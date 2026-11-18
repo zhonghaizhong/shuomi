@@ -1,0 +1,465 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { ReferralsPage, type ReferralView } from "./referrals-page";
+import styles from "./referrals.module.css";
+
+const state = vi.hoisted(() => ({
+  context: { user: { id: "subject-1" } as { id: string } | null, isLoading: false, isSwitching: false, error: null as { code: string } | null, blockingError: null as { code: string } | null },
+}));
+vi.mock("@/components/providers/workbench-context-provider", () => ({ useWorkbenchContext: () => state.context }));
+
+const clients: QueryClient[] = [];
+function mount(mode: "overview" | "complete" = "overview", expectedUserId = "subject-1", registrationAvailable = true, view?: ReferralView) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  clients.push(client);
+  const child = (subject = expectedUserId) => <QueryClientProvider client={client}><ReferralsPage mode={mode} view={view} expectedUserId={subject} registrationAvailable={registrationAvailable} /></QueryClientProvider>;
+  const rendered = render(child());
+  return { ...rendered, update: (subject = expectedUserId) => rendered.rerender(child(subject)) };
+}
+
+afterEach(() => {
+  cleanup();
+  clients.splice(0).forEach((client) => client.clear());
+  state.context = { user: { id: "subject-1" }, isLoading: false, isSwitching: false, error: null, blockingError: null };
+  vi.unstubAllGlobals();
+});
+
+describe("ReferralsPage", () => {
+  it("keeps the overview links available when the referral summary cannot load", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({}, { status: 503 })));
+    mount();
+    await screen.findByRole("alert");
+    const nav = within(screen.getByRole("navigation", { name: "推广管理入口" }));
+    for (const [name, path] of [
+      ["查看推广", "center"],
+      ["查看收益明细", "earnings"],
+      ["管理提现", "withdrawals"],
+      ["查看推广规则", "rules"],
+    ]) {
+      expect(nav.getByRole("link", { name })).toHaveAttribute("href", `/workbench/account/referrals/${path}`);
+    }
+  });
+  it("cancels a second requested withdrawal after the first completes",async()=>{
+    const projection={code:"CODE1234",codeAvailability:"available",count:1,generatedAt:"2026-09-13T10:00:00Z",earnings:{availability:"available",currency:"CNY",pendingMinor:"0",availableMinor:"12000",reservedMinor:"20000",adjustmentMinor:"0",version:"1",updatedAt:"2026-09-13T10:00:00Z"}};
+    const row={id:"withdrawal-A",currency:"CNY",method:"ALIPAY",payoutMethodId:"method-1",amountMinor:"10000",status:"REQUESTED",payoutReference:"",version:"2",createdAt:"2026-09-13T10:01:00Z",updatedAt:"2026-09-13T10:01:00Z"};
+    let rows=[row,{...row,id:"withdrawal-B"}];
+    const fetch=vi.fn(async(input:unknown,init?:RequestInit)=>{
+      void init;const path=String(input);
+      if(path.endsWith("/referrals"))return Response.json(projection);
+      if(path.endsWith("/referral-payout-methods"))return Response.json({schemaVersion:"payout-methods-v1",methods:[{methodId:"method-1",type:"ALIPAY",displayName:"支付宝",maskedDestination:"***1234",version:"1"}]});
+      if(path.endsWith("/cancel")){const id=path.split("/").at(-2);rows=rows.map(item=>item.id===id?{...item,status:"CANCELED",version:"3"}:item);return Response.json({schemaVersion:"referral-withdrawal-v1",...rows.find(r=>r.id===id)})}
+      return Response.json({schemaVersion:"referral-withdrawals-v1",withdrawals:rows});
+    });vi.stubGlobal("fetch",fetch);mount("overview","subject-1",true,"withdrawals");
+    await userEvent.click(await screen.findByRole("button",{name:"取消提现申请"}));await screen.findByText("提现状态：已取消。");
+    await userEvent.click(await screen.findByRole("button",{name:"取消提现申请"}));
+    await waitFor(()=>expect(fetch.mock.calls.some(([path,init])=>path==="/api/account/referral-withdrawals/withdrawal-B/cancel"&&init?.method==="POST")).toBe(true));
+  });
+  it("keeps four owner-backed overview facts in one horizontal metrics group", async () => {
+    vi.stubGlobal("fetch", vi.fn((input: string) => Promise.resolve(String(input).includes("referral-withdrawals")
+      ? Response.json({ schemaVersion: "referral-withdrawals-v1", withdrawals: [] })
+      : Response.json({ code: "CODE1234", codeAvailability: "available", count: 2, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } }))));
+    mount("overview", "subject-1", true, "overview");
+    const overview = await screen.findByRole("region", { name: "推广与收益概览" });
+    expect(within(overview).getAllByRole("article")).toHaveLength(4);
+    expect(within(overview).getByText("已建立推广关系")).toBeVisible();
+    expect(within(overview).getByText("推广码状态")).toBeVisible();
+    expect(within(overview).getAllByText("暂不可用")).toHaveLength(2);
+    expect(screen.getByRole("region", { name: "推广与收益管理" })).toBeVisible();
+    const activity = screen.getByRole("region", { name: "近期收益动态表格，可横向滚动" });
+    expect(within(activity).getByRole("columnheader", { name: "时间" })).toBeVisible();
+    expect(within(activity).getByRole("columnheader", { name: "金额" })).toBeVisible();
+    expect(within(activity).getByText("总览暂不显示近期收益记录。")).toBeVisible();
+  });
+
+  it("separates center summary facts from the promotion-code group", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "CODE1234", codeAvailability: "available", count: 2, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } })));
+    mount("overview", "subject-1", true, "center");
+    const summary = await screen.findByRole("region", { name: "推广数据摘要" });
+    const code = screen.getByRole("region", { name: "我的推广信息" });
+    expect(within(summary).getByText("已建立推广关系")).toBeVisible();
+    expect(within(code).getByRole("heading", { name: "我的推广" })).toBeVisible();
+    expect(within(code).getByText("CODE1234")).toBeVisible();
+    expect(within(code).queryByText("转化统计暂不可用")).not.toBeInTheDocument();
+    const conversion = screen.getByRole("region", { name: "推广转化" });
+    const steps = within(conversion).getByRole("list");
+    expect(steps).toHaveClass(styles.conversionSteps);
+    expect(within(steps).getAllByRole("listitem")).toHaveLength(4);
+    const funnel = within(steps).getAllByRole("listitem");
+    expect(within(funnel[0]).getByText("访问")).toBeVisible();
+    expect(within(funnel[1]).getByText("注册")).toBeVisible();
+    expect(within(funnel[2]).getByText("付费")).toBeVisible();
+    expect(within(funnel[2]).getByText("未提供")).toBeVisible();
+    expect(within(funnel[3]).getByText("收益")).toBeVisible();
+    expect(within(funnel[3]).getByText("金额未提供")).toBeVisible();
+    expect(within(steps).queryByText("2")).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "收益记录表格，可横向滚动" })).toHaveClass(styles.earningsTableWrap);
+  });
+
+  it.each([30, 45])("renders the authoritative %i-day period and approved conduct guidance", async (settlementPeriodDays) => {
+    const rules = { schemaVersion: "referral-rules-v1", currency: "CNY", commissionRateBps: 1000, settlementPeriodDays, minimumWithdrawalMinor: "10000", withdrawalReview: "manual", earningsBasis: "canonical_settled_payment_refund_chargeback", source: "referral_economics_contract" };
+    const fetch = vi.fn().mockResolvedValue(Response.json(rules));
+    vi.stubGlobal("fetch", fetch);
+    mount("overview", "subject-1", true, "rules");
+
+    expect(await screen.findByRole("heading", { name: "当前推广规则" })).toBeVisible();
+    expect(screen.getByText("推广前请了解下方的佣金比例、结算周期、提现条件和推广规范。")).toBeVisible();
+
+    const rulesRegion = screen.getByRole("region", { name: "规则说明" });
+    expect(within(rulesRegion).getAllByRole("article")).toHaveLength(6);
+    expect(within(rulesRegion).getByText("10%")).toBeVisible();
+    expect(within(rulesRegion).getByText(`${settlementPeriodDays} 天`)).toBeVisible();
+    expect(within(rulesRegion).getByText(`新产生的佣金从付款结算确认起满 ${settlementPeriodDays} 天后可进入结算。已有收益沿用原定的结算时间。发生退款或拒付时，相关收益会随之调整。`)).toBeVisible();
+    expect(within(rulesRegion).getByText("¥100.00")).toBeVisible();
+    expect(within(rulesRegion).getByText("最低申请金额为 ¥100.00。提交时会检查你是否满足提现条件、收款方式是否有效。申请由工作人员审核。")).toBeVisible();
+    expect(within(rulesRegion).queryByText(/个人实名认证/)).not.toBeInTheDocument();
+    expect(within(rulesRegion).queryByText("可用收益达到最低申请金额后可发起提现；当前提现申请采用人工审核。")).not.toBeInTheDocument();
+    expect(within(rulesRegion).getByText("请真实、准确地介绍平台服务，不得虚构功能、价格、优惠或收益承诺，也不得冒充平台官方。")).toBeVisible();
+    expect(within(rulesRegion).getByText("禁止批量虚假注册、刷单或伪造交易以获取推广收益；不得发送垃圾信息、反复骚扰他人，或未经授权使用他人品牌、内容及个人信息。")).toBeVisible();
+    expect(within(rulesRegion).getByText("退款或拒付会影响对应的推广收益。提现须符合申请条件，并由工作人员审核。")).toBeVisible();
+    expect(within(rulesRegion).queryByText("未提供")).not.toBeInTheDocument();
+
+    expect(screen.queryByText(/owner|canonical|projection/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/严重违规时平台可限制推广或提现功能|违规收益自动清零/)).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][0]).toBe("/api/account/referral-rules");
+  });
+
+  it("shows personal identity verification only when the authoritative rules contract is v2", async () => {
+    const rules = { schemaVersion: "referral-rules-v2", currency: "CNY", commissionRateBps: 1000, settlementPeriodDays: 30, minimumWithdrawalMinor: "10000", withdrawalReview: "manual", earningsBasis: "canonical_settled_payment_refund_chargeback", source: "referral_economics_contract", personalKycRequired: true };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(rules)));
+    mount("overview", "subject-1", true, "rules");
+
+    const rulesRegion = await screen.findByRole("region", { name: "规则说明" });
+    expect(within(rulesRegion).getByText(/还需完成个人实名认证/)).toBeVisible();
+    expect(within(rulesRegion).getByText(/最低申请金额为 ¥100.00/)).toBeVisible();
+  });
+
+  it("uses the dedicated backend projection for the earnings page", async () => {
+    const earnings = { schemaVersion: "referral-earnings-v1", referrer: "subject-1", currency: "CNY", pendingMinor: "2000", availableMinor: "10000", reservedMinor: "0", adjustmentMinor: "-500", version: "3", updatedAt: "2026-09-13T10:00:00Z", source: "referral_earnings_projection", entryLimit: 100, entries: [{ entryId: "entry-1", referrer: "subject-1", currency: "CNY", paymentId: "payment-1", entryType: "COMMISSION", amountMinor: "10000", referenceId: "payment-1", occurredAt: "2026-09-13T10:00:00Z" }] };
+    const fetch = vi.fn().mockResolvedValue(Response.json(earnings));
+    vi.stubGlobal("fetch", fetch);
+    mount("overview", "subject-1", true, "earnings");
+    expect(await screen.findByText("¥95.00")).toBeVisible();
+    expect(screen.getByText(/^更新时间：/)).toBeVisible();
+    const tableRegion = screen.getByRole("region", { name: "逐笔收益记录，可横向滚动" });
+    expect(tableRegion).toHaveClass(styles.earningsTableWrap);
+    const table = within(tableRegion).getByRole("table");
+    expect(screen.getByText("推广佣金")).toBeVisible(); expect(within(table).getByText("¥100.00")).toBeVisible(); expect(within(table).getByText("payment-1")).toBeVisible();
+    expect(screen.getByRole("group", { name: "收益筛选" })).toBeVisible();
+    expect(within(screen.getByRole("group", { name: "收益筛选" })).getAllByRole("combobox")).toHaveLength(2);
+    expect(screen.getByText("明细最多显示最近 100 条记录。上方金额按全部记录汇总。")).toBeVisible();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][0]).toBe("/api/account/referral-earnings");
+  });
+
+  it("shows actual relation count and leaves unsupported earnings unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "CODE1234", codeAvailability: "available", count: 2, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } })));
+    mount("overview", "subject-1", true, "center");
+    const summary = await screen.findByRole("region", { name: "推广数据摘要" });
+    expect(within(summary).getByText("2")).toBeVisible();
+    expect(screen.getByText("CODE1234")).toBeVisible();
+    expect(screen.getAllByText("未提供").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/¥0|￥0|0\.00/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "复制链接" })).toBeVisible();
+    expect(screen.getByText("二维码暂不可用")).toBeVisible();
+  });
+
+  it("distinguishes not-created from a real zero count and creates only on explicit click", async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json({ code: "", codeAvailability: "not_created", count: 0, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } }))
+      .mockResolvedValueOnce(Response.json({ code: "CODE1234" }))
+      .mockResolvedValueOnce(Response.json({ code: "CODE1234", codeAvailability: "available", count: 0, generatedAt: "2026-09-13T10:01:00Z", earnings: { availability: "unavailable", amount: null } }));
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    mount("overview", "subject-1", true, "center");
+    expect(await screen.findByText("尚未创建推广码。")).toBeVisible();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "创建推广码" }));
+    expect(await screen.findByText("CODE1234")).toBeVisible();
+    expect(fetch.mock.calls[1][1].method).toBe("POST");
+  });
+
+  it("does not treat an organization switch as loss of personal referral access", async () => {
+    state.context.isSwitching = true;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "CODE1234", codeAvailability: "available", count: 1, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } })));
+    mount("overview", "subject-1", true, "center");
+    expect(await screen.findByText("CODE1234")).toBeVisible();
+    expect(screen.queryByText(/企业.*不可用|请选择当前企业/)).not.toBeInTheDocument();
+  });
+
+  it("reads personal facts when enterprise context is unavailable", async () => {
+    state.context.user = null;
+    state.context.blockingError = { code: "DEPENDENCY_UNAVAILABLE" };
+    const fetch = vi.fn((input: string) => String(input).includes("referral-withdrawals")
+      ? Promise.resolve(Response.json({ schemaVersion: "referral-withdrawals-v1", withdrawals: [] }))
+      : Promise.resolve(Response.json({ code: "CODE1234", codeAvailability: "available", count: 1, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } })));
+    vi.stubGlobal("fetch", fetch);
+    mount("overview", "subject-1", true, "center");
+    expect(await screen.findByText("CODE1234")).toBeVisible();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps personal count readable but disables an unconfigured invitation entry", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "CODE1234", codeAvailability: "available", count: 2, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } })));
+    mount("overview", "subject-1", false, "center");
+    expect(within(await screen.findByRole("region", { name: "推广数据摘要" })).getByText("2")).toBeVisible();
+    expect(screen.queryByRole("link", { name: "打开邀请链接" })).not.toBeInTheDocument();
+    expect(screen.getByText("注册入口暂不可用")).toBeVisible();
+  });
+
+  it("renders unavailable earnings instead of a disabled payout-method spinner", async () => {
+    const projection = { code: "CODE1234", codeAvailability: "available", count: 1, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } };
+    const fetch = vi.fn((input: string) => String(input).includes("referral-withdrawals")
+      ? Promise.resolve(Response.json({ schemaVersion: "referral-withdrawals-v1", withdrawals: [] }))
+      : Promise.resolve(Response.json(projection)));
+    vi.stubGlobal("fetch", fetch);
+    mount("overview", "subject-1", true, "withdrawals");
+    expect(await screen.findByText("暂时查不到收益，无法查看收款方式或申请提现。请稍后再试。")).toBeVisible();
+    expect(screen.queryByText("正在加载收款方式…")).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("allows a user to cancel only the requested withdrawal", async () => {
+    const projection = { code: "CODE1234", codeAvailability: "available", count: 1, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "available", currency: "CNY", pendingMinor: "0", availableMinor: "12000", reservedMinor: "0", adjustmentMinor: "0", version: "1", updatedAt: "2026-09-13T10:00:00Z" } };
+    const requested = { schemaVersion: "referral-withdrawal-v1", id: "withdrawal-1", currency: "CNY", method: "ALIPAY", payoutMethodId: "method-1", amountMinor: "10000", status: "REQUESTED", payoutReference: "", version: "2", createdAt: "2026-09-13T10:01:00Z", updatedAt: "2026-09-13T10:01:00Z" };
+    const canceled = { ...requested, status: "CANCELED", version: "3", updatedAt: "2026-09-13T10:02:00Z" };
+    const fetch = vi.fn((input: string, init?: RequestInit) => {
+      const path = String(input);
+      if (path === "/api/account/referrals") return Promise.resolve(Response.json(projection));
+      if (path === "/api/account/referral-withdrawals" && !init?.method) return Promise.resolve(Response.json({ schemaVersion: "referral-withdrawals-v1", withdrawals: [] }));
+      if (path === "/api/account/referral-payout-methods") return Promise.resolve(Response.json({ schemaVersion: "payout-methods-v1", methods: [{ methodId: "method-1", type: "ALIPAY", displayName: "支付宝", maskedDestination: "***1234", version: "1" }] }));
+      if (path === "/api/account/referral-withdrawals" && init?.method === "POST") return Promise.resolve(Response.json(requested));
+      if (path === "/api/account/referral-withdrawals/withdrawal-1/cancel" && init?.method === "POST") return Promise.resolve(Response.json(canceled));
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    mount("overview", "subject-1", true, "withdrawals");
+    await user.type(await screen.findByLabelText("金额（分）"), "10000");
+    expect(screen.getByRole("heading", { name: "收款账户" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "提现记录表格，可横向滚动" })).toHaveClass(styles.earningsTableWrap);
+    expect(screen.getByRole("region", { name: "提现概览" })).toHaveTextContent("累计提现");
+    await user.click(screen.getByRole("button", { name: "申请提现" }));
+    expect(await screen.findByRole("button", { name: "取消提现申请" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "取消提现申请" }));
+    expect(await screen.findByText("提现状态：已取消。")).toBeVisible();
+    expect(fetch).toHaveBeenCalledWith("/api/account/referral-withdrawals/withdrawal-1/cancel", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("replays an unknown withdrawal write with its original idempotency key", async () => {
+    const projection = { code: "CODE1234", codeAvailability: "available", count: 1, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "available", currency: "CNY", pendingMinor: "0", availableMinor: "12000", reservedMinor: "0", adjustmentMinor: "0", version: "1", updatedAt: "2026-09-13T10:00:00Z" } };
+    const withdrawalResult = { schemaVersion: "referral-withdrawal-v1", id: "withdrawal-1", currency: "CNY", method: "ALIPAY", payoutMethodId: "method-1", amountMinor: "10000", status: "REQUESTED", payoutReference: "", version: "2", createdAt: "2026-09-13T10:01:00Z", updatedAt: "2026-09-13T10:01:00Z" };
+    let withdrawalWrites = 0;
+    const fetch = vi.fn((input: string, init?: RequestInit) => {
+      const path = String(input);
+      if (path === "/api/account/referrals") return Promise.resolve(Response.json(projection));
+      if (path === "/api/account/referral-withdrawals" && !init?.method) return Promise.resolve(Response.json({ schemaVersion: "referral-withdrawals-v1", withdrawals: [] }));
+      if (path === "/api/account/referral-payout-methods") return Promise.resolve(Response.json({ schemaVersion: "payout-methods-v1", methods: [{ methodId: "method-1", type: "ALIPAY", displayName: "支付宝", maskedDestination: "***1234", version: "1" }] }));
+      if (path === "/api/account/referral-withdrawals" && init?.method === "POST") {
+        withdrawalWrites += 1;
+        return withdrawalWrites === 1 ? Promise.resolve(Response.json({ code: "RESULT_UNVERIFIED", message: "unknown", requestId: "", fieldErrors: [], outcome: "unknown" }, { status: 504 })) : Promise.resolve(Response.json(withdrawalResult));
+      }
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    mount("overview", "subject-1", true, "withdrawals");
+    await user.type(await screen.findByLabelText("金额（分）"), "10000");
+    await user.click(screen.getByRole("button", { name: "申请提现" }));
+    expect((await screen.findAllByText("操作结果待核实"))[0]).toBeVisible();
+    expect(screen.getByRole("button", { name: "申请提现" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "刷新提现状态" }));
+    await waitFor(() => expect(screen.queryByText("操作结果待核实")).not.toBeInTheDocument());
+    const writes = fetch.mock.calls.filter(([input, init]) => input === "/api/account/referral-withdrawals" && init?.method === "POST");
+    expect(writes).toHaveLength(2);
+    expect(new Headers(writes[0]?.[1]?.headers).get("Idempotency-Key")).toBe(new Headers(writes[1]?.[1]?.headers).get("Idempotency-Key"));
+    expect(fetch.mock.calls.filter(([input]) => input === "/api/account/referrals").length).toBe(2);
+  });
+
+  it("replays an unknown payout-method write with its original idempotency key", async () => {
+    const projection = { code: "CODE1234", codeAvailability: "available", count: 1, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "available", currency: "CNY", pendingMinor: "0", availableMinor: "12000", reservedMinor: "0", adjustmentMinor: "0", version: "1", updatedAt: "2026-09-13T10:00:00Z" } };
+    const method = { schemaVersion: "payout-method-v1", methodId: "method-1", type: "ALIPAY", displayName: "支付宝账户", maskedDestination: "***1234", version: "1" };
+    const listedMethod = { methodId: method.methodId, type: method.type, displayName: method.displayName, maskedDestination: method.maskedDestination, version: method.version };
+    let payoutWrites = 0;
+    const fetch = vi.fn((input: string, init?: RequestInit) => {
+      const path = String(input);
+      if (path === "/api/account/referrals") return Promise.resolve(Response.json(projection));
+      if (path === "/api/account/referral-withdrawals") return Promise.resolve(Response.json({ schemaVersion: "referral-withdrawals-v1", withdrawals: [] }));
+      if (path === "/api/account/referral-payout-methods" && init?.method === "POST") {
+        payoutWrites += 1;
+        return payoutWrites === 1
+          ? Promise.resolve(Response.json({ code: "RESULT_UNVERIFIED", message: "unknown", requestId: "", fieldErrors: [], outcome: "unknown" }, { status: 504 }))
+          : Promise.resolve(Response.json(method, { status: 201 }));
+      }
+      if (path === "/api/account/referral-payout-methods") return Promise.resolve(Response.json({ schemaVersion: "payout-methods-v1", methods: payoutWrites >= 2 ? [listedMethod] : [] }));
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    mount("overview", "subject-1", true, "withdrawals");
+    await user.type(await screen.findByLabelText("名称"), "支付宝账户");
+    await user.type(screen.getByLabelText("账号或收款地址"), "buyer@example.test");
+    await user.click(screen.getByRole("button", { name: "登记收款方式" }));
+    expect((await screen.findAllByText("操作结果待核实"))[0]).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "刷新提现状态" }));
+    await waitFor(() => expect(screen.queryByText("操作结果待核实")).not.toBeInTheDocument());
+    const writes = fetch.mock.calls.filter(([input, init]) => input === "/api/account/referral-payout-methods" && init?.method === "POST");
+    expect(writes).toHaveLength(2);
+    expect(new Headers(writes[0]?.[1]?.headers).get("Idempotency-Key")).toBe(new Headers(writes[1]?.[1]?.headers).get("Idempotency-Key"));
+    expect(within(screen.getByRole("region", { name: "收款账户" })).getByText(/支付宝账户/)).toBeVisible();
+  });
+
+  it("replays an unknown cancellation with its original idempotency key", async () => {
+    const projection = { code: "CODE1234", codeAvailability: "available", count: 1, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "available", currency: "CNY", pendingMinor: "0", availableMinor: "12000", reservedMinor: "0", adjustmentMinor: "0", version: "1", updatedAt: "2026-09-13T10:00:00Z" } };
+    const requested = { schemaVersion: "referral-withdrawal-v1", id: "withdrawal-1", currency: "CNY", method: "ALIPAY", payoutMethodId: "method-1", amountMinor: "10000", status: "REQUESTED", payoutReference: "", version: "2", createdAt: "2026-09-13T10:01:00Z", updatedAt: "2026-09-13T10:01:00Z" };
+    const canceled = { id: requested.id, currency: requested.currency, method: requested.method, payoutMethodId: requested.payoutMethodId, amountMinor: requested.amountMinor, status: "CANCELED", payoutReference: requested.payoutReference, version: "3", createdAt: requested.createdAt, updatedAt: "2026-09-13T10:02:00Z" };
+    const canceledResult = { schemaVersion: "referral-withdrawal-v1", ...canceled };
+    let cancelWrites = 0;
+    const fetch = vi.fn((input: string, init?: RequestInit) => {
+      const path = String(input);
+      if (path === "/api/account/referrals") return Promise.resolve(Response.json(projection));
+      if (path === "/api/account/referral-payout-methods") return Promise.resolve(Response.json({ schemaVersion: "payout-methods-v1", methods: [{ methodId: "method-1", type: "ALIPAY", displayName: "支付宝", maskedDestination: "***1234", version: "1" }] }));
+      if (path === "/api/account/referral-withdrawals" && init?.method === "POST") return Promise.resolve(Response.json(requested));
+      if (path === "/api/account/referral-withdrawals/withdrawal-1/cancel") {
+        cancelWrites += 1;
+        return cancelWrites === 1 ? Promise.resolve(Response.json({ code: "RESULT_UNVERIFIED", message: "unknown", requestId: "", fieldErrors: [], outcome: "unknown" }, { status: 504 })) : Promise.resolve(Response.json(canceledResult));
+      }
+      if (path === "/api/account/referral-withdrawals") {
+        return Promise.resolve(Response.json({ schemaVersion: "referral-withdrawals-v1", withdrawals: cancelWrites >= 2 ? [canceled] : [] }));
+      }
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    mount("overview", "subject-1", true, "withdrawals");
+    await user.type(await screen.findByLabelText("金额（分）"), "10000");
+    await user.click(screen.getByRole("button", { name: "申请提现" }));
+    await user.click(await screen.findByRole("button", { name: "取消提现申请" }));
+    expect((await screen.findAllByText("操作结果待核实"))[0]).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "刷新提现状态" }));
+    await waitFor(() => expect(screen.queryByText("操作结果待核实")).not.toBeInTheDocument());
+    const writes = fetch.mock.calls.filter(([input, init]) => input === "/api/account/referral-withdrawals/withdrawal-1/cancel" && init?.method === "POST");
+    expect(writes).toHaveLength(2);
+    expect(new Headers(writes[0]?.[1]?.headers).get("Idempotency-Key")).toBe(new Headers(writes[1]?.[1]?.headers).get("Idempotency-Key"));
+    expect(screen.getByText("提现状态：已取消。")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "取消提现申请" })).not.toBeInTheDocument();
+  });
+
+  it("shows available earnings after immutable refund adjustments", async () => {
+    const projection = { code: "CODE1234", codeAvailability: "available", count: 1, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "available", currency: "CNY", pendingMinor: "0", availableMinor: "12000", reservedMinor: "0", adjustmentMinor: "-2000", version: "2", updatedAt: "2026-09-13T10:00:00Z" } };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(projection)));
+    mount();
+    expect(await screen.findByText("¥100.00")).toBeVisible();
+    expect(screen.getByText("已结算，已计入退款和拒付调整")).toBeVisible();
+  });
+
+  it("clears an old subject result and prevents a late response from returning", async () => {
+    let resolve!: (value: Response) => void;
+    const fetch = vi.fn(() => new Promise<Response>((done) => { resolve = done; }));
+    vi.stubGlobal("fetch", fetch);
+    const view = mount();
+    state.context.user = { id: "subject-2" };
+    view.update();
+    expect(screen.getByText("登录身份已变化")).toBeVisible();
+    resolve(Response.json({ code: "OLD-CODE", codeAvailability: "available", count: 99, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } }));
+    await waitFor(() => expect(screen.queryByText("OLD-CODE")).not.toBeInTheDocument());
+  });
+
+  it("clears an in-flight result when shared context reports authentication loss", async () => {
+    let resolve!: (value: Response) => void;
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((done) => { resolve = done; })));
+    const view = mount();
+    state.context.user = null;
+    state.context.error = { code: "AUTHENTICATION_REQUIRED" };
+    view.update();
+    expect(screen.getByText("登录身份已变化")).toBeVisible();
+    resolve(Response.json({ code: "OLD-CODE", codeAvailability: "available", count: 99, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } }));
+    await waitFor(() => expect(screen.queryByText("OLD-CODE")).not.toBeInTheDocument());
+  });
+
+  it("completes only after an explicit click and then re-reads the durable projection", async () => {
+    const projection = { code: "", codeAvailability: "not_created", count: 0, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } };
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json(projection)).mockResolvedValueOnce(Response.json({ status: "complete", intentID: "intent-1", boundAt: "2026-09-13T10:02:00Z" })).mockResolvedValueOnce(Response.json({ ...projection, count: 1 }));
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    mount("complete");
+    expect(await screen.findByRole("button", { name: "确认邀请信息" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "提现状态" })).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "确认邀请信息" }));
+    expect(await screen.findByText("推广关系已确认")).toBeVisible();
+    expect(fetch.mock.calls[1][0]).toBe("/api/account/referrals/complete");
+  });
+
+  it("omits the withdrawal summary from registration completion", async () => {
+    const projection = { code: "", codeAvailability: "not_created", count: 0, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } };
+    const fetch = vi.fn().mockResolvedValue(Response.json(projection));
+    vi.stubGlobal("fetch", fetch);
+    mount("complete");
+    expect(await screen.findByRole("button", { name: "确认邀请信息" })).toBeVisible();
+    expect(screen.queryByText("正在加载提现记录…")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "提现状态" })).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a successful receipt when the projection refresh is unavailable", async () => {
+    const projection = { code: "", codeAvailability: "not_created", count: 0, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } };
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json(projection)).mockResolvedValueOnce(Response.json({ status: "complete", intentID: "intent-1", boundAt: "2026-09-13T10:02:00Z" })).mockResolvedValueOnce(Response.json({ error: "referral_unavailable" }, { status: 503 }));
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    const view = mount("complete");
+    await user.click(await screen.findByRole("button", { name: "确认邀请信息" }));
+    expect(await screen.findByText("推广关系已确认")).toBeVisible();
+    expect(screen.getByText("推广汇总暂不可用")).toBeVisible();
+    state.context.user = null;
+    state.context.blockingError = { code: "DEPENDENCY_UNAVAILABLE" };
+    view.update();
+    expect(screen.getByText("推广关系已确认")).toBeVisible();
+    state.context.user = { id: "subject-1" };
+    state.context.blockingError = null;
+    view.update();
+    expect(screen.getByText("推广关系已确认")).toBeVisible();
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it.each([[401, "AUTHENTICATION_REQUIRED"], [409, "IDENTITY_CONTEXT_CHANGED"]])("clears a receipt when refreshed identity fails with %s", async (status, code) => {
+    const projection = { code: "", codeAvailability: "not_created", count: 0, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json(projection)).mockResolvedValueOnce(Response.json({ status: "complete", intentID: "intent-1", boundAt: "2026-09-13T10:02:00Z" })).mockResolvedValueOnce(Response.json({ code }, { status })));
+    const user = userEvent.setup();
+    mount("complete");
+    await user.click(await screen.findByRole("button", { name: "确认邀请信息" }));
+    expect(await screen.findByText("登录身份已变化")).toBeVisible();
+    expect(screen.queryByText("推广关系已确认")).not.toBeInTheDocument();
+  });
+
+  it("does not claim an unknown write produced no fact", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "referral_outcome_unknown" }, { status: 503 })));
+    mount("overview", "subject-1", true, "center");
+    expect(await screen.findByText("暂时无法确认操作结果")).toBeVisible();
+    expect(screen.queryByText("请稍后重试。")).not.toBeInTheDocument();
+  });
+
+  it("treats a disconnected create response as an unknown write outcome", async () => {
+    const projection = { code: "", codeAvailability: "not_created", count: 0, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json(projection)).mockRejectedValueOnce(new TypeError("connection lost")));
+    const user = userEvent.setup();
+    mount("overview", "subject-1", true, "center");
+    await user.click(await screen.findByRole("button", { name: "创建推广码" }));
+    expect(await screen.findByText("推广服务暂不可用")).toBeVisible();
+    expect(screen.getByText("还无法确认操作结果。请先核实当前状态，避免重复提交。")).toBeVisible();
+    expect(screen.queryByText("请稍后重试。")).not.toBeInTheDocument();
+  });
+
+  it("treats an invalid complete response as an unknown write outcome", async () => {
+    const projection = { code: "", codeAvailability: "not_created", count: 0, generatedAt: "2026-09-13T10:00:00Z", earnings: { availability: "unavailable", amount: null } };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json(projection)).mockResolvedValueOnce(Response.json({ unexpected: true })));
+    const user = userEvent.setup();
+    mount("complete");
+    await user.click(await screen.findByRole("button", { name: "确认邀请信息" }));
+    expect(await screen.findByText("还无法确认操作结果。请先核实当前状态，避免重复提交。")).toBeVisible();
+    expect(screen.queryByText("请稍后重试。")).not.toBeInTheDocument();
+  });
+});

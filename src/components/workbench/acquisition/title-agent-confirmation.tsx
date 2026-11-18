@@ -1,0 +1,58 @@
+"use client";
+import { useEffect, useId, useRef, useState } from "react";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import type {AgentTemplate} from "@/lib/contracts/agent-configuration";
+import { baseSchema, basesSchema, sourcesSchema, knowledgeRequest, KnowledgeError, type KnowledgeSource, type KnowledgeScope } from "@/lib/api/knowledge";
+import styles from "../task-center/title-review.module.css";
+import type {ExecutionModeView} from "@/lib/contracts/execution-mode";
+import {executionModeLabels} from "../agents/execution-mode-settings";
+import { contentSelectionLabel, type ContentSelection } from "@/lib/contracts/content-selection";
+import {SkillPicker} from "../skills/skill-picker";
+import type {SkillSelection} from "@/lib/contracts/skill";
+
+export function TitleAgentConfirmation({scope,organization,platform,template,knowledgeAvailable,knowledgeReadable=true,executionMode,contentSelection,initialSkill,onConfirm,onCancel}:{scope:KnowledgeScope;organization:string;platform:string;template?:AgentTemplate;knowledgeAvailable:boolean;knowledgeReadable?:boolean;executionMode?:ExecutionModeView;contentSelection?:ContentSelection;initialSkill?:SkillSelection;onConfirm:(baseId?:string,method?:SkillSelection)=>void;onCancel:()=>void}) {
+ const dialog=useRef<HTMLDialogElement>(null),cancelButton=useRef<HTMLButtonElement>(null),request=useRef<AbortController|null>(null);
+ const id=useId();
+ const [method,setMethod]=useState<SkillSelection|undefined>(initialSkill),[methodReady,setMethodReady]=useState(!initialSkill);
+ const titleOnly=!!contentSelection?.title&&!contentSelection.description&&!contentSelection.sellingPoints&&!contentSelection.seoKeywords;
+ const defaultKnowledge=!!template?.defaultKnowledgeBaseId||template?.knowledgeAvailability==="UNAVAILABLE";
+ const canLoadDefault=defaultKnowledge&&knowledgeAvailable&&knowledgeReadable&&template?.knowledgeAvailability!=="UNAVAILABLE"&&!!template?.defaultKnowledgeBaseId;
+ const {userId,organizationId}=scope;
+ const [useKnowledge,setUseKnowledge]=useState(defaultKnowledge),[bases,setBases]=useState<z.infer<typeof basesSchema>["items"]>([]),[baseId,setBaseId]=useState(""),[sources,setSources]=useState<KnowledgeSource[]>([]),[loading,setLoading]=useState(canLoadDefault),[failure,setFailure]=useState(defaultKnowledge&&!canLoadDefault?"模板默认知识当前不可用，请重新选择或明确取消使用知识。":"");
+ const [pagination,setPagination]=useState<z.infer<typeof basesSchema>["pagination"]|null>(null);
+ useEffect(()=>{const previous=document.activeElement,element=dialog.current;element?.showModal();cancelButton.current?.focus();return()=>{request.current?.abort();element?.close();if(previous instanceof HTMLElement&&previous.isConnected)previous.focus()};},[]);
+ useEffect(()=>{
+  if(!canLoadDefault||!template?.defaultKnowledgeBaseId)return;
+  const controller=new AbortController();request.current=controller;const selected=template.defaultKnowledgeBaseId;
+  void Promise.all([knowledgeRequest({userId,organizationId},`knowledge-bases/${selected}`,baseSchema,{signal:controller.signal}),knowledgeRequest({userId,organizationId},`knowledge-bases/${selected}/sources`,sourcesSchema,{signal:controller.signal})]).then(([base,result])=>{if(controller.signal.aborted)return;if(base.state!=="ACTIVE")throw Error("disabled");setBases([base]);setBaseId(selected);setSources(result.items)}).catch(()=>{if(!controller.signal.aborted){setBases([]);setBaseId("");setSources([]);setFailure("模板默认知识当前不可用，请重新选择或明确取消使用知识。")}}).finally(()=>{if(!controller.signal.aborted)setLoading(false)});
+  return()=>controller.abort();
+ },[canLoadDefault,template?.defaultKnowledgeBaseId,userId,organizationId]);
+ async function load(selection?:string,page=1) {
+  request.current?.abort();const controller=new AbortController();request.current=controller;setLoading(true);setFailure("");
+  if(!selection){setBases([]);setBaseId("");setSources([]);}
+  try {
+   if(selection) {const result=await knowledgeRequest(scope,`knowledge-bases/${selection}/sources`,sourcesSchema,{signal:controller.signal});if(!controller.signal.aborted)setSources(result.items);}
+   else {const result=await knowledgeRequest(scope,`knowledge-bases?page=${page}&pageSize=100`,basesSchema,{signal:controller.signal});if(!controller.signal.aborted){setBases(result.items.filter(base=>base.state==="ACTIVE"));setPagination(result.pagination);}}
+  }catch(error){if(!controller.signal.aborted){setBases([]);setBaseId("");setSources([]);setPagination(null);setFailure(error instanceof KnowledgeError&&error.status===403?"当前身份无权读取企业知识。":"企业知识当前不可用，请稍后重试或明确选择不使用知识。");}}
+  finally{if(!controller.signal.aborted)setLoading(false);}
+ }
+ const activeSources=sources.filter(source=>source.state==="ACTIVE");
+ const ready=!!baseId&&!loading&&!failure&&activeSources.length>0&&activeSources.length<=4&&activeSources.every(source=>source.currentReadableRevision);
+ return <dialog ref={dialog} className={styles.confirmation} aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`} onCancel={event=>{event.preventDefault();onCancel()}}>
+  <h2 id={`${id}-title`}>{contentSelection ? "确认内容完善与本地化" : "确认标题优化"}</h2><p>当前企业 · {organization}</p>
+  {contentSelection && <p>{contentSelectionLabel(contentSelection)}</p>}
+  <p id={`${id}-description`}>{!executionMode?"尚未读取当前权限模式，暂不能执行。":`${executionModeLabels[executionMode.mode]} · 配置版本 ${executionMode.revision}。${executionMode.mode==="full_access"?(contentSelection?"完整合法的原内容建议可按策略直接采用，未经逐项人工审阅。":"合格标题可按策略直接采用，未经逐项人工审阅。"):executionMode.mode==="auto_approve"?(contentSelection?"仅标题建议可按程序校验自动采用；含描述、卖点或SEO字段时整组保留人工审核。":"通过确定性规则的标题可自动采用，无法判断的内容需要人工确认。"):executionMode.mode==="read_only"?"仅保存建议和诊断，不修改商品。":"建议由本人审核后采用。"}`}商品事实以当前已保存版本为准。</p>
+  <p>素材查询平台：{platform}。发送前重新检查企业权限、模型能力和成员额度；完整输入参与既有预算与计费，当前未报价。</p>
+  <p>{template?`采用模板：${template.name} · v${template.version}。最终平台和知识以本页确认为准。`:"本次不使用模板。"}</p>
+  {(knowledgeAvailable&&knowledgeReadable)||defaultKnowledge?<label className="mt-4 flex items-center gap-2"><input type="checkbox" checked={useKnowledge} onChange={event=>{setUseKnowledge(event.target.checked);setBaseId("");setSources([]);setFailure("");if(event.target.checked){if(knowledgeAvailable&&knowledgeReadable)void load();else setFailure("当前企业知识不可用，请明确取消使用知识。")}else{request.current?.abort();setLoading(false)}}}/>使用企业知识（可选）</label>:<p>{knowledgeAvailable?"当前身份无权读取企业知识；本次可不使用知识。":"当前环境未开放企业知识；本次仅使用商品证据。"}</p>}
+  {useKnowledge&&<div className="mt-4 rounded-lg border border-border bg-secondary p-4">
+   <label htmlFor={`${id}-base`}>企业知识库</label><select id={`${id}-base`} className="mt-2 block w-full rounded-lg border border-border bg-background p-2" value={baseId} disabled={loading} onChange={event=>{setBaseId(event.target.value);setSources([]);if(event.target.value)void load(event.target.value)}}><option value="">请选择知识库</option>{bases.map(base=><option key={base.id} value={base.id}>{base.name}</option>)}</select>
+   {loading?<p role="status">正在读取知识与版本…</p>:failure?<p role="alert">{failure}</p>:baseId?<><ul className="mt-3 space-y-2">{activeSources.map(source=><li key={source.id}>{source.name} · {source.currentReadableRevision?`v${source.currentReadableRevision.number} · ${source.currentReadableRevision.state==="PARTIAL"?"部分解析可用":"可读"}`:"尚无可读版本"}</li>)}</ul>{!ready&&<p>所选知识库当前未就绪，不能发送。请选择其他知识库，或取消使用企业知识。</p>}</>:!bases.length?<p>本页没有当前可用的知识库。</p>:null}
+   {pagination&&pagination.total>pagination.pageSize&&<nav aria-label="知识库分页" className="mt-3 flex flex-wrap items-center gap-3"><Button variant="outline" disabled={loading||pagination.page===1} onClick={()=>void load(undefined,pagination.page-1)}>上一页</Button><span>第 {pagination.page} 页 · 共 {pagination.total} 个</span><Button variant="outline" disabled={loading||pagination.page*pagination.pageSize>=pagination.total} onClick={()=>void load(undefined,pagination.page+1)}>下一页</Button></nav>}
+   <p>确认后服务端冻结实际采用的版本；若完整内容超限，将明确拒绝，不会截断或切换知识。</p>
+  </div>}
+  {titleOnly?<SkillPicker scope={scope} initialSelection={initialSkill} onChange={(v,ready)=>{setMethod(v);setMethodReady(ready)}}/>:contentSelection?<p>技能首版用于仅标题操作；包含其他字段时本次不使用技能。</p>:null}
+  <div className={styles.actions}><Button ref={cancelButton} variant="outline" onClick={onCancel}>取消</Button><Button disabled={!executionMode||useKnowledge&&!ready||!methodReady} onClick={()=>method?onConfirm(useKnowledge?baseId:undefined,method):onConfirm(useKnowledge?baseId:undefined)}>确认生成</Button></div>
+ </dialog>;
+}

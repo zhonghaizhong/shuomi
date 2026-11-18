@@ -1,0 +1,205 @@
+import { z } from "zod";
+import {
+  officialConnectionViewSchema,
+  officialConnectionBeginSchema,
+  officialConnectionCompleteSchema,
+	officialConnectionQuerySchema,
+	officialApplicationListSchema,
+	officialConnectionStartSchema,
+	officialConnectionInstallSchema,
+  type OfficialConnectionCallback,
+} from "@/lib/contracts/store-connection";
+import { memberResourceID, type MemberResourceScope } from "./member-resources";
+import { readBoundedStrictJSON } from "./strict-json-response";
+import { parseWorkbenchErrorEnvelopePayload } from "./workbench-context";
+export class StoreConnectionError extends Error {
+  constructor(
+    public status: number,
+    public code: string,
+    public unknown = false,
+  ) {
+    super("Official connection could not be completed");
+  }
+}
+async function request<T>(
+  scope: MemberResourceScope,
+  storeId: string,
+  action: string,
+  schema: z.ZodType<T>,
+  init: RequestInit = {},
+): Promise<T> {
+  memberResourceID.parse(scope.expectedUserId);
+  memberResourceID.parse(scope.expectedOrganizationId);
+  z.uuid().parse(storeId);
+  const write = init.method === "POST";
+  try {
+    const response = await fetch(
+      `/api/workbench/stores/${storeId}/connection${action ? `/${action}` : ""}`,
+      {
+        ...init,
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: {
+          Accept: "application/json",
+          "X-Expected-User-ID": scope.expectedUserId,
+          "X-Expected-Organization-ID": scope.expectedOrganizationId,
+          ...(init.headers ?? {}),
+        },
+      },
+    );
+    const payload = await readBoundedStrictJSON(
+      response,
+      16384,
+      init.signal ?? undefined,
+    );
+    if (response.status !== 200) {
+      const error = parseWorkbenchErrorEnvelopePayload(payload);
+      if (!error.success)
+        throw new StoreConnectionError(502, "INVALID_UPSTREAM_RESPONSE", write);
+      const code = error.data.code;
+      throw new StoreConnectionError(
+        response.status,
+        code,
+        write &&
+          response.status >= 500 &&
+          code !== "STORE_OFFICIAL_SETUP_UNAVAILABLE",
+      );
+    }
+    const result = schema.safeParse(payload);
+    if (!result.success)
+      throw new StoreConnectionError(502, "INVALID_UPSTREAM_RESPONSE", write);
+    return result.data;
+  } catch (error) {
+    if (error instanceof StoreConnectionError) throw error;
+    throw new StoreConnectionError(502, "RESULT_UNVERIFIED", write);
+  }
+}
+export function getStoreConnection(
+  scope: MemberResourceScope,
+  storeId: string,
+  signal?: AbortSignal,
+) {
+  return request(scope, storeId, "", officialConnectionViewSchema, {
+    method: "GET",
+    signal,
+  });
+}
+export function beginStoreConnection(
+  scope: MemberResourceScope,
+  storeId: string,
+  version: number,
+	key: string,
+	appId:string,
+	identityPartition?:"CN"|"US"|"EU"|"GLOBAL",
+) {
+  z.uuid().parse(key);
+  return request(scope, storeId, "begin", officialConnectionBeginSchema, {
+    method: "POST",
+		headers: { "If-Match": `"${version}"`, "Idempotency-Key": key,"Content-Type":"application/json" },
+		body:JSON.stringify(officialConnectionStartSchema.parse({appId,identityPartition})),
+	});
+}
+export function installStoreToken(scope:MemberResourceScope,storeId:string,input:z.infer<typeof officialConnectionInstallSchema>,signal?:AbortSignal) {
+ const body=officialConnectionInstallSchema.parse(input);
+ return request(scope,storeId,"token",officialConnectionViewSchema.refine(view=>view.attemptId===body.attemptId),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal});
+}
+export async function getStoreApplications(scope:MemberResourceScope,storeId:string,signal?:AbortSignal) {
+	const result=await request(scope,storeId,"applications",officialApplicationListSchema,{method:"GET",signal});return result.applications;
+}
+export async function completeStoreConnection(
+  scope: MemberResourceScope,
+  storeId: string,
+  input: OfficialConnectionCallback,
+) {
+  const body = officialConnectionCompleteSchema.parse(input);
+  return request(
+    scope,
+    storeId,
+    "complete",
+    officialConnectionViewSchema.refine(
+      (view) => view.attemptId === body.attemptId,
+    ),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+}
+export function queryStoreConnection(
+  scope: MemberResourceScope,
+  storeId: string,
+  attemptId: string,
+) {
+  return request(
+    scope,
+    storeId,
+    "query",
+    officialConnectionViewSchema.refine((view) => view.attemptId === attemptId),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(officialConnectionQuerySchema.parse({ attemptId })),
+    },
+  );
+}
+export function disconnectStoreConnection(
+  scope: MemberResourceScope,
+  storeId: string,
+  version: number,
+  key: string,
+) {
+  z.uuid().parse(key);
+  return request(scope, storeId, "disconnect", officialConnectionViewSchema, {
+    method: "POST",
+    headers: { "If-Match": `"${version}"`, "Idempotency-Key": key },
+  });
+}
+const pendingSchema = z
+  .object({
+    expectedUserId: memberResourceID,
+    expectedOrganizationId: memberResourceID,
+    storeId: z.uuid(),
+    attemptId: z.uuid(),
+    expiresAt: z.string().datetime({ precision: null }),
+    appId:z.string().min(1).max(128).optional(),
+  })
+  .strict();
+const authorizationPendingKey=(platform:"shein"|"tiktokshop"|"walmart")=>`listingkit.${platform}.pending`;
+// Contains local routing metadata only. Consent state, tempToken, merchant
+// credentials and authorization URL never enter browser persistence.
+export function rememberStoreAuthorization(
+  value: z.infer<typeof pendingSchema>,
+  platform:"shein"|"tiktokshop"|"walmart"="shein",
+) {
+  const pendingKey=authorizationPendingKey(platform);
+  const encoded = JSON.stringify(pendingSchema.parse(value));
+  sessionStorage.setItem(pendingKey, encoded);
+  if (sessionStorage.getItem(pendingKey) !== encoded)
+    throw new Error("Authorization routing metadata could not be saved");
+}
+export function readStoreAuthorization(platform:"shein"|"tiktokshop"|"walmart"="shein") {
+  const pendingKey=authorizationPendingKey(platform);
+  try {
+    return pendingSchema.parse(
+      JSON.parse(sessionStorage.getItem(pendingKey) ?? "null"),
+    );
+  } catch {
+    return null;
+  }
+}
+export function clearStoreAuthorization(
+  original: z.infer<typeof pendingSchema>,
+  platform:"shein"|"tiktokshop"|"walmart"="shein",
+) {
+  const pendingKey=authorizationPendingKey(platform);
+  const current = readStoreAuthorization(platform);
+  if (
+    !current ||
+    JSON.stringify(current) !== JSON.stringify(pendingSchema.parse(original))
+  )
+    return;
+  sessionStorage.removeItem(pendingKey);
+}
+
+export function refreshStoreConnection(scope:MemberResourceScope,storeId:string,generation:number,signal?:AbortSignal){return request(scope,storeId,"refresh",officialConnectionViewSchema,{method:"POST",signal,headers:{"Content-Type":"application/json"},body:JSON.stringify({operationId:crypto.randomUUID(),generation:String(generation)})})}

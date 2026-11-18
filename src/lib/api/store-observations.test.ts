@@ -1,0 +1,165 @@
+import { expect, it } from "vitest";
+import {
+  observationListSchema,
+  observationRecordSchema,
+  observationTracksSchema,
+  observationCapabilitiesSchema,
+  observationSyncSchema,
+} from "./store-observations";
+export const fixtureID = "d6f6ca0a-27e2-4c4a-b1aa-4505110ae635";
+
+it("admits public TikTok order progress without exposing pagination secrets",()=>{
+ const source={id:fixtureID,commandId:fixtureID,storeId:fixtureID,kind:"orders",status:"running",progress:{page:2,windows:[],expectedTotal:null,seen:1,pages:1,incomplete:false,notes:[],tiktokOrders:{total:2,complete:false}},range:null,createdAt:"2026-11-01T00:00:00Z",observedAt:null,errorCode:""};
+ expect(observationSyncSchema.safeParse(source).success).toBe(true);
+ for(const secret of [{token:"opaque"},{tokenHashes:["hash"]}])expect(observationSyncSchema.safeParse({...source,progress:{...source.progress,tiktokOrders:{...source.progress.tiktokOrders,...secret}}}).success).toBe(false);
+});
+
+it("admits public Walmart progress but rejects cursor and hashes",()=>{
+ const source={id:fixtureID,commandId:fixtureID,storeId:fixtureID,kind:"orders",status:"running",progress:{page:1,windows:[],expectedTotal:null,seen:0,pages:1,incomplete:false,notes:[],walmartOrders:{partition:1,total:30,complete:false}},range:null,createdAt:"2026-11-01T00:00:00Z",observedAt:null,errorCode:""};
+ expect(observationSyncSchema.safeParse(source).success).toBe(true);
+ for(const secret of [{cursor:"?poIndex=2"},{cursorHashes:["hash"]}])expect(observationSyncSchema.safeParse({...source,progress:{...source.progress,walmartOrders:{...source.progress.walmartOrders,...secret}}}).success).toBe(false);
+});
+
+it.each([undefined,null,1,2,99])("preserves optional native sales area %s without inferring local",salesArea=>{
+ const parsed=observationRecordSchema.parse({...fixtureOrderRecord,order:{...fixtureOrderRecord.order,salesArea}});
+ expect(parsed.order?.salesArea).toBe(salesArea);
+});
+
+it("preserves native goods and SKC identities and exact quantities without a SHEIN body",()=>{
+ const native={storeId:fixtureID,syncId:fixtureID,id:"9007199254740993",observedAt:"2026-10-12T01:00:00Z",temuProduct:{id:"9007199254740993",productId:"9007199254740993",entity:"local_goods",mode:"local",title:"Official title",externalCode:"external",imageUrl:"",saleState:"active",rawStatus:"Active",skus:[{id:"9007199254740994",externalCode:"",serialNumber:"platform",stock:"0",stockKind:"stock",specifications:[]}],sites:[],publishStatus:{status:"1",subStatus:null}}};
+ const parsed=observationRecordSchema.parse(native);expect(parsed.temuProduct?.id).toBe("9007199254740993");expect(parsed.temuProduct?.skus[0]?.stock).toBe("0");expect(parsed.product).toBeUndefined();
+ expect(observationRecordSchema.safeParse({...native,product:fixtureRecord.product}).success).toBe(false);
+ expect(observationRecordSchema.safeParse({...native,temuProduct:{...native.temuProduct,id:9007199254740993}}).success).toBe(false);
+ expect(observationCapabilitiesSchema.safeParse({available:true,canSync:true,runtimeReady:true,providerConfigured:true,kind:"products",site:"store-native",platformUrl:""}).success).toBe(true);
+});
+it("rejects executable capabilities without worker readiness or provider configuration",()=>{
+ const c={available:false,canSync:false,runtimeReady:true,providerConfigured:false,kind:"products",site:"shein-us",platformUrl:"https://sellerhub.shein.com/"};
+ expect(observationCapabilitiesSchema.safeParse(c).success).toBe(true);
+ expect(observationCapabilitiesSchema.safeParse({...c,available:true}).success).toBe(false);
+ expect(observationCapabilitiesSchema.safeParse({...c,canSync:true}).success).toBe(false);
+ expect(observationCapabilitiesSchema.safeParse({...c,available:true,providerConfigured:true,runtimeReady:false}).success).toBe(false);
+});
+export const fixtureRecord = {
+  storeId: fixtureID,
+  syncId: fixtureID,
+  id: "spu-a",
+  observedAt: "2026-10-09T01:00:00Z",
+  product: {
+    id: "spu-a",
+    skcs: [
+      {
+        id: "skc-a",
+        sellerCode: "",
+        title: "Shoe",
+        imageUrl: "",
+        site: "shein-us",
+        siteStatus: null,
+        skus: [
+          {
+            id: "sku-a",
+            sellerSku: "",
+            prices: [{ currency: "USD", value: "0.00", special: "" }],
+            costs: [],
+            inventory: [],
+          },
+        ],
+      },
+    ],
+  },
+};
+export const fixtureOrderRecord = {
+  storeId: fixtureID,
+  syncId: fixtureID,
+  id: "order-a",
+  observedAt: "2026-10-09T01:00:00Z",
+  order: {
+    id: "order-a",
+    site: "shein-us",
+    status: 2,
+    stockMode: null,
+    type: null,
+    tag: 1,
+    reasons: [4],
+    items: [],
+    packages: [{ id: "", waybill: "", carrier: "Carrier", label: "label-a" }],
+    amount: null,
+    supplyCost: null,
+    createdAt: "",
+    updatedAt: "",
+    issuedAt: "",
+    needDeliveryAt: "",
+    handoverAt: "",
+    expectedCollectAt: "",
+  },
+};
+it("retains optional package metadata without inventing a package number", () => {
+  expect(
+    observationRecordSchema.parse(fixtureOrderRecord).order?.packages,
+  ).toEqual(fixtureOrderRecord.order.packages);
+});
+it("retains explicit stale saved observations and their original time", () => {
+  const value = observationRecordSchema.parse({
+    ...fixtureOrderRecord,
+    stale: true,
+  });
+  expect(value.observedAt).toBe(fixtureOrderRecord.observedAt);
+  expect(value.order?.packages).toEqual(fixtureOrderRecord.order.packages);
+  expect(value).toHaveProperty("stale", true);
+});
+it("preserves absent inventory and zero price without fabricating quantities", () => {
+  const value = observationRecordSchema.parse(fixtureRecord);
+  expect(value.product?.skcs[0].skus[0].inventory).toEqual([]);
+  expect(value.product?.skcs[0].skus[0].prices[0].value).toBe("0.00");
+});
+it("rejects sensitive fields, duplicate ownership projections and mutable platform instructions", () => {
+  expect(
+    observationRecordSchema.safeParse({ ...fixtureRecord, address: "private" })
+      .success,
+  ).toBe(false);
+  expect(
+    observationRecordSchema.safeParse({
+      ...fixtureRecord,
+      order: { id: "other" },
+    }).success,
+  ).toBe(false);
+  expect(
+    observationTracksSchema.safeParse([
+      { carrier: "", waybill: "", nodes: [], raw: { address: "private" } },
+    ]).success,
+  ).toBe(false);
+});
+it("requires whole-scope summaries and explicit coverage instead of page-derived totals", () => {
+  expect(
+    observationListSchema.safeParse({
+      items: [fixtureRecord],
+      next: "",
+      summary: {
+        total: 100,
+        active: 0,
+        offShelf: 0,
+        today: 0,
+        todayUnknown: 0,
+        pending: 0,
+        transit: 0,
+        exceptional: 0,
+        unknown: 100,
+      },
+      syncs: [],
+      latest: [],
+      complete: false,
+    }).success,
+  ).toBe(true);
+  expect(
+    observationListSchema.safeParse({
+      items: [fixtureRecord],
+      next: "",
+      total: 1,
+    }).success,
+  ).toBe(false);
+});
+
+it("admits only the public Temu order progress fields",()=>{
+ const source={id:fixtureID,commandId:fixtureID,storeId:fixtureID,kind:"orders",status:"running",progress:{page:2,windows:[],expectedTotal:null,seen:1,pages:1,incomplete:false,notes:[],temuOrders:{total:2,complete:false}},range:null,createdAt:"2026-11-01T00:00:00Z",observedAt:null,errorCode:""};
+ expect(observationSyncSchema.safeParse(source).success).toBe(true);
+ expect(observationSyncSchema.safeParse({...source,progress:{...source.progress,temuOrders:{total:2,complete:false,token:"PRIVATE"}}}).success).toBe(false);
+});

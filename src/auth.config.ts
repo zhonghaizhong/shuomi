@@ -1,0 +1,485 @@
+import { createHash } from "node:crypto";
+import { customFetch } from "@auth/core";
+import type { NextAuthConfig, Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
+import ZITADEL from "next-auth/providers/zitadel";
+
+import { createResilientOidcFetch } from "@/lib/server/auth-fetch";
+import { resolveAuthRedirect } from "@/lib/server/login-entry";
+import { resolvePublicAppOrigin } from "@/lib/server/public-app-origin";
+import { persistZitadelAcceptanceToken } from "@/lib/server/zitadel-acceptance-token";
+import {
+  extractZitadelIdentityFromClaims,
+  normalizeClaim,
+  type ListingKitSessionIdentity,
+  type ZitadelTokenPayload,
+  ZITADEL_IDENTITY_VERSION,
+} from "@/lib/server/zitadel-identity";
+
+export type { ListingKitSessionIdentity };
+
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string;
+    expiresAt?: number;
+    error?: string;
+    idToken?: string;
+    issuerUrl?: string;
+    clientId?: string;
+    identity?: ListingKitSessionIdentity | null;
+    identityVersion?: number;
+    authenticatedAt?: string | null;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    accessToken?: string;
+    refreshToken?: string;
+    idToken?: string;
+    expiresAt?: number;
+    error?: string;
+    issuerUrl?: string;
+    clientId?: string;
+    identity?: ListingKitSessionIdentity | null;
+    identityVersion?: number;
+    authenticatedAt?: string | null;
+  }
+}
+
+export type ZitadelAuthOptions = {
+  issuerUrl: string;
+  clientId: string;
+  clientSecret?: string;
+  redirectUri?: string;
+  postLogoutRedirectUri?: string;
+  projectId?: string;
+  scopes: string;
+};
+
+type ZitadelDiscovery = {
+  token_endpoint: string;
+};
+
+type ZitadelTokenResponse = {
+  access_token?: string;
+  id_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  error?: string;
+  error_description?: string;
+};
+
+const DEFAULT_ZITADEL_SCOPES = [
+  "openid",
+  "profile",
+  "email",
+  "urn:zitadel:iam:user:resourceowner",
+  "urn:zitadel:iam:org:project:id:zitadel:aud",
+  "urn:zitadel:iam:org:project:role:listingkit_viewer",
+  "urn:zitadel:iam:org:project:role:listingkit_operator",
+  "urn:zitadel:iam:org:project:role:listingkit_admin",
+  "urn:zitadel:iam:org:project:role:platform_admin",
+].join(" ");
+
+export function getZitadelAuthOptions(): ZitadelAuthOptions | undefined {
+  const issuerUrl = process.env.ZITADEL_ISSUER_URL?.trim().replace(/\/+$/, "");
+  const clientId = process.env.ZITADEL_CLIENT_ID?.trim();
+  if (!issuerUrl || !clientId) {
+    return undefined;
+  }
+
+  const scopes = process.env.ZITADEL_SCOPES?.trim() || DEFAULT_ZITADEL_SCOPES;
+  return {
+    issuerUrl,
+    clientId,
+    clientSecret: process.env.ZITADEL_CLIENT_SECRET?.trim() || undefined,
+    redirectUri: process.env.ZITADEL_REDIRECT_URI?.trim() || undefined,
+    postLogoutRedirectUri:
+      process.env.ZITADEL_POST_LOGOUT_REDIRECT_URI?.trim() || undefined,
+    projectId: readProjectIDFromScopes(scopes),
+    scopes,
+  };
+}
+
+function readProjectIDFromScopes(scopes: string) {
+  const prefix = "urn:zitadel:iam:org:project:";
+  const suffix = ":roles";
+  const projectIDs = new Set(
+    scopes
+      .split(/\s+/)
+      .filter((scope) => scope.startsWith(prefix) && scope.endsWith(suffix))
+      .map((scope) => scope.slice(prefix.length, -suffix.length))
+      .filter(Boolean),
+  );
+  return projectIDs.size === 1 ? [...projectIDs][0] : undefined;
+}
+
+export function isZitadelAuthConfigured() {
+  return Boolean(getZitadelAuthOptions());
+}
+
+export function getAuthJsSecret() {
+  const authSecret = process.env.AUTH_SECRET;
+  const nextAuthSecret = process.env.NEXTAUTH_SECRET;
+  const secret = authSecret?.trim() || nextAuthSecret?.trim();
+
+  // An omitted config secret lets Auth.js read the untrimmed environment again.
+  if (!secret && (authSecret || nextAuthSecret)) {
+    throw new Error("Configure a nonblank AUTH_SECRET or NEXTAUTH_SECRET");
+  }
+  return secret || undefined;
+}
+
+function authCookieConfig(zitadel: ZitadelAuthOptions | undefined) {
+  let publicURL: URL;
+  try {
+    publicURL = new URL(
+      (process.env.AUTH_URL ?? process.env.NEXTAUTH_URL)?.trim() || resolvePublicAppOrigin(),
+    );
+  } catch {
+    throw new Error("Invalid public auth origin");
+  }
+  if (
+    !["https:", "http:"].includes(publicURL.protocol) ||
+    publicURL.username || publicURL.password
+  ) {
+    throw new Error("Invalid public auth origin");
+  }
+  // Cookies are shared across ports. Keep every native Auth.js slot local to
+  // this configured origin/application without changing any secret or cipher.
+  const namespace = createHash("sha256")
+    .update(JSON.stringify([publicURL.origin, zitadel?.issuerUrl ?? "", zitadel?.clientId ?? ""]))
+    .digest("hex").slice(0, 32);
+  const useSecureCookies = publicURL.protocol === "https:";
+  const prefix = `${useSecureCookies ? "__Secure-" : ""}shuomi.${namespace}.`;
+  return {
+    useSecureCookies,
+    // Only names are customized. Auth.js merges its native security options,
+    // check lifetimes, chunking and clearing behavior for each configured name.
+    cookies: {
+      sessionToken: { name: `${prefix}session-token` },
+      callbackUrl: { name: `${prefix}callback-url` },
+      csrfToken: { name: `${useSecureCookies ? "__Host-" : ""}shuomi.${namespace}.csrf-token` },
+      pkceCodeVerifier: { name: `${prefix}pkce.code_verifier` },
+      state: { name: `${prefix}state` },
+      nonce: { name: `${prefix}nonce` },
+      webauthnChallenge: { name: `${prefix}challenge` },
+    },
+  } satisfies Pick<NextAuthConfig, "useSecureCookies" | "cookies">;
+}
+
+export function buildAuthConfig(): NextAuthConfig {
+  const zitadel = getZitadelAuthOptions();
+  const oidcFetch = createResilientOidcFetch({
+    onRetry(input, attempt, error) {
+      console.warn("[listingkit-ui] retrying OIDC request", {
+        url: String(input),
+        attempt,
+        error:
+          error instanceof Error
+            ? {
+                message: error.message,
+                cause:
+                  error instanceof Error &&
+                  "cause" in error &&
+                  error.cause &&
+                  typeof error.cause === "object"
+                    ? {
+                        code: Reflect.get(error.cause, "code"),
+                      }
+                    : undefined,
+              }
+            : undefined,
+      });
+    },
+  });
+  const zitadelProvider = zitadel
+    ? ZITADEL({
+        issuer: zitadel.issuerUrl,
+        clientId: zitadel.clientId,
+        clientSecret: zitadel.clientSecret,
+        client: { token_endpoint_auth_method: "client_secret_basic" },
+        authorization: { params: { scope: zitadel.scopes } },
+      })
+    : undefined;
+
+  // Auth.js exposes customFetch on the resolved provider configuration, while
+  // the ZITADEL factory input type does not include the symbol yet.
+  if (zitadelProvider) {
+    zitadelProvider[customFetch] = oidcFetch;
+  }
+
+  return {
+    secret: getAuthJsSecret(),
+    ...authCookieConfig(zitadel),
+    trustHost: true,
+    session: { strategy: "jwt" },
+    providers: zitadelProvider ? [zitadelProvider] : [],
+    callbacks: {
+      async jwt({ token, account, profile }) {
+        if (account?.provider === "zitadel") {
+          if (account.access_token) {
+            await persistZitadelAcceptanceToken(account.access_token);
+          }
+          const identity = profile
+            ? extractZitadelIdentityFromClaims(
+                profile as ZitadelTokenPayload,
+                zitadel?.projectId,
+              )
+            : null;
+          return {
+            ...token,
+            accessToken: account.access_token,
+            refreshToken: account.refresh_token,
+            idToken: account.id_token,
+            expiresAt:
+              typeof account.expires_at === "number"
+                ? account.expires_at
+                : typeof account.expires_in === "number"
+                  ? Math.floor(Date.now() / 1000) + account.expires_in
+                  : undefined,
+            issuerUrl: zitadel?.issuerUrl,
+            clientId: zitadel?.clientId,
+            error: undefined,
+            identity,
+            identityVersion: identity ? ZITADEL_IDENTITY_VERSION : undefined,
+            // Initial OIDC profile claims have been validated by Auth.js.
+            // Refreshing an access token does not reauthenticate the user.
+            authenticatedAt: identity
+              ? oidcAuthenticationTime(profile?.auth_time)
+              : null,
+          } satisfies JWT;
+        }
+
+        if (!token.accessToken || !token.expiresAt) {
+          return token;
+        }
+
+        if (token.expiresAt > Math.floor(Date.now() / 1000) + 30) {
+          return token;
+        }
+
+        if (!zitadel) {
+          return { ...token, error: "ZITADEL auth is not configured" };
+        }
+
+        try {
+          const refreshed = await refreshZitadelToken(token, zitadel, oidcFetch);
+          if (refreshed.accessToken) {
+            await persistZitadelAcceptanceToken(refreshed.accessToken);
+          }
+          return {
+            ...token,
+            ...refreshed,
+            authenticatedAt:
+              token.identity?.userId === refreshed.identity?.userId
+                ? token.authenticatedAt ?? null
+                : null,
+            issuerUrl: zitadel.issuerUrl,
+            clientId: zitadel.clientId,
+            error: undefined,
+          } satisfies JWT;
+        } catch (error) {
+          return {
+            ...token,
+            identity: null,
+            identityVersion: undefined,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to refresh ZITADEL session",
+          } satisfies JWT;
+        }
+      },
+      async session({ session, token }) {
+        session.expiresAt = token.expiresAt;
+        session.error = token.error;
+        session.issuerUrl = token.issuerUrl;
+        session.clientId = token.clientId;
+        session.identity = hasCurrentZitadelIdentity(token)
+          ? token.identity
+          : null;
+        session.identityVersion = hasCurrentZitadelIdentity(token)
+          ? ZITADEL_IDENTITY_VERSION
+          : undefined;
+        session.authenticatedAt =
+          hasCurrentZitadelIdentity(token) && !token.error
+            ? token.authenticatedAt ?? null
+            : null;
+        return session;
+      },
+      async redirect({ url, baseUrl }) {
+        return resolveAuthRedirect(url, baseUrl, zitadel?.issuerUrl);
+      },
+    },
+  };
+}
+
+function oidcAuthenticationTime(value: unknown): string | null {
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value <= 0 ||
+    value > Math.floor(Date.now() / 1000)
+  ) return null;
+  return new Date(value * 1000).toISOString();
+}
+
+export function buildServerAuthConfig(): NextAuthConfig {
+  const config = buildAuthConfig();
+  const publicSession = config.callbacks?.session;
+
+  return {
+    ...config,
+    callbacks: {
+      ...config.callbacks,
+      async session(args) {
+        const session = publicSession
+          ? await publicSession(args)
+          : args.session;
+        return {
+          ...session,
+          accessToken:
+            typeof args.token.accessToken === "string"
+              ? args.token.accessToken
+              : undefined,
+          idToken:
+            typeof args.token.idToken === "string"
+              ? args.token.idToken
+              : undefined,
+        } satisfies Session;
+      },
+    },
+  };
+}
+
+async function refreshZitadelToken(
+  token: JWT,
+  options: ZitadelAuthOptions,
+  fetchImpl: typeof fetch,
+) {
+  if (!token.refreshToken) {
+    throw new Error("Missing ZITADEL refresh token");
+  }
+
+  const discovery = await fetchZitadelDiscovery(options, fetchImpl);
+  const response = await fetchImpl(discovery.token_endpoint, {
+    method: "POST",
+    headers: buildZitadelClientAuthHeaders(options),
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: token.refreshToken,
+      client_id: options.clientId,
+    }).toString(),
+    cache: "no-store",
+  });
+  const payload = (await response.json().catch(() => undefined)) as
+    | ZitadelTokenResponse
+    | undefined;
+
+  if (!response.ok || !payload?.access_token) {
+    throw new Error(
+      payload?.error_description ??
+        payload?.error ??
+        `ZITADEL refresh token exchange failed: ${response.status}`,
+    );
+  }
+
+  const includesIDToken = Object.hasOwn(payload, "id_token");
+  const identity = includesIDToken
+    ? extractIdentityFromTokenPayload(payload.id_token, options.projectId)
+    : hasCurrentZitadelIdentity(token)
+      ? token.identity
+      : null;
+  if (includesIDToken && !identity) {
+    throw new Error("Refreshed ZITADEL ID token is missing a canonical subject");
+  }
+
+  // A refresh token issued before the current authorization contract cannot
+  // gain the newly requested project-role scopes. Keep that session stale so
+  // the proxy forces a fresh authorization request instead of upgrading it.
+  const identityVersion =
+    identity && token.identityVersion === ZITADEL_IDENTITY_VERSION
+      ? ZITADEL_IDENTITY_VERSION
+      : undefined;
+
+  return {
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token ?? token.refreshToken,
+    idToken: payload.id_token ?? token.idToken,
+    expiresAt: payload.expires_in
+      ? Math.floor(Date.now() / 1000) + payload.expires_in
+      : token.expiresAt,
+    identity,
+    identityVersion,
+  } satisfies Partial<JWT>;
+}
+
+function hasCurrentZitadelIdentity(
+  token: Pick<JWT, "identity" | "identityVersion">,
+): token is JWT & { identity: ListingKitSessionIdentity } {
+  return Boolean(
+    token.identityVersion === ZITADEL_IDENTITY_VERSION &&
+      normalizeClaim(token.identity?.tenantId) &&
+      normalizeClaim(token.identity?.userId),
+  );
+}
+
+async function fetchZitadelDiscovery(
+  options: ZitadelAuthOptions,
+  fetchImpl: typeof fetch,
+) {
+  const response = await fetchImpl(
+    `${options.issuerUrl}/.well-known/openid-configuration`,
+    { cache: "no-store" },
+  );
+  if (!response.ok) {
+    throw new Error(`ZITADEL discovery failed: ${response.status}`);
+  }
+  return (await response.json()) as ZitadelDiscovery;
+}
+
+function buildZitadelClientAuthHeaders(options: ZitadelAuthOptions) {
+  const headers = new Headers({
+    "Content-Type": "application/x-www-form-urlencoded",
+  });
+  if (options.clientSecret) {
+    headers.set(
+      "Authorization",
+      `Basic ${Buffer.from(`${options.clientId}:${options.clientSecret}`).toString("base64")}`,
+    );
+  }
+  return headers;
+}
+
+function extractIdentityFromTokenPayload(
+  rawToken: string | undefined,
+  projectId?: string,
+): ListingKitSessionIdentity | null {
+  if (!rawToken) {
+    return null;
+  }
+  const payload = parseJWTClaims(rawToken);
+  if (!payload) {
+    return null;
+  }
+  return extractZitadelIdentityFromClaims(payload, projectId);
+}
+
+function parseJWTClaims(token: string): ZitadelTokenPayload | null {
+  const [, payload = ""] = token.split(".");
+  if (!payload) {
+    return null;
+  }
+  try {
+    return JSON.parse(base64UrlDecode(payload)) as ZitadelTokenPayload;
+  } catch {
+    return null;
+  }
+}
+
+function base64UrlDecode(value: string) {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(padded, "base64").toString("utf8");
+}

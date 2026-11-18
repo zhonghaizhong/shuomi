@@ -1,0 +1,243 @@
+import type { Session } from "next-auth";
+
+import {
+  getZitadelAuthOptions,
+  type ZitadelAuthOptions,
+} from "@/auth.config";
+import {
+  extractZitadelIdentityFromClaims,
+  normalizeClaim,
+  type ListingKitSessionIdentity,
+  type ZitadelTokenPayload,
+  ZITADEL_IDENTITY_VERSION,
+} from "@/lib/server/zitadel-identity";
+
+export { normalizeReturnTo } from "@/lib/server/login-entry";
+
+export type ZitadelDiscovery = {
+  authorization_endpoint: string;
+  token_endpoint: string;
+  introspection_endpoint?: string;
+  userinfo_endpoint?: string;
+  end_session_endpoint?: string;
+};
+
+export type ZitadelVerifiedIdentity = ListingKitSessionIdentity;
+
+export type ZitadelAuthorizationResult = {
+  authorized: boolean;
+  required: boolean;
+  reason?: string;
+};
+
+type ZitadelIntrospectionResponse = ZitadelTokenPayload & { active?: boolean };
+
+export { getZitadelAuthOptions };
+export { resolvePublicAppOrigin } from "@/lib/server/public-app-origin";
+
+export function isZitadelAuthConfigured() {
+  return Boolean(getZitadelAuthOptions());
+}
+
+export function readZitadelIdentityFromSession(
+  session: Session | null | undefined,
+): ZitadelVerifiedIdentity | null {
+  const identity = session?.identity;
+  if (!identity || session?.identityVersion !== ZITADEL_IDENTITY_VERSION) {
+    return null;
+  }
+  const tenantId = normalizeClaim(identity.tenantId);
+  const userId = normalizeClaim(identity.userId);
+  if (!tenantId || !userId) {
+    return null;
+  }
+  return {
+    tenantId,
+    userId,
+    username: identity.username,
+    userType: identity.userType ?? "zitadel",
+    roles: identity.roles ?? [],
+  };
+}
+
+export function readZitadelSessionError(session: Session | null | undefined) {
+  return typeof session?.error === "string" ? session.error : "";
+}
+
+export function readZitadelSessionIssuerURL(
+  session: Session | null | undefined,
+) {
+  return typeof session?.issuerUrl === "string" ? session.issuerUrl : "";
+}
+
+export function readZitadelSessionClientID(
+  session: Session | null | undefined,
+) {
+  return typeof session?.clientId === "string" ? session.clientId : "";
+}
+
+export async function fetchZitadelDiscovery(
+  options: ZitadelAuthOptions,
+): Promise<ZitadelDiscovery> {
+  const response = await fetch(
+    `${options.issuerUrl}/.well-known/openid-configuration`,
+    { cache: "no-store" },
+  );
+  if (!response.ok) {
+    throw new Error(`ZITADEL discovery failed: ${response.status}`);
+  }
+  return (await response.json()) as ZitadelDiscovery;
+}
+
+export async function verifyZitadelAccessToken(
+  token: string,
+  options: ZitadelAuthOptions,
+  discovery?: ZitadelDiscovery,
+): Promise<ZitadelVerifiedIdentity | null> {
+  if (!token) {
+    throw new Error("Missing ZITADEL bearer token");
+  }
+
+  const metadata = discovery ?? (await fetchZitadelDiscovery(options));
+  if (!metadata.introspection_endpoint) {
+    throw new Error("ZITADEL introspection endpoint is not available");
+  }
+
+  const response = await fetch(metadata.introspection_endpoint, {
+    method: "POST",
+    headers: buildZitadelClientAuthHeaders(options),
+    body: new URLSearchParams({
+      token,
+      token_type_hint: "access_token",
+    }).toString(),
+    cache: "no-store",
+  });
+  const payload = (await response.json().catch(() => undefined)) as
+    | ZitadelIntrospectionResponse
+    | undefined;
+
+  if (!response.ok || !payload?.active) {
+    throw new Error(`ZITADEL token introspection failed: ${response.status}`);
+  }
+
+  return extractZitadelIdentityFromClaims(payload, options.projectId);
+}
+
+export function authorizeZitadelIdentity(
+  identity: ZitadelVerifiedIdentity,
+): ZitadelAuthorizationResult {
+  const config = readZitadelAuthorizationConfig();
+  if (config.hasLegacyUsernameAllowlist) {
+    return {
+      authorized: false,
+      required: true,
+      reason: "ZITADEL username allowlists are obsolete; configure canonical allowlists",
+    };
+  }
+  if (!config.required) {
+    return { authorized: true, required: false };
+  }
+
+  if (
+    config.allowedTenantIds.size === 0 &&
+    config.allowedUserIds.size === 0 &&
+    config.allowedRoles.size === 0
+  ) {
+    return {
+      authorized: false,
+      required: true,
+      reason: "ZITADEL authorization is required but no allowlist is configured",
+    };
+  }
+
+  const tenantId = stringifyIdentityValue(identity.tenantId);
+  if (tenantId && config.allowedTenantIds.has(tenantId)) {
+    return { authorized: true, required: true };
+  }
+
+  const userId = stringifyIdentityValue(identity.userId);
+  if (userId && config.allowedUserIds.has(userId)) {
+    return { authorized: true, required: true };
+  }
+
+  for (const role of identity.roles ?? []) {
+    const normalizedRole = stringifyIdentityValue(role);
+    if (normalizedRole && config.allowedRoles.has(normalizedRole)) {
+      return { authorized: true, required: true };
+    }
+  }
+
+  return {
+    authorized: false,
+    required: true,
+    reason: "ZITADEL identity is not allowed to access ListingKit",
+  };
+}
+
+function buildZitadelClientAuthHeaders(options: ZitadelAuthOptions) {
+  const headers = new Headers({
+    "Content-Type": "application/x-www-form-urlencoded",
+  });
+  if (options.clientSecret) {
+    headers.set(
+      "Authorization",
+      `Basic ${Buffer.from(`${options.clientId}:${options.clientSecret}`).toString("base64")}`,
+    );
+  }
+  return headers;
+}
+
+function readZitadelAuthorizationConfig() {
+  const allowedTenantIds = readDelimitedEnvSet(
+    "LISTINGKIT_ZITADEL_ALLOWED_TENANT_IDS",
+    "TASK_PROCESSOR_LISTINGKIT_ZITADEL_ALLOWED_TENANT_IDS",
+  );
+  const allowedUserIds = readDelimitedEnvSet(
+    "LISTINGKIT_ZITADEL_ALLOWED_USER_IDS",
+    "TASK_PROCESSOR_LISTINGKIT_ZITADEL_ALLOWED_USER_IDS",
+  );
+  const allowedRoles = readDelimitedEnvSet(
+    "LISTINGKIT_ZITADEL_ALLOWED_ROLES",
+    "TASK_PROCESSOR_LISTINGKIT_ZITADEL_ALLOWED_ROLES",
+  );
+  const hasLegacyUsernameAllowlist = hasConfiguredEnvValue(
+    "LISTINGKIT_ZITADEL_ALLOWED_USERNAMES",
+    "TASK_PROCESSOR_LISTINGKIT_ZITADEL_ALLOWED_USERNAMES",
+  );
+
+  return {
+    required:
+      allowedTenantIds.size > 0 ||
+      allowedUserIds.size > 0 ||
+      allowedRoles.size > 0,
+    allowedTenantIds,
+    allowedUserIds,
+    allowedRoles,
+    hasLegacyUsernameAllowlist,
+  };
+}
+
+function hasConfiguredEnvValue(...names: string[]) {
+  return names.some((name) => Boolean(process.env[name]?.trim()));
+}
+
+function readDelimitedEnvSet(...names: string[]) {
+  const values = new Set<string>();
+  for (const name of names) {
+    const raw = process.env[name];
+    if (!raw) {
+      continue;
+    }
+    for (const item of raw.split(",")) {
+      const normalized = item.trim();
+      if (normalized) {
+        values.add(normalized);
+      }
+    }
+  }
+  return values;
+}
+
+function stringifyIdentityValue(value: unknown) {
+  return normalizeClaim(value);
+}

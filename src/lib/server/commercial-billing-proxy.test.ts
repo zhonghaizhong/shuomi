@@ -1,0 +1,102 @@
+import { beforeEach, afterEach, expect, it, vi } from "vitest";
+import { proxyCommercialBilling } from "./commercial-billing-proxy";
+
+beforeEach(() => vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost"));
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+
+it("rejects foreign-origin resource quotes and orders before forwarding",async()=>{
+ vi.stubEnv("COMMERCIAL_API_ORIGIN","http://localhost:8888");const fetcher=vi.fn();vi.stubGlobal("fetch",fetcher);
+ for(const path of ["quotes","orders","data-row-pricing/publish"]){const request=new Request(`http://localhost/api/workbench/commercial/${path}`,{method:"POST",headers:{origin:"https://foreign.example",cookie:"shuomi_effective_organization=org-a","X-Expected-Organization-ID":"org-a","X-Expected-User-ID":"user-a","content-type":"application/json"},body:"{}"});expect((await proxyCommercialBilling(request,"fixture-token","user-a")).status).toBe(403);}
+ expect(fetcher).not.toHaveBeenCalled();
+});
+
+function postRequest(body: ReadableStream<Uint8Array>): Request {
+  return new Request("http://localhost/api/workbench/commercial/orders", {
+    method: "POST",
+    headers: {
+      origin: "http://localhost", cookie: "shuomi_effective_organization=org-a",
+      "X-Expected-Organization-ID": "org-a",
+      "X-Expected-User-ID": "user-a",
+      "content-type": "application/json",
+    },
+    body,
+    duplex: "half",
+  } as RequestInit);
+}
+
+it("cancels oversized request streams before forwarding", async () => {
+  vi.stubEnv("COMMERCIAL_API_ORIGIN", "http://localhost:8888");
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+  let cancelled = false;
+  const request = postRequest(new ReadableStream<Uint8Array>({
+    pull(controller) { controller.enqueue(new Uint8Array(16 * 1024 + 1)); },
+    cancel() { cancelled = true; },
+  }));
+
+  const response = await proxyCommercialBilling(request, "fixture-token", "user-a");
+  expect(response.status).toBe(413);
+  expect(cancelled).toBe(true);
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("times out and cancels a stalled request stream", async () => {
+  vi.useFakeTimers();
+  vi.stubEnv("COMMERCIAL_API_ORIGIN", "http://localhost:8888");
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+  let cancelled = false;
+  const request = postRequest(new ReadableStream<Uint8Array>({ cancel() { cancelled = true; } }));
+
+  const pending = proxyCommercialBilling(request, "fixture-token", "user-a");
+  await vi.advanceTimersByTimeAsync(15_000);
+  const response = await pending;
+  expect(response.status).toBe(504);
+  expect(cancelled).toBe(true);
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("aborts a stalled upstream request at the fixed deadline", async () => {
+  vi.useFakeTimers();
+  vi.stubEnv("COMMERCIAL_API_ORIGIN", "http://localhost:8888");
+  const fetchMock = vi.fn((_url: URL, init: RequestInit) => new Promise<Response>((_resolve, reject) => {
+    init.signal?.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+  }));
+  vi.stubGlobal("fetch", fetchMock);
+  const request = new Request("http://localhost/api/workbench/commercial/orders", {
+    method: "POST",
+    headers: { origin: "http://localhost", cookie: "shuomi_effective_organization=org-a", "X-Expected-Organization-ID": "org-a", "X-Expected-User-ID": "user-a", "content-type": "application/json" },
+    body: "{}",
+  });
+
+  const pending = proxyCommercialBilling(request, "fixture-token", "user-a");
+  for (let index = 0; index < 10 && fetchMock.mock.calls.length === 0; index++) await Promise.resolve();
+  expect(fetchMock).toHaveBeenCalledOnce();
+  await vi.advanceTimersByTimeAsync(15_000);
+  const response = await pending;
+  expect(response.status).toBe(504);
+  expect((fetchMock.mock.calls[0][1] as RequestInit).signal?.aborted).toBe(true);
+});
+
+it("rejects a stale user assertion before forwarding billing requests", async () => {
+  vi.stubEnv("COMMERCIAL_API_ORIGIN", "http://localhost:8888");
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+  const request = postRequest(new ReadableStream<Uint8Array>({ start(controller) { controller.enqueue(new TextEncoder().encode("{}")); controller.close(); } }));
+
+  const response = await proxyCommercialBilling(request, "fixture-token", "user-b");
+  expect(response.status).toBe(409);
+  expect(await response.json()).toMatchObject({ code: "IDENTITY_CONTEXT_CHANGED" });
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("preserves persisted 409 orders within the normal order response bound", async () => {
+  vi.stubEnv("COMMERCIAL_API_ORIGIN", "http://localhost:8888");
+  const order = { order_id: "original-order", organization_id: "org-a", kind: "RESOURCE_PURCHASE", status: "RECONCILIATION_REQUIRED", items: Array.from({ length: 64 }, (_, i) => ({ order_item_id: `item-${i}-${"x".repeat(16)}`, product_kind: "AI_POINT", resource_type: "ai_point", resource_quantity: "1", amount_minor: "1" })) };
+  expect(JSON.stringify(order).length).toBeGreaterThan(8192);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(order, { status: 409 })));
+  const request = postRequest(new ReadableStream<Uint8Array>({ start(c) { c.enqueue(new TextEncoder().encode('{"quote_id":"quote-1"}')); c.close(); } }));
+  const response = await proxyCommercialBilling(request, "fixture-token", "user-a");
+  expect(response.status).toBe(409);
+  expect(await response.json()).toEqual(order);
+});

@@ -1,0 +1,145 @@
+.entry {
+  display: grid;
+  gap: 10px;
+  font-size: var(--label-text-size);
+}
+.entry p {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+.dialog {
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  margin: auto;
+}
+.dialog::backdrop {
+  background: var(--overlay);
+}
+.dialog form {
+  display: grid;
+  gap: 18px;
+}
+.dialog h2,
+.payment h2 {
+  font-size: var(--dialog-title-size);
+  font-weight: 700;
+  margin: 0;
+}
+.description {
+  color: var(--muted-foreground);
+  font-size: var(--body-text-size);
+  line-height: 1.8;
+  margin: -8px 0 0;
+}
+.field {
+  display: grid;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: var(--caption-text-size);
+}
+.field input {
+  height: 42px;
+  border-radius: var(--control-radius);
+  color: var(--foreground);
+}
+.range {
+  font-size: var(--caption-text-size);
+  color: var(--muted-foreground);
+  margin: -12px 0 0;
+}
+.dialog fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.dialog legend {
+  font-size: var(--caption-text-size);
+  color: var(--muted-foreground);
+  margin-bottom: 12px;
+}
+.amounts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.amounts button {
+  background: var(--muted);
+  padding: 0 4px;
+  border-radius: var(--control-radius);
+  height: 34px;
+  font-size: var(--label-text-size);
+}
+.amounts button[aria-pressed="true"] {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.channels {
+  display: grid;
+  gap: 10px;
+}
+.channels label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: var(--caption-text-size);
+}
+.channels span {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: var(--caption-text-size);
+}
+.channels input {
+  accent-color: var(--primary);
+}
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.dialog .actions button {
+  min-width: 96px;
+  border-radius: var(--control-radius);
+  height: 36px;
+  font-size: var(--label-text-size);
+}
+.payment {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+.payment p {
+  font-size: var(--label-text-size);
+  color: var(--muted-foreground);
+  margin: 0;
+  line-height: 1.8;
+}
+.payment .actions {
+  justify-content: flex-start;
+}
+.qr {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+@media (max-width: 420px) {
+  .amounts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .channels label {
+    flex-wrap: wrap;
+  }
+}

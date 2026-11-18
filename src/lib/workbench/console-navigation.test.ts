@@ -1,0 +1,188 @@
+import { describe, expect, it } from "vitest";
+import { consoleNavigation, findConsoleRoute } from "./console-navigation";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
+describe("Figma Console navigation contract", () => {
+  it("keeps the existing exact-version product selector in the AI workbench breadcrumb", () => {
+    const route = findConsoleRoute("/workbench/agents/skills/official/use");
+    expect(route?.trail.map(node => node.label)).toEqual(["AI工作台", "技能库", "官方模板", "选择已有商品"]);
+  });
+  it("places the skill library beside knowledge in AI workbench without a market duplicate", () => {
+    const ai = findConsoleRoute("/workbench/ai")!.node;
+    const labels = ai.children!.map(node => node.label);
+    expect(labels.indexOf("技能库")).toBe(labels.indexOf("知识库") + 1);
+    expect(findConsoleRoute("/workbench/agents")!.node.children!.some(node => node.label === "技能库")).toBe(false);
+    for (const category of ["official", "mine", "team"]) {
+      const route = findConsoleRoute(`/workbench/agents/skills/${category}`)!;
+      expect(route.trail[0]).toBe(ai);
+      expect(route.node.href).toBe(`/workbench/agents/skills/${category}`);
+    }
+  });
+  it("registers the tool customization pages without adding sidebar children", () => {
+    expect(findConsoleRoute("/workbench/tools/custom")?.node.children).toBeUndefined();
+    for (const [label, href] of [
+      ["提交定制需求", "/workbench/tools/custom/new"],
+      ["定制进度", "/workbench/tools/custom/progress"],
+    ]) {
+      expect(findConsoleRoute(href)?.trail.map(node => node.label)).toEqual(["工具市场", "工具定制", label]);
+      expect(existsSync(join(process.cwd(), "src/app", href.slice(1), "page.tsx"))).toBe(true);
+    }
+  });
+  it("keeps own-item confirmation and independent draft detail under their current parents",()=>{
+    const id="11111111-1111-4111-8111-111111111111";
+    const confirmation=findConsoleRoute(`/workbench/data/mine/own/${id}/prepare`);
+    expect(confirmation?.node.label).toBe("转入待补全");expect(confirmation?.trail.map(node=>node.label)).toContain("我的数据");
+    const draft=findConsoleRoute(`/workbench/listing/missing/${id}`);
+    expect(draft?.node.label).toBe("待补全草稿");expect(draft?.trail.map(node=>node.label)).toContain("商品刊登");
+  });
+  it("keeps catalog pages registered without turning them into sidebar children", () => {
+    const parent = findConsoleRoute("/workbench/supply/catalogs")!;
+    expect(parent.node.children).toBeUndefined();
+    for (const [label, href] of [["货盘选品","/workbench/supply/catalogs/selection"],["对接进度","/workbench/supply/catalogs/apply"]]) {
+      expect(findConsoleRoute(href)?.node.label).toBe(label);
+      expect(findConsoleRoute(href)?.trail.map(node=>node.label)).toEqual(["供应市场","货盘集成",label]);
+      expect(existsSync(join(process.cwd(),"src/app",href.slice(1),"page.tsx"))).toBe(true);
+    }
+  });
+  it("keeps the three selected-application entries and shared detail under their real parent", () => {
+    const parent = findConsoleRoute("/workbench/supply/applications")!;
+    expect(parent.node.children).toBeUndefined();
+    for (const [label,href] of [["发起申请","/workbench/supply/applications/new"],["申请进度","/workbench/supply/applications/progress"],["申请记录","/workbench/supply/applications/records"]]) {
+      expect(findConsoleRoute(href)?.node.label).toBe(label);
+      expect(findConsoleRoute(href)?.trail.map(node => node.label)).toEqual(["供应市场", "优选申请", label]);
+      expect(existsSync(join(process.cwd(), "src/app", href.slice(1), "page.tsx"))).toBe(true);
+    }
+    expect(findConsoleRoute("/workbench/supply/applications/11111111-1111-4111-8111-111111111111")?.trail.map(node => node.label)).toEqual(["供应市场", "优选申请", "申请详情"]);
+    expect(findConsoleRoute("/workbench/supply/applications/extra")).toBeUndefined();
+  });
+  it("keeps official and current-enterprise knowledge under the Figma Knowledge branch", () => {
+    const knowledge = findConsoleRoute("/workbench/ai/knowledge")?.node;
+    expect(knowledge?.children?.map(node => node.label)).toEqual(["官方知识库", "我的知识库"]);
+    expect(findConsoleRoute("/workbench/ai/knowledge/official")?.trail.map(node => node.label)).toEqual(["AI工作台", "知识库", "官方知识库"]);
+    expect(findConsoleRoute("/workbench/ai/knowledge/mine")?.trail.map(node => node.label)).toEqual(["AI工作台", "知识库", "我的知识库"]);
+    expect(findConsoleRoute("/workbench/ai/knowledge/4841d296-ef14-4c16-8d25-a7667e534feb")?.trail.map(node => node.label)).toEqual(["AI工作台", "知识库", "我的知识库", "知识库资料"]);
+  });
+  it("gives every primary menu a real page instead of falling through to the unavailable catchall", () => {
+    for (const node of consoleNavigation) {
+      expect(existsSync(join(process.cwd(), "src/app", node.href.slice(1), "page.tsx")), node.href).toBe(true);
+    }
+  });
+  it("models every My Account entry as the Figma three-level hierarchy", () => {
+    const account = consoleNavigation.find((item) => item.label === "我的账户");
+    expect(account?.children?.map((item) => item.label)).toEqual(["账户资料", "企业空间", "推广与收益"]);
+    expect(account?.children?.map((item) => item.children?.map((child) => child.label))).toEqual([
+      ["账户设置", "经营画像", "认证信息"],
+      ["成员与权限", "资源与额度", "操作记录"],
+      ["推广中心", "收益明细", "提现管理", "推广规则"],
+    ]);
+  });
+
+  it("resolves every My Account third-level page to its full breadcrumb", () => {
+    const pages = [
+      ["/workbench/account/profile/settings", ["我的账户", "账户资料", "账户设置"]],
+      ["/workbench/account/profile/business", ["我的账户", "账户资料", "经营画像"]],
+      ["/workbench/account/profile/verification", ["我的账户", "账户资料", "认证信息"]],
+      ["/workbench/account/organization/members", ["我的账户", "企业空间", "成员与权限"]],
+      ["/workbench/account/organization/resources", ["我的账户", "企业空间", "资源与额度"]],
+      ["/workbench/account/organization/audit", ["我的账户", "企业空间", "操作记录"]],
+      ["/workbench/account/referrals/center", ["我的账户", "推广与收益", "推广中心"]],
+      ["/workbench/account/referrals/earnings", ["我的账户", "推广与收益", "收益明细"]],
+      ["/workbench/account/referrals/withdrawals", ["我的账户", "推广与收益", "提现管理"]],
+      ["/workbench/account/referrals/rules", ["我的账户", "推广与收益", "推广规则"]],
+    ] as const;
+    for (const [path, trail] of pages) {
+      expect(findConsoleRoute(path)?.trail.map((item) => item.label), path).toEqual(trail);
+      expect(findConsoleRoute(path)?.node.availability, path).toBe("connected");
+    }
+  });
+
+  it("connects all delivered account leaves", () => {
+    for (const leaf of ["members", "resources", "audit"])
+      expect(findConsoleRoute(`/workbench/account/organization/${leaf}`)?.node.availability).toBe("connected");
+    expect(findConsoleRoute("/workbench/account/referrals")?.node.availability).toBe("connected");
+  });
+  it("connects the delivered members page with its sibling leaves", () => {
+    const route = findConsoleRoute("/workbench/account/organization/members");
+    expect(route?.node.availability).toBe("connected");
+    expect(route?.trail.map(node => node.label)).toEqual(["我的账户", "企业空间", "成员与权限"]);
+    expect(findConsoleRoute("/workbench/account/referrals")?.node.availability).toBe("connected");
+  });
+  it("keeps the profile and enterprise leaves connected together", () => {
+    for (const path of ["/workbench/account/profile", "/workbench/account/organization/resources", "/workbench/account/organization/audit"])
+      expect(findConsoleRoute(path)?.node.availability).toBe("connected");
+    for (const path of ["/workbench/account/referrals", "/workbench/account/organization/members"])
+      expect(findConsoleRoute(path)?.node.availability).toBe("connected");
+  });
+  it("connects the delivered personal referral page and derives only its completion breadcrumb", () => {
+    const route = findConsoleRoute("/workbench/account/referrals");
+    expect(route?.node.availability).toBe("connected");
+    expect(route?.trail.map(node => node.label)).toEqual(["我的账户", "推广与收益"]);
+    expect(findConsoleRoute("/workbench/account/referrals/complete")?.trail.map(node => node.label)).toEqual(["我的账户", "推广与收益", "完成注册"]);
+    expect(findConsoleRoute("/workbench/account/referrals/complete")?.node.availability).toBe("connected");
+    expect(findConsoleRoute("/workbench/account/referrals/other")).toBeUndefined();
+  });
+  it("exposes the bounded audit page alongside the other account leaves", () => {
+    const route = findConsoleRoute("/workbench/account/organization/audit");
+    expect(route?.node.availability).toBe("connected");
+    expect(route?.trail.map(node => node.label)).toEqual(["我的账户", "企业空间", "操作记录"]);
+    expect(route?.node.children).toBeUndefined();
+    expect(findConsoleRoute("/workbench/account/organization/members")?.node.availability).toBe("connected");
+  });
+  it("exposes the resource page and its existing source-account breadcrumb", () => {
+    const path = "/workbench/account/organization/resources";
+    expect(findConsoleRoute(path)?.node.availability).toBe("connected");
+    expect(findConsoleRoute(`${path}/source-accounts`)?.trail.map(node => node.label)).toEqual(["我的账户", "企业空间", "资源与额度", "源账号"]);
+    expect(findConsoleRoute(`${path}/source-accounts`)?.node.availability).toBe("connected");
+    expect(findConsoleRoute(path)?.node.children).toBeUndefined();
+    expect(findConsoleRoute("/workbench/account/referrals")?.node.availability).toBe("connected");
+  });
+  it("derives the third-level commercial order detail trail without adding a menu item", () => {
+    const route = findConsoleRoute("/workbench/plans/orders/order-123");
+    expect(route?.node.availability).toBe("connected");
+    expect(route?.trail.map(node => node.label)).toEqual(["套餐与权益", "账单与订单", "订单详情"]);
+    expect(findConsoleRoute("/workbench/plans/orders/not%2Fvalid")).toBeUndefined();
+    expect(consoleNavigation.find(node => node.label === "套餐与权益")?.children?.map(node => node.label)).toEqual(["套餐方案", "我的权益", "用量明细", "充值中心", "账单与订单"]);
+  });
+  it("contains the approved primary research, selection and Orders menus", () => {
+    expect(consoleNavigation.map((item) => item.label)).toEqual(["运营驾驶舱", "AI工作台", "市场调研", "智能选品", "供应市场", "智能市场", "工具市场", "生态服务", "数据服务", "商品刊登", "店铺中心", "订单管理", "套餐与权益", "系统设置", "我的账户"]);
+  });
+  it("exposes every research and selection operation directly at the second level", () => {
+    for (const [label, steps] of [
+      ["市场调研",["projects","sources","evidence","summary"]],
+      ["智能选品",["candidates","comparison","analysis","decisions","transfer"]],
+    ] as const) {
+      const menu=consoleNavigation.find(node=>node.label===label)!;
+      expect(menu.children?.map(node=>node.href)).toEqual(steps.map(step=>`${menu.href}?step=${step}`));
+      for(const child of menu.children!) {
+        expect(child.children).toBeUndefined();expect(child.disclosureOnly).not.toBe(true);
+        expect(findConsoleRoute(child.href)?.trail.map(node=>node.label)).toEqual([label,child.label]);
+      }
+    }
+  });
+  it("resolves listing stages as page routes without adding sidebar children", () => {
+    const parent = findConsoleRoute("/workbench/listing")!;
+    expect(parent.node.children).toBeUndefined();
+    const id="11111111-1111-4111-8111-111111111111";
+    expect(findConsoleRoute("/workbench/listing/materials/" + id)?.trail.map(node => node.label)).toEqual(["商品刊登", "平台上架资料"]);
+    expect(findConsoleRoute("/workbench/supply/mine")).toBeUndefined();
+    expect(findConsoleRoute("/workbench/supply/materials/" + id)).toBeUndefined();
+    for (const [stage, label] of [["waiting","待上传"],["missing","待补全"],["review","待审核"],["uploaded","已上传"]]) {
+      expect(findConsoleRoute("/workbench/listing/" + stage)?.trail.map(node => node.label)).toEqual(["商品刊登", label]);
+    }
+  });
+  it("maps exact descendants and internal diagnostics without inventing Store ownership", () => {
+    expect(findConsoleRoute("/workbench/stores/123")?.trail.map((item) => item.label)).toEqual(["店铺中心", "我的店铺", "店铺详情"]);
+    expect(findConsoleRoute("/workbench/ai/chat/recent")?.trail.map((item) => item.label)).toEqual(["AI工作台", "硕米Chat", "最近会话"]);
+    expect(findConsoleRoute("/workbench/stores-evil")).toBeUndefined();
+    expect(findConsoleRoute("/workbench/shein-records/123/diagnostic")?.trail.map((item) => item.label)).toEqual(["SHEIN 资料诊断"]);
+  });
+  it("distinguishes unimplemented functions from a live page whose BFF still authorizes", () => {
+    expect(findConsoleRoute("/workbench/account")?.node.availability).toBe("connected");
+    expect(findConsoleRoute("/workbench/ai/chat")?.node.availability).toBe("connected");
+    expect(findConsoleRoute("/workbench/stores")?.node.availability).toBe("connected");
+    expect(findConsoleRoute("/workbench/store-products")?.node.availability).toBe("unavailable");
+    expect(findConsoleRoute("/workbench/ai/tasks/completed")?.node.availability).toBe("connected");
+    expect(findConsoleRoute("/workbench/ai/tasks/running")?.node.availability).toBe("connected");
+  });
+});

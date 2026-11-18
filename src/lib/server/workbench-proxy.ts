@@ -1,0 +1,2275 @@
+import { isCockpitMetricsQuery } from "@/lib/contracts/cockpit-metrics";
+import { catalogVersionSchema, COMPLETION_MAX_BYTES, SUPPLY_MAX_BYTES, supplyRouteMethods, supplyPath, supplyRequestSchema, supplyUsesKey, supplyMutates, parseSupplyResponse, type SupplyRoute } from "@/lib/contracts/supply-chain";
+import {completionRevision} from "@/lib/contracts/completion-draft-navigation";
+import {materialsErrorStatuses} from "@/lib/contracts/listing-materials";
+import { hasValidStoreServiceFacts, workbenchStorePlatformSchema } from "@/lib/validation/workbench-store";
+import { planPath, planMethods, planRequestSchema, planResponseSchema, type PlanRoute } from "@/lib/contracts/acquisition-plan";
+import {officialConnectionViewSchema,officialConnectionBeginSchema,officialConnectionCompleteSchema,officialConnectionQuerySchema,officialConnectionRefreshSchema,officialApplicationListSchema,officialConnectionStartSchema,officialConnectionInstallSchema} from "@/lib/contracts/store-connection";
+import { BROWSER_CAPTURE_MAX_BYTES, browserCaptureSchema } from "@/lib/contracts/browser-capture";
+import {agentEmptyRequestSchema,agentStartRequestSchema,contentAgentStartRequestSchema,ownContentStartRequestSchema,ownContentSourceSchema,ownAgentPath,agentResumeRequestSchema,agentResultSchema,contentAgentResultSchema,agentReviewLinkSchema,agentPath} from "@/lib/contracts/product-agent";
+import { aiWorkbenchPath, aiCreateBody, aiMessageBody, aiStoreRouteBody, aiStoreOverviewBody, aiMetadataBody, aiResumeBody, aiScheduleInput,aiScheduleControl,aiScheduleEdit, parseAIWorkbenchResponse, type AIWorkbenchRoute } from "@/lib/contracts/ai-workbench";
+import { NextResponse } from "next/server";
+import { COLLECTION_MAX_BYTES, COLLECTION_DETAIL_RESPONSE_MAX_BYTES, collectionPath, collectionCommandSchema, collectionSourceKindSchema, collectionVersion, parseCollectionResponse, type CollectionRoute } from "@/lib/contracts/product-collection";
+import {
+  findNodeAtLocation,
+  parseTree,
+  type Node as JSONNode,
+  type ParseError,
+} from "jsonc-parser";
+import { z } from "zod";
+
+import {
+  parseWorkbenchContextPayload,
+  parseWorkbenchErrorEnvelopePayload,
+} from "@/lib/api/workbench-context";
+import {
+  isCanonicalSourceAccountCursor,
+  isCanonicalSourceAccountId,
+  isCanonicalSourceAccountOperationId,
+  isStrongSourceAccountETag,
+  SOURCE_ACCOUNT_CURSOR_MAX_BYTES,
+  SOURCE_ACCOUNT_QUERY_MAX_BYTES,
+  SOURCE_ACCOUNT_REQUEST_BODY_MAX_BYTES,
+  SOURCE_ACCOUNT_RESPONSE_MAX_BYTES,
+  sourceAccountCreateRequestSchema,
+  sourceAccountDetailResponseSchema,
+  sourceAccountMutationResponseSchema,
+  sourceAccountPageResponseSchema,
+} from "@/lib/contracts/source-account";
+import { newRequestLogId } from "@/lib/server/request-log";
+import { hasTrustedSameOriginRecovery, hasTrustedSameOriginWrite } from "@/lib/server/same-origin-write";
+import { ACQUISITION_BODY_MAX_BYTES, ACQUISITION_RESPONSE_MAX_BYTES, acquisitionRequestSchema, acquisitionProductSchema, acquisitionResultSchema, acquisitionErrorStatuses, isAcquisitionUUID } from "@/lib/contracts/product-acquisition";
+import { mainImageAcceptedSchema, mainImageApprovalRequestSchema, mainImageCandidatesSchema, mainImageResultSchema, mainImageStartRequestSchema } from "@/lib/contracts/acquisition-main-image";
+import {imageSetRoutes,imageSetMethods,imageSetPath,imageSetRequestSchema,imageSetResponseSchema,imageSetSuccessStatus,imageSetErrorStatuses,imageSetResponseBinding,imageSetResponseBindingSchema,imageSetResponseMatches,type ImageSetRoute} from "@/lib/contracts/product-image-set";
+import {analysisRoutes,analysisMethods,analysisPath,analysisRequestSchema,analysisResponseSchema,analysisBinding,analysisBindingSchema,analysisMatches,type AnalysisRoute} from "@/lib/contracts/product-image-analysis";
+
+export const WORKBENCH_COOKIE_NAME = "shuomi_effective_organization";
+const EXPECTED_ORGANIZATION_ID_HEADER = "X-Expected-Organization-ID";
+const EXPECTED_USER_ID_HEADER = "X-Expected-User-ID";
+
+const DEFAULT_SERVICE_API_BASE = "http://localhost:8085/api/v1";
+const SWITCH_REQUEST_BODY_MAX_BYTES = 4 * 1024;
+const STORE_REQUEST_BODY_MAX_BYTES = 16 * 1024;
+const REQUEST_BODY_READ_TIMEOUT_MS = 15_000;
+const UPSTREAM_RESPONSE_MAX_BYTES = 1024 * 1024;
+const STORE_QUERY_MAX_BYTES = 2 * 1024;
+const REQUEST_ID_MAX_BYTES = 128;
+const imageErrorStatuses: Readonly<Record<string, number>> = { INVALID_IMAGE_REQUEST: 400, FORBIDDEN: 403, IMAGE_NOT_FOUND: 404, IMAGE_CONFLICT: 409, IMAGE_BLOCKED: 409, IMAGE_UNAVAILABLE: 503 };
+
+export type WorkbenchResponseContract =
+  | `product-acquisition-plan-${PlanRoute}`
+  | `image-set-${ImageSetRoute}`
+  | `collection-${CollectionRoute}`
+  | `supply-${SupplyRoute}`
+  | `ai-${AIWorkbenchRoute}`
+  | "product-agent-result"
+  | `product-agent-image-analysis-${AnalysisRoute}`
+  | "product-agent-source"
+  | "product-agent-content-result"
+  | "product-agent-review"
+  | "product-acquisition"
+  | "product-acquisition-product"
+  | "acquisition-image-candidates"
+  | "acquisition-image-accepted"
+  | "acquisition-image-result"
+  | "context"
+  | "context-switch"
+  | "store-list"
+  | "store-create"
+  | "store-item"
+  | "store-delete"
+  | "store-service-lifecycle"
+  | "store-connection-applications"
+  | "store-connection-view"
+  | "store-connection-begin"
+  | "source-account-list"
+  | "source-account-create"
+  | "source-account-detail"
+  | "source-account-mutation";
+
+type WorkbenchRequestContract =
+  | `product-acquisition-plan-${PlanRoute}`
+  | `image-set-${ImageSetRoute}`
+  | `collection-${CollectionRoute}`
+  | `supply-${SupplyRoute}`
+  | `ai-${AIWorkbenchRoute}`
+  | "product-agent-start"
+  | `product-agent-image-analysis-${AnalysisRoute}`
+  | "product-agent-read"
+  | "product-agent-resume"
+  | "product-agent-review"
+  | "browser-capture-create"
+  | "browser-capture-verify"
+  | "browser-capture-by-key"
+  | "browser-capture-read"
+  | "product-acquisition-create"
+  | "product-acquisition-verify"
+  | "product-acquisition-read"
+  | "product-acquisition-product"
+  | "acquisition-image-candidates"
+  | "acquisition-image-start"
+  | "acquisition-image-read"
+  | "acquisition-image-approve"
+  | "context-get"
+  | "context-switch"
+  | "store-list"
+  | "store-create"
+  | "store-get"
+  | "store-update"
+  | "store-delete"
+  | "store-enable"
+  | "store-disable"
+  | "store-service-activate"
+  | "store-service-renew"
+  | "store-service-reactivate"
+  | "store-connection-applications"
+  | "store-connection-read"
+  | "store-connection-begin"
+  | "store-connection-complete"
+  | "store-connection-refresh"
+  | "store-connection-query"
+  | "store-connection-token"
+  | "store-connection-disconnect"
+  | "source-account-list"
+  | "source-account-create"
+  | "source-account-detail"
+  | "source-account-enable"
+  | "source-account-disable";
+
+type WorkbenchRouteDescriptor = {
+  requestContract: WorkbenchRequestContract;
+  responseContract: WorkbenchResponseContract;
+  upstreamPath: string;
+};
+
+type WorkbenchRouteDefinition = Omit<
+  WorkbenchRouteDescriptor,
+  "upstreamPath"
+> & {
+  method: "GET" | "PUT" | "POST" | "PATCH" | "DELETE";
+  resolveUpstreamPath: (path: string[]) => string | null;
+};
+
+type WorkbenchUpstreamRequest = {
+  url: string;
+  init: RequestInit;
+  responseContract: WorkbenchResponseContract;
+  expectedStoreId?: string;
+  requestId: string;
+  sourceMutation: boolean;
+};
+
+type ParsedJSONBody = {
+  payload: Record<string, unknown>;
+  root: JSONNode;
+  text: string;
+};
+
+const canonicalUUIDSchema = z.string().refine(isCanonicalUUID);
+const positiveSafeIntegerSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(Number.MAX_SAFE_INTEGER);
+const nonnegativeSafeIntegerSchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(Number.MAX_SAFE_INTEGER);
+const normalizedPublicString = (minimum: number, maximum: number) =>
+  z
+    .string()
+    .refine(
+      (value) =>
+        value === value.trim() &&
+        !hasUnicodeControl(value) &&
+        Array.from(value).length >= minimum &&
+        Array.from(value).length <= maximum,
+    );
+const utcRFC3339Schema = z.string().refine(isUTCRFC3339Timestamp);
+const storeResponseSchema = z
+  .object({
+    id: canonicalUUIDSchema,
+    name: normalizedPublicString(1, 120),
+    platform: workbenchStorePlatformSchema,
+    region: normalizedPublicString(1, 64),
+    externalStoreId: normalizedPublicString(0, 128),
+    recordStatus: z.enum([
+      "active",
+      "disabled",
+      "deleting",
+    ]),
+    serviceStatus: z.enum(["pending_activation", "active", "expired", "suspended"]).nullable(),
+    serviceStartedAt: utcRFC3339Schema.nullable(),
+    serviceExpiresAt: utcRFC3339Schema.nullable(),
+    connectionStatus: z.enum([
+      "disconnected",
+      "connected",
+      "expired",
+      "unavailable",
+    ]),
+    version: positiveSafeIntegerSchema,
+    createdAt: utcRFC3339Schema,
+    updatedAt: utcRFC3339Schema,
+  })
+  .strict().refine(hasValidStoreServiceFacts, "Inconsistent record/service facts");
+const listStoresResponseSchema = z
+  .object({
+    items: z.array(storeResponseSchema).max(100),
+    pagination: z
+      .object({
+        page: positiveSafeIntegerSchema,
+        pageSize: positiveSafeIntegerSchema.max(100),
+        total: nonnegativeSafeIntegerSchema,
+      })
+      .strict(),
+  })
+  .strict()
+  .superRefine((response, refinement) => {
+    if (
+      response.items.length > response.pagination.pageSize ||
+      response.items.length > response.pagination.total
+    ) {
+      refinement.addIssue({
+        code: "custom",
+        message: "Pagination state is inconsistent",
+      });
+    }
+  });
+const deleteStoreResponseSchema = z
+  .object({
+    id: canonicalUUIDSchema,
+    deleted: z.literal(true),
+    version: positiveSafeIntegerSchema,
+  })
+  .strict();
+const canonicalPositiveDecimalSchema = z
+  .string()
+  .regex(/^[1-9][0-9]*$/)
+  .refine((value) => BigInt(value) <= BigInt("12"));
+const canonicalNonnegativeDecimalSchema = z
+  .string()
+  .regex(/^(0|[1-9][0-9]*)$/)
+  .refine((value) => BigInt(value) <= BigInt("9223372036854775807"));
+const serviceLifecycleResponseSchema = z
+  .object({
+    storeId: canonicalUUIDSchema,
+    recordStatus: z.literal("active"),
+    serviceStatus: z.literal("active"),
+    serviceStartedAt: utcRFC3339Schema,
+    serviceExpiresAt: utcRFC3339Schema,
+    version: positiveSafeIntegerSchema,
+    quantity: canonicalPositiveDecimalSchema,
+    resourceBalanceAfter: canonicalNonnegativeDecimalSchema,
+  })
+  .strict()
+  .superRefine((result, refinement) => {
+    if (Date.parse(result.serviceExpiresAt) <= Date.parse(result.serviceStartedAt)) {
+      refinement.addIssue({
+        code: "custom",
+        message: "Service period is inconsistent",
+      });
+    }
+  });
+
+const documentedWorkbenchErrorStatuses: Readonly<Record<string, number>> = {
+  INVALID_REQUEST: 400,
+  AUTHENTICATION_REQUIRED: 401,
+  ORGANIZATION_SELECTION_REQUIRED: 409,
+  ORGANIZATION_ACCESS_DENIED: 403,
+  ORGANIZATION_ACCESS_REVOKED: 403,
+  ORGANIZATION_SUSPENDED: 403,
+  PERMISSION_DENIED: 403,
+  DEPENDENCY_UNAVAILABLE: 503,
+  STORE_NOT_FOUND: 404,
+  STORE_ALREADY_EXISTS: 409,
+  STORE_VERSION_CONFLICT: 409,
+  STORE_INVALID_STATE: 422,
+  STORE_SERVICE_STATE_CORRUPT: 409,
+  STORE_CONNECTION_UNAVAILABLE: 503,
+  STORE_SERVICE_OUTCOME_UNKNOWN: 503,
+  STORE_AUTHORIZATION_OUTCOME_UNKNOWN: 503,
+  STORE_OFFICIAL_SETUP_UNAVAILABLE: 503,
+  STORE_AUTHORIZATION_REJECTED: 422,
+  STORE_CONNECTION_NOT_CONNECTED: 422,
+  RESOURCE_QUANTITY_INVALID: 422,
+  RESOURCE_INSUFFICIENT_BALANCE: 409,
+  IDEMPOTENCY_KEY_CONFLICT: 409,
+  RESOURCE_CONCURRENCY_RETRY: 503,
+  SUBSCRIPTION_REQUIRED: 409,
+  STORE_LIMIT_REACHED: 409,
+  ORGANIZATION_CONTEXT_CHANGED: 409,
+  IDENTITY_CONTEXT_CHANGED: 409,
+  SOURCE_ACCOUNT_NOT_FOUND: 404,
+  IDEMPOTENCY_CONFLICT: 409,
+  VERSION_CONFLICT: 409,
+  INVALID_TRANSITION: 409,
+  RESOURCE_LIMIT_REACHED: 409,
+  INPUT_TOO_LARGE: 413,
+  OUTCOME_UNKNOWN: 503,
+  DEADLINE_EXCEEDED: 504,
+};
+
+const sourceAccountErrorStatuses: Readonly<Record<string, number>> = {
+  INVALID_REQUEST: 400,
+  AUTHENTICATION_REQUIRED: 401,
+  ORGANIZATION_SELECTION_REQUIRED: 409,
+  ORGANIZATION_ACCESS_DENIED: 403,
+  ORGANIZATION_ACCESS_REVOKED: 403,
+  ORGANIZATION_SUSPENDED: 403,
+  PERMISSION_DENIED: 403,
+  SOURCE_ACCOUNT_NOT_FOUND: 404,
+  IDEMPOTENCY_CONFLICT: 409,
+  VERSION_CONFLICT: 409,
+  INVALID_TRANSITION: 409,
+  RESOURCE_LIMIT_REACHED: 409,
+  ORGANIZATION_CONTEXT_CHANGED: 409,
+  IDENTITY_CONTEXT_CHANGED: 409,
+  INPUT_TOO_LARGE: 413,
+  DEPENDENCY_UNAVAILABLE: 503,
+  OUTCOME_UNKNOWN: 503,
+  DEADLINE_EXCEEDED: 504,
+};
+
+const workbenchRouteAllowlist = [
+  ...imageSetRoutes.map(action=>routeDefinition(imageSetMethods[action],`image-set-${action}`,`image-set-${action}`,path=>imageSetPath(path,action))),
+  ...analysisRoutes.map(action=>routeDefinition(analysisMethods[action],`product-agent-image-analysis-${action}`,`product-agent-image-analysis-${action}`,path=>analysisPath(path,action))),
+  ...supplyRouteMethods.map(([method,name])=>routeDefinition(method,`supply-${name}`,`supply-${name}`,path=>supplyPath(method,path)===name?path.join("/"):null)),
+  ...(["batches", "batch", "items", "own", "detail", "history", "history-detail", "operation", "command", "import-preview", "import-template", "media-upload", "media-read"] as const).map(name => {
+    const method = name === "command" || name === "import-preview" || name === "media-upload" ? "POST" : "GET";
+    return routeDefinition(method, `collection-${name}`, `collection-${name}`, path => collectionPath(method, path) === name ? path.join("/") : null);
+  }),
+  ...([
+    ["GET","subject-read"], ["GET","scope-options"], ["GET", "conversation-list"], ["POST", "conversation-create"],
+    ["GET", "conversation-read"], ["PATCH", "conversation-metadata"],
+    ["POST", "message"], ["POST", "store-route"], ["POST", "store-overview"], ["POST", "confirm"],
+    ["GET", "task-list"], ["GET", "task-cockpit-metrics"], ["GET", "task-read"], ["GET", "task-scope-options"],
+    ["POST", "task-start"], ["POST", "task-resume"], ["POST", "task-review"],
+    ["GET","schedule-availability"],["GET","schedule-list"],["GET","schedule-read"],["GET","schedule-history"],
+    ["POST","schedule-quote"],["POST","schedule-create"],["PATCH","schedule-edit"],["POST","schedule-pause"],["POST","schedule-resume"],["POST","schedule-close"],["POST","schedule-delete"],
+  ] as const).map(([method, name]) => routeDefinition(method, `ai-${name}`, `ai-${name}`,
+    path => aiWorkbenchPath(method, path) === name ? path.join("/") : null)),
+  routeDefinition("POST", "browser-capture-create", "product-acquisition", (path) =>
+    exactPath(path, "sourcing", "1688", "browser-captures") ? "sourcing/1688/browser-captures" : null),
+  routeDefinition("POST", "browser-capture-verify", "product-acquisition", (path) =>
+    exactPath(path, "sourcing", "1688", "browser-captures", "verify") ? "sourcing/1688/browser-captures/verify" : null),
+  routeDefinition("GET", "browser-capture-by-key", "product-acquisition", (path) =>
+    path.length === 5 && exactPath(path.slice(0, 4), "sourcing", "1688", "browser-captures", "by-key") && isAcquisitionUUID(path[4]!) ? `sourcing/1688/browser-captures/by-key/${path[4]}` : null),
+  routeDefinition("GET", "browser-capture-read", "product-acquisition", (path) =>
+    path.length === 4 && exactPath(path.slice(0, 3), "sourcing", "1688", "browser-captures") && isAcquisitionUUID(path[3]!) ? `sourcing/1688/browser-captures/${path[3]}` : null),
+  routeDefinition("POST", "product-acquisition-create", "product-acquisition", (path) =>
+    exactPath(path, "sourcing", "1688", "acquisitions") ? "sourcing/1688/acquisitions" : null),
+  ...Object.entries(planMethods).map(([action,method])=>routeDefinition(method,`product-acquisition-plan-${action as PlanRoute}`,`product-acquisition-plan-${action as PlanRoute}`,path=>planPath(method,path)===action?path.join("/"):null)),
+  routeDefinition("POST","product-agent-start","product-agent-result",path=>path.length===6?agentPath(path,"product-agent"):null),
+  routeDefinition("GET","product-agent-read","product-agent-result",path=>path.length===7?agentPath(path,"product-agent"):null),
+  routeDefinition("POST","product-agent-resume","product-agent-result",path=>path.length===8&&path[7]==="resume"?agentPath(path,"product-agent"):null),
+  routeDefinition("POST","product-agent-review","product-agent-review",path=>path.length===8&&path[7]==="review"?agentPath(path,"product-agent"):null),
+  routeDefinition("POST","product-agent-start","product-agent-content-result",path=>path.length===6?agentPath(path,"content-agent"):null),
+  routeDefinition("GET","product-agent-read","product-agent-source",path=>path.length===5&&path[4]==="source"?ownAgentPath(path):null),
+  routeDefinition("POST","product-agent-start","product-agent-content-result",path=>path.length===5&&path[4]==="runs"?ownAgentPath(path):null),
+  routeDefinition("GET","product-agent-read","product-agent-content-result",path=>path.length===6?ownAgentPath(path):null),
+  routeDefinition("POST","product-agent-resume","product-agent-content-result",path=>path.length===7&&path[6]==="resume"?ownAgentPath(path):null),
+  routeDefinition("POST","product-agent-review","product-agent-review",path=>path.length===7&&path[6]==="review"?ownAgentPath(path):null),
+  routeDefinition("GET","product-agent-read","product-agent-content-result",path=>path.length===7?agentPath(path,"content-agent"):null),
+  routeDefinition("POST","product-agent-resume","product-agent-content-result",path=>path.length===8&&path[7]==="resume"?agentPath(path,"content-agent"):null),
+  routeDefinition("POST","product-agent-review","product-agent-review",path=>path.length===8&&path[7]==="review"?agentPath(path,"content-agent"):null),
+  routeDefinition("POST", "product-acquisition-verify", "product-acquisition", (path) =>
+    exactPath(path, "sourcing", "1688", "acquisitions", "verify") ? "sourcing/1688/acquisitions/verify" : null),
+  routeDefinition("GET", "product-acquisition-read", "product-acquisition", (path) =>
+    path.length === 4 && path[0] === "sourcing" && path[1] === "1688" && path[2] === "acquisitions" && isAcquisitionUUID(path[3]!) ? `sourcing/1688/acquisitions/${path[3]}` : null),
+  routeDefinition("GET", "product-acquisition-product", "product-acquisition-product", (path) =>
+    path.length === 5 && path[0] === "sourcing" && path[1] === "1688" && path[2] === "acquisitions" && isAcquisitionUUID(path[3]!) && path[4] === "product" ? `sourcing/1688/acquisitions/${path[3]}/product` : null),
+  routeDefinition("GET", "acquisition-image-candidates", "acquisition-image-candidates", (path) =>
+    path.length === 6 && path[0] === "sourcing" && path[1] === "1688" && path[2] === "acquisitions" && isAcquisitionUUID(path[3]!) && path[4] === "main-image" && path[5] === "candidates" ? `sourcing/1688/acquisitions/${path[3]}/main-image/candidates` : null),
+  routeDefinition("POST", "acquisition-image-start", "acquisition-image-accepted", (path) =>
+    path.length === 5 && path[0] === "sourcing" && path[1] === "1688" && path[2] === "acquisitions" && isAcquisitionUUID(path[3]!) && path[4] === "main-image" ? `sourcing/1688/acquisitions/${path[3]}/main-image` : null),
+  routeDefinition("GET", "acquisition-image-read", "acquisition-image-result", (path) =>
+    path.length === 7 && path[0] === "sourcing" && path[1] === "1688" && path[2] === "acquisitions" && isAcquisitionUUID(path[3]!) && path[4] === "main-image" && path[5] === "runs" && isAcquisitionUUID(path[6]!) ? `sourcing/1688/acquisitions/${path[3]}/main-image/runs/${path[6]}` : null),
+  routeDefinition("POST", "acquisition-image-approve", "acquisition-image-accepted", (path) =>
+    path.length === 8 && path[0] === "sourcing" && path[1] === "1688" && path[2] === "acquisitions" && isAcquisitionUUID(path[3]!) && path[4] === "main-image" && path[5] === "runs" && isAcquisitionUUID(path[6]!) && path[7] === "approve" ? `sourcing/1688/acquisitions/${path[3]}/main-image/runs/${path[6]}/approve` : null),
+  routeDefinition("GET", "context-get", "context", (path) =>
+    exactPath(path, "context") ? "context" : null,
+  ),
+  routeDefinition("PUT", "context-switch", "context-switch", (path) =>
+    exactPath(path, "context", "effective-organization")
+      ? "context/effective-organization"
+      : null,
+  ),
+  routeDefinition("GET", "store-list", "store-list", (path) =>
+    exactPath(path, "stores") ? "stores" : null,
+  ),
+  routeDefinition("POST", "store-create", "store-create", (path) =>
+    exactPath(path, "stores") ? "stores" : null,
+  ),
+  routeDefinition("GET", "store-get", "store-item", storeItemPath),
+  routeDefinition("PUT", "store-update", "store-item", storeItemPath),
+  routeDefinition("DELETE", "store-delete", "store-delete", storeItemPath),
+  routeDefinition("POST", "store-enable", "store-item", (path) =>
+    storeActionPath(path, "enable"),
+  ),
+  routeDefinition("POST", "store-disable", "store-item", (path) =>
+    storeActionPath(path, "disable"),
+  ),
+  routeDefinition("POST","store-service-activate","store-service-lifecycle",path=>storeActionPath(path,"activate")),
+  routeDefinition("POST","store-service-renew","store-service-lifecycle",path=>storeActionPath(path,"renew")),
+  routeDefinition("POST","store-service-reactivate","store-service-lifecycle",path=>storeActionPath(path,"reactivate")),
+  routeDefinition("GET","store-connection-applications","store-connection-applications",path=>path.length===4&&path[0]==="stores"&&isAcquisitionUUID(path[1]!)&&path[2]==="connection"&&path[3]==="applications" ? `stores/${path[1]}/connection/applications`:null),
+  routeDefinition("GET","store-connection-read","store-connection-view",path=>path.length === 3&&path[0] === "stores"&&isAcquisitionUUID(path[1]!)&&path[2] === "connection" ? `stores/${path[1]}/connection`:null),
+  ...(["begin","complete","query","disconnect","token","refresh"] as const).map(action=>routeDefinition("POST",`store-connection-${action}`,action === "begin" ? "store-connection-begin":"store-connection-view",path=>path.length === 4&&path[0] === "stores"&&isAcquisitionUUID(path[1]!)&&path[2] === "connection"&&path[3] === action ? `stores/${path[1]}/connection/${action}`:null)),
+  routeDefinition("GET", "source-account-list", "source-account-list", (path) =>
+    exactPath(path, "source-accounts") ? "source-accounts" : null,
+  ),
+  routeDefinition("POST", "source-account-create", "source-account-create", (path) =>
+    exactPath(path, "source-accounts") ? "source-accounts" : null,
+  ),
+  routeDefinition(
+    "GET",
+    "source-account-detail",
+    "source-account-detail",
+    sourceAccountItemPath,
+  ),
+  routeDefinition(
+    "POST",
+    "source-account-disable",
+    "source-account-mutation",
+    (path) => sourceAccountActionPath(path, "disable"),
+  ),
+  routeDefinition(
+    "POST",
+    "source-account-enable",
+    "source-account-mutation",
+    (path) => sourceAccountActionPath(path, "enable"),
+  ),
+] as const satisfies readonly WorkbenchRouteDefinition[];
+
+export async function buildWorkbenchUpstreamRequest(
+  request: Request,
+  path: string[],
+  accessToken: string,
+  authenticatedActorSubject = "",
+): Promise<WorkbenchUpstreamRequest | Response> {
+  const route = resolveAllowlistedRoute(request.method, path);
+  if (!route) {
+    return protocolError(
+      404,
+      "INVALID_REQUEST",
+      "Workbench route is not allowed",
+    );
+  }
+  const collectionContract = route.requestContract.startsWith("collection-");
+  const supplyContract = route.requestContract.startsWith("supply-");
+  const imageSetContract = route.requestContract.startsWith("image-set-");
+  const analysisContract = route.requestContract.startsWith("product-agent-image-analysis-");
+  if (
+    (supplyContract || collectionContract || route.requestContract.startsWith("store-") ||
+      route.requestContract.startsWith("source-account-") ||
+      (route.requestContract.startsWith("product-acquisition-") || route.requestContract.startsWith("browser-capture-") || (imageSetContract || route.requestContract.startsWith("acquisition-image-")) || route.requestContract.startsWith("product-agent-") || route.requestContract.startsWith("ai-"))) &&
+    new URL(request.url).pathname !==
+      `/api/workbench/${route.upstreamPath}`
+  ) {
+    return protocolError(
+      404,
+      "INVALID_REQUEST",
+      "Workbench route is not allowed",
+    );
+  }
+
+  const headers = new Headers({
+    Accept: "application/json",
+    Authorization: `Bearer ${accessToken}`,
+  });
+  const requestId = readRequestId(request.headers);
+  headers.set("X-Request-ID", requestId);
+  let body: BodyInit | undefined;
+  let query = "";
+  let expectedCollectionMedia: string | undefined;
+
+  if (route.requestContract === "context-switch") {
+    const rawBody = await readRequestBody(request, SWITCH_REQUEST_BODY_MAX_BYTES);
+    if (rawBody instanceof Response) return rawBody;
+    const organizationId = parseSwitchOrganizationBody(rawBody);
+    if (!organizationId) {
+      return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+    }
+    body = JSON.stringify({ organizationId });
+    headers.set("Content-Type", "application/json");
+    headers.set("X-Requested-Organization-ID", organizationId);
+  } else {
+    const selectedOrganization = (supplyContract || collectionContract || route.requestContract.startsWith("source-account-") || (route.requestContract.startsWith("product-acquisition-") || route.requestContract.startsWith("browser-capture-") || (imageSetContract || route.requestContract.startsWith("acquisition-image-")) || route.requestContract.startsWith("product-agent-") || route.requestContract.startsWith("ai-")))
+      ? readSourceSelectedOrganization(request)
+      : readSelectedOrganization(request);
+    if (selectedOrganization instanceof Response) return selectedOrganization;
+    if (
+      supplyContract || collectionContract || route.requestContract.startsWith("store-") ||
+      route.requestContract.startsWith("source-account-") || (route.requestContract.startsWith("product-acquisition-") || route.requestContract.startsWith("browser-capture-") || (imageSetContract || route.requestContract.startsWith("acquisition-image-")) || route.requestContract.startsWith("product-agent-") || route.requestContract.startsWith("ai-"))
+    ) {
+      const expectedOrganization = readExpectedOrganizationAssertion(
+        request.headers,
+      );
+      if (
+        !expectedOrganization ||
+        !selectedOrganization ||
+        expectedOrganization !== selectedOrganization
+      ) {
+        return protocolError(
+          409,
+          "ORGANIZATION_CONTEXT_CHANGED",
+          "Organization context changed",
+        );
+      }
+    }
+    if (selectedOrganization) {
+      headers.set("X-Requested-Organization-ID", selectedOrganization);
+    }
+
+    if (analysisContract) {
+      const action=route.requestContract.slice("product-agent-image-analysis-".length) as AnalysisRoute,url=new URL(request.url);
+      if(!authenticatedActorSubject||request.headers.get(EXPECTED_USER_ID_HEADER)!==authenticatedActorSubject)return protocolError(409,"IDENTITY_CONTEXT_CHANGED","Identity context changed");
+      if(analysisMethods[action]==="GET"){
+        if(!(await requestHasNoBody(request))||request.headers.has("Idempotency-Key"))return protocolError(400,"INVALID_REQUEST","Analysis read invalid");
+        for(const key of url.searchParams.keys())if(action!=="recent"||key!=="cursor"||url.searchParams.getAll(key).length!==1||!isAcquisitionUUID(url.searchParams.get(key)??""))return protocolError(400,"INVALID_REQUEST","Analysis query invalid");
+        query=url.search;
+      }else{
+        const boundary=validateSourceMutationBoundary(request,authenticatedActorSubject);if(boundary)return boundary;
+        if(url.search||request.headers.get("content-type")!=="application/json"||request.headers.has("content-encoding"))return protocolError(400,"INVALID_REQUEST","Analysis body invalid");
+        const raw=await readRequestBody(request,8192,"INPUT_TOO_LARGE");if(raw instanceof Response)return raw;
+        const parsed=parseJSONBody(raw),checked=analysisRequestSchema(action).safeParse(parsed?.payload);
+        if(!parsed||!checked.success)return protocolError(400,"INVALID_REQUEST","Analysis body invalid");
+        if(action==="prepare"){const key=request.headers.get("Idempotency-Key")??"";if(!isAcquisitionUUID(key))return protocolError(400,"INVALID_REQUEST","Analysis key invalid");headers.set("Idempotency-Key",key)}
+        else if(request.headers.has("Idempotency-Key"))return protocolError(400,"INVALID_REQUEST","Unexpected analysis key");
+        body=JSON.stringify(checked.data);headers.set("Content-Type","application/json");
+      }
+    } else if (imageSetContract) {
+      const action=route.requestContract.slice(10) as ImageSetRoute;
+      const url=new URL(request.url);
+      if(!authenticatedActorSubject || request.headers.get(EXPECTED_USER_ID_HEADER)!==authenticatedActorSubject)return protocolError(409,"IDENTITY_CONTEXT_CHANGED","Identity context changed");
+      if(imageSetMethods[action]==="GET"){
+        if(!(await requestHasNoBody(request))||request.headers.has("Idempotency-Key"))return protocolError(400,"INVALID_REQUEST","Image read request invalid");
+        const allowed=action==="sources"?["effectiveCatalogVersion","applyReceiptId"]:action==="recent"?["cursor"]:[];
+        for(const key of url.searchParams.keys()){
+          const values=url.searchParams.getAll(key);const value=values[0]??"";
+          if(!allowed.includes(key)||values.length!==1||!value||key==="effectiveCatalogVersion"&&!catalogVersionSchema.safeParse(value).success||(key==="applyReceiptId"||key==="cursor")&&!isAcquisitionUUID(value))return protocolError(400,"INVALID_REQUEST","Image query invalid");
+        }
+        query=url.search;
+      }else{
+        const boundary=validateSourceMutationBoundary(request,authenticatedActorSubject);if(boundary)return boundary;
+        if(url.search||request.headers.get("content-type")!=="application/json"||request.headers.has("content-encoding"))return protocolError(400,"INVALID_REQUEST","Image body invalid");
+        const raw=await readRequestBody(request,128*1024,"INPUT_TOO_LARGE");if(raw instanceof Response)return raw;
+        const parsed=parseJSONBody(raw);const validated=parsed?imageSetRequestSchema(action).safeParse(parsed.payload):null;
+        if(!validated?.success)return protocolError(400,"INVALID_REQUEST","Image body invalid");
+        if(action==="prepare"||action==="regenerate"){
+          const key=request.headers.get("Idempotency-Key")??"";if(!isAcquisitionUUID(key))return protocolError(400,"INVALID_REQUEST","Image key invalid");headers.set("Idempotency-Key",key);
+        }else if(request.headers.has("Idempotency-Key"))return protocolError(400,"INVALID_REQUEST","Unexpected image key");
+        headers.set("Content-Type","application/json");body=JSON.stringify(validated.data);
+      }
+    } else if (route.requestContract === "supply-submission-overview-metrics" || route.requestContract === "supply-cockpit-metrics" || route.requestContract === "supply-walmart-feed-metrics" || route.requestContract === "supply-tiktok-publish-metrics" || route.requestContract === "supply-shein-publish-metrics" || route.requestContract === "supply-temu-create-metrics" || route.requestContract === "ai-task-cockpit-metrics") {
+      if (!authenticatedActorSubject || request.headers.get(EXPECTED_USER_ID_HEADER) !== authenticatedActorSubject)
+        return protocolError(409, "IDENTITY_CONTEXT_CHANGED", "Identity context changed");
+      const url = new URL(request.url);
+      const maxStores = route.requestContract === "supply-walmart-feed-metrics" || route.requestContract === "supply-tiktok-publish-metrics" || route.requestContract === "supply-shein-publish-metrics" || route.requestContract === "supply-temu-create-metrics" ? 1 : undefined;
+      if (!isCockpitMetricsQuery(url, maxStores) || request.headers.has("Idempotency-Key") ||
+        request.headers.has("content-encoding") || !(await requestHasNoBody(request)))
+        return protocolError(400, "INVALID_REQUEST", "Metrics query is invalid");
+      query = url.search;
+    } else if (supplyContract) {
+      const action=route.requestContract.slice(7) as SupplyRoute;
+      if(!authenticatedActorSubject || request.headers.get(EXPECTED_USER_ID_HEADER)!==authenticatedActorSubject)return protocolError(409,"IDENTITY_CONTEXT_CHANGED","Identity context changed");
+      const url=new URL(request.url);
+      const schema=supplyRequestSchema(action);
+      if(supplyMutates(action)){const boundary=validateSourceMutationBoundary(request,authenticatedActorSubject);if(boundary)return boundary;}
+      if(schema){
+        const key=readCanonicalUUIDHeader(request.headers,"Idempotency-Key");
+        if(url.search || request.headers.get("content-type")!=="application/json" || request.headers.has("content-encoding") || (supplyUsesKey(action)?!key:request.headers.has("Idempotency-Key")))return protocolError(400,"INVALID_REQUEST","Supply command invalid");
+        const raw=await readRequestBody(request,action.startsWith("materials-")?8192:action==="save-completion-draft"?COMPLETION_MAX_BYTES:SUPPLY_MAX_BYTES,"INPUT_TOO_LARGE");if(raw instanceof Response)return raw;
+        const parsed=parseJSONBody(raw);const checked=schema.safeParse(parsed?.payload);
+        if(!parsed || !checked.success)return protocolError(400,"INVALID_REQUEST","Supply command invalid");
+        if(action==="approve" && "actionId" in checked.data && checked.data.actionId && checked.data.actionId!==key)return protocolError(400,"INVALID_REQUEST","Approval action differs from its original key");
+        body=JSON.stringify(checked.data);headers.set("Content-Type","application/json");if(key)headers.set("Idempotency-Key",key);
+      }else{
+        if(request.headers.has("Idempotency-Key") || ((action==="item-completion-drafts"||action.startsWith("completion-history"))&&request.headers.has("content-encoding")) || !(await requestHasNoBody(request)))return protocolError(400,"INVALID_REQUEST","Body or command key is not allowed");
+        const allowed=action==="local-context"?new Set(["sourceId","completionRecordId","revision"]):action==="completion-history"?new Set(["before","limit"]):["upload-plans","item-completion-drafts","completion-drafts","list","sources","stages","operation-items","operations","optimization-options"].includes(action)?new Set(["limit","after",...action==="stages"?["storeId","stage","keyword","sourceKind","planId"]:action==="operations"?["storeId"]:action==="optimization-options"||action==="upload-plans"?[]:["keyword"]]):new Set<string>();
+        if(/%(?![0-9A-Fa-f]{2})/.test(url.search)||(action==="operations"||action==="stages")&&!isAcquisitionUUID(url.searchParams.get("storeId")??"")||action==="stages"&&!["all","waiting","missing","ready","review","uploaded"].includes(url.searchParams.get("stage")??""))return protocolError(400,"INVALID_REQUEST","Supply query invalid");
+        for(const key of url.searchParams.keys()){
+          const values=url.searchParams.getAll(key);if(!allowed.has(key)||values.length!==1||!values[0])return protocolError(400,"INVALID_REQUEST","Supply query invalid");
+          const value=values[0];if(key==="before"&&completionRevision(value)===null||key==="limit"&&(!/^[1-9][0-9]*$/.test(value)||Number(value)>100)||(key==="after"||key==="storeId"||key==="planId")&&!isAcquisitionUUID(value)||key==="sourceKind"&&!collectionSourceKindSchema.safeParse(value).success||key==="keyword"&&(new TextEncoder().encode(value).length>80||/[\0\r\n]/.test(value)))return protocolError(400,"INVALID_REQUEST","Supply query invalid");
+        }
+        if(action==="local-context" && ([...url.searchParams.keys()].length!==3 || !isAcquisitionUUID(url.searchParams.get("sourceId")??"") || !isAcquisitionUUID(url.searchParams.get("completionRecordId")??"") || completionRevision(url.searchParams.get("revision"))===null))return protocolError(400,"INVALID_REQUEST","Local context invalid");
+        query=url.search;
+      }
+    } else if (collectionContract) {
+      const action = route.requestContract.slice(11) as CollectionRoute;
+      const url = new URL(request.url);
+      if (!authenticatedActorSubject || request.headers.get(EXPECTED_USER_ID_HEADER)!==authenticatedActorSubject)return protocolError(409,"IDENTITY_CONTEXT_CHANGED","Identity context changed");
+      if(action === "media-upload") {
+        const boundary=validateSourceMutationBoundary(request,authenticatedActorSubject);if(boundary)return boundary;
+        const hash=request.headers.get("X-Content-SHA256");
+        if(url.search||request.headers.get("content-type")!=="application/octet-stream"||!hash||! /^[a-f0-9]{64}$/.test(hash)||request.headers.has("content-encoding")||request.headers.has("Idempotency-Key"))return protocolError(400,"INVALID_REQUEST","Media upload invalid");
+        const raw=await readRequestBody(request,3*1024*1024,"INPUT_TOO_LARGE");if(raw instanceof Response)return raw;
+        if(!raw.length)return protocolError(400,"INVALID_REQUEST","Media upload empty");
+        body=new Blob([new Uint8Array(raw)]);headers.set("Content-Type","application/octet-stream");headers.set("X-Content-SHA256",hash);expectedCollectionMedia=`${hash}:${raw.length}`;
+      } else if(action === "media-read") {
+        if(!(await requestHasNoBody(request))||request.headers.has("Idempotency-Key")||[...url.searchParams.keys()].length!==1||url.searchParams.getAll("bytes").length!==1||! /^[1-9][0-9]*$/.test(url.searchParams.get("bytes")??"")||Number(url.searchParams.get("bytes"))>3*1024*1024)return protocolError(400,"INVALID_REQUEST","Media verification invalid");
+        query=url.search;expectedCollectionMedia=`${path[2]}:${url.searchParams.get("bytes")}`;
+      } else if (action === "import-preview") {
+        const boundary=validateSourceMutationBoundary(request,authenticatedActorSubject); if(boundary)return boundary;
+        const media="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if(url.search||request.headers.get("content-type")!==media||request.headers.has("content-encoding")||request.headers.has("Idempotency-Key"))return protocolError(400,"INVALID_REQUEST","Import request invalid");
+        const raw=await readRequestBody(request,COLLECTION_MAX_BYTES,"INPUT_TOO_LARGE");if(raw instanceof Response)return raw;
+        body=new Blob([new Uint8Array(raw)]);headers.set("Content-Type",media);
+      } else if (action === "command") {
+        const boundary = validateSourceMutationBoundary(request, authenticatedActorSubject);
+        if (boundary) return boundary;
+        const key = readCanonicalUUIDHeader(request.headers, "Idempotency-Key");
+        if (!key || url.search || request.headers.get("content-type") !== "application/json" || request.headers.has("content-encoding"))
+          return protocolError(400, "INVALID_REQUEST", "Collection command is invalid");
+        const raw = await readRequestBody(request, COLLECTION_MAX_BYTES, "INPUT_TOO_LARGE");
+        if (raw instanceof Response) return raw;
+        const parsed = parseJSONBody(raw);
+        const checked = collectionCommandSchema.safeParse(parsed?.payload);
+        if (!parsed || !checked.success) return protocolError(400, "INVALID_REQUEST", "Collection command is invalid");
+        body = JSON.stringify(checked.data);
+        headers.set("Content-Type", "application/json");
+        headers.set("Idempotency-Key", key);
+      } else {
+        if (!(await requestHasNoBody(request))) return protocolError(400, "INVALID_REQUEST", "Body is not allowed");
+        if((action==="batch"||action==="history"||action==="history-detail")&&(request.headers.has("Idempotency-Key")||request.headers.has("content-encoding")))return protocolError(400,"INVALID_REQUEST","Collection read invalid");
+        const allowed = action==="history"?new Set(["limit","before"]):action === "batches" || action === "items" || action === "own" ? new Set(["limit", "after", "keyword"]) : new Set<string>();
+        for (const key of url.searchParams.keys()) {
+          const values = url.searchParams.getAll(key);
+          if (!allowed.has(key) || values.length !== 1 || values[0] === "") return protocolError(400, "INVALID_REQUEST", "Collection query is invalid");
+          const value = values[0]!;
+          if (key === "limit" && (!/^[1-9][0-9]*$/.test(value) || Number(value) > (action==="history"?20:100)) || key==="before"&&!collectionVersion.safeParse(value).success ||
+              key === "after" && !isAcquisitionUUID(value) ||
+              key === "keyword" && (new TextEncoder().encode(value).length > 80 || /[\0\r\n]/.test(value)))
+            return protocolError(400, "INVALID_REQUEST", "Collection query is invalid");
+        }
+        query = url.search;
+      }
+    } else if (route.requestContract.startsWith("ai-")) {
+      const action = route.requestContract.slice(3) as AIWorkbenchRoute;
+      if (!authenticatedActorSubject || request.headers.get(EXPECTED_USER_ID_HEADER) !== authenticatedActorSubject)
+        return protocolError(409, "IDENTITY_CONTEXT_CHANGED", "Identity context changed");
+      const scopeOptions = action === "scope-options" || action === "task-scope-options";
+      const listed = action === "conversation-list" || action === "conversation-read" || action === "task-list" || scopeOptions || action==="schedule-list"||action==="schedule-history";
+      if (listed) {
+        if (!(await requestHasNoBody(request))) return protocolError(400, "INVALID_REQUEST", "Body is not allowed");
+        const url = new URL(request.url);
+        const allowed = action === "conversation-read" ? new Set(["limit", "before"])
+          : action === "conversation-list" ? new Set(["limit", "after", "saved", "archived"])
+          : scopeOptions ? new Set(["kind", "projectId", "storeId", "after"]) : action.startsWith("schedule-")?new Set(["limit","after",...(action==="schedule-list"?["kind"]:[])]):new Set(["limit", "after", "scopeKind", "projectId", "storeId"]);
+        const selected = new URLSearchParams();
+        for (const [name, value] of url.searchParams) {
+          if (!allowed.has(name) || selected.has(name) || !value ||
+            (name === "limit" && (!/^[1-9][0-9]?$/.test(value) || Number(value) > 50)) ||
+            (name === "after" && !(action === "conversation-list" ? /^[A-Za-z0-9_-]{32}$/.test(value) : scopeOptions || url.searchParams.has("scopeKind") ? /^[A-Za-z0-9_-]{1,512}$/.test(value) : isAcquisitionUUID(value))) ||
+            ((name === "kind" || name === "scopeKind") && !(action==="schedule-list"&&name==="kind"?["product.content.localize","store.operating-daily-report"]:["all","general","project","store","unrecorded"]).includes(value)) ||
+            ((name === "projectId" || name === "storeId") && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value)) ||
+            ((name === "saved" || name === "archived") && value !== "true") ||
+            (name === "before" && !/^[1-9][0-9]*$/.test(value))) return protocolError(400, "INVALID_REQUEST", "Query is invalid");
+          selected.set(name, value);
+        }
+        if (selected.has("saved") && selected.has("archived")) return protocolError(400, "INVALID_REQUEST", "Query is invalid");
+        query = selected.size ? `?${selected.toString()}` : "";
+      } else {
+        if (!hasExactNoQuery(request)) return protocolError(400, "INVALID_REQUEST", "Query is not allowed");
+        if (action === "task-read" || action === "subject-read" || action==="schedule-read"||action==="schedule-availability") {
+          if (!(await requestHasNoBody(request))) return protocolError(400, "INVALID_REQUEST", "Body is not allowed");
+        } else {
+          const assertion = validateSourceMutationBoundary(request, authenticatedActorSubject);
+          if (assertion) return assertion;
+          if (["conversation-create", "message", "store-route", "store-overview", "confirm", "task-start", "task-resume", "task-review","schedule-create","schedule-edit","schedule-pause","schedule-resume","schedule-close","schedule-delete"].includes(action)) {
+            const key = readCanonicalUUIDHeader(request.headers, "Idempotency-Key");
+            if (!key) return protocolError(400, "INVALID_REQUEST", "Idempotency-Key is invalid");
+            headers.set("Idempotency-Key", key);
+          }
+          if (action === "conversation-metadata") {
+            const revision = request.headers.get("If-Match") ?? "";
+            if (!/^[1-9][0-9]*$/.test(revision)) return protocolError(400, "INVALID_REQUEST", "If-Match is invalid");
+            headers.set("If-Match", revision);
+          }
+          if (["confirm", "task-start", "task-review"].includes(action)) {
+            if (!(await requestHasNoBody(request))) return protocolError(400, "INVALID_REQUEST", "Body is not allowed");
+          } else {
+            if (request.headers.get("content-type") !== "application/json" || request.headers.has("content-encoding"))
+              return protocolError(400, "INVALID_REQUEST", "Content type is invalid");
+            const raw = await readRequestBody(request, 16 * 1024, "INPUT_TOO_LARGE");
+            if (raw instanceof Response) return raw;
+            const parsed = parseJSONBody(raw);
+            const schema = action==="schedule-quote"||action==="schedule-create"?aiScheduleInput:action==="schedule-edit"?aiScheduleEdit:action.startsWith("schedule-")?aiScheduleControl:action === "conversation-create" ? aiCreateBody : action === "message" ? aiMessageBody : action === "store-route" ? aiStoreRouteBody : action === "store-overview" ? aiStoreOverviewBody : action === "conversation-metadata" ? aiMetadataBody : aiResumeBody;
+            const valid = schema.safeParse(parsed?.payload);
+            if (!parsed || !valid.success) return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+            body = JSON.stringify(valid.data);
+            headers.set("Content-Type", "application/json");
+          }
+        }
+      }
+    } else switch (route.requestContract) {
+      case "store-connection-applications":
+      case "store-connection-read":
+      case "store-connection-begin":
+      case "store-connection-complete":
+      case "store-connection-refresh":
+      case "store-connection-query":
+      case "store-connection-token":
+      case "store-connection-disconnect": {
+        if(!hasExactNoQuery(request) || request.headers.get(EXPECTED_USER_ID_HEADER) !== authenticatedActorSubject || !authenticatedActorSubject) return protocolError(409,"IDENTITY_CONTEXT_CHANGED","Identity context changed");
+        if(route.requestContract === "store-connection-read" || route.requestContract === "store-connection-applications") {if(!(await requestHasNoBody(request)))return protocolError(400,"INVALID_REQUEST","Body is not allowed");break;}
+        const assertion=validateSourceMutationBoundary(request,authenticatedActorSubject);if(assertion)return assertion;
+        if(route.requestContract === "store-connection-begin" || route.requestContract === "store-connection-disconnect") {
+          if(route.requestContract === "store-connection-disconnect" && !(await requestHasNoBody(request)))return protocolError(400,"INVALID_REQUEST","Body is not allowed");
+          const key=readCanonicalUUIDHeader(request.headers,"Idempotency-Key"),match=readIfMatchHeader(request.headers);
+          if(!key||!match)return protocolError(400,"INVALID_REQUEST","Required header is invalid");
+          headers.set("Idempotency-Key",key);headers.set("If-Match",match);
+          if(route.requestContract==="store-connection-begin") {
+            if(request.headers.get("content-type")!=="application/json" || request.headers.has("content-encoding"))return protocolError(400,"INVALID_REQUEST","Invalid content type");
+            const raw=await readRequestBody(request,1024);if(raw instanceof Response)return raw;
+            const parsed=parseJSONBody(raw),valid=officialConnectionStartSchema.safeParse(parsed?.payload);
+            if(!parsed||!valid.success)return protocolError(400,"INVALID_REQUEST","Invalid application choice");
+            body=JSON.stringify(valid.data);headers.set("Content-Type","application/json");
+          }
+          break;
+        }
+        if(request.headers.has("Idempotency-Key")||request.headers.has("If-Match")||request.headers.get("content-type") !== "application/json"||request.headers.has("content-encoding"))return protocolError(400,"INVALID_REQUEST","Request is invalid");
+        const raw=await readRequestBody(request,8192);if(raw instanceof Response)return raw;const parsed=parseJSONBody(raw);
+        const valid=(route.requestContract === "store-connection-refresh" ? officialConnectionRefreshSchema:route.requestContract === "store-connection-query" ? officialConnectionQuerySchema:route.requestContract === "store-connection-token" ? officialConnectionInstallSchema:officialConnectionCompleteSchema).safeParse(parsed?.payload);
+        if(!parsed||!valid.success)return protocolError(400,"INVALID_REQUEST","Request is invalid");body=JSON.stringify(valid.data);headers.set("Content-Type","application/json");break;
+      }
+      case "product-agent-start":
+      case "product-agent-read":
+      case "product-agent-resume":
+      case "product-agent-review": {
+        if(!hasExactNoQuery(request))return protocolError(400,"INVALID_REQUEST","Query is not allowed");
+        const actor=request.headers.get(EXPECTED_USER_ID_HEADER);
+        if(!actor || actor!==authenticatedActorSubject)return protocolError(409,"IDENTITY_CONTEXT_CHANGED","Identity context changed");
+        if(route.requestContract==="product-agent-read") {if(!(await requestHasNoBody(request)))return protocolError(400,"INVALID_REQUEST","Body is not allowed");break;}
+        const assertion=validateSourceMutationBoundary(request,authenticatedActorSubject);if(assertion)return assertion;
+        if(request.headers.get("content-type")!=="application/json" || request.headers.has("content-encoding"))return protocolError(400,"INVALID_REQUEST","Invalid content type");
+        const raw=await readRequestBody(request,16384,"INPUT_TOO_LARGE");if(raw instanceof Response)return raw;
+        const parsed=parseJSONBody(raw);
+        const valid=(route.requestContract==="product-agent-start"?(ownAgentPath(path)?ownContentStartRequestSchema:path[4]==="content-agent"?contentAgentStartRequestSchema:agentStartRequestSchema):route.requestContract==="product-agent-resume"?agentResumeRequestSchema:agentEmptyRequestSchema).safeParse(parsed?.payload);
+        if(!parsed || !valid.success)return protocolError(400,"INVALID_REQUEST","Invalid Agent request");
+        if(route.requestContract==="product-agent-start") {const key=request.headers.get("Idempotency-Key")??"";if(!isAcquisitionUUID(key))return protocolError(400,"INVALID_REQUEST","Invalid request key");headers.set("Idempotency-Key",key);}
+        body=JSON.stringify(valid.data);headers.set("Content-Type","application/json");break;
+      }
+      case "product-acquisition-plan-list":
+      case "product-acquisition-plan-create":
+      case "product-acquisition-plan-read":
+      case "product-acquisition-plan-by-key":
+      case "product-acquisition-plan-advance":
+      case "product-acquisition-plan-rules":
+      case "product-acquisition-plan-mutate-rule": {
+        if(route.requestContract==="product-acquisition-plan-list"){
+          const requested=new URL(request.url);
+          const parameters=requested.searchParams;
+          if([...parameters.keys()].some(key=>key!=="after")||parameters.has("after")&&(parameters.getAll("after").length!==1||!isAcquisitionUUID(parameters.get("after")!)))return protocolError(400,"INVALID_REQUEST","Invalid cursor");
+          query=requested.search;
+        }else if(!hasExactNoQuery(request))return protocolError(400,"INVALID_REQUEST","Query is not allowed");
+        const actor=request.headers.get(EXPECTED_USER_ID_HEADER);
+        if(!actor||actor!==authenticatedActorSubject)return protocolError(409,"IDENTITY_CONTEXT_CHANGED","Identity context changed");
+        const action=route.requestContract.slice(25) as PlanRoute;
+        if(request.method==="GET"){
+          if(!(await requestHasNoBody(request)))return protocolError(400,"INVALID_REQUEST","Request body is invalid");
+          break;
+        }
+        const boundary=validateSourceMutationBoundary(request,authenticatedActorSubject);if(boundary)return boundary;
+        if(request.headers.get("content-type")!=="application/json"||request.headers.has("content-encoding"))return protocolError(400,"INVALID_REQUEST","Content-Type is invalid");
+        const key=request.headers.get("Idempotency-Key")??"";
+        if(action!=="advance"&&!isAcquisitionUUID(key))return protocolError(400,"INVALID_REQUEST","Idempotency-Key is invalid");
+        const raw=await readRequestBody(request,65536,"SOURCE_TOO_LARGE");if(raw instanceof Response)return raw;
+        const parsed=parseJSONBody(raw),checked=planRequestSchema(action)?.safeParse(parsed?.payload);
+        if(!parsed||!checked?.success)return protocolError(400,"INVALID_REQUEST","Request body is invalid");
+        body=JSON.stringify(checked.data);headers.set("Content-Type","application/json");
+        if(action!=="advance")headers.set("Idempotency-Key",key);
+        break;
+      }
+      case "browser-capture-create":
+      case "browser-capture-verify":
+      case "browser-capture-by-key":
+      case "browser-capture-read":
+      case "product-acquisition-create":
+      case "product-acquisition-verify":
+      case "product-acquisition-read":
+      case "product-acquisition-product": {
+        if (!hasExactNoQuery(request)) return protocolError(400, "INVALID_REQUEST", "Query is not allowed");
+        const assertedActor = request.headers.get(EXPECTED_USER_ID_HEADER);
+        if (!assertedActor || !isSafeOrganizationId(assertedActor) || assertedActor !== authenticatedActorSubject) {
+          return protocolError(409, "IDENTITY_CONTEXT_CHANGED", "Identity context changed");
+        }
+        if (route.requestContract === "browser-capture-by-key") {
+          const assertion = validateSourceMutationBoundary(request, authenticatedActorSubject, true);
+          if (assertion) return assertion;
+          if (!(await requestHasNoBody(request))) return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+          break;
+        }
+        if (route.requestContract === "product-acquisition-read" || route.requestContract === "product-acquisition-product" || route.requestContract === "browser-capture-read") {
+          if (!(await requestHasNoBody(request))) return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+          break;
+        }
+        const assertion = validateSourceMutationBoundary(request, authenticatedActorSubject);
+        if (assertion) return assertion;
+        if (request.headers.get("content-type") !== "application/json" || request.headers.has("content-encoding")) {
+          return protocolError(400, "INVALID_REQUEST", "Content-Type or encoding is invalid");
+        }
+        const key = request.headers.get("Idempotency-Key") ?? "";
+        if (!isAcquisitionUUID(key)) return protocolError(400, "INVALID_REQUEST", "Idempotency-Key is invalid");
+        const browser = route.requestContract.startsWith("browser-capture-");
+        const raw = await readRequestBody(request, browser ? BROWSER_CAPTURE_MAX_BYTES : ACQUISITION_BODY_MAX_BYTES, "SOURCE_TOO_LARGE");
+        if (raw instanceof Response) return raw;
+        const parsed = parseJSONBody(raw);
+        const validated = browser ? browserCaptureSchema.safeParse(parsed?.payload) : acquisitionRequestSchema.safeParse(parsed?.payload);
+        if (!parsed || !validated.success) return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+        body = browser ? parsed.text : JSON.stringify(validated.data);
+        headers.set("Content-Type", "application/json"); headers.set("Idempotency-Key", key);
+        break;
+      }
+      case "acquisition-image-candidates":
+      case "acquisition-image-start":
+      case "acquisition-image-read":
+      case "acquisition-image-approve": {
+        if (!hasExactNoQuery(request)) return protocolError(400, "INVALID_REQUEST", "Query is not allowed");
+        const assertedActor = request.headers.get(EXPECTED_USER_ID_HEADER);
+        if (!assertedActor || !isSafeOrganizationId(assertedActor) || assertedActor !== authenticatedActorSubject) {
+          return protocolError(409, "IDENTITY_CONTEXT_CHANGED", "Identity context changed");
+        }
+        if (route.requestContract === "acquisition-image-candidates" || route.requestContract === "acquisition-image-read") {
+          if (!(await requestHasNoBody(request))) return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+          break;
+        }
+        const assertion = validateSourceMutationBoundary(request, authenticatedActorSubject);
+        if (assertion) return assertion;
+        if (request.headers.get("content-type") !== "application/json" || request.headers.has("content-encoding")) {
+          return protocolError(400, "INVALID_REQUEST", "Content-Type or encoding is invalid");
+        }
+        const raw = await readRequestBody(request, ACQUISITION_BODY_MAX_BYTES, "INPUT_TOO_LARGE");
+        if (raw instanceof Response) return raw;
+        const parsed = parseJSONBody(raw);
+        if (!parsed) return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+        const schema = route.requestContract === "acquisition-image-start" ? mainImageStartRequestSchema : mainImageApprovalRequestSchema;
+        const validated = schema.safeParse(parsed.payload);
+        if (!validated.success || parsed.root.children?.length !== Object.keys(validated.data).length) return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+        if (route.requestContract === "acquisition-image-start") {
+          const key = request.headers.get("Idempotency-Key") ?? "";
+          if (!isAcquisitionUUID(key)) return protocolError(400, "INVALID_REQUEST", "Idempotency-Key is invalid");
+          headers.set("Idempotency-Key", key);
+        }
+        body = JSON.stringify(validated.data);
+        headers.set("Content-Type", "application/json");
+        break;
+      }
+      case "context-get":
+        break;
+      case "store-list": {
+        const parsedQuery = parseStoreListQuery(new URL(request.url).searchParams);
+        if (parsedQuery === null) {
+          return protocolError(400, "INVALID_REQUEST", "Query is invalid");
+        }
+        query = parsedQuery ? `?${parsedQuery}` : "";
+        break;
+      }
+      case "store-create": {
+        if (!hasNoQuery(request)) {
+          return protocolError(400, "INVALID_REQUEST", "Query is not allowed");
+        }
+        const idempotencyKey = readCanonicalUUIDHeader(
+          request.headers,
+          "Idempotency-Key",
+        );
+        if (!idempotencyKey) {
+          return protocolError(400, "INVALID_REQUEST", "Idempotency-Key is invalid");
+        }
+        const rawBody = await readRequestBody(request, STORE_REQUEST_BODY_MAX_BYTES);
+        if (rawBody instanceof Response) return rawBody;
+        const payload = parseStoreBody(rawBody, "create");
+        if (!payload) {
+          return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+        }
+        body = JSON.stringify(payload);
+        headers.set("Content-Type", "application/json");
+        headers.set("Idempotency-Key", idempotencyKey);
+        break;
+      }
+      case "store-update": {
+        if (!hasNoQuery(request)) {
+          return protocolError(400, "INVALID_REQUEST", "Query is not allowed");
+        }
+        const ifMatch = readIfMatchHeader(request.headers);
+        if (!ifMatch) {
+          return protocolError(400, "INVALID_REQUEST", "If-Match is invalid");
+        }
+        const rawBody = await readRequestBody(request, STORE_REQUEST_BODY_MAX_BYTES);
+        if (rawBody instanceof Response) return rawBody;
+        const payload = parseStoreBody(rawBody, "update");
+        if (!payload) {
+          return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+        }
+        body = JSON.stringify(payload);
+        headers.set("Content-Type", "application/json");
+        headers.set("If-Match", ifMatch);
+        break;
+      }
+      case "store-delete": {
+        if (!hasNoQuery(request) || !(await requestHasNoBody(request))) {
+          return protocolError(400, "INVALID_REQUEST", "Request is invalid");
+        }
+        const idempotencyKey = readCanonicalUUIDHeader(
+          request.headers,
+          "Idempotency-Key",
+        );
+        const ifMatch = readIfMatchHeader(request.headers);
+        if (!idempotencyKey || !ifMatch) {
+          return protocolError(400, "INVALID_REQUEST", "Required header is invalid");
+        }
+        headers.set("Idempotency-Key", idempotencyKey);
+        headers.set("If-Match", ifMatch);
+        break;
+      }
+      case "store-enable":
+      case "store-disable":
+      {
+        if (!hasNoQuery(request) || !(await requestHasNoBody(request))) {
+          return protocolError(400, "INVALID_REQUEST", "Request is invalid");
+        }
+        const ifMatch = readIfMatchHeader(request.headers);
+        if (!ifMatch) {
+          return protocolError(400, "INVALID_REQUEST", "If-Match is invalid");
+        }
+        headers.set("If-Match", ifMatch);
+        break;
+      }
+      case "store-service-activate":
+      case "store-service-renew":
+      case "store-service-reactivate": {
+        const assertion=validateSourceMutationBoundary(request,authenticatedActorSubject);if(assertion)return assertion;
+        if (!hasNoQuery(request)) {
+          return protocolError(400, "INVALID_REQUEST", "Query is not allowed");
+        }
+        const idempotencyKey = readCanonicalUUIDHeader(
+          request.headers,
+          "Idempotency-Key",
+        );
+        const ifMatch = readIfMatchHeader(request.headers);
+        if (!idempotencyKey || !ifMatch) {
+          return protocolError(400, "INVALID_REQUEST", "Required header is invalid");
+        }
+        const rawBody = await readRequestBody(request, STORE_REQUEST_BODY_MAX_BYTES);
+        if (rawBody instanceof Response) return rawBody;
+        const action = route.requestContract.slice("store-service-".length) as
+          | "activate"
+          | "renew"
+          | "reactivate";
+        const payload = parseServiceLifecycleBody(rawBody, action);
+        if (!payload) {
+          return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+        }
+        body = JSON.stringify(payload);
+        headers.set("Content-Type", "application/json");
+        headers.set("Idempotency-Key", idempotencyKey);
+        headers.set("If-Match", ifMatch);
+        break;
+      }
+      case "store-get":
+        if (!hasNoQuery(request)) {
+          return protocolError(400, "INVALID_REQUEST", "Query is not allowed");
+        }
+        break;
+      case "source-account-list": {
+        if (!(await requestHasNoBody(request))) {
+          return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+        }
+        const parsedQuery = parseSourceAccountListQuery(request.url);
+        if (parsedQuery === null) {
+          return protocolError(400, "INVALID_REQUEST", "Query is invalid");
+        }
+        query = `?${parsedQuery}`;
+        break;
+      }
+      case "source-account-detail":
+        if (!hasExactNoQuery(request) || !(await requestHasNoBody(request))) {
+          return protocolError(400, "INVALID_REQUEST", "Request is invalid");
+        }
+        break;
+      case "source-account-create": {
+        const assertion = validateSourceMutationBoundary(
+          request,
+          authenticatedActorSubject,
+        );
+        if (assertion) return assertion;
+        if (!hasExactNoQuery(request)) {
+          return protocolError(400, "INVALID_REQUEST", "Query is not allowed");
+        }
+        if (request.headers.get("content-type") !== "application/json") {
+          return protocolError(400, "INVALID_REQUEST", "Content-Type is invalid");
+        }
+        const idempotencyKey = readSourceAccountOperationHeader(
+          request.headers,
+          "Idempotency-Key",
+        );
+        if (!idempotencyKey) {
+          return protocolError(400, "INVALID_REQUEST", "Idempotency-Key is invalid");
+        }
+        const rawBody = await readRequestBody(
+          request,
+          SOURCE_ACCOUNT_REQUEST_BODY_MAX_BYTES,
+          "INPUT_TOO_LARGE",
+        );
+        if (rawBody instanceof Response) return rawBody;
+        const payload = parseSourceAccountCreateBody(rawBody);
+        if (!payload) {
+          return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+        }
+        body = JSON.stringify(payload);
+        headers.set("Content-Type", "application/json");
+        headers.set("Idempotency-Key", idempotencyKey);
+        break;
+      }
+      case "source-account-enable":
+      case "source-account-disable": {
+        const assertion = validateSourceMutationBoundary(
+          request,
+          authenticatedActorSubject,
+        );
+        if (assertion) return assertion;
+        if (!hasExactNoQuery(request) || !(await requestHasNoBody(request))) {
+          return protocolError(400, "INVALID_REQUEST", "Request is invalid");
+        }
+        const idempotencyKey = readSourceAccountOperationHeader(
+          request.headers,
+          "Idempotency-Key",
+        );
+        const ifMatch = readSourceAccountIfMatch(request.headers);
+        if (!idempotencyKey || !ifMatch) {
+          return protocolError(400, "INVALID_REQUEST", "Required header is invalid");
+        }
+        headers.set("Idempotency-Key", idempotencyKey);
+        headers.set("If-Match", ifMatch);
+        break;
+      }
+    }
+  }
+
+  return {
+    url: `${getServiceRoot()}/workbench/${route.upstreamPath}${query}`,
+    init: {
+      method: request.method.toUpperCase(),
+      headers,
+      body,
+      cache: "no-store",
+    },
+    responseContract: route.responseContract,
+    expectedStoreId:analysisContract?JSON.stringify(analysisBinding(path,headers.get("Idempotency-Key")??undefined)):route.requestContract==="ai-subject-read"?`${path[2]}:${path[3]}`: imageSetContract ? JSON.stringify(imageSetResponseBinding(path,route.requestContract.slice(10) as ImageSetRoute)) : expectedCollectionMedia ?? (
+      route.requestContract.startsWith("supply-shein-")&&route.requestContract!=="supply-shein-completion-preview"&&route.requestContract!=="supply-shein-sales-mapping-preview"&&typeof body==="string"?JSON.stringify({...JSON.parse(body),key:headers.get("Idempotency-Key")??JSON.parse(body).key}):
+      route.requestContract==="supply-local-context"?`${new URL(request.url).searchParams.get("sourceId")}:${new URL(request.url).searchParams.get("completionRecordId")}:${new URL(request.url).searchParams.get("revision")}`:
+      route.requestContract==="supply-color-split-list"?`${path[2]}:${path[4]}`:
+ route.requestContract==="supply-color-split-family"?`${path[2]}:${path[4]}`:
+ ["supply-color-split-preview","supply-create-color-split"].includes(route.requestContract)&&typeof body==="string"?body:
+ (route.requestContract==="supply-shein-completion-preview"||route.requestContract==="supply-shein-sales-mapping-preview")&&typeof body==="string"?body:
+      route.requestContract.startsWith("supply-materials-")?`${path[2]}:${path[5]??request.headers.get("Idempotency-Key")??(typeof body==="string"?JSON.parse(body).requestKey:"")}`:
+      route.requestContract==="product-acquisition-plan-read"||route.requestContract==="product-acquisition-plan-advance"?path[3]:
+      ["supply-cancel-upload-plan","supply-upload-plan","supply-upload-plan-preview","supply-continue-upload-plan","supply-upload-plan-command"].includes(route.requestContract)?path[2]:
+      route.requestContract==="supply-completion-history"?`${path[2]}:${new URL(request.url).searchParams.get("before")??0}:${new URL(request.url).searchParams.get("limit")??20}`:
+      route.requestContract==="supply-completion-history-detail"?`${path[2]}:${path[5]}`:
+      (route.requestContract==="supply-target"||route.requestContract==="supply-publication"||route.requestContract==="supply-publication-status") ? `${path[2]}:${path[4]}` :
+      ["supply-product-inputs","supply-item-completion-drafts","supply-completion-draft","supply-completion-drafts","supply-source","supply-preparation","supply-record","supply-operation","supply-ensure","supply-cancel"].includes(route.requestContract) ? (["supply-preparation","supply-completion-drafts"].includes(route.requestContract)?path[1]:path[2]) :
+      route.requestContract === "collection-detail" || route.requestContract === "collection-batch" ? path[2] :
+      route.requestContract === "collection-history" ? path[2] :
+      route.requestContract === "collection-history-detail" ? `${path[2]}:${path[4]}` :
+      route.requestContract.startsWith("product-agent-") ? (ownAgentPath(path)?path[5]??request.headers.get("Idempotency-Key")??undefined:path[6]??request.headers.get("Idempotency-Key")??undefined) :
+      (route.requestContract === "acquisition-image-candidates") ? path[3] :
+      (route.requestContract === "acquisition-image-read" || route.requestContract === "acquisition-image-approve") ? path[6] :
+      (route.requestContract === "product-acquisition-read" || route.requestContract === "product-acquisition-product" || route.requestContract === "browser-capture-read") ? path[3] :
+      route.responseContract === "store-item" ||
+      route.responseContract === "store-delete" ||
+      route.responseContract === "store-service-lifecycle" ||
+      route.responseContract === "source-account-detail" ||
+      route.responseContract === "source-account-mutation"
+        ? path[1]
+        : undefined),
+    requestId,
+    sourceMutation:
+      (route.requestContract.startsWith("product-acquisition-plan-")&&request.method==="POST") ||
+      (imageSetContract && request.method==="POST" && route.requestContract!=="image-set-preview" && route.requestContract!=="image-set-requirements") ||
+      (supplyContract && supplyMutates(route.requestContract.slice(7) as SupplyRoute)) ||
+      route.requestContract === "collection-command" || route.requestContract === "collection-media-upload" ||
+      (route.requestContract.startsWith("ai-") && request.method!=="GET" && route.requestContract!=="ai-schedule-quote") ||
+      (route.requestContract.startsWith("store-connection-") && route.requestContract !== "store-connection-read" && route.requestContract !== "store-connection-applications") ||
+      route.requestContract.startsWith("store-service-") ||
+      (route.requestContract.startsWith("product-agent-") && (analysisContract?request.method==="POST":route.requestContract!=="product-agent-read")) ||
+      route.requestContract === "browser-capture-create" ||
+      route.requestContract === "browser-capture-verify" ||
+      route.requestContract === "browser-capture-by-key" ||
+      route.requestContract === "product-acquisition-create" ||
+      route.requestContract === "product-acquisition-verify" ||
+      route.requestContract === "acquisition-image-start" ||
+      route.requestContract === "acquisition-image-approve" ||
+      route.requestContract === "source-account-create" ||
+      route.requestContract === "source-account-enable" ||
+      route.requestContract === "source-account-disable",
+  };
+}
+
+export async function buildWorkbenchBrowserResponse(
+  upstream: Response,
+  contract: WorkbenchResponseContract = "context",
+  expectedStoreId?: string,
+  options: {
+    sourceMutation?: boolean;
+    requestId?: string;
+    signal?: AbortSignal;
+  } = {},
+) {
+  const planContract=contract.startsWith("product-acquisition-plan-");
+  const acquisitionContract = planContract || contract === "product-acquisition" || contract === "product-acquisition-product";
+  const imageSetContract=contract.startsWith("image-set-");
+  const imageContract = imageSetContract || contract.startsWith("acquisition-image-");
+  const agentContract = contract.startsWith("product-agent-");
+  const aiContract = contract.startsWith("ai-");
+  const collectionContract = contract.startsWith("collection-");
+  const supplyContract=contract.startsWith("supply-");
+  const sourceContract = contract.startsWith("source-account-") || acquisitionContract;
+  const invalidSource = () =>
+    acquisitionContract
+      ? protocolError(options.sourceMutation ? 503 : 502, options.sourceMutation ? "OUTCOME_UNKNOWN" : "INVALID_UPSTREAM_RESPONSE", "Product acquisition response is unavailable", options.requestId ?? "")
+      : sourceProtocolFailure(Boolean(options.sourceMutation), options.requestId ?? "");
+  let body: Uint8Array;
+  try {
+    if (
+      (supplyContract || sourceContract || imageContract || agentContract || aiContract || collectionContract) &&
+      !/^application\/json(?:\s*;|$)/i.test(
+        upstream.headers.get("content-type") ?? "",
+      )
+    ) {
+      void upstream.body?.cancel().catch(() => undefined);
+      throw new InvalidUpstreamBodyError();
+    }
+    const responseLimit = imageSetContract ? 2*1024*1024 : supplyContract ? SUPPLY_MAX_BYTES : collectionContract ? contract === "collection-detail" || contract === "collection-history-detail" ? COLLECTION_DETAIL_RESPONSE_MAX_BYTES : COLLECTION_MAX_BYTES : aiContract ? 256 * 1024 : (acquisitionContract || imageContract || agentContract) ? ACQUISITION_RESPONSE_MAX_BYTES : sourceContract
+      ? SOURCE_ACCOUNT_RESPONSE_MAX_BYTES
+      : UPSTREAM_RESPONSE_MAX_BYTES;
+    const contentLength = readContentLength(upstream.headers);
+    if (contentLength !== null && contentLength > responseLimit) {
+      void upstream.body?.cancel().catch(() => undefined);
+      throw new BodyTooLargeError();
+    }
+    body = await readBodyWithinLimit(
+      upstream.body,
+      responseLimit,
+      undefined,
+      options.signal,
+    );
+  } catch {
+    if (supplyContract) return protocolError(options.sourceMutation?503:502,options.sourceMutation?"OUTCOME_UNKNOWN":"DEPENDENCY_UNAVAILABLE","Supply response unavailable",options.requestId??"");
+    if (collectionContract) return protocolError(options.sourceMutation ? 503 : 502, options.sourceMutation ? "OUTCOME_UNKNOWN" : "DEPENDENCY_UNAVAILABLE", "Collection response unavailable", options.requestId ?? "");
+    if (aiContract) return protocolError(options.sourceMutation ? 503 : 502, options.sourceMutation ? "OUTCOME_UNKNOWN" : "DEPENDENCY_UNAVAILABLE", "AI Workbench response unavailable", options.requestId ?? "");
+    if(agentContract)return protocolError(options.sourceMutation?503:502,options.sourceMutation?"OUTCOME_UNKNOWN":"DEPENDENCY_UNAVAILABLE","Agent response unavailable",options.requestId??"");
+    if (sourceContract) return invalidSource();
+    if (imageContract) return protocolError(options.sourceMutation ? 503 : 502, options.sourceMutation ? "OUTCOME_UNKNOWN" : "DEPENDENCY_UNAVAILABLE", "Image response is unavailable", options.requestId ?? "");
+    return protocolError(
+      502,
+      "DEPENDENCY_UNAVAILABLE",
+      "Workbench upstream response is unavailable",
+    );
+  }
+
+  const parsedBody = parseJSONBody(body);
+  const payload = parsedBody?.payload ?? null;
+  if(supplyContract){
+    const invalid=()=>protocolError(options.sourceMutation?503:502,options.sourceMutation?"OUTCOME_UNKNOWN":"DEPENDENCY_UNAVAILABLE","Supply response invalid",options.requestId??"");
+    if(!parsedBody||!payload)return invalid();
+    if(upstream.ok){const checked=parseSupplyResponse(contract.slice(7) as SupplyRoute,payload,expectedStoreId);return upstream.status===200 && checked?new NextResponse(JSON.stringify(checked),{status:200,headers:safeJSONHeaders()}):invalid();}
+    const standard=parseWorkbenchErrorEnvelopePayload(payload);const code=typeof payload.code==="string"?payload.code:standard.success?standard.data.code:"";
+    const statuses:Record<string,number>={...acquisitionErrorStatuses,INVALID_REQUEST:400,PERMISSION_DENIED:403,NOT_FOUND:404,REVISION_CONFLICT:409,NOT_READY:409,SPLIT_ALREADY_EXISTS:409,OUTCOME_UNKNOWN:409,...(contract.startsWith("supply-materials-")?materialsErrorStatuses:{})};
+    if(statuses[code]!==upstream.status)return invalid();
+    const response=protocolError(upstream.status,code,"Supply request could not be completed",options.requestId??"");
+    if(code==="ORGANIZATION_ACCESS_REVOKED"||code==="ORGANIZATION_ACCESS_DENIED")clearSelectionCookie(response);return response;
+  }
+  if (collectionContract) {
+    const invalid = () => protocolError(options.sourceMutation ? 503 : 502, options.sourceMutation ? "OUTCOME_UNKNOWN" : "DEPENDENCY_UNAVAILABLE", "Collection response invalid", options.requestId ?? "");
+    if (!parsedBody || !payload) return invalid();
+    if (upstream.ok) {
+      const checked = parseCollectionResponse(contract.slice(11) as CollectionRoute, payload, expectedStoreId);
+      return upstream.status === 200 && checked ? new NextResponse(JSON.stringify(checked), { status: 200, headers: safeJSONHeaders() }) : invalid();
+    }
+    const standard = parseWorkbenchErrorEnvelopePayload(payload);
+    const code = typeof payload.code === "string" ? payload.code : standard.success ? standard.data.code : "";
+    const statuses: Record<string, number> = { ...acquisitionErrorStatuses, INVALID_REQUEST: 400, PERMISSION_DENIED: 403, NOT_FOUND: 404, REVISION_CONFLICT: 409, STORAGE_LIMIT_EXCEEDED: 409, OUTCOME_UNKNOWN: 409 };
+    if (statuses[code] !== upstream.status) return invalid();
+    const response = protocolError(upstream.status, code, "Collection request could not be completed", options.requestId ?? "");
+    if (code === "ORGANIZATION_ACCESS_REVOKED" || code === "ORGANIZATION_ACCESS_DENIED") clearSelectionCookie(response);
+    return response;
+  }
+  if (aiContract) {
+    const unavailable = () => protocolError(options.sourceMutation ? 503 : 502, options.sourceMutation ? "OUTCOME_UNKNOWN" : "DEPENDENCY_UNAVAILABLE", "AI Workbench response invalid", options.requestId ?? "");
+    if (!parsedBody || !payload) return unavailable();
+    if (upstream.ok) {
+      const checked = parseAIWorkbenchResponse(contract.slice(3) as AIWorkbenchRoute, upstream.status, payload);
+      if(contract==="ai-subject-read"&&expectedStoreId&&checked&&("subject" in checked)&&`${checked.subject.kind}:${checked.subject.id}`!==expectedStoreId)return unavailable();
+      return checked ? new NextResponse(JSON.stringify(checked), { status: upstream.status, headers: safeJSONHeaders() }) : unavailable();
+    }
+    const standard = parseWorkbenchErrorEnvelopePayload(payload);
+    const code = typeof payload.code === "string" ? payload.code : standard.success ? standard.data.code : "";
+    const statuses: Record<string, number> = { INVALID_REQUEST: 400, FORBIDDEN: 403, NOT_FOUND: 404,
+      IDEMPOTENCY_CONFLICT: 409, PROPOSAL_STALE: 409, REVISION_MISMATCH: 409,
+      CONVERSATION_ARCHIVED: 409, MANUAL_REVIEW_REQUIRED:409,SCHEDULE_COMMAND_REJECTED:409, TASK_OUTCOME_UNKNOWN: 503, DEPENDENCY_UNAVAILABLE: 503,
+      AUTHENTICATION_REQUIRED: 401, ORGANIZATION_SELECTION_REQUIRED: 409, ORGANIZATION_ACCESS_DENIED: 403,
+      ORGANIZATION_ACCESS_REVOKED: 403, ORGANIZATION_SUSPENDED: 403, PERMISSION_DENIED: 403,
+      ORGANIZATION_CONTEXT_CHANGED: 409, IDENTITY_CONTEXT_CHANGED: 409, OUTCOME_UNKNOWN: 503,
+      INPUT_TOO_LARGE: 413, DEADLINE_EXCEEDED: 504 };
+    if (statuses[code] !== upstream.status) return unavailable();
+    let response = protocolError(upstream.status, code, "AI Workbench request could not be completed", options.requestId ?? "");
+    if(code==="SCHEDULE_COMMAND_REJECTED"){
+      if(!contract.startsWith("ai-schedule-")||contract==="ai-schedule-quote"||payload.commandAccepted!==false)return unavailable();
+      response=new NextResponse(JSON.stringify({...await response.json(),commandAccepted:false}),{status:response.status,headers:response.headers});
+    }
+    if(contract==="ai-message"&&payload.messageAccepted===false&&["INVALID_REQUEST","PROPOSAL_STALE"].includes(code)){
+      response=new NextResponse(JSON.stringify({...await response.json(),messageAccepted:false}),{status:response.status,headers:response.headers});
+    }
+    if(contract==="ai-conversation-create"&&payload.conversationAccepted===false&&["NOT_FOUND","PROPOSAL_STALE"].includes(code)){
+      response=new NextResponse(JSON.stringify({...await response.json(),conversationAccepted:false}),{status:response.status,headers:response.headers});
+    }
+    if (code === "ORGANIZATION_ACCESS_REVOKED" || code === "ORGANIZATION_ACCESS_DENIED") clearSelectionCookie(response);
+    return response;
+  }
+  if(agentContract) {
+    const invalid=()=>protocolError(options.sourceMutation?503:502,options.sourceMutation?"OUTCOME_UNKNOWN":"DEPENDENCY_UNAVAILABLE","Agent response unavailable",options.requestId??"");
+    if(upstream.ok) {
+      if(contract.startsWith("product-agent-image-analysis-")){
+        const action=contract.slice("product-agent-image-analysis-".length) as AnalysisRoute,checked=analysisResponseSchema(action).safeParse(payload);
+        let binding:unknown;try{binding=JSON.parse(expectedStoreId??"")}catch{return invalid()}
+        const expected=analysisBindingSchema.safeParse(binding);
+        if(upstream.status!==200||!checked.success||!expected.success||!analysisMatches(checked.data,expected.data))return invalid();
+        return new NextResponse(JSON.stringify(checked.data),{status:200,headers:safeJSONHeaders()});
+      }
+      const checked=(contract==="product-agent-source"?ownContentSourceSchema:contract==="product-agent-review"?agentReviewLinkSchema:contract==="product-agent-content-result"?contentAgentResultSchema:agentResultSchema).safeParse(payload);
+      if(upstream.status!==200 || !checked.success || (expectedStoreId!==undefined && !("requestKey" in checked.data && checked.data.requestKey===expectedStoreId)))return invalid();
+      return new NextResponse(JSON.stringify(checked.data),{status:200,headers:safeJSONHeaders()});
+    }
+    const code=payload&&typeof payload==="object"&&"code" in payload&&typeof payload.code==="string"?payload.code:"";
+    const statuses:Record<string,number>={INVALID_AGENT_REQUEST:400,FORBIDDEN:403,AGENT_CONFLICT:409,PRODUCT_AGENT_UNAVAILABLE:503,KNOWLEDGE_CONTEXT_TOO_LARGE:409,KNOWLEDGE_FORBIDDEN:403,KNOWLEDGE_DISABLED:409,KNOWLEDGE_NOT_READY:409,KNOWLEDGE_NOT_FOUND:409,...acquisitionErrorStatuses,
+      CONFIGURATION_CHANGED:409,AGENT_NOT_ENABLED:409,TEMPLATE_ARCHIVED:409,AGENT_DEFINITION_UNAVAILABLE:409,MANUAL_REVIEW_REQUIRED:409,
+      NOT_FOUND:404,TEMPLATE_IS_DEFAULT:409,REVISION_MISMATCH:412,PRECONDITION_REQUIRED:428,
+      SKILL_INVALID:400,SKILL_UNSUPPORTED_FIELD:400,SKILL_FORBIDDEN:403,SKILL_NOT_FOUND:409,SKILL_NOT_ENABLED:409,SKILL_IDEMPOTENCY_CONFLICT:409,SKILL_REVISION_MISMATCH:409,SKILL_UNAVAILABLE:503};
+    if(upstream.status===404 && statuses[code]===undefined)return protocolError(503,"PRODUCT_AGENT_UNAVAILABLE","Product Agent is not enabled",options.requestId??"");
+    if(statuses[code]!==upstream.status)return invalid();
+    const response=protocolError(upstream.status,code,"Agent request could not be completed",options.requestId??"");
+    if(code==="ORGANIZATION_ACCESS_REVOKED" || code==="ORGANIZATION_ACCESS_DENIED")clearSelectionCookie(response);
+    return response;
+  }
+  if (acquisitionContract) {
+    if (!parsedBody || !payload) return invalidSource();
+    if (upstream.ok) {
+      const checked = (planContract?planResponseSchema(contract.slice(25) as PlanRoute):contract === "product-acquisition-product" ? acquisitionProductSchema : acquisitionResultSchema).safeParse(payload);
+      if (upstream.status !== 200 || !checked.success || (expectedStoreId !== undefined && (planContract?("id" in checked.data?checked.data.id:undefined):("operationId" in checked.data?checked.data.operationId:undefined)) !== expectedStoreId)) return invalidSource();
+      return new NextResponse(JSON.stringify(checked.data), {status: 200, headers: safeJSONHeaders()});
+    }
+    const nested = z.object({schemaVersion: z.literal(1), error: z.object({code: z.string()}).strict()}).strict().safeParse(payload);
+    const standard = parseWorkbenchErrorEnvelopePayload(payload);
+    const code = nested.success ? nested.data.error.code : standard.success ? standard.data.code : "";
+    if (!code || acquisitionErrorStatuses[code] !== upstream.status) return invalidSource();
+    const response = protocolError(upstream.status, code, "Product acquisition request could not be completed", options.requestId ?? "");
+    if (code === "ORGANIZATION_ACCESS_REVOKED" || code === "ORGANIZATION_ACCESS_DENIED") clearSelectionCookie(response);
+    return response;
+  }
+  if(imageSetContract){
+    const invalid=()=>protocolError(options.sourceMutation?503:502,options.sourceMutation?"OUTCOME_UNKNOWN":"DEPENDENCY_UNAVAILABLE","Image response invalid",options.requestId??"");
+    if(!parsedBody||!payload)return invalid();
+    const action=contract.slice(10) as ImageSetRoute;
+    if(upstream.ok){
+      const checked=imageSetResponseSchema(action).safeParse(payload);
+      let binding:unknown;
+      try{binding=JSON.parse(expectedStoreId??"")}catch{return invalid()}
+      const expected=imageSetResponseBindingSchema.safeParse(binding);
+      if(upstream.status!==imageSetSuccessStatus(action)||!checked.success||!expected.success||!imageSetResponseMatches(action,checked.data,expected.data))return invalid();
+      return new NextResponse(JSON.stringify(checked.data),{status:upstream.status,headers:safeJSONHeaders()});
+    }
+    const standard=parseWorkbenchErrorEnvelopePayload(payload);const code=typeof payload.code==="string"?payload.code:standard.success?standard.data.code:"";
+    if(imageSetErrorStatuses[code]!==upstream.status && acquisitionErrorStatuses[code]!==upstream.status)return invalid();
+    const response=protocolError(upstream.status,code,"Image request could not be completed",options.requestId??"");
+    if(code==="ORGANIZATION_ACCESS_REVOKED"||code==="ORGANIZATION_ACCESS_DENIED")clearSelectionCookie(response);return response;
+  }
+  if (imageContract) {
+    if (!parsedBody || !payload) return protocolError(options.sourceMutation ? 503 : 502, options.sourceMutation ? "OUTCOME_UNKNOWN" : "DEPENDENCY_UNAVAILABLE", "Image response is unavailable", options.requestId ?? "");
+    if (upstream.ok) {
+      const schema = contract === "acquisition-image-candidates" ? mainImageCandidatesSchema : contract === "acquisition-image-result" ? mainImageResultSchema : mainImageAcceptedSchema;
+      const checked = schema.safeParse(payload);
+      const expectedStatus = contract === "acquisition-image-accepted" ? 202 : 200;
+      if (upstream.status !== expectedStatus || !checked.success ||
+        (expectedStoreId !== undefined && (("operationId" in checked.data && checked.data.operationId !== expectedStoreId) || ("runId" in checked.data && checked.data.runId !== expectedStoreId)))) {
+        return protocolError(options.sourceMutation ? 503 : 502, options.sourceMutation ? "OUTCOME_UNKNOWN" : "DEPENDENCY_UNAVAILABLE", "Image response is invalid", options.requestId ?? "");
+      }
+      return new NextResponse(JSON.stringify(checked.data), { status: upstream.status, headers: safeJSONHeaders() });
+    }
+    const backend = z.object({code: z.string()}).strict().safeParse(payload);
+    const standard = parseWorkbenchErrorEnvelopePayload(payload);
+    const code = backend.success ? backend.data.code : standard.success ? standard.data.code : "";
+    if (!(imageErrorStatuses[code] === upstream.status || acquisitionErrorStatuses[code] === upstream.status)) {
+      return protocolError(options.sourceMutation ? 503 : 502, options.sourceMutation ? "OUTCOME_UNKNOWN" : "DEPENDENCY_UNAVAILABLE", "Image response is invalid", options.requestId ?? "");
+    }
+    const response = protocolError(upstream.status, code, "Image request could not be completed", options.requestId ?? "");
+    if (code === "ORGANIZATION_ACCESS_REVOKED" || code === "ORGANIZATION_ACCESS_DENIED") clearSelectionCookie(response);
+    return response;
+  }
+  const parsedError =
+    upstream.status >= 400 && upstream.status <= 599
+      ? parseWorkbenchErrorEnvelopePayload(payload)
+      : null;
+  if (!upstream.ok) {
+    if (!parsedError?.success) {
+      return sourceContract ? invalidSource() : invalidUpstreamResponse();
+    }
+    const documentedStatus = sourceContract
+      ? sourceAccountErrorStatuses[parsedError.data.code]
+      : documentedWorkbenchErrorStatuses[parsedError.data.code];
+    if (
+      (sourceContract && documentedStatus === undefined) ||
+      (documentedStatus !== undefined && documentedStatus !== upstream.status)
+    ) {
+      return sourceContract ? invalidSource() : invalidUpstreamResponse();
+    }
+    const response = new NextResponse(JSON.stringify(parsedError.data), {
+      status: upstream.status,
+      headers: safeJSONHeaders(),
+    });
+    if (
+      contract !== "context-switch" &&
+      (parsedError.data.code === "ORGANIZATION_ACCESS_REVOKED" ||
+        parsedError.data.code === "ORGANIZATION_ACCESS_DENIED")
+    ) {
+      clearSelectionCookie(response);
+    }
+    return response;
+  }
+
+  const validatedPayload = parseSuccessfulPayload(
+    contract,
+    upstream.status,
+    parsedBody,
+    expectedStoreId,
+  );
+  if (!validatedPayload) {
+    return sourceContract ? invalidSource() : invalidUpstreamResponse();
+  }
+  const sourceETag = sourceContract
+    ? readSourceResponseETag(upstream.headers, validatedPayload, contract)
+    : null;
+  if (sourceContract && contract !== "source-account-list" && !sourceETag) {
+    return invalidSource();
+  }
+  const response = new NextResponse(JSON.stringify(validatedPayload), {
+    status: upstream.status,
+    headers: safeJSONHeaders(),
+  });
+  if (sourceETag) response.headers.set("ETag", sourceETag);
+
+  if (contract === "context" || contract === "context-switch") {
+    const effectiveOrganizationId = validatedPayload.effectiveOrganizationId;
+    if (effectiveOrganizationId) {
+      response.cookies.set(WORKBENCH_COOKIE_NAME, String(effectiveOrganizationId), {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV !== "development",
+      });
+    } else {
+      clearSelectionCookie(response);
+    }
+  }
+
+  return response;
+}
+
+export function workbenchProtocolError(
+  status: number,
+  code: string,
+  message: string,
+  requestId = "",
+) {
+  return protocolError(status, code, message, requestId);
+}
+
+function resolveAllowlistedRoute(
+  method: string,
+  path: string[],
+): WorkbenchRouteDescriptor | null {
+  if (!path.every(isSafePathSegment)) return null;
+  const verb = method.toUpperCase();
+  for (const route of workbenchRouteAllowlist) {
+    if (route.method !== verb) continue;
+    const upstreamPath = route.resolveUpstreamPath(path);
+    if (upstreamPath === null) continue;
+    return {
+      requestContract: route.requestContract,
+      responseContract: route.responseContract,
+      upstreamPath,
+    };
+  }
+  return null;
+}
+
+function routeDefinition(
+  method: WorkbenchRouteDefinition["method"],
+  requestContract: WorkbenchRequestContract,
+  responseContract: WorkbenchResponseContract,
+  resolveUpstreamPath: WorkbenchRouteDefinition["resolveUpstreamPath"],
+): WorkbenchRouteDefinition {
+  return { method, requestContract, responseContract, resolveUpstreamPath };
+}
+
+function exactPath(path: string[], ...segments: string[]) {
+  return (
+    path.length === segments.length &&
+    segments.every((segment, index) => path[index] === segment)
+  );
+}
+
+function storeItemPath(path: string[]) {
+  return path.length === 2 && path[0] === "stores" && isCanonicalUUID(path[1]!)
+    ? `stores/${path[1]}`
+    : null;
+}
+
+function storeActionPath(
+  path: string[],
+  action:
+    | "enable"
+    | "disable"
+    | "activate"
+    | "renew"
+    | "reactivate",
+) {
+  return path.length === 3 &&
+    path[0] === "stores" &&
+    isCanonicalUUID(path[1]!) &&
+    path[2] === action
+    ? `stores/${path[1]}/${action}`
+    : null;
+}
+
+function sourceAccountItemPath(path: string[]) {
+  return path.length === 2 &&
+    path[0] === "source-accounts" &&
+    isCanonicalSourceAccountId(path[1]!)
+    ? `source-accounts/${path[1]}`
+    : null;
+}
+
+function sourceAccountActionPath(path: string[], action: "enable" | "disable") {
+  return path.length === 3 &&
+    path[0] === "source-accounts" &&
+    isCanonicalSourceAccountId(path[1]!) &&
+    path[2] === action
+    ? `source-accounts/${path[1]}/${action}`
+    : null;
+}
+
+function isSafePathSegment(value: string) {
+  return Boolean(
+    value &&
+    value !== "." &&
+    value !== ".." &&
+    !value.includes("/") &&
+    !value.includes("\\") &&
+    !value.includes("%") &&
+    !value.includes("\0"),
+  );
+}
+
+function getServiceRoot() {
+  return (
+    process.env.LISTINGKIT_SERVICE_API_BASE?.trim() || DEFAULT_SERVICE_API_BASE
+  ).replace(/\/+$/, "");
+}
+
+function parseSwitchOrganizationBody(body: Uint8Array) {
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(body);
+  } catch {
+    return "";
+  }
+  const errors: ParseError[] = [];
+  const root = parseTree(text, errors, {
+    allowEmptyContent: false,
+    allowTrailingComma: false,
+    disallowComments: true,
+  });
+  if (
+    errors.length > 0 ||
+    root?.type !== "object" ||
+    root.children?.length !== 1
+  ) {
+    return "";
+  }
+  const property = root.children[0];
+  const key = property?.children?.[0];
+  const value = property?.children?.[1];
+  if (
+    property?.type !== "property" ||
+    property.children?.length !== 2 ||
+    key?.type !== "string" ||
+    key.value !== "organizationId" ||
+    value?.type !== "string"
+  ) {
+    return "";
+  }
+  const organizationId = String(value.value).trim();
+  return isSafeOrganizationId(organizationId) ? organizationId : "";
+}
+
+async function readRequestBody(
+  request: Request,
+  limit: number,
+  tooLargeCode = "INVALID_REQUEST",
+) {
+  const contentLength = readContentLength(request.headers);
+  if (contentLength !== null && contentLength > limit) {
+    void request.body?.cancel().catch(() => undefined);
+    return protocolError(413, tooLargeCode, "Request body is too large");
+  }
+  try {
+    return await readBodyWithinLimit(
+      request.body,
+      limit,
+      REQUEST_BODY_READ_TIMEOUT_MS,
+      request.signal,
+    );
+  } catch (error) {
+    if (error instanceof BodyReadTimeoutError) {
+      const acquisitionBody = tooLargeCode === "SOURCE_TOO_LARGE";
+      return protocolError(
+        acquisitionBody ? 504 : 408,
+        acquisitionBody ? "DEADLINE_EXCEEDED" : "INVALID_REQUEST",
+        acquisitionBody
+          ? "Request body read deadline exceeded"
+          : "Request body read timed out",
+      );
+    }
+    if (error instanceof BodyTooLargeError) {
+      return protocolError(413, tooLargeCode, "Request body is too large");
+    }
+    return protocolError(400, "INVALID_REQUEST", "Request body is invalid");
+  }
+}
+
+function readSelectedOrganization(request: Request) {
+  const selectedCookie = readCookie(
+    request.headers.get("cookie"),
+    WORKBENCH_COOKIE_NAME,
+  );
+  if (selectedCookie === null) {
+    return protocolError(400, "INVALID_REQUEST", "Selection cookie is invalid");
+  }
+  const selectedOrganization = selectedCookie.trim();
+  if (selectedOrganization && !isSafeOrganizationId(selectedOrganization)) {
+    return protocolError(400, "INVALID_REQUEST", "Selection cookie is invalid");
+  }
+  return selectedOrganization;
+}
+
+function readExpectedOrganizationAssertion(headers: Headers) {
+  const value = headers.get(EXPECTED_ORGANIZATION_ID_HEADER);
+  return value && !value.includes(",") && isSafeOrganizationId(value)
+    ? value
+    : "";
+}
+
+function hasNoQuery(request: Request) {
+  return new URL(request.url).searchParams.size === 0;
+}
+
+function readSourceSelectedOrganization(request: Request) {
+  const matches = (request.headers.get("cookie") ?? "")
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part.startsWith(`${WORKBENCH_COOKIE_NAME}=`));
+  if (matches.length !== 1) {
+    return protocolError(
+      409,
+      matches.length === 0
+        ? "ORGANIZATION_SELECTION_REQUIRED"
+        : "ORGANIZATION_CONTEXT_CHANGED",
+      "Organization context changed",
+    );
+  }
+  let selected: string;
+  try {
+    selected = decodeURIComponent(
+      matches[0]!.slice(WORKBENCH_COOKIE_NAME.length + 1),
+    );
+  } catch {
+    return protocolError(
+      409,
+      "ORGANIZATION_CONTEXT_CHANGED",
+      "Organization context changed",
+    );
+  }
+  return isSafeOrganizationId(selected)
+    ? selected
+    : protocolError(
+        409,
+        "ORGANIZATION_CONTEXT_CHANGED",
+        "Organization context changed",
+      );
+}
+
+function hasExactNoQuery(request: Request) {
+  const url = new URL(request.url);
+  return url.search === "" && !request.url.endsWith("?");
+}
+
+function parseSourceAccountListQuery(rawURL: string) {
+  const url = new URL(rawURL);
+  const rawQuery = url.search.startsWith("?") ? url.search.slice(1) : url.search;
+  if (utf8Length(rawQuery) > SOURCE_ACCOUNT_QUERY_MAX_BYTES) return null;
+  const values = new Map<string, string>();
+  for (const [key, value] of url.searchParams) {
+    if (!["limit", "cursor"].includes(key) || values.has(key) || value === "") {
+      return null;
+    }
+    values.set(key, value);
+  }
+  const limit = values.get("limit") ?? "20";
+  if (!validCanonicalInteger(limit, 1, 100)) return null;
+  const cursor = values.get("cursor");
+  if (
+    cursor !== undefined &&
+    (utf8Length(cursor) > SOURCE_ACCOUNT_CURSOR_MAX_BYTES ||
+      !isCanonicalSourceAccountCursor(cursor))
+  ) {
+    return null;
+  }
+  const rebuilt = new URLSearchParams({ limit });
+  if (cursor !== undefined) rebuilt.set("cursor", cursor);
+  return rebuilt.toString();
+}
+
+function validateSourceMutationBoundary(
+  request: Request,
+  authenticatedActorSubject: string,
+  recovery = false,
+) {
+  if (!(recovery ? hasTrustedSameOriginRecovery(request) : hasTrustedSameOriginWrite(request))) {
+    return protocolError(403, "PERMISSION_DENIED", "Same-origin request is required");
+  }
+  const assertedActor = request.headers.get(EXPECTED_USER_ID_HEADER);
+  if (
+    !assertedActor ||
+    assertedActor.includes(",") ||
+    !isSafeOrganizationId(assertedActor)
+  ) {
+    return protocolError(400, "INVALID_REQUEST", "Expected user is invalid");
+  }
+  if (assertedActor !== authenticatedActorSubject) {
+    return protocolError(409, "IDENTITY_CONTEXT_CHANGED", "Identity context changed");
+  }
+  return null;
+}
+
+function parseSourceAccountCreateBody(body: Uint8Array) {
+  const parsed = parseJSONBody(body);
+  if (!parsed || parsed.root.children?.length !== 2) return null;
+  const keys = new Set(parsed.root.children.map((property) => property.children?.[0]?.value));
+  if (keys.size !== 2 || !keys.has("displayName") || !keys.has("platform")) {
+    return null;
+  }
+  const payload = sourceAccountCreateRequestSchema.safeParse(parsed.payload);
+  return payload.success ? payload.data : null;
+}
+
+function readSourceAccountIfMatch(headers: Headers) {
+  const value = headers.get("If-Match") ?? "";
+  return isStrongSourceAccountETag(value) ? value : "";
+}
+
+function parseStoreListQuery(search: URLSearchParams) {
+  const allowed = new Set(["page", "pageSize", "platform", "status"]);
+  const values = new Map<string, string>();
+  for (const [key, value] of search) {
+    if (!allowed.has(key) || values.has(key) || value === "") return null;
+    values.set(key, value);
+  }
+  if (!validCanonicalInteger(values.get("page"), 1, Number.MAX_SAFE_INTEGER)) {
+    return null;
+  }
+  if (!validCanonicalInteger(values.get("pageSize"), 1, 100)) return null;
+  const platform = values.get("platform");
+  if (platform !== undefined && !workbenchStorePlatformSchema.safeParse(platform).success) return null;
+  const status = values.get("status");
+  if (
+    status !== undefined &&
+    !["active", "disabled", "deleting"].includes(status)
+  ) {
+    return null;
+  }
+  const rebuilt = new URLSearchParams();
+  for (const key of ["page", "pageSize", "platform", "status"]) {
+    const value = values.get(key);
+    if (value !== undefined) rebuilt.set(key, value);
+  }
+  const encoded = rebuilt.toString();
+  return encoded.length <= STORE_QUERY_MAX_BYTES ? encoded : null;
+}
+
+function validCanonicalInteger(
+  value: string | undefined,
+  minimum: number,
+  maximum: number,
+) {
+  if (value === undefined) return true;
+  if (!/^(0|[1-9][0-9]*)$/.test(value)) return false;
+  const parsed = Number(value);
+  return (
+    Number.isSafeInteger(parsed) && parsed >= minimum && parsed <= maximum
+  );
+}
+
+function parseStoreBody(body: Uint8Array, kind: "create" | "update") {
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(body);
+  } catch {
+    return null;
+  }
+  const errors: ParseError[] = [];
+  const root = parseTree(text, errors, {
+    allowEmptyContent: false,
+    allowTrailingComma: false,
+    disallowComments: true,
+  });
+  if (errors.length > 0 || root?.type !== "object") return null;
+  const required =
+    kind === "create"
+      ? new Set(["name", "platform", "region"])
+      : new Set(["name", "region"]);
+  const allowed =
+    kind === "create"
+      ? new Set(["name", "platform", "region", "externalStoreId"])
+      : new Set(["name", "region"]);
+  const values = new Map<string, string>();
+  for (const property of root.children ?? []) {
+    const key = property.children?.[0];
+    const value = property.children?.[1];
+    const name = key?.type === "string" ? String(key.value) : "";
+    if (
+      property.type !== "property" ||
+      property.children?.length !== 2 ||
+      !allowed.has(name) ||
+      values.has(name) ||
+      value?.type !== "string"
+    ) {
+      return null;
+    }
+    values.set(name, String(value.value));
+  }
+  if ([...required].some((key) => !values.has(key))) return null;
+  const name = normalizeStoreValue(values.get("name") ?? "", 120, true);
+  const region = normalizeStoreValue(values.get("region") ?? "", 64, true);
+  if (name === null || region === null) return null;
+  if (kind === "update") return { name, region };
+  const platform = workbenchStorePlatformSchema.safeParse(values.get("platform"));
+  if (!platform.success) return null;
+  const externalStoreId = normalizeStoreValue(
+    values.get("externalStoreId") ?? "",
+    128,
+    false,
+  );
+  if (externalStoreId === null) return null;
+  return values.has("externalStoreId")
+    ? { name, platform: platform.data, region, externalStoreId }
+    : { name, platform: platform.data, region };
+}
+
+function parseServiceLifecycleBody(
+  body: Uint8Array,
+  action: "activate" | "renew" | "reactivate",
+) {
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(body);
+  } catch {
+    return null;
+  }
+  const errors: ParseError[] = [];
+  const root = parseTree(text, errors, {
+    allowEmptyContent: false,
+    allowTrailingComma: false,
+    disallowComments: true,
+  });
+  if (errors.length > 0 || root?.type !== "object") return null;
+  if (action === "activate") {
+    return root.children?.length === 0 ? {} : null;
+  }
+  if (root.children?.length !== 1) return null;
+  const property = root.children[0];
+  const key = property?.children?.[0];
+  const value = property?.children?.[1];
+  if (
+    property?.type !== "property" ||
+    property.children?.length !== 2 ||
+    key?.type !== "string" ||
+    key.value !== "periods" ||
+    value?.type !== "number" ||
+    !hasCanonicalIntegerNode(value, text, false)
+  ) {
+    return null;
+  }
+  const periods = Number(value.value);
+  return Number.isSafeInteger(periods) && periods >= 1 && periods <= 12
+    ? { periods }
+    : null;
+}
+
+function normalizeStoreValue(value: string, maximum: number, required: boolean) {
+  if (hasUnicodeControl(value)) return null;
+  const normalized = value.trim();
+  if ((required && normalized === "") || Array.from(normalized).length > maximum) {
+    return null;
+  }
+  return normalized;
+}
+
+function hasUnicodeControl(value: string) {
+  return /\p{Cc}/u.test(value);
+}
+
+function readCanonicalUUIDHeader(headers: Headers, name: string) {
+  const value = headers.get(name);
+  return value && isCanonicalUUID(value) ? value : "";
+}
+
+function readSourceAccountOperationHeader(headers: Headers, name: string) {
+  const value = headers.get(name);
+  return value && isCanonicalSourceAccountOperationId(value) ? value : "";
+}
+
+function readRequestId(headers: Headers) {
+  const value = headers.get("X-Request-ID")?.trim() ?? "";
+  if (
+    value &&
+    new TextEncoder().encode(value).byteLength <= REQUEST_ID_MAX_BYTES &&
+    /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/.test(value)
+  ) {
+    return value;
+  }
+  return newRequestLogId();
+}
+
+function readIfMatchHeader(headers: Headers) {
+  const value = headers.get("If-Match") ?? "";
+  const matched = /^"([1-9][0-9]*)"$/.exec(value);
+  if (!matched) return "";
+  const version = Number(matched[1]);
+  return Number.isSafeInteger(version) && version > 0 ? value : "";
+}
+
+async function requestHasNoBody(request: Request) {
+  const contentLength = readContentLength(request.headers);
+  if (contentLength !== null && contentLength !== 0) {
+    void request.body?.cancel().catch(() => undefined);
+    return false;
+  }
+  if (!request.body) return true;
+  try {
+    const body = await readBodyWithinLimit(
+      request.body,
+      0,
+      REQUEST_BODY_READ_TIMEOUT_MS,
+      request.signal,
+    );
+    return body.byteLength === 0;
+  } catch {
+    return false;
+  }
+}
+
+function readCookie(header: string | null, name: string): string | null {
+  if (!header) return "";
+  for (const part of header.split(";")) {
+    const separator = part.indexOf("=");
+    if (separator < 0 || part.slice(0, separator).trim() !== name) continue;
+    try {
+      return decodeURIComponent(part.slice(separator + 1).trim());
+    } catch {
+      return null;
+    }
+  }
+  return "";
+}
+
+export async function readBodyWithinLimit(
+  stream: ReadableStream<Uint8Array> | null,
+  limit: number,
+  timeoutMs?: number,
+  signal?: AbortSignal,
+) {
+  if (!stream) return new Uint8Array();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const deadline = timeoutMs
+    ? new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(
+          () => reject(new BodyReadTimeoutError()),
+          timeoutMs,
+        );
+      })
+    : undefined;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  const cancel = () => void reader?.cancel().catch(() => undefined);
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    reader = stream.getReader();
+    signal?.addEventListener("abort", cancel, { once: true });
+    while (true) {
+      signal?.throwIfAborted();
+      const next = reader.read();
+      const { done, value } = deadline
+        ? await Promise.race([next, deadline])
+        : await next;
+      signal?.throwIfAborted();
+      if (done) break;
+      if (total + value.byteLength > limit) {
+        void reader.cancel().catch(() => undefined);
+        throw new BodyTooLargeError();
+      }
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } catch (error) {
+    if (error instanceof BodyReadTimeoutError && reader) {
+      void reader.cancel().catch(() => undefined);
+    }
+    throw error;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    signal?.removeEventListener("abort", cancel);
+    reader?.releaseLock();
+  }
+  const joined = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return joined;
+}
+
+function readContentLength(headers: Headers) {
+  const raw = headers.get("content-length");
+  if (!raw || !/^\d+$/.test(raw)) return null;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) ? value : null;
+}
+
+function parseJSONBody(body: Uint8Array): ParsedJSONBody | null {
+  try {
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(body);
+    const value = JSON.parse(text) as unknown;
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+      return null;
+    }
+    const errors: ParseError[] = [];
+    const root = parseTree(text, errors, {
+      allowEmptyContent: false,
+      allowTrailingComma: false,
+      disallowComments: true,
+    });
+    return errors.length === 0 && root?.type === "object" && hasUniqueObjectKeys(root)
+      ? { payload: value as Record<string, unknown>, root, text }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function isSafeOrganizationId(value: string) {
+  return /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
+}
+
+function isCanonicalUUID(value: string) {
+  return (
+    value !== "00000000-0000-0000-0000-000000000000" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+      value,
+    )
+  );
+}
+
+function utf8Length(value: string) {
+  return new TextEncoder().encode(value).byteLength;
+}
+
+function isUTCRFC3339Timestamp(value: string) {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?Z$/.exec(
+      value,
+    );
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  if (year < 1 || month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59) {
+    return false;
+  }
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return day >= 1 && day <= daysInMonth;
+}
+
+function hasCanonicalStoreIntegerTokens(
+  contract: WorkbenchResponseContract,
+  body: ParsedJSONBody,
+) {
+  if (!hasUniqueObjectKeys(body.root)) return false;
+  if (
+    contract === "store-create" ||
+    contract === "store-item" ||
+    contract === "store-service-lifecycle"
+  ) {
+    return hasCanonicalIntegerNode(
+      findNodeAtLocation(body.root, ["version"]),
+      body.text,
+      false,
+    );
+  }
+  if (contract === "store-delete") {
+    return hasCanonicalIntegerNode(
+      findNodeAtLocation(body.root, ["version"]),
+      body.text,
+      false,
+    );
+  }
+  if (contract !== "store-list") return true;
+
+  const items = findNodeAtLocation(body.root, ["items"]);
+  if (items?.type === "array") {
+    for (const item of items.children ?? []) {
+      if (
+        !hasCanonicalIntegerNode(
+          findNodeAtLocation(item, ["version"]),
+          body.text,
+          false,
+        )
+      ) {
+        return false;
+      }
+    }
+  }
+  return (
+    hasCanonicalIntegerNode(
+      findNodeAtLocation(body.root, ["pagination", "page"]),
+      body.text,
+      false,
+    ) &&
+    hasCanonicalIntegerNode(
+      findNodeAtLocation(body.root, ["pagination", "pageSize"]),
+      body.text,
+      false,
+    ) &&
+    hasCanonicalIntegerNode(
+      findNodeAtLocation(body.root, ["pagination", "total"]),
+      body.text,
+      true,
+    )
+  );
+}
+
+function hasUniqueObjectKeys(root: JSONNode): boolean {
+  const pending = [root];
+  while (pending.length > 0) {
+    const node = pending.pop()!;
+    if (node.type === "object") {
+      const names = new Set<string>();
+      for (const property of node.children ?? []) {
+        const key = property.children?.[0];
+        const value = property.children?.[1];
+        if (
+          property.type !== "property" ||
+          key?.type !== "string" ||
+          !value ||
+          names.has(String(key.value))
+        ) {
+          return false;
+        }
+        names.add(String(key.value));
+        pending.push(value);
+      }
+    } else if (node.type === "array") {
+      for (const child of node.children ?? []) pending.push(child);
+    }
+  }
+  return true;
+}
+
+function hasCanonicalIntegerNode(
+  node: JSONNode | undefined,
+  text: string,
+  allowZero: boolean,
+) {
+  if (!node || node.type !== "number") return true;
+  const token = text.slice(node.offset, node.offset + node.length);
+  const canonicalPattern = allowZero ? /^(0|[1-9][0-9]*)$/ : /^[1-9][0-9]*$/;
+  if (!canonicalPattern.test(token)) return false;
+  try {
+    return BigInt(token) <= BigInt("9007199254740991");
+  } catch {
+    return false;
+  }
+}
+
+function parseSuccessfulPayload(
+  contract: WorkbenchResponseContract,
+  status: number,
+  body: ParsedJSONBody | null,
+  expectedStoreId?: string,
+): Record<string, unknown> | null {
+  if (!body) return null;
+  if (contract === "context" || contract === "context-switch") {
+    if (status !== 200) return null;
+    const parsed = parseWorkbenchContextPayload(body.payload);
+    return parsed.success ? parsed.data : null;
+  }
+  if (contract.startsWith("source-account-")) {
+    return parseSourceAccountSuccessfulPayload(
+      contract,
+      status,
+      body.payload,
+      expectedStoreId,
+    );
+  }
+  const parser =
+    contract === "store-connection-applications" ? officialApplicationListSchema :
+    contract === "store-connection-view" ? officialConnectionViewSchema :
+    contract === "store-connection-begin" ? officialConnectionBeginSchema :
+    contract === "store-list"
+      ? listStoresResponseSchema
+      : contract === "store-delete"
+        ? deleteStoreResponseSchema
+        : contract === "store-service-lifecycle"
+          ? serviceLifecycleResponseSchema
+          : storeResponseSchema;
+  const expectedStatus = contract === "store-create" ? 201 : 200;
+  if (status !== expectedStatus) return null;
+  if (!hasCanonicalStoreIntegerTokens(contract, body)) return null;
+  const parsed = parser.safeParse(body.payload);
+  if (!parsed.success) return null;
+  if (
+    (contract === "store-item" ||
+      contract === "store-delete" ||
+      contract === "store-service-lifecycle") &&
+    expectedStoreId !== undefined &&
+    (contract === "store-service-lifecycle"
+      ? !("storeId" in parsed.data) || parsed.data.storeId !== expectedStoreId
+      : !("id" in parsed.data) || parsed.data.id !== expectedStoreId)
+  ) {
+    return null;
+  }
+  return parsed.data;
+}
+
+function parseSourceAccountSuccessfulPayload(
+  contract: WorkbenchResponseContract,
+  status: number,
+  payload: Record<string, unknown>,
+  expectedAccountId?: string,
+): Record<string, unknown> | null {
+  if (contract === "source-account-list") {
+    if (status !== 200) return null;
+    const parsed = sourceAccountPageResponseSchema.safeParse(payload);
+    return parsed.success ? parsed.data : null;
+  }
+  if (contract === "source-account-detail") {
+    if (status !== 200) return null;
+    const parsed = sourceAccountDetailResponseSchema.safeParse(payload);
+    return parsed.success && parsed.data.account.id === expectedAccountId
+      ? parsed.data
+      : null;
+  }
+  if (contract === "source-account-create") {
+    const parsed = sourceAccountMutationResponseSchema.safeParse(payload);
+    if (!parsed.success) return null;
+    const statusMatchesReplay =
+      (status === 201 && !parsed.data.replayed) ||
+      (status === 200 && parsed.data.replayed);
+    return statusMatchesReplay ? parsed.data : null;
+  }
+  if (contract === "source-account-mutation") {
+    if (status !== 200) return null;
+    const parsed = sourceAccountMutationResponseSchema.safeParse(payload);
+    return parsed.success && parsed.data.account.id === expectedAccountId
+      ? parsed.data
+      : null;
+  }
+  return null;
+}
+
+function readSourceResponseETag(
+  headers: Headers,
+  payload: Record<string, unknown>,
+  contract: WorkbenchResponseContract,
+) {
+  if (contract === "source-account-list") return null;
+  const account = payload.account;
+  if (!account || typeof account !== "object" || Array.isArray(account)) return "";
+  const version = (account as Record<string, unknown>).version;
+  if (typeof version !== "string") return "";
+  const etag = headers.get("ETag") ?? "";
+  return etag === `"${version}"` && isStrongSourceAccountETag(etag) ? etag : "";
+}
+
+function invalidUpstreamResponse() {
+  return protocolError(
+    502,
+    "DEPENDENCY_UNAVAILABLE",
+    "Workbench upstream response is invalid",
+  );
+}
+
+function sourceProtocolFailure(sourceMutation: boolean, requestId: string) {
+  return sourceMutation
+    ? protocolError(
+        503,
+        "OUTCOME_UNKNOWN",
+        "Source Account mutation outcome is unknown",
+        requestId,
+      )
+    : protocolError(
+        502,
+        "INVALID_UPSTREAM_RESPONSE",
+        "Source Account upstream response is invalid",
+        requestId,
+      );
+}
+
+function clearSelectionCookie(response: NextResponse) {
+  response.cookies.set(WORKBENCH_COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: process.env.NODE_ENV !== "development",
+    maxAge: 0,
+  });
+}
+
+function protocolError(
+  status: number,
+  code: string,
+  message: string,
+  requestId = "",
+) {
+  return NextResponse.json(
+    { code, message, requestId, fieldErrors: [] },
+    { status, headers: safeJSONHeaders() },
+  );
+}
+
+function safeJSONHeaders() {
+  return new Headers({
+    "Content-Type": "application/json",
+    "Cache-Control": "private, no-store",
+    "X-Content-Type-Options": "nosniff",
+  });
+}
+
+export class BodyTooLargeError extends Error {}
+class BodyReadTimeoutError extends Error {}
+class InvalidUpstreamBodyError extends Error {}

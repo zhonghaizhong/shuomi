@@ -1,0 +1,53 @@
+import {render,screen,within} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import {afterEach,expect,it,vi} from "vitest";
+import type {CatalogItem} from "@/lib/api/store-center";
+const state=vi.hoisted(()=>({summary:{} as Record<string,unknown>,chat:false}));
+vi.mock("@/components/providers/workbench-context-provider",()=>({useWorkbenchContext:()=>({user:{id:"actor"},effectiveOrganization:{id:"org-a",capabilities:{"workbench.chat.use":state.chat}},aiWorkbenchAvailable:state.chat,aiWorkbenchExecutionKind:state.chat?"product.content.localize":undefined,permissions:["workbench.store.read","workbench.store.update"],roles:[]})}));
+vi.mock("@tanstack/react-query",()=>({useQueryClient:()=>({invalidateQueries:vi.fn()}),useQuery:({queryKey}:{queryKey:string[]})=>queryKey[0]==="store-summary"?state.summary:{data:{items:[]}}}));
+vi.mock("./store-catalog-dialogs",()=>({StoreCatalogDialogs:({dialog}:{dialog:{kind:string;initialKind?:string}})=> <div role="dialog">{dialog.kind==="sync"?`同步 ${dialog.initialKind}`:"归属设置"}</div>}));
+vi.mock("./store-official-connection",()=>({StoreOfficialConnection:()=> <div>当前店铺官方连接入口</div>}));
+import {StoreDetailPresentation} from "./store-detail-presentation";
+const metric={value:0,complete:true,unknown:0,reason:""};
+const item={id:"11111111-1111-4111-8111-111111111111",name:"A 店铺",region:"US",platform:"shein",version:1,recordStatus:"active",serviceStatus:"pending_activation",connectionStatus:"disconnected",profile:{storeId:"11111111-1111-4111-8111-111111111111",profileVersion:0,groupId:null,responsibleMemberId:null,lowStockThreshold:null,updatedAt:null},signals:{products:metric,orders:metric,inventory:metric,syncHealthy:false,observedAt:null},attention:"attention"} as CatalogItem;
+afterEach(()=>{state.summary={};state.chat=false;window.history.replaceState(null,"",window.location.pathname)});
+it("links the current authorized store to a content chat",()=>{
+ state.chat=true;state.summary={data:item,isPending:false,isError:false};
+ render(<StoreDetailPresentation store={item} canUpdate onRefresh={vi.fn()} actions={null} editForm={null}/>);
+ expect(screen.getByRole("link",{name:"在硕米 Chat 中讨论"})).toHaveAttribute("href",`/workbench/ai/chat/new?storeId=${item.id}`);
+});
+it("keeps the selected store in both order record entry points",async()=>{
+ state.summary={data:item,isPending:false,isError:false};
+ render(<StoreDetailPresentation store={item} canUpdate onRefresh={vi.fn()} actions={null} editForm={null}/>);
+ expect(screen.getByRole("link",{name:"查看平台订单记录"})).toHaveAttribute("href",`/workbench/store-orders/records?storeId=${item.id}`);
+ await userEvent.click(screen.getByRole("tab",{name:"数据同步"}));
+ expect(within(screen.getByRole("heading",{name:"订单数据"}).closest("section")!).getByRole("link",{name:"查看数据与历史"})).toHaveAttribute("href",`/workbench/store-orders/records?storeId=${item.id}`);
+});
+it("distinguishes an unset threshold and incomplete inventory coverage in detail overviews",()=>{
+ const props={store:item,canUpdate:true,onRefresh:vi.fn(),actions:null,editForm:null};state.summary={data:{...item,signals:{...item.signals,inventory:{value:null,complete:false,unknown:0,reason:"threshold_not_set"}}},isPending:false,isError:false};const view=render(<StoreDetailPresentation {...props}/>);
+ expect(screen.getByText("未设置")).toBeInTheDocument();state.summary={data:{...item,signals:{...item.signals,inventory:{value:0,complete:false,unknown:2,reason:"inventory_unknown"}}},isPending:false,isError:false};view.rerender(<StoreDetailPresentation {...props}/>);expect(screen.getByText("另 2 项库存未知")).toBeInTheDocument();
+});
+it("hides stale profile facts and its open dialog after the Store summary access is revoked",async()=>{
+ state.summary={data:item,isPending:false,isError:false};const props={store:item,canUpdate:true,onRefresh:vi.fn(),actions:null,editForm:null};const view=render(<StoreDetailPresentation {...props}/>);
+ await userEvent.click(screen.getByRole("tab",{name:"店铺设置"}));await userEvent.click(screen.getByRole("button",{name:"修改归属与预警设置"}));expect(screen.getByRole("dialog")).toBeInTheDocument();
+ state.summary={data:item,isPending:false,isError:true,error:{code:"PERMISSION_DENIED"}};view.rerender(<StoreDetailPresentation {...props}/>);expect(screen.queryByRole("dialog")).not.toBeInTheDocument();expect(screen.getByRole("button",{name:"修改归属与预警设置"})).toBeDisabled();expect(within(screen.getByText("分组与业务归属").closest("section")!).getAllByText("未知")).toHaveLength(3);expect(screen.queryByText("未设置")).not.toBeInTheDocument();
+});
+it("opens TEMU product sync while leaving unsupported order sync disabled",async()=>{
+ const store={...item,platform:"temu" as const};state.summary={data:store,isPending:false,isError:false};
+ render(<StoreDetailPresentation store={store} canUpdate={true} onRefresh={vi.fn()} actions={null} editForm={null}/>);
+ await userEvent.click(screen.getByRole("tab",{name:"数据同步"}));
+ const products=within(screen.getByText("商品与库存").closest("section")!),orders=within(screen.getByText("订单数据").closest("section")!);
+ expect(products.getByRole("button",{name:"立即同步"})).toBeEnabled();
+ expect(orders.getByRole("button",{name:"立即同步"})).toBeDisabled();
+ await userEvent.click(products.getByRole("button",{name:"立即同步"}));
+ expect(screen.getByRole("dialog")).toHaveTextContent("同步 products");
+});
+it("selects authorization when the same-page next-step link changes history without hashchange",async()=>{
+ state.summary={data:item,isPending:false,isError:false};
+ render(<StoreDetailPresentation store={item} canUpdate={true} onRefresh={vi.fn()} actions={null} editForm={null}/>);
+ const preventNative=(event:Event)=>event.preventDefault();
+ window.addEventListener("click",preventNative);
+ try{await userEvent.click(screen.getByRole("link",{name:/查看本店授权信息/}));}finally{window.removeEventListener("click",preventNative);}
+ expect(screen.getByRole("tab",{name:"授权信息"})).toHaveAttribute("aria-selected","true");
+ expect(screen.getByText("当前店铺官方连接入口")).toBeVisible();
+});

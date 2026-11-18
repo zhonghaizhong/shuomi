@@ -1,0 +1,140 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildWorkbenchBrowserResponse, buildWorkbenchUpstreamRequest } from "./workbench-proxy";
+
+const id = "550e8400-e29b-41d4-a716-446655440000";
+const scope = { cookie: "shuomi_effective_organization=org-b", "X-Expected-Organization-ID": "org-b", "X-Expected-User-ID": "user-a" };
+
+describe("AI Workbench BFF boundary", () => {
+  beforeEach(() => vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost"));
+  it("forwards only the durable scheduled rejection proof and never fabricates it",async()=>{
+    const accepted=await buildWorkbenchBrowserResponse(Response.json({code:"SCHEDULE_COMMAND_REJECTED",commandAccepted:false,secret:"hidden"},{status:409}),"ai-schedule-create",undefined,{sourceMutation:true});
+    expect(accepted.status).toBe(409);expect(await accepted.json()).toMatchObject({code:"SCHEDULE_COMMAND_REJECTED",commandAccepted:false});
+    const unknown=await buildWorkbenchBrowserResponse(Response.json({code:"SCHEDULE_COMMAND_REJECTED"},{status:409}),"ai-schedule-create",undefined,{sourceMutation:true});
+    expect(unknown.status).toBe(503);expect(await unknown.json()).not.toHaveProperty("commandAccepted");
+  });
+  it.each(["pause","close","delete"])("preserves scheduled %s CAS and retry identity, and rejects forged owner fields",async action=>{
+    const make=(body:object)=>new Request(`http://localhost/api/workbench/schedules/${id}/${action}`,{method:"POST",headers:{...scope,Origin:"http://localhost","Content-Type":"application/json","Idempotency-Key":id},body:JSON.stringify(body)});
+    const result=await buildWorkbenchUpstreamRequest(make({expectedRevision:"9007199254740993"}),["schedules",id,action],"server-token","user-a");
+    expect(result).not.toBeInstanceOf(Response);
+    if(!(result instanceof Response)){expect(result.init.body).toBe('{"expectedRevision":"9007199254740993"}');expect(new Headers(result.init.headers).get("Idempotency-Key")).toBe(id);expect(result.sourceMutation).toBe(true);}
+    const forged=await buildWorkbenchUpstreamRequest(make({expectedRevision:"2",actorId:"other"}),["schedules",id,action],"server-token","user-a");
+    expect(forged).toBeInstanceOf(Response);if(forged instanceof Response)expect(forged.status).toBe(400);
+  });
+  it("allows a scoped Chat create and strips browser identity claims", async () => {
+    const request = new Request("http://localhost/api/workbench/chat/conversations", {
+      method: "POST", headers: { ...scope, Origin: "http://localhost", "Content-Type": "application/json", "Idempotency-Key": id, "X-Tenant-ID": "victim" }, body: JSON.stringify({scopeSelection:{kind:"general"},scopeConfirmation:"a".repeat(64)}),
+    });
+    const mapped = await buildWorkbenchUpstreamRequest(request, ["chat", "conversations"], "server-token", "user-a");
+    expect(mapped).not.toBeInstanceOf(Response);
+    if (mapped instanceof Response) return;
+    expect(mapped.url).toMatch(/\/api\/v1\/workbench\/chat\/conversations$/);
+    const headers = new Headers(mapped.init.headers);
+    expect(headers.get("Authorization")).toBe("Bearer server-token");
+    expect(headers.get("X-Requested-Organization-ID")).toBe("org-b");
+    expect(headers.get("X-Tenant-ID")).toBeNull();
+    expect(mapped.sourceMutation).toBe(true);
+  });
+
+  it("rejects a write after the expected enterprise changes", async () => {
+    const request = new Request("http://localhost/api/workbench/chat/conversations", {
+      method: "POST", headers: { ...scope, "X-Expected-Organization-ID": "org-a", Origin: "http://localhost", "Content-Type": "application/json", "Idempotency-Key": id }, body: "{}",
+    });
+    const mapped = await buildWorkbenchUpstreamRequest(request, ["chat", "conversations"], "server-token", "user-a");
+    expect(mapped).toBeInstanceOf(Response);
+    if (mapped instanceof Response) expect(mapped.status).toBe(409);
+  });
+
+  it("forwards only the scoped saved-conversation page filter", async () => {
+    const headers = { ...scope };
+    const cursor = "A".repeat(31) + "B";
+    const accepted = new Request(`http://localhost/api/workbench/chat/conversations?limit=50&saved=true&after=${cursor}`, { headers });
+    const mapped = await buildWorkbenchUpstreamRequest(accepted, ["chat", "conversations"], "server-token", "user-a");
+    expect(mapped).not.toBeInstanceOf(Response);
+    if (mapped instanceof Response) return;
+    expect(mapped.url).toContain(`?limit=50&saved=true&after=${cursor}`);
+    const archived = new Request(`http://localhost/api/workbench/chat/conversations?archived=true&after=${cursor}`, { headers });
+    const archivedMapped = await buildWorkbenchUpstreamRequest(archived, ["chat", "conversations"], "server-token", "user-a");
+    expect(archivedMapped).not.toBeInstanceOf(Response);
+    if (!(archivedMapped instanceof Response)) expect(archivedMapped.url).toContain(`?archived=true&after=${cursor}`);
+    for (const suffix of ["saved=false", "saved=true&saved=true", "archived=false", "saved=true&archived=true", "unknown=true", `after=${id}`]) {
+      const rejected = new Request(`http://localhost/api/workbench/chat/conversations?${suffix}`, { headers });
+      const result = await buildWorkbenchUpstreamRequest(rejected, ["chat", "conversations"], "server-token", "user-a");
+      expect(result).toBeInstanceOf(Response);
+      if (result instanceof Response) expect(result.status).toBe(400);
+    }
+  });
+
+  it("accepts only the curated Task projection fields", async () => {
+    const task = { id, conversationId: id, proposalId: id, title: "Title suggestion", goalSummary: "Improve title", createdAt: "2026-10-03T00:00:00Z",
+      projectionAvailable: true, state: "WAITING_CONFIRMATION", reason: "pending", canStart: false, canReconcile: false, canResume: false, canReview: false,
+      productDetailsAvailable: false, secret: "never forward" };
+    const response = await buildWorkbenchBrowserResponse(Response.json({ task }), "ai-task-read");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ task: { id, state: "WAITING_CONFIRMATION" } });
+    expect(JSON.stringify(await buildWorkbenchBrowserResponse(Response.json({ task }), "ai-task-read").then(r => r.json()))).not.toContain("never forward");
+  });
+
+  it("requires and forwards a canonical key for each Task mutation", async () => {
+    for (const action of ["start", "resume", "review"] as const) {
+      const body = action === "resume" ? JSON.stringify({ revision: "2", feedback: "Use the source title" }) : undefined;
+      const make = (key?: string) => new Request(`http://localhost/api/workbench/tasks/${id}/${action}`, {
+        method: "POST", headers: { ...scope, Origin: "http://localhost", ...(body ? { "Content-Type": "application/json" } : {}),
+          ...(key ? { "Idempotency-Key": key } : {}) }, ...(body ? { body } : {}),
+      });
+      const path = ["tasks", id, action];
+      const missing = await buildWorkbenchUpstreamRequest(make(), path, "server-token", "user-a");
+      expect(missing).toBeInstanceOf(Response);
+      if (missing instanceof Response) expect(missing.status).toBe(400);
+      const mapped = await buildWorkbenchUpstreamRequest(make(id), path, "server-token", "user-a");
+      expect(mapped).not.toBeInstanceOf(Response);
+      if (!(mapped instanceof Response)) expect(new Headers(mapped.init.headers).get("Idempotency-Key")).toBe(id);
+    }
+  });
+
+  it("rejects Resume feedback over 8 KiB in UTF-8 before forwarding", async () => {
+    const request = new Request(`http://localhost/api/workbench/tasks/${id}/resume`, {
+      method: "POST", headers: { ...scope, Origin: "http://localhost", "Content-Type": "application/json", "Idempotency-Key": id },
+      body: JSON.stringify({ revision: "2", feedback: "中".repeat(2731) }),
+    });
+    const mapped = await buildWorkbenchUpstreamRequest(request, ["tasks", id, "resume"], "server-token", "user-a");
+    expect(mapped).toBeInstanceOf(Response);
+    if (mapped instanceof Response) expect(mapped.status).toBe(400);
+  });
+
+  it("preserves a verified organization revocation response for Chat", async () => {
+    const response = await buildWorkbenchBrowserResponse(Response.json({ code: "ORGANIZATION_ACCESS_REVOKED" }, { status: 403 }), "ai-conversation-read");
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ code: "ORGANIZATION_ACCESS_REVOKED" });
+  });
+
+  it("forwards exact Workbench revision and Task outcome errors", async () => {
+    for (const [code, status] of [["REVISION_MISMATCH", 409], ["TASK_OUTCOME_UNKNOWN", 503]] as const) {
+      const response = await buildWorkbenchBrowserResponse(Response.json({ code }, { status }), "ai-task-resume", undefined, { sourceMutation: true });
+      expect(response.status).toBe(status);
+      expect(await response.json()).toMatchObject({ code });
+    }
+  });
+});
+
+it("resolves only the explicit scoped subject namespace without mutation semantics",async()=>{
+ vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL","http://localhost");
+ const path=["chat","subjects","own_product",id];
+ const request=new Request(`http://localhost/api/workbench/${path.join("/")}`,{headers:scope});
+ const mapped=await buildWorkbenchUpstreamRequest(request,path,"token","user-a");
+ expect(mapped).not.toBeInstanceOf(Response);if(mapped instanceof Response)return;
+ expect(mapped.sourceMutation).toBe(false);expect(mapped.expectedStoreId).toBe(`own_product:${id}`);
+ const payload={subject:{kind:"own_product",id,catalogVersion:"2",publicationId:"current-publication"},productKey:"product"};
+ expect((await buildWorkbenchBrowserResponse(Response.json(payload),"ai-subject-read",mapped.expectedStoreId)).status).toBe(200);
+ expect((await buildWorkbenchBrowserResponse(Response.json({...payload,subject:{...payload.subject,kind:"acquisition"}}),"ai-subject-read",mapped.expectedStoreId)).status).toBe(502);
+ expect(await buildWorkbenchUpstreamRequest(new Request(request.url+"?version=1",{headers:scope}),path,"token","user-a")).toBeInstanceOf(Response);
+});
+it("forwards full content selection without accepting acquisition/title or identity claims",async()=>{
+ vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL","http://localhost");
+ const taskSelection={subject:{kind:"own_product",id,catalogVersion:"3",publicationId:"effective-publication"},capability:"product.content.localize",parameters:{targetLanguage:"en-US",description:true,sellingPoints:true}};
+ const path=["chat","conversations",id,"messages"];
+ const make=(body:unknown)=>new Request(`http://localhost/api/workbench/${path.join("/")}`,{method:"POST",headers:{...scope,Origin:"http://localhost","Content-Type":"application/json","Idempotency-Key":id},body:JSON.stringify(body)});
+ const body={content:"Localize",taskSelection};
+ const mapped=await buildWorkbenchUpstreamRequest(make(body),path,"token","user-a");
+ expect(mapped).not.toBeInstanceOf(Response);if(!(mapped instanceof Response))expect(JSON.parse(mapped.init.body as string)).toEqual(body);
+ for(const invalid of [{...body,operationId:id,targetPlatform:"shein"},{...body,taskSelection:{...taskSelection,subject:{...taskSelection.subject,organizationId:"other"}}}])expect(await buildWorkbenchUpstreamRequest(make(invalid),path,"token","user-a")).toBeInstanceOf(Response);
+});

@@ -1,0 +1,200 @@
+"use client";
+
+import Link from "next/link";
+import {useSearchParams} from "next/navigation";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {fetchTaskCenterSummary} from "@/lib/api/task-center-summary";
+import {taskRunKey} from "@/lib/contracts/task-center-summary";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useWorkbenchContext } from "@/components/providers/workbench-context-provider";
+import { WorkScopePicker, scopeLabel } from "./work-scope-picker";
+import type { WorkScopeOption } from "@/lib/contracts/ai-workbench";
+import { requestAIWorkbench, type AIScope } from "@/lib/api/ai-workbench";
+import { fetchProductTitleProposals } from "@/lib/api/product-title-review-client";
+import { contentSelectionLabel } from "@/lib/contracts/content-selection";
+import { findConsoleRoute } from "@/lib/workbench/console-navigation";
+import { ConsolePage, ConsoleState } from "../console/console-page";
+import {WorkbenchViewNav,workbenchViewPage} from "../console/workbench-view-nav";
+import { ProposalSession, ReviewError, reviewQueryPolicy, reviewAccessDenied } from "../task-center/review-session";
+import { TaskDetail } from "./task-detail";
+import {ScheduleManager} from "./schedule-manager";
+import { errorText, filters, taskState, taskReason, type TaskMode } from "./task-presentation";
+import {useNativeRuns} from "./use-native-runs";
+import {NativeRunDetail,NativeRunReadStatus} from "./native-run-view";
+import type {NativeRunDestinations} from "@/lib/agent-run-destination";
+import layout from "../task-center/task-center.module.css";
+import styles from "./task-browser.module.css";
+
+type Selection = { kind: "task" | "review" | "native"; id: string };
+type Row = Selection & { title: string; caption: string; summary: string; state?: string; label?:string; available: boolean };
+
+export function TaskBrowser({ scope, authorizationKey, mode, tasksAvailable, productReviewAvailable, sheinRecordsAvailable, nativeRunsAvailable = false, nativeRunDestinations, initialProposalId }: {
+  scope: AIScope; authorizationKey: string; mode: TaskMode; tasksAvailable: boolean; productReviewAvailable: boolean; sheinRecordsAvailable: boolean; nativeRunsAvailable?:boolean; nativeRunDestinations?:NativeRunDestinations; initialProposalId?: string;
+}) {
+  const context = useWorkbenchContext(), client = useQueryClient();
+  const [schedulesView,setSchedulesView]=useState(false);
+  const scheduleSearch=useSearchParams()?.toString()??(typeof window==="undefined"?"":window.location.search);
+  useEffect(()=>{let active=true;queueMicrotask(()=>{if(active)setSchedulesView(new URLSearchParams(scheduleSearch).get("view")==="schedules")});return()=>{active=false}},[scheduleSearch]);
+  const schedules=useQuery({queryKey:["ai-schedule-availability",scope.userId,scope.organizationId,authorizationKey],enabled:tasksAvailable,queryFn:({signal})=>requestAIWorkbench({route:"schedule-availability",method:"GET",path:"schedules/availability",scope,signal}),retry:false,refetchOnWindowFocus:false});
+  function showSchedules(value:boolean){setSchedulesView(value);const url=new URL(window.location.href);if(value)url.searchParams.set("view","schedules");else{url.searchParams.delete("view");url.searchParams.delete("schedule_id");url.searchParams.delete("schedule_proposal");}window.history.replaceState(null,"",url);}
+  const [selection, setSelection] = useState<Selection | undefined>(initialProposalId ? {kind:"review", id:initialProposalId} : undefined);
+  const [search, setSearch] = useState("");
+  const [filterKind,setFilterKind] = useState<"all"|"general"|"project"|"store"|"unrecorded">("all");
+  const [filterScope,setFilterScope] = useState<WorkScopeOption>();
+  const filterReady = (filterKind !== "project" && filterKind !== "store") || !!filterScope;
+  const filterQuery = new URLSearchParams({scopeKind:filterKind});
+  if(filterKind==="project" && filterScope?.scope.projectId) filterQuery.set("projectId",filterScope.scope.projectId);
+  if(filterKind==="store" && filterScope?.scope.storeId) filterQuery.set("storeId",filterScope.scope.storeId);
+  const [reviewRef, setReviewRef] = useState<string>();
+  const [pausedOnly, setPausedOnly] = useState(false);
+  const [reviewLocked, setReviewLocked] = useState(false);
+  const [taskLocked, setTaskLocked] = useState(false);
+  const locked = reviewLocked || taskLocked;
+  const [generation, setGeneration] = useState(0);
+  const native=useNativeRuns(scope,authorizationKey,nativeRunsAvailable && (filterKind==="all"||filterKind==="unrecorded"),generation);
+  const [reviewPosition, setReviewPosition] = useState({ cursors:[undefined] as (string | undefined)[], page:1 });
+  const [accessError, setAccessError] = useState<unknown>();
+  const detailHeading = useRef<HTMLHeadingElement>(null);
+  const listHeading = useRef<HTMLHeadingElement>(null);
+  const rowButtons = useRef(new Map<string, HTMLButtonElement>());
+  const selectionFocus = useRef<"detail" | HTMLButtonElement | HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    const target = selectionFocus.current;
+    selectionFocus.current = null;
+    if (target === "detail") detailHeading.current?.focus();
+    else target?.focus();
+  }, [selection]);
+  const showReviews = (filterKind==="all"||filterKind==="unrecorded") && productReviewAvailable && (mode === "all" || mode === "pending");
+  const tasks = useInfiniteQuery({
+    queryKey: ["ai-tasks", scope.userId, scope.organizationId, authorizationKey, mode, generation,filterQuery.toString()], enabled: tasksAvailable && filterReady,
+    initialPageParam: "", queryFn: ({signal, pageParam}) => requestAIWorkbench({route:"task-list", method:"GET", path:`tasks?limit=50&${filterQuery}${pageParam ? `&after=${pageParam}` : ""}`, scope, signal}),
+    getNextPageParam: (last, _pages, lastParam) => last.next && last.next !== lastParam ? last.next : undefined,
+    retry:false, staleTime:0, gcTime:0, refetchOnWindowFocus:false, refetchOnReconnect:false,
+  });
+  const reviews = useQuery({ ...reviewQueryPolicy,
+    queryKey:["workbench", scope.userId, scope.organizationId, authorizationKey, "task-center-reviews", generation, reviewPosition],
+    enabled:showReviews && !accessError,
+    queryFn: ({signal}) => fetchProductTitleProposals({organizationId:scope.organizationId,limit:20,cursor:reviewPosition.cursors.at(-1),signal}),
+  });
+  if (reviewAccessDenied(reviews.error) && accessError !== reviews.error) {
+    setAccessError(reviews.error); setReviewLocked(false);
+    if (!taskLocked) setSelection(undefined);
+  }
+  const page = tasks.isError ? [] : Array.from(new Map(tasks.data?.pages.flatMap(part => part.tasks ?? []).map(item => [item.id, item]) ?? []).values());
+  const incomplete = tasks.data?.pages.some(page=>page.incomplete) ?? false;
+  const matchesMode = (state?: string) => pausedOnly ? state === "PAUSED" : mode === "all" ||
+    mode === "pending" && state === "WAITING_CONFIRMATION" || mode === "running" && state === "RUNNING" ||
+    mode === "completed" && state === "COMPLETED" || mode === "errors" && state === "ERROR";
+  const taskRows: Row[] = page.filter(item => matchesMode(item.state)).map(item => ({
+    kind:"task",id:item.id,title:item.title,caption:item.businessScope ? scopeLabel(item.businessScope) : "未记录工作范围",
+    summary:item.projectionAvailable ? taskReason(item.reason ?? "", item.kind) ?? item.goalSummary ?? "" : "状态暂不可用",
+    state:item.state,available:item.projectionAvailable,
+  }));
+  // Correlation only removes a proposal when its task is actually in this visible page.
+  const matchesSearch = (row: Row) => `${row.title} ${row.caption} ${row.summary}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
+  const visibleTaskRows = taskRows.filter(matchesSearch);
+  const linked = new Set(page.filter(item => visibleTaskRows.some(row => row.id === item.id)).map(item => item.reviewId).filter(Boolean));
+  const reviewRows: Row[] = !showReviews || accessError || reviews.isError || reviews.isFetching || pausedOnly ? [] : (reviews.data?.items ?? []).filter(item => !item.workbench_scoped && !linked.has(item.proposal_id)).map(item => ({
+    kind:"review",id:item.proposal_id,title:"policy" in item && item.policy === "product-content-review-v1" ? "完善与本地化标准商品内容" : "调整标准商品标题",
+    caption:`${item.product_key} · 未记录工作范围`,summary:`${item.state === "accepted" ? "已接受，待应用" : "提案待审核"} · 基线 ${item.base_version} · 提案修订 ${item.proposal_revision}${"content_selection" in item ? ` · ${contentSelectionLabel(item.content_selection)}` : ""}`,
+    state:"WAITING_CONFIRMATION",available:true,
+  }));
+  const linkedRuns=new Set(page.map(taskRunKey).filter(Boolean));
+  const nativeRows:Row[]=native.items.filter(item=>!linkedRuns.has(item.key)&&matchesMode(item.state)).map(item=>({kind:"native",id:item.key,title:item.title,caption:`${item.caption} · 未记录工作范围`,summary:item.summary,label:item.label,state:item.state,available:true}));
+  const rows = [...visibleTaskRows, ...reviewRows.filter(matchesSearch),...nativeRows.filter(matchesSearch)];
+  rows.sort((a,b) => Number(b.state === "WAITING_CONFIRMATION") - Number(a.state === "WAITING_CONFIRMATION"));
+  const searching = filterReady && !incomplete && tasksAvailable && (mode !== "all" || pausedOnly) && !tasks.isPending && !tasks.isFetching && !tasks.isError && taskRows.length === 0 && tasks.hasNextPage;
+  const fetchNextPage = tasks.fetchNextPage, loadedPages = tasks.data?.pages.length ?? 0;
+  useEffect(() => { if (searching && !locked) void fetchNextPage(); }, [searching, locked, fetchNextPage, loadedPages]);
+  const refetchReviews = reviews.refetch;
+  const reviewChanged = useCallback(() => {
+    void refetchReviews();
+    void client.invalidateQueries({queryKey:["ai-task",scope.userId,scope.organizationId,authorizationKey]});
+    void client.invalidateQueries({queryKey:["ai-tasks",scope.userId,scope.organizationId,authorizationKey]});
+    void client.invalidateQueries({queryKey:["task-center-summary",scope.userId,scope.organizationId,authorizationKey]});
+  }, [refetchReviews, client, scope.userId, scope.organizationId, authorizationKey]);
+  // A partial Task projection cannot discard the Review owner's unknown intent.
+  const observeReview = useCallback((id?: string) => { if (id && !locked) setReviewRef(id); }, [locked, setReviewRef]);
+  function select(next?: Selection) {
+    if (locked) return;
+    selectionFocus.current = next ? "detail" : selection && rowButtons.current.get(selection.kind+selection.id) || listHeading.current;
+    setSelection(next); setReviewRef(next?.kind === "task" ? page.find(item=>item.id===next.id)?.reviewId : undefined);
+    const url = new URL(window.location.href);
+    if (next?.kind === "review") url.searchParams.set("proposal_id", next.id); else url.searchParams.delete("proposal_id");
+    window.history.replaceState(null,"",url);
+  }
+  function refresh() {
+    if (locked) return;
+    select(); setGeneration(value=>value+1); setReviewPosition({cursors:[undefined],page:1}); setAccessError(undefined);
+  }
+  const renderReview = (id: string) => <ProposalSession key={id} proposalId={id} organizationId={scope.organizationId} scope={JSON.stringify([scope,authorizationKey])}
+    userId={scope.userId} roles={context.roles} permissions={context.permissions} onLocked={setReviewLocked} interactionLocked={taskLocked}
+    onDenied={error=>{setReviewLocked(false);setAccessError(error);if(!taskLocked)setSelection(undefined);}} onChanged={reviewChanged} />;
+  const canChat = tasksAvailable && context.effectiveOrganization?.capabilities?.["workbench.chat.use"] === true && context.aiWorkbenchPlanningReadiness === "AVAILABLE";
+  const available = tasksAvailable || nativeRunsAvailable || productReviewAvailable || sheinRecordsAvailable && (mode === "all" || mode === "completed");
+  const summary=useQuery({queryKey:["task-center-summary",scope.userId,scope.organizationId,authorizationKey,generation,filterQuery.toString()],enabled:available&&filterReady,queryFn:({signal})=>fetchTaskCenterSummary(scope,filterQuery.toString(),signal),retry:false,staleTime:0,gcTime:0,refetchOnWindowFocus:false,refetchOnReconnect:false});
+  const metrics = [
+    {label:"待确认",state:"WAITING_CONFIRMATION"},
+    {label:"执行中",state:"RUNNING"},
+    {label:"已完成",state:"COMPLETED"},
+    {label:"异常",state:"ERROR"},
+    {label:"已暂停",state:"PAUSED"},
+  ] as const;
+  const summaryReady=filterReady&&summary.isSuccess&&!summary.isFetching&&summary.data.status==="complete";
+  let detail: ReactNode = <ConsoleState kind="empty" title="选择一条任务或待确认事项">查看当前状态、建议与依据，再决定下一步操作。</ConsoleState>;
+  if (selection?.kind === "task" && tasksAvailable) detail = <><TaskDetail key={selection.id} scope={scope} authorizationKey={authorizationKey} taskId={selection.id} embedded interactionLocked={reviewLocked} onLocked={setTaskLocked} onChanged={reviewChanged} onReviewReference={productReviewAvailable ? observeReview : undefined} />{productReviewAvailable && reviewRef ? renderReview(reviewRef) : null}</>;
+  if (selection?.kind === "review" && productReviewAvailable) detail = renderReview(selection.id);
+  const selectedNative=selection?.kind==="native"?native.items.find(item=>item.key===selection.id):undefined;
+  if(selectedNative)detail=<NativeRunDetail record={selectedNative} locked={locked} scope={scope} destinations={nativeRunDestinations}/>;
+  if(schedulesView&&tasksAvailable)return <ScheduleManager key={JSON.stringify([scope,authorizationKey])} scope={scope} authorizationKey={authorizationKey} canUse={context.permissions.includes("workbench.agent.use")} onBack={()=>showSchedules(false)}/>;
+  return <ConsolePage className={workbenchViewPage} title="任务中心" description="查看正在执行、等待确认和已经完成的业务任务。" breadcrumbs={findConsoleRoute(filters.find(item=>item.mode===mode)!.href)?.trail}
+    actions={<>{<input className={styles.search} type="search" aria-label="搜索已加载记录" placeholder="搜索任务或商品" value={search} disabled={locked} onChange={event=>setSearch(event.target.value)} />}
+      {schedules.data?.enabled?<Button variant="outline" disabled={locked} onClick={()=>showSchedules(true)}>定时任务</Button>:null}
+      {canChat ? <Button asChild><Link href="/workbench/ai/chat/new" prefetch={false} aria-disabled={locked || undefined} tabIndex={locked ? -1 : undefined} onClick={event=>{if(locked)event.preventDefault();}}>向硕米发起任务</Link></Button> : null}</>}>
+    <div className={`${layout.metrics} ${styles.metrics}`} aria-label="当前范围任务统计">
+      {metrics.map(metric=><Card className={layout.metric} key={metric.state}><div><h2>{metric.label}</h2></div><strong className={styles.metricNumber} data-state={metric.state}>{summaryReady?summary.data.counts?.[metric.state]:!available?"未启用":!filterReady?"待选择":summary.isPending||summary.isFetching?"读取中":"暂不可用"}</strong></Card>)}
+    </div>
+    <p className={styles.summaryNote} role="status">{summaryReady?`当前权限与工作范围内统计${summary.data.excluded?`；另有 ${summary.data.excluded} 条建议已生成或已停止的记录，可在“全部”中查看`:""}`:!available?"当前没有已启用的任务来源。":!filterReady?"请选择项目或店铺后查看统计。":summary.isPending||summary.isFetching?"正在统计当前范围内的任务…":"部分任务来源暂不可用，当前无法给出完整统计，请刷新重试。"}</p>
+    <div className={styles.toolbar}><WorkbenchViewNav className={layout.viewNavigation} label="任务状态">
+      {filters.filter(filter=>tasksAvailable || nativeRunsAvailable || filter.mode==="all" || filter.mode==="pending" && productReviewAvailable || filter.mode==="completed" && sheinRecordsAvailable).map(filter=><Link key={filter.mode} href={filter.href} aria-current={!pausedOnly && mode===filter.mode ? "page":undefined} aria-disabled={locked || undefined} tabIndex={locked ? -1 : undefined} prefetch={false} onClick={event=>{if(locked)event.preventDefault();else if(pausedOnly){select();setPausedOnly(false);}}}>{filter.label}</Link>)}
+      {tasksAvailable || nativeRunsAvailable ? <Button variant="outline" disabled={locked} aria-pressed={pausedOnly} onClick={()=>{select();setPausedOnly(value=>!value);}}>已暂停</Button> : null}
+    </WorkbenchViewNav><Button variant="outline" disabled={locked} onClick={refresh}>刷新状态</Button></div>
+    <div className={styles.filterBar}>
+      {tasksAvailable ? <label className={styles.scopeFilter}>工作范围<select aria-label="工作范围筛选" value={filterKind} disabled={locked} onChange={event=>{select();setFilterScope(undefined);setFilterKind(event.target.value as typeof filterKind);}}><option value="all">全部范围</option><option value="general">通用业务</option><option value="project">项目</option><option value="store">店铺</option><option value="unrecorded">未记录工作范围</option></select></label> : null}
+      {tasksAvailable&&(filterKind==="project"||filterKind==="store") ? <WorkScopePicker key={filterKind} initialKind={filterKind} fixedKind scope={scope} authorizationKey={authorizationKey} disabled={locked} selected={filterScope} onSelect={value=>{select();setFilterScope(value);}}/> : null}
+      <span className={styles.filterHint}>待确认事项优先显示</span>
+      <details className={styles.filterHelp}><summary>查看说明</summary><div><p>状态统计覆盖当前权限和工作范围内的记录，不受列表分页影响；搜索只查找列表当前已加载的记录。</p><p>统计包含当前可读取的业务任务、待确认事项和智能体运行。研究分析和历史资料记录仍在各自入口查看。任务完成后，应用建议或发布商品仍需单独确认。</p></div></details>
+    </div>
+    {!available ? <ConsoleState kind="unavailable" title="暂未启用">当前应用未启用硕米 Chat 与业务任务。</ConsoleState> :
+    <div className={`${layout.columns} ${styles.columns}`} data-selected={!!selection}>
+      <Card className={layout.list}><header className={layout.panelHeader}><h2 tabIndex={-1} ref={listHeading}>任务列表</h2><span>已显示 {rows.length} 项</span></header>
+        {tasksAvailable && filterReady && tasks.isPending ? <ConsoleState kind="loading" title={mode==="all" ? "正在读取任务" : "正在查找符合筛选的任务"} /> : null}
+        {tasksAvailable && tasks.isError ? <ConsoleState kind="error" title={tasks.data ? "部分任务读取失败" : "任务读取失败"}>{errorText(tasks.error)} <Button variant="outline" disabled={locked} onClick={()=>void(tasks.isFetchNextPageError ? tasks.fetchNextPage() : tasks.refetch())}>重试</Button></ConsoleState> : null}
+        {showReviews && (reviews.isPending || reviews.isFetching) && !accessError ? <ConsoleState kind="loading" title="正在读取内容提案">正在校验当前授权范围。</ConsoleState> : null}
+        {accessError || showReviews && reviews.isError ? <ReviewError error={accessError ?? reviews.error} recover={refresh} /> : null}
+        <ul className={layout.rows} aria-label="业务任务与待确认事项">{rows.map(row=><li key={row.kind+row.id}>
+          <button ref={element=>{if(element)rowButtons.current.set(row.kind+row.id,element);else rowButtons.current.delete(row.kind+row.id);}} className={layout.row} disabled={locked} aria-pressed={selection?.kind===row.kind && selection.id===row.id} onClick={()=>select(row)}>
+            <span className={layout.rowMarker+" "+styles.marker} data-state={row.state} aria-hidden="true" />
+            <span className={layout.rowMain}><strong>{row.title}</strong><span>{row.caption} · {row.kind==="review" ? "待确认事项" : row.kind==="native" ? "运行记录":"业务任务"}</span><span>{row.summary}</span></span>
+            <span className={styles.rowStatus}><span className={styles.badge} data-state={row.state}>{row.available ? row.label ?? taskState[row.state ?? ""] ?? "状态未知" : "状态暂不可用"}</span><span className={layout.rowAction}>查看详情 ›</span></span>
+          </button>
+        </li>)}</ul>
+        {searching || tasks.isFetchingNextPage ? <ConsoleState kind="loading" title="正在查找符合筛选的任务" /> : null}
+        {incomplete ? <ConsoleState kind="unavailable" title="部分任务暂不可读">请核对权限，或刷新当前范围。</ConsoleState> : null}
+        {filterReady && !incomplete && !rows.length && !searching && native.ready && (!tasksAvailable || !tasks.isPending && !tasks.isError) && (!showReviews || reviews.isSuccess && !reviews.isFetching) ? <ConsoleState kind="empty" title={search ? "已加载记录中没有匹配项" : "当前筛选无任务"}>任务沿原业务入口发起；已生成建议的运行保留在全部记录，待确认提案按原审核权限读取。</ConsoleState> : null}
+        <NativeRunReadStatus runs={native} locked={locked}/>
+        {tasksAvailable && tasks.hasNextPage && !searching ? <Button variant="outline" disabled={locked || tasks.isFetching} onClick={()=>void tasks.fetchNextPage()}>加载更早任务</Button> : null}
+        {showReviews && !accessError ? <div className={styles.pagination}><span>第 {reviewPosition.page} 页</span>
+          <Button variant="outline" size="sm" disabled={locked || reviews.isFetching || reviewPosition.cursors.length<=1} onClick={()=>{select();setReviewPosition(old=>({cursors:old.cursors.slice(0,-1),page:old.page-1}));}}>上一页</Button>
+          <Button variant="outline" size="sm" disabled={locked || reviews.isFetching || !reviews.data?.next_cursor} onClick={()=>{const cursor=reviews.data?.next_cursor;if(cursor){select();setReviewPosition(old=>({cursors:[...old.cursors,cursor].slice(-50),page:old.page+1}));}}}>下一页</Button>
+          <p>提案每页最多 20 条，按提案标识排序；未读取的分页不计入数量。</p>
+        </div> : null}
+      </Card>
+      <Card className={layout.detail} role="region" aria-label="任务详情"><header className={layout.panelHeader}><h2 tabIndex={-1} ref={detailHeading}>任务详情</h2>
+        {selection ? <Button size="sm" variant="outline" disabled={locked} onClick={()=>select()}>返回列表</Button> : null}</header>{detail}</Card>
+    </div>}
+    {sheinRecordsAvailable && (mode==="all" || mode==="completed") ? <Card className={styles.history}><h2>历史已完成工作记录</h2><p>本地资料准备记录仍由原业务来源读取。</p><Button asChild variant="outline"><Link href="/workbench/ai/tasks/completed/history" prefetch={false} aria-disabled={locked || undefined} tabIndex={locked ? -1 : undefined} onClick={event=>{if(locked)event.preventDefault();}}>查看历史记录</Link></Button></Card> : null}
+  </ConsolePage>;
+}

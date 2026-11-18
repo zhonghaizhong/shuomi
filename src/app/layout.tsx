@@ -1,0 +1,54 @@
+import {isAgentConfigurationAvailable} from "@/lib/server/agent-configuration-origin";
+import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { connection } from "next/server";
+
+import { ApplicationFrame } from "@/components/application-frame";
+import { isProductAcquisitionAvailable } from "@/lib/server/product-acquisition-availability";
+import { isKnowledgeAvailable } from "@/lib/server/knowledge-availability";
+import { configuredProductReviewOrigin } from "@/lib/server/product-title-review-request";
+import { isSheinRecordsAvailable } from "@/lib/server/shein-records-availability";
+import {isEcoservicesAvailable} from "@/lib/server/ecoservices-availability";
+import { isNotificationCenterAvailable } from "@/lib/server/notification-availability";
+import { isReportCenterAvailable } from "@/lib/server/report-center-availability";
+import { isChatwootSupportAvailable } from "@/lib/server/chatwoot-support";
+import "./globals.css";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
+  const metadataBase = new URL(`${protocol}://${host}`);
+  const image = new URL("/og-v2.png", metadataBase).toString();
+
+  return {
+    metadataBase,
+    title: "硕米智能引擎 | AI 电商智能操作系统",
+    description: "AI 自动完成商品资料生产与渠道适配，团队只需审核并决策。",
+    openGraph: {
+      title: "硕米智能引擎 | AI 电商智能操作系统",
+      description: "AI 做繁琐工作，你只需审核。",
+      images: [image],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "硕米智能引擎 | AI 电商智能操作系统",
+      description: "AI 做繁琐工作，你只需审核。",
+      images: [image],
+    },
+  };
+}
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // The server-only deployment switch must be read at request time; it is never
+  // accepted from browser state or inferred from a role.
+  await connection();
+  const productAcquisitionAvailable = isProductAcquisitionAvailable();
+  return (
+    <html lang="zh-CN" className="h-full antialiased" suppressHydrationWarning>
+      <body className="min-h-full bg-background text-foreground">
+        <ApplicationFrame supportAvailable={isChatwootSupportAvailable()} dataServicesAvailable={process.env.LISTINGKIT_DATA_SERVICES_ENABLED === "true"} reportCenterAvailable={isReportCenterAvailable()} supplyMarketAvailable={process.env.LISTINGKIT_SUPPLY_MARKET_ENABLED === "true"} toolMarketAvailable={process.env.LISTINGKIT_TOOL_MARKET_ENABLED === "true"} ecoservicesAvailable={isEcoservicesAvailable()} supplyPreparationAvailable={process.env.LISTINGKIT_PRODUCT_COLLECTIONS_ENABLED === "true" && (process.env.LISTINGKIT_SUPPLY_CHAIN_ENABLED === "true" || process.env.LISTINGKIT_ACQUISITION_PLANS_ENABLED === "true" || process.env.LISTINGKIT_SUPPLY_COMPLETION_DRAFTS_ENABLED === "true")} supplyCompletionDraftsAvailable={process.env.LISTINGKIT_PRODUCT_COLLECTIONS_ENABLED === "true" && process.env.LISTINGKIT_SUPPLY_COMPLETION_DRAFTS_ENABLED === "true"} supplyChainAvailable={process.env.LISTINGKIT_PRODUCT_COLLECTIONS_ENABLED === "true" && process.env.LISTINGKIT_SUPPLY_CHAIN_ENABLED === "true"} productCollectionsAvailable={process.env.LISTINGKIT_PRODUCT_COLLECTIONS_ENABLED === "true"} productAcquisitionAvailable={productAcquisitionAvailable} knowledgeAvailable={isKnowledgeAvailable()} nativeRunsAvailable={isAgentConfigurationAvailable()} productReviewAvailable={configuredProductReviewOrigin() !== null} sheinRecordsAvailable={isSheinRecordsAvailable()} notificationCenterAvailable={isNotificationCenterAvailable()}>{children}</ApplicationFrame>
+      </body>
+    </html>
+  );
+}

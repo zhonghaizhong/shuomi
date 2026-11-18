@@ -1,0 +1,154 @@
+import {cleanup, render, screen, waitFor, within} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {afterEach, beforeEach, expect, it, vi} from "vitest";
+import {listMarketRecords,readApplicationOverview} from "@/lib/api/supply-market";
+import {SupplyApplicationsPage} from "./applications";
+import CatalogApplyRoute from "@/app/workbench/supply/catalogs/apply/page";
+vi.mock("next/server",()=>({connection:vi.fn()}));
+vi.mock("next/navigation",async original=>({...await original<object>(),redirect:vi.fn((url:string)=>{throw new Error("redirect:"+url)})}));
+it("returns the standalone catalog application URL to the directory",async()=>{
+ vi.stubEnv("LISTINGKIT_SUPPLY_MARKET_ENABLED","true");
+ await expect(CatalogApplyRoute()).rejects.toThrow("redirect:/workbench/supply/catalogs");vi.unstubAllEnvs();
+});
+it.each(["progress","records"] as const)("reads only the applicant connection %s via the real catalog route",async(view)=>{
+ vi.stubEnv("LISTINGKIT_SUPPLY_MARKET_ENABLED","true");
+ const component=await CatalogApplyRoute({searchParams:Promise.resolve({view})});
+ const client=new QueryClient({defaultOptions:{queries:{retry:false}}});render(<QueryClientProvider client={client}>{component}</QueryClientProvider>);
+ await waitFor(()=>expect(listMarketRecords).toHaveBeenCalledWith({userId:"member-a",organizationId:"org-a"},{kind:"connection",ended:view==="records",after:undefined},false,expect.any(AbortSignal)));
+ expect(screen.queryByRole("navigation",{name:"供应市场"})).not.toBeInTheDocument();
+ expect(screen.queryByRole("link",{name:"发起申请"})).not.toBeInTheDocument();
+ const trigger=screen.getByRole("button",{name:"发起申请"});await userEvent.setup().click(trigger);
+ const dialog=within(screen.getByRole("dialog",{name:"申请对接货盘"}));expect(dialog.getByLabelText("货盘名称")).toHaveFocus();
+ await userEvent.setup().click(dialog.getByRole("button",{name:"取消"}));expect(trigger).toHaveFocus();expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+ expect(screen.getByRole("link",{name:"申请进度"})).toHaveAttribute("href","/workbench/supply/catalogs/apply?view=progress");
+ expect(screen.getByRole("link",{name:"申请记录"})).toHaveAttribute("href","/workbench/supply/catalogs/apply?view=records");
+ client.clear();vi.unstubAllEnvs();
+});
+
+const context = vi.hoisted(() => ({user:{id:"member-a"}, effectiveOrganization:{id:"org-a"}, isLoading:false, isSwitching:false, error:null, blockingError:null,registerOrganizationSwitchGuard:()=>()=>{}}));
+vi.mock("@/components/providers/workbench-context-provider", () => ({useWorkbenchContext:() => context}));
+vi.mock("@/lib/api/supply-market", async importOriginal => ({...await importOriginal<typeof import("@/lib/api/supply-market")>(), listMarketRecords:vi.fn(),readApplicationOverview:vi.fn()}));
+afterEach(cleanup);
+beforeEach(() => {
+  Object.defineProperty(HTMLDialogElement.prototype,"showModal",{configurable:true,value:function(this:HTMLDialogElement){this.open=true}});
+  Object.defineProperty(HTMLDialogElement.prototype,"close",{configurable:true,value:function(this:HTMLDialogElement){this.open=false}});
+  context.user.id = "member-a";
+  context.isLoading = false;
+  context.isSwitching = false;
+  context.effectiveOrganization.id = "org-a";
+  vi.mocked(listMarketRecords).mockReset().mockResolvedValue({items:[], total:0});
+  vi.mocked(readApplicationOverview).mockReset().mockResolvedValue({eligibleProducts:54,reviewing:27,supplementRequired:4,approved:7,products:[{itemId:"12752596-6056-4316-9f2f-380c97df9675",title:"当前优化商品",thumbnailUrl:"https://images.example.org/real.png",groupName:"真实分组",source:"own"}]});
+});
+function page(view?:"progress"|"records", admin=false) {
+  const client = new QueryClient({defaultOptions:{queries:{retry:false, gcTime:0}}});
+  return render(<QueryClientProvider client={client}><SupplyApplicationsPage view={view} admin={admin} expectedUserId={admin?"specialist":undefined}/></QueryClientProvider>);
+}
+it.each([["progress", "申请进度", false], ["records", "申请记录", true]] as const)("binds %s to the existing selected/ended contract and complete breadcrumb", async (view, label, ended) => {
+  page(view);
+  await screen.findByText("暂无申请记录");
+  expect(screen.getByRole("heading", {name:label, level:1})).toBeVisible();
+  expect(screen.queryByRole("navigation",{name:"供应市场"})).not.toBeInTheDocument();
+  const breadcrumbs = within(screen.getByRole("navigation", {name:"面包屑"}));
+  expect(breadcrumbs.getByText("供应市场")).toBeVisible();
+  expect(breadcrumbs.getByRole("link", {name:"优选申请"})).toHaveAttribute("href", "/workbench/supply/applications");
+  expect(breadcrumbs.getByText(label)).toBeVisible();
+  expect(listMarketRecords).toHaveBeenCalledWith({userId:"member-a", organizationId:"org-a"}, {kind:"selected", ended, after:undefined}, false, expect.any(AbortSignal));
+  expect(screen.queryByRole("combobox", {name:"申请类型"})).not.toBeInTheDocument();
+  expect(screen.getByRole("link", {name:"申请进度"})).toHaveAttribute("href", "/workbench/supply/applications/progress");
+  expect(screen.getByRole("link", {name:"申请记录"})).toHaveAttribute("href", "/workbench/supply/applications/records");
+});
+it("preserves ended/cursor while paging history", async () => {
+  vi.mocked(listMarketRecords).mockResolvedValue({items:[], total:0, nextCursor:"next-history"});
+  page("records");
+  await screen.findByText("暂无申请记录");
+  await userEvent.setup().click(screen.getByRole("button", {name:"下一页"}));
+  await waitFor(() => expect(listMarketRecords).toHaveBeenLastCalledWith({userId:"member-a", organizationId:"org-a"}, {kind:"selected", ended:true, after:"next-history"}, false, expect.any(AbortSignal)));
+});
+it("switches platform type tabs with the existing filters, cursor reset and keyboard controls", async () => {
+  context.user.id = "specialist";
+  vi.mocked(listMarketRecords).mockResolvedValue({items:[],total:0,nextCursor:"next-filter"});
+  page(undefined, true);const user=userEvent.setup();
+  await screen.findByText("暂无申请记录");
+  expect(screen.queryByRole("combobox",{name:"申请类型"})).not.toBeInTheDocument();
+  expect(screen.getByRole("tab",{name:"优选申请"})).toHaveAttribute("aria-selected","true");
+  await user.click(screen.getByRole("button",{name:"下一页"}));
+  await waitFor(()=>expect(listMarketRecords).toHaveBeenLastCalledWith({userId:"specialist",organizationId:""},{kind:"selected",ended:false,after:"next-filter"},true,expect.any(AbortSignal)));
+  await user.click(screen.getByRole("tab", {name:"货盘对接"}));
+  await user.click(screen.getByRole("button", {name:"已结束"}));
+  await waitFor(() => expect(listMarketRecords).toHaveBeenLastCalledWith({userId:"specialist", organizationId:""}, {kind:"connection", ended:true, after:undefined}, true, expect.any(AbortSignal)));
+  await user.click(screen.getByRole("tab",{name:"货盘对接"}));await user.keyboard("{ArrowRight}");
+  expect(screen.getByRole("tab",{name:"自营商品"})).toHaveFocus();expect(screen.getByRole("tab",{name:"自营商品"})).toHaveAttribute("aria-selected","true");
+  expect(screen.getByRole("tabpanel",{name:"自营商品"})).toBeVisible();expect(screen.queryByRole("button",{name:"已结束"})).not.toBeInTheDocument();
+  await waitFor(()=>expect(listMarketRecords).toHaveBeenLastCalledWith({userId:"specialist",organizationId:""},{kind:"official",ended:false,after:undefined},true,expect.any(AbortSignal)));
+  await user.keyboard("{Home}");expect(screen.getByRole("tab",{name:"优选申请"})).toHaveFocus();
+  await waitFor(()=>expect(listMarketRecords).toHaveBeenLastCalledWith({userId:"specialist",organizationId:""},{kind:"selected",ended:true,after:undefined},true,expect.any(AbortSignal)));
+  await user.keyboard("{End}");expect(screen.getByRole("tab",{name:"自营商品"})).toHaveFocus();
+});
+it("replaces the generic member list with the real selected overview and existing entry points", async () => {
+  page();
+  await screen.findByText("当前优化商品");
+  expect(screen.getByRole("heading", {name:"优选申请", level:1})).toBeVisible();
+  expect(screen.getByText("54")).toBeVisible();expect(screen.getByText("27")).toBeVisible();expect(screen.getByText("4")).toBeVisible();expect(screen.getByText("7")).toBeVisible();
+  expect(screen.getByText("真实分组")).toBeVisible();expect(screen.getByRole("img",{name:"当前优化商品"})).toHaveAttribute("src","https://images.example.org/real.png");
+  expect(screen.getByRole("link",{name:"选择商品发起申请"})).toHaveAttribute("href","/workbench/supply/applications/new");expect(screen.getByRole("link",{name:"申请记录"})).toHaveAttribute("href","/workbench/supply/applications/records");
+  expect(screen.getByRole("link",{name:"申请进度"})).toHaveAttribute("href","/workbench/supply/applications/progress");
+  for(const name of ["申请条件","申请流程","服务说明"])expect(screen.queryByRole("heading",{name})).not.toBeInTheDocument();expect(screen.queryByRole("combobox",{name:"申请类型"})).not.toBeInTheDocument();
+  expect(readApplicationOverview).toHaveBeenCalledWith({userId:"member-a",organizationId:"org-a"},expect.any(AbortSignal));expect(listMarketRecords).not.toHaveBeenCalled();
+});
+it("shows genuine zero only after a complete empty overview",async()=>{vi.mocked(readApplicationOverview).mockResolvedValue({eligibleProducts:0,reviewing:0,supplementRequired:0,approved:0,products:[]});page();await screen.findByText("暂无可申请商品");expect(screen.getAllByText("0")).toHaveLength(4)});
+it("does not replace an overview read failure with zero or an empty preview",async()=>{vi.mocked(readApplicationOverview).mockRejectedValue(new Error("unavailable"));page();await screen.findByRole("button",{name:"重新读取"});expect(screen.queryByText("0")).not.toBeInTheDocument();expect(screen.queryByText("暂无可申请商品")).not.toBeInTheDocument()});
+it("hides previously loaded facts when refreshing the overview fails", async () => {
+  const client = new QueryClient({defaultOptions:{queries:{retry:false, gcTime:0}}});
+  render(<QueryClientProvider client={client}><SupplyApplicationsPage/></QueryClientProvider>);
+  await screen.findByText("当前优化商品");
+  vi.mocked(readApplicationOverview).mockRejectedValue(new Error("unavailable"));
+  await client.invalidateQueries({queryKey:["supply-market", "member-a", "org-a", "application-overview"]});
+  await screen.findByRole("button", {name:"重新读取"});
+  expect(screen.queryByText("54")).not.toBeInTheDocument();
+  expect(screen.queryByText("当前优化商品")).not.toBeInTheDocument();
+  expect(screen.queryByText("0")).not.toBeInTheDocument();
+});
+it("resets the cursor when changing the selected-application leaf", async () => {
+  vi.mocked(listMarketRecords).mockResolvedValue({items:[], total:0, nextCursor:"history-cursor"});
+  const client=new QueryClient({defaultOptions:{queries:{retry:false, gcTime:0}}});
+  const view=render(<QueryClientProvider client={client}><SupplyApplicationsPage view="records"/></QueryClientProvider>);
+  await screen.findByText("暂无申请记录");
+  await userEvent.setup().click(screen.getByRole("button", {name:"下一页"}));
+  await waitFor(() => expect(listMarketRecords).toHaveBeenLastCalledWith(expect.anything(), {kind:"selected", ended:true, after:"history-cursor"}, false, expect.any(AbortSignal)));
+  view.rerender(<QueryClientProvider client={client}><SupplyApplicationsPage view="progress"/></QueryClientProvider>);
+  await waitFor(() => expect(listMarketRecords).toHaveBeenLastCalledWith({userId:"member-a", organizationId:"org-a"}, {kind:"selected", ended:false, after:undefined}, false, expect.any(AbortSignal)));
+});
+it("does not query member applications until identity is ready", () => {
+  context.isLoading = true;
+  page("records");
+  expect(listMarketRecords).not.toHaveBeenCalled();
+  expect(screen.getByText("正在确认当前身份")).toBeVisible();
+});
+it("does not query the overview while confirming identity", () => {
+  context.isLoading = true;
+  page();
+  expect(readApplicationOverview).not.toHaveBeenCalled();
+  expect(screen.getByText("正在确认当前身份")).toBeVisible();
+});
+it("removes old overview facts and cancels the read when the enterprise changes", async () => {
+  const client = new QueryClient({defaultOptions:{queries:{retry:false, gcTime:0}}});
+  const view = render(<QueryClientProvider client={client}><SupplyApplicationsPage/></QueryClientProvider>);
+  await screen.findByText("当前优化商品");
+  const previousSignal = vi.mocked(readApplicationOverview).mock.calls[0]![1]!;
+  vi.mocked(readApplicationOverview).mockImplementation((_scope, signal) => new Promise((_resolve, reject) => {
+    signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+  }));
+  context.effectiveOrganization.id = "org-b";
+  view.rerender(<QueryClientProvider client={client}><SupplyApplicationsPage/></QueryClientProvider>);
+  await waitFor(() => expect(readApplicationOverview).toHaveBeenLastCalledWith({userId:"member-a", organizationId:"org-b"}, expect.any(AbortSignal)));
+  expect(screen.queryByText("当前优化商品")).not.toBeInTheDocument();
+  expect(screen.queryByText("54")).not.toBeInTheDocument();
+  // Only an in-flight read needs cancellation; a completed read remains scoped.
+  expect(previousSignal).toBeInstanceOf(AbortSignal);
+  const pendingSignal = vi.mocked(readApplicationOverview).mock.calls[1]![1]!;
+  context.isSwitching = true;
+  view.rerender(<QueryClientProvider client={client}><SupplyApplicationsPage/></QueryClientProvider>);
+  expect(screen.getByText("正在确认当前身份")).toBeVisible();
+  await waitFor(() => expect(pendingSignal.aborted).toBe(true));
+});

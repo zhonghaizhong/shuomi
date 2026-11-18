@@ -1,0 +1,111 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { useWorkbenchContext } from "@/components/providers/workbench-context-provider";
+import { StoreDetailPresentation } from "./store-detail-presentation";
+import { StoreForm } from "@/components/workbench/stores/store-form";
+import { StoreLifecycleActions } from "@/components/workbench/stores/store-lifecycle-actions";
+import { Button } from "@/components/ui/button";
+import { WorkbenchAPIError, type WorkbenchStore } from "@/lib/api/workbench-stores";
+import { useWorkbenchStore } from "@/lib/query/use-workbench-stores";
+import type { WorkbenchStoreUpdateInput } from "@/lib/validation/workbench-store";
+import { canUpdateWorkbenchStore } from "@/lib/workbench/permissions";
+
+type RecoveryState =
+  | { state: "idle" }
+  | { state: "loading" | "failed"; base: WorkbenchStore; draft: WorkbenchStoreUpdateInput }
+  | { state: "ready"; base: WorkbenchStore; draft: WorkbenchStoreUpdateInput; latest: WorkbenchStore; changedFields: ("name" | "region")[] };
+
+export function StoreDetailPage({ storeId }: { storeId: string }) {
+  const router = useRouter();
+  const context = useWorkbenchContext();
+  const organizationId = context.effectiveOrganization?.id ?? "";
+  const [initialOrganizationId, setInitialOrganizationId] = useState(organizationId);
+  if (!initialOrganizationId && organizationId) setInitialOrganizationId(organizationId);
+  const organizationChanged = Boolean(initialOrganizationId) && organizationId !== initialOrganizationId;
+  useEffect(() => {
+    if (!organizationId || !organizationChanged) return;
+    router.replace("/workbench/stores");
+  }, [organizationChanged, organizationId, router]);
+  if (!organizationId) return <section className="mx-auto max-w-2xl px-4 py-8" role="status">正在加载企业权限...</section>;
+  if (organizationChanged) {
+    return (
+      <section
+        className="mx-auto max-w-2xl px-4 py-8"
+        role="status"
+      >
+        正在切换企业...
+      </section>
+    );
+  }
+  return (
+    <StoreDetailContent
+      key={JSON.stringify([context.user?.id,organizationId,context.roles,context.permissions,storeId])}
+      canUpdate={canUpdateWorkbenchStore(context.permissions)}
+      storeId={storeId}
+    />
+  );
+}
+
+
+function StoreDetailContent({ canUpdate, storeId }: { canUpdate: boolean; storeId: string }) {
+  const router = useRouter();
+  const context = useWorkbenchContext();
+  const storeQuery = useWorkbenchStore(storeId);
+  const [displayedStore, setDisplayedStore] = useState<WorkbenchStore | null>(null);
+  const [recovery, setRecovery] = useState<RecoveryState>({ state: "idle" });
+  const scopeCode=(storeQuery.error as Partial<WorkbenchAPIError>|undefined)?.code;
+  if(storeQuery.isError && ["STORE_NOT_FOUND","PERMISSION_DENIED","IDENTITY_CONTEXT_CHANGED","AUTHENTICATION_REQUIRED","ORGANIZATION_CONTEXT_CHANGED","ORGANIZATION_ACCESS_REVOKED","ORGANIZATION_ACCESS_DENIED","ORGANIZATION_SUSPENDED"].includes(scopeCode??"")){
+    if(displayedStore)setDisplayedStore(null);
+    if(recovery.state!=="idle")setRecovery({state:"idle"});
+    return <DetailError code={scopeCode} retry={()=>{if(scopeCode!=="STORE_NOT_FOUND"&&scopeCode!=="PERMISSION_DENIED"){void context.retry();return;}void storeQuery.refetch()}}/>;
+  }
+  const displayStore = (next: WorkbenchStore) => {
+    setDisplayedStore((current) => {
+      if (!current || (next.version >= current.version && !(current.recordStatus === "deleting" && next.recordStatus !== "deleting"))) return next;
+      return current;
+    });
+  };
+  const recoveredStore = recovery.state === "idle" ? storeQuery.data : recovery.base;
+  const store = displayedStore && (!storeQuery.data || displayedStore.version > storeQuery.data.version) ? displayedStore : recoveredStore;
+  if (storeQuery.isPending && !store) return <section className="mx-auto max-w-2xl px-4 py-8" role="status">正在加载店铺...</section>;
+  if (!store) {
+    const code = (storeQuery.error as Partial<WorkbenchAPIError> | undefined)?.code;
+    return <DetailError code={code} retry={() => { if (code === "ORGANIZATION_CONTEXT_CHANGED" || code === "ORGANIZATION_ACCESS_REVOKED" || code === "ORGANIZATION_ACCESS_DENIED") { context.retry(); return; } void storeQuery.refetch(); }} />;
+  }
+
+  const loadLatest = async (
+    draft: WorkbenchStoreUpdateInput,
+    base: WorkbenchStore,
+  ) => {
+    setRecovery({ state: "loading", base, draft });
+    const result = await storeQuery.refetch();
+    if (!result.isSuccess || result.isError || !result.data) {
+      setRecovery({ state: "failed", base, draft });
+      return;
+    }
+    if (result.data.recordStatus === "deleting") {
+      displayStore(result.data);
+      setRecovery({ state: "idle" });
+      return;
+    }
+    setRecovery({ state: "ready", base, draft, latest: result.data, changedFields: changedFields(base, result.data) });
+  };
+  const refreshLifecycleStore = async () => {
+    const result = await storeQuery.refetch();
+    if (!result.isSuccess || result.isError || !result.data) return null;
+    return result.data;
+  };
+  return <StoreDetailPresentation store={store} canUpdate={canUpdate} onRefresh={refreshLifecycleStore} actions={<StoreLifecycleActions onDeleted={() => router.push("/workbench/stores?notice=store-deleted")} onRefreshStore={refreshLifecycleStore} onStoreUpdated={next => { displayStore(next); setRecovery({ state: "idle" }); }} store={store}/>} editForm={canUpdate && (store.recordStatus === "active" || store.recordStatus === "disabled") ? <><StoreForm conflict={recovery.state === "ready" ? { latest: recovery.latest, changedFields: recovery.changedFields } : null} mode="edit" onConflict={(draft, baseline) => void loadLatest(draft, baseline)} onSaved={(next) => { displayStore(next); setRecovery({ state: "idle" }); }} recoveryState={recovery.state === "loading" || recovery.state === "failed" ? recovery.state : "idle"} store={store} />{recovery.state === "failed" ? <p role="alert">无法确认店铺最新版本，草稿已保留。<Button onClick={() => void loadLatest(recovery.draft, recovery.base)} variant="outline">重试获取最新版本</Button></p> : null}</> : null}/>;
+}
+
+function changedFields(oldStore: WorkbenchStore, latest: WorkbenchStore): ("name" | "region")[] {
+  return (["name", "region"] as const).filter((field) => oldStore[field] !== latest[field]);
+}
+
+function DetailError({ code, retry }: { code?: string; retry: () => void }) {
+  const message = code === "STORE_NOT_FOUND" || code === "ORGANIZATION_ACCESS_DENIED" || code === "ORGANIZATION_ACCESS_REVOKED" ? "店铺不存在或已不可访问" : code === "PERMISSION_DENIED" ? "没有查看当前企业店铺的权限" : "店铺服务暂时不可用，请稍后重试";
+  return <section className="mx-auto mt-8 max-w-2xl rounded-xl border bg-card p-6" role="alert"><h1 className="text-xl font-semibold">{message}</h1><Button className="mt-4" onClick={retry} variant="outline">重试</Button></section>;
+}

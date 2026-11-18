@@ -1,0 +1,1165 @@
+import { createServer, type RequestListener } from "node:http";
+import type { AddressInfo } from "node:net";
+
+import { NextRequest } from "next/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const authState = vi.hoisted(() => ({
+  session: null as Record<string, unknown> | null,
+  token: "",
+  identity: null as { userId: string } | null,
+  gate: null as Promise<void> | null,
+}));
+
+const authMocks = vi.hoisted(() => ({
+  wrapper: vi.fn(
+    (
+      handler: (
+        request: NextRequest & { auth?: unknown },
+        context: unknown,
+      ) => unknown,
+    ) =>
+      async (request: NextRequest, context: unknown) => {
+        if (authState.gate) await authState.gate;
+        return handler(Object.assign(request, { auth: authState.session }), context);
+      },
+  ),
+  readToken: vi.fn((session: unknown) => {
+    void session;
+    return authState.token;
+  }),
+  readIdentity: vi.fn((session: unknown) => {
+    void session;
+    return authState.identity;
+  }),
+}));
+
+vi.mock("@/auth", () => ({ serverAuth: authMocks.wrapper }));
+vi.mock("@/lib/server/zitadel-server-token", () => ({
+  readZitadelServerAccessToken: authMocks.readToken,
+}));
+vi.mock("@/lib/server/zitadel-auth", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/server/zitadel-auth")>()),
+  readZitadelIdentityFromSession: authMocks.readIdentity,
+}));
+
+import * as workbenchRoute from "@/app/api/workbench/[...path]/route";
+
+const { GET, PUT, POST, DELETE } = workbenchRoute;
+
+it.each(["status","prepare","confirm","result"])("gives the exact SHEIN %s route its 32s budget before authentication",async(action)=>{
+ vi.useFakeTimers();let release=()=>{};authState.gate=new Promise<void>(resolve=>{release=resolve});
+ const fetcher=vi.fn<typeof fetch>();vi.stubGlobal("fetch",fetcher);let done=false;
+ const path=["supply-preparations","shein-publication",action];
+ const pending=call(POST,new NextRequest("http://localhost/api/workbench/"+path.join("/"),{method:"POST"}),path).then(r=>{done=true;return r});
+ await vi.advanceTimersByTimeAsync(31999);expect(done).toBe(false);
+ await vi.advanceTimersByTimeAsync(1);expect((await pending).status).toBeGreaterThanOrEqual(500);release();await vi.advanceTimersByTimeAsync(0);
+ expect(fetcher).not.toHaveBeenCalled();expect(vi.getTimerCount()).toBe(0);
+});
+it("retains a dispatched SHEIN timeout as UNKNOWN and reads the original result without resending",async()=>{
+ vi.useFakeTimers();authState.session={accessToken:"fixture"};authState.token="fixture";authState.identity={userId:"user-a"};
+ vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL","http://localhost");
+ const fetcher=vi.fn<typeof fetch>((_url,init)=>new Promise((_resolve,reject)=>init?.signal?.addEventListener("abort",()=>reject(new DOMException("aborted","AbortError")),{once:true})));vi.stubGlobal("fetch",fetcher);
+ const path=["supply-preparations","shein-publication","confirm"],command={sourceId:operationKey,storeId,receiptId:operationKey,skc:"skc",token:operationKey};
+ const headers={cookie:"shuomi_effective_organization=org-b",Origin:"http://localhost","Content-Type":"application/json","X-Expected-Organization-ID":"org-b","X-Expected-User-ID":"user-a"};
+ const pending=call(POST,new NextRequest("http://localhost/api/workbench/"+path.join("/"),{method:"POST",headers:{...headers,"Idempotency-Key":operationKey},body:JSON.stringify(command)}),path);
+ await vi.advanceTimersByTimeAsync(31999);expect(fetcher).toHaveBeenCalledOnce();expect(fetcher.mock.calls[0][1]?.signal?.aborted).toBe(false);
+ await vi.advanceTimersByTimeAsync(1);expect((await(await pending).json()).code).toBe("OUTCOME_UNKNOWN");expect(fetcher).toHaveBeenCalledOnce();
+ fetcher.mockResolvedValueOnce(Response.json({key:operationKey,attemptId:operationKey,sourceId:operationKey,storeId,receiptId:operationKey,skc:"skc",status:"outcome_unknown",message:"待核实"}));
+ const readPath=["supply-preparations","shein-publication","result"];
+ const read=await call(POST,new NextRequest("http://localhost/api/workbench/"+readPath.join("/"),{method:"POST",headers,body:JSON.stringify({...command,key:operationKey})}),readPath);
+ expect(read.status).toBe(200);expect(fetcher).toHaveBeenCalledTimes(2);expect(String(fetcher.mock.calls[1][0])).toMatch(/shein-publication\/result$/);expect(vi.getTimerCount()).toBe(0);
+});
+
+
+const storeId = "11111111-1111-4111-8111-11111111111a";
+const operationKey = "22222222-2222-4222-8222-22222222222b";
+const sourceAccountId = "018f1f0e-7b5d-7c3a-8a11-1234567890ab";
+const sourceAccountPayload = {
+  schemaVersion: 1,
+  account: {
+    id: sourceAccountId,
+    platform: "1688",
+    displayName: "Primary 1688",
+    managementStatus: "enabled",
+    connectionStatus: "pending_connection",
+    version: "1",
+    createdAt: "2026-09-09T01:02:03Z",
+    updatedAt: "2026-09-09T01:02:03Z",
+  },
+  replayed: false,
+};
+const storePayload = {
+  id: storeId,
+  name: "Store",
+  platform: "shein",
+  region: "SG",
+  externalStoreId: "",
+  recordStatus: "active", serviceStatus: "pending_activation" as const, serviceStartedAt: null, serviceExpiresAt: null,
+  connectionStatus: "disconnected",
+  version: 2,
+  createdAt: "2026-08-30T01:02:03Z",
+  updatedAt: "2026-08-30T02:03:04Z",
+};
+
+async function call(handler: typeof GET, request: NextRequest, path: string[]) {
+  const response = await handler(request, {
+    params: Promise.resolve({ path }),
+  });
+  if (!(response instanceof Response)) {
+    throw new Error("Workbench route did not return a response");
+  }
+  return response;
+}
+
+async function listen(handler: RequestListener) {
+  const server = createServer(handler);
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const { port } = server.address() as AddressInfo;
+  return {
+    url: `http://127.0.0.1:${port}`,
+    close: () =>
+      new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      ),
+  };
+}
+
+afterEach(() => {
+    authState.session = null;
+    authState.token = "";
+    authState.identity = null;
+    authState.gate = null;
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.useRealTimers();
+  });
+
+describe("/api/workbench BFF", () => {
+  it.each([
+    { method: "POST", path: `supply-preparations/records/${operationKey}/materials-agent/runs`, budget: 125_000 },
+    { method: "POST", path: `supply-preparations/records/${operationKey}/materials-agent/runs/${storeId}/resume`, budget: 125_000 },
+    { method: "POST", path: `supply-preparations/records/${operationKey}/materials-agent/runs/${storeId}/adopt`, budget: 125_000 },
+    { method: "GET", path: `supply-preparations/records/${operationKey}/materials-agent/runs/${storeId}/adoption`, budget: 15_000 },
+    { method: "POST", path: `supply-preparations/records/${operationKey}/materials-agent/runs/not-a-uuid/adopt`, budget: 15_000 },
+    ...["product-agent", "content-agent"].flatMap((namespace) => [
+      { method: "POST", path: `sourcing/1688/acquisitions/${operationKey}/${namespace}/runs`, budget: 125_000 },
+      { method: "GET", path: `sourcing/1688/acquisitions/${operationKey}/${namespace}/runs/${storeId}`, budget: 125_000 },
+      { method: "POST", path: `sourcing/1688/acquisitions/${operationKey}/${namespace}/runs/${storeId}/resume`, budget: 125_000 },
+    ]),
+    { method: "POST", path: `collections/items/${operationKey}/content-agent/runs`, budget: 125_000 },
+    { method: "GET", path: `collections/items/${operationKey}/content-agent/runs/${storeId}`, budget: 125_000 },
+    { method: "POST", path: `collections/items/${operationKey}/content-agent/runs/${storeId}/resume`, budget: 125_000 },
+    { method: "POST", path: `collections/items/${operationKey}/content-agent/runs/${storeId}/review`, budget: 125_000 },
+    { method: "GET", path: `collections/items/${operationKey}/content-agent/source`, budget: 15_000 },
+    { method: "POST", path: "collections/items/not-a-uuid/content-agent/runs", budget: 15_000 },
+    { method: "GET", path: `collections/items/${operationKey}/content-agent/runs/not-a-uuid`, budget: 15_000 },
+    { method: "POST", path: `collections/items/${operationKey}/product-agent/runs`, budget: 15_000 },
+    { method: "GET", path: `collections/items/${operationKey}/content-agent/runs`, budget: 15_000 },
+    { method: "POST", path: `collections/items/${operationKey}/content-agent/runs/${storeId}`, budget: 15_000 },
+    { method: "PUT", path: `collections/items/${operationKey}/content-agent/runs`, budget: 15_000 },
+    ...["sourcing/1688/acquisitions", "supply-preparations/sources"].flatMap((base) => [
+      { method: "GET", path: `${base}/${operationKey}/images/sources`, budget: 32_000 },
+      { method: "GET", path: `${base}/${operationKey}/images/runs/${storeId}`, budget: 32_000 },
+      { method: "POST", path: `${base}/${operationKey}/images/prepare`, budget: 32_000 },
+      { method: "POST", path: `${base}/${operationKey}/images/runs/${storeId}/preview`, budget: 32_000 },
+      { method: "POST", path: `${base}/${operationKey}/images/sources`, budget: 15_000 },
+      { method: "GET", path: `${base}/not-a-uuid/images/sources`, budget: 15_000 },
+      { method: "GET", path: `${base}/${operationKey}/images/runs/not-a-uuid`, budget: 15_000 },
+    ]),
+  ])("bounds auth before dispatch using the exact method and route: $method $path", async ({ method, path, budget }) => {
+    vi.useFakeTimers();
+    let releaseAuth = () => {};
+    authState.gate = new Promise<void>((resolve) => { releaseAuth = resolve; });
+    const controller = new AbortController();
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+    let settled = false;
+    const pending = call(method === "GET" ? GET : POST, new NextRequest(`http://localhost/api/workbench/${path}`, {
+      method, signal: controller.signal,
+    }), path.split("/")).then((response) => { settled = true; return response; });
+    try {
+      await vi.advanceTimersByTimeAsync(budget - 1);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(settled).toBe(true);
+      expect((await pending).status).toBeGreaterThanOrEqual(500);
+    } finally {
+      controller.abort();
+      releaseAuth();
+      await vi.advanceTimersByTimeAsync(0);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("retains a dispatched materials timeout as UNKNOWN without resending", async () => {
+    vi.useFakeTimers();
+    authState.session = { accessToken: "private-token" };authState.token = "private-token";authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    }));vi.stubGlobal("fetch", fetchMock);
+    const path = ["supply-preparations", "records", operationKey, "materials-agent", "runs"];
+    const pending = call(POST, new NextRequest(`http://localhost/api/workbench/${path.join("/")}`, {
+      method:"POST", headers:{cookie:"shuomi_effective_organization=org-b",Origin:"http://localhost","Content-Type":"application/json","X-Expected-Organization-ID":"org-b","X-Expected-User-ID":"user-a","Idempotency-Key":storeId},
+      body:JSON.stringify({configurationSnapshotRef:{Kind:"agent-configuration-v1",ID:storeId,Digest:"a".repeat(64)}}),
+    }),path);
+    await vi.advanceTimersByTimeAsync(124_999);expect(fetchMock).toHaveBeenCalledOnce();expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);const response=await pending;
+    expect(response.status).toBe(503);expect((await response.json()).code).toBe("OUTCOME_UNKNOWN");expect(fetchMock).toHaveBeenCalledOnce();expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each([
+    { kind: "acquisition", base: "sourcing/1688/acquisitions" },
+    { kind: "supply", base: "supply-preparations/sources" },
+  ])("allows image transport to finish after the backend window for $kind", async ({ kind, base }) => {
+    vi.useFakeTimers();
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const payload = {
+      contextKind: kind, contextId: operationKey, manualReplacementAvailable: false,
+      source: { ContextKind: kind, OperationID: operationKey, ProductID: "p", OriginalPublicationID: "pub", OriginalVersion: "1", EffectiveVersion: "1" },
+      originals: [], evidence: {},
+    };
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => resolve(Response.json(payload)), 31_000);
+      init?.signal?.addEventListener("abort", () => {
+        clearTimeout(timer);
+        reject(new DOMException("aborted", "AbortError"));
+      }, { once: true });
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const path = `${base}/${operationKey}/images/sources`.split("/");
+    let settled = false;
+    const pending = call(GET, new NextRequest(`http://localhost/api/workbench/${path.join("/")}`, {
+      headers: { cookie: "shuomi_effective_organization=org-b", "X-Expected-Organization-ID": "org-b", "X-Expected-User-ID": "user-a" },
+    }), path).then((response) => { settled = true; return response; });
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect((await pending).status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each(["sourcing/1688/acquisitions", "supply-preparations/sources"])("keeps a dispatched image timeout UNKNOWN without retry: %s", async (base) => {
+    vi.useFakeTimers();
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const path = `${base}/${operationKey}/images/runs/${storeId}/confirm`.split("/");
+    const pending = call(POST, new NextRequest(`http://localhost/api/workbench/${path.join("/")}`, {
+      method: "POST",
+      headers: {
+        cookie: "shuomi_effective_organization=org-b", Origin: "http://localhost",
+        "Content-Type": "application/json", "X-Expected-Organization-ID": "org-b", "X-Expected-User-ID": "user-a",
+      },
+      body: JSON.stringify({ actionId: operationKey, planRevision: 1, planDigest: "a".repeat(64), quoteDigest: "b".repeat(64) }),
+    }), path);
+    await vi.advanceTimersByTimeAsync(31_999);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    const response = await pending;
+    expect(response.status).toBe(503);
+    expect((await response.json()).code).toBe("OUTCOME_UNKNOWN");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each([
+    { method: "POST", suffix: "acquisitions-other", budget: 15_000 },
+    { method: "POST", suffix: "acquisitionsXYZ", budget: 15_000 },
+    { method: "GET", suffix: "acquisitions", budget: 15_000 },
+    { method: "PUT", suffix: "acquisitions", budget: 15_000 },
+    { method: "GET", suffix: "acquisitions/not-a-uuid", budget: 15_000 },
+    { method: "GET", suffix: "acquisitions/verify", budget: 15_000 },
+    { method: "POST", suffix: `acquisitions/${operationKey}`, budget: 15_000 },
+    { method: "POST", suffix: "acquisitions/verify", budget: 22_000 },
+    { method: "GET", suffix: `acquisitions/${operationKey}`, budget: 22_000 },
+    { method: "GET", suffix: `acquisitions/${operationKey}/main-image/candidates`, budget: 22_000 },
+    { method: "GET", suffix: `acquisitions/${operationKey}/main-image/runs/${storeId}`, budget: 22_000 },
+    { method: "POST", suffix: `acquisitions/${operationKey}/main-image`, budget: 22_000 },
+    { method: "POST", suffix: `acquisitions/${operationKey}/main-image/runs/${storeId}/approve`, budget: 22_000 },
+  ])("uses exact route budget before blocked auth: $method $suffix", async ({ method, suffix, budget }) => {
+    vi.useFakeTimers();
+    let releaseAuth = () => {};
+    authState.gate = new Promise<void>((resolve) => { releaseAuth = resolve; });
+    const controller = new AbortController();
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+    let settled = false;
+    const handler = method === "GET" ? GET : method === "PUT" ? PUT : POST;
+    const pending = call(handler, new NextRequest(`http://localhost/api/workbench/sourcing/1688/${suffix}`, {
+      method, signal: controller.signal,
+    }), ["sourcing", "1688", ...suffix.split("/")]).then((response) => { settled = true; return response; });
+    try {
+      await vi.advanceTimersByTimeAsync(budget - 1);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(settled).toBe(true);
+      expect((await pending).status).toBeGreaterThanOrEqual(500);
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      controller.abort();
+      releaseAuth();
+      await vi.advanceTimersByTimeAsync(0);
+    }
+  });
+
+  it.each([
+    { name: "allows an 18s backend success", duration: 18_000, cancelEarly: false, status: 200 },
+    { name: "bounds a stalled acquisition at 22s", duration: 23_000, cancelEarly: false, status: 503 },
+    { name: "preserves earlier caller cancellation", duration: 18_000, cancelEarly: true, status: 503 },
+  ])("acquisition deadline $name", async ({ duration, cancelEarly, status }) => {
+    vi.useFakeTimers();
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const controller = new AbortController();
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => resolve(Response.json({
+        schemaVersion: 1, operationId: operationKey, outcome: "published", replayed: false,
+        productKey: "crawler:1688:981645030344", publicationId: `source-run:acquisition:${operationKey}`,
+        catalogVersion: "1", warnings: [], missingFacts: [],
+      })), duration);
+      init?.signal?.addEventListener("abort", () => {
+        clearTimeout(timer);
+        reject(new DOMException("aborted", "AbortError"));
+      }, { once: true });
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    let settled = false;
+    const pending = call(POST, new NextRequest("http://localhost/api/workbench/sourcing/1688/acquisitions", {
+      method: "POST", signal: controller.signal,
+      headers: {
+        cookie: "shuomi_effective_organization=org-b", Origin: "http://localhost",
+        "Content-Type": "application/json", "Idempotency-Key": operationKey,
+        "X-Expected-Organization-ID": "org-b", "X-Expected-User-ID": "user-a",
+      },
+      body: JSON.stringify({ source: "981645030344" }),
+    }), ["sourcing", "1688", "acquisitions"]).then((response) => { settled = true; return response; });
+    await vi.advanceTimersByTimeAsync(cancelEarly ? 5_000 : 15_000);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(settled).toBe(false);
+    if (cancelEarly) controller.abort();
+    else await vi.advanceTimersByTimeAsync(7_000);
+    const response = await pending;
+    expect(response.status).toBe(status);
+    if (status === 200) await expect(response.json()).resolves.toMatchObject({ outcome: "published", catalogVersion: "1" });
+    else await expect(response.json()).resolves.toMatchObject({ code: "OUTCOME_UNKNOWN" });
+    expect(fetchMock.mock.calls[0]?.[1]?.signal?.aborted).toBe(status !== 200);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each(["start", "approve"])("keeps dispatched main-image %s timeout unknown without retry", async (action) => {
+    vi.useFakeTimers();
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const path = ["sourcing", "1688", "acquisitions", operationKey, "main-image", ...(action === "approve" ? ["runs", storeId, "approve"] : [])];
+    const pending = call(POST, new NextRequest(`http://localhost/api/workbench/${path.join("/")}`, {
+      method: "POST",
+      headers: {
+        cookie: "shuomi_effective_organization=org-b", Origin: "http://localhost",
+        "Content-Type": "application/json", "Idempotency-Key": operationKey,
+        "X-Expected-Organization-ID": "org-b", "X-Expected-User-ID": "user-a",
+      },
+      body: JSON.stringify(action === "approve" ? { planRevision: 1, resultDigest: "digest", actionId: operationKey } : { sourceImageId: "catalog-image-1" }),
+    }), path);
+    await vi.advanceTimersByTimeAsync(22_000);
+    const response = await pending;
+    expect(response.status).toBe(503);
+    expect((await response.json()).code).toBe("OUTCOME_UNKNOWN");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each(["start", "resume", "review"].flatMap(action => [
+    { kind: "acquisition", action }, { kind: "own", action },
+  ]))("keeps a dispatched $kind content $action deadline UNKNOWN after the full agent window", async ({kind, action}) => {
+    vi.useFakeTimers();
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const path = [...(kind === "own" ? ["collections", "items", operationKey] : ["sourcing", "1688", "acquisitions", operationKey]), "content-agent", "runs", ...(action === "start" ? [] : [storeId, action])];
+    let settled = false;
+    const pending = call(POST, new NextRequest(`http://localhost/api/workbench/${path.join("/")}`, {
+      method: "POST", headers: {
+        cookie: "shuomi_effective_organization=org-b", Origin: "http://localhost",
+        "Content-Type": "application/json", "Idempotency-Key": storeId,
+        "X-Expected-Organization-ID": "org-b", "X-Expected-User-ID": "user-a",
+      },
+      body: JSON.stringify(action === "review" ? {} : action === "resume" ? { revision: "1", feedback: "check evidence" } : {
+        expectedModeRevision: "0", targetPlatform: "product", contentSelection: { targetLanguage: "en-US", title: true },
+        ...(kind === "own" ? { ownSource: { catalogVersion: "2", publicationId: "original-own-publication" } } : {}),
+      }),
+    }), path).then(response => { settled = true; return response; });
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(settled).toBe(false);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(109_999);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    const response = await pending;
+    expect(response.status).toBe(503);
+    expect((await response.json()).code).toBe("OUTCOME_UNKNOWN");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each(["product-agent", "content-agent"].flatMap(namespace => [
+    ["CONFIGURATION_CHANGED", 409], ["AGENT_NOT_ENABLED", 409], ["TEMPLATE_ARCHIVED", 409], ["AGENT_DEFINITION_UNAVAILABLE", 409],
+    ["INVALID_REQUEST", 400], ["NOT_FOUND", 404], ["TEMPLATE_IS_DEFAULT", 409], ["REVISION_MISMATCH", 412], ["PRECONDITION_REQUIRED", 428],
+  ].map(([code, status]) => ({ namespace, code: String(code), status: Number(status) }))))("preserves $namespace configuration rejection $code/$status", async ({ namespace, code, status }) => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ code }, { status }));
+    vi.stubGlobal("fetch", fetchMock);
+    const path = ["sourcing", "1688", "acquisitions", operationKey, namespace, "runs"];
+    const response = await call(POST, new NextRequest(`http://localhost/api/workbench/${path.join("/")}`, {
+      method: "POST", headers: {
+        cookie: "shuomi_effective_organization=org-b", Origin: "http://localhost",
+        "Content-Type": "application/json", "Idempotency-Key": storeId,
+        "X-Expected-Organization-ID": "org-b", "X-Expected-User-ID": "user-a",
+      },
+      body: JSON.stringify({ expectedModeRevision: "0", targetPlatform: namespace === "content-agent" ? "product" : "shein",
+        ...(namespace === "content-agent" ? { contentSelection: { targetLanguage: "en-US", description: true } } : {}) }),
+    }), path);
+    expect(response.status).toBe(status);
+    expect((await response.json()).code).toBe(code);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it.each(["start", "read", "resume"])("routes content %s through its actual allowlist and response contract", async (action) => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const contentSelection = { targetLanguage: "en-US", description: true };
+    const payload = {
+      executionMode: "default", modeRevision: "0", modeSnapshotRef: { Kind: "agent-execution-mode-v1", ID: storeId, Digest: "a".repeat(64) },
+      runId: operationKey, requestKey: storeId, operationId: operationKey, productKey: "product", catalogVersion: "2", publicationId: "adopted-head", targetPlatform: "product",
+      contentSelection, phase: "human_review_required", revision: "2", humanReviewRequired: true, canSubmitReview: true,
+      candidate: { Changes: [{ Field: "description", Value: "Content suggestion", EvidenceIDs: ["source"] }], Warnings: [], Rejections: [] },
+      confidence: [], unresolved: [], steps: [], tokens: 50, estimatedCostMicros: 30, currency: "CNY", usageStatus: "observed",
+    };
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(Response.json(payload));
+    vi.stubGlobal("fetch", fetchMock);
+    const path = ["sourcing", "1688", "acquisitions", operationKey, "content-agent", "runs", ...(action === "start" ? [] : action === "read" ? [storeId] : [storeId, "resume"])];
+    const method = action === "read" ? "GET" : "POST";
+    const response = await call(action === "read" ? GET : POST, new NextRequest(`http://localhost/api/workbench/${path.join("/")}`, {
+      method, headers: {
+        cookie: "shuomi_effective_organization=org-b", Origin: "http://localhost",
+        "Content-Type": "application/json", "Idempotency-Key": storeId,
+        "X-Expected-Organization-ID": "org-b", "X-Expected-User-ID": "user-a",
+      },
+      body: method === "GET" ? undefined : JSON.stringify(action === "resume" ? { revision: "1", feedback: "check evidence" } : { expectedModeRevision: "0", targetPlatform: "product", contentSelection }),
+    }), path);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(payload);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("uses the merged serverAuth wrapper and reads the token from request.auth", async () => {
+    authMocks.wrapper.mockClear();
+    vi.resetModules();
+    const { GET: authenticatedGET } = await import(
+      "@/app/api/workbench/[...path]/route"
+    );
+    const session = { user: { id: "user-1" }, accessToken: "private-token" };
+    authState.session = session;
+    authState.token = "private-token";
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        user: { id: "user-1" },
+        homeOrganizationId: "org-a",
+        effectiveOrganizationId: "org-a",
+        selectionRequired: false,
+        organizations: [],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await call(
+      authenticatedGET,
+      new NextRequest("http://localhost/api/workbench/context", {
+        headers: { authorization: "Bearer browser-token" },
+      }),
+      ["context"],
+    );
+
+    expect(authMocks.wrapper).toHaveBeenCalledOnce();
+    expect(authMocks.readToken).toHaveBeenCalledWith(session);
+    const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("Authorization")).toBe("Bearer private-token");
+    const responseText = await response.text();
+    expect(responseText).not.toContain("private-token");
+    expect(response.headers.get("Authorization")).toBeNull();
+  });
+
+  it("returns bounded 401 JSON without an open redirect when the server session has no token", async () => {
+    authState.session = { user: { id: "user-1" } };
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await call(
+      GET,
+      new NextRequest(
+        "http://localhost/api/workbench/context?redirect=https://attacker.example",
+        { headers: { authorization: "Bearer browser-token" } },
+      ),
+      ["context"],
+    );
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("Location")).toBeNull();
+    await expect(response.json()).resolves.toEqual({
+      code: "AUTHENTICATION_REQUIRED",
+      message: "Authentication is required",
+      requestId: "",
+      fieldErrors: [],
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not follow an upstream redirect outside the fixed endpoint allowlist", async () => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    let redirectTargetHits = 0;
+    const target = await listen((_request, response) => {
+      redirectTargetHits += 1;
+      response.setHeader("Content-Type", "application/json");
+      response.end(JSON.stringify({ effectiveOrganizationId: "org-target" }));
+    });
+    const source = await listen((_request, response) => {
+      response.writeHead(302, { Location: `${target.url}/not-allowlisted` });
+      response.end();
+    });
+    vi.stubEnv("LISTINGKIT_SERVICE_API_BASE", `${source.url}/api/v1`);
+
+    try {
+      const response = await call(
+        GET,
+        new NextRequest("http://localhost/api/workbench/context", {
+          headers: { cookie: "shuomi_effective_organization=org-cookie" },
+        }),
+        ["context"],
+      );
+
+      expect(response.status).toBe(502);
+      expect(response.headers.get("Location")).toBeNull();
+      await expect(response.json()).resolves.toMatchObject({
+        code: "DEPENDENCY_UNAVAILABLE",
+      });
+      expect(redirectTargetHits).toBe(0);
+    } finally {
+      await source.close();
+      await target.close();
+    }
+  });
+
+  it("keeps the existing bounded 502 contract for a non-Source read timeout", async () => {
+    vi.useFakeTimers();
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    const fetchMock = vi.fn<typeof fetch>((_input, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        );
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pending = call(
+      GET,
+      new NextRequest("http://localhost/api/workbench/context"),
+      ["context"],
+    );
+    await vi.advanceTimersByTimeAsync(15_000);
+    const response = await pending;
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "DEPENDENCY_UNAVAILABLE",
+      message: "Workbench upstream is unavailable",
+      fieldErrors: [],
+    });
+  });
+
+  it("maps a dispatched Source Account read deadline to 504", async () => {
+    vi.useFakeTimers();
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    const fetchMock = vi.fn<typeof fetch>((_input, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        );
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const pending = call(
+      GET,
+      new NextRequest("http://localhost/api/workbench/source-accounts?limit=20", {
+        headers: {
+          cookie: "shuomi_effective_organization=org-b",
+          "X-Expected-Organization-ID": "org-b",
+        },
+      }),
+      ["source-accounts"],
+    );
+    await vi.advanceTimersByTimeAsync(15_000);
+    const response = await pending;
+
+    expect(response.status).toBe(504);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "DEADLINE_EXCEEDED",
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("maps a dispatched acquisition product read deadline to 504", async () => {
+    vi.useFakeTimers();
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    const fetchMock = vi.fn<typeof fetch>((_input, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        );
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pending = call(
+      GET,
+      new NextRequest(`http://localhost/api/workbench/sourcing/1688/acquisitions/${operationKey}/product`, {
+        headers: {
+          cookie: "shuomi_effective_organization=org-b",
+          "X-Expected-Organization-ID": "org-b",
+          "X-Expected-User-ID": "user-a",
+        },
+      }),
+      ["sourcing", "1688", "acquisitions", operationKey, "product"],
+    );
+    await vi.advanceTimersByTimeAsync(22_000);
+    const response = await pending;
+
+    expect(response.status).toBe(504);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "DEADLINE_EXCEEDED",
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("reads actor and token from one authenticated session and strips the actor assertion upstream", async () => {
+    const session = { identity: "opaque", accessToken: "private-token" };
+    authState.session = session;
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation((_input, init) => {
+      const headers = new Headers(init?.headers);
+      expect(headers.get("Authorization")).toBe("Bearer private-token");
+      expect(headers.get("X-Expected-User-ID")).toBeNull();
+      expect(headers.get("X-Requested-Organization-ID")).toBe("org-b");
+      return Promise.resolve(
+        new Response(JSON.stringify(sourceAccountPayload), {
+          status: 201,
+          headers: { "Content-Type": "application/json", ETag: '"1"' },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await call(
+      POST,
+      new NextRequest("http://localhost/api/workbench/source-accounts", {
+        method: "POST",
+        headers: {
+          cookie: "shuomi_effective_organization=org-b",
+          Origin: "http://localhost",
+          "Content-Type": "application/json",
+          "Idempotency-Key": operationKey,
+          "X-Expected-Organization-ID": "org-b",
+          "X-Expected-User-ID": "user-a",
+        },
+        body: JSON.stringify({ displayName: "Primary 1688", platform: "1688" }),
+      }),
+      ["source-accounts"],
+    );
+
+    expect(response.status).toBe(201);
+    expect(response.headers.get("ETag")).toBe('"1"');
+    expect(authMocks.readIdentity).toHaveBeenCalledWith(session);
+    expect(authMocks.readToken).toHaveBeenCalledWith(session);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an actor change before Go dispatch", async () => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-c" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await call(
+      POST,
+      new NextRequest("http://localhost/api/workbench/source-accounts", {
+        method: "POST",
+        headers: {
+          cookie: "shuomi_effective_organization=org-b",
+          Origin: "http://localhost",
+          "Content-Type": "application/json",
+          "Idempotency-Key": operationKey,
+          "X-Expected-Organization-ID": "org-b",
+          "X-Expected-User-ID": "user-a",
+        },
+        body: JSON.stringify({ displayName: "Primary 1688", platform: "1688" }),
+      }),
+      ["source-accounts"],
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({ code: "IDENTITY_CONTEXT_CHANGED" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("starts the deadline before serverAuth and cannot dispatch a late mutation", async () => {
+    vi.useFakeTimers();
+    let releaseAuth = () => {};
+    authState.gate = new Promise<void>((resolve) => { releaseAuth = resolve; });
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify(sourceAccountPayload), {
+        status: 201,
+        headers: { "Content-Type": "application/json", ETag: '"1"' },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pending = call(
+      POST,
+      new NextRequest("http://localhost/api/workbench/source-accounts", {
+        method: "POST",
+        headers: {
+          cookie: "shuomi_effective_organization=org-b",
+          Origin: "http://localhost",
+          "Content-Type": "application/json",
+          "Idempotency-Key": operationKey,
+          "X-Expected-Organization-ID": "org-b",
+          "X-Expected-User-ID": "user-a",
+        },
+        body: JSON.stringify({ displayName: "Primary 1688", platform: "1688" }),
+      }),
+      ["source-accounts"],
+    );
+    await vi.advanceTimersByTimeAsync(15_000);
+    releaseAuth();
+    const response = await pending;
+    await vi.runAllTimersAsync();
+
+    expect(response.status).toBe(504);
+    await expect(response.json()).resolves.toMatchObject({ code: "DEADLINE_EXCEEDED" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the Source Account deadline when the request was already canceled before blocked auth", async () => {
+    vi.useFakeTimers();
+    let releaseAuth = () => {};
+    authState.gate = new Promise<void>((resolve) => {
+      releaseAuth = resolve;
+    });
+    const controller = new AbortController();
+    controller.abort();
+    const pending = call(
+      POST,
+      new NextRequest("http://localhost/api/workbench/source-accounts", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          cookie: "shuomi_effective_organization=org-b",
+          Origin: "http://localhost",
+          "Content-Type": "application/json",
+          "Idempotency-Key": operationKey,
+          "X-Expected-Organization-ID": "org-b",
+          "X-Expected-User-ID": "user-a",
+        },
+        body: JSON.stringify({ displayName: "Primary 1688", platform: "1688" }),
+      }),
+      ["source-accounts"],
+    );
+    const outcome = Promise.race([
+      pending.then((response) => response.status),
+      new Promise<string>((resolve) => {
+        setTimeout(() => resolve("still-pending"), 1);
+      }),
+    ]);
+    await vi.advanceTimersByTimeAsync(15_002);
+    releaseAuth();
+
+    await expect(outcome).resolves.toBe(504);
+  });
+
+  it("maps a network loss after mutation dispatch to OUTCOME_UNKNOWN", async () => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>().mockRejectedValueOnce(new TypeError("network secret"));
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await call(
+      POST,
+      new NextRequest("http://localhost/api/workbench/source-accounts", {
+        method: "POST",
+        headers: {
+          cookie: "shuomi_effective_organization=org-b",
+          Origin: "http://localhost",
+          "Content-Type": "application/json",
+          "Idempotency-Key": operationKey,
+          "X-Expected-Organization-ID": "org-b",
+          "X-Expected-User-ID": "user-a",
+        },
+        body: JSON.stringify({ displayName: "Primary 1688", platform: "1688" }),
+      }),
+      ["source-accounts"],
+    );
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({ code: "OUTCOME_UNKNOWN" });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("links incoming cancellation and treats a dispatched mutation as OUTCOME_UNKNOWN", async () => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    authState.identity = { userId: "user-a" };
+    vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL", "http://localhost");
+    const fetchMock = vi.fn<typeof fetch>((_input, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        );
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const controller = new AbortController();
+    const pending = call(
+      POST,
+      new NextRequest("http://localhost/api/workbench/source-accounts", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          cookie: "shuomi_effective_organization=org-b",
+          Origin: "http://localhost",
+          "Content-Type": "application/json",
+          "Idempotency-Key": operationKey,
+          "X-Expected-Organization-ID": "org-b",
+          "X-Expected-User-ID": "user-a",
+        },
+        body: JSON.stringify({ displayName: "Primary 1688", platform: "1688" }),
+      }),
+      ["source-accounts"],
+    );
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    controller.abort();
+    const response = await pending;
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({ code: "OUTCOME_UNKNOWN" });
+  });
+
+  it("sets the switch cookie from Go's response instead of the requested organization", async () => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        user: { id: "user-1" },
+        homeOrganizationId: "org-a",
+        effectiveOrganizationId: "org-canonical",
+        selectionRequired: false,
+        aiWorkbenchAvailable: true,
+        aiWorkbenchPlanningReadiness: "NEEDS_CONFIGURATION",
+        aiWorkbenchTitleReadiness: "AVAILABLE",
+        organizations: [
+          {
+            id: "org-canonical",
+            name: "Canonical Organization",
+            roles: ["listingkit_viewer"], permissions: ["workbench.task.read","workbench.store.read","workbench.source_account.read","workbench.organization_member.read","workbench.commercial.read"],
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await call(
+      PUT,
+      new NextRequest(
+        "http://localhost/api/workbench/context/effective-organization",
+        {
+          method: "PUT",
+          body: JSON.stringify({ organizationId: "org-requested" }),
+        },
+      ),
+      ["context", "effective-organization"],
+    );
+
+    expect(response.headers.get("Set-Cookie")).toContain(
+      "shuomi_effective_organization=org-canonical",
+    );
+    expect(await response.json()).toMatchObject({ aiWorkbenchAvailable: true, aiWorkbenchPlanningReadiness: "NEEDS_CONFIGURATION", aiWorkbenchTitleReadiness: "AVAILABLE" });
+  });
+
+  it("preserves a Go body/header mismatch rejection and leaves the cookie unchanged", async () => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    const payload = {
+      code: "INVALID_REQUEST",
+      message: "Request is invalid",
+      requestId: "req-1",
+      fieldErrors: [],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(Response.json(payload, { status: 400 })),
+    );
+
+    const response = await call(
+      PUT,
+      new NextRequest(
+        "http://localhost/api/workbench/context/effective-organization",
+        {
+          method: "PUT",
+          body: JSON.stringify({ organizationId: "org-requested" }),
+        },
+      ),
+      ["context", "effective-organization"],
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual(payload);
+    expect(response.headers.get("Set-Cookie")).toBeNull();
+  });
+
+  it("rejects a non-allowlisted path before fetch", async () => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await call(
+      GET,
+      new NextRequest(
+        "http://localhost/api/workbench/https://attacker.example",
+      ),
+      ["https:", "", "attacker.example"],
+    );
+
+    expect(response.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("proxies Store create with the typed 201 response contract", async () => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json(storePayload, { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await call(
+      POST,
+      new NextRequest("http://localhost/api/workbench/stores", {
+        method: "POST",
+        headers: {
+          "Idempotency-Key": operationKey,
+          cookie: "shuomi_effective_organization=org-cookie",
+          "X-Expected-Organization-ID": "org-cookie",
+        },
+        body: JSON.stringify({ name: "Store", platform: "shein", region: "SG" }),
+      }),
+      ["stores"],
+    );
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toEqual(storePayload);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0]?.[1]?.redirect).toBe("manual");
+    const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("Idempotency-Key")).toBe(operationKey);
+    expect(headers.get("X-Requested-Organization-ID")).toBe("org-cookie");
+  });
+
+  it("proxies Store delete and validates its response as delete, not item", async () => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({ id: storeId, deleted: true, version: 3 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await call(
+      DELETE,
+      new NextRequest(`http://localhost/api/workbench/stores/${storeId}`, {
+        method: "DELETE",
+        headers: {
+          "Idempotency-Key": operationKey,
+          "If-Match": '"2"',
+          cookie: "shuomi_effective_organization=org-cookie",
+          "X-Expected-Organization-ID": "org-cookie",
+        },
+      }),
+      ["stores", storeId],
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      id: storeId,
+      deleted: true,
+      version: 3,
+    });
+  });
+
+  it.each([
+    ["list", GET, "GET", ["stores"], "/api/workbench/stores?page=1", {}, undefined],
+    ["create", POST, "POST", ["stores"], "/api/workbench/stores", { "Idempotency-Key": operationKey }, JSON.stringify({ name: "Store", platform: "shein", region: "SG" })],
+    ["get", GET, "GET", ["stores", storeId], `/api/workbench/stores/${storeId}`, {}, undefined],
+    ["update", PUT, "PUT", ["stores", storeId], `/api/workbench/stores/${storeId}`, { "If-Match": '"2"' }, JSON.stringify({ name: "Store", region: "SG" })],
+    ["delete", DELETE, "DELETE", ["stores", storeId], `/api/workbench/stores/${storeId}`, { "Idempotency-Key": operationKey, "If-Match": '"2"' }, undefined],
+    ["enable", POST, "POST", ["stores", storeId, "enable"], `/api/workbench/stores/${storeId}/enable`, { "If-Match": '"2"' }, undefined],
+    ["disable", POST, "POST", ["stores", storeId, "disable"], `/api/workbench/stores/${storeId}/disable`, { "If-Match": '"2"' }, undefined],
+  ] as const)("does not fetch upstream when %s has a mismatched or absent Store assertion", async (_name, handler, method, path, route, routeHeaders, body) => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+    for (const headers of [
+      { cookie: "shuomi_effective_organization=org-cookie", "X-Expected-Organization-ID": "org-other", ...routeHeaders },
+      { "X-Expected-Organization-ID": "org-cookie", ...routeHeaders },
+    ]) {
+      const response = await call(
+        handler,
+        new NextRequest(`http://localhost${route}`, { method, headers, body }),
+        [...path],
+      );
+      expect(response.status).toBe(409);
+      await expect(response.json()).resolves.toMatchObject({ code: "ORGANIZATION_CONTEXT_CHANGED" });
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["list", GET, "GET", ["stores"], "/api/workbench/stores?page=1", {}, undefined, 200],
+    ["create", POST, "POST", ["stores"], "/api/workbench/stores", { "Idempotency-Key": operationKey }, JSON.stringify({ name: "Store", platform: "shein", region: "SG" }), 201],
+    ["get", GET, "GET", ["stores", storeId], `/api/workbench/stores/${storeId}`, {}, undefined, 200],
+    ["update", PUT, "PUT", ["stores", storeId], `/api/workbench/stores/${storeId}`, { "If-Match": '"2"' }, JSON.stringify({ name: "Store", region: "SG" }), 200],
+    ["delete", DELETE, "DELETE", ["stores", storeId], `/api/workbench/stores/${storeId}`, { "Idempotency-Key": operationKey, "If-Match": '"2"' }, undefined, 200],
+    ["enable", POST, "POST", ["stores", storeId, "enable"], `/api/workbench/stores/${storeId}/enable`, { "If-Match": '"2"' }, undefined, 200],
+    ["disable", POST, "POST", ["stores", storeId, "disable"], `/api/workbench/stores/${storeId}/disable`, { "If-Match": '"2"' }, undefined, 200],
+  ] as const)("proxies matching expected Organization assertions for %s", async (name, handler, method, path, route, routeHeaders, body, status) => {
+    authState.session = { accessToken: "private-token" };
+    authState.token = "private-token";
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation((input, init) => {
+      expect(new Headers(init?.headers).get("X-Requested-Organization-ID")).toBe("org-cookie");
+      expect(new Headers(init?.headers).get("X-Expected-Organization-ID")).toBeNull();
+      const payload = name === "list"
+        ? { items: [], pagination: { page: 1, pageSize: 20, total: 0 } }
+        : name === "delete"
+          ? { id: storeId, deleted: true, version: 3 }
+          : storePayload;
+      void input;
+      return Promise.resolve(Response.json(payload, { status }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await call(
+      handler,
+      new NextRequest(`http://localhost${route}`, {
+        method,
+        headers: { cookie: "shuomi_effective_organization=org-cookie", "X-Expected-Organization-ID": "org-cookie", ...routeHeaders },
+        body,
+      }),
+      [...path],
+    );
+    expect(response.status).toBe(status);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it.each(["HEAD", "OPTIONS"])(
+    "explicitly rejects %s without contacting upstream",
+    async (method) => {
+      const fetchMock = vi.fn<typeof fetch>();
+      vi.stubGlobal("fetch", fetchMock);
+      const handler = (
+        workbenchRoute as unknown as Record<string, typeof GET | undefined>
+      )[method];
+
+      expect(handler).toBeTypeOf("function");
+      if (!handler) return;
+      const response = await call(
+        handler,
+        new NextRequest("http://localhost/api/workbench/not-allowlisted", {
+          method,
+        }),
+        ["not-allowlisted"],
+      );
+
+      expect(response.status).toBe(405);
+      await expect(response.json()).resolves.toMatchObject({
+        code: "INVALID_REQUEST",
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects an unauthenticated PATCH and never sends an unknown PATCH route upstream", async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+    const patch = workbenchRoute.PATCH;
+    const request = () => new NextRequest("http://localhost/api/workbench/not-allowlisted", { method: "PATCH" });
+    const denied = await call(patch, request(), ["not-allowlisted"]);
+    expect(denied.status).toBe(401);
+    authState.token = "test-token";
+    authState.identity = { userId: "user-1" };
+    const unknown = await call(patch, request(), ["not-allowlisted"]);
+    expect(unknown.status).toBe(404);
+    await expect(unknown.json()).resolves.toMatchObject({ code: "INVALID_REQUEST" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

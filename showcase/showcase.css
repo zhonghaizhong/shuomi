@@ -1,0 +1,17 @@
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { background: #25293c; color: #cfcde4; font-family: var(--font-geist-sans), "Microsoft YaHei", sans-serif; }
+button { font: inherit; }
+.showcase-shell { min-height: 100vh; display: flex; background: #25293c; }
+.showcase-main { flex: 1; min-width: 0; }
+.showcase-topbar { height: 72px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #44485e; background: #2f3349; }
+.showcase-brand-message { display: flex; align-items: center; gap: 16px; }
+.showcase-brand-message strong { color: #e2e2f0; font-size: 14px; }
+.showcase-brand-message span { padding-left: 16px; border-left: 1px solid #7367f0; color: #acabc1; font-size: 10px; letter-spacing: .18em; }
+.showcase-top-actions { display: flex; align-items: center; gap: 14px; color: #acabc1; font-size: 12px; }
+.showcase-top-actions button, .showcase-menu-fab { border: 1px solid #44485e; border-radius: 7px; background: #393d55; color: #e2e2f0; padding: 8px 11px; cursor: pointer; }
+.showcase-content { max-width: none; margin: 0; padding: 24px 28px 48px; }
+.showcase-content .page { min-height: 400px; }
+.showcase-menu-fab { position: fixed; bottom: 20px; left: 20px; z-index: 5; background: #7367f0; }
+@media (max-width: 900px) { .showcase-topbar { padding: 0 18px; } .showcase-content { padding: 18px; } }
+@media (max-width: 767px) { .showcase-shell { display: block; } .showcase-sidebar { position: relative; width: 100%; height: auto; max-height: 45vh; overflow: auto; } .showcase-topbar { height: 60px; padding: 0 12px; } .showcase-brand-message { gap: 8px; } .showcase-brand-message strong { font-size: 12px; } .showcase-brand-message span { padding-left: 8px; font-size: 8px; } .showcase-top-actions > span { display: none; } .showcase-content { padding: 14px 12px 32px; } }

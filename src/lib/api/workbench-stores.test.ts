@@ -1,0 +1,556 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  WorkbenchAPIError,
+  activateWorkbenchStoreService as activateWorkbenchStoreServiceWithExpectedOrganization,
+  createWorkbenchStore as createWorkbenchStoreWithExpectedOrganization,
+  deleteWorkbenchStore as deleteWorkbenchStoreWithExpectedOrganization,
+  disableWorkbenchStore as disableWorkbenchStoreWithExpectedOrganization,
+  enableWorkbenchStore as enableWorkbenchStoreWithExpectedOrganization,
+  getWorkbenchStore as getWorkbenchStoreWithExpectedOrganization,
+  listWorkbenchStores as listWorkbenchStoresWithExpectedOrganization,
+  reactivateWorkbenchStoreService as reactivateWorkbenchStoreServiceWithExpectedOrganization,
+  renewWorkbenchStoreService as renewWorkbenchStoreServiceWithExpectedOrganization,
+  updateWorkbenchStore as updateWorkbenchStoreWithExpectedOrganization,
+} from "@/lib/api/workbench-stores";
+
+const STORE_ID = "11111111-1111-4111-8111-111111111111";
+const CREATE_KEY = "2222222a-2222-4222-8222-222222222222";
+const DELETE_KEY = "33333333-3333-4333-8333-333333333333";
+const ORGANIZATION_ID = "org-a";
+const listWorkbenchStores = (filters: Parameters<typeof listWorkbenchStoresWithExpectedOrganization>[0]) =>
+  listWorkbenchStoresWithExpectedOrganization(filters, ORGANIZATION_ID);
+const getWorkbenchStore = (storeId: string) =>
+  getWorkbenchStoreWithExpectedOrganization(storeId, ORGANIZATION_ID);
+const createWorkbenchStore = (
+  input: Parameters<typeof createWorkbenchStoreWithExpectedOrganization>[0],
+  key: string,
+) => createWorkbenchStoreWithExpectedOrganization(input, key, ORGANIZATION_ID);
+const deleteWorkbenchStore = (
+  id: string,
+  version: number,
+  key: string,
+) => deleteWorkbenchStoreWithExpectedOrganization(id, version, key, ORGANIZATION_ID);
+const updateWorkbenchStore = (
+  id: string,
+  input: Parameters<typeof updateWorkbenchStoreWithExpectedOrganization>[1],
+  version: number,
+) => updateWorkbenchStoreWithExpectedOrganization(id, input, version, ORGANIZATION_ID);
+const enableWorkbenchStore = (id: string, version: number) =>
+  enableWorkbenchStoreWithExpectedOrganization(id, version, ORGANIZATION_ID);
+const disableWorkbenchStore = (id: string, version: number) =>
+  disableWorkbenchStoreWithExpectedOrganization(id, version, ORGANIZATION_ID);
+const activateWorkbenchStoreService = (id: string, version: number, key: string) =>
+  activateWorkbenchStoreServiceWithExpectedOrganization(
+    id,
+    version,
+    key,
+    ORGANIZATION_ID,
+    "user-1",
+  );
+const renewWorkbenchStoreService = (
+  id: string,
+  periods: number,
+  version: number,
+  key: string,
+) =>
+  renewWorkbenchStoreServiceWithExpectedOrganization(
+    id,
+    periods,
+    version,
+    key,
+    ORGANIZATION_ID,
+    "user-1",
+  );
+const reactivateWorkbenchStoreService = (
+  id: string,
+  periods: number,
+  version: number,
+  key: string,
+) =>
+  reactivateWorkbenchStoreServiceWithExpectedOrganization(
+    id,
+    periods,
+    version,
+    key,
+    ORGANIZATION_ID,
+    "user-1",
+  );
+const store = {
+  id: STORE_ID,
+  name: "North Shop",
+  platform: "shein",
+  region: "SG",
+  externalStoreId: "external-1",
+  recordStatus: "active", serviceStatus: "pending_activation" as const, serviceStartedAt: null, serviceExpiresAt: null,
+  connectionStatus: "disconnected",
+  version: 2,
+  createdAt: "2026-08-30T01:02:03Z",
+  updatedAt: "2026-08-30T02:03:04Z",
+};
+const list = {
+  items: [store],
+  pagination: { page: 2, pageSize: 20, total: 21 },
+};
+const serviceLifecycleResult = {
+  storeId: STORE_ID,
+  recordStatus: "active",
+  serviceStatus: "active",
+  serviceStartedAt: "2026-09-05T01:02:03Z",
+  serviceExpiresAt: "2026-10-05T01:02:03Z",
+  version: 3,
+  quantity: "1",
+  resourceBalanceAfter: "2",
+};
+
+const fetchMock = vi.fn<typeof fetch>();
+
+function jsonResponse(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function requestAt(index = 0) {
+  const [input, init] = fetchMock.mock.calls[index]!;
+  return {
+    input,
+    init: init!,
+    headers: new Headers(init?.headers),
+  };
+}
+
+describe("workbench Store API", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  it("reads a TEMU record and preserves the exact TEMU list filter", async () => {
+    const temu={...store,platform:"temu"};
+    fetchMock.mockResolvedValueOnce(jsonResponse(temu));
+    await expect(getWorkbenchStore(STORE_ID)).resolves.toEqual(temu);
+    fetchMock.mockResolvedValueOnce(jsonResponse({...list,items:[temu]}));
+    await expect(listWorkbenchStores({page:2,pageSize:20,platform:"temu"})).resolves.toMatchObject({items:[temu]});
+    expect(requestAt(1).input).toBe("/api/workbench/stores?page=2&pageSize=20&platform=temu");
+  });
+
+  it.each(["active", "expired", "suspended"])("keeps paid service facts on a disabled record (%s)", async (serviceStatus) => {
+    const paid = { ...store, recordStatus: "disabled", serviceStatus, serviceStartedAt: "2026-09-01T00:00:00Z", serviceExpiresAt: "2026-10-01T00:00:00Z" };
+    fetchMock.mockResolvedValue(jsonResponse(paid));
+    await expect(getWorkbenchStore(STORE_ID)).resolves.toEqual(paid);
+  });
+
+  it("rejects the retired alias and inconsistent service facts", async () => {
+    const { recordStatus, ...withoutRecord } = store;
+    for (const invalid of [
+      { ...withoutRecord, lifecycleStatus: recordStatus },
+      { ...store, lifecycleStatus: recordStatus },
+      { ...store, recordStatus: "disabled", serviceStatus: null },
+      { ...store, recordStatus: "provisioning" },
+      { ...store, serviceStatus: "active", serviceStartedAt: "2026-10-01T00:00:00Z", serviceExpiresAt: "2026-09-01T00:00:00Z" },
+    ]) {
+      fetchMock.mockResolvedValue(jsonResponse(invalid));
+      await expect(getWorkbenchStore(STORE_ID)).rejects.toMatchObject({ code: "INVALID_WORKBENCH_RESPONSE" });
+    }
+  });
+
+  it("rebuilds the allowlisted list query and omits absent filters", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(list));
+
+    await listWorkbenchStores({
+      page: 2,
+      pageSize: 20,
+      platform: "shein",
+      status: "active",
+    });
+    expect(requestAt().input).toBe(
+      "/api/workbench/stores?page=2&pageSize=20&platform=shein&status=active",
+    );
+    expect(requestAt().init).toMatchObject({
+      method: "GET",
+      credentials: "same-origin",
+    });
+    expect(requestAt().headers.get("Accept")).toBe("application/json");
+    expect(requestAt().headers.get("X-Expected-Organization-ID")).toBe(
+      ORGANIZATION_ID,
+    );
+    expect(requestAt().headers.has("Content-Type")).toBe(false);
+    expect(requestAt().headers.has("If-Match")).toBe(false);
+    expect(requestAt().headers.has("Idempotency-Key")).toBe(false);
+
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValue(jsonResponse({ ...list, items: [] }));
+    await listWorkbenchStores({ page: 1, pageSize: 100 });
+    expect(requestAt().input).toBe(
+      "/api/workbench/stores?page=1&pageSize=100",
+    );
+  });
+
+  it("rejects arbitrary and Organization filters before fetch", async () => {
+    await expect(
+      listWorkbenchStores({
+        page: 1,
+        pageSize: 20,
+        organizationId: "org-a",
+      } as never),
+    ).rejects.toMatchObject({ code: "INVALID_REQUEST" });
+    await expect(
+      listWorkbenchStores({ page: 1, pageSize: 20, arbitrary: "x" } as never),
+    ).rejects.toMatchObject({ code: "INVALID_REQUEST" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends the exact get request without mutation headers", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(store));
+    await expect(getWorkbenchStore(STORE_ID)).resolves.toEqual(store);
+
+    expect(requestAt().input).toBe(`/api/workbench/stores/${STORE_ID}`);
+    expect(requestAt().init).toMatchObject({
+      method: "GET",
+      credentials: "same-origin",
+    });
+    expect([...requestAt().headers]).toEqual([
+      ["accept", "application/json"],
+      ["x-expected-organization-id", ORGANIZATION_ID],
+    ]);
+  });
+
+  it("sends normalized create JSON with only its operation header", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(store, 201));
+    await createWorkbenchStore(
+      {
+        name: " North Shop ",
+        platform: "shein",
+        region: " SG ",
+        externalStoreId: "   ",
+      },
+      CREATE_KEY,
+    );
+
+    expect(requestAt().input).toBe("/api/workbench/stores");
+    expect(requestAt().init).toMatchObject({
+      method: "POST",
+      credentials: "same-origin",
+      body: JSON.stringify({
+        name: "North Shop",
+        platform: "shein",
+        region: "SG",
+      }),
+    });
+    expect(requestAt().headers.get("Content-Type")).toBe("application/json");
+    expect(requestAt().headers.get("Idempotency-Key")).toBe(CREATE_KEY);
+    expect(requestAt().headers.has("If-Match")).toBe(false);
+  });
+
+  it("sends exact update JSON and a quoted last version", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(store));
+    await updateWorkbenchStore(
+      STORE_ID,
+      { name: " Renamed ", region: " MY " },
+      2,
+    );
+
+    expect(requestAt().input).toBe(`/api/workbench/stores/${STORE_ID}`);
+    expect(requestAt().init).toMatchObject({
+      method: "PUT",
+      credentials: "same-origin",
+      body: JSON.stringify({ name: "Renamed", region: "MY" }),
+    });
+    expect(requestAt().headers.get("Content-Type")).toBe("application/json");
+    expect(requestAt().headers.get("If-Match")).toBe('"2"');
+    expect(requestAt().headers.has("Idempotency-Key")).toBe(false);
+  });
+
+  it("sends exact enable and disable requests without bodies or content type", async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(store))
+      .mockResolvedValueOnce(jsonResponse(store));
+    await enableWorkbenchStore(STORE_ID, 2);
+    await disableWorkbenchStore(STORE_ID, 3);
+
+    expect(requestAt(0).input).toBe(
+      `/api/workbench/stores/${STORE_ID}/enable`,
+    );
+    expect(requestAt(1).input).toBe(
+      `/api/workbench/stores/${STORE_ID}/disable`,
+    );
+    for (const [index, version] of [2, 3].entries()) {
+      expect(requestAt(index).init.method).toBe("POST");
+      expect(requestAt(index).init.body).toBeUndefined();
+      expect(requestAt(index).headers.has("Content-Type")).toBe(false);
+      expect(requestAt(index).headers.get("If-Match")).toBe(`"${version}"`);
+      expect(requestAt(index).headers.has("Idempotency-Key")).toBe(false);
+    }
+  });
+
+  it("sends exact keyed service lifecycle requests", async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(serviceLifecycleResult))
+      .mockResolvedValueOnce(
+        jsonResponse({ ...serviceLifecycleResult, version: 4, quantity: "2" }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ ...serviceLifecycleResult, version: 5, quantity: "3" }),
+      );
+
+    await activateWorkbenchStoreService(STORE_ID, 2, CREATE_KEY);
+    await renewWorkbenchStoreService(STORE_ID, 2, 3, DELETE_KEY);
+    await reactivateWorkbenchStoreService(STORE_ID, 3, 4, CREATE_KEY);
+
+    expect(requestAt(0).input).toBe(
+      `/api/workbench/stores/${STORE_ID}/activate`,
+    );
+    expect(requestAt(1).input).toBe(
+      `/api/workbench/stores/${STORE_ID}/renew`,
+    );
+    expect(requestAt(2).input).toBe(
+      `/api/workbench/stores/${STORE_ID}/reactivate`,
+    );
+    expect(requestAt(0).init.body).toBe("{}");
+    expect(requestAt(1).init.body).toBe(JSON.stringify({ periods: 2 }));
+    expect(requestAt(2).init.body).toBe(JSON.stringify({ periods: 3 }));
+    for (const [index, expected] of [
+      [0, { version: 2, key: CREATE_KEY }],
+      [1, { version: 3, key: DELETE_KEY }],
+      [2, { version: 4, key: CREATE_KEY }],
+    ] as const) {
+      expect(requestAt(index).init.method).toBe("POST");
+      expect(requestAt(index).headers.get("Content-Type")).toBe(
+        "application/json",
+      );
+      expect(requestAt(index).headers.get("If-Match")).toBe(
+        `"${expected.version}"`,
+      );
+      expect(requestAt(index).headers.get("Idempotency-Key")).toBe(
+        expected.key,
+      );
+    }
+  });
+
+  it("rejects invalid service periods, versions, and operation keys before fetch", async () => {
+    for (const call of [
+      () => renewWorkbenchStoreService(STORE_ID, 0, 2, CREATE_KEY),
+      () => renewWorkbenchStoreService(STORE_ID, 13, 2, CREATE_KEY),
+      () => reactivateWorkbenchStoreService(STORE_ID, 1.5, 2, CREATE_KEY),
+      () => activateWorkbenchStoreService(STORE_ID, 0, CREATE_KEY),
+      () => activateWorkbenchStoreService(STORE_ID, 2, "not-a-key"),
+    ]) {
+      await expect(call()).rejects.toMatchObject({ code: "INVALID_REQUEST" });
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed service lifecycle success projections", async () => {
+    for (const payload of [
+      { ...serviceLifecycleResult, storeId: DELETE_KEY },
+      { ...serviceLifecycleResult, recordStatus: "deleted" },
+      { ...serviceLifecycleResult, serviceStatus: "expired" },
+      { ...serviceLifecycleResult, quantity: "01" },
+      { ...serviceLifecycleResult, quantity: "13" },
+      { ...serviceLifecycleResult, resourceBalanceAfter: "-1" },
+      {
+        ...serviceLifecycleResult,
+        resourceBalanceAfter: "9223372036854775808",
+      },
+      { ...serviceLifecycleResult, serviceExpiresAt: "2026-08-05T01:02:03Z" },
+      { ...serviceLifecycleResult, credential: "secret" },
+    ]) {
+      fetchMock.mockResolvedValueOnce(jsonResponse(payload));
+      await expect(
+        activateWorkbenchStoreService(STORE_ID, 2, CREATE_KEY),
+      ).rejects.toMatchObject({ code: "INVALID_WORKBENCH_RESPONSE" });
+    }
+  });
+
+  it("sends exact delete headers and no body", async () => {
+    const deleted = { id: STORE_ID, deleted: true, version: 3 };
+    fetchMock.mockResolvedValue(jsonResponse(deleted));
+    await expect(
+      deleteWorkbenchStore(STORE_ID, 2, DELETE_KEY),
+    ).resolves.toEqual(deleted);
+
+    expect(requestAt().input).toBe(`/api/workbench/stores/${STORE_ID}`);
+    expect(requestAt().init).toMatchObject({
+      method: "DELETE",
+      credentials: "same-origin",
+    });
+    expect(requestAt().init.body).toBeUndefined();
+    expect(requestAt().headers.get("If-Match")).toBe('"2"');
+    expect(requestAt().headers.get("Idempotency-Key")).toBe(DELETE_KEY);
+    expect(requestAt().headers.has("Content-Type")).toBe(false);
+  });
+
+  it("rejects noncanonical resource and operation UUIDs before fetch", async () => {
+    for (const call of [
+      () => getWorkbenchStore("not-a-uuid"),
+      () => createWorkbenchStore(
+        { name: "Shop", platform: "shein", region: "SG" },
+        "00000000-0000-0000-0000-000000000000",
+      ),
+      () => deleteWorkbenchStore(STORE_ID, 2, CREATE_KEY.toUpperCase()),
+    ]) {
+      await expect(call()).rejects.toMatchObject({ code: "INVALID_REQUEST" });
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-positive, fractional, and unsafe versions before fetch", async () => {
+    for (const version of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+      await expect(enableWorkbenchStore(STORE_ID, version)).rejects.toMatchObject(
+        { code: "INVALID_REQUEST" },
+      );
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("reuses the authoritative stable Workbench error envelope", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        {
+          code: "STORE_VERSION_CONFLICT",
+          message: "Store has changed",
+          requestId: "req-1",
+          fieldErrors: [{ field: "If-Match", code: "conflict" }],
+        },
+        409,
+      ),
+    );
+
+    const error = await updateWorkbenchStore(
+      STORE_ID,
+      { name: "Shop", region: "SG" },
+      2,
+    ).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(WorkbenchAPIError);
+    expect(error).toMatchObject({
+      status: 409,
+      code: "STORE_VERSION_CONFLICT",
+      message: "Store has changed",
+      requestId: "req-1",
+      fieldErrors: [{ field: "If-Match", code: "conflict" }],
+    });
+  });
+
+  it("maps network, non-JSON, malformed error, and malformed success bodies to bounded failures", async () => {
+    const cases: Array<() => Promise<unknown>> = [];
+    fetchMock.mockRejectedValueOnce(new Error("token=network-secret"));
+    cases.push(() => getWorkbenchStore(STORE_ID));
+    fetchMock.mockResolvedValueOnce(
+      new Response("password=raw-upstream", { status: 502 }),
+    );
+    cases.push(() => getWorkbenchStore(STORE_ID));
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ code: "BROKEN", message: "raw", requestId: "req" }, 409),
+    );
+    cases.push(() => getWorkbenchStore(STORE_ID));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ...store, password: "secret" }));
+    cases.push(() => getWorkbenchStore(STORE_ID));
+
+    for (const call of cases) {
+      const error = await call().catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(WorkbenchAPIError);
+      expect(error).toMatchObject({
+        status: expect.any(Number),
+        code: expect.stringMatching(
+          /^(WORKBENCH_REQUEST_FAILED|INVALID_WORKBENCH_RESPONSE)$/,
+        ),
+        requestId: "",
+        fieldErrors: [],
+      });
+      expect(String(error)).not.toMatch(/network-secret|raw-upstream|secret/);
+    }
+  });
+
+  it("rejects Store response values that violate the Task 7A public contract", async () => {
+    const invalidPayloads = [
+      { ...store, name: " North Shop" },
+      { ...store, region: "SG\u0000" },
+      { ...store, createdAt: "2026-08-30T01:02:03+08:00" },
+      { ...store, updatedAt: "2026-02-30T02:03:04Z" },
+      { ...list, items: Array.from({ length: 101 }, () => store) },
+      {
+        ...list,
+        quota: { used: 1, reserved: 0, limit: 5, allowed: false, reason: "" },
+      },
+      {
+        ...list,
+        pagination: { ...list.pagination, pageSize: 1, total: 0 },
+      },
+    ];
+
+    for (const payload of invalidPayloads) {
+      fetchMock.mockResolvedValueOnce(jsonResponse(payload));
+      await expect(
+        "items" in payload ? listWorkbenchStores({ page: 1, pageSize: 20 }) : getWorkbenchStore(STORE_ID),
+      ).rejects.toMatchObject({ code: "INVALID_WORKBENCH_RESPONSE" });
+    }
+  });
+
+  it("rejects valid success payloads returned with an operation's wrong 2xx status", async () => {
+    const cases = [
+      {
+        status: 200,
+        payload: store,
+        call: () =>
+          createWorkbenchStore(
+            { name: "Shop", platform: "shein", region: "SG" },
+            CREATE_KEY,
+          ),
+      },
+      {
+        status: 201,
+        payload: list,
+        call: () => listWorkbenchStores({ page: 1, pageSize: 20 }),
+      },
+      {
+        status: 201,
+        payload: store,
+        call: () => getWorkbenchStore(STORE_ID),
+      },
+      {
+        status: 201,
+        payload: store,
+        call: () =>
+          updateWorkbenchStore(
+            STORE_ID,
+            { name: "Shop", region: "SG" },
+            2,
+          ),
+      },
+      {
+        status: 201,
+        payload: store,
+        call: () => enableWorkbenchStore(STORE_ID, 2),
+      },
+      {
+        status: 201,
+        payload: store,
+        call: () => disableWorkbenchStore(STORE_ID, 2),
+      },
+      {
+        status: 201,
+        payload: { id: STORE_ID, deleted: true, version: 3 },
+        call: () => deleteWorkbenchStore(STORE_ID, 2, DELETE_KEY),
+      },
+    ];
+    const results: string[] = [];
+
+    for (const testCase of cases) {
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse(testCase.payload, testCase.status),
+      );
+      const result = await testCase.call().catch((error: unknown) => error);
+      results.push(
+        result instanceof WorkbenchAPIError ? result.code : "resolved",
+      );
+    }
+
+    expect(results).toEqual(
+      Array.from({ length: cases.length }, () => "INVALID_WORKBENCH_RESPONSE"),
+    );
+  });
+});
+
+it("reads native store records without a subscription quota projection",async()=>{vi.stubGlobal("fetch",vi.fn().mockResolvedValue(Response.json({items:[store],pagination:list.pagination})));await expect(listWorkbenchStores({page:2,pageSize:20})).resolves.toEqual({items:[store],pagination:list.pagination});});

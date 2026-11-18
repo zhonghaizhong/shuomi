@@ -1,0 +1,151 @@
+import {act,cleanup,fireEvent,render,screen,waitFor,within} from "@testing-library/react";
+import {beforeEach,afterEach,it,expect,vi} from "vitest";
+import {ProjectPage} from "./project-page";
+import {ProjectError} from "@/lib/api/project-center";
+const f=vi.hoisted(()=>({request:vi.fn(),research:vi.fn(),overview:vi.fn(),push:vi.fn(),context:{user:{id:"user-a"},effectiveOrganization:{id:"org-a"} as {id:string;capabilities?:{"workbench.chat.use":boolean}},aiWorkbenchAvailable:false,aiWorkbenchExecutionKind:undefined as "product.content.localize"|"product.title.optimize"|undefined,permissions:["workbench.project.read","workbench.project.manage"],projectCenterAvailable:true,isLoading:false,isSwitching:false,selectionRequired:false,error:null,blockingError:null,registerOrganizationSwitchGuard:()=>()=>{}}}));
+vi.mock("@/components/providers/workbench-context-provider",()=>({useWorkbenchContext:()=>f.context}));
+vi.mock("@/lib/api/project-center",async original=>({...await original<typeof import("@/lib/api/project-center")>(),projectRequest:f.request,projectOverviewRequest:f.overview}));
+vi.mock("next/navigation",()=>({useRouter:()=>({push:f.push})}));
+vi.mock("@/lib/api/market-research",async original=>({...await original<object>(),researchRequest:f.research}));
+vi.mock("./research-analysis-flow",async original=>({...await original<object>(),ResearchAnalysisFlow:()=>null}));
+const id="550e8400-e29b-41d4-a716-446655440000";
+const storageKey='project-center:intent:["user-a","org-a"]';
+const p={id,title:"原企业项目",goal:"长期目标",kind:"OTHER",dueDate:"",revision:1,archived:false,createdAt:"2026-10-09T00:00:00Z",updatedAt:"2026-10-09T00:00:00Z",storeScope:false,references:[],taskTotal:0,taskCompleted:0,taskPending:0,taskSummaryAvailable:true};
+const metrics={activeProjects:35,todayUpdatedProjects:4,storeProjects:20,generalProjects:15,waitingTasks:2,timeZone:"Asia/Singapore",today:"2026-10-11",stores:[{id:"store-a",name:"授权一号店"}],storesAvailable:true};
+beforeEach(()=>{f.context.user={id:"user-a"};f.context.effectiveOrganization={id:"org-a",capabilities:undefined};f.context.aiWorkbenchAvailable=false;f.context.aiWorkbenchExecutionKind=undefined;f.context.isSwitching=false;f.context.projectCenterAvailable=true;f.context.permissions=["workbench.project.read","workbench.project.manage"];f.overview.mockReset();f.overview.mockResolvedValue(metrics);f.request.mockReset();f.research.mockReset().mockResolvedValue({items:[],incomplete:false});f.push.mockReset();sessionStorage.clear();f.request.mockResolvedValue({projects:[],next:""});HTMLDialogElement.prototype.showModal=vi.fn();HTMLDialogElement.prototype.close=vi.fn();});
+afterEach(()=>{cleanup();sessionStorage.clear();});
+it("links the current authorized project to a content chat",async()=>{
+ f.context.aiWorkbenchAvailable=true;f.context.aiWorkbenchExecutionKind="product.content.localize";f.context.effectiveOrganization.capabilities={"workbench.chat.use":true};
+ f.request.mockImplementation(async(_scope,path)=>path.endsWith("visit")?{id,revision:1,replayed:false}:p);
+ render(<ProjectPage projectId={id}/>);
+ expect(await screen.findByRole("link",{name:"在硕米 Chat 中讨论"})).toHaveAttribute("href",`/workbench/ai/chat/new?projectId=${id}`);
+});
+it.each(["active","recent","templates","archived"] as const)("exposes all project views and marks %s as current",async mode=>{
+ f.request.mockResolvedValue({projects:[],templates:[],next:""});
+ render(<ProjectPage mode={mode}/>);
+ const nav=screen.getByRole("navigation",{name:"项目视图"});
+ for(const [label,path] of [["进行中项目","active"],["最近访问","recent"],["项目模板","templates"],["已归档","archived"]]){
+  const link=within(nav).getByRole("link",{name:label});
+  expect(link).toHaveAttribute("href",`/workbench/ai/projects/${path}`);
+  if(path===mode) expect(link).toHaveAttribute("aria-current","page");
+  else expect(link).not.toHaveAttribute("aria-current");
+ }
+ await waitFor(()=>expect(f.request).toHaveBeenCalled());
+});
+it("shows full private metrics, scopes store filters and clears them on reset",async()=>{
+ render(<ProjectPage/>);await screen.findByText("35");expect(screen.getByText("店铺 20 · 非店铺 15")).toBeVisible();expect(screen.getByRole("heading",{name:"进行中项目",level:1})).toBeVisible();
+ const store=screen.getByRole("combobox",{name:"关联店铺"});expect(store).toHaveValue("scope:all");fireEvent.change(store,{target:{value:"store:store-a"}});
+ await waitFor(()=>expect(f.request.mock.calls.some(c=>{const q=new URLSearchParams(c[1].slice(1));return q.get("storeId")==="store-a" && q.get("workScope")==="store";})).toBe(true));fireEvent.change(store,{target:{value:"scope:general"}});await waitFor(()=>expect(f.request.mock.calls.some(c=>{const q=new URLSearchParams(c[1].slice(1));return q.get("workScope")==="general" && q.get("storeId")==="";})).toBe(true));fireEvent.click(screen.getByRole("button",{name:"重置"}));expect(store).toHaveValue("scope:all");
+ await waitFor(()=>expect(new URLSearchParams(f.request.mock.lastCall![1].slice(1)).get("storeId")).toBe(""));expect(screen.getAllByRole("heading",{name:"进行中项目",level:1})).toHaveLength(1);
+});
+it("keeps unknown metrics honest and does not reinstall stale overview after organization changes",async()=>{
+ let finish!:(v:unknown)=>void;f.overview.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve}));f.overview.mockResolvedValue({...metrics,activeProjects:1,storeProjects:0,generalProjects:1,waitingTasks:null,stores:[],storesAvailable:false});
+ const v=render(<ProjectPage/>);await waitFor(()=>expect(f.overview).toHaveBeenCalled());f.context.effectiveOrganization={id:"org-b"};v.rerender(<ProjectPage/>);await screen.findByText("关联任务状态暂不可用");f.context.effectiveOrganization={id:"org-a"};v.rerender(<ProjectPage/>);await act(async()=>finish(metrics));expect(screen.queryByText("35")).toBeNull();expect(screen.queryByRole("option",{name:"授权一号店"})).toBeNull();
+});
+it("clears old overview on failed refresh and offers an explicit retry",async()=>{
+ render(<ProjectPage/>);await screen.findByText("35");f.overview.mockRejectedValue(new ProjectError("DEPENDENCY_UNAVAILABLE"));fireEvent.click(screen.getByRole("button",{name:"刷新统计"}));await screen.findByText("项目统计暂不可用");expect(screen.queryByText("35")).toBeNull();expect(screen.getByRole("button",{name:"重试统计"})).toBeEnabled();
+});
+it("isolates pending private goals when colon-bearing identity and organization tuples would collide",async()=>{
+ f.context.user={id:"a:b"};f.context.effectiveOrganization={id:"c"};
+ f.request.mockImplementation(async(_scope,_path,_schema,_signal,command)=>command?Promise.reject(new ProjectError("OUTCOME_UNKNOWN")):{projects:[],next:""});
+ const view=render(<ProjectPage/>);await waitFor(()=>expect(screen.getByRole("button",{name:"＋ 新建项目"})).toBeEnabled());fireEvent.click(screen.getByRole("button",{name:"＋ 新建项目"}));fireEvent.change(screen.getByLabelText("项目名称"),{target:{value:"private title"}});fireEvent.change(screen.getByLabelText("项目目标"),{target:{value:"private goal"}});fireEvent.submit(screen.getByLabelText("项目名称").closest("form")!);await screen.findByRole("button",{name:"重试原操作"});
+ f.context.user={id:"a"};f.context.effectiveOrganization={id:"b:c"};view.rerender(<ProjectPage/>);await screen.findByText("还没有项目");await waitFor(()=>expect(screen.getByRole("button",{name:"＋ 新建项目"})).toBeEnabled());expect(screen.queryByRole("button",{name:"重试原操作"})).toBeNull();
+ expect(f.request.mock.calls.filter(c=>c[4]).every(c=>c[0].userId==="a:b" && c[0].organizationId==="c")).toBe(true);
+ f.context.user={id:"a:b"};f.context.effectiveOrganization={id:"c"};view.rerender(<ProjectPage/>);await screen.findByRole("button",{name:"重试原操作"});
+});
+it("releases a recovered operation after definitive revision rejection so fresh editing is possible",async()=>{
+ const intent={path:"/"+id+"/archive",method:"POST",body:{},key:id,revision:1};
+ sessionStorage.setItem(storageKey,JSON.stringify(intent));
+ f.request.mockImplementation(async(_scope,path,_schema,_signal,command)=>command && !path.endsWith("visit")?Promise.reject(new ProjectError("REVISION_MISMATCH")):path.endsWith("visit")?{id,revision:2,replayed:false}:{...p,revision:2});
+ render(<ProjectPage projectId={id}/>);await screen.findByRole("button",{name:"重试原操作"});fireEvent.click(screen.getByRole("button",{name:"重试原操作"}));
+ await screen.findByText("项目已更新，请刷新后重新操作。");await waitFor(()=>expect(sessionStorage.getItem(storageKey)).toBeNull());
+ expect(screen.queryByRole("button",{name:"重试原操作"})).toBeNull();expect(screen.getByRole("button",{name:"编辑项目"})).toBeEnabled();
+});
+it("requires restoration before saving a template from an archived project",async()=>{
+ f.request.mockImplementation(async(_scope,path)=>path.endsWith("visit")?{id,revision:2,replayed:false}:{...p,revision:2,archived:true});render(<ProjectPage projectId={id}/>);await screen.findByRole("button",{name:"恢复项目"});expect(screen.queryByLabelText("模板名称")).toBeNull();
+});
+it("does not require AI Workbench or a model to create a personal project",async()=>{
+ render(<ProjectPage/>);await screen.findByRole("button",{name:"＋ 新建项目"});await waitFor(()=>expect(screen.getByRole("button",{name:"＋ 新建项目"})).toBeEnabled());fireEvent.click(screen.getByRole("button",{name:"＋ 新建项目"}));fireEvent.change(screen.getByLabelText("项目名称"),{target:{value:"目标项目"}});fireEvent.change(screen.getByLabelText("项目目标"),{target:{value:"实际目标"}});
+ f.request.mockResolvedValueOnce({id,revision:1,replayed:false});fireEvent.submit(screen.getByLabelText("项目名称").closest("form")!);await waitFor(()=>expect(f.push).toHaveBeenCalledWith("/workbench/ai/projects/"+id));const call=f.request.mock.calls.find(c=>c[4]?.method==="POST");expect(call?.[4].body).toEqual({title:"目标项目",goal:"实际目标",kind:"OTHER",dueDate:"",storeId:""});
+});
+it("keeps the exact intent after an unknown response and remount",async()=>{
+ const view=render(<ProjectPage projectId={id}/>);f.request.mockImplementation(async(_s,path,_z,_signal,intent)=>{if(intent && !path.endsWith("visit"))throw new ProjectError("OUTCOME_UNKNOWN");return path.endsWith("visit")?{id,revision:1,replayed:false}:p;});view.rerender(<ProjectPage projectId={id}/>);await screen.findByRole("button",{name:"归档项目"});fireEvent.click(screen.getByRole("button",{name:"归档项目"}));await screen.findByRole("button",{name:"重试原操作"});const original=JSON.parse(sessionStorage.getItem(storageKey)!);view.unmount();render(<ProjectPage projectId={id}/>);await screen.findByRole("button",{name:"重试原操作"});f.request.mockResolvedValueOnce({id,revision:2,replayed:true});fireEvent.click(screen.getByRole("button",{name:"重试原操作"}));await waitFor(()=>expect(sessionStorage.getItem(storageKey)).toBeNull());expect(f.request.mock.calls.some(c=>c[4]?.key===original.key && c[4]?.revision===original.revision && c[4]?.path===original.path)).toBe(true);
+});
+it("discards old reads across A to B to A without using a cached response",async()=>{
+ let finish!:(v:unknown)=>void;f.request.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));const v=render(<ProjectPage/>);await waitFor(()=>expect(f.request).toHaveBeenCalled());f.context.effectiveOrganization={id:"org-b"};v.rerender(<ProjectPage/>);await screen.findByText("还没有项目");f.context.effectiveOrganization={id:"org-a"};v.rerender(<ProjectPage/>);await act(async()=>finish({projects:[p],next:""}));expect(screen.queryByText("原企业项目")).toBeNull();expect(f.request.mock.calls.filter(c=>c[0].organizationId==="org-a")).toHaveLength(2);
+});
+it("does not expose protected reference fields or fabricated completion on unavailable tasks",async()=>{
+ f.request.mockImplementation(async(_s,path)=>path.endsWith("visit")?{id,revision:1,replayed:false}:{...p,references:[{slotId:id,kind:"BUSINESS_TASK",available:false}],taskTotal:1,taskSummaryAvailable:false});render(<ProjectPage projectId={id}/>);await screen.findByText("任务状态暂不可用");fireEvent.click(screen.getByRole("button",{name:"任务"}));expect(screen.getByText("内容当前不可访问")).toBeVisible();expect(screen.queryByRole("progressbar")).toBeNull();expect(screen.getByRole("button",{name:"移除关联"})).toBeVisible();
+});
+
+it("keeps an unknown create key through permission denial and later authentication denial until a receipt arrives",async()=>{
+ const intent={path:"",method:"POST",body:{title:"目标",goal:"长期目标",kind:"OTHER",dueDate:"",storeId:""},key:id};
+ sessionStorage.setItem(storageKey,JSON.stringify(intent));
+ f.request.mockImplementation(async(_scope,_path,_schema,_signal,command)=>{if(command)throw new ProjectError("FORBIDDEN");return {projects:[],next:""};});
+ let view=render(<ProjectPage/>);await screen.findByRole("button",{name:"重试原操作"});fireEvent.click(screen.getByRole("button",{name:"重试原操作"}));await screen.findByText("当前权限不可用，请重新确认企业。");expect(JSON.parse(sessionStorage.getItem(storageKey)!).key).toBe(id);view.unmount();
+ f.request.mockImplementation(async(_scope,_path,_schema,_signal,command)=>{if(command)throw new ProjectError("AUTHENTICATION_REQUIRED");return {projects:[],next:""};});view=render(<ProjectPage/>);await screen.findByRole("button",{name:"重试原操作"});fireEvent.click(screen.getByRole("button",{name:"重试原操作"}));await waitFor(()=>expect(screen.getByRole("button",{name:"重试原操作"})).toBeEnabled());expect(sessionStorage.getItem(storageKey)).not.toBeNull();view.unmount();
+ f.request.mockImplementation(async(_scope,_path,_schema,_signal,command)=>command?{id,revision:1,replayed:true}:{projects:[],next:""});render(<ProjectPage/>);await screen.findByRole("button",{name:"重试原操作"});fireEvent.click(screen.getByRole("button",{name:"重试原操作"}));await waitFor(()=>expect(sessionStorage.getItem(storageKey)).toBeNull());expect(f.push).toHaveBeenCalledWith("/workbench/ai/projects/"+id);expect(f.request.mock.calls.filter(c=>c[4]).every(c=>c[4].key===id)).toBe(true);
+});
+
+it("reuses project creation for research centers with a fixed research kind and no global metrics",async()=>{
+ Object.assign(f.context,{marketResearchAvailable:true});
+ render(<ProjectPage center="research"/>);
+ await screen.findByRole("heading",{name:"市场调研",level:1});
+ await waitFor(()=>expect(new URLSearchParams(f.request.mock.lastCall![1].slice(1)).get("kind")).toBe("PRODUCT_RESEARCH"));
+ expect(f.overview).not.toHaveBeenCalled();expect(screen.queryByText("35")).toBeNull();
+ fireEvent.click(await screen.findByRole("button",{name:"＋ 新建调研项目"}));
+ fireEvent.change(screen.getByLabelText("项目名称"),{target:{value:"美国站收纳研究"}});fireEvent.change(screen.getByLabelText("项目目标"),{target:{value:"核对美国站收纳盒的保存样本"}});
+ fireEvent.submit(screen.getByLabelText("项目名称").closest("form")!);
+ await waitFor(()=>expect(f.request.mock.calls.some(c=>c[4]?.body?.kind==="PRODUCT_RESEARCH")).toBe(true));
+});
+
+it("asks for a project before a workflow function and preserves its step through selection and creation",async()=>{
+ Object.assign(f.context,{marketResearchAvailable:true});
+ f.request.mockImplementation(async(_scope,_path,_schema,_signal,command)=>command?{id,revision:1,replayed:false}:{projects:[{...p,kind:"PRODUCT_RESEARCH"}],next:""});
+ render(<ProjectPage center="research" workflowStep="sources" initialSearch="收纳"/>);
+ await screen.findByText("当前步骤：收集与整理资料。选择或新建调研项目后继续。");
+ const href=new URL((await screen.findByRole("link",{name:"查看调研"})).getAttribute("href")!,"https://test.invalid");
+ expect(href.pathname).toBe("/workbench/data/research/"+id);
+ expect(Object.fromEntries(href.searchParams)).toEqual({mode:"active",search:"收纳",step:"sources"});
+ expect(new URL(screen.getByRole("link",{name:"已归档"}).getAttribute("href")!,"https://test.invalid").searchParams.get("step")).toBe("sources");
+ fireEvent.click(screen.getByRole("button",{name:"＋ 新建调研项目"}));
+ fireEvent.change(screen.getByLabelText("项目名称"),{target:{value:"新研究"}});fireEvent.change(screen.getByLabelText("项目目标"),{target:{value:"核对资料"}});
+ fireEvent.submit(screen.getByLabelText("项目名称").closest("form")!);
+ await waitFor(()=>expect(f.push).toHaveBeenCalled());
+ const created=new URL(f.push.mock.lastCall![0],"https://test.invalid");
+ expect(created.pathname).toBe(href.pathname);expect(Object.fromEntries(created.searchParams)).toEqual(Object.fromEntries(href.searchParams));
+});
+
+it.each([
+ {center:"research",step:"evidence",label:"查看商品资料"},
+ {center:"selection",step:"analysis",label:"AI建议与记录"},
+] as const)("offers a market return path and center breadcrumbs for $center",async({center,step,label})=>{
+ Object.assign(f.context,{marketResearchAvailable:true});
+ render(<ProjectPage center={center} workflowStep={step}/>);
+ const trail=within(screen.getByRole("navigation",{name:"面包屑"}));
+ expect(trail.getAllByRole("listitem")).toHaveLength(3);
+ expect(trail.getByRole("link",{name:"智能体市场"})).toHaveAttribute("href","/workbench/agents/market");
+ expect(trail.getAllByRole("listitem")[2]).toHaveTextContent(label);
+ await waitFor(()=>expect(f.request).toHaveBeenCalled());
+});
+
+it("keeps the live project panel, selected candidates and draft reasons when only the workflow step changes",async()=>{
+ Object.assign(f.context,{marketResearchAvailable:true,permissions:["workbench.project.read","workbench.project.manage","workbench.collection.read"]});
+ let projectReads=0;
+ f.request.mockImplementation(async(_scope,path,_schema,_signal,command)=>{
+  if(command)return {id,revision:1,replayed:false};
+  if(path==="/"+id){projectReads++;return projectReads===1?{...p,kind:"PRODUCT_RESEARCH"}:new Promise(()=>{});}
+  return {projects:[],next:""};
+ });
+ f.research.mockResolvedValue({items:[{id,revision:1,state:"PENDING_CONFIRMATION",selectedLinkId:id,evidenceDigest:"a".repeat(64),observation:{title:"已保存候选",site:"us",asin:"B000123456",sourceUrl:"https://www.amazon.com/dp/B000123456",capturedAt:p.createdAt,parserVersion:"amazon-v1",missing:[],ref:{checksum:"original",selection:{itemId:id,revision:1,publicationId:id,version:"1"}},item:{id,revision:1,source:{kind:"amazon_data",version:"1",publicationId:id}}},evidence:[],history:[]}],incomplete:false});
+ const view=render(<ProjectPage center="selection" projectId={id} workflowStep="decisions"/>);
+ fireEvent.click(await screen.findByRole("checkbox"));
+ fireEvent.change(screen.getByLabelText("选择理由"),{target:{value:"仍在核对成本"}});
+ await waitFor(()=>expect(f.request.mock.calls.filter(c=>c[4]?.path.endsWith("/visit"))).toHaveLength(1));
+ view.rerender(<ProjectPage center="selection" projectId={id} workflowStep="transfer"/>);
+ await waitFor(()=>expect(document.getElementById("research-transfer")).toHaveFocus());
+ expect(screen.getByRole("checkbox")).toBeChecked();expect(screen.getByLabelText("选择理由")).toHaveValue("仍在核对成本");
+ expect(projectReads).toBe(1);expect(f.research).toHaveBeenCalledTimes(1);
+ expect(f.request.mock.calls.filter(c=>c[4]?.path.endsWith("/visit"))).toHaveLength(1);
+ expect(f.research.mock.calls.every(c=>!c[4]?.intent)).toBe(true);
+});

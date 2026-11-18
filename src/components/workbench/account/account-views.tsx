@@ -1,0 +1,383 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { Check, ChevronDown } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { enterpriseRoleKey } from "@/lib/api/enterprise-role-schema";
+
+import { AccountReadError, updateAccountBusinessProfile, type AccountBusinessProfile, type AccountBusinessProfileInput, type AccountOrganization, type AccountProfile } from "@/lib/api/account";
+import { getAccountIdentityProfile, resendAccountEmailVerification, resendAccountPhoneVerification, setAccountEmail, setAccountPhone, updateAccountIdentityProfile, updateAccountPassword, verifyAccountEmail, verifyAccountPhone, type AccountIdentityProfileInput } from "@/lib/api/account-identity";
+import { getCommercialOverview } from "@/lib/api/commercial";
+import { getMemberSummary } from "@/lib/api/members";
+import {getInvitationSummary} from "@/lib/api/invitations";
+import {listWorkbenchStores} from "@/lib/api/workbench-stores";
+import { MemberAllocationPreview } from "./member-allocation-preview";
+import {EnterpriseResources} from "../commercial/enterprise-resources";
+import styles from "./account.module.css";
+import overviewStyles from "../console/primary-overview.module.css";
+import { AccountOverview } from "./account-overview";
+import { ConsoleState } from "../console/console-page";
+import { SubjectVerification } from "./subject-verification";
+import { IdentityDates, RegionSettings } from "./account-facts";
+
+const provided = (value: string | null) => value?.trim() || "未设置";
+const verification = (value: boolean | null) => value === true ? "已验证" : value === false ? "未验证" : "未提供";
+function Panel({ title, description, children, className = "" }: { title: string; description?: string; children: ReactNode; className?: string }) {
+  return <Card className={`${styles.panel} ${className}`}><header><h2>{title}</h2>{description ? <p>{description}</p> : null}</header>{children}</Card>;
+}
+function Fields({ items }: { items: readonly (readonly [string, ReactNode])[] }) {
+  return <dl className={styles.fields}>{items.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
+}
+function Provenance({ data }: { data: AccountProfile | AccountOrganization }) {
+  return <details className={styles.provenance}><summary>资料来源与读取时间</summary><p>来源：{data.source === "zitadel_userinfo" ? "ZITADEL 账户资料" : "ZITADEL 项目授权"}</p><p>读取时间：<time dateTime={data.readAt}>{data.readAt}</time></p>{"authorizationMaxAgeSeconds" in data ? <p>授权缓存最长 60 秒；读取时间不代表授权刷新时间。</p> : null}</details>;
+}
+
+export function AccountOverviewView(props: { profile: AccountProfile; business: AccountBusinessProfile | null; organization: AccountOrganization }) { return <AccountOverview {...props} />; }
+
+type ProfileSection = "summary" | "settings" | "business" | "verification";
+
+export function ProfileView({ data, business, organization, organizationId, section = "summary", identityVerificationOutcomeUnknown = false, onIdentityVerificationOutcomeUnknown, identityContactOutcomeUnknown = false, onIdentityContactOutcomeUnknown }: { data: AccountProfile; business?: AccountBusinessProfile | null; organization?: AccountOrganization | null; organizationId?: string; section?: ProfileSection; identityVerificationOutcomeUnknown?: boolean; onIdentityVerificationOutcomeUnknown?: () => void; identityContactOutcomeUnknown?: boolean; onIdentityContactOutcomeUnknown?: () => void }) {
+  const identity = <ProfileIdentity data={data}/>;
+  if (section === "settings") return <section className={styles.settingsWorkspace} aria-label="账户资料设置"><AccountSettingsPanel data={data} returnTo="/workbench/account/profile/settings" identityContactOutcomeUnknown={identityContactOutcomeUnknown} onIdentityContactOutcomeUnknown={onIdentityContactOutcomeUnknown} /><Provenance data={data} /></section>;
+  if (section === "business") return <>{identity}<BusinessProfilePanel profile={business} organizationId={organizationId} /><Provenance data={data} /></>;
+  if (section === "verification") return <>{identity}<VerificationPanel data={data} interactive organization={organization} returnTo="/workbench/account/profile/verification" identityVerificationOutcomeUnknown={identityVerificationOutcomeUnknown} onIdentityVerificationOutcomeUnknown={onIdentityVerificationOutcomeUnknown} /><Provenance data={data} /></>;
+  return <>
+    <Card className={styles.profileSummary}>
+      <header><div className={styles.profileAvatar} aria-hidden="true">{(data.displayName?.trim() || "账").slice(0, 1)}</div><div><h2>{data.displayName?.trim() || "当前账户"}</h2><p>个人资料与联系方式</p></div><div className={styles.summaryStatus} data-complete={data.emailVerified === true && data.phoneNumberVerified === true || undefined}><span>账户状态</span><strong>{data.emailVerified === true && data.phoneNumberVerified === true ? "已验证" : "待完善"}</strong></div></header>
+      <Fields items={[["手机号码", <>{provided(data.phoneNumber)} · <span>{verification(data.phoneNumberVerified)}</span></>], ["邮箱地址", <>{provided(data.email)} · <span>{verification(data.emailVerified)}</span></>], ["归属企业（Home）", data.homeOrganizationId]]} />
+    </Card>
+    {![data.displayName, data.email, data.phoneNumber].some(value => value?.trim()) ? <ConsoleState kind="empty" title="暂未提供个人资料">登录服务本次未提供显示名称、手机号码或电子邮箱。你仍可查看账户标识并刷新资料。</ConsoleState> : null}
+    <div className={styles.summaryGrid}>
+      <Panel title="经营画像" description="已填写的经营角色、平台与市场">
+        {business ? <Fields items={[["经营角色", provided(business.userRole)], ["店铺情况", provided(business.shopSituation)], ["销售平台", business.platforms.join("、") || "未设置"], ["经营站点", business.sites.join("、") || "未设置"]]} /> : <p className={styles.note}>经营画像暂时无法读取，未将缺失资料视为已填写。</p>}
+        <Button asChild variant="outline"><Link href="/workbench/account/profile/business" prefetch={false}>编辑经营画像</Link></Button>
+      </Panel>
+      <Panel title="账户设置" description="修改联系方式与维护登录安全">
+        <p className={styles.note}>手机号、邮箱及验证流程沿用现有账户设置。</p>
+        <p className={styles.note}>敏感操作会按当前规则要求验证。</p>
+        <div className={styles.summaryActions}><Button asChild variant="outline"><Link href="/workbench/account/profile/settings" prefetch={false}>前往账户设置</Link></Button><Button asChild variant="link"><Link href="/workbench/account/profile/verification" prefetch={false}>查看身份认证</Link></Button></div>
+      </Panel>
+    </div>
+    <details className={styles.summaryDetails}><summary>查看账户编号与登录信息</summary><p>账户 ID：{data.userId}</p><IdentityDates subject={data.userId}/><Provenance data={data}/></details>
+  </>;
+}
+
+function ProfileIdentity({ data }: { data: AccountProfile }) {
+  return <Card className={styles.identity}><div><h2>{data.displayName?.trim() || "当前账户"}</h2><p>账户 ID：{data.userId}</p><p>归属企业（Home）：{data.homeOrganizationId}</p></div><div className={styles.identityStatus}><span className={styles.badge}>账户资料 · 当前用户</span><IdentityDates subject={data.userId}/></div></Card>;
+}
+
+function AccountSettingsPanel({ data, returnTo, identityContactOutcomeUnknown = false, onIdentityContactOutcomeUnknown }: { data: AccountProfile; returnTo?: string; identityContactOutcomeUnknown?: boolean; onIdentityContactOutcomeUnknown?: () => void }) {
+  return <>
+    <Panel title="账户信息" className={styles.settingsAccount}>
+      <section className={styles.settingsGroup} aria-label="地区资料">
+        <h3>地区资料</h3>
+        <p>用于提供适合你所在地区的服务</p>
+        <RegionSettings subject={data.userId} />
+      </section>
+      <section className={styles.settingsGroup} aria-label="个人资料">
+        <h3>个人资料</h3>
+        <IdentityProfileManagement data={data} returnTo={returnTo ?? "/workbench/account/profile/settings"} />
+      </section>
+    </Panel>
+    <IdentityContactManagement data={data} returnTo={returnTo ?? "/workbench/account/profile/settings"} identityContactOutcomeUnknown={identityContactOutcomeUnknown} onIdentityContactOutcomeUnknown={onIdentityContactOutcomeUnknown} />
+  </>;
+
+}
+
+function IdentityProfileManagement({ data, returnTo }: { data: AccountProfile; returnTo: string }) {
+  const profileQuery = useQuery({ queryKey: ["account", "identity-profile", data.userId], queryFn: () => getAccountIdentityProfile({ expectedUserId: data.userId }), retry: false });
+  if (profileQuery.isPending) return <p className={styles.note} role="status">正在读取个人资料…</p>;
+  if (profileQuery.isError || !profileQuery.data) return <><p className={styles.errorText}>个人资料暂时无法读取，请稍后重试。</p>{profileQuery.isError && identityMutationNeedsLogin(profileQuery.error) ? <IdentityLoginRecovery returnTo={returnTo} /> : null}</>;
+  const profileKey = [profileQuery.data.userId, profileQuery.data.firstName, profileQuery.data.lastName, profileQuery.data.nickName, profileQuery.data.displayName, profileQuery.data.preferredLanguage, profileQuery.data.gender].join("\u001f");
+  return <IdentityProfileForm key={profileKey} data={data} profile={profileQuery.data} returnTo={returnTo} />;
+}
+
+function IdentityProfileForm({ data, profile, returnTo }: { data: AccountProfile; profile: { firstName: string; lastName: string; nickName: string; displayName: string; preferredLanguage: string; gender: string }; returnTo: string }) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<AccountIdentityProfileInput>(() => identityProfileInput(profile));
+  const mutation = useMutation({ mutationFn: (input: AccountIdentityProfileInput) => updateAccountIdentityProfile({ expectedUserId: data.userId, input }), onSuccess: () => reconcileIdentityQueries(queryClient, data.userId), onError: error => { if (identityOutcomeUnknown(error)) reconcileIdentityQueries(queryClient, data.userId); } });
+  const field = (key: keyof AccountIdentityProfileInput, label: string) => <label key={key}>{label}<input value={form[key]} onChange={event => setForm(current => current ? { ...current, [key]: event.target.value } : current)} disabled={mutation.isPending} /></label>;
+  return (
+    <form className={styles.settingsGridForm} onSubmit={event => { event.preventDefault(); mutation.mutate(form); }}>
+      {field("firstName", "名")}
+      {field("lastName", "姓")}
+      {field("nickName", "昵称")}
+      {field("displayName", "显示名称")}
+      <div className={styles.formActions}>
+        <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? "保存中…" : "保存个人资料"}</Button>
+        {mutation.isError ? <span className={styles.errorText} role="alert">{identityMutationErrorText(mutation.error)}</span> : mutation.isSuccess ? <span className={styles.successText} role="status">个人资料已保存</span> : null}
+        {mutation.isError && identityMutationNeedsLogin(mutation.error) ? <IdentityLoginRecovery returnTo={returnTo} /> : null}
+      </div>
+    </form>
+  );
+}
+
+function VerificationPanel({ data, organization, interactive = false, returnTo, identityVerificationOutcomeUnknown = false, onIdentityVerificationOutcomeUnknown }: { data: AccountProfile; organization?: AccountOrganization | null; interactive?: boolean; returnTo?: string; identityVerificationOutcomeUnknown?: boolean; onIdentityVerificationOutcomeUnknown?: () => void }) {
+  return <>
+    {interactive ? <SubjectVerification userId={data.userId} organizationId={organization?.effectiveOrganizationId} /> : <Panel title="身份认证" description="查看个人与企业认证的开放情况。" className={styles.status}><p>组织授权状态不代表企业身份认证结果。</p><Button asChild variant="outline"><Link href="/workbench/account/profile/verification" prefetch={false}>查看身份认证</Link></Button></Panel>}
+    <Panel title="账户联系方式验证" description="手机和邮箱验证状态由 ZITADEL 官方 Auth API 返回；企业授权仅表示当前登录授权有效。" className={styles.status}>
+      <Fields items={[["手机验证", verification(data.phoneNumberVerified)], ["邮箱验证", verification(data.emailVerified)], ["企业授权", organization ? "已读取当前企业授权" : "未读取当前企业授权"]]} />{interactive ? <IdentityVerificationManagement data={data} returnTo={returnTo ?? "/workbench/account/profile/verification"} identityVerificationOutcomeUnknown={identityVerificationOutcomeUnknown} onIdentityVerificationOutcomeUnknown={onIdentityVerificationOutcomeUnknown} /> : null}
+    </Panel>
+  </>;
+}
+
+function IdentityContactManagement({ data, returnTo, identityContactOutcomeUnknown, onIdentityContactOutcomeUnknown }: { data: AccountProfile; returnTo: string; identityContactOutcomeUnknown: boolean; onIdentityContactOutcomeUnknown?: () => void }) {
+  const emailStatusId = useId();
+  const phoneStatusId = useId();
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState(data.email ?? "");
+  const [phone, setPhone] = useState(data.phoneNumber ?? "");
+  const emailMutation = useMutation({ mutationFn: () => setAccountEmail({ expectedUserId: data.userId, email }), onSuccess: () => reconcileIdentityQueries(queryClient, data.userId), onError: error => { if (identityOutcomeUnknown(error)) { onIdentityContactOutcomeUnknown?.(); reconcileIdentityQueries(queryClient, data.userId); } } });
+  const phoneMutation = useMutation({ mutationFn: () => setAccountPhone({ expectedUserId: data.userId, phone }), onSuccess: () => reconcileIdentityQueries(queryClient, data.userId), onError: error => { if (identityOutcomeUnknown(error)) { onIdentityContactOutcomeUnknown?.(); reconcileIdentityQueries(queryClient, data.userId); } } });
+  const [oldPassword, setOldPassword] = useState(""); const [newPassword, setNewPassword] = useState("");
+  const passwordMutation = useMutation({ mutationFn: (input: { oldPassword: string; newPassword: string }) => updateAccountPassword({ expectedUserId: data.userId, ...input }), onSettled: () => { setOldPassword(""); setNewPassword(""); } });
+  const errorText = (mutation: { isError: boolean; error: unknown }) => mutation.isError ? identityMutationErrorText(mutation.error) : null;
+  return <div className={styles.settingsSections}>
+    {identityContactOutcomeUnknown ? <p className={styles.errorText} role="alert">操作结果待核实，已刷新资料；请确认当前联系方式状态后，再点击“刷新资料”重新提交。</p> : null}
+    <Panel title="联系方式" description="换绑后，请到认证信息完成验证" className={styles.settingsContacts}>
+      <form className={styles.settingsGridForm} onSubmit={event => { event.preventDefault(); emailMutation.mutate(); }}>
+        <label>邮箱地址<input type="email" autoComplete="email" aria-describedby={emailStatusId} value={email} onChange={event => setEmail(event.target.value)} disabled={emailMutation.isPending || identityContactOutcomeUnknown} /></label>
+        <ContactStatus id={emailStatusId} label="当前邮箱" value={data.email} verified={data.emailVerified} />
+        <div className={styles.formActions}>
+          <Button type="submit" variant="outline" disabled={emailMutation.isPending || identityContactOutcomeUnknown}>{emailMutation.isPending ? "提交中…" : "更换邮箱"}</Button>
+          {errorText(emailMutation) ? <span className={styles.errorText} role="alert">{errorText(emailMutation)}</span> : emailMutation.isSuccess ? <span className={styles.successText} role="status">已发送验证邮件</span> : null}
+          {emailMutation.isError && identityMutationNeedsLogin(emailMutation.error) ? <IdentityLoginRecovery returnTo={returnTo} /> : null}
+        </div>
+      </form>
+      <form className={styles.settingsGridForm} onSubmit={event => { event.preventDefault(); phoneMutation.mutate(); }}>
+        <label>手机号码<input type="tel" autoComplete="tel" aria-describedby={phoneStatusId} value={phone} onChange={event => setPhone(event.target.value)} disabled={phoneMutation.isPending || identityContactOutcomeUnknown} /></label>
+        <ContactStatus id={phoneStatusId} label="当前手机号" value={data.phoneNumber} verified={data.phoneNumberVerified} />
+        <div className={styles.formActions}>
+          <Button type="submit" variant="outline" disabled={phoneMutation.isPending || identityContactOutcomeUnknown}>{phoneMutation.isPending ? "提交中…" : "更换手机号"}</Button>
+          {errorText(phoneMutation) ? <span className={styles.errorText} role="alert">{errorText(phoneMutation)}</span> : phoneMutation.isSuccess ? <span className={styles.successText} role="status">已发送短信验证码</span> : null}
+          {phoneMutation.isError && identityMutationNeedsLogin(phoneMutation.error) ? <IdentityLoginRecovery returnTo={returnTo} /> : null}
+        </div>
+      </form>
+      <Link href="/workbench/account/profile/verification" prefetch={false} className={styles.settingsVerificationLink}>前往认证信息</Link>
+    </Panel>
+    <Panel title="登录与安全" description="硕米不会保存你的密码或验证码">
+      <form className={styles.settingsGridForm} onSubmit={event => { event.preventDefault(); passwordMutation.mutate({ oldPassword, newPassword }); }}>
+        <label>当前密码<input type="password" value={oldPassword} onChange={event => setOldPassword(event.target.value)} autoComplete="current-password" disabled={passwordMutation.isPending} /></label>
+        <label>新密码<input type="password" value={newPassword} onChange={event => setNewPassword(event.target.value)} autoComplete="new-password" disabled={passwordMutation.isPending} /></label>
+        <div className={styles.formActions}>
+          <Button type="submit" variant="outline" disabled={passwordMutation.isPending}>{passwordMutation.isPending ? "提交中…" : "修改密码"}</Button>
+          {errorText(passwordMutation) ? <span className={styles.errorText} role="alert">{errorText(passwordMutation)}</span> : passwordMutation.isSuccess ? <span className={styles.successText} role="status">密码已更新</span> : null}
+          {passwordMutation.isError && identityMutationNeedsLogin(passwordMutation.error) ? <IdentityLoginRecovery returnTo={returnTo} /> : null}
+        </div>
+      </form>
+    </Panel>
+  </div>;
+}
+
+function ContactStatus({ id, label, value, verified }: { id: string; label: string; value: string | null; verified: boolean | null }) {
+  const current = value?.trim();
+  return <p id={id} className={styles.contactStatus} data-verified={Boolean(current) && verified === true || undefined}>
+    {label}{current ? ` ${current} · ${verification(verified)}` : "未设置"}
+  </p>;
+}
+
+function identityProfileInput(profile: { firstName: string; lastName: string; nickName: string; displayName: string; preferredLanguage: string; gender: string }): AccountIdentityProfileInput {
+  return { firstName: profile.firstName, lastName: profile.lastName, nickName: profile.nickName, displayName: profile.displayName, preferredLanguage: profile.preferredLanguage, gender: profile.gender as AccountIdentityProfileInput["gender"] };
+}
+
+function IdentityVerificationManagement({ data, returnTo, identityVerificationOutcomeUnknown, onIdentityVerificationOutcomeUnknown }: { data: AccountProfile; returnTo: string; identityVerificationOutcomeUnknown: boolean; onIdentityVerificationOutcomeUnknown?: () => void }) {
+  const queryClient = useQueryClient();
+  const [emailCode, setEmailCode] = useState(""); const [phoneCode, setPhoneCode] = useState("");
+  const emailMutation = useMutation({ mutationFn: () => verifyAccountEmail({ expectedUserId: data.userId, code: emailCode }), onSuccess: () => reconcileIdentityQueries(queryClient, data.userId), onError: error => { if (identityOutcomeUnknown(error)) { onIdentityVerificationOutcomeUnknown?.(); reconcileIdentityQueries(queryClient, data.userId); } } });
+  const phoneMutation = useMutation({ mutationFn: () => verifyAccountPhone({ expectedUserId: data.userId, code: phoneCode }), onSuccess: () => reconcileIdentityQueries(queryClient, data.userId), onError: error => { if (identityOutcomeUnknown(error)) { onIdentityVerificationOutcomeUnknown?.(); reconcileIdentityQueries(queryClient, data.userId); } } });
+  const emailResend = useMutation({ mutationFn: () => resendAccountEmailVerification({ expectedUserId: data.userId }), onError: error => { if (identityOutcomeUnknown(error)) { onIdentityVerificationOutcomeUnknown?.(); reconcileIdentityQueries(queryClient, data.userId); } } });
+  const phoneResend = useMutation({ mutationFn: () => resendAccountPhoneVerification({ expectedUserId: data.userId }), onError: error => { if (identityOutcomeUnknown(error)) { onIdentityVerificationOutcomeUnknown?.(); reconcileIdentityQueries(queryClient, data.userId); } } });
+  const error = (mutation: { isError: boolean; error: unknown }) => mutation.isError ? mutation.error instanceof AccountReadError && mutation.error.code === "IDENTITY_VERIFICATION_FAILED" ? "验证码无效或已过期" : identityMutationErrorText(mutation.error) : null;
+  const emailError = error(emailMutation) ?? error(emailResend);
+  const phoneError = error(phoneMutation) ?? error(phoneResend);
+  const needsEmailLogin = (emailMutation.isError && identityMutationNeedsLogin(emailMutation.error)) || (emailResend.isError && identityMutationNeedsLogin(emailResend.error));
+  const needsPhoneLogin = (phoneMutation.isError && identityMutationNeedsLogin(phoneMutation.error)) || (phoneResend.isError && identityMutationNeedsLogin(phoneResend.error));
+  return <div className={styles.profileForm}>
+    {identityVerificationOutcomeUnknown ? <p className={styles.errorText} role="alert">操作结果待核实，已刷新资料；请确认当前验证状态后，再点击“刷新资料”重新发送。</p> : null}
+    {data.email && data.emailVerified !== true ? <form onSubmit={event => { event.preventDefault(); emailMutation.mutate(); }}><label>邮箱验证码<input value={emailCode} onChange={event => setEmailCode(event.target.value)} inputMode="numeric" disabled={emailMutation.isPending || identityVerificationOutcomeUnknown} /></label><div className={styles.formActions}><Button type="submit" disabled={emailMutation.isPending || identityVerificationOutcomeUnknown}>验证邮箱</Button><Button type="button" variant="outline" onClick={() => emailResend.mutate()} disabled={emailResend.isPending || identityVerificationOutcomeUnknown}>重新发送</Button>{emailError ? <span className={styles.errorText}>{emailError}</span> : emailMutation.isSuccess || emailResend.isSuccess ? <span className={styles.successText}>{emailMutation.isSuccess ? "邮箱已验证" : "验证码已发送"}</span> : null}{needsEmailLogin ? <IdentityLoginRecovery returnTo={returnTo} /> : null}</div></form> : null}
+    {data.phoneNumber && data.phoneNumberVerified !== true ? <form onSubmit={event => { event.preventDefault(); phoneMutation.mutate(); }}><label>手机验证码<input value={phoneCode} onChange={event => setPhoneCode(event.target.value)} inputMode="numeric" disabled={phoneMutation.isPending || identityVerificationOutcomeUnknown} /></label><div className={styles.formActions}><Button type="submit" disabled={phoneMutation.isPending || identityVerificationOutcomeUnknown}>验证手机</Button><Button type="button" variant="outline" onClick={() => phoneResend.mutate()} disabled={phoneResend.isPending || identityVerificationOutcomeUnknown}>重新发送</Button>{phoneError ? <span className={styles.errorText}>{phoneError}</span> : phoneMutation.isSuccess || phoneResend.isSuccess ? <span className={styles.successText}>{phoneMutation.isSuccess ? "手机已验证" : "验证码已发送"}</span> : null}{needsPhoneLogin ? <IdentityLoginRecovery returnTo={returnTo} /> : null}</div></form> : null}
+    {!data.email && !data.phoneNumber ? <p className={styles.note}>当前没有可验证的邮箱或手机号，请先在账户设置中添加。</p> : <p className={styles.note}>验证码校验由 ZITADEL 官方完成；验证结果刷新后以身份服务返回为准。</p>}
+  </div>;
+}
+
+function identityOutcomeUnknown(error: unknown): boolean { return error instanceof AccountReadError && error.code === "RESULT_UNVERIFIED"; }
+function identityMutationNeedsLogin(error: unknown): boolean { return error instanceof AccountReadError && ["AUTHENTICATION_REQUIRED", "IDENTITY_CONTEXT_CHANGED"].includes(error.code); }
+function IdentityLoginRecovery({ returnTo }: { returnTo: string }) { return <Button asChild variant="outline"><Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} prefetch={false}>重新登录</Link></Button>; }
+function identityMutationErrorText(error: unknown): string {
+  if (identityOutcomeUnknown(error)) return "操作结果待核实，已刷新资料；请勿重复提交，确认当前状态后再操作";
+  if (error instanceof AccountReadError && error.code === "AUTHENTICATION_REQUIRED") return "登录已失效，请重新登录";
+  if (error instanceof AccountReadError && error.code === "IDENTITY_CONTEXT_CHANGED") return "登录身份已变化，请重新登录";
+  if (error instanceof AccountReadError && error.code === "IDENTITY_PROVIDER_REJECTED") return "身份服务拒绝了本次修改";
+  return "操作失败，请稍后重试";
+}
+function reconcileIdentityQueries(queryClient: ReturnType<typeof useQueryClient>, userId: string): void {
+  void queryClient.invalidateQueries({ queryKey: ["account"] });
+  void queryClient.invalidateQueries({ queryKey: ["account", "identity-profile", userId] });
+}
+
+function BusinessProfilePanel({ profile, organizationId }: { profile?: AccountBusinessProfile | null; organizationId?: string }) {
+  const [form, setForm] = useState<AccountBusinessProfileInput>(() => profileInput(profile));
+  const mutation = useMutation({ mutationFn: (input: AccountBusinessProfileInput) => updateAccountBusinessProfile({ expectedUserId: profile?.userId ?? "", expectedOrganizationId: organizationId ?? "", input }), onSuccess: saved => setForm(profileInput(saved)) });
+  if (!profile) return <ConsoleState kind="empty" title="暂时无法读取经营画像">请刷新资料后再试。</ConsoleState>;
+
+  const disabled = !organizationId || mutation.isPending;
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!disabled) mutation.mutate(form);
+  };
+
+  const scalar = (key: "userRole" | "shopSituation" | "factorySituation" | "shopType", label: string, options: readonly string[]) => (
+    <fieldset className={styles.choiceField} disabled={disabled} aria-label={label}>
+      {key === "shopType" ? <legend>{label}</legend> : null}
+      <div className={styles.choiceOptions}>
+        {options.map(option => <BusinessOption key={option} label={option} selected={form[key] === option}
+          onClick={() => setForm(current => ({ ...current, [key]: current[key] === option ? "" : option }))} />)}
+      </div>
+      <BusinessSupplement fieldLabel={label} inputLabel="其他／补充" value={options.includes(form[key]) ? "" : form[key]}
+        onChange={value => setForm(current => ({ ...current, [key]: value }))} />
+    </fieldset>
+  );
+
+  const multiple = (key: "platforms" | "sites" | "services", label: string, options: readonly string[]) => {
+    const custom = form[key].filter(value => !options.includes(value));
+    const atLimit = form[key].length >= 16;
+    return (
+      <fieldset className={styles.choiceField} disabled={disabled}>
+        <legend>{label}<span className={styles.choiceHint}>可多选</span></legend>
+        <div className={styles.choiceOptions}>
+          {options.map(option => <BusinessOption key={option} label={option} selected={form[key].includes(option)}
+            disabled={!form[key].includes(option) && atLimit}
+            onClick={() => setForm(current => ({ ...current, [key]: current[key].includes(option) ? current[key].filter(value => value !== option) : current[key].length >= 16 ? current[key] : [...current[key], option] }))} />)}
+        </div>
+        <BusinessSupplement fieldLabel={label} inputLabel="其他选项（逗号分隔）" value={custom.join(", ")} disabled={custom.length === 0 && atLimit}
+          onChange={value => setForm(current => {
+            const selected = current[key].filter(value => options.includes(value));
+            const additional = splitList(value).filter(value => !selected.includes(value)).slice(0, 16 - selected.length);
+            return { ...current, [key]: [...selected, ...additional] };
+          })} />
+      </fieldset>
+    );
+  };
+
+  return <form className={styles.businessForm} onSubmit={submit}>
+    <div className={styles.businessGroups}>
+      <BusinessGroup title="经营角色" compact>{scalar("userRole", "经营角色", ["跨境电商创业者", "跨境电商卖家", "工厂或供应商", "企业电商团队", "OPC电商社区或园区", "电商服务商", "其他"])}</BusinessGroup>
+      <BusinessGroup title="店铺情况" compact>{scalar("shopSituation", "店铺情况", ["暂时没有店铺", "正在准备开店", "已有店铺", "有多个店铺或店群"])}</BusinessGroup>
+      <BusinessGroup title="平台与站点" columns>
+        {multiple("platforms", "店铺平台", ["Amazon", "SHEIN", "Temu", "TikTok Shop", "Walmart", "Shopee", "Lazada", "AliExpress", "Etsy", "独立站"])}
+        {multiple("sites", "经营站点", ["美国站", "加拿大站", "日本站", "英国站", "欧洲站"])}
+        {scalar("shopType", "店铺类型", ["全托店", "半托店", "自营店", "其他"])}
+      </BusinessGroup>
+      <BusinessGroup title="工厂与供应链">{scalar("factorySituation", "工厂与供应链", ["有自有工厂", "有长期合作工厂", "有稳定供应链资源", "暂时没有工厂或供应链资源", "其他"])}</BusinessGroup>
+      <BusinessGroup title="所需服务">{multiple("services", "服务选项", ["AI选品与市场分析", "商品采集与刊登", "商品图片与内容生成", "POD商品定制", "供应链与货盘对接", "店铺智能运营", "广告投放与优化", "客服自动化", "订单库存与ERP", "多店铺矩阵管理", "创业培训与陪跑", "店铺联合运营", "品牌出海", "企业功能定制", "OPC电商社区落地", "暂时不确定"])}</BusinessGroup>
+    </div>
+    <div className={styles.businessActions}>
+      <Button type="submit" disabled={disabled}>{mutation.isPending ? "保存中…" : "保存经营画像"}</Button>
+      {mutation.isError ? <span className={styles.errorText} role="alert">保存失败，请稍后重试</span> : null}
+      {mutation.isSuccess ? <span className={styles.successText} role="status">经营画像已保存</span> : null}
+    </div>
+  </form>;
+}
+
+function BusinessGroup({ title, children, compact = false, columns = false }: { title: string; children: ReactNode; compact?: boolean; columns?: boolean }) {
+  const headingId = useId();
+  return <section className={styles.businessGroup} data-compact={compact || undefined} aria-labelledby={headingId}>
+    <h2 id={headingId}>{title}</h2>
+    <div className={columns ? styles.businessColumns : undefined}>{children}</div>
+  </section>;
+}
+
+function BusinessOption({ label, selected, disabled, onClick }: { label: string; selected: boolean; disabled?: boolean; onClick: () => void }) {
+  return <button type="button" aria-pressed={selected} disabled={disabled} onClick={onClick}>
+    <Check size={16} aria-hidden="true" />
+    <span>{label}</span>
+  </button>;
+}
+
+function BusinessSupplement({ fieldLabel, inputLabel, value, onChange, disabled = false }: {
+  fieldLabel: string; inputLabel: string; value: string; onChange: (value: string) => void; disabled?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(Boolean(value));
+  const [typedValue, setTypedValue] = useState<string | null>(null);
+  const contentId = useId();
+  return <div className={styles.supplement}>
+    <button type="button" aria-label={`补充填写：${fieldLabel}`} aria-expanded={expanded} aria-controls={contentId} onClick={() => setExpanded(current => !current)}>
+      <ChevronDown size={16} aria-hidden="true" />
+      补充填写
+    </button>
+    <div id={contentId} hidden={!expanded}>
+      <label className={styles.otherChoice}>{inputLabel}
+        <input value={typedValue ?? value} disabled={disabled} onBlur={() => setTypedValue(null)} onChange={event => {
+          const nextValue = event.target.value;
+          setTypedValue(nextValue);
+          onChange(nextValue);
+        }} />
+      </label>
+    </div>
+  </div>;
+}
+function profileInput(profile?: AccountBusinessProfile | null): AccountBusinessProfileInput { return { userRole: profile?.userRole ?? "", shopSituation: profile?.shopSituation ?? "", factorySituation: profile?.factorySituation ?? "", platforms: profile?.platforms ?? [], sites: profile?.sites ?? [], shopType: profile?.shopType ?? "", services: profile?.services ?? [] }; }
+function splitList(value: string) { return [...new Set(value.split(",").map(item => item.trim()).filter(Boolean))].slice(0, 16); }
+
+const enterpriseRoleLabels = new Map([["listingkit_admin", "企业管理员"], ["listingkit_viewer", "查看者"], ["viewer", "查看者"], ["platform_admin", "平台管理员"]]);
+
+export function OrganizationView({ data, scope,platformMaintenance }: { data: AccountOrganization; scope: string;platformMaintenance?:ReactNode }) {
+  const members = useQuery({ queryKey: ["account-overview", data.userId, data.effectiveOrganizationId, "members", scope], queryFn: ({ signal }) => getMemberSummary({ expectedUserId: data.userId, expectedOrganizationId: data.effectiveOrganizationId, signal }), gcTime: 0, staleTime: 0, retry: false });
+  const commercial = useQuery({ queryKey: ["account-overview", data.userId, data.effectiveOrganizationId, "commercial", scope], queryFn: ({ signal }) => getCommercialOverview(data.effectiveOrganizationId, signal), gcTime: 0, staleTime: 0, retry: false });
+  const metric = (query: { isPending: boolean; isError: boolean }, value: ReactNode, unavailable: string) => query.isPending ? "正在读取" : query.isError ? unavailable : value;
+  const activeMembers = members.data?.active;
+  const invites = useQuery({queryKey:["invitation-summary",data.userId,data.effectiveOrganizationId,scope],queryFn:({signal})=>getInvitationSummary({expectedUserId:data.userId,expectedOrganizationId:data.effectiveOrganizationId,signal}),gcTime:0,staleTime:0,retry:false});
+  const stores = useQuery({queryKey:["enterprise-stores",data.userId,data.effectiveOrganizationId,scope],queryFn:({signal})=>listWorkbenchStores({page:1,pageSize:1},data.effectiveOrganizationId,signal),gcTime:0,staleTime:0,retry:false});
+  const roles = [...new Set(data.roles.map(role =>
+    enterpriseRoleLabels.get(role) ?? (enterpriseRoleKey.safeParse(role).success ? "自定义角色" : "角色名称暂未提供"),
+  ))];
+  const management = [
+    { title: "成员与权限", tone: "blue", description: "查看成员和角色，有权限的管理员可邀请成员", href: "/workbench/account/organization/members" },
+    { title: "资源与额度", tone: "purple", description: "查看企业余额和成员消费上限", href: "/workbench/account/organization/resources" },
+    { title: "操作记录", tone: "orange", description: "查看账户资料、成员、额度和源账号的变动", href: "/workbench/account/organization/audit" },
+  ];
+  const metrics = [
+    { label: "企业成员", tone: "blue", value: metric(members, members.data?.total, "暂不可用"), detail: activeMembers === undefined ? undefined : `有效成员 ${activeMembers} 人` },
+    { label: "已绑定店铺", tone: "teal", value: metric(stores, stores.data?.pagination.total, "暂不可用") },
+    { label: "待处理邀请", tone: "orange", value: metric(invites, invites.data?.pending, "暂不可用"), detail: "尚未结束且未过期" },
+    { label: "当前方案", tone: "purple", value: metric(commercial, commercial.data?.base_plan.name, "暂不可用"), detail: "店铺按期收费，AI 与数据资源预付使用" },
+  ];
+
+  return <div className={`${overviewStyles.stack} ${styles.enterpriseWorkspace}`}>
+    <Card role="region" aria-label="当前企业信息" className={overviewStyles.panel}>
+      <div className={styles.enterpriseHeader}>
+        <div className={styles.organizationIdentity}>
+          <Image src="/console/account/organization-avatar.svg" width={48} height={48} alt="" unoptimized />
+          <div><h2>{provided(data.name)}</h2><p>当前角色：{roles.join("、") || "未提供"}</p></div>
+        </div>
+        <details className={styles.enterpriseDetails}>
+          <summary>企业编号</summary>
+          <dl><div><dt>当前企业编号</dt><dd>{data.effectiveOrganizationId}</dd></div><div><dt>归属企业编号</dt><dd>{data.homeOrganizationId}</dd></div></dl>
+        </details>
+      </div>
+      <dl className={`${overviewStyles.metrics} ${overviewStyles.metricsFour}`}>
+        {metrics.map(({ label, tone, value, detail }) => <div key={label} data-tone={tone}>
+          <dt>{label}</dt><dd><strong>{value}</strong>{detail ? <small>{detail}</small> : null}</dd>
+        </div>)}
+      </dl>
+    </Card>
+    <section aria-label="企业管理">
+      <h2 className={styles.sectionTitle}>企业管理</h2>
+      <div className={`${overviewStyles.entriesThree} ${overviewStyles.entriesCompact}`}>
+        {management.map(({ title, tone, description, href }) => <Card key={href} className={overviewStyles.entry} data-tone={tone}>
+          <h3>{title}</h3>
+          <p className={overviewStyles.description}>{description}</p>
+          <Button asChild size="sm" variant="outline"><Link href={href} prefetch={false}>{title}</Link></Button>
+        </Card>)}
+      </div>
+    </section>
+    {platformMaintenance}
+    <Panel title="企业资源"><EnterpriseResources userId={data.userId} organizationId={data.effectiveOrganizationId} scope={scope} sequence={0} hideActions /></Panel>
+    <MemberAllocationPreview userId={data.userId} organizationId={data.effectiveOrganizationId} scope={scope} />
+    <Provenance data={data} />
+  </div>;
+}

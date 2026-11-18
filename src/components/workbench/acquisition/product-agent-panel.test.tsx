@@ -1,0 +1,278 @@
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {useEffect} from "react";
+import { ProductAgentPanel } from "./product-agent-panel";
+import { ProductAgentError } from "@/lib/api/product-agent";
+const fixture = vi.hoisted(() => ({ request: vi.fn(), knowledge:vi.fn(), params: new URLSearchParams(), context: { user: { id: "actor" }, effectiveOrganization: { id: "org" }, roles:["listingkit_operator"], permissions: ["product_sourcing.write","local_agent.write","listingkit.image_agent.read","listingkit.image_agent.write","workbench.agent.read","workbench.agent.use","workbench.chat.read","workbench.chat.use","workbench.task.read","workbench.knowledge.read","workbench.store.read","workbench.store.create","workbench.store.update","workbench.store.lifecycle","workbench.source_account.read","workbench.source_account.manage","workbench.organization_member.read","workbench.commercial.read"], isLoading: false, isSwitching: false, error: null, blockingError: null, selectionRequired: false, registerOrganizationSwitchGuard: vi.fn(() => () => { }) } }));
+vi.mock("@/lib/api/knowledge",async original=>({...await original<typeof import("@/lib/api/knowledge")>(),knowledgeRequest:fixture.knowledge}));
+vi.mock("@/lib/api/product-agent", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/api/product-agent")>(), requestProductAgent: fixture.request }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => fixture.params }));
+vi.mock("../agents/agent-configuration-hooks",()=>({useConfigurationRead:()=>({data:{subject:{kind:"registered_agent",id:"product.title.agent"},definition:{id:"product.title.agent",version:"v1.0.0"},mode:"default",revision:"0",policyVersion:"agent-execution-policy-v1",canConfigure:false,updatedAt:"2026-10-12T00:00:00Z",updatedBy:""}})}));
+vi.mock("@/components/providers/workbench-context-provider", () => ({ useWorkbenchContext: () => fixture.context }));
+vi.mock("./title-agent-templates",()=>({TitleAgentTemplates:({onReady}:{onReady:(v:boolean)=>void})=>{useEffect(()=>onReady(true),[onReady]);return null}}));
+beforeEach(() => { fixture.context.roles=["listingkit_operator"];fixture.request.mockReset();fixture.knowledge.mockReset(); fixture.params = new URLSearchParams(); window.history.replaceState(null, "", "/"); Object.defineProperty(HTMLDialogElement.prototype,"showModal",{configurable:true,value:function(this:HTMLDialogElement){this.open=true}});Object.defineProperty(HTMLDialogElement.prototype,"close",{configurable:true,value:function(this:HTMLDialogElement){this.open=false}}); });
+afterEach(cleanup);
+const op = "11111111-1111-4111-8111-111111111111";
+const props = { enabled: true, operationId: op, productKey: "product", catalogVersion: "1" };
+
+it.each([
+    ["succeeded", "技能处理完成", "Portable storage bag"],
+    ["not_dispatched", "技能未执行", null],
+    ["outcome_unknown", "技能处理结果待确认", null],
+] as const)("presents the own title receipt %s with the appropriate next action", async (outcome, heading, processedTitle) => {
+    const canSubmitReview = outcome === "succeeded";
+    const originalTitle = "Storage bag";
+    const unconfirmedTitle = "Unconfirmed output";
+    fixture.params = new URLSearchParams({ agent_key: op, agent_actor: "actor", agent_org: "org" });
+    fixture.request.mockResolvedValue({
+        runId: op, requestKey: op, operationId: op, productKey: "product", catalogVersion: "1",
+        publicationId: "original", targetPlatform: "product", executionMode: "default", modeRevision: "0",
+        phase: canSubmitReview ? "human_review_required" : "stopped", revision: "2",
+        stopReason: canSubmitReview ? undefined : "tool_error", canSubmitReview,
+        contentSelection: { targetLanguage: "en-US", title: true },
+        scriptOriginalTitle: originalTitle,
+        scriptReceipt: {
+            outcome, cleanup: outcome === "not_dispatched" ? "not_needed" : "completed",
+            reason: outcome === "not_dispatched" ? "control_unavailable" : "execution_unconfirmed",
+        },
+        candidate: { Changes: [{
+            Field: "title", Value: outcome === "outcome_unknown" ? unconfirmedTitle : processedTitle ?? originalTitle,
+            EvidenceIDs: ["source"],
+        }] },
+        confidence: [], unresolved: [], steps: [{ step: 1, callId: "model-call" }],
+        tokens: 60, estimatedCostMicros: 100, currency: "CNY", usageStatus: "observed",
+    });
+
+    render(<ProductAgentPanel {...props} ownSource={{ catalogVersion: "1", publicationId: "original" }}/>);
+    expect(fixture.request).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "读取当前结果" }));
+    await screen.findByRole("heading", { name: heading });
+    expect(screen.getAllByText(originalTitle)).toHaveLength(1);
+    expect(fixture.request.mock.calls[0].slice(0, 3)).toEqual(["read", op, op]);
+    if (processedTitle) {
+        expect(screen.getByText("技能处理前")).toBeInTheDocument();
+        expect(screen.getByText("技能处理后")).toBeInTheDocument();
+        expect(screen.getByText(processedTitle)).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "提交人工审核" })).toBeEnabled();
+    } else {
+        expect(screen.queryByText("技能处理后")).toBeNull();
+        expect(screen.queryByText(unconfirmedTitle)).toBeNull();
+        expect(screen.queryByRole("button", { name: "提交人工审核" })).toBeNull();
+        expect(screen.getByText(/暂不能采用/)).toBeInTheDocument();
+    }
+    if (outcome === "not_dispatched") {
+        expect(screen.getByRole("status")).toHaveTextContent("请联系管理员");
+        expect(screen.queryByText(/工具处理失败/)).toBeNull();
+    }
+    const details = screen.getByText("查看本次详情").closest("details")!;
+    expect(details).not.toHaveAttribute("open");
+    expect(within(details).getByText(op, { exact: false })).toBeInTheDocument();
+    expect(within(details).getByText(/model-call/)).toBeInTheDocument();
+    expect(fixture.request).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "重新查看本次结果" }));
+    await waitFor(() => expect(fixture.request).toHaveBeenCalledTimes(2));
+    expect(fixture.request.mock.calls[1].slice(0, 3)).toEqual(["read", op, op]);
+});
+it("keeps the full translation preview when preparing image text for an own product", async () => {
+    const ownSource = { catalogVersion: "1", publicationId: "original" };
+    const contentSelection = { targetLanguage: "en", title: true, sellingPoints: true };
+    const start = { expectedModeRevision: "0", targetPlatform: "product" as const, manualReviewOnly: true as const, contentSelection, ownSource };
+    fixture.request.mockResolvedValue({
+        runId: op, requestKey: op, operationId: op, productKey: "product", ...ownSource,
+        targetPlatform: "product", phase: "human_review_required", revision: "2", canSubmitReview: true,
+        contentSelection, candidate: { Changes: [
+            { Field: "title", Value: "Storage bag", EvidenceIDs: ["source"] },
+            { Field: "selling_points", Value: "Folds flat", EvidenceIDs: ["source"] },
+        ] },
+        confidence: [], unresolved: [], steps: [], tokens: 30, estimatedCostMicros: 20, currency: "CNY", usageStatus: "observed",
+    });
+
+    render(<ProductAgentPanel {...props} ownSource={ownSource} imageTranslation={{
+        language: "en", original: { key: op, start }, persist: vi.fn(), onReview: vi.fn(),
+    }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "读取当前结果" }));
+    await screen.findByText("selling_points：Folds flat");
+    expect(screen.getByText("title：Storage bag")).toBeInTheDocument();
+    expect(screen.getByText(/自动翻译后人工审核，不应用商品/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "提交人工审核" })).toBeEnabled();
+    expect(screen.queryByRole("heading", { name: "标题建议结果" })).toBeNull();
+    expect(fixture.request.mock.calls[0].slice(0, 3)).toEqual(["read", op, op]);
+});
+
+it("reconfirms a restored manual-only rejection only after preserving the original request",async()=>{
+ const start={expectedModeRevision:"0",targetPlatform:"product" as const,manualReviewOnly:true as const,contentSelection:{targetLanguage:"en",title:true,sellingPoints:true}};
+ const reset=vi.fn(),persist=vi.fn();fixture.request.mockRejectedValue(new ProductAgentError("MANUAL_REVIEW_REQUIRED"));
+ render(<ProductAgentPanel {...props} imageTranslation={{language:"en",original:{key:op,start},reset,persist,onReview:vi.fn()}}/>);
+ fireEvent.click(screen.getByRole("button",{name:"使用原请求核实启动"}));
+ await screen.findByText(/本次没有开始模型调用/);
+ expect(fixture.request.mock.calls[0][2]).toBe(op);expect(fixture.request.mock.calls[0][11]).toEqual(start.contentSelection);expect(fixture.request.mock.calls[0][15]).toBe(true);
+ fireEvent.click(screen.getByRole("button",{name:"重新确认配置"}));
+ expect(reset).toHaveBeenCalledOnce();expect(persist).not.toHaveBeenCalled();expect(fixture.request).toHaveBeenCalledOnce();
+ expect(screen.getByRole("button",{name:"生成内容建议"})).toBeEnabled();
+});
+it("restores an image translation with its exact language and manual-only flag, preserving general Agent URL intent",async()=>{
+ fixture.params=new URLSearchParams({agent_key:"22222222-2222-4222-8222-222222222222",agent_platform:"shein"});
+ window.history.replaceState(null,"","/?agent_key=22222222-2222-4222-8222-222222222222&agent_platform=shein");
+ fixture.request.mockRejectedValue(new ProductAgentError("OUTCOME_UNKNOWN"));
+ const start={expectedModeRevision:"0",targetPlatform:"product" as const,manualReviewOnly:true as const,contentSelection:{targetLanguage:"en",title:true,sellingPoints:true}};
+ render(<ProductAgentPanel {...props} imageTranslation={{language:"en",original:{key:op,start},persist:vi.fn(),onReview:vi.fn()}}/>);
+ fireEvent.click(screen.getByText("使用原请求核实启动"));await screen.findByRole("alert");
+ expect(fixture.request.mock.calls[0][2]).toBe(op);
+ expect(fixture.request.mock.calls[0][11]).toEqual(start.contentSelection);
+ expect(fixture.request.mock.calls[0][15]).toBe(true);
+ expect(new URL(window.location.href).searchParams.get("agent_platform")).toBe("shein");
+ expect(screen.queryByRole("button",{name:"重新确认配置"})).toBeNull();
+});
+it("restores an own run's original sealed version instead of the latest preview",async()=>{
+ fixture.params=new URLSearchParams({agent_key:op,agent_actor:"actor",agent_org:"org",agent_kind:"content",agent_mode_revision:"0",agent_platform:"product",agent_content:JSON.stringify({targetLanguage:"zh-CN",title:true}),agent_own_version:"1",agent_own_publication:"original-publication"});
+ fixture.request.mockRejectedValue(new ProductAgentError("OUTCOME_UNKNOWN"));
+ render(<ProductAgentPanel {...props} catalogVersion="3" ownSource={{catalogVersion:"3",publicationId:"later-apply"}}/>);
+ fireEvent.click(screen.getByText("使用原请求核实启动"));
+ await screen.findByRole("alert");
+ expect(fixture.request.mock.calls[0][14]).toEqual({source:{catalogVersion:"1",publicationId:"original-publication"}});
+ expect(fixture.request.mock.calls[0][13]).toBeUndefined();
+ expect(screen.queryByRole("option",{name:"标题优化"})).toBeNull();
+});
+it("does not restore another organization's own request",()=>{
+ fixture.params=new URLSearchParams({agent_key:op,agent_actor:"actor",agent_org:"other"});
+ render(<ProductAgentPanel {...props} ownSource={{catalogVersion:"1",publicationId:"original"}}/>);
+ expect(screen.queryByText("读取当前结果")).toBeNull();
+ expect(fixture.request).not.toHaveBeenCalled();
+});
+it("keeps a closed capability explicit and never dispatches on mount", () => {
+    render(<ProductAgentPanel {...props} enabled={false}/>);
+    expect(screen.getByText("当前环境尚未开放 Product Agent。")).toBeInTheDocument();
+    expect(fixture.request).not.toHaveBeenCalled();
+});
+it.each(["OUTCOME_UNKNOWN", "AGENT_CONFLICT"])("retains one request key after %s without automatically retrying", async code => {
+    fixture.request.mockRejectedValue(new ProductAgentError(code));
+    render(<ProductAgentPanel {...props}/>);
+    expect(screen.getByText("生成标题建议")).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("素材查询平台"), { target: { value: "shein" } });
+    fireEvent.click(screen.getByText("生成标题建议"));
+    expect(fixture.request).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog",{name:"确认标题优化"})).toBeInTheDocument();
+    fireEvent.click(screen.getByText("确认生成"));
+    await screen.findByRole("alert");
+    expect(fixture.request).toHaveBeenCalledTimes(1);
+    expect(fixture.request.mock.calls[0][7]).toBe("shein");
+    const key = fixture.request.mock.calls[0][2];
+    expect(new URL(window.location.href).searchParams.get("agent_key")).toBe(key);
+    fireEvent.click(screen.getByText("读取当前结果"));
+    await waitFor(() => expect(fixture.request).toHaveBeenCalledTimes(2));
+    expect(fixture.request.mock.calls[1].slice(0, 3)).toEqual(["read", op, key]);
+    expect(screen.queryByText("生成标题建议")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", {name:"重新确认配置"})).toBeNull();
+});
+
+it.each(["CONFIGURATION_CHANGED", "TEMPLATE_ARCHIVED", "AGENT_NOT_ENABLED", "AGENT_DEFINITION_UNAVAILABLE"])("offers explicit new confirmation only after a zero-Claim Start rejection: %s", async code => {
+    fixture.request.mockRejectedValueOnce(new ProductAgentError(code)).mockRejectedValueOnce(new ProductAgentError("OUTCOME_UNKNOWN"));
+    render(<ProductAgentPanel {...props}/>);
+    fireEvent.change(screen.getByLabelText("素材查询平台"), { target: { value: "shein" } });
+    fireEvent.click(screen.getByText("生成标题建议"));
+    fireEvent.click(screen.getByText("确认生成"));
+    await screen.findByRole("alert");
+    const firstKey = fixture.request.mock.calls[0][2];
+    expect(fixture.request).toHaveBeenCalledTimes(1);
+    expect(new URL(window.location.href).searchParams.get("agent_key")).toBe(firstKey);
+    fireEvent.click(screen.getByRole("button", {name:"重新确认配置"}));
+    expect(new URL(window.location.href).searchParams.has("agent_key")).toBe(false);
+    expect(fixture.request).toHaveBeenCalledTimes(1);
+    fireEvent.change(screen.getByLabelText("素材查询平台"), { target: { value: "shein" } });
+    fireEvent.click(screen.getByText("生成标题建议"));
+    fireEvent.click(screen.getByText("确认生成"));
+    await waitFor(() => expect(fixture.request).toHaveBeenCalledTimes(2));
+    expect(fixture.request.mock.calls[1][2]).not.toBe(firstKey);
+    await screen.findByRole("alert");
+    expect(screen.queryByRole("button", {name:"重新确认配置"})).toBeNull();
+});
+
+it.each(["CONFIGURATION_CHANGED", "AGENT_DEFINITION_UNAVAILABLE"])("preserves an interrupted run after %s on Resume", async code => {
+    fixture.request.mockResolvedValueOnce({runId:op,requestKey:op,operationId:op,productKey:"product",catalogVersion:"1",targetPlatform:"shein",phase:"interrupted",revision:"2",canResume:true,canSubmitReview:false,candidate:{Changes:[]},confidence:[],unresolved:[],steps:[],tokens:0,estimatedCostMicros:0,currency:"CNY",usageStatus:"observed"}).mockRejectedValueOnce(new ProductAgentError(code));
+    render(<ProductAgentPanel {...props}/>);
+    fireEvent.change(screen.getByLabelText("素材查询平台"), { target: { value: "shein" } });
+    fireEvent.click(screen.getByText("生成标题建议"));fireEvent.click(screen.getByText("确认生成"));
+    await screen.findByText("状态：需要补充说明");
+    const firstKey = fixture.request.mock.calls[0][2];
+    fireEvent.change(screen.getByLabelText("补充说明"), {target:{value:"继续"}});
+    fireEvent.click(screen.getByText("继续本次诊断"));
+    await screen.findByRole("alert");
+    expect(fixture.request.mock.calls[1][0]).toBe("resume");
+    expect(new URL(window.location.href).searchParams.get("agent_key")).toBe(firstKey);
+    expect(screen.queryByRole("button", {name:"重新确认配置"})).toBeNull();
+});
+
+it.each(["CONFIGURATION_CHANGED", "AGENT_DEFINITION_UNAVAILABLE"])("allows reconfirmation after an original restored Start receives a definite zero-Claim response: %s", async code => {
+    fixture.params = new URLSearchParams({agent_key:op,agent_mode_revision:"0",agent_platform:"shein",agent_actor:"actor",agent_org:"org"});
+    window.history.replaceState(null,"",`/?${fixture.params}`);
+    fixture.request.mockRejectedValueOnce(new ProductAgentError(code));
+    render(<ProductAgentPanel {...props}/>);
+    fireEvent.click(screen.getByText("使用原请求核实启动"));
+    await screen.findByRole("alert");
+    expect(new URL(window.location.href).searchParams.get("agent_key")).toBe(op);
+    fireEvent.click(screen.getByRole("button", {name:"重新确认配置"}));
+    expect(new URL(window.location.href).searchParams.has("agent_key")).toBe(false);
+    expect(fixture.request).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("生成标题建议")).toBeInTheDocument();
+});
+it("only admits a validated candidate to existing human review", async () => {
+    fixture.request.mockResolvedValue({ runId: op, requestKey: op, operationId: op, productKey: "product", catalogVersion: "1", targetPlatform: "shein", phase: "human_review_required", revision: "2", canSubmitReview: true, candidate: { Changes: [{ Field: "title", Value: "建议标题", EvidenceIDs: ["evidence"] }] }, confidence: [], unresolved: [], steps: [], tokens: 30, estimatedCostMicros: 20, currency: "CNY", usageStatus: "observed" });
+    render(<ProductAgentPanel {...props}/>);
+    expect(screen.getByText("生成标题建议")).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("素材查询平台"), { target: { value: "shein" } });
+    fireEvent.click(screen.getByText("生成标题建议"));
+    fireEvent.click(screen.getByText("确认生成"));
+    await screen.findByText("title：建议标题");
+    expect(screen.getByText("状态：候选已通过校验，等待人工审核")).toBeInTheDocument();
+    expect(screen.queryByText("自动应用")).not.toBeInTheDocument();
+    fixture.request.mockResolvedValue({ proposalId: op });
+    fireEvent.click(screen.getByText("提交人工审核"));
+    expect(await screen.findByRole("link", { name: "打开标题审核" })).toHaveAttribute("href", `/workbench/ai/tasks/pending/other?proposal_id=${op}`);
+    expect(fixture.request.mock.calls[1][0]).toBe("review");
+});
+
+it("shows an invalid repair-limit candidate without claiming validation or offering review", async () => {
+    fixture.request.mockResolvedValue({ runId: op, requestKey: op, operationId: op, productKey: "product", catalogVersion: "1", targetPlatform: "shein", phase: "human_review_required", revision: "2", stopReason: "repair_limit", canSubmitReview: false, candidate: { Changes: [{ Field: "title", Value: "无效标题", EvidenceIDs: ["evidence"] }] }, confidence: [], unresolved: ["标题证据不足"], steps: [], tokens: 30, estimatedCostMicros: 20, currency: "CNY", usageStatus: "observed" });
+    render(<ProductAgentPanel {...props}/>);
+    fireEvent.change(screen.getByLabelText("素材查询平台"), { target: { value: "shein" } });
+    fireEvent.click(screen.getByText("生成标题建议"));
+    fireEvent.click(screen.getByText("确认生成"));
+    await screen.findByText("title：无效标题");
+    expect(screen.getByText("状态：候选未通过校验，不能提交人工审核")).toBeInTheDocument();
+    expect(screen.getByText("两次修复后仍未通过校验")).toBeInTheDocument();
+    expect(screen.queryByText("状态：候选已通过校验，等待人工审核")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "提交人工审核" })).not.toBeInTheDocument();
+    expect(fixture.request).toHaveBeenCalledTimes(1);
+});
+it("restores the original normalized Start after refresh and explicitly retries the same key and selection",async()=>{
+ fixture.request.mockRejectedValueOnce(new ProductAgentError("DEPENDENCY_UNAVAILABLE"));
+ fixture.knowledge.mockResolvedValueOnce({items:[{id:op,name:"Private guide",state:"ACTIVE"}]}).mockResolvedValueOnce({items:[{id:op,name:"Private source",state:"ACTIVE",currentReadableRevision:{id:op,number:1,state:"AVAILABLE"}}]});
+ const view=render(<ProductAgentPanel {...props} knowledgeAvailable/>);
+ fireEvent.change(screen.getByLabelText("素材查询平台"),{target:{value:"shein"}});fireEvent.click(screen.getByText("生成标题建议"));fireEvent.click(screen.getByLabelText("使用企业知识（可选）"));await screen.findByText("Private guide");fireEvent.change(screen.getByLabelText("企业知识库"),{target:{value:op}});await screen.findByText("Private source · v1 · 可读");fireEvent.click(screen.getByText("确认生成"));await screen.findByRole("alert");
+ const first=fixture.request.mock.calls[0];expect(first[8]).toBe(op);
+ expect(window.location.href).not.toContain("Private");view.unmount();fixture.params=new URL(window.location.href).searchParams;
+ render(<ProductAgentPanel {...props} knowledgeAvailable/>);expect(fixture.request).toHaveBeenCalledTimes(1);expect(screen.queryByText("Private guide")).toBeNull();
+ fixture.request.mockRejectedValueOnce(new ProductAgentError("KNOWLEDGE_DISABLED"));fireEvent.click(screen.getByText("使用原请求核实启动"));await waitFor(()=>expect(fixture.request).toHaveBeenCalledTimes(2));await screen.findByRole("alert");
+ expect(fixture.request.mock.calls[1].slice(0,4)).toEqual(first.slice(0,4));expect(fixture.request.mock.calls[1][7]).toBe("shein");expect(fixture.request.mock.calls[1][8]).toBe(op);expect(new URL(window.location.href).searchParams.get("agent_key")).toBe(first[2]);expect(screen.queryByText("生成标题建议")).toBeNull();expect(screen.getByRole("alert")).not.toHaveTextContent("本次未启动");
+});
+it.each(["other actor","other org","invalid selection"])("does not restore Start intent from another scope or malformed URL: %s",variant=>{
+ fixture.params=new URLSearchParams({agent_key:op,agent_mode_revision:"0",agent_platform:"shein",agent_actor:variant==="other actor"?"other":"actor",agent_org:variant==="other org"?"other":"org",agent_knowledge_base:variant==="invalid selection"?"invalid":op});render(<ProductAgentPanel {...props}/>);expect(screen.queryByText("使用原请求核实启动")).toBeNull();expect(screen.getByText("读取当前结果")).toBeInTheDocument();expect(fixture.request).not.toHaveBeenCalled();
+});
+it.each([false,true])("hides protected results after same-role permission downgrade including late response=%s without losing key",async(late)=>{
+ const original=fixture.context.permissions;
+ const response={runId:op,requestKey:op,operationId:op,productKey:"product",catalogVersion:"1",targetPlatform:"shein",phase:"human_review_required",revision:"2",canSubmitReview:true,candidate:{Changes:[]},confidence:[],unresolved:[],steps:[],tokens:30,estimatedCostMicros:20,currency:"CNY",usageStatus:"observed",knowledge:{status:"available",originAgentRunId:op,citations:[{id:op,sourceId:op,revisionId:op,name:"Protected company guide",location:"text",excerpt:"Private wording",state:"AVAILABLE"}]}};
+ let resolve!:(value:typeof response)=>void;fixture.request.mockImplementation(()=>new Promise(r=>{resolve=r}));
+ const view=render(<ProductAgentPanel {...props}/>);fireEvent.change(screen.getByLabelText("素材查询平台"),{target:{value:"shein"}});fireEvent.click(screen.getByText("生成标题建议"));fireEvent.click(screen.getByText("确认生成"));
+ const key=fixture.request.mock.calls[0][2];
+ if(!late){resolve(response);await screen.findByText("Protected company guide · 可查看")}
+ fixture.context.permissions=original.filter(permission=>permission!=="workbench.knowledge.read");view.rerender(<ProductAgentPanel {...props}/>);
+ if(late)resolve(response);
+ await screen.findByText(/知识当前不可用/);expect(screen.queryByText("Protected company guide · 可查看")).toBeNull();expect(screen.queryByText("Private wording")).toBeNull();expect(new URL(window.location.href).searchParams.get("agent_key")).toBe(key);
+ fixture.context.permissions=original;view.rerender(<ProductAgentPanel {...props}/>);expect(screen.queryByText("Protected company guide · 可查看")).toBeNull();expect(fixture.request).toHaveBeenCalledTimes(1);
+});
+it("cannot revive an old protected response after downgrade and regrant before completion",async()=>{
+ const response={runId:op,requestKey:op,operationId:op,productKey:"product",catalogVersion:"1",targetPlatform:"shein",phase:"human_review_required",revision:"2",canSubmitReview:true,candidate:{Changes:[]},confidence:[],unresolved:[],steps:[],tokens:30,estimatedCostMicros:20,currency:"CNY",usageStatus:"observed",knowledge:{status:"available",originAgentRunId:op,citations:[{id:op,sourceId:op,revisionId:op,name:"Old protected guide",location:"text",excerpt:"Old protected excerpt",state:"AVAILABLE"}]}};
+ let resolve!:(value:typeof response)=>void;fixture.request.mockImplementation(()=>new Promise(r=>{resolve=r}));const view=render(<ProductAgentPanel {...props}/>);fireEvent.change(screen.getByLabelText("素材查询平台"),{target:{value:"shein"}});fireEvent.click(screen.getByText("生成标题建议"));fireEvent.click(screen.getByText("确认生成"));const key=fixture.request.mock.calls[0][2];
+ fixture.context.roles=["listingkit_viewer"];view.rerender(<ProductAgentPanel {...props}/>);fixture.context.roles=["listingkit_operator"];view.rerender(<ProductAgentPanel {...props}/>);resolve(response);
+ await screen.findByText(/知识当前不可用/);expect(screen.queryByText("Old protected guide · 可读")).toBeNull();expect(screen.queryByText("Old protected excerpt")).toBeNull();expect(new URL(window.location.href).searchParams.get("agent_key")).toBe(key);expect(fixture.request).toHaveBeenCalledTimes(1);
+});

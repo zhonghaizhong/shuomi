@@ -1,0 +1,130 @@
+import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, expect, it, vi } from "vitest";
+
+const context = vi.hoisted(() => ({ aiWorkbenchAvailable: true, aiWorkbenchPlanningReadiness: "AVAILABLE", effectiveOrganization: { capabilities: { "workbench.chat.use": true } } }));
+vi.mock("@/components/providers/workbench-context-provider", () => ({ useWorkbenchContext: () => context }));
+import { TaskCenterLayout } from "./task-center-layout";
+import { CompletedWorkResults, WorkResultDetail } from "./completed-work-results";
+
+// Synthetic v2 component DTO, not a backend or runtime fallback.
+const fixture = {
+  projection_version: "2", coverage: "listing-local-preparation-only",
+  items: ["12345678-1234-1234-1234-123456789abc", "12345678-1234-1234-1234-123456789abd"].map((id, index) => ({
+    source_type: "listing-local-preparation", source_kind: "shein-local-record",
+    title: "准备商品上架资料", summary: "本地资料已创建；诊断和发布是后续独立操作",
+    platform: "SHEIN", work_scope: "store", store_id: "11111111-1111-4111-8111-111111111111", action: "publish", completion_basis: "local_record_committed",
+    source_record_id: id, product_key: `synthetic-product-${index}`, snapshot_version: "9007199254740993",
+    country: "US", language: "en", created_at: "2026-09-06T00:00:00Z",
+    result: { kind: "shein-diagnostic", href: `/workbench/shein-records/${id}/diagnostic` },
+  })), next_cursor: null,
+};
+// Presentation slots only. Production projection DTO/client remain exclusively #340-owned.
+const entries = fixture.items.map((item) => ({
+  key: item.source_record_id, heading: item.title, caption: item.product_key,
+  content: <span>{item.summary}</span>,
+  detail: <WorkResultDetail title={item.title} summary={item.summary}>
+    <dl><dt>来源商品</dt><dd>{item.product_key}</dd><dt>快照版本</dt><dd>{item.snapshot_version}</dd></dl>
+    <a href={item.result.href}>查看诊断</a>
+  </WorkResultDetail>,
+}));
+afterEach(() => { cleanup(); context.aiWorkbenchAvailable = true; context.aiWorkbenchPlanningReadiness = "AVAILABLE"; context.effectiveOrganization.capabilities["workbench.chat.use"] = true; });
+
+it("keeps independent Review readable without a new Chat entry when planning needs configuration", () => {
+  context.aiWorkbenchPlanningReadiness = "NEEDS_CONFIGURATION";
+  render(<TaskCenterLayout pendingReview><p>独立标题审核</p></TaskCenterLayout>);
+  expect(screen.getByText("独立标题审核")).toBeVisible();
+  expect(screen.queryByRole("link", { name: "向硕米发起任务" })).not.toBeInTheDocument();
+});
+
+it("keeps independent Review readable but hides the Chat creation link for viewers", () => {
+  context.effectiveOrganization.capabilities["workbench.chat.use"] = false;
+  render(<TaskCenterLayout pendingReview><p>独立标题审核</p></TaskCenterLayout>);
+  expect(screen.getByText("独立标题审核")).toBeVisible();
+  expect(screen.queryByRole("link", { name: "向硕米发起任务" })).not.toBeInTheDocument();
+});
+
+it("does not link legacy Review or history pages to an unmounted AI Workbench", () => {
+  context.aiWorkbenchAvailable = false;
+  render(<TaskCenterLayout pendingReview><p>独立标题审核</p></TaskCenterLayout>);
+  expect(screen.getByText("独立标题审核")).toBeVisible();
+  expect(screen.queryByRole("link", { name: "返回业务任务" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "向硕米发起任务" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("navigation", { name: "任务状态" })).not.toBeInTheDocument();
+});
+
+it("labels the Review owner list as including Task-linked and direct proposals", () => {
+  render(<TaskCenterLayout pendingReview><p>提案区域</p></TaskCenterLayout>);
+  expect(screen.getByRole("navigation", { name: "任务状态" }).querySelector('[aria-current="page"]')).toHaveTextContent("待确认");
+  expect(screen.getByRole("link", { name: "全部" })).not.toHaveAttribute("aria-current");
+  expect(screen.getByRole("link", { name: "执行中" })).toHaveAttribute("href", "/workbench/ai/tasks/running");
+  expect(screen.getByRole("link", { name: "异常任务" })).toHaveAttribute("href", "/workbench/ai/tasks/errors");
+  expect(screen.getByText("当前页面按已授权的当前企业展示已接入工作记录")).toBeVisible();
+  expect(screen.queryByText(/已完成记录按条目标注所属店铺/)).not.toBeInTheDocument();
+  expect(screen.getByText(/包括 BusinessTask 关联的提案与直接提交的提案/)).toBeVisible();
+  expect(screen.queryByText(/仅覆盖本地资料准备完成记录/)).not.toBeInTheDocument();
+  expect(screen.getAllByText("统计暂未接入")).toHaveLength(3);
+});
+
+it("keeps the all-records scope neutral while work types remain partially connected", () => {
+  render(<TaskCenterLayout><p>已接入记录</p></TaskCenterLayout>);
+  expect(screen.getByRole("link", { name: "全部" })).toHaveAttribute("aria-current", "page");
+  expect(screen.getByText("当前页面按已授权的当前企业展示已接入工作记录")).toBeVisible();
+  expect(screen.queryByText(/已完成记录按条目标注所属店铺/)).not.toBeInTheDocument();
+});
+
+it("states bounded coverage and does not fabricate global metrics or lifecycle actions", () => {
+  render(<TaskCenterLayout completed><p>结果区域</p></TaskCenterLayout>);
+  expect(screen.getByRole("heading", { level: 1, name: "任务中心" })).toBeVisible();
+  expect(screen.getByText(/仅覆盖本地资料准备完成记录/)).toBeVisible();
+  expect(screen.getByText(/不代表诊断通过或可发布/)).toBeVisible();
+  expect(within(screen.getByRole("navigation", { name: "任务状态" })).getByRole("link", { name: "已完成" })).toHaveAttribute("aria-current", "page");
+  expect(screen.getByRole("heading", { name: "当前企业" })).toBeVisible();
+  expect(screen.getByText("已完成记录按条目标注所属店铺 · 店铺筛选暂未接入")).toBeVisible();
+  expect(screen.queryByText("通用业务")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /搜索任务/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "向硕米发起任务" })).toHaveAttribute("href", "/workbench/ai/chat/new");
+  expect(screen.getByRole("link", { name: "返回业务任务" })).toHaveAttribute("href", "/workbench/ai/tasks");
+  expect(screen.queryByText(/3 \/ 5|5 \/ 5/)).not.toBeInTheDocument();
+});
+
+it("selects a real result reference with keyboard and returns focus to its row", async () => {
+  const user = userEvent.setup();
+  render(<CompletedWorkResults entries={entries} />);
+  expect(screen.queryByRole("link", { name: "查看诊断" })).not.toBeInTheDocument();
+  const second = screen.getByRole("button", { name: /synthetic-product-1/ });
+  second.focus(); await user.keyboard("{Enter}");
+  const detail = screen.getByRole("region", { name: "工作记录详情" });
+  expect(within(detail).getByText("9007199254740993")).toBeVisible();
+  expect(within(detail).getByRole("link", { name: "查看诊断" })).toHaveAttribute("href", fixture.items[1].result.href);
+  expect(screen.getByRole("heading", { name: "工作记录详情" })).toHaveFocus();
+  await user.click(within(detail).getByRole("button", { name: "返回记录列表" }));
+  expect(second).toHaveFocus();
+  expect(screen.queryByRole("link", { name: "查看诊断" })).not.toBeInTheDocument();
+});
+
+it("cannot retain detail when the selected entry leaves the returned page", async () => {
+  const view = render(<CompletedWorkResults entries={entries} />);
+  await userEvent.click(screen.getByRole("button", { name: /synthetic-product-0/ }));
+  view.rerender(<CompletedWorkResults entries={entries.slice(1)} />);
+  expect(screen.queryByRole("link", { name: "查看诊断" })).not.toBeInTheDocument();
+  expect(screen.getByText("选择一条工作记录")).toBeVisible();
+  view.rerender(<CompletedWorkResults entries={entries} />);
+  expect(screen.queryByRole("link", { name: "查看诊断" })).not.toBeInTheDocument();
+});
+
+it("distinguishes unavailable from a successfully read empty page", () => {
+  const view = render(<TaskCenterLayout completed><CompletedWorkResults entries={[]} /></TaskCenterLayout>);
+  expect(screen.getByText("当前授权范围内暂无本地资料准备记录")).toBeVisible();
+  view.rerender(<TaskCenterLayout completed />);
+  expect(screen.getByText("暂未启用")).toBeVisible();
+  expect(screen.queryByText("当前授权范围内暂无本地资料准备记录")).not.toBeInTheDocument();
+});
+
+it("keeps the toolbar refresh operable without introducing a write action", async () => {
+  const refresh = vi.fn();
+  render(<TaskCenterLayout completed onRefresh={refresh}><CompletedWorkResults entries={[]} /></TaskCenterLayout>);
+  await userEvent.click(screen.getByRole("button", { name: "刷新记录" }));
+  expect(refresh).toHaveBeenCalledOnce();
+  expect(screen.queryByRole("button", { name: /发布|生成|编辑|Apply/ })).not.toBeInTheDocument();
+});

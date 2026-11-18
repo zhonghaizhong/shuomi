@@ -1,0 +1,60 @@
+import { beforeEach, expect, it, vi } from "vitest";
+import { reportResultSchema, reviewLocator, sourceRef, sourceHref, reportEndpoint, reportTargetQuery } from "@/lib/contracts/report-center";
+import { readReportIntent, reportRequest, writeReportIntent } from "./report-center";
+const scope = { userId: "actor-a", organizationId: "org-a" };
+const intent = { operation: "save" as const, key: "1510eced-9831-49de-a28c-098cb16deba1", source: { kind: "TITLE_REVIEW" as const, id: "1510eced-9831-49de-a28c-098cb16deba2", version: "1:pending" } };
+beforeEach(() => { sessionStorage.clear(); vi.unstubAllGlobals(); });
+it("preserves the source owner's canonical SHEIN digest", () => {
+  const ref = { kind: "SHEIN_RECORD", id: intent.source.id, version: `sha256:${"a".repeat(64)}` };
+  expect(sourceRef.safeParse(ref).success).toBe(true);
+  expect(sourceRef.safeParse({ ...ref, version: "a".repeat(64) }).success).toBe(false);
+});
+it("keeps native saved material separate from the old diagnostic and recovers its exact intent", () => {
+  const ref = { kind: "SHEIN_TARGET_RECORD" as const, id: intent.source.id, version: `sha256:${"b".repeat(64)}` };
+  expect(sourceRef.safeParse(ref).success).toBe(true);
+  expect(sourceRef.safeParse({ ...ref, version: "1:pending" }).success).toBe(false);
+  expect(sourceHref(ref)).toBe(`/workbench/listing/ready?record=${ref.id}`);
+  expect(sourceHref({ ...ref, kind: "SHEIN_RECORD" })).toBe(`/workbench/shein-records/${ref.id}/diagnostic`);
+  expect(reportEndpoint(new URL(`https://app.test/api/report-center/reports/sources/${ref.kind}/${ref.id}`), "GET")).not.toBeNull();
+  writeReportIntent(scope, { ...intent, source: ref });
+  expect(readReportIntent(scope)?.operation === "save" && readReportIntent(scope)).toMatchObject({ source: ref });
+  expect(readReportIntent({ ...scope, organizationId: "other" })).toBeNull();
+});
+it("allows only a kind-qualified exact native locator, never client versions, body or repeated query values", () => {
+  expect(reportTargetQuery({})).toBeUndefined();
+  const query = { sourceKind: "SHEIN_TARGET_RECORD", sourceId: intent.source.id };
+  expect(reportTargetQuery(query)).toBe(intent.source.id);
+  for (const invalid of [{ ...query, sourceKind: "SHEIN_RECORD" }, { ...query, sourceId: [intent.source.id] }, { ...query, version: "sha256:" + "b".repeat(64) }, { ...query, body: "{}" }, { ...query, sourceId: "https://other.invalid" }]) expect(reportTargetQuery(invalid)).toBeNull();
+});
+it("uses only an exact current-app Review locator without accepting client content or version", () => {
+  const origin = "http://localhost:3000", path = `/workbench/ai/tasks/pending/other?proposal_id=${intent.source.id}`;
+  expect(reviewLocator(intent.source.id, origin)).toBe(intent.source.id);
+  expect(reviewLocator(path, origin)).toBe(intent.source.id);
+  expect(reviewLocator(origin + path, origin)).toBe(intent.source.id);
+  for (const input of [`https://other.example${path}`, `${path}&version=2:applied`, `${path}&proposal_id=${intent.source.id}`, `${path}#body`, "/wrong?proposal_id=" + intent.source.id]) expect(reviewLocator(input, origin)).toBeNull();
+});
+it("retains the exact intent per actor and enterprise after a lost response", async () => {
+  writeReportIntent(scope, intent); const fetch = vi.fn().mockRejectedValue(new Error("lost")); vi.stubGlobal("fetch", fetch);
+  await expect(reportRequest(scope, "", reportResultSchema, undefined, intent)).rejects.toMatchObject({ code: "OUTCOME_UNKNOWN" });
+  expect(readReportIntent(scope)).toEqual(intent); expect(readReportIntent({ ...scope, organizationId: "other" })).toBeNull(); expect(readReportIntent({ ...scope, userId: "other" })).toBeNull();
+  await expect(reportRequest(scope, "", reportResultSchema, undefined, readReportIntent(scope)!)).rejects.toMatchObject({ code: "OUTCOME_UNKNOWN" });
+  expect(new Headers(fetch.mock.calls[0][1].headers).get("Idempotency-Key")).toBe(intent.key); expect(fetch.mock.calls[0][1].body).toBe(fetch.mock.calls[1][1].body);
+});
+it("keeps colon-containing actor and enterprise scopes independent", () => {
+  const first = { userId: "a:b", organizationId: "c" }, second = { userId: "a", organizationId: "b:c" };
+  writeReportIntent(first, intent);
+  expect(readReportIntent(second)).toBeNull();
+  const other = { ...intent, key: "1510eced-9831-49de-a28c-098cb16deba3" };
+  writeReportIntent(second, other);
+  expect(readReportIntent(first)).toEqual(intent);
+  expect(readReportIntent(second)).toEqual(other);
+  writeReportIntent(second, null);
+  expect(readReportIntent(first)).toEqual(intent);
+});
+it("refuses corrupt recovery data instead of inventing a new key", () => { writeReportIntent(scope, intent); sessionStorage.setItem(sessionStorage.key(0)!, "{}"); expect(() => readReportIntent(scope)).toThrow("INTENT_STORAGE_UNAVAILABLE"); });
+it.each(["/workbench/ai/tasks", "/workbench/ai/tasks/pending"])("reads an exact Review ID from the unified Task Center URL %s", path => {
+  const id = "550e8400-e29b-41d4-a716-446655440000";
+  expect(reviewLocator(`${path}?proposal_id=${id}`, "http://localhost:3000")).toBe(id);
+  expect(reviewLocator(`https://other.invalid${path}?proposal_id=${id}`, "http://localhost:3000")).toBeNull();
+  expect(reviewLocator(`${path}?proposal_id=${id}&proposal_id=${id}`, "http://localhost:3000")).toBeNull();
+});

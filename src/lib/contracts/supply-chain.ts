@@ -1,0 +1,288 @@
+import {sheinSalesRequestSchema,sheinSalesBindingSchema} from "./shein-sales-mapping";
+import {aiPointUnit,positiveMicropoints} from "./ai-points";
+import * as plans from "./upload-plan";
+import { sourceProductInputsSchema } from "./source-materials";
+import { z } from "zod";
+import { listingMetrics, publicationMetrics, submissionOverviewMetrics, storeSubmissionMetrics } from "./cockpit-metrics";
+import {sheinPublicationStatusSchema,sheinRequestSchema,sheinResponseSchema,matchesSheinResponse} from "./shein-publication";
+export * from "./shein-publication";
+import {walmartDraftInputSchema,walmartMerchantSchema,walmartDraftSchema,walmartRulesSchema,walmartReceiptSchema,walmartResultSchema,walmartSelectionSchema} from "./walmart-model";
+import { collectionID, collectionItemSchema, collectionDetailSchema } from "./product-collection";
+import { isAcquisitionUUID } from "./product-acquisition";
+import { completionRevision } from "./completion-draft-navigation";
+import {completionContentSchema,completionPayloadBytes} from "./completion-content";
+import {listingMaterialsSchemas,materialsRouteMethods,materialsPath,materialsRequestSchema,materialsPreparedSchema,type MaterialsRoute} from "./listing-materials";
+import {temuDraftInputSchema,temuDraftSchema,temuModeSchema,temuRuleSnapshotSchema,ruleSelectionSchema,temuCreatedGoodsSchema} from "./temu-model";
+import {tiktokDraftInputSchema,tiktokSelectionSchema,tiktokMerchantSchema,tiktokRuleSnapshotSchema,tiktokCatalogSchema,tiktokDraftSchema,tiktokEffectSchema} from "./tiktokshop-model";
+
+export const SUPPLY_MAX_BYTES=2*1024*1024;
+const text=(max:number)=>z.string().refine(v=>new TextEncoder().encode(v).length<=max && !v.includes("\0"));
+const integer=z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+const revision=integer.min(1);
+const time=z.iso.datetime({offset:true});
+export const catalogVersionSchema=z.string().regex(/^[1-9][0-9]{0,18}$/).pipe(z.string().refine(v=>BigInt(v)<=BigInt("9223372036854775807")));
+const version=catalogVersionSchema;
+const list=<T extends z.ZodType>(value:T,max=4096)=>z.array(value).max(max).nullable().transform(v=>v??[]);
+const page=<T extends z.ZodType>(value:T)=>z.object({items:list(value,100),total:integer,nextCursor:collectionID.optional()});
+const applicationModeSchema=z.enum(["self_operated","semi_managed","fully_managed"]);
+const language=z.object({language:text(32),name:text(1024*1024)}).strict();
+const attribute=z.object({attribute_id:integer,attribute_value_id:integer.optional(),attribute_extra_value:text(8192).optional(),custom_attribute_value:text(8192).optional(),language:text(32).optional()}).strict();
+const image=z.object({image_sort:integer,image_type:integer,image_url:text(2048)}).strict();
+const imageInfo=z.object({image_info_list:list(image,40)}).strict();
+const quantity=z.object({quantity_type:integer,quantity_unit:integer,quantity:integer}).strict();
+const officialSKUSchema=z.object({supplier_sku:text(200),length:text(32).optional(),width:text(32).optional(),height:text(32).optional(),weight:z.number().finite().optional(),weight_unit:text(32).optional(),length_width_height_unit:text(32).optional(),mall_state:integer,
+ price_info_list:list(z.object({base_price:z.number().finite(),currency:text(16),sub_site:text(128)}).strict(),20).optional(),stock_info_list:list(z.object({inventory_num:integer,supplier_warehouse_id:text(128).optional(),supplier_warehouse_name:text(256).optional()}).strict(),20),sale_attribute_list:list(attribute,1000),sku_scope_attribute_list:list(attribute,1000).optional(),image_info:imageInfo.optional(),quantity_info:quantity.optional(),package_type:text(128).optional(),competing_product_link:text(2048).optional(),cost_info:z.object({cost_price:text(32),currency:text(16)}).strict().optional(),minimum_stock_quantity:text(32).optional(),stop_purchase:integer.optional()}).strict();
+const officialSKCSchema=z.object({supplier_code:text(200).optional(),sale_attribute:attribute,image_info:imageInfo,skc_multi_language_name_list:list(language,32).optional(),shelf_way:text(128).optional(),shelf_require:text(8192).optional(),hope_on_sale_date:text(64).optional(),suggested_retail_price:z.object({price:z.number().finite(),currency:text(16)}).strict().optional(),site_detail_image_info_list:list(z.object({site_abbr_list:list(text(128),20),image_info_list:list(z.object({image_sort:integer,image_url:text(2048)}).strict(),40)}).strict(),20).optional(),proof_of_stock_list:list(z.object({file_name:text(256).min(1),type:z.enum(["1","2"]),url:text(2048).min(1)}).strict(),1).optional(),sku_list:list(officialSKUSchema,1000)}).strict();
+const officialProductSchema=z.object({category_id:integer,product_type_id:integer,brand_code:text(128).optional(),source_system:text(128),suit_flag:text(32),is_spu_pic:z.boolean(),supplier_code:text(200).optional(),multi_language_name_list:list(language,32),multi_language_desc_list:list(language,32).optional(),product_attribute_list:list(attribute,1000),site_list:list(z.object({main_site:text(128),sub_site_list:list(text(128),20)}).strict(),20).optional(),skc_list:list(officialSKCSchema,40),image_info:imageInfo.optional(),size_attribute_list:list(z.object({attribute_id:integer,attribute_extra_value:text(8192),relate_sale_attribute_id:integer.optional(),relate_sale_attribute_value_id:integer.optional()}).strict(),256).optional(),
+ sample_info:z.object({sample_spec:z.object({main_spec:z.object({attribute_id:integer,attribute_value_id:integer}).strict(),sub_spec_list:list(z.object({attribute_id:text(128),attribute_value_id:text(128)}).strict(),256)}).strict(),sample_judge_type:integer,reserve_sample_flag:integer,spot_flag:integer}).strict().optional(),fill_configuration_info:z.object({filled_quantity_to_sku:z.boolean()}).strict().optional(),fill_configuration_tags:list(text(256),256).optional()}).strict();
+const imageSlot=z.object({group:z.enum(["spu","skc","sku","detail"]),skc:integer,sku:integer,asset_id:text(128).min(1),sort:integer,type:integer}).strict();
+export const officialDraftInputSchema=z.object({product:officialProductSchema,images:list(imageSlot,10000)}).strict();
+const sheinImportSelectionSchema=z.object({title:z.boolean(),description:z.boolean(),attributes:z.array(z.object({sourceIndex:integer.max(255),attributeId:integer.min(1),optionId:integer.min(1).optional()}).strict()).max(256).nullable().transform(v=>v??[]),skus:z.array(z.object({sourceIndex:integer.max(255),skcIndex:integer.max(39),skuIndex:integer.max(999),price:z.boolean(),stock:z.boolean(),warehouseId:text(128)}).strict().refine(v=>v.price||v.stock)).max(256).nullable().transform(v=>v??[])}).strict();
+export const sheinImportRequestSchema=z.object({sourceId:collectionID,baseRecordId:collectionID,completionDraft:z.object({recordId:collectionID,revision:integer.min(1)}).strict(),selection:sheinImportSelectionSchema}).strict();
+const sheinImportSchema=sheinImportRequestSchema.omit({sourceId:true}).extend({targetId:collectionID,rulesHash:z.string().regex(/^[0-9a-f]{64}$/),merchantHash:z.string().regex(/^[0-9a-f]{64}$/)}).strict();
+const colorPartitionSchema=z.object({familyId:collectionID,partitionId:collectionID,colorAttributeId:integer.min(1),colorValueId:integer.min(1),baseRecordId:collectionID,completionDraft:z.object({recordId:collectionID,revision}).strict(),members:z.array(z.object({sourceIndex:integer.max(255),supplierSku:text(200).min(1),saleAttributes:z.array(attribute)}).strict()).min(1).max(256),localOnly:z.literal(true)}).strict();
+const hash=z.string().regex(/^[a-f0-9]{64}$/);
+const localTrialSchema=z.object({contractVersion:z.literal(1),trialId:z.literal("issue1158-local-draft-v1"),sourceId:collectionID,storeId:collectionID,completionDraft:z.object({recordId:collectionID,revision:z.literal(1)}).strict(),fixtureVersion:z.literal("issue1158-local-draft-v1"),fixtureHash:hash}).strict();
+const targetBase=z.object({sourceId:collectionID,storeId:collectionID,expectedRevision:integer,effectiveVersion:version,applyReceiptId:collectionID.optional()}).strict();
+const sheinTargetInputSchema=targetBase.extend({localTrial:localTrialSchema.optional(),draft:officialDraftInputSchema,sheinImport:sheinImportSchema.optional(),sheinSalesMapping:sheinSalesBindingSchema.optional(),targetId:collectionID.optional(),colorPartition:colorPartitionSchema.optional()}).strict().refine(v=>!v.sheinSalesMapping||!v.sheinImport&&!v.colorPartition);
+export const sheinSalesPreviewSchema=z.object({request:sheinSalesRequestSchema,attributes:z.lazy(()=>rulesSchema.shape.rules.shape.attributes).optional(),input:sheinTargetInputSchema.optional(),issues:z.array(z.object({field:text(8192),code:text(128),message:text(8192)}).strict()).max(256)}).strict().refine(v=>!!v.input===!v.issues.length&&(!v.input||!!v.input.sheinSalesMapping&&!!v.attributes));
+export function matchesSheinSalesPreview(value:unknown,request:unknown){
+ const r=sheinSalesRequestSchema.safeParse(request),v=sheinSalesPreviewSchema.safeParse(value);if(!r.success||!v.success||JSON.stringify(r.data)!==JSON.stringify(v.data.request))return false;
+ if(!v.data.input)return true;
+ const actual=v.data.input.sheinSalesMapping;
+ return !!actual&&v.data.input.sourceId===r.data.sourceId&&actual.baseRecordId===r.data.baseRecordId&&JSON.stringify(actual.completionDraft)===JSON.stringify(r.data.completionDraft)&&JSON.stringify(actual.selection)===JSON.stringify(r.data.selection)&&v.data.input.expectedRevision>0;
+}
+export const sheinImportPreviewSchema=z.object({input:sheinTargetInputSchema.refine(v=>!!v.sheinImport&&v.expectedRevision>0)}).strict();
+export type SheinImportSelection=z.infer<typeof sheinImportSelectionSchema>;
+export type SheinImportRequest=z.infer<typeof sheinImportRequestSchema>;
+
+export function matchesSheinImportPreview(value:unknown,request:unknown){
+ const r=sheinImportRequestSchema.safeParse(request),v=sheinImportPreviewSchema.safeParse(value);if(!r.success||!v.success||!v.data.input.sheinImport)return false;
+ const {sourceId,baseRecordId,completionDraft,selection}=r.data,actual=v.data.input.sheinImport;
+ return v.data.input.sourceId===sourceId&&actual.baseRecordId===baseRecordId&&JSON.stringify(actual.completionDraft)===JSON.stringify(completionDraft)&&JSON.stringify(actual.selection)===JSON.stringify(selection);
+}
+export const temuTargetInputSchema=targetBase.extend({temu:temuDraftInputSchema}).strict();
+export const temuRulesQuerySchema=targetBase.extend({temuRules:ruleSelectionSchema}).strict();
+export const tiktokTargetInputSchema=targetBase.extend({tiktok:tiktokDraftInputSchema,completionDraft:z.object({recordId:collectionID,revision:integer.min(1)}).strict().optional()}).strict();
+export const tiktokRulesQuerySchema=targetBase.extend({tiktokRules:tiktokSelectionSchema.extend({method:tiktokSelectionSchema.shape.method.or(z.literal(""))})}).strict();
+export const walmartTargetInputSchema=targetBase.extend({walmart:walmartDraftInputSchema,completionDraft:z.object({recordId:collectionID,revision:integer.min(1)}).strict().optional()}).strict();
+export const walmartRulesQuerySchema=targetBase.extend({walmartRules:walmartSelectionSchema.extend({version:z.string().max(128),productType:z.string().max(200)})}).strict();
+export const walmartCatalogSchema=z.object({feedType:z.enum(["MP_ITEM","MP_ITEM_MATCH"]),version:z.string().min(1).max(128),productTypes:z.array(z.string().min(1).max(200)).max(10000)}).strict();
+export const walmartRulesResponseSchema=z.union([z.object({merchant:walmartMerchantSchema,walmart:walmartRulesSchema}),z.object({merchant:walmartMerchantSchema,walmartCatalog:walmartCatalogSchema})]);
+export const targetInputSchema=z.union([walmartRulesQuerySchema,walmartTargetInputSchema,sheinTargetInputSchema,temuTargetInputSchema,temuRulesQuerySchema,tiktokTargetInputSchema,tiktokRulesQuerySchema]);
+const officialMerchantSchema=z.object({organization_id:text(128),store_id:collectionID,site:z.literal("shein-us"),store_version:revision,connection_revision:revision,application_revision:text(128),application_id:text(128),application_type:applicationModeSchema,supplier_identity_hash:z.string().regex(/^[0-9a-f]{64}$/),service_expires_at:time});
+const localMerchantSchema=officialMerchantSchema.extend({platform:z.literal("shein"),connection_revision:z.literal(0),application_id:z.literal(""),application_revision:z.literal(""),application_type:z.literal("self_operated"),service_expires_at:z.literal("0001-01-01T00:00:00Z")}).strict();
+const merchantSchema=z.union([officialMerchantSchema,localMerchantSchema]);
+export const preparationSchema=z.object({id:collectionID,sourceBatchId:collectionID,sourceRevision:revision,name:text(200),count:integer,revision,createdAt:time});
+const sourceSchema=z.object({id:collectionID,preparationId:collectionID,collectionItemId:collectionID,collectionRevision:revision,source:collectionItemSchema.shape.source});
+export const COMPLETION_MAX_BYTES=64*1024;
+export const completionInputSchema=z.object({sourceId:collectionID,expectedRevision:integer,content:completionContentSchema}).strict().refine(value=>completionPayloadBytes(value)<=COMPLETION_MAX_BYTES,"候选内容超过64KiB保存上限");
+export const completionRecordSchema=z.object({id:collectionID,draftId:collectionID,revision,source:sourceSchema,content:completionContentSchema,status:z.literal("pending_completion"),createdAt:time}).strict();
+export const completionReceiptSchema=z.object({record:completionRecordSchema,replayed:z.boolean()}).strict();
+export const completionPageSchema=page(completionRecordSchema);
+export const itemCompletionPageSchema=completionPageSchema.extend({collectionItemId:collectionID});
+export const completionHistoryQuerySchema=z.object({before:revision.optional(),limit:revision.max(100).default(20)}).strict();
+export const completionHistorySchema=z.object({source:sourceSchema,draftId:collectionID,currentRevision:integer,items:z.array(completionRecordSchema).max(100),nextBefore:revision.optional()}).strict().refine(page=>{
+ let previous=Number.POSITIVE_INFINITY;const ids=new Set<string>();
+ for(const record of page.items){if(ids.has(record.id)||record.draftId!==page.draftId||JSON.stringify(record.source)!==JSON.stringify(page.source)||record.revision>page.currentRevision||record.revision>=previous)return false;ids.add(record.id);previous=record.revision}
+ return !(page.currentRevision===0&&page.items.length>0)&&(!page.nextBefore||(page.items.length>0&&page.nextBefore===previous&&previous>1));
+});
+export type CompletionHistory=z.infer<typeof completionHistorySchema>;
+export type SupplyCompletionDraft=z.infer<typeof completionRecordSchema>;
+export const sourceDetailSchema=z.object({source:sourceSchema,product:collectionDetailSchema.shape.product,images:list(z.object({id:collectionID,url:text(2048),width:integer,height:integer}),4096)});
+const sheinTargetRecordBase=z.object({localTrial:localTrialSchema.optional(),id:collectionID,targetId:collectionID,revision,source:sourceSchema,effectiveVersion:version,applyReceiptId:collectionID.optional(),productHash:z.string().regex(/^[0-9a-f]{64}$/),inventoryHash:z.string().regex(/^[0-9a-f]{64}$/),rulesHash:z.string().regex(/^[0-9a-f]{64}$/),merchant:merchantSchema,input:sheinTargetInputSchema,result:z.object({product:officialProductSchema,images:list(imageSlot,10000),issues:list(z.object({field:text(8192),code:text(128),message:text(8192)}),4096),ready_for_upload:z.boolean()}),createdAt:time});
+export const sheinTargetRecordSchema=z.union([
+ sheinTargetRecordBase.extend({merchant:localMerchantSchema,localTrial:localTrialSchema,result:sheinTargetRecordBase.shape.result.strict()}).strict().refine(v=>!!v.input.localTrial&&JSON.stringify(v.localTrial)===JSON.stringify(v.input.localTrial)&&v.localTrial.sourceId===v.source.id&&v.localTrial.sourceId===v.input.sourceId&&v.localTrial.storeId===v.input.storeId&&v.localTrial.storeId===v.merchant.store_id&&v.localTrial.fixtureHash===v.rulesHash&&!v.result.ready_for_upload&&!v.input.colorPartition&&!v.input.draft.images.length),
+ sheinTargetRecordBase.extend({merchant:officialMerchantSchema}).refine(v=>!v.localTrial&&!v.input.localTrial),
+]);
+const temuMerchantSchema=officialMerchantSchema.omit({site:true,application_type:true}).extend({platform:z.literal("temu"),site:z.enum(["temu-local","temu-supplier"]),application_type:z.literal(""),identity_partition:z.enum(["CN","US","EU","GLOBAL"]),merchant_mode:temuModeSchema,region_id:integer.optional(),credential_expires_at:time,verification_revision:text(128),scopes_hash:z.string().regex(/^[0-9a-f]{64}$/)});
+const temuTargetRecordSchema=sheinTargetRecordBase.omit({merchant:true,input:true,result:true}).extend({merchant:temuMerchantSchema,input:temuTargetInputSchema,temu:temuDraftSchema,temuRuleSnapshot:temuRuleSnapshotSchema}).refine(v=>v.input.temu.mode===v.merchant.merchant_mode&&v.temu.mode===v.merchant.merchant_mode&&v.temuRuleSnapshot.mode===v.merchant.merchant_mode);
+const tiktokTargetRecordSchema=sheinTargetRecordBase.omit({merchant:true,input:true,result:true}).extend({merchant:tiktokMerchantSchema,input:tiktokTargetInputSchema,tiktok:tiktokDraftSchema,tiktokRuleSnapshot:tiktokRuleSnapshotSchema}).refine(v=>v.input.tiktok.selection.method===v.tiktokRuleSnapshot.selection.method&&v.input.tiktok.selection.categoryId===v.tiktokRuleSnapshot.category.id);
+const walmartTargetRecordSchema=sheinTargetRecordBase.omit({merchant:true,input:true,result:true}).extend({merchant:walmartMerchantSchema,input:walmartTargetInputSchema,walmart:walmartDraftSchema,walmartRuleSnapshot:walmartRulesSchema}).refine(v=>v.input.walmart.selection.feedType===v.walmartRuleSnapshot.selection.feedType && v.input.walmart.selection.version===v.walmartRuleSnapshot.selection.version && v.walmart.rulesHash===v.rulesHash);
+export const targetRecordSchema=z.union([walmartTargetRecordSchema,sheinTargetRecordSchema,temuTargetRecordSchema,tiktokTargetRecordSchema]);
+export const tiktokRulesSchema=z.union([z.object({merchant:tiktokMerchantSchema,tiktok:tiktokRuleSnapshotSchema}),z.object({merchant:tiktokMerchantSchema,tiktokCatalog:tiktokCatalogSchema})]);
+export const temuRulesSchema=z.object({merchant:temuMerchantSchema,temu:temuRuleSnapshotSchema}).refine(v=>v.merchant.merchant_mode===v.temu.mode);
+export const targetReceiptSchema=z.object({record:targetRecordSchema,replayed:z.boolean()});
+export const materialsAdoptionSchema=z.object({record:sheinTargetRecordSchema,replayed:z.boolean()});
+export const colorSplitRequestSchema=z.object({sourceId:collectionID,baseRecordId:collectionID,completionDraft:z.object({recordId:collectionID,revision}).strict(),selection:z.object({colorAttributeId:integer.min(1),skus:z.array(z.object({sourceIndex:integer.max(255),skcIndex:integer.max(1),skuIndex:integer.max(255)}).strict()).min(2).max(256),sharedImages:z.array(z.object({slotIndex:integer.max(9999),colorValueIds:z.array(integer.min(1)).max(2)}).strict()).max(10000)}).strict()}).strict().transform(v=>({...v,selection:{...v.selection,skus:[...v.selection.skus].sort((a,b)=>a.sourceIndex-b.sourceIndex),sharedImages:[...v.selection.sharedImages].sort((a,b)=>a.slotIndex-b.slotIndex).map(s=>({...s,colorValueIds:[...s.colorValueIds].sort((a,b)=>a-b)}))}}));
+
+export const colorSplitPlanSchema=z.object({request:colorSplitRequestSchema,familyId:collectionID,groups:z.array(z.object({colorValueId:integer.min(1),input:sheinTargetInputSchema,rulesHash:hash,merchantHash:hash,inventoryHash:hash,issues:list(z.object({field:text(8192),code:text(128),message:text(8192)}).strict())}).strict()).length(2),planHash:hash}).strict().refine(v=>new Set(v.groups.map(g=>g.input.targetId)).size===2&&v.groups.every(g=>g.input.colorPartition?.familyId===v.familyId&&g.input.colorPartition.colorValueId===g.colorValueId&&g.input.sourceId===v.request.sourceId&&g.input.expectedRevision===0));
+export const colorSplitReceiptSchema=z.object({familyId:collectionID,records:z.array(sheinTargetRecordSchema).length(2),replayed:z.boolean().optional()}).strict().refine(v=>new Set(v.records.map(r=>r.targetId)).size===2&&v.records.every(r=>r.input.colorPartition?.familyId===v.familyId&&r.input.targetId===r.targetId));
+export type ColorSplitPlan=z.infer<typeof colorSplitPlanSchema>;
+export type ColorSplitReceipt=z.infer<typeof colorSplitReceiptSchema>;
+export function matchesColorSplitReceipt(value:unknown,plan:unknown){const v=colorSplitReceiptSchema.safeParse(value),p=colorSplitPlanSchema.safeParse(plan);return !!(v.success&&p.success&&v.data.familyId===p.data.familyId&&v.data.records.every(r=>r.revision===1&&p.data.groups.some(g=>g.input.targetId===r.targetId&&JSON.stringify(g.input)===JSON.stringify(r.input))));}
+
+export const transferInputSchema=z.object({batchId:collectionID,expectedRevision:revision,itemIds:z.array(collectionID).max(1000).optional()}).strict();
+export const transferReceiptSchema=z.object({preparation:preparationSchema,replayed:z.boolean()});
+export const sourceSelectionSchema=z.object({itemId:collectionID,originalPublicationId:text(128).min(1),originalSnapshotVersion:version,effectiveCatalogVersion:version,applyReceiptId:collectionID.optional(),targetPlatform:z.enum(["shein","temu","tiktokshop","walmart","product"])}).strict().refine(v=>v.targetPlatform!=="product"||v.originalSnapshotVersion===v.effectiveCatalogVersion&&!v.applyReceiptId);
+const role=z.enum(["main","white_background","gallery","design"]);
+const imageApprovalSchema=z.object({actionId:collectionID.optional(),selection:sourceSelectionSchema,images:z.array(z.object({id:collectionID,role}).strict()).max(40),approved:z.array(z.object({actionId:text(128),assetId:text(128)}).strict()).max(40)}).strict().refine(v=>v.images.length+v.approved.length>0 && v.images.length+v.approved.length<=40);
+export const imageApprovalReceiptSchema=z.object({action_id:collectionID,asset_ids:z.array(text(128)).min(1).max(40)});
+export const inventorySchema=z.object({scope:z.object({tenant_id:text(128),product_key:text(128),target_platform:z.enum(["shein","temu","tiktokshop","walmart","product"]),source_snapshot_version:version}),assets:list(z.object({id:text(128).min(1),role,url:text(2048),width:integer.optional(),height:integer.optional(),source_asset_id:text(128).optional()}),40)});
+export const operationInputSchema=z.object({walmartApprovals:z.array(z.object({sourceId:collectionID,recordId:collectionID,revision:integer.min(1),wireHash:z.string().regex(/^[a-f0-9]{64}$/)}).strict()).max(1000).optional(),preparationId:collectionID,expectedRevision:revision,action:z.enum(["adapt","upload","optimize"]),storeId:collectionID,sourceIds:z.array(collectionID).max(1000).optional(),categoryId:integer.optional(),titleTemplateId:collectionID.optional(),titleTemplateRevision:version.optional(),titleQuoteHash:z.string().regex(/^[a-f0-9]{64}$/).optional(),titleModeRevision:z.union([z.literal("0"),version]).optional(),imageTemplateId:text(128).optional()}).strict().refine(v=>v.action==="optimize"?!!(v.titleTemplateId||v.imageTemplateId):!v.titleTemplateId&&!v.imageTemplateId).refine(v=>v.action!=="upload"||!v.categoryId).refine(v=>v.titleTemplateId?!!v.titleTemplateRevision&&!!v.titleQuoteHash&&v.titleModeRevision!==undefined:!v.titleTemplateRevision&&!v.titleQuoteHash&&v.titleModeRevision===undefined);
+const operationResponseInputSchema=operationInputSchema.safeExtend({
+ planId:collectionID.optional(),planCommandKey:collectionID.optional(),planRequestHash:z.string().regex(/^[a-f0-9]{64}$/).optional(),
+ targetApprovals:z.array(z.object({sourceId:collectionID,recordId:collectionID,revision}).strict()).max(1000).optional(),
+});
+export const operationSchema=z.object({id:collectionID,input:operationResponseInputSchema,count:integer,completed:integer,status:z.enum(["pending","running","completed","cancelled"]),execution:z.enum(["pending","started","start_unknown"]),createdAt:time}).refine(v=>v.completed<=v.count);
+export const operationReceiptSchema=z.object({operation:operationSchema,replayed:z.boolean()});
+const operationItemSchema=z.object({sourceId:collectionID,recordId:collectionID.optional(),recordRevision:revision.optional(),status:z.enum(["pending","running","succeeded","missing","review","unknown","denied","failed","cancelled"]),resultReference:text(2048).optional(),note:text(8192).optional(),confirmedProduct:z.object({spu_name:text(128).min(1),skc_list:z.array(z.object({skc_name:text(128).min(1),sku_list:z.array(z.object({sku_code:text(128).min(1),supplier_sku:text(800).min(1)})).min(1).max(400)})).min(1).max(40)}).optional(),confirmedTemuProduct:temuCreatedGoodsSchema.optional(),confirmedWalmart:walmartReceiptSchema.optional(),confirmedTikTok:tiktokEffectSchema.optional()}).refine(v=>[v.confirmedProduct,v.confirmedTemuProduct,v.confirmedTikTok,v.confirmedWalmart].filter(Boolean).length<=1).refine(v=>!(v.confirmedProduct||v.confirmedTemuProduct||v.confirmedTikTok||v.confirmedWalmart)||v.status==="unknown"&&!!v.recordId&&!!v.recordRevision&&!!v.resultReference&&collectionID.safeParse(v.resultReference).success);
+type Category={category_id:number;product_type_id:number;parent_category_id:number;category_name:string;last_category:boolean|null;children:Category[]};
+const category:z.ZodType<Category>=z.lazy(()=>z.object({category_id:integer,product_type_id:integer,parent_category_id:integer,category_name:text(8192),last_category:z.boolean().nullable(),children:list(category,4096)}));
+const nullableFlag=z.number().int().nullable();
+const ruleAttribute=z.object({attribute_id:integer,attribute_name:text(8192),attribute_is_show:nullableFlag,attribute_type:nullableFlag,attribute_label:nullableFlag,attribute_mode:nullableFlag,attribute_input_num:nullableFlag,attribute_status:nullableFlag,data_dimension:nullableFlag,value_info_list:list(z.object({attribute_value_id:integer,attribute_value:text(8192),is_show:nullableFlag,is_custom_attribute_value:nullableFlag,supplier_id:integer})),rule_info_list:list(z.object({id:integer,condition_operator:nullableFlag,condition_type:nullableFlag,value:text(8192)}))});
+export const rulesSchema=z.object({initialInput:sheinTargetInputSchema.optional(),merchant:merchantSchema,rules:z.object({authority:z.enum(["official","local_trial"]).optional(),application_type:applicationModeSchema,categories:list(category),brands:list(z.object({brand_code:text(128),brand_name:text(8192)})),sites:list(z.object({main_site:text(128),main_site_name:text(8192),sub_site_list:list(z.object({site_abbr:text(128),site_name:text(8192),site_status:nullableFlag,store_type:nullableFlag,currency:text(16)}),256)}),256),warehouses:list(z.object({warehouseCode:text(128),warehouseName:text(256),saleCountryList:list(text(2),256),warehouseType:z.union([z.literal(1),z.literal(2)])}),20),
+ fill:z.object({fill_in_standard_list:list(z.object({field_key:text(128),module:text(128),required:z.boolean().nullable(),show:z.boolean().nullable()})),currency:text(16).nullable(),default_language:text(32),default_language_title_max_length:integer.nullable(),language_title_max_length_list:list(z.object({language:text(32),max_length:z.number().finite()})),picture_config_list:list(z.object({field_key:text(128),is_true:z.boolean().nullable()})),supplier_code_in_spu_dimension:z.boolean().nullable(),support_duplicate_sale_attr_value:z.boolean().nullable()}),attributes:z.object({product_type_id:integer,main_attribute_status:nullableFlag,attribute_infos:list(ruleAttribute)}),linked:list(z.object({group_id:text(128),link_rule_attribute_list:list(z.object({attribute_id:integer,attribute_value_list:list(integer),attribute_value_pre_fill_list:list(integer)}))}))})}).refine(v=>(v.rules.authority==="local_trial")===(v.merchant.connection_revision===0)&&(!v.initialInput||!!v.initialInput.localTrial&&v.rules.authority==="local_trial"&&v.initialInput.storeId===v.merchant.store_id&&v.initialInput.localTrial.storeId===v.merchant.store_id));
+const materialsSchemas=listingMaterialsSchemas(sheinTargetInputSchema,materialsAdoptionSchema,attribute,imageSlot,rulesSchema.shape.rules.shape.fill.strict(),rulesSchema.shape.rules.shape.attributes.strict());
+export const materialsRunSchema=materialsSchemas.run;
+export type MaterialsRun=z.infer<typeof materialsRunSchema>;
+export const preparationPageSchema=page(preparationSchema);
+export const sourcePageSchema=page(sourceSchema);
+export const operationItemPageSchema=page(operationItemSchema);
+export const stageSchema=z.enum(["all","waiting","missing","ready","review","uploaded"]);
+export const stagePageSchema=z.object({items:z.array(z.object({sourceId:collectionID,stage:stageSchema.exclude(["all"]),operationId:collectionID.optional(),review:operationItemSchema.optional()})).max(100),total:integer,batchTotal:integer,counts:z.object({all:integer,waiting:integer,missing:integer,ready:integer,review:integer,uploaded:integer}),nextCursor:collectionID.optional()}).refine(v=>v.counts.all===v.batchTotal&&v.counts.waiting+v.counts.missing+v.counts.ready+v.counts.review+v.counts.uploaded===v.batchTotal&&v.total<=v.batchTotal&&v.items.every(i=>!i.review||i.review.sourceId===i.sourceId));
+export const operationPageSchema=page(operationSchema);
+export const publicationSchema=z.object({sheinStatus:sheinPublicationStatusSchema.optional(),walmart:walmartReceiptSchema.optional(),walmartResults:z.array(walmartResultSchema).max(1000).optional(),sourceId:collectionID,storeId:collectionID,recordId:collectionID.optional(),receiptId:text(128).optional(),observedAt:time.optional(),product:z.object({version:text(128).optional(),traceId:text(128).optional(),spu_name:text(128).min(1),skc_list:list(z.object({skc_name:text(128).min(1),sku_list:list(z.object({sku_code:text(128).min(1),supplier_sku:text(200).min(1)}),400)}),40)}).optional(),temuProduct:temuCreatedGoodsSchema.optional(),tiktok:tiktokEffectSchema.optional(),tiktokStatus:z.object({productId:text(128).min(1),status:z.enum(["DRAFT","PENDING","FAILED","ACTIVATE","SELLER_DEACTIVATED","PLATFORM_DEACTIVATED","FREEZE","DELETED","SCHEDULED"]),auditStatus:z.enum(["NONE","AUDITING","FAILED","PRE_APPROVED","APPROVED"]),reasons:z.array(z.enum(["KYC_PENDING","RESTRICTED_CATEGORY_PENDING","PAYMENT_ACCOUNT_NOT_LINKED","SHOP_INACTIVE","W8_NOT_CONFIGURED"])).max(5),observedAt:time}).strict().optional()}).refine(v=>!v.sheinStatus||!!v.product&&v.sheinStatus.spu===v.product.spu_name&&v.sheinStatus.receiptId===v.receiptId&&v.sheinStatus.sourceId===v.sourceId&&v.sheinStatus.storeId===v.storeId).refine(v=>!v.tiktokStatus||!!v.tiktok&&(v.tiktokStatus.productId===(v.tiktok.local?.id??v.tiktok.publication?.productId))).refine(v=>[v.product,v.temuProduct,v.tiktok,v.walmart].filter(Boolean).length<=1).refine(v=>(v.product||v.temuProduct||v.tiktok||v.walmart)?!!v.receiptId&&!!v.observedAt:!v.receiptId&&!v.observedAt&&!v.recordId);
+export const uploadAttemptSchema=z.object({recordId:collectionID,attemptId:collectionID,effectKind:z.enum(["publish","image","global_create"]),platform:z.enum(["temu","tiktokshop","walmart"]).optional(),status:z.enum(["claimed","outcome_unknown","succeeded","failed_definitive","cancelled","not_sent"]),message:text(8192),correlationId:z.uuid().optional(),wireHash:z.string().regex(/^[a-f0-9]{64}$/).optional(),approvedAt:z.iso.datetime({offset:true}).optional()}).strict().refine(v=>v.status!=="not_sent"||v.platform==="tiktokshop");
+export const resolveUploadSchema=z.object({recordId:collectionID,attemptId:collectionID,spu:text(128).min(1)}).strict();
+export const uploadResolutionSchema=z.object({recordId:collectionID,publishedRecordId:collectionID.optional(),attemptId:collectionID,status:z.enum(["succeeded","outcome_unknown"]),currentRecordUploaded:z.boolean().optional(),message:text(8192).optional(),product:z.object({spu_name:text(128),skc_list:z.array(z.object({skc_name:text(128).min(1),sku_list:z.array(z.object({sku_code:text(128).min(1),supplier_sku:text(800).min(1)})).min(1).max(400)})).max(40).nullable()}).optional()}).refine(v=>v.status!=="succeeded"||!!v.product?.spu_name&&!!v.product.skc_list?.length&&v.publishedRecordId===v.recordId&&v.currentRecordUploaded===true);
+export const localDraftContextSchema=z.object({sourceId:collectionID,completionDraft:z.object({recordId:collectionID,revision:z.number().int().positive()}).strict(),storeId:collectionID,writesEnabled:z.boolean()}).strict();
+export type DraftKind="local"|"official";
+export type SupplyRoute="local-context"|"shein-sales-mapping-preview"|"color-split-list"|"color-split-preview"|"create-color-split"|"color-split-command"|"color-split-family"|plans.UploadPlanRoute|"cockpit-metrics"|"walmart-feed-metrics"|"tiktok-publish-metrics"|"shein-publish-metrics"|"temu-create-metrics"|"submission-overview-metrics"|"product-inputs"|"shein-status"|"shein-shelf-prepare"|"shein-shelf-confirm"|"shein-shelf-result"|MaterialsRoute|"shein-completion-preview"|"completion-history"|"completion-history-detail"|"item-completion-drafts"|"completion-draft"|"completion-drafts"|"completion-command"|"save-completion-draft"|"upload-attempt"|"resolve-upload"|"stages"|"optimization-options"|"publication"|"publication-status"|"preparation"|"operations"|"list"|"transfer"|"transfer-read"|"sources"|"source"|"target"|"save-target"|"rules"|"target-command"|"record"|"approve"|"inventory"|"create-operation"|"operation-key"|"operation"|"operation-items"|"ensure"|"cancel";
+export const supplyRouteMethods:ReadonlyArray<readonly["GET"|"POST",SupplyRoute]>=[["GET","local-context"],["POST","shein-sales-mapping-preview"],["GET","color-split-list"],["POST","color-split-preview"],["POST","create-color-split"],["GET","color-split-command"],["GET","color-split-family"],...plans.uploadPlanRoutes,...materialsRouteMethods,["GET","cockpit-metrics"],["GET","walmart-feed-metrics"],["GET","tiktok-publish-metrics"],["GET","shein-publish-metrics"],["GET","temu-create-metrics"],["GET","submission-overview-metrics"],["GET","product-inputs"],["POST","shein-status"],["POST","shein-shelf-prepare"],["POST","shein-shelf-confirm"],["POST","shein-shelf-result"],["POST","shein-completion-preview"],["GET","completion-history"],["GET","completion-history-detail"],["GET","item-completion-drafts"],["POST","save-completion-draft"],["GET","completion-draft"],["GET","completion-drafts"],["GET","completion-command"],["GET","upload-attempt"],["POST","resolve-upload"],["GET","stages"],["GET","optimization-options"],["GET","publication"],["GET","publication-status"],["GET","preparation"],["GET","operations"],["GET","list"],["POST","transfer"],["GET","transfer-read"],["GET","sources"],["GET","source"],["GET","target"],["POST","save-target"],["POST","rules"],["GET","target-command"],["GET","record"],["POST","approve"],["POST","inventory"],["POST","create-operation"],["GET","operation-key"],["GET","operation"],["GET","operation-items"],["POST","ensure"],["POST","cancel"]];
+export function supplyPath(method:string,p:string[]):SupplyRoute|null{
+ if(p[0]==="local-platform-drafts") {
+  if(method==="GET" && p.length===2 && p[1]==="context")return "local-context";
+  const action=supplyPath(method,["supply-preparations",...p.slice(1)]);
+  return action && ["target","record","target-command","rules","shein-completion-preview","shein-sales-mapping-preview","save-target"].includes(action)?action:null;
+ }
+
+ const plan=plans.uploadPlanPath(method,p);if(plan)return plan;
+ const materials=materialsPath(method,p);if(materials)return materials;
+ if(p[0]!=="supply-preparations")return null;
+ if(method==="GET"){
+ if(p.length===6&&p[1]==="sources"&&isAcquisitionUUID(p[2]!)&&p[3]==="stores"&&isAcquisitionUUID(p[4]!)&&p[5]==="color-splits")return "color-split-list";
+ if(p.length===3&&p[1]==="shein-color-split-commands"&&isAcquisitionUUID(p[2]!))return "color-split-command";
+ if(p.length===5&&p[1]==="sources"&&isAcquisitionUUID(p[2]!)&&p[3]==="color-splits"&&isAcquisitionUUID(p[4]!))return "color-split-family";
+  if(p.length===2 && p[1]==="cockpit-metrics")return "cockpit-metrics";
+  if(p.length===2 && (p[1]==="walmart-feed-metrics" || p[1]==="tiktok-publish-metrics" || p[1]==="shein-publish-metrics" || p[1]==="temu-create-metrics" || p[1]==="submission-overview-metrics"))return p[1];
+  if(p.length===4&&p[1]==="sources"&&isAcquisitionUUID(p[2]!)&&p[3]==="product-inputs")return "product-inputs";
+  if(p.length===7&&p[1]==="sources"&&isAcquisitionUUID(p[2]!)&&p[3]==="publications"&&isAcquisitionUUID(p[4]!)&&p[5]==="status"&&isAcquisitionUUID(p[6]!))return "publication-status";
+  if(p.length===6&&p[1]==="sources"&&isAcquisitionUUID(p[2]!)&&p[3]==="publications"&&isAcquisitionUUID(p[4]!)&&p[5]==="status")return "publication-status";
+  if(p.length===4&&p[1]==="completion-drafts"&&p[2]==="commands"&&isAcquisitionUUID(p[3]!))return "completion-command";
+  if(p.length===5&&p[1]==="sources"&&isAcquisitionUUID(p[2]!)&&p[3]==="completion-draft"&&p[4]==="history")return "completion-history";
+  if(p.length===6&&p[1]==="sources"&&isAcquisitionUUID(p[2]!)&&p[3]==="completion-draft"&&p[4]==="history"&&completionRevision(p[5])!==null)return "completion-history-detail";
+  if(p.length===4&&p[1]==="sources"&&isAcquisitionUUID(p[2]!)&&p[3]==="completion-draft")return "completion-draft";
+  if(p.length===4&&p[1]==="collection-items"&&isAcquisitionUUID(p[2]!)&&p[3]==="completion-drafts")return "item-completion-drafts";
+  if(p.length===3&&isAcquisitionUUID(p[1]!)&&p[2]==="completion-drafts")return "completion-drafts";
+  if(p.length===4&&p[1]==="uploads"&&isAcquisitionUUID(p[2]!)&&isAcquisitionUUID(p[3]!))return "upload-attempt";
+  if(p.length===1)return "list";
+  if(p.length===2 && p[1]==="optimization-options")return "optimization-options";
+  if(p.length===2 && isAcquisitionUUID(p[1]!))return "preparation";
+  if(p.length===3 && isAcquisitionUUID(p[1]!) && p[2]==="operations")return "operations";
+  if(p.length===3 && isAcquisitionUUID(p[1]!) && p[2]==="sources")return "sources";
+  if(p.length===3 && isAcquisitionUUID(p[1]!) && p[2]==="stages")return "stages";
+  if(p.length===3 && isAcquisitionUUID(p[2]!))return p[1]==="sources"?"source":p[1]==="records"?"record":p[1]==="target-commands"?"target-command":p[1]==="operations"?"operation":null;
+  if(p.length===4 && p[2]==="by-key" && isAcquisitionUUID(p[3]!))return p[1]==="transfers"?"transfer-read":p[1]==="operations"?"operation-key":null;
+  if(p.length===4 && p[1]==="operations" && isAcquisitionUUID(p[2]!) && p[3]==="items")return "operation-items";
+  if(p.length===5 && p[1]==="sources" && isAcquisitionUUID(p[2]!) && isAcquisitionUUID(p[4]!))return p[3]==="targets"?"target":p[3]==="publications"?"publication":null;
+ }
+ if(method==="POST"){
+ if(p.length===2&&p[1]==="shein-sales-mapping-preview")return "shein-sales-mapping-preview";
+  if(p.length===3&&p[1]==="shein-publication")return p[2]==="status"?"shein-status":p[2]==="prepare"?"shein-shelf-prepare":p[2]==="confirm"?"shein-shelf-confirm":p[2]==="result"?"shein-shelf-result":null;
+  if(p.length===2&&p[1]==="shein-color-split-preview")return "color-split-preview";
+ if(p.length===2&&p[1]==="shein-color-splits")return "create-color-split";
+ if(p.length===2&&p[1]==="shein-completion-preview")return "shein-completion-preview";
+  if(p.length===2&&p[1]==="completion-drafts")return "save-completion-draft";
+  if(p.length===3 && p[1]==="uploads"&&p[2]==="resolve")return "resolve-upload";
+  if(p.length===2)return p[1]==="transfer"?"transfer":p[1]==="targets"?"save-target":p[1]==="target-rules"?"rules":p[1]==="operations"?"create-operation":null;
+  if(p.length===3 && p[1]==="images")return p[2]==="approve"?"approve":p[2]==="inventory"?"inventory":null;
+  if(p.length===4 && p[1]==="operations" && isAcquisitionUUID(p[2]!))return p[3]==="ensure"?"ensure":p[3]==="cancel"?"cancel":null;
+ }
+ return null;
+}
+export const supplyRequestSchema=(route:SupplyRoute)=>route==="shein-sales-mapping-preview"?sheinSalesRequestSchema:route==="color-split-preview"?colorSplitRequestSchema:route==="create-color-split"?colorSplitPlanSchema:plans.uploadPlanRequest(route)??(route.startsWith("shein-")&&route!=="shein-completion-preview"?sheinRequestSchema(route):route==="shein-completion-preview"?sheinImportRequestSchema:route.startsWith("materials-")?materialsRequestSchema(route as MaterialsRoute):route==="save-completion-draft"?completionInputSchema:route==="resolve-upload"?resolveUploadSchema:route==="transfer"?transferInputSchema:route==="save-target"||route==="rules"?targetInputSchema:route==="approve"?imageApprovalSchema:route==="inventory"?sourceSelectionSchema:route==="create-operation"?operationInputSchema:null);
+export const supplyUsesKey=(route:SupplyRoute)=>["create-color-split","create-upload-plan","continue-upload-plan","shein-shelf-prepare","shein-shelf-confirm","materials-start","transfer","save-target","save-completion-draft","approve","create-operation"].includes(route);
+export const supplyMutates=(route:SupplyRoute)=>supplyUsesKey(route)||["cancel-upload-plan","materials-prepare","materials-resume","materials-adopt","resolve-upload","ensure","cancel"].includes(route);
+export function supplyResponseSchema(route:SupplyRoute):z.ZodType {
+ if(route==="local-context")return localDraftContextSchema;
+ if(route==="shein-sales-mapping-preview")return sheinSalesPreviewSchema;
+ if(route==="color-split-list")return z.object({items:z.array(colorSplitReceiptSchema).max(40)}).strict();
+ if(route==="color-split-preview")return colorSplitPlanSchema;
+ if(route==="create-color-split"||route==="color-split-command"||route==="color-split-family")return colorSplitReceiptSchema;
+ if(route==="cockpit-metrics")return listingMetrics;
+ if(route==="submission-overview-metrics")return submissionOverviewMetrics;
+ if(route==="shein-publish-metrics" || route==="temu-create-metrics")return publicationMetrics;
+ if(route==="walmart-feed-metrics" || route==="tiktok-publish-metrics")return storeSubmissionMetrics;
+ const plan=plans.uploadPlanResponse(route);if(plan)return plan;
+ if(route==="product-inputs")return sourceProductInputsSchema;
+ if(route.startsWith("shein-")&&route!=="shein-completion-preview")return sheinResponseSchema(route);
+ if(route==="shein-completion-preview")return sheinImportPreviewSchema;
+ if(route==="completion-history")return completionHistorySchema;
+ if(route==="completion-history-detail")return completionRecordSchema;
+ if(route.startsWith("materials-"))return route==="materials-prepare"?materialsPreparedSchema:route==="materials-adopt"||route==="materials-adoption"?materialsAdoptionSchema:materialsRunSchema;
+ if(route==="rules")return z.union([rulesSchema,temuRulesSchema,tiktokRulesSchema,walmartRulesResponseSchema]);
+ if(route==="completion-draft")return completionRecordSchema;
+ if(route==="completion-command"||route==="save-completion-draft")return completionReceiptSchema;
+ if(route==="completion-drafts")return completionPageSchema;
+ if(route==="item-completion-drafts")return itemCompletionPageSchema;
+ return route==="upload-attempt"?uploadAttemptSchema:route==="resolve-upload"?uploadResolutionSchema:route==="stages"?stagePageSchema:route==="optimization-options"?optimizationOptionsSchema:route==="publication"||route==="publication-status"?publicationSchema:route==="preparation"?preparationSchema:route==="operations"?operationPageSchema:route==="list"?preparationPageSchema:route==="sources"?sourcePageSchema:route==="source"?sourceDetailSchema:route==="transfer"||route==="transfer-read"?transferReceiptSchema:route==="target"||route==="record"?targetRecordSchema:route==="save-target"||route==="target-command"?targetReceiptSchema:route==="approve"?imageApprovalReceiptSchema:route==="inventory"?inventorySchema:route==="create-operation"?operationReceiptSchema:route==="operation-items"?operationItemPageSchema:operationSchema;
+}
+export type SupplyPreparation=z.infer<typeof preparationSchema>;
+export type SupplySourceDetail=z.infer<typeof sourceDetailSchema>;
+export type SupplyTarget=z.infer<typeof sheinTargetRecordSchema>;
+export type SupplyTargetInput=z.infer<typeof sheinTargetInputSchema>;
+export type SupplySavedTarget=z.infer<typeof targetRecordSchema>;
+export type TemuSupplyTarget=z.infer<typeof temuTargetRecordSchema>;
+export type TikTokSupplyTarget=z.infer<typeof tiktokTargetRecordSchema>;
+export type SupplyRules=z.infer<typeof rulesSchema>;
+export type SupplyOperation=z.infer<typeof operationSchema>;
+export type SupplyOperationItem=z.infer<typeof operationItemSchema>;
+export type OfficialProduct=z.infer<typeof officialProductSchema>;
+
+export function parseSupplyResponse(route:SupplyRoute,payload:unknown,expected?:string):unknown|null {
+ const result=supplyResponseSchema(route).safeParse(payload);if(!result.success)return null;
+ if(expected){
+ if(route==="local-context"){const v=localDraftContextSchema.parse(result.data);if(`${v.sourceId}:${v.completionDraft.recordId}:${v.completionDraft.revision}`!==expected)return null;}
+ if(route==="color-split-list"){const v=z.object({items:z.array(colorSplitReceiptSchema)}).parse(result.data);if(v.items.some(f=>f.records.some(r=>`${r.source.id}:${r.input.storeId}`!==expected)))return null;}
+ if(route==="color-split-preview"){try{return JSON.stringify(colorSplitPlanSchema.parse(result.data).request)===JSON.stringify(colorSplitRequestSchema.parse(JSON.parse(expected)))?result.data:null}catch{return null}}
+ if(route==="create-color-split"){try{return matchesColorSplitReceipt(result.data,JSON.parse(expected))?result.data:null}catch{return null}}
+ if(route==="color-split-family"){const v=colorSplitReceiptSchema.parse(result.data);if(v.records.some(r=>`${r.source.id}:${v.familyId}`!==expected))return null;}
+  if((route==="upload-plan"||route==="cancel-upload-plan")&&plans.uploadPlanSchema.parse(result.data).id!==expected)return null;
+  if(route==="upload-plan-preview"&&plans.uploadPlanPreviewSchema.parse(result.data).plan.id!==expected)return null;
+  if((route==="continue-upload-plan"||route==="upload-plan-command")&&plans.uploadPlanAdvanceSchema.parse(result.data).planId!==expected)return null;
+  if(route==="product-inputs"&&sourceProductInputsSchema.parse(result.data).sourceId!==expected)return null;
+  if(route==="shein-sales-mapping-preview"){try{return matchesSheinSalesPreview(result.data,JSON.parse(expected))?result.data:null}catch{return null}}
+  if(route.startsWith("shein-")&&route!=="shein-completion-preview")return matchesSheinResponse(route,result.data,expected)?result.data:null;
+  if(route==="shein-completion-preview"){try{return matchesSheinImportPreview(result.data,JSON.parse(expected))?result.data:null}catch{return null}}
+  if(route==="completion-history"){
+   const page=completionHistorySchema.parse(result.data),[id,before,limit]=expected.split(":");
+   if(page.source.id!==id||page.items.length>Number(limit??20)||Number(before)>0&&page.items.some(r=>r.revision>=Number(before))||!Number(before)&&page.currentRevision>0&&page.items[0]?.revision!==page.currentRevision)return null;
+  }
+  if(route==="completion-history-detail"){const record=completionRecordSchema.parse(result.data);if(`${record.source.id}:${record.revision}`!==expected)return null;}
+  if(route==="materials-prepare"){const value=materialsPreparedSchema.parse(result.data);if(`${value.recordId}:${value.requestKey}`!==expected)return null;}
+  if(["materials-start","materials-read","materials-resume"].includes(route)){const value=materialsRunSchema.parse(result.data);if(`${value.recordId}:${value.requestKey}`!==expected)return null;}
+  if(route==="completion-draft"&&completionRecordSchema.parse(result.data).source.id!==expected)return null;
+  if(route==="completion-drafts"&&completionPageSchema.parse(result.data).items.some(r=>r.source.preparationId!==expected))return null;
+  if(route==="item-completion-drafts"){const page=itemCompletionPageSchema.parse(result.data);if(page.collectionItemId!==expected||page.items.some(r=>r.source.collectionItemId!==expected||r.source.source.kind!=="own"))return null;}
+  if(route==="preparation" && preparationSchema.parse(result.data).id!==expected)return null;
+  if(route==="source" && sourceDetailSchema.parse(result.data).source.id!==expected)return null;
+  if(route==="record" && targetRecordSchema.parse(result.data).id!==expected)return null;
+  if((route==="operation"||route==="ensure"||route==="cancel") && operationSchema.parse(result.data).id!==expected)return null;
+  if(route==="publication"||route==="publication-status"){const value=publicationSchema.parse(result.data);if(`${value.sourceId}:${value.storeId}`!==expected)return null;}
+  if(route==="target"){const value=targetRecordSchema.parse(result.data);if(`${value.source.id}:${value.merchant.store_id}`!==expected)return null;}
+ }
+ return result.data;
+}
+
+export type SupplyPublication=z.infer<typeof publicationSchema>;
+
+const optimizationChoiceSchema=z.object({unitVersion:aiPointUnit,agentId:z.literal("product.title.agent"),modeRevision:z.union([z.literal("0"),version]),executionMode:z.enum(["default","auto_approve","read_only","full_access"]),templateId:collectionID,revision:version,name:text(512),quoteHash:z.string().regex(/^[a-f0-9]{64}$/),maximumCostMicros:integer,currency:text(16),maximumPoints:positiveMicropoints,priceVersion:text(128).min(1)});
+export const optimizationOptionsSchema=z.object({titles:z.array(optimizationChoiceSchema).max(100),reason:text(512).optional(),imageReason:text(512).optional(),nextCursor:collectionID.optional()});
+export type SupplyOptimizationChoice=z.infer<typeof optimizationChoiceSchema>;
+export type SupplyOptimizationOptions=z.infer<typeof optimizationOptionsSchema>;
+
+export type Stage=z.infer<typeof stageSchema>;
+export type SupplyStagePage=z.infer<typeof stagePageSchema>;
+
+export type WalmartSupplyTarget=z.infer<typeof walmartTargetRecordSchema>;

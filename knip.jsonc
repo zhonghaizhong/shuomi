@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    // Generates the shipping directory bundled with the backend.
+    "scripts/generate-shipping-regions.mjs",
+    "src/**/*.type-test.{ts,tsx}",
+    "src/**/*.test.{ts,tsx}",
+    // Next App Router files are runtime entry points, not imported by another module.
+    "src/app/**/page.{ts,tsx}",
+    "src/app/**/route.{ts,tsx}",
+    "src/app/**/layout.{ts,tsx}",
+    // Auth and proxy modules are loaded by Next/Auth conventions.
+    "src/auth.ts",
+    "src/auth.config.ts",
+    "src/proxy.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}"],
+  // Tailwind v4 is consumed by globals.css and postcss.config.mjs, not via a TS import.
+  "ignoreDependencies": ["tailwindcss"]
+}

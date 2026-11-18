@@ -1,0 +1,177 @@
+"use client";
+
+import {useCallback,useMemo,useRef,useState} from "react";
+import Image from "next/image";
+import {useRouter} from "next/navigation";
+import {Plus,Trash2,ArrowLeft} from "lucide-react";
+import {useWorkbenchContext} from "@/components/providers/workbench-context-provider";
+import {Button} from "@/components/ui/button";
+import {Card} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Checkbox} from "@/components/ui/checkbox";
+import {Select} from "@/components/ui/select";
+import {Textarea} from "@/components/ui/textarea";
+import {Table,TableHeader,TableHead,TableBody,TableRow,TableCell} from "@/components/ui/table";
+import {ConsolePage,ConsoleState} from "../console/console-page";
+import {ResourceDialog} from "../resources/resource-dialog";
+import {DescriptionEditor} from "../description-editor";
+import {OwnProductIntake} from "./own-product-intake";
+import {applyIntakeVariants} from "./own-product-intake-model";
+import type {IntakeCandidate} from "@/lib/contracts/own-product-intake";
+import {SourceImageUploader} from "./source-image-uploader";
+import {useCollectionCommand} from "./use-collection-command";
+import {CollectionCommandFeedback} from "./collection-command-feedback";
+import {buildVariantRows,newVariantRow,prepareOwnProduct,prepareProductAttributes,removeVariantImage,specificationSignature,variantCombinationKey,type ProductAttributeRow,type Specification,type VariantRow} from "./own-product-model";
+import {formFromOwnProduct,specificationsFromRows,type OwnProductFormState} from "./own-product-editor-model";
+import {collectionCommandSchema,type CollectionDetail} from "@/lib/contracts/product-collection";
+import type {CollectionScope} from "@/lib/api/product-collection";
+import {OfficialPublishingAccess} from "../supply-market/official-access";
+import {MarketBoundary} from "../supply-market/shared";
+import {packagingFields} from "./own-product-packaging";
+
+const library="/workbench/data/mine?view=own";
+export function OwnProductEntryPage({continuation}:{continuation?:"official"}){
+ const context=useWorkbenchContext();
+ const userId=context.user?.id,organizationId=context.effectiveOrganization?.id;
+ const scope=useMemo(()=>userId&&organizationId?{userId,organizationId}:null,[userId,organizationId]);
+ if(context.isLoading||context.isSwitching)return <ConsoleState kind="loading" title="正在确认当前企业"/>;
+ if(!scope||context.selectionRequired||context.error||context.blockingError)return <ConsoleState kind="error" title="请先确认登录身份与当前企业"/>;
+ if(!context.permissions.includes("workbench.collection.manage"))return <OwnProductRecovery key={`${scope.userId}:${scope.organizationId}`} scope={scope} continuation={continuation}/>;
+ return <OwnProductForm key={`${scope.userId}:${scope.organizationId}`} scope={scope} continuation={continuation}/>;
+}
+
+export function OwnProductRecovery({scope,continuation}:{scope:CollectionScope;continuation?:"official"}){
+ const context=useWorkbenchContext(),router=useRouter();
+ const commands=useCollectionCommand(scope,(receipt,intent)=>{if(intent.command.action==="create_product"&&receipt.itemId)router.push(continuation==="official"?`/workbench/supply/official/new?item=${receipt.itemId}`:`${library}&saved=${receipt.itemId}`);if(intent.command.action==="revise_product"&&receipt.itemId===intent.command.itemId)router.push(`/workbench/data/mine/own/${intent.command.itemId}`)},true);
+ if(!context.permissions.includes("workbench.collection.read"))return <ConsoleState kind="error" title="当前没有读取自有商品的权限"/>;
+ return <ConsolePage title="自有商品操作" description="当前没有编辑权限，可以核实原操作的保存结果。"><CollectionCommandFeedback state={commands} canRetry={false}/></ConsolePage>;
+}
+
+export function OwnProductForm({scope,edit,continuation}:{scope:CollectionScope;continuation?:"official";edit?:{detail:CollectionDetail;initial:OwnProductFormState}}){
+ const context=useWorkbenchContext(),router=useRouter();
+ const [frozen]=useState(()=>{const pending=context.pendingCollectionIntent;if(!pending||pending.userId!==scope.userId||pending.organizationId!==scope.organizationId)return null;if(!edit&&pending.command.action==="create_product")return pending.command;if(edit&&pending.command.action==="revise_product"&&pending.command.itemId===edit.detail.item.id)return pending.command;return null});
+ const frozenRevision=frozen?.action==="revise_product"?frozen:null;
+ const [initial]=useState(()=>frozen?formFromOwnProduct(frozen.product):edit?.initial);
+ const [title,setTitle]=useState(initial?.title??""),[brand,setBrand]=useState(initial?.brand??""),[description,setDescription]=useState(initial?.description??"");
+ const [descriptionFormat,setDescriptionFormat]=useState<"html-v1"|undefined>(initial?.descriptionFormat);
+ const [attributes,setAttributes]=useState<ProductAttributeRow[]>(initial?.attributes??[{id:"initial",name:"",value:""}]);
+ const [images,setImages]=useState<string[]>(initial?.images??[]),[imageURL,setImageURL]=useState(""),[mediaBlocked,setMediaBlocked]=useState(false);
+ const imagesRef=useRef<string[]>(initial?.images??[]);
+ const [uploaded,setUploaded]=useState<ReadonlySet<string>>(()=>new Set());
+ const confirmedGallery=useRef(new Set<string>());
+ const removedIntakeRows=useRef(new Set<string>());
+ const [commonImages,setCommonImages]=useState<string[]>(initial?.images??[]);
+ const [originalSKUImages]=useState(()=>new Set(initial?.rows.flatMap(row=>row.originalImages??[])??[]));
+ const [mode,setMode]=useState<"single"|"multiple">(initial?.mode??"single");
+ const [single,setSingle]=useState(()=>initial?.rows[0]??newVariantRow()),[rows,setRows]=useState<VariantRow[]>(initial?.mode==="multiple"?initial.rows:[]);
+ const [specs,setSpecs]=useState<Specification[]>(initial?.specs??[{id:"initial",name:"",values:""}]),[generated,setGenerated]=useState(()=>initial?specificationSignature(initial.specs):"");
+ const [bulk,setBulk]=useState({prefix:"",currency:"",price:"",stock:""}),[error,setError]=useState("");
+ const [confirmation,setConfirmation]=useState<"leave"|"reload"|null>(null);
+ const keepEditingRef=useRef<HTMLButtonElement>(null);
+ const commands=useCollectionCommand(scope,(receipt,intent)=>{
+  if(intent.command.action==="create_product"&&receipt.itemId)router.push(continuation==="official"?`/workbench/supply/official/new?item=${receipt.itemId}`:`${library}&saved=${receipt.itemId}`);
+  if(intent.command.action==="revise_product"&&receipt.itemId===intent.command.itemId)router.push(`/workbench/data/mine/own/${intent.command.itemId}`);
+ },!!context.pendingSupplyIntent||!context.supplyIntentReady);
+ const restoredRequestEnded=!!frozen&&!commands.pending;
+ const disabled=commands.locked||restoredRequestEnded,stale=mode==="multiple"&&!!rows.length&&generated!==specificationSignature(specs);
+ function patchRow(id:string,patch:Partial<VariantRow>){if(mode==="single")setSingle(row=>({...row,...patch}));else setRows(prior=>prior.map(row=>row.id===id?{...row,...patch}:row))}
+ const addImages=useCallback((values:string[])=>{
+  const next=[...new Set([...imagesRef.current,...values])];
+  if(next.length>40){setError("图片选择池最多保留40张图片。");return}
+  const checked=prepareImageURLs(next);if(!checked){setError("请填写有效的HTTPS图片链接，每行一个。");return}
+  const added=next.filter(url=>!imagesRef.current.includes(url)&&!originalSKUImages.has(url));
+  imagesRef.current=next;setImages(next);setCommonImages(prior=>[...prior,...added]);setImageURL("");setError("");
+ },[originalSKUImages]);
+ function removeImage(url:string){const next=imagesRef.current.filter(v=>v!==url);imagesRef.current=next;setImages(next);setCommonImages(prior=>prior.filter(v=>v!==url));setRows(prior=>prior.map(v=>removeVariantImage(v,url)));setSingle(v=>removeVariantImage(v,url))}
+ function generate(){try{const attributeCount=Object.keys(prepareProductAttributes(attributes)).length;setRows(buildVariantRows(specs,rows,commonImages.length,attributeCount));setGenerated(specificationSignature(specs));setError("")}catch(failure){setError((failure as Error).message)}}
+ function applyBulk(){
+  if(!bulk.prefix&&!bulk.currency&&!bulk.price.trim()&&!bulk.stock.trim()){setError("请先填写需要批量设置的值。");return}
+  setRows(prior=>prior.map((row,index)=>({...row,...(bulk.prefix?{sku:`${bulk.prefix.trim()}-${index+1}`}:{}) ,...(bulk.currency?{currency:bulk.currency}:{}) ,...(bulk.price.trim()?{price:bulk.price}:{}) ,...(bulk.stock.trim()?{stock:bulk.stock}:{})})));setError("");
+ }
+ const activeRows=mode==="single"?[single]:rows;
+ function adoptIntake(candidate:IntakeCandidate,acceptImages:boolean,gallery:string[],confirmedPrices:ReadonlySet<number>,confirmedStocks:ReadonlySet<number>){
+  if(gallery.length!==imagesRef.current.length||gallery.some((url,index)=>url!==imagesRef.current[index]))throw new Error("候选引用的图库已变化，请重新生成。");
+  if(stale||mode==="multiple"&&!rows.length&&specs.some(spec=>spec.name.trim()||spec.values.trim())&&candidate.rows?.length)throw new Error("规格已修改，请先确认当前规格组合。");
+  const next=applyIntakeVariants(candidate,activeRows,imagesRef.current,acceptImages,removedIntakeRows.current,confirmedPrices,confirmedStocks);
+  const added=Object.entries(candidate.attributes??{}).filter(([name])=>!attributes.some(row=>row.name.trim()===name));
+  if(attributes.length+added.length>256)throw new Error("商品属性超过保存限制，请减少候选属性。");
+  if(!title.trim()&&candidate.title)setTitle(candidate.title);
+  if(!brand.trim()&&candidate.brand)setBrand(candidate.brand.value);
+  if(!description.trim()&&candidate.description){setDescription(candidate.description);setDescriptionFormat(undefined)}
+  if(added.length)setAttributes(prior=>[...prior.filter(row=>row.name||row.value),...added.map(([name,fact])=>({id:crypto.randomUUID(),name,value:fact.value}))]);
+  if(candidate.rows?.length&&next.rows.length){
+   const dimensions=specificationsFromRows(next.rows);
+   if(next.rows.length>1||dimensions.length){
+    setMode("multiple");setRows(next.rows);setSpecs(dimensions);setGenerated(specificationSignature(dimensions));
+   }else{
+    setMode("single");setSingle(next.rows[0]);
+   }
+  }
+  if(next.assigned.size)setCommonImages(prior=>prior.filter(url=>!next.assigned.has(url)||confirmedGallery.current.has(url)));
+  setError("");
+ }
+ const formIdentity=JSON.stringify({title,brand,description,descriptionFormat,images,commonImages,attributes,mode,single,rows,specs}),originalForm=useRef(formIdentity);
+ function returnToDetail(){router.push(edit?`/workbench/data/mine/own/${edit.detail.item.id}`:continuation==="official"?"/workbench/supply/official/new":library)}
+ function leave(){if((edit||continuation==="official")&&!commands.pending&&originalForm.current!==formIdentity){setConfirmation("leave");return}returnToDetail()}
+ const pageTitle=edit?"编辑自有商品":continuation==="official"?"添加自营商品 · 商品资料":"添加自有商品";
+ if(["PERMISSION_DENIED","IDENTITY_CONTEXT_CHANGED","ORGANIZATION_CONTEXT_CHANGED"].includes(commands.error??""))return <ConsolePage title={pageTitle} description="当前访问资格已变化，请重新确认后读取商品。"><CollectionCommandFeedback state={commands} canRetry={false}/><Button variant="outline" onClick={()=>window.location.reload()}>重新读取最新资料</Button></ConsolePage>;
+ return <ConsolePage title={pageTitle} description={edit?"修改已保存的商品资料，保存后生成新的资料版本。":continuation==="official"?"第1步：填写商品资料。保存后继续填写供货信息，商品不会自动公开。":"录入商品资料和销售规格，保存到当前企业下的自有商品库。"} breadcrumbs={continuation==="official"?[{label:"硕米自营",href:"/workbench/supply/official"},{label:"添加自营商品",href:"/workbench/supply/official/new"},{label:"商品资料"}]:[{label:"数据服务",href:"/workbench/data"},{label:"我的数据",href:library},{label:pageTitle}]} actions={<Button variant="outline" disabled={commands.busy||mediaBlocked} onClick={leave}><ArrowLeft size={16}/>{edit?"取消并返回详情":continuation==="official"?"返回商品选择":"返回自有商品库"}</Button>}>
+  <form className="space-y-6" onSubmit={event=>{event.preventDefault();if(disabled||mediaBlocked)return;if(stale){setError("规格已修改，请先更新变体组合。");return}try{const product=prepareOwnProduct({title,brand,description,descriptionFormat,images:commonImages,imagePool:images,mode,rows:activeRows,attributes});const command=edit?{action:"revise_product" as const,itemId:edit.detail.item.id,expectedRevision:frozenRevision?.expectedRevision??edit.detail.item.revision,expectedSourceVersion:frozenRevision?.expectedSourceVersion??edit.detail.item.source.version,expectedPublicationId:frozenRevision?.expectedPublicationId??edit.detail.item.source.publicationId,product}:{action:"create_product" as const,product};const parsed=collectionCommandSchema.safeParse(command);if(!parsed.success)throw new Error(parsed.error.issues[0]?.message??"请检查填写内容。");setError("");void commands.run(parsed.data)}catch(failure){setError((failure as Error).message)}}}>
+   <CollectionCommandFeedback state={commands}/>
+   {restoredRequestEnded?<p role="status" className="text-sm text-muted-foreground">原请求已结束。重新读取最新资料后才能继续编辑。</p>:null}
+   {(restoredRequestEnded||edit&&commands.error==="REVISION_CONFLICT")?<Button type="button" variant="outline" onClick={()=>setConfirmation("reload")}>重新读取最新资料</Button>:null}
+   {edit?<Card className="space-y-2 border-border bg-muted/40 p-4"><p className="text-sm font-medium">基于资料版本 {frozenRevision?.expectedSourceVersion??edit.detail.item.source.version}</p><p className="text-sm text-muted-foreground">保存会追加新版本，已有草稿继续使用它们选定的资料。{frozen?"正在显示待核实请求的原始内容。":""}</p></Card>:null}
+   {context.pendingSupplyIntent?<p className="text-sm text-muted-foreground">有待核实的供应链操作，请先返回“商品刊登”处理后再保存商品。</p>:null}
+   {!context.permissions.includes("workbench.collection.manage")?<p role="alert" className="text-sm text-destructive">当前没有添加自有商品的权限。</p>:null}
+   <fieldset disabled={disabled} className="min-w-0 space-y-6 disabled:opacity-70">
+    {!edit&&context.permissions.includes("workbench.agent.use")&&context.permissions.includes("local_agent.write")&&context.effectiveMemberId?<OwnProductIntake key={context.effectiveMemberId} scope={scope} member={context.effectiveMemberId} images={images} uploaded={uploaded} disabled={disabled||mediaBlocked} onAdopt={adoptIntake}/>:null}
+    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(300px,2fr)]">
+     <Card className="space-y-5 p-6"><div><h2 className="text-lg font-semibold">基本资料</h2><p className="mt-1 text-sm text-muted-foreground">所有变体共用商品名称、品牌和描述。</p></div>
+      <label className="grid gap-2 text-sm">商品名称<Input required maxLength={2000} value={title} placeholder="输入商品名称" onChange={e=>setTitle(e.target.value)}/></label>
+      <label className="grid gap-2 text-sm">品牌<Input value={brand} maxLength={2000} placeholder="选填" onChange={e=>setBrand(e.target.value)}/></label>
+      <DescriptionEditor label="商品描述" value={description} format={descriptionFormat} images={[...new Set([...images,...activeRows.flatMap(v=>v.originalImages??[])])]} disabled={disabled} maxBytes={8192} onChange={(value,format)=>{setDescription(value);setDescriptionFormat(format)}}/>
+     </Card>
+     <Card role="region" aria-label="商品图片" className="space-y-5 p-6"><div><h2 className="text-lg font-semibold">商品图片</h2><p className="mt-1 text-sm text-muted-foreground">勾选的公共图片供所有SKU共用，第一张公共图片作为主图。取消勾选后仅用于表格中绑定的SKU；绑定SKU不会自动取消公共归属。</p></div>
+      <SourceImageUploader scope={scope} allowNewUpload={images.length<40} disabled={disabled} onBlocked={setMediaBlocked} onImage={url=>addImages([url])} onMedia={media=>setUploaded(prior=>new Set([...prior,media.url]))} uploadLabel="上传图片"/>
+      {images.length?<div className="grid grid-cols-3 gap-3">{images.map((url,index)=><div key={url} className="min-w-0 space-y-2 rounded-lg border border-border p-2">
+       <Image unoptimized src={`/api/image-proxy?url=${encodeURIComponent(url)}`} alt={`商品图片 ${index+1}`} width={120} height={120} className="aspect-square w-full rounded-md object-contain"/>
+       <div className="flex items-center justify-between text-xs"><span>{commonImages.includes(url)?commonImages[0]===url?"公共主图":"公共图片":"SKU专属"}</span><Button type="button" size="icon" variant="ghost" aria-label={`移除图片 ${index+1}`} disabled={mediaBlocked} onClick={()=>removeImage(url)}><Trash2 size={14}/></Button></div>
+       <label className="flex items-center gap-2 text-xs"><Checkbox aria-label={`公共图片 ${index+1}`} checked={commonImages.includes(url)} disabled={mediaBlocked} onChange={e=>{const checked=e.target.checked;confirmedGallery.current.add(url);setCommonImages(prior=>checked?images.filter(v=>v===url||prior.includes(v)):prior.filter(v=>v!==url))}}/>作为公共图片</label>
+      </div>)}</div>:<p className="rounded-lg border border-dashed border-border p-5 text-center text-sm text-muted-foreground">尚未添加图片</p>}
+      <label className="grid gap-2 text-sm">图片链接<Textarea rows={2} disabled={mediaBlocked} value={imageURL} placeholder="每行一个HTTPS图片链接" onChange={e=>setImageURL(e.target.value)}/></label>
+      <Button type="button" variant="outline" disabled={!imageURL.trim()||mediaBlocked||images.length>=40} onClick={()=>addImages(imageURL.split(/\r?\n/).map(v=>v.trim()).filter(Boolean))}><Plus size={16}/>添加图片链接</Button>
+      <p className="text-xs text-muted-foreground">需要在描述中使用商品图片时，可从描述工具栏选择「插入图片」。</p>
+     </Card>
+    </div>
+    <Card className="space-y-5 p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">商品属性</h2><p className="mt-1 text-sm text-muted-foreground">填写材质、产地、适用季节等同款通用信息。颜色、尺码等SKU差异请放在销售规格中。</p></div><Button type="button" variant="outline" disabled={attributes.length>=256} onClick={()=>setAttributes(prior=>[...prior,{id:crypto.randomUUID(),name:"",value:""}])}><Plus size={16}/>添加商品属性</Button></div>
+     {attributes.length?<div className="space-y-3">{attributes.map((attribute,index)=><div key={attribute.id} className="grid items-end gap-3 sm:grid-cols-[minmax(120px,1fr)_minmax(0,3fr)_auto]"><label className="grid gap-2 text-sm">属性名称 {index+1}<Input maxLength={200} value={attribute.name} placeholder="例如：材质" onChange={e=>setAttributes(prior=>prior.map(a=>a.id===attribute.id?{...a,name:e.target.value}:a))}/></label><label className="grid gap-2 text-sm">属性值 {index+1}<Input maxLength={8192} value={attribute.value} placeholder="例如：100%棉" onChange={e=>setAttributes(prior=>prior.map(a=>a.id===attribute.id?{...a,value:e.target.value}:a))}/></label><Button type="button" size="icon" variant="ghost" aria-label={`删除商品属性 ${index+1}`} onClick={()=>setAttributes(prior=>prior.filter(a=>a.id!==attribute.id))}><Trash2 size={16}/></Button></div>)}</div>:<p className="text-sm text-muted-foreground">尚未填写商品属性，可按商品资料添加。</p>}
+    </Card>
+    <Card className="space-y-5 p-6"><div><h2 className="text-lg font-semibold">销售规格</h2><p className="mt-1 text-sm text-muted-foreground">选择单规格，或按颜色、尺码等规格生成多个SKU。</p></div>
+     <div className="flex flex-wrap gap-4">{(["single","multiple"] as const).map(value=><label key={value} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-4 py-3 text-sm"><input type="radio" name="variant-mode" checked={mode===value} onChange={()=>{setMode(value);setError("")}}/>{value==="single"?"单规格商品":"多规格商品"}</label>)}</div>
+     {mode==="multiple"?<><div className="space-y-3">{specs.map((spec,index)=><div key={spec.id} className="grid items-end gap-3 sm:grid-cols-[minmax(120px,1fr)_minmax(0,3fr)_auto]"><label className="grid gap-2 text-sm">规格名称 {index+1}<Input value={spec.name} placeholder="例如：颜色" onChange={e=>setSpecs(prior=>prior.map(s=>s.id===spec.id?{...s,name:e.target.value}:s))}/></label><label className="grid gap-2 text-sm">规格值 {index+1}<Input value={spec.values} placeholder="例如：红色,蓝色（用逗号分隔）" onChange={e=>setSpecs(prior=>prior.map(s=>s.id===spec.id?{...s,values:e.target.value}:s))}/></label><Button type="button" variant="ghost" size="icon" aria-label={`删除规格 ${index+1}`} disabled={specs.length===1} onClick={()=>setSpecs(prior=>prior.filter(s=>s.id!==spec.id))}><Trash2 size={16}/></Button></div>)}</div>
+      <div className="flex flex-wrap gap-3"><Button type="button" variant="outline" onClick={()=>setSpecs(prior=>[...prior,{id:crypto.randomUUID(),name:"",values:""}])}><Plus size={16}/>添加规格</Button><Button type="button" onClick={generate}>{rows.length?"更新变体组合":"生成变体组合"}</Button></div>
+      <p className="text-xs text-muted-foreground">更新时保留相同组合已填写的资料，并移除不在当前规格中的组合。每个商品最多256个变体，规格与图片总量也受保存限制。</p>{stale?<p role="status" className="text-sm text-warning-foreground">规格已修改，请更新变体组合后保存。</p>:null}
+     </>:<p className="text-sm text-muted-foreground">可先保存基础资料；填写 SKU 后需同时声明币种和价格。库存可留空，填 0 表示明确无库存。</p>}
+    </Card>
+    {(mode==="single"||rows.length>0)?<Card className="overflow-hidden"><div className="space-y-4 border-b border-border p-6"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-semibold">{mode==="single"?"SKU资料":"变体资料"}</h2><span className="text-sm text-muted-foreground">{activeRows.length} 个{mode==="single"?"规格":"变体"}</span></div>
+     {mode==="multiple"?<div className="rounded-lg border border-border bg-muted p-4"><p className="mb-3 text-sm font-medium">批量填写</p><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><label className="grid gap-2 text-xs">SKU前缀<Input value={bulk.prefix} placeholder="选填，生成前缀-序号" onChange={e=>setBulk(v=>({...v,prefix:e.target.value}))}/></label><label className="grid gap-2 text-xs">公共币种<Input maxLength={3} value={bulk.currency} placeholder="例如 CNY" onChange={e=>setBulk(v=>({...v,currency:e.target.value.toUpperCase()}))}/></label><label className="grid gap-2 text-xs">公共价格<Input type="number" min="0" step="any" value={bulk.price} onChange={e=>setBulk(v=>({...v,price:e.target.value}))}/></label><label className="grid gap-2 text-xs">公共库存<Input type="number" min="0" step="1" value={bulk.stock} onChange={e=>setBulk(v=>({...v,stock:e.target.value}))}/></label><Button type="button" className="self-end" variant="outline" onClick={applyBulk}>应用到全部变体</Button></div><p className="mt-3 text-xs text-muted-foreground">仅应用已填写的公共值，会覆盖各行对应字段。价格和库存填0表示明确声明0。</p></div>:null}
+     <p className="text-xs text-muted-foreground">价格和库存是你提供的来源资料，保存后仍需按目标平台要求适配。</p></div>
+     <Table className="min-w-[960px]"><TableHeader className="bg-muted"><TableRow><TableHead>规格组合</TableHead>{edit?<TableHead>SKU名称</TableHead>:null}<TableHead>SKU</TableHead><TableHead>币种</TableHead><TableHead>价格</TableHead><TableHead>库存</TableHead><TableHead>变体图片</TableHead>{mode==="multiple"?<TableHead>操作</TableHead>:null}</TableRow></TableHeader><TableBody>{activeRows.map((row,index)=><TableRow key={row.id}><TableCell><span className="block max-w-52 break-words text-sm">{Object.values(row.attributes).join(" / ")||"默认规格"}</span></TableCell>{edit?<TableCell><Input aria-label={`SKU名称 ${index+1}`} className="min-w-36" maxLength={2000} value={row.title??""} onChange={e=>patchRow(row.id,{title:e.target.value})}/></TableCell>:null}<TableCell><Input aria-label={`SKU ${index+1}`} className="min-w-36" maxLength={200} value={row.sku} onChange={e=>patchRow(row.id,{sku:e.target.value})}/></TableCell><TableCell><Input aria-label={`币种 ${index+1}`} className="w-24" maxLength={3} placeholder="CNY" value={row.currency} onChange={e=>patchRow(row.id,{currency:e.target.value.toUpperCase()})}/></TableCell><TableCell><Input aria-label={`价格 ${index+1}`} className="w-28" type="number" min="0" step="any" value={row.price} onChange={e=>patchRow(row.id,{price:e.target.value})}/></TableCell><TableCell><Input aria-label={`库存 ${index+1}`} className="w-28" type="number" min="0" step="1" value={row.stock} onChange={e=>patchRow(row.id,{stock:e.target.value})}/></TableCell><TableCell><Select aria-label={`变体图片 ${index+1}`} className="min-w-32" value={row.image} onChange={e=>patchRow(row.id,{image:e.target.value})}><option value="">未指定</option>{row.originalImages?.filter(url=>!images.includes(url)).map((url,i)=><option key={url} value={url}>原SKU图片 {i+1}</option>)}{images.map((url,i)=><option key={url} value={url}>{`图片 ${i+1} · ${commonImages.includes(url)?"公共":"SKU专属"}`}</option>)}</Select>{edit&&row.originalImages?.length?<p className="mt-2 max-w-48 text-xs text-muted-foreground">原有{row.originalImages.length}张SKU图片。保持原选择会保留图组；改选会替换图组。</p>:null}</TableCell>{mode==="multiple"?<TableCell><Button type="button" variant="ghost" size="icon" aria-label={`删除变体 ${index+1}`} onClick={()=>{removedIntakeRows.current.add(variantCombinationKey(row.attributes));setRows(prior=>prior.filter(v=>v.id!==row.id))}}><Trash2 size={16}/></Button></TableCell>:null}</TableRow>)}</TableBody></Table>
+    </Card>:null}
+    {activeRows.length?<Card className="space-y-5 p-6"><div><h2 className="text-lg font-semibold">SKU 含包装资料</h2><p className="mt-1 text-sm text-muted-foreground">填写一件该 SKU 的含包装实测值。重量用克（g），尺寸用厘米（cm）；留空表示未知，可保存后补充。保存后仍按目标平台要求检查。</p></div><div className="space-y-4">{activeRows.map((row,index)=><div key={row.id} role="group" aria-label={`SKU 包装 ${row.sku||index+1}`} className="space-y-3 rounded-lg border border-border p-4"><p className="break-words text-sm font-medium">{row.sku||`SKU ${index+1}`} · {Object.values(row.attributes).join(" / ")||"默认规格"}</p><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{packagingFields.map(field=><label key={field.key} className="grid gap-2 text-sm">{field.label} {field.unit}<Input aria-label={`${field.label} ${field.unit} ${index+1}`} type="number" inputMode="decimal" min="0" step="any" value={row.packaging?.[field.key]??""} placeholder="未知" onChange={event=>patchRow(row.id,{packaging:{...row.packaging,[field.key]:event.target.value}})}/></label>)}</div></div>)}</div></Card>:null}
+   </fieldset>
+   <Card className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-4 border-border bg-card p-4 text-card-foreground shadow-lg"><div className="min-w-0"><p className="text-sm">{mode==="multiple"?`${rows.length} 个变体`:(single.sku?"1 个SKU":"基础商品资料")} · {commonImages.length} 张公共图片</p><p className="mt-1 text-xs text-muted-foreground">{continuation==="official"?"保存到自有商品库后继续填写供货信息，预览确认后才会公开。":"保存到自有商品库，图片在适配时由你确认。"}</p>{error?<p role="alert" className="mt-2 text-sm text-destructive">{error}</p>:null}</div><Button type="submit" disabled={disabled||stale||mediaBlocked}>{commands.busy?"正在保存…":edit?"保存新版本":continuation==="official"?"保存并填写供货信息":"保存商品"}</Button></Card>
+  </form>
+  {confirmation?<ResourceDialog title={confirmation==="leave"?"放弃未保存的修改？":"重新读取最新资料？"} onClose={()=>setConfirmation(null)} initialFocusRef={keepEditingRef}>
+   <p className="text-sm text-muted-foreground">{confirmation==="leave"?continuation==="official"?"当前商品资料尚未保存，放弃后返回商品选择。":"当前修改尚未保存。放弃后将返回商品详情，已保存的商品资料不会改变。":"重新读取会放弃当前未保存的修改，并加载最新资料。"}</p>
+   <div className="flex flex-wrap justify-end gap-3">
+    <Button type="button" variant="outline" ref={keepEditingRef} onClick={()=>setConfirmation(null)}>{confirmation==="leave"?"继续编辑":"保留当前内容"}</Button>
+    <Button type="button" variant="destructive" disabled={commands.busy||mediaBlocked} onClick={()=>{if(commands.busy||mediaBlocked)return;setConfirmation(null);if(confirmation==="reload")window.location.reload();else returnToDetail()}}>{confirmation==="leave"?"放弃修改":"放弃并重新读取"}</Button>
+   </div>
+  </ResourceDialog>:null}
+ </ConsolePage>;
+}
+
+function prepareImageURLs(urls:string[]){return urls.every(value=>{try{const url=new URL(value);return value.length<=2048&&url.protocol==="https:"&&!!url.hostname&&!url.username&&!url.password&&!url.hash}catch{return false}})}
+
+export function OfficialOwnProductEntryPage(){return <MarketBoundary>{()=> <OfficialPublishingAccess><OwnProductEntryPage continuation="official"/></OfficialPublishingAccess>}</MarketBoundary>}

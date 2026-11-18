@@ -1,0 +1,317 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  cleanup,
+  render,
+  screen,
+  within,
+  waitFor,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, afterEach, it, expect, vi } from "vitest";
+import { ResourcePurchasePanel } from "./resource-purchase-panel";
+import type {ResourceOffer} from "@/lib/api/resource-purchase";
+import { commercialResourcesFixture } from "@/test/fixtures/commercial-resources";
+const api = vi.hoisted(() => ({
+  quote: vi.fn(),
+  order: vi.fn(),
+  readOrder: vi.fn(),
+  resources: vi.fn(),
+  wallet: vi.fn(),
+}));
+vi.mock("@/lib/api/resource-purchase", async (original) => ({
+  ...(await original<typeof import("@/lib/api/resource-purchase")>()),
+  createResourceQuote: api.quote,
+  createResourceOrder: api.order,
+}));
+vi.mock("@/lib/api/commercial-billing", async (original) => ({
+  ...(await original<typeof import("@/lib/api/commercial-billing")>()),
+  getCommercialOrder: api.readOrder,
+  getCommercialResources: api.resources,
+  getCommercialWallet: api.wallet,
+}));
+const offer = {
+  offer_id: "offer-1",
+  product_kind: "AI_POINT" as const,
+  resource_type: "ai_point" as const,
+  currency: "CNY" as const,
+  unit_price_minor: "7",
+  min_quantity: "1",
+  max_quantity: "1000",
+  pricing_version: "synthetic-v1",
+};
+const quote = {
+  quote_id: "quote-1",
+  organization_id: "org-B",
+  offer_id: "offer-1",
+  product_kind: "AI_POINT" as const,
+  resource_type: "ai_point" as const,
+  resource_quantity: "10",
+  currency: "CNY" as const,
+  total_minor: "70",
+  pricing_version: "synthetic-v1",
+  expires_at: "2099-09-29T01:00:00Z",
+  fingerprint: "frozen",
+  created_at: "2099-09-29T00:00:00Z",
+  amount_minor: "73",
+  unit_price_minor: "7",
+  remainder_minor: "3",
+};
+const order = {
+  order_id: "order-1",
+  organization_id: "org-B",
+  kind: "RESOURCE_PURCHASE" as const,
+  description: "Synthetic points",
+  quote_id: "quote-1",
+  currency: "CNY" as const,
+  total_minor: "70",
+  status: "FULFILLED" as const,
+  items: [],
+  product_kind: "AI_POINT" as const,
+  created_at: "2026-09-29T00:00:00Z",
+  updated_at: "2026-09-29T00:00:00Z",
+};
+let client: QueryClient;
+function tree(org = "org-B", items:ResourceOffer[] = [offer], roles = ["workbench.commercial.purchase"]) {
+  return (
+    <QueryClientProvider client={client}>
+      <ResourcePurchasePanel
+        userId="actor"
+        organizationId={org}
+        organizationName="企业乙"
+        permissions={roles}
+        offers={{ organization_id: org, items }}
+      />
+    </QueryClientProvider>
+  );
+}
+beforeEach(() => {
+  sessionStorage.clear();
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  api.quote.mockReset().mockResolvedValue(quote);
+  api.order.mockReset().mockResolvedValue(order);
+  api.readOrder.mockReset().mockResolvedValue(order);
+  api.resources
+    .mockReset()
+    .mockResolvedValue(commercialResourcesFixture("org-B"));
+  api.wallet.mockReset().mockResolvedValue({
+    organization_id: "org-B",
+    currency: "CNY",
+    available_minor: "1000",
+    reserved_minor: "0",
+    debt_minor: "0",
+    lifetime_topup_minor: "1000",
+    lifetime_spend_minor: "0",
+    version: "1",
+    observed_at: order.created_at,
+  });
+});
+afterEach(() => {
+  cleanup();
+  client.clear();
+  sessionStorage.clear();
+  vi.restoreAllMocks();
+});
+
+it("receives exactly three zero-price rows without requiring wallet balance",async()=>{
+ const zero:ResourceOffer={...offer,offer_id:"zero-data",product_kind:"DATA_ROW",resource_type:"data_row",unit_price_minor:"0",settlement_mode:"ZERO_PRICE"};
+ const zeroQuote={...quote,offer_id:zero.offer_id,product_kind:zero.product_kind,resource_type:zero.resource_type,resource_quantity:"3",total_minor:"0",settlement_mode:"ZERO_PRICE",amount_minor:undefined,unit_price_minor:undefined,remainder_minor:undefined};
+ api.quote.mockResolvedValue(zeroQuote);api.order.mockResolvedValue({...order,product_kind:"DATA_ROW",total_minor:"0",settlement_mode:"ZERO_PRICE",items:[{order_item_id:"data-item",product_kind:"DATA_ROW",resource_type:"data_row",resource_quantity:"3",amount_minor:"0"}]});
+ const balance=commercialResourcesFixture("org-B");api.resources.mockResolvedValue({...balance,resources:balance.resources.map(r=>r.resource_type==="data_row"?{...r,state:"recorded",available:"3",allocated:"0",reserved:"0",consumed:"0",debt:"0",updated_at:order.created_at}:r)});
+ api.wallet.mockRejectedValue(new Error("wallet unavailable"));render(tree("org-B",[zero]));const user=userEvent.setup();const card=screen.getByRole("region",{name:"数据资源购买"});await user.clear(within(card).getByLabelText("购买数量"));await user.type(within(card).getByLabelText("购买数量"),"3");expect(within(card).queryByLabelText("购买方式")).toBeNull();await user.click(within(card).getByRole("button",{name:"获取报价"}));
+ const confirmation=await screen.findByRole("region",{name:"报价确认"});await user.click(within(confirmation).getByRole("button",{name:"确认领取3条"}));expect(await screen.findByText(/资源已到账/)).toBeVisible();expect(api.order).toHaveBeenCalledOnce();
+});
+async function confirm() {
+  const user = userEvent.setup();
+  const region = await screen.findByRole("region", { name: "AI 点数购买" });
+  await user.selectOptions(within(region).getByLabelText("购买方式"), "amount");
+  await user.clear(within(region).getByLabelText("金额（元）"));
+  await user.type(within(region).getByLabelText("金额（元）"), "0.73");
+  await user.click(within(region).getByRole("button", { name: "获取报价" }));
+  return {
+    user,
+    confirmation: await screen.findByRole("region", { name: "报价确认" }),
+  };
+}
+it("reads the deducted wallet after fulfilled purchase and retains the order if wallet readback fails",async()=>{
+ const wallet={organization_id:"org-B",currency:"CNY",available_minor:"930",reserved_minor:"0",debt_minor:"0",lifetime_topup_minor:"1000",lifetime_spend_minor:"70",version:"2",observed_at:order.created_at};
+ api.wallet.mockResolvedValueOnce({...wallet,available_minor:"1000"}).mockRejectedValueOnce(new Error("read unavailable"));
+ render(tree());const {user,confirmation}=await confirm();await user.click(within(confirmation).getByRole("button",{name:"确认购买"}));
+ expect(await screen.findByText(/订单已完成，但余额回读尚未确认/)).toBeVisible();
+ expect(api.order).toHaveBeenCalledOnce();expect(sessionStorage.length).toBeGreaterThan(0);
+});
+it("updates wallet cache with the deducted owner balance",async()=>{
+ const previous=api.wallet.getMockImplementation()!;
+ api.wallet.mockImplementation(async(...args)=>({...await previous(...args),available_minor:api.wallet.mock.calls.length===1?"1000":"930"}));
+ render(tree());const {user,confirmation}=await confirm();await user.click(within(confirmation).getByRole("button",{name:"确认购买"}));
+ await screen.findByText(/资源已到账/);
+ expect(client.getQueryData<{available_minor:string}>(["workbench","org-B","commercial-wallet","actor","resource-purchase"])?.available_minor).toBe("930");
+});
+it("confirms exact server quantity, amount and remainder then reads resource balances", async () => {
+  render(tree());
+  const { user, confirmation } = await confirm();
+  expect(within(confirmation).getByText("企业乙（org-B）")).toBeVisible();
+  expect(within(confirmation).getByText("10 点")).toBeVisible();
+  expect(within(confirmation).getByText("¥0.70")).toBeVisible();
+  expect(within(confirmation).getByText(/¥0.03/)).toBeVisible();
+  expect(api.quote).toHaveBeenCalledWith(
+    "actor",
+    "org-B",
+    "offer-1",
+    { amountMinor: "73" },
+    expect.any(AbortSignal),
+  );
+  await user.click(
+    within(confirmation).getByRole("button", { name: "确认购买" }),
+  );
+  expect(await screen.findByText(/资源已到账/)).toBeVisible();
+  expect(api.resources).toHaveBeenCalledWith(
+    "actor",
+    "org-B",
+    expect.any(AbortSignal),
+  );
+});
+it("restores the original command after an unknown result without making another quote", async () => {
+  api.order.mockRejectedValueOnce({ code: "DEADLINE_EXCEEDED" });
+  const view = render(tree());
+  const { user, confirmation } = await confirm();
+  await user.click(
+    within(confirmation).getByRole("button", { name: "确认购买" }),
+  );
+  expect(await screen.findByText(/结果尚未确认/)).toBeVisible();
+  const key = api.order.mock.calls[0][3];
+  expect(
+    sessionStorage.getItem('resource-purchase.pending:["actor","org-B"]'),
+  ).toContain(key);
+  view.unmount();
+  render(tree());
+  await user.click(await screen.findByRole("button", { name: "恢复原订单" }));
+  expect(await screen.findByText(/资源已到账/)).toBeVisible();
+  expect(api.order.mock.calls[1][3]).toBe(key);
+  expect(api.quote).toHaveBeenCalledTimes(1);
+});
+it("does not let a late old-enterprise response overwrite a persisted original operation", async () => {
+  let complete: (v: typeof order) => void = () => {};
+  api.order.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  const view = render(tree());
+  const { user, confirmation } = await confirm();
+  await user.click(
+    within(confirmation).getByRole("button", { name: "确认购买" }),
+  );
+  await waitFor(() => expect(api.order).toHaveBeenCalledTimes(1));
+  const original = sessionStorage.getItem(
+    'resource-purchase.pending:["actor","org-B"]',
+  );
+  view.rerender(tree("org-C", []));
+  complete(order);
+  await waitFor(() =>
+    expect((api.order.mock.calls[0][4] as AbortSignal).aborted).toBe(true),
+  );
+  expect(
+    sessionStorage.getItem('resource-purchase.pending:["actor","org-B"]'),
+  ).toBe(original);
+  expect(api.resources).not.toHaveBeenCalled();
+  expect(screen.queryByText(/资源已到账/)).not.toBeInTheDocument();
+});
+it("keeps the original order while readback is unavailable and fails closed on invalid recovery storage", async () => {
+  api.resources.mockRejectedValue({ code: "DEPENDENCY_UNAVAILABLE" });
+  const view = render(tree());
+  const { user, confirmation } = await confirm();
+  await user.click(
+    within(confirmation).getByRole("button", { name: "确认购买" }),
+  );
+  expect(await screen.findByText(/余额回读尚未确认/)).toBeVisible();
+  expect(
+    sessionStorage.getItem('resource-purchase.pending:["actor","org-B"]'),
+  ).toContain("order-1");
+  view.unmount();
+  sessionStorage.setItem('resource-purchase.pending:["actor","org-B"]', "{bad");
+  render(tree());
+  expect(await screen.findByText(/原订单恢复信息无效/)).toBeVisible();
+  expect(
+    screen
+      .getAllByRole("button", { name: "获取报价" })
+      .every((button) => (button as HTMLButtonElement).disabled),
+  ).toBe(true);
+});
+it("shows no configured price or purchase action for an empty catalog", async () => {
+  render(tree("org-B", []));
+  expect(screen.getAllByText("价格未配置")).toHaveLength(3);
+  expect(api.quote).not.toHaveBeenCalled();
+  expect(api.wallet).not.toHaveBeenCalled();
+});
+
+it("clears a cancelled 409 order through the actual client so a later purchase is possible", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/lib/api/resource-purchase")
+  >("@/lib/api/resource-purchase");
+  api.order.mockImplementation(actual.createResourceOrder);
+  const fetcher = vi
+    .fn()
+    .mockResolvedValue(
+      Response.json(
+        { ...order, status: "CANCELLED", failure_code: "INSUFFICIENT_FUNDS" },
+        { status: 409 },
+      ),
+    );
+  vi.stubGlobal("fetch", fetcher);
+  try {
+    render(tree());
+    const { user, confirmation } = await confirm();
+    await user.click(
+      within(confirmation).getByRole("button", { name: "确认购买" }),
+    );
+    expect(await screen.findByText("企业钱包余额不足。")).toBeVisible();
+    expect(
+      sessionStorage.getItem('resource-purchase.pending:["actor","org-B"]'),
+    ).toBeNull();
+    expect(api.resources).not.toHaveBeenCalled();
+    const region = screen.getByRole("region", { name: "AI 点数购买" });
+    await user.click(within(region).getByRole("button", { name: "获取报价" }));
+    expect(
+      await screen.findByRole("region", { name: "报价确认" }),
+    ).toBeVisible();
+    expect(api.quote).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+it("persists the original 409 reconciliation order through the actual client", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/lib/api/resource-purchase")
+  >("@/lib/api/resource-purchase");
+  api.order.mockImplementation(actual.createResourceOrder);
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue(
+        Response.json(
+          { ...order, status: "RECONCILIATION_REQUIRED" },
+          { status: 409 },
+        ),
+      ),
+  );
+  try {
+    render(tree());
+    const { user, confirmation } = await confirm();
+    await user.click(
+      within(confirmation).getByRole("button", { name: "确认购买" }),
+    );
+    expect(
+      await screen.findByText("正在核对原订单，请勿重新购买。"),
+    ).toBeVisible();
+    expect(
+      sessionStorage.getItem('resource-purchase.pending:["actor","org-B"]'),
+    ).toContain("order-1");
+    expect(api.resources).not.toHaveBeenCalled();
+    expect(api.quote).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

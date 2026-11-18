@@ -1,0 +1,328 @@
+"use client";
+
+import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from "react";
+
+import {
+  fetchWorkbenchContext,
+  switchEffectiveOrganization,
+  WORKBENCH_CONTEXT_QUERY_KEY,
+  WorkbenchContextError,
+  type WorkbenchContext,
+  type WorkbenchOrganization,
+} from "@/lib/api/workbench-context";
+import { loadAcquisitionIntent, saveAcquisitionIntent, type PendingAcquisitionIntent } from "@/lib/api/acquisition-intent";
+export type { PendingAcquisitionIntent } from "@/lib/api/acquisition-intent";
+import type { CollectionIntent } from "@/lib/api/product-collection";
+import { loadCollectionIntent, saveCollectionIntent } from "@/lib/api/collection-intent";
+import type { SupplyIntent } from "@/lib/api/supply-chain";
+import { loadSupplyIntent, saveSupplyIntent } from "@/lib/api/supply-intent";
+
+type WorkbenchContextValue = {
+  user: WorkbenchContext["user"] | null;
+  homeOrganizationId: string | null;
+ effectiveMemberId?: string;
+  organizations: WorkbenchOrganization[];
+  effectiveOrganization: WorkbenchOrganization | null;
+  roles: string[];
+  permissions: string[];
+  aiWorkbenchAvailable: boolean;
+  storageCapacityAvailable: boolean;
+ projectCenterAvailable:boolean;
+ marketResearchAvailable?:boolean;
+  storeObservationsAvailable: boolean;
+  operationsCockpitAvailable: boolean;
+  aiWorkbenchPlanningReadiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE";
+  aiWorkbenchStoreRouteReadiness?: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE";
+  aiWorkbenchExecutionKind?:"product.content.localize"|"product.title.optimize";
+  aiWorkbenchExecutionReadiness?:"AVAILABLE"|"NEEDS_CONFIGURATION"|"UNAVAILABLE";
+  aiWorkbenchTitleReadiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE";
+  selectionRequired: boolean;
+  isLoading: boolean;
+  isSwitching: boolean;
+  error: WorkbenchContextError | null;
+  blockingError: WorkbenchContextError | null;
+  retry: () => Promise<WorkbenchContext | null>;
+  switchOrganization: (organizationId: string) => void;
+  pendingAcquisitionIntent: PendingAcquisitionIntent | null;
+  acquisitionIntentReady: boolean;
+  setPendingAcquisitionIntent: (intent: PendingAcquisitionIntent | null) => boolean;
+  pendingCollectionIntent: CollectionIntent | null;
+  collectionIntentReady: boolean;
+  setPendingCollectionIntent: (intent: CollectionIntent | null) => boolean;
+  pendingSupplyIntent: SupplyIntent | null;
+  supplyIntentReady: boolean;
+  setPendingSupplyIntent: (intent: SupplyIntent | null) => boolean;
+  registerOrganizationSwitchGuard: (
+    guard: (target: WorkbenchOrganization) => boolean | Promise<boolean>,
+  ) => () => void;
+};
+
+const WorkbenchContextState = createContext<WorkbenchContextValue | null>(null);
+
+export function WorkbenchContextProvider({ children }: PropsWithChildren) {
+  const queryClient = useQueryClient();
+  const [blockingError, setBlockingError] =
+    useState<WorkbenchContextError | null>(null);
+  // A scoped browser intent survives shell remounts. It is a recovery clue,
+  // never a cross-organization authorization grant or automatic retry.
+  const [pendingAcquisitionIntent, setAcquisitionIntent] =
+    useState<PendingAcquisitionIntent | null>(null);
+  const acquisitionIntentRef = useRef<PendingAcquisitionIntent | null>(null);
+  const [acquisitionIntentReady, setAcquisitionIntentReady] = useState(false);
+  const setPendingAcquisitionIntent = useCallback((intent: PendingAcquisitionIntent | null) => {
+    if (!saveAcquisitionIntent(intent, acquisitionIntentRef.current)) return false;
+    acquisitionIntentRef.current = intent;
+    setAcquisitionIntent(intent);
+    return true;
+  }, []);
+  const [pendingCollectionIntent, setCollectionIntent] = useState<CollectionIntent | null>(null);
+  const collectionIntentRef = useRef<CollectionIntent | null>(null);
+  const [collectionIntentReady, setCollectionIntentReady] = useState(false);
+  const setPendingCollectionIntent = useCallback((intent: CollectionIntent | null) => {
+    if (!saveCollectionIntent(intent, collectionIntentRef.current)) return false;
+    collectionIntentRef.current = intent;
+    setCollectionIntent(intent);
+    return true;
+  }, []);
+  const [pendingSupplyIntent,setSupplyIntent]=useState<SupplyIntent|null>(null);
+  const [supplyIntentReady,setSupplyIntentReady]=useState(false);
+  useEffect(() => {
+    let active = true;
+    // Hydrate browser storage after the initial server-compatible render.
+    void Promise.resolve().then(() => {
+      if (active) {
+        const acquisitionIntent = loadAcquisitionIntent();
+        acquisitionIntentRef.current = acquisitionIntent;
+        setAcquisitionIntent(acquisitionIntent);
+        setAcquisitionIntentReady(true);
+        const collectionIntent = loadCollectionIntent();
+        collectionIntentRef.current = collectionIntent;
+        setCollectionIntent(collectionIntent);
+        setCollectionIntentReady(true);
+        setSupplyIntent(loadSupplyIntent());
+        setSupplyIntentReady(true);
+      }
+    });
+    return () => { active = false; };
+  }, []);
+  const setPendingSupplyIntent=useCallback((intent:SupplyIntent|null)=>{if(!saveSupplyIntent(intent))return false;setSupplyIntent(intent);return true},[]);
+  const guardsRef = useRef(new Set<(target: WorkbenchOrganization) => boolean | Promise<boolean>>());
+  const currentContextRef = useRef<WorkbenchContext | null>(null);
+  const switchRequestPendingRef = useRef(false);
+  const [switchPreparing, setSwitchPreparing] = useState(false);
+  const contextQuery = useQuery({
+    queryKey: WORKBENCH_CONTEXT_QUERY_KEY,
+    queryFn: ({ signal }) => fetchWorkbenchContext(signal),
+    enabled: !blockingError && !switchPreparing,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const switchMutation = useMutation({
+    mutationFn: switchEffectiveOrganization,
+    onSuccess: (nextContext) => {
+      switchRequestPendingRef.current = false;
+      setSwitchPreparing(false);
+      queryClient.clear();
+      queryClient.setQueryData(WORKBENCH_CONTEXT_QUERY_KEY, nextContext);
+      setBlockingError(null);
+    },
+    onError: (error) => {
+      switchRequestPendingRef.current = false;
+      setSwitchPreparing(false);
+      queryClient.clear();
+      setBlockingError(normalizeWorkbenchError(error));
+    },
+  });
+
+  const currentContext = blockingError
+    ? null
+    : (contextQuery.data ?? null);
+  useEffect(() => {
+    currentContextRef.current = currentContext;
+  }, [currentContext]);
+  const effectiveOrganization = currentContext?.effectiveOrganizationId
+    ? (currentContext.organizations.find(
+        (organization) =>
+          organization.id === currentContext.effectiveOrganizationId,
+      ) ?? null)
+    : null;
+  const queryError = contextQuery.error
+    ? normalizeWorkbenchError(contextQuery.error)
+    : null;
+  const storeMutationsPending = useIsMutating({
+    predicate: isPendingStoreMutation,
+  });
+  const hasPendingStoreMutation = useCallback(
+    () => queryClient.isMutating({ predicate: isPendingStoreMutation }) > 0,
+    [queryClient],
+  );
+  const registerOrganizationSwitchGuard = useCallback(
+    (guard: (target: WorkbenchOrganization) => boolean | Promise<boolean>) => {
+      guardsRef.current.add(guard);
+      return () => {
+        guardsRef.current.delete(guard);
+      };
+    },
+    [],
+  );
+  const switchOrganization = useCallback(
+    (organizationId: string) => {
+      void (async () => {
+        const context = currentContextRef.current;
+        const target = context?.organizations.find(
+          (organization) => organization.id === organizationId,
+        );
+        if (
+          !target ||
+          target.id === context?.effectiveOrganizationId ||
+          switchRequestPendingRef.current ||
+          hasPendingStoreMutation()
+        ) {
+          return;
+        }
+        switchRequestPendingRef.current = true;
+        setSwitchPreparing(true);
+        const cancelPreparation = () => {
+          switchRequestPendingRef.current = false;
+          setSwitchPreparing(false);
+        };
+        for (const guard of [...guardsRef.current]) {
+          try {
+            if (!(await guard(target))) {
+              cancelPreparation();
+              return;
+            }
+          } catch {
+            cancelPreparation();
+            return;
+          }
+        }
+        if (!switchRequestPendingRef.current || hasPendingStoreMutation()) {
+          cancelPreparation();
+          return;
+        }
+        await queryClient.cancelQueries({ queryKey: WORKBENCH_CONTEXT_QUERY_KEY });
+        if (hasPendingStoreMutation()) {
+          cancelPreparation();
+          return;
+        }
+        switchMutation.mutate(organizationId);
+      })();
+    },
+    [hasPendingStoreMutation, queryClient, switchMutation],
+  );
+
+  const value = useMemo<WorkbenchContextValue>(
+    () => ({
+      user: currentContext?.user ?? null,
+      homeOrganizationId: currentContext?.homeOrganizationId ?? null,
+ effectiveMemberId: currentContext?.effectiveMemberId,
+      organizations: currentContext?.organizations ?? [],
+      effectiveOrganization,
+      roles: effectiveOrganization?.roles ?? [],
+      permissions: effectiveOrganization?.permissions ?? [],
+      aiWorkbenchAvailable: currentContext?.aiWorkbenchAvailable === true,
+      storageCapacityAvailable:currentContext?.storageCapacityAvailable===true,
+ projectCenterAvailable:currentContext?.projectCenterAvailable===true,
+ marketResearchAvailable:currentContext?.marketResearchAvailable===true,
+      storeObservationsAvailable: currentContext?.storeObservationsAvailable === true,
+      operationsCockpitAvailable: currentContext?.operationsCockpitAvailable === true,
+      aiWorkbenchPlanningReadiness: currentContext?.aiWorkbenchPlanningReadiness ?? "UNAVAILABLE",
+      aiWorkbenchStoreRouteReadiness: currentContext?.aiWorkbenchStoreRouteReadiness ?? "UNAVAILABLE",
+      aiWorkbenchExecutionKind:currentContext?.aiWorkbenchExecutionKind,
+      aiWorkbenchExecutionReadiness:currentContext?.aiWorkbenchExecutionReadiness,
+      aiWorkbenchTitleReadiness: currentContext?.aiWorkbenchTitleReadiness ?? "UNAVAILABLE",
+      selectionRequired: currentContext?.selectionRequired ?? false,
+      isLoading: !blockingError && contextQuery.isPending,
+      isSwitching: switchPreparing || switchMutation.isPending || storeMutationsPending > 0,
+      error: queryError,
+      blockingError,
+      retry: async () => {
+        setBlockingError(null);
+        const result = await contextQuery.refetch();
+        return result.isSuccess ? result.data : null;
+      },
+      switchOrganization,
+      pendingAcquisitionIntent,
+      acquisitionIntentReady,
+      setPendingAcquisitionIntent,
+      pendingCollectionIntent,
+      collectionIntentReady,
+      setPendingCollectionIntent,
+      pendingSupplyIntent,
+      supplyIntentReady,
+      setPendingSupplyIntent,
+      registerOrganizationSwitchGuard,
+    }),
+    [
+      blockingError,
+      contextQuery,
+      currentContext,
+      effectiveOrganization,
+      queryError,
+      switchMutation,
+      storeMutationsPending,
+      switchPreparing,
+      switchOrganization,
+      pendingAcquisitionIntent,
+      acquisitionIntentReady,
+      setPendingAcquisitionIntent,
+      pendingCollectionIntent,
+      collectionIntentReady,
+      setPendingCollectionIntent,
+      pendingSupplyIntent,
+      supplyIntentReady,
+      setPendingSupplyIntent,
+      registerOrganizationSwitchGuard,
+    ],
+  );
+
+  return (
+    <WorkbenchContextState.Provider value={value}>
+      {children}
+    </WorkbenchContextState.Provider>
+  );
+}
+
+function isPendingStoreMutation(mutation: {
+  options: { mutationKey?: readonly unknown[] };
+  state: { status: string };
+}) {
+  const key = mutation.options.mutationKey;
+  return (
+    mutation.state.status === "pending" &&
+    Array.isArray(key) &&
+    key.length === 5 &&
+    key[0] === "workbench" &&
+    typeof key[1] === "string" &&
+    key[2] === "stores" &&
+    key[3] === "mutation" &&
+    typeof key[4] === "string"
+  );
+}
+
+export function useWorkbenchContext() {
+  const context = useContext(WorkbenchContextState);
+  if (!context) {
+    throw new Error(
+      "useWorkbenchContext must be used within WorkbenchContextProvider",
+    );
+  }
+  return context;
+}
+
+function normalizeWorkbenchError(error: unknown) {
+  if (error instanceof WorkbenchContextError) return error;
+  return new WorkbenchContextError(0, "WORKBENCH_REQUEST_FAILED", "", []);
+}

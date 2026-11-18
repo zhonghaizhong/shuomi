@@ -1,0 +1,89 @@
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {proxySupplyMarket} from "./supply-market-proxy";
+const id="12752596-6056-4316-9f2f-380c97df9675";
+const request=(path:string,init:RequestInit={})=>new Request("https://console.example/api/workbench/supply-market/"+path,{...init,headers:{"X-Expected-User-ID":"user-a","X-Expected-Organization-ID":"org-a",cookie:"shuomi_effective_organization=org-a",...init.headers}});
+describe("market BFF disclosure and uncertain writes",()=>{
+ beforeEach(()=>{vi.stubEnv("LISTINGKIT_SERVICE_API_BASE","https://api.example/api/v1");vi.stubEnv("LISTINGKIT_SUPPLY_MARKET_ENABLED","true");vi.stubEnv("LISTINGKIT_PUBLIC_BASE_URL","https://console.example")});
+ afterEach(()=>vi.unstubAllGlobals());
+ it("accepts verified merchant names and recipient state but rejects private certification fields",async()=>{
+  const item={id,channel:"selected",revision:1,active:true,publishedAt:"2026-10-10T00:00:00Z",product:{title:"商品",images:["https://images.example/p.png"]},supply:{stock:1,minimumQuantity:1,leadDays:1,province:"浙江省",city:"杭州市"},prices:[{currency:"CNY",minimum:0,maximum:10}],added:true,merchant:{state:"verified",name:"认证企业名称"}};
+  const fetcher=vi.fn().mockResolvedValueOnce(Response.json({items:[item],total:1})).mockResolvedValueOnce(Response.json({items:[{...item,added:null,merchant:{state:"unavailable"}}],total:1})).mockResolvedValueOnce(Response.json({items:[{...item,merchant:{...item.merchant,creditCode:"PRIVATE_CERTIFICATE"}}],total:1}));vi.stubGlobal("fetch",fetcher);
+  const valid=await proxySupplyMarket(request("releases"),"private-token","user-a");expect(valid.status).toBe(200);expect((await valid.json()).items[0].merchant.name).toBe("认证企业名称");
+  expect((await proxySupplyMarket(request("releases"),"private-token","user-a")).status).toBe(200);
+  const rejected=await proxySupplyMarket(request("releases"),"private-token","user-a");expect(rejected.status).toBe(502);expect(await rejected.text()).not.toContain("PRIVATE_CERTIFICATE");
+ });
+ it("forwards valid market filters and rejects invalid or non-market filters",async()=>{
+  const fetcher=vi.fn(async()=>Response.json({items:[],total:0}));vi.stubGlobal("fetch",fetcher);
+  const query=new URLSearchParams({kind:"selected",province:"浙江省",city:"杭州市",minPrice:"0",maxPrice:"50.25",priceCurrency:"CNY",maxMOQ:"2",maxLeadDays:"0"});
+  expect((await proxySupplyMarket(request("releases?"+query),"private-token","user-a")).status).toBe(200);
+  expect(fetcher).toHaveBeenCalledWith(expect.stringContaining("maxLeadDays=0"),expect.any(Object));
+  for(const q of ["city=a","province=x&city=a&city=b","minPrice=-1&priceCurrency=CNY","minPrice=10&maxPrice=2&priceCurrency=CNY","minPrice=NaN&priceCurrency=CNY","minPrice=1e2&priceCurrency=CNY","minPrice=0","priceCurrency=CNY","maxMOQ=0","maxMOQ=1.5","maxMOQ=1.0","maxLeadDays=0.0","maxLeadDays=3651","maxLeadDays=1&maxLeadDays=2","province=a&province=b"]){expect((await proxySupplyMarket(request("releases?"+q),"private-token","user-a")).status).toBe(400)}
+  expect((await proxySupplyMarket(request("records?province=x"),"private-token","user-a")).status).toBe(400);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+ });
+ it("proxies the member overview with strict facts and rejects query/admin/private fields",async()=>{
+  const overview={eligibleProducts:54,reviewing:27,supplementRequired:4,approved:7,products:[]};const fetcher=vi.fn(async()=>Response.json(overview));vi.stubGlobal("fetch",fetcher);
+  const result=await proxySupplyMarket(request("application-overview"),"private-token","user-a");expect(result.status).toBe(200);expect(await result.json()).toEqual(overview);
+  expect((await proxySupplyMarket(request("application-overview?ended=true"),"private-token","user-a")).status).toBe(400);
+  const admin=request("application-overview");expect((await proxySupplyMarket(new Request(admin.url.replace("/workbench/","/admin/"),{headers:admin.headers}),"private-token","user-a")).status).toBe(400);
+  expect(fetcher).toHaveBeenCalledTimes(1);fetcher.mockResolvedValueOnce(Response.json({...overview,organizationId:"secret"}));expect((await proxySupplyMarket(request("application-overview"),"private-token","user-a")).status).toBe(502);
+ });
+ it("rejects scope drift before reading any upstream data",async()=>{
+  const fetcher=vi.fn();vi.stubGlobal("fetch",fetcher);
+  const r=await proxySupplyMarket(request("releases",{headers:{"X-Expected-Organization-ID":"org-b"}}),"private-token","user-a");
+  expect(r.status).toBe(409);expect(fetcher).not.toHaveBeenCalled();
+ });
+ it("accepts normal ineligible choices but keeps the public projection strict",async()=>{
+  const selection={itemId:id,expectedRevision:1,originalPublicationId:id,originalVersion:"1",effectiveVersion:"1"};
+  const unoptimized={selection,optimized:false,ineligibleReason:"not_optimized"};
+  const product={title:"Own product",images:["https://images.example/product.png"]};
+  const applied={...selection,effectiveVersion:"2",applyId:id};
+  const fetcher=vi.fn();vi.stubGlobal("fetch",fetcher);
+  for(const body of [unoptimized,{...unoptimized,product},{selection:applied,optimized:true,ineligibleReason:"incomplete_product"},{selection:applied,optimized:true,product}]){
+   fetcher.mockResolvedValueOnce(Response.json(body));const result=await proxySupplyMarket(request("choices/"+id),"private-token","user-a");expect(result.status).toBe(200);expect(await result.json()).toEqual(body);
+  }
+  for(const body of [{selection:applied,optimized:true},{selection:applied,optimized:true,product:{...product,images:[]}},{...unoptimized,product:{...product,images:[]}},{...unoptimized,rawSnapshot:{secret:true}}]){
+   fetcher.mockResolvedValueOnce(Response.json(body));expect((await proxySupplyMarket(request("choices/"+id),"private-token","user-a")).status).toBe(502);
+  }
+ });
+ it("does not forward private fields from a released product",async()=>{
+  vi.stubGlobal("fetch",vi.fn(async()=>Response.json({items:[{id,channel:"official",revision:1,active:true,publishedAt:"2026-10-10T00:00:00Z",product:{title:"Released",images:["https://images.example/p.png"]},supply:{stock:1,minimumQuantity:1,leadDays:1,province:"浙江",city:"杭州"},source:{organizationId:"secret"}}],total:1})));
+  const r=await proxySupplyMarket(request("releases"),"private-token","user-a");
+  expect(r.status).toBe(502);expect(await r.text()).not.toContain("secret");
+ });
+ it("retains UNKNOWN when a sent selection response is malformed",async()=>{
+  const fetcher=vi.fn(async()=>new Response("{",{headers:{"Content-Type":"application/json"}}));vi.stubGlobal("fetch",fetcher);
+  const r=await proxySupplyMarket(request("select",{method:"POST",headers:{Origin:"https://console.example","Content-Type":"application/json","Idempotency-Key":id,"If-Match":'"1"'},body:JSON.stringify({action:"select_release",id,expectedRevision:1})}),"private-token","user-a");
+  expect(fetcher).toHaveBeenCalledTimes(1);expect(await r.json()).toEqual({code:"OUTCOME_UNKNOWN"});
+ });
+ // Independent vectors generated by Go collection.StableID (UUIDv5 URL namespace).
+ it.each(["POST","GET"])("binds each member %s receipt to the original key, actor and organization",async method=>{
+  const command={action:"submit_selected",selection:{itemId:id,expectedRevision:1,originalPublicationId:id,originalVersion:"1",effectiveVersion:"2",applyId:id},supply:{stock:1,minimumQuantity:1,leadDays:1,province:"浙江省",city:"杭州市"},fileIds:[id],disclosure:true};
+  const expected="71a72345-86aa-547e-ba83-88bea75d2c6e";
+  const foreign=["147c1493-d145-596a-b6c9-2e7c60592fc9","4f2a260e-295a-5238-9431-14e1e533af2b","3f476ef1-de58-588a-9e8f-6a1de463c277"];
+  const fetcher=vi.fn();vi.stubGlobal("fetch",fetcher);
+  for(const operationId of [...foreign,expected]){
+   const receipt={operationId,recordId:id,revision:1,replayed:method==="GET"};fetcher.mockResolvedValueOnce(Response.json(receipt));
+   const req=method==="GET"?request("by-key/"+id):request("commands",{method,headers:{Origin:"https://console.example","Content-Type":"application/json","Idempotency-Key":id},body:JSON.stringify(command)});
+   const result=await proxySupplyMarket(req,"private-token","user-a");
+   expect(result.status).toBe(operationId===expected?200:502);
+   expect(await result.json()).toEqual(operationId===expected?receipt:{code:method==="POST"?"OUTCOME_UNKNOWN":"DEPENDENCY_UNAVAILABLE"});
+  }
+  expect(fetcher).toHaveBeenCalledTimes(4);
+ });
+ it.each(["POST","GET"])("preserves the platform owner namespace for %s receipt binding",async method=>{
+  const operationId="3cf65526-3608-5859-b1d7-dc6ae414f5b0",receipt={operationId,recordId:id,revision:1,replayed:method==="GET"};
+  const fetcher=vi.fn().mockResolvedValueOnce(Response.json({...receipt,operationId:"71a72345-86aa-547e-ba83-88bea75d2c6e"})).mockResolvedValueOnce(Response.json(receipt));vi.stubGlobal("fetch",fetcher);
+  const member=method==="GET"?request("by-key/"+id):request("commands",{method,headers:{Origin:"https://console.example","Content-Type":"application/json","Idempotency-Key":id,"If-Match":'"1"'},body:JSON.stringify({action:"evaluate",id,expectedRevision:1,note:"检查"})});
+  for(const valid of [false,true]){
+   const req=new Request(member.url.replace("/workbench/","/admin/"),{method,headers:member.headers,body:method==="POST"?await member.clone().text():undefined});
+   const result=await proxySupplyMarket(req,"private-token","user-a");expect(result.status).toBe(valid?200:502);
+   expect(await result.json()).toEqual(valid?receipt:{code:method==="POST"?"OUTCOME_UNKNOWN":"DEPENDENCY_UNAVAILABLE"});
+  }
+ });
+ it("rejects duplicate or unknown command fields before dispatch",async()=>{
+  const fetcher=vi.fn();vi.stubGlobal("fetch",fetcher);
+  const r=await proxySupplyMarket(request("commands",{method:"POST",headers:{Origin:"https://console.example","Content-Type":"application/json","Idempotency-Key":id},body:'{"action":"submit_connection","action":"submit_connection","organizationId":"other"}'}),"private-token","user-a");
+  expect(r.status).toBe(400);expect(fetcher).not.toHaveBeenCalled();
+ });
+});

@@ -1,0 +1,304 @@
+import {beforeEach,expect,it,vi} from "vitest";
+import {render,screen,waitFor,cleanup,within,fireEvent} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import {QueryClient,QueryClientProvider} from "@tanstack/react-query";
+import {ScheduleManager} from "./schedule-manager";
+import {ScheduleForm} from "./schedule-form";
+import {AIWorkbenchError,requestAIWorkbench} from "@/lib/api/ai-workbench";
+vi.mock("@/lib/api/ai-workbench",async original=>{const actual=await original<typeof import("@/lib/api/ai-workbench")>();return {...actual,requestAIWorkbench:vi.fn()};});
+vi.mock("./chat-task-selection",()=>({ChatTaskSelection:()=>null}));
+vi.mock("@/lib/api/store-center",()=>({catalogSchema:{},storeCenterRequest:vi.fn(async()=>({items:[{id:"33333333-3333-4333-8333-333333333333",name:"日报合成店",platform:"shein"}],pagination:{page:1,pageSize:100,total:1}}))}));
+const request=vi.mocked(requestAIWorkbench),scope={userId:"user",organizationId:"org"},id="11111111-1111-4111-8111-111111111111";
+const plan={id,revision:"2",state:"ACTIVE" as const,registrationState:"MATCHED" as const,detailsAvailable:true,goalSummary:"完善商品描述",rule:{frequency:"daily" as const,timeZone:"Asia/Shanghai",hour:9,minute:0,weekday:0},maxOccurrences:"3",consumedOccurrences:"1",unit:"ai-micropoint-v1" as const,perRunUpperBoundMicros:"19200000",totalUpperBoundMicros:"57600000",createdAt:"2026-11-01T00:00:00Z"};
+const storageKey="ai-workbench-schedule-command:user:org";
+const dailyPlan={...plan,deleted:false,kind:"store.operating-daily-report" as const,storeName:"日报合成店",goalSummary:"店铺经营日报",report:{storeId:"33333333-3333-4333-8333-333333333333",version:1 as const,periodPolicy:"previous_natural_day" as const,businessZone:"Asia/Shanghai" as const},unit:"none" as const,perRunUpperBoundMicros:"0",totalUpperBoundMicros:"0"};
+const latest={id:"55555555-5555-4555-8555-555555555555",scheduledAt:"2026-11-15T01:00:00Z",planRevision:"2",state:"RECONCILED",reason:"REPORT_SAVED",reportId:"66666666-6666-4666-8666-666666666666"};
+function withDailyHistory(read:()=>Promise<unknown>){
+ const current=request.getMockImplementation()!;
+ request.mockImplementation(async input=>{
+  if(input.route==="schedule-list")return {plans:[dailyPlan],next:""} as never;
+  if(input.route==="schedule-history")return await read() as never;
+  return current(input);
+ });
+}
+Object.defineProperty(HTMLDialogElement.prototype,"showModal",{configurable:true,value:function(this:HTMLDialogElement){this.open=true;}});
+Object.defineProperty(HTMLDialogElement.prototype,"close",{configurable:true,value:function(this:HTMLDialogElement){this.open=false;}});
+function mount(){return render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><ScheduleManager scope={scope} authorizationKey="roles" canUse onBack={vi.fn()}/></QueryClientProvider>)}
+beforeEach(()=>{cleanup();sessionStorage.clear();window.history.replaceState(null,"","/?view=schedules");request.mockReset();request.mockImplementation(async input=>{
+ if(input.route==="schedule-availability")return {enabled:true,ready:true,storeDailyReportEnabled:true} as never;
+ if(input.route==="schedule-list")return {plans:[plan],next:""} as never;
+ if(input.route==="schedule-read")return {plan} as never;
+ if(input.route==="schedule-history")return {occurrences:[],next:""} as never;
+ throw new Error("unexpected mutation");
+});});
+it.each(["结束计划","删除计划"])("confirms %s in the shared dialog, supports cancel and Esc, and restores focus",async label=>{
+ mount();await userEvent.click(await screen.findByRole("button",{name:/完善商品描述/}));
+ const trigger=await screen.findByRole("button",{name:label});await userEvent.click(trigger);
+ let dialog=screen.getByRole("dialog");expect(within(dialog).getByRole("button",{name:"取消"})).toHaveFocus();
+ expect(request.mock.calls.some(([input])=>input.method==="POST")).toBe(false);
+ await userEvent.click(within(dialog).getByRole("button",{name:"取消"}));expect(trigger).toHaveFocus();
+ await userEvent.click(trigger);dialog=screen.getByRole("dialog");fireEvent(dialog,new Event("cancel",{cancelable:true}));
+ expect(screen.queryByRole("dialog")).toBeNull();expect(trigger).toHaveFocus();
+ expect(request.mock.calls.some(([input])=>input.method==="POST")).toBe(false);
+});
+it("deletes an ended plan only after confirmation and removes it from the list",async()=>{
+ let removed=false;const current=request.getMockImplementation()!;
+ request.mockImplementation(async input=>{
+  if(input.route==="schedule-list")return {plans:removed?[]:[{...plan,state:"CLOSED"}],next:""} as never;
+  if(input.route==="schedule-read")return {plan:{...plan,state:"CLOSED"}} as never;
+  if(String(input.route)==="schedule-delete"){removed=true;expect(input.body).toEqual({expectedRevision:"2"});return {plan:{...plan,state:"CLOSED",deleted:true},planSaved:true} as never;}
+  return current(input);
+ });
+ mount();await userEvent.click(await screen.findByRole("button",{name:/完善商品描述/}));
+ await userEvent.click(await screen.findByRole("button",{name:"删除计划"}));
+ await userEvent.click(within(screen.getByRole("dialog")).getByRole("button",{name:"删除计划"}));
+ await screen.findByText("计划已删除，已有结果和执行记录仍保留。");
+ await screen.findByRole("heading",{name:"还没有定时任务"});
+ expect(request.mock.calls.filter(([input])=>String(input.route)==="schedule-delete")).toHaveLength(1);
+});
+it("restores an uncertain pause after reload and retries the exact original version and key",async()=>{
+ const command={action:"pause",path:`schedules/${id}/pause`,key:id,body:{expectedRevision:"2"}};
+ sessionStorage.setItem(storageKey,JSON.stringify(command));
+ request.mockImplementationOnce(async()=>({enabled:true,ready:true}) as never);
+ mount();await screen.findByRole("heading",{name:"上次操作结果待核实"});
+ expect(screen.getByRole("button",{name:"创建定时任务"})).toBeDisabled();
+ request.mockImplementation(async input=>{
+  if(input.route==="schedule-pause"){expect(input.key).toBe(id);expect(input.body).toEqual({expectedRevision:"2"});return {plan:{...plan,state:"PAUSED"},planSaved:true} as never;}
+  if(input.route==="schedule-availability")return {enabled:true,ready:true,storeDailyReportEnabled:true} as never;
+  if(input.route==="schedule-list")return {plans:[plan],next:""} as never;
+  if(input.route==="schedule-read")return {plan:{...plan,state:"PAUSED"}} as never;
+  return {occurrences:[],next:""} as never;
+ });
+ await userEvent.click(screen.getByRole("button",{name:"核实原操作"}));
+ await screen.findByRole("button",{name:"恢复未来执行"});expect(sessionStorage.getItem(storageKey)).toBeNull();
+});
+it("recovers an uncertain deletion with the same key after reload without losing the original command",async()=>{
+ const command={action:"delete",path:`schedules/${id}/delete`,key:id,body:{expectedRevision:"2"}};
+ sessionStorage.setItem(storageKey,JSON.stringify(command));const current=request.getMockImplementation()!;let tries=0;
+ request.mockImplementation(async input=>{
+  if(input.route==="schedule-delete"){
+   expect(input.key).toBe(command.key);expect(input.body).toEqual(command.body);
+   if(++tries===1)throw new AIWorkbenchError("OUTCOME_UNKNOWN");
+   return {plan:{...plan,state:"CLOSED",deleted:true},planSaved:true} as never;
+  }
+  if(input.route==="schedule-list"&&tries>1)return {plans:[],next:""} as never;
+  return current(input);
+ });
+ mount();await userEvent.click(await screen.findByRole("button",{name:"核实原操作"}));
+ await waitFor(()=>expect(screen.getByRole("button",{name:"核实原操作"})).toBeEnabled());
+ expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(command);
+ await userEvent.click(screen.getByRole("button",{name:"核实原操作"}));
+ await screen.findByText("计划已删除，已有结果和执行记录仍保留。");expect(sessionStorage.getItem(storageKey)).toBeNull();expect(tries).toBe(2);
+});
+it.each(["OUTCOME_UNKNOWN","DEPENDENCY_UNAVAILABLE","DEADLINE_EXCEEDED","TASK_OUTCOME_UNKNOWN"])("keeps the original command when %s cannot prove rejection",async code=>{
+ mount();await userEvent.click(await screen.findByRole("button",{name:/完善商品描述/}));
+ await screen.findByRole("button",{name:"暂停未来执行"});
+ const current=request.getMockImplementation()!;
+ request.mockImplementation(async input=>{if(input.route==="schedule-pause")throw new AIWorkbenchError(code);return current(input)});
+ await userEvent.click(screen.getByRole("button",{name:"暂停未来执行"}));
+ await screen.findByRole("heading",{name:"上次操作结果待核实"});
+ const saved=JSON.parse(sessionStorage.getItem(storageKey)!);expect(saved.body).toEqual({expectedRevision:"2"});
+ await userEvent.click(screen.getByRole("button",{name:"核实原操作"}));
+ await waitFor(()=>expect(request.mock.calls.filter(([i])=>i.route==="schedule-pause")).toHaveLength(2));
+ const sends=request.mock.calls.filter(([i])=>i.route==="schedule-pause");expect(sends[0][0].key).toBe(sends[1][0].key);
+});
+it("retains time inputs after a quote failure and requires a fresh successful quote before saving",async()=>{
+ request.mockRejectedValue(new AIWorkbenchError("PROPOSAL_STALE"));const save=vi.fn();
+ render(<ScheduleForm scope={scope} authorizationKey="roles" plan={{...plan,deleted:false,selection:{subject:{kind:"own_product",id,catalogVersion:"1",publicationId:id},capability:"product.content.localize",parameters:{targetLanguage:"en-US",description:true}},rule:{...plan.rule,frequency:"once",atUtc:"2030-11-20T01:00:00Z"},consumedOccurrences:"0"}} disabled={false} onSave={save} onCancel={vi.fn()}/>);
+ const at=screen.getByLabelText("执行日期与时间（本机时区）");await userEvent.type(at,"2030-11-20T09:00");
+ // Native datetime controls are not text inputs in all test environments.
+ const {fireEvent}=await import("@testing-library/react");fireEvent.change(at,{target:{value:"2030-11-20T09:00"}});
+ await userEvent.click(screen.getByRole("button",{name:"核对时间与预算"}));await screen.findByRole("alert");
+ expect(at).toHaveValue("2030-11-20T09:00");expect(save).not.toHaveBeenCalled();expect(screen.queryByRole("button",{name:"确认并保存计划"})).toBeNull();
+});
+it("retains an earlier unknown create through a later permission failure",async()=>{
+ const body={proposalId:id,rule:{frequency:"once",timeZone:"UTC",atUtc:"2030-11-20T00:00:00Z",hour:0,minute:0,weekday:0},maxOccurrences:"1",confirmation:"a".repeat(64)};
+ const command={action:"create",path:"schedules",key:id,body};sessionStorage.setItem(storageKey,JSON.stringify(command));
+ const current=request.getMockImplementation()!;let tries=0;
+ request.mockImplementation(async input=>{if(input.route==="schedule-create"){expect(input.key).toBe(id);expect(input.body).toEqual(body);if(++tries===1)throw new AIWorkbenchError("FORBIDDEN");return {plan,planSaved:true} as never;}return current(input)});
+ mount();await userEvent.click(await screen.findByRole("button",{name:"核实原操作"}));
+ await waitFor(()=>expect(screen.getByRole("button",{name:"核实原操作"})).toBeEnabled());expect(JSON.parse(sessionStorage.getItem(storageKey)!)).toEqual(command);
+ await userEvent.click(screen.getByRole("button",{name:"核实原操作"}));await screen.findByRole("button",{name:"暂停未来执行"});expect(tries).toBe(2);expect(sessionStorage.getItem(storageKey)).toBeNull();
+});
+it("retires an unknown command only after an authoritative durable rejection",async()=>{
+ const body={proposalId:id,rule:{frequency:"once",timeZone:"UTC",atUtc:"2020-11-20T00:00:00Z",hour:0,minute:0,weekday:0},maxOccurrences:"1",confirmation:"a".repeat(64)};
+ const command={action:"create",path:"schedules",key:id,body};sessionStorage.setItem(storageKey,JSON.stringify(command));
+ const current=request.getMockImplementation()!;let tries=0;
+ request.mockImplementation(async input=>{if(input.route==="schedule-create")throw ++tries===1?new AIWorkbenchError("INVALID_REQUEST"):new AIWorkbenchError("SCHEDULE_COMMAND_REJECTED",undefined,undefined,false);return current(input)});
+ mount();await userEvent.click(await screen.findByRole("button",{name:"核实原操作"}));await waitFor(()=>expect(screen.getByRole("button",{name:"核实原操作"})).toBeEnabled());expect(sessionStorage.getItem(storageKey)).not.toBeNull();
+ await userEvent.click(screen.getByRole("button",{name:"核实原操作"}));await waitFor(()=>expect(screen.queryByRole("heading",{name:"上次操作结果待核实"})).toBeNull());
+ expect(sessionStorage.getItem(storageKey)).toBeNull();expect(screen.getByRole("button",{name:"创建定时任务"})).toBeEnabled();
+});
+
+it("confirms a deterministic store report without product or model fields",async()=>{
+ const save=vi.fn<(input:unknown)=>Promise<void>>(async()=>{});
+ request.mockImplementation(async input=>{expect(input.route).toBe("schedule-quote");expect(input.body).not.toHaveProperty("selection");expect(input.body).not.toHaveProperty("proposalId");return {storeName:"合成测试长店铺名称".repeat(20),kind:"store.operating-daily-report",report:(input.body as {report:unknown}).report,confirmation:"a".repeat(64),goalSummary:"店铺经营日报",rule:(input.body as {rule:unknown}).rule,maxOccurrences:"1",unit:"none",perRunUpperBoundMicros:"0",totalUpperBoundMicros:"0",nextAt:"2030-11-20T01:00:00Z"} as never;});
+ render(<QueryClientProvider client={new QueryClient()}><ScheduleForm scope={scope} authorizationKey="auth" disabled={false} dailyReportEnabled onSave={save} onCancel={vi.fn()}/></QueryClientProvider>);
+ await screen.findByRole("option",{name:/日报合成店/});
+ await userEvent.selectOptions(await screen.findByLabelText("店铺"),"33333333-3333-4333-8333-333333333333");
+ await userEvent.type(screen.getByLabelText("执行日期与时间（本机时区）"),"2030-11-20T09:00");
+ await userEvent.click(screen.getByRole("button",{name:"核对计划"}));
+ await screen.findByText("每次执行自动保存一份个人报告");expect(save).not.toHaveBeenCalled();expect(screen.queryByText(/AI 积分/)).toBeNull();
+ await userEvent.click(screen.getByText("查看完整计划内容"));expect(screen.getByText(`${"合成测试长店铺名称".repeat(20)} · 店铺经营日报`,{selector:"details p"})).toBeVisible();
+ await userEvent.click(screen.getByRole("button",{name:"确认并保存计划"}));expect(save).toHaveBeenCalledOnce();expect(save.mock.calls[0][0]).toMatchObject({kind:"store.operating-daily-report",report:{storeId:"33333333-3333-4333-8333-333333333333"}});
+});
+
+it("opens a full plan editor without changing the plan or starting a task",async()=>{
+ mount();await userEvent.click(await screen.findByRole("button",{name:/完善商品描述/}));
+ await userEvent.click(await screen.findByRole("button",{name:"编辑计划"}));
+ expect(await screen.findByRole("heading",{name:"编辑计划",level:1})).toBeVisible();
+ expect(screen.queryByRole("heading",{name:"定时任务"})).toBeNull();
+ expect(screen.getByRole("textbox",{name:"任务目标"})).toHaveValue(plan.goalSummary);
+ expect(request.mock.calls.some(([input])=>input.method!=="GET")).toBe(false);
+});
+
+it("keeps ended content history readable without offering another content plan",async()=>{
+ const current=request.getMockImplementation()!;
+ request.mockImplementation(async input=>input.route==="schedule-read"?{plan:{...plan,state:"CLOSED",rule:{...plan.rule,frequency:"once",atUtc:"2026-11-01T01:00:00Z"}}} as never:current(input));
+ mount();await userEvent.click(await screen.findByRole("button",{name:/完善商品描述/}));
+ await screen.findByRole("heading",{name:plan.goalSummary});
+ expect(screen.queryByRole("button",{name:"复制新建"})).toBeNull();
+ expect(screen.getByRole("heading",{name:"执行历史"})).toBeVisible();
+ expect(request.mock.calls.some(([input])=>input.method!=="GET")).toBe(false);
+});
+
+it("opens only a store report from the new schedule entry",async()=>{
+ const current=request.getMockImplementation()!;request.mockImplementation(async input=>input.route==="schedule-availability"?{enabled:true,ready:true,contentEnabled:true,storeDailyReportEnabled:true} as never:current(input));
+ mount();await userEvent.click(await screen.findByRole("button",{name:"创建定时任务"}));
+ expect(await screen.findByLabelText("店铺")).toBeVisible();
+ expect(screen.queryByLabelText("任务目标")).toBeNull();expect(screen.queryByLabelText("任务类型")).toBeNull();
+ expect(request.mock.calls.some(([input])=>input.method!=="GET")).toBe(false);
+});
+
+it("does not fall back to content creation when reports are unavailable and keeps existing controls",async()=>{
+ const current=request.getMockImplementation()!;request.mockImplementation(async input=>input.route==="schedule-availability"?{enabled:true,ready:true,contentEnabled:true,storeDailyReportEnabled:false} as never:current(input));
+ mount();await screen.findByText("店铺经营日报暂不可新建，已有计划仍可查看和管理");
+ expect(screen.getByRole("button",{name:"创建定时任务"})).toBeDisabled();
+ await userEvent.click(screen.getByRole("button",{name:/完善商品描述/}));
+ expect(await screen.findByRole("button",{name:"暂停未来执行"})).toBeEnabled();
+ expect(screen.getByRole("button",{name:"编辑计划"})).toBeEnabled();
+ expect(screen.queryByRole("button",{name:"复制新建"})).toBeNull();
+ expect(request.mock.calls.some(([input])=>input.method!=="GET")).toBe(false);
+});
+
+it("refuses a direct content copy form without quoting or saving",()=>{
+ render(<ScheduleForm scope={scope} authorizationKey="auth" copyFrom={{...plan,deleted:false}} dailyReportEnabled disabled={false} onSave={vi.fn()} onCancel={vi.fn()}/>);
+ expect(screen.getByText("商品内容不再提供新建定时计划，已有计划和执行记录仍可查看")).toBeVisible();
+ expect(screen.queryByRole("button",{name:"核对时间与预算"})).toBeNull();expect(request).not.toHaveBeenCalled();
+});
+
+it.each([id,""])("rejects an old Chat schedule link without preparing or saving a content plan (%s)",async proposal=>{
+ window.history.replaceState(null,"",`/?view=schedules&schedule_proposal=${proposal}`);
+ mount();await screen.findByText("商品内容不再提供新建定时计划，已有计划和执行记录仍可查看");
+ expect(screen.queryByRole("button",{name:"核对时间与预算"})).toBeNull();
+ expect(request.mock.calls.some(([input])=>input.method!=="GET")).toBe(false);
+});
+
+it("requotes all future settings and distinguishes remaining budget from past runs",async()=>{
+ const save=vi.fn(async()=>{}),selection={subject:{kind:"own_product" as const,id,catalogVersion:"1",publicationId:id},capability:"product.content.localize" as const,parameters:{targetLanguage:"en-US",description:true}};
+ request.mockImplementation(async input=>{expect(input.route).toBe("schedule-quote");expect(input.body).toMatchObject({scheduleId:id,expectedRevision:"2",goalSummary:"Updated future description",maxOccurrences:"4",selection});return {selection,confirmation:"a".repeat(64),goalSummary:"Updated future description",rule:plan.rule,maxOccurrences:"4",consumedOccurrences:"1",unit:plan.unit,perRunUpperBoundMicros:"19200000",totalUpperBoundMicros:"76800000",nextAt:"2030-11-20T01:00:00Z",executionMode:"default"} as never;});
+ render(<QueryClientProvider client={new QueryClient()}><ScheduleForm scope={scope} authorizationKey="auth" plan={{...plan,deleted:false,selection}} disabled={false} onSave={save} onCancel={vi.fn()}/></QueryClientProvider>);
+ expect(within(screen.getByRole("region",{name:"计划摘要"})).getByText("待核对")).toBeVisible();
+ expect(screen.queryByText(/AI 积分/)).toBeNull();
+ expect(screen.queryByRole("button",{name:"确认修改计划"})).toBeNull();
+ await userEvent.clear(screen.getByRole("textbox",{name:"任务目标"}));await userEvent.type(screen.getByRole("textbox",{name:"任务目标"}),"Updated future description");
+ await userEvent.clear(screen.getByLabelText("最多执行次数"));await userEvent.type(screen.getByLabelText("最多执行次数"),"4");
+ await userEvent.click(screen.getByRole("button",{name:"核对时间与预算"}));
+ await screen.findByText("已执行 1 次，后续可执行 3 次");expect(screen.getByText("57.6 AI 积分")).toBeVisible();expect(save).not.toHaveBeenCalled();
+ expect(screen.queryByRole("button",{name:"核对时间与预算"})).toBeNull();
+ expect(screen.getByRole("button",{name:"确认修改计划"})).toBeEnabled();
+ await userEvent.click(screen.getByText("查看所选商品资料"));
+ expect(within(screen.getByRole("region",{name:"确认定时计划"})).getByText(`商品标识 ${id}`)).toBeVisible();
+ await userEvent.clear(screen.getByLabelText("最多执行次数"));await userEvent.type(screen.getByLabelText("最多执行次数"),"5");
+ expect(screen.queryByRole("button",{name:"确认修改计划"})).toBeNull();expect(screen.getByRole("textbox",{name:"任务目标"})).toHaveValue("Updated future description");
+});
+
+it("keeps the authorized original store identifiable when outside loaded catalog pages",async()=>{
+ const storeId="44444444-4444-4444-8444-444444444444";
+ render(<QueryClientProvider client={new QueryClient()}><ScheduleForm scope={scope} authorizationKey="auth" copyFrom={{...plan,deleted:false,kind:"store.operating-daily-report",storeName:"原计划授权店铺",report:{storeId,version:1,periodPolicy:"previous_natural_day",businessZone:"Asia/Shanghai"}}} disabled={false} onSave={vi.fn()} onCancel={vi.fn()}/></QueryClientProvider>);
+ await screen.findByRole("option",{name:/日报合成店/});
+ expect(screen.getByRole("option",{name:/原计划授权店铺/})).toHaveAttribute("value",storeId);
+ expect(screen.getByLabelText("店铺")).toHaveDisplayValue("原计划授权店铺");
+ expect(request).not.toHaveBeenCalled();
+});
+
+it("rejects a count already consumed before requesting a quote",async()=>{
+ render(<QueryClientProvider client={new QueryClient()}><ScheduleForm scope={scope} authorizationKey="auth" plan={{...plan,deleted:false}} disabled={false} onSave={vi.fn()} onCancel={vi.fn()}/></QueryClientProvider>);
+ await userEvent.clear(screen.getByLabelText("最多执行次数"));await userEvent.type(screen.getByLabelText("最多执行次数"),"1");await userEvent.click(screen.getByRole("button",{name:"核对时间与预算"}));
+ expect(screen.getByRole("alert")).toHaveTextContent("次数上限需大于已执行的 1 次");expect(request).not.toHaveBeenCalled();
+});
+
+it("sets fresh daily terms, keeps an optional deadline, and invalidates the old quote",async()=>{
+ const current=request.getMockImplementation()!;
+ request.mockImplementation(async input=>input.route==="schedule-quote"?{...input.body,confirmation:"a".repeat(64),goalSummary:"店铺经营日报",storeName:"日报合成店",unit:"none",perRunUpperBoundMicros:"0",totalUpperBoundMicros:"0",nextAt:"2030-01-01T01:00:00Z"} as never:current(input));
+ mount();await userEvent.click(await screen.findByRole("button",{name:"创建定时任务"}));
+ await screen.findByRole("option",{name:/日报合成店/});
+ await userEvent.selectOptions(screen.getByLabelText("店铺"),dailyPlan.report.storeId);
+ await userEvent.selectOptions(screen.getByLabelText("频率"),"daily");
+ expect(screen.getByRole("group",{name:"执行期限"})).toBeVisible();
+ expect(screen.getByLabelText("最多执行次数")).toHaveValue("30");
+ await userEvent.click(screen.getByRole("button",{name:"最多7次"}));
+ expect(screen.getByLabelText("最多执行次数")).toHaveValue("7");
+ expect(within(screen.getByRole("region",{name:"计划摘要"})).getByText("最多执行 7 次")).toBeVisible();
+ fireEvent.change(screen.getByLabelText("截止时间（可选，本机时区）"),{target:{value:"2030-12-31T23:00"}});
+ expect(request.mock.calls.some(([input])=>input.method==="POST")).toBe(false);
+ await userEvent.click(screen.getByRole("button",{name:"核对计划"}));
+ await screen.findByRole("button",{name:"确认并保存计划"});
+ const quoted=request.mock.calls.find(([input])=>input.route==="schedule-quote")![0].body as {maxOccurrences:string;rule:{untilUtc:string}};
+ expect(quoted.maxOccurrences).toBe("7");expect(quoted.rule.untilUtc).toBe(new Date("2030-12-31T23:00").toISOString());
+ expect(within(screen.getByRole("region",{name:"确认定时计划"})).getByText("先达到次数上限或截止时间时结束")).toBeVisible();
+ await userEvent.click(screen.getByRole("button",{name:"最多30次"}));
+ expect(screen.queryByRole("button",{name:"确认并保存计划"})).toBeNull();
+ expect(screen.getByLabelText("最多执行次数")).toHaveValue("30");
+ expect(screen.getByLabelText("截止时间（可选，本机时区）")).toHaveValue("2030-12-31T23:00");
+ await userEvent.clear(screen.getByLabelText("最多执行次数"));await userEvent.type(screen.getByLabelText("最多执行次数"),"9");
+ expect(within(screen.getByRole("region",{name:"计划摘要"})).getByText("最多执行 9 次")).toBeVisible();
+ expect(request.mock.calls.filter(([input])=>input.method==="POST")).toHaveLength(1);
+});
+it.each(["edit","copy"])("retains original daily count when opening %s",async mode=>{
+ const original={...dailyPlan,maxOccurrences:"1",consumedOccurrences:"0",rule:{...dailyPlan.rule,untilUtc:"2030-01-03T01:00:00Z"}};
+ render(<QueryClientProvider client={new QueryClient()}><ScheduleForm scope={scope} authorizationKey="auth" {...(mode==="edit"?{plan:original}:{copyFrom:original})} disabled={false} onSave={vi.fn()} onCancel={vi.fn()}/></QueryClientProvider>);
+ expect(screen.getByLabelText("最多执行次数")).toHaveValue("1");
+ expect(screen.getByLabelText("截止时间（可选，本机时区）")).toHaveValue(mode==="edit"?new Date(original.rule.untilUtc).toLocaleString("sv-SE").slice(0,16).replace(" ","T"):"");
+ expect(request).not.toHaveBeenCalled();
+});
+it("shows the authorized latest report as a separate keyboard link, using one occurrence",async()=>{
+ withDailyHistory(async()=>({occurrences:[latest],next:"older"}));mount();
+ const link=await screen.findByRole("link",{name:"查看日报"});
+ expect(link).toHaveAttribute("href",`/workbench/ai/reports?reportId=${latest.reportId}`);
+ expect(link.closest("button")).toBeNull();link.focus();expect(link).toHaveFocus();
+ expect(screen.getByText("日报已生成")).toBeVisible();expect(screen.queryByText("资料完整")).toBeNull();
+ expect(request.mock.calls.some(([input])=>input.route==="schedule-history"&&input.path===`schedules/${id}/occurrences?limit=1`)).toBe(true);
+ expect(request.mock.calls.every(([input])=>input.method==="GET")).toBe(true);
+});
+it.each([["BLOCKED","CURRENT_AUTHORIZATION_UNAVAILABLE","执行受阻"],["UNKNOWN","REPORT_CAPTURE_UNRESOLVED","结果待确认"],["SKIPPED","PREVIOUS_RUN_ACTIVE","已跳过"],["CLAIMED","","正在处理"]])("shows %s without inventing a report link",async(state,reason,label)=>{
+ withDailyHistory(async()=>({occurrences:[{...latest,state,reason,reportId:undefined}],next:""}));mount();
+ expect(await screen.findByText(label)).toBeVisible();expect(screen.queryByRole("link",{name:"查看日报"})).toBeNull();
+});
+it("distinguishes no execution from an unavailable result",async()=>{
+ withDailyHistory(async()=>({occurrences:[],next:""}));mount();expect(await screen.findByText("尚未执行")).toBeVisible();
+});
+it("hides stale report links while refreshing and after a failed authorization read",async()=>{
+ let rejectRead:((error:Error)=>void)|undefined,calls=0;
+ withDailyHistory(async()=>++calls===1?{occurrences:[latest],next:""}:new Promise((_resolve,reject)=>{rejectRead=reject;}));
+ mount();await screen.findByRole("link",{name:"查看日报"});
+ await userEvent.click(screen.getByRole("button",{name:"刷新状态"}));
+ await waitFor(()=>expect(rejectRead).toBeDefined());expect(screen.queryByRole("link",{name:"查看日报"})).toBeNull();
+ rejectRead!(new Error("revoked history"));
+ expect(await screen.findByText("结果暂不可用")).toBeVisible();expect(screen.queryByRole("link",{name:"查看日报"})).toBeNull();
+});
+
+it("removes an old report link when a fresh history response withdraws its report reference",async()=>{
+ let readable=true;
+ withDailyHistory(async()=>({occurrences:[readable?latest:{...latest,reportId:undefined}],next:""}));
+ mount();await screen.findByRole("link",{name:"查看日报"});readable=false;
+ await userEvent.click(screen.getByRole("button",{name:"刷新状态"}));
+ await waitFor(()=>expect(screen.queryByRole("link",{name:"查看日报"})).toBeNull());
+ expect(await screen.findByText("日报已生成")).toBeVisible();expect(screen.queryByRole("link",{name:"查看日报"})).toBeNull();
+});
+it("does not read recent execution facts when the plan details are unavailable",async()=>{
+ const current=request.getMockImplementation()!;
+ request.mockImplementation(async input=>input.route==="schedule-list"?{plans:[{...dailyPlan,detailsAvailable:false,goalSummary:undefined,storeName:undefined}],next:""} as never:current(input));
+ mount();expect(await screen.findByText("当前不可查看")).toBeVisible();
+ expect(request.mock.calls.some(([input])=>input.route==="schedule-history")).toBe(false);
+});

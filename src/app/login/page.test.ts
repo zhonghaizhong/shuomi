@@ -1,0 +1,94 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const redirectMock = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({
+  redirect: redirectMock,
+}));
+
+import LoginPage from "./page";
+
+describe("LoginPage", () => {
+  beforeEach(() => {
+    redirectMock.mockReset();
+  });
+
+  it("redirects to the ZITADEL login endpoint with a normalized returnTo", async () => {
+    await LoginPage({
+      searchParams: Promise.resolve({
+        returnTo: "/workbench/supply/products/product-1?source=import",
+      }),
+    });
+
+    expect(redirectMock).toHaveBeenCalledWith(
+      "/api/zitadel-auth/login?returnTo=%2Fworkbench%2Fsupply%2Fproducts%2Fproduct-1%3Fsource%3Dimport",
+    );
+  });
+
+  it("rejects a retired Task-first return target", async () => {
+    await LoginPage({ searchParams: Promise.resolve({
+      returnTo: "/listing-kits/canonical-products?source=import",
+    }) });
+    expect(redirectMock).toHaveBeenCalledWith("/api/zitadel-auth/login?returnTo=%2F");
+  });
+
+  it.each(["otp", "password"])(
+    "preserves the allowlisted %s entry for the server-side capability gate",
+    async (method) => {
+      await LoginPage({
+        searchParams: Promise.resolve({
+          method,
+          returnTo: "/workbench",
+        }),
+      });
+
+      expect(redirectMock).toHaveBeenCalledWith(
+        `/api/zitadel-auth/login?returnTo=%2Fworkbench&method=${method}`,
+      );
+    },
+  );
+
+  it.each([
+    { method: "magic-link", caseName: "an unknown method" },
+    {
+      method: ["otp", "password"],
+      caseName: "ambiguous repeated methods",
+    },
+  ])("keeps generic login for $caseName", async ({ method }) => {
+    await LoginPage({
+      searchParams: Promise.resolve({
+        method,
+        returnTo: "/workbench",
+      }),
+    });
+
+    expect(redirectMock).toHaveBeenCalledWith(
+      "/api/zitadel-auth/login?returnTo=%2Fworkbench",
+    );
+  });
+
+  it("falls back to the app root for invalid returnTo values", async () => {
+    await LoginPage({
+      searchParams: Promise.resolve({
+        returnTo: "https://evil.example/phish",
+      }),
+    });
+
+    expect(redirectMock).toHaveBeenCalledWith(
+      "/api/zitadel-auth/login?returnTo=%2F",
+    );
+  });
+
+  it("falls back to the app root when returnTo points at the ZITADEL login API", async () => {
+    await LoginPage({
+      searchParams: Promise.resolve({
+        returnTo:
+          "/api/zitadel-auth/login?returnTo=%2Fapi%2Fzitadel-auth%2Flogin%3FreturnTo%3D%252Fapi",
+      }),
+    });
+
+    expect(redirectMock).toHaveBeenCalledWith(
+      "/api/zitadel-auth/login?returnTo=%2F",
+    );
+  });
+});

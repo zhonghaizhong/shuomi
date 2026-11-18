@@ -1,0 +1,247 @@
+"use client";
+
+import {TransferSelection} from "./transfer-selection";
+import {ResearchCollectionTransfer} from "./research-collection-transfer";
+import {researchHandoffScope} from "../project-center/research-handoff-provider";
+import type {ResearchSelection} from "@/lib/contracts/market-research";
+import {OfflineDiagnosticPanel} from "../shein-diagnostic/offline-panel";
+import {DescriptionView} from "../description-view";
+import {SourceQuotes,VariantSourcePrice} from "./source-quotes";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {useRouter} from "next/navigation";
+import { useWorkbenchContext } from "@/components/providers/workbench-context-provider";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { CollectionAPIError, readCollectionBatch, listCollectionBatches, listCollectionItems, listOwnProducts, readCollectionItem, type CollectionScope, type CollectionIntent } from "@/lib/api/product-collection";
+import { collectionID, type CollectionBatch, type CollectionItem, type CollectionDetail, type CollectionCommand } from "@/lib/contracts/product-collection";
+import { findConsoleRoute } from "@/lib/workbench/console-navigation";
+import { useListingCommand } from "../listing/use-listing-command";
+import { ListingCommandFeedback } from "../listing/command-feedback";
+import { transferReceiptSchema } from "@/lib/contracts/supply-chain";
+import { ExcelImportForm } from "./excel-import-form";
+import { useCollectionCommand } from "./use-collection-command";
+import { cn } from "@/lib/utils/cn";
+import { ConsolePage, ConsoleState } from "../console/console-page";
+
+const kindLabels = { acquisition: "在线采集", own: "自有商品", manual: "手动分组", market: "供应市场", sds_template: "SDS 模板（未定制）", sds_finished: "SDS 定制成品", amazon_data: "Amazon数据", custom_dataset: "定制数据集", shein_us_data: "SHEIN 美国站卡片" };
+const failureText: Record<string, string> = { OUTCOME_UNKNOWN: "结果待核实", INTENT_STORAGE_UNAVAILABLE: "无法保存原请求，请恢复浏览器存储后重试。", REVISION_CONFLICT: "资料已发生变化，请刷新后重试。", PERMISSION_DENIED: "当前权限不足。", NOT_FOUND: "未找到当前身份下的记录。", ORGANIZATION_CONTEXT_CHANGED: "企业上下文已变化。", IDENTITY_CONTEXT_CHANGED: "登录身份已变化。", INVALID_REQUEST: "请检查填写内容。" };
+
+export function CollectionPage({offlineAvailable=false,agentAvailable=false,supplyAvailable=false,initialBatchId,initialItemId,initialTransferSelection,initialView="batches",researchToken}:{researchToken?:string;offlineAvailable?:boolean;agentAvailable?:boolean;supplyAvailable?:boolean;initialBatchId?:string;initialItemId?:string;initialTransferSelection?:ResearchSelection[];initialView?:"batches"|"own"}) {
+  const context = useWorkbenchContext();
+  const userId = context.user?.id;
+  const organizationId = context.effectiveOrganization?.id;
+  const scope = useMemo(() => userId && organizationId ? { userId, organizationId } : null, [userId, organizationId]);
+  if (context.isLoading || context.isSwitching) return <ConsoleState kind="loading" title="正在确认当前企业" />;
+  if (!scope || context.selectionRequired || context.error || context.blockingError) return <ConsoleState kind="error" title="请先确认登录身份与当前企业" />;
+  if (researchToken!==undefined) return <ResearchCollectionTransfer key={JSON.stringify([researchToken,researchHandoffScope(context)])} scope={scope} token={researchToken} supplyAvailable={supplyAvailable}/>;
+  return <ScopedCollectionPage key={JSON.stringify([scope,context.effectiveMemberId,context.permissions,initialItemId,initialBatchId,initialTransferSelection])} scope={scope} offlineAvailable={offlineAvailable} agentAvailable={agentAvailable} supplyAvailable={supplyAvailable} initialBatchId={initialBatchId} initialTransferSelection={initialTransferSelection} initialItemId={initialItemId} initialView={initialView} />;
+}
+
+function ScopedCollectionPage({ scope,offlineAvailable,agentAvailable,supplyAvailable,initialBatchId,initialItemId,initialTransferSelection,initialView }: { scope: CollectionScope;offlineAvailable:boolean;agentAvailable:boolean;supplyAvailable:boolean;initialBatchId?:string;initialItemId?:string;initialTransferSelection?:ResearchSelection[];initialView:"batches"|"own" }) {
+  const context = useWorkbenchContext();
+  const {replace}=useRouter();
+  const [tab, setTab] = useState<"batches" | "own">(initialView);
+  const [batches, setBatches] = useState<CollectionBatch[]>([]);
+  const [items, setItems] = useState<CollectionItem[]>([]);
+  const [batchId, setBatchId] = useState<string | null>(initialBatchId??null);
+  const [total, setTotal] = useState<number>();
+  const [next, setNext] = useState<string>();
+  const [after, setAfter] = useState<string>();
+  const [search, setSearch] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [reload, setReload] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [readBusy, setBusy] = useState(!!initialItemId);
+  const [readError, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
+  const [transferred,setTransferred]=useState<string|null>(null);
+  const [dialog, setDialog] = useState<"manage" | "import" | "rename" | "archive-batch" | "move" | "archive-item" | "detail" | "transfer" | null>(null);
+  const [selectedBatch, setSelectedBatch] = useState<CollectionBatch | null>(null);
+  const [selectedItem, setSelectedItem] = useState<CollectionItem | null>(null);
+  const [detail, setDetail] = useState<CollectionDetail | null>(null);
+  const [detailFailure,setDetailFailure]=useState<string|null>(null);
+  const [name, setName] = useState("");
+  const [targetBatch, setTargetBatch] = useState("");
+  const [moveAfter,setMoveAfter]=useState<string>();
+  const [moveNext,setMoveNext]=useState<string>();
+  const pending = context.pendingCollectionIntent;
+  const alive = useRef(true);
+  const inFlight = useRef(false);
+  const commandAbort = useRef<AbortController | null>(null);
+  const canManage = context.permissions.includes("workbench.collection.manage");
+  const foreignPending = !!pending && (pending.userId !== scope.userId || pending.organizationId !== scope.organizationId);
+  const supply=useListingCommand(scope,(result,intent)=>{
+    if(intent.route!=="transfer"){setNotice("已核实原供应链操作");return;}
+    const receipt=transferReceiptSchema.parse(result);setTransferred(receipt.preparation.id);setDialog(null);setNotice(`已转入待上传，共 ${receipt.preparation.count} 件商品。`);
+  });
+  const commands=useCollectionCommand(scope,()=>{setDialog(null);setNotice("已保存");refresh()},readBusy||supply.busy||!!supply.pending);
+  const busy=readBusy||commands.busy;
+  const error=commands.error??readError;
+  const transferBlocked=busy||!!pending||!context.collectionIntentReady||supply.busy||!!supply.pending||!supply.ready||!context.permissions.includes("workbench.supply.manage");
+  const writeBlocked = busy || !!pending || !context.collectionIntentReady || supply.busy || !!supply.pending || !canManage;
+
+  useEffect(() => { alive.current = true; return () => { alive.current = false; commandAbort.current?.abort(); }; }, []);
+  useEffect(() => context.registerOrganizationSwitchGuard(() => !inFlight.current), [context]);
+  useEffect(() => {
+    const controller = new AbortController();
+    let current = true;
+    const query = { keyword, after, limit: 50 };
+    const request = tab === "own" ? listOwnProducts(scope, query, controller.signal) : batchId ? listCollectionItems(scope, batchId, query, controller.signal) : listCollectionBatches(scope, query, controller.signal);
+    void request.then(page => {
+      if (!current) return;
+      if (tab === "batches" && !batchId) setBatches(page.items as CollectionBatch[]);
+      else setItems(page.items as CollectionItem[]);
+      setTotal(page.total); setNext(page.nextCursor); setError(null);
+    }).catch((failure: unknown) => {
+      if (!current) return;
+      setTotal(undefined);
+      setNext(undefined);
+      setError(codeOf(failure));
+    }).finally(() => { if (current) setLoading(false); });
+    return () => { current = false; controller.abort(); };
+  }, [scope, tab, batchId, keyword, after, reload]);
+  useEffect(()=>{
+    if(!initialItemId)return;
+    const controller=new AbortController();let current=true;
+    void readCollectionItem(scope,initialItemId,controller.signal).then(value=>{
+      if(!current)return;
+      if(value.item.source.kind==="own"){replace(`/workbench/data/mine/own/${value.item.id}`);return;}
+      setDialog("detail");
+      setDetail(value);setSelectedItem(value.item);setBatchId(value.item.batchId);
+    }).catch(failure=>{if(current){setDetailFailure(codeOf(failure));setDialog("detail")}}).finally(()=>{if(current)setBusy(false);});
+    return ()=>{current=false;controller.abort();};
+  },[scope,initialItemId,replace]);
+
+  useEffect(()=>{if(!initialTransferSelection||!initialBatchId||!supplyAvailable)return;const controller=new AbortController();void readCollectionBatch(scope,initialBatchId,controller.signal).then(batch=>{if(!controller.signal.aborted){if(!batch.supplyTransferSupported||batch.archivedAt){setError("INVALID_REQUEST");return;}setSelectedBatch(batch);setDialog("transfer");}}).catch(()=>{if(!controller.signal.aborted)setError("NOT_FOUND");});return()=>controller.abort();},[scope,initialBatchId,initialTransferSelection,supplyAvailable]);
+  function refresh() { setLoading(true); setReload(value => value + 1); }
+  function changeView(nextTab: "batches" | "own", selected: string | null = null) { setTab(nextTab); setBatchId(selected); setAfter(undefined); setKeyword(""); setSearch(""); refresh(); setItems([]); setError(null); }
+  async function command(input:CollectionCommand,original?:CollectionIntent,verify=false){
+    if(inFlight.current)return;
+    return commands.run(input,original,verify);
+  }
+  async function showDetail(item: CollectionItem) {
+    if (inFlight.current || commands.busy) return;
+    const controller = new AbortController(); commandAbort.current = controller;
+    setSelectedItem(item); setDetail(null); setDetailFailure(null); setDialog("detail"); setBusy(true); inFlight.current = true; setError(null);
+    try { const value = await readCollectionItem(scope, item.id, controller.signal); if (alive.current) setDetail(value); }
+    catch (failure) { if (alive.current) setDetailFailure(codeOf(failure)); }
+    finally { inFlight.current = false; if (alive.current) setBusy(false); }
+  }
+  async function showMove(item:CollectionItem,after?:string){
+    if(inFlight.current||commands.busy)return;
+    const controller=new AbortController();commandAbort.current=controller;
+    setSelectedItem(item);setTargetBatch("");setBatches([]);setMoveAfter(after);setMoveNext(undefined);setDialog("move");setBusy(true);inFlight.current=true;setError(null);
+    try{const page=await listCollectionBatches(scope,{after,limit:100},controller.signal);if(alive.current){setBatches(page.items);setMoveNext(page.nextCursor);}}
+    catch(failure){if(alive.current)setError(codeOf(failure));}
+    finally{inFlight.current=false;if(commandAbort.current===controller)commandAbort.current=null;if(alive.current)setBusy(false);}
+  }
+  const displayingItems = tab === "own" || !!batchId;
+  return <ConsolePage title="我的数据" breadcrumbs={findConsoleRoute("/workbench/data/mine")?.trail}>
+    <div className="mb-5 rounded-xl border border-border bg-muted px-5 py-3 text-sm text-muted-foreground">原始商品数据 <span aria-hidden="true">→</span> 转入待上传 <span aria-hidden="true">→</span> 整理商品资料 <span aria-hidden="true">→</span> 上架其他平台</div>
+    <div className="mb-5 flex gap-7 border-b border-border text-sm" role="tablist" aria-label="我的数据分类">
+      <button role="tab" aria-selected={tab === "batches"} className={`border-b-2 px-1 pb-3 ${tab === "batches" ? "border-primary font-semibold text-primary" : "border-transparent text-muted-foreground"}`} onClick={() => changeView("batches")}>采集批次</button>
+      <button role="tab" aria-selected={tab === "own"} className={`border-b-2 px-1 pb-3 ${tab === "own" ? "border-primary font-semibold text-primary" : "border-transparent text-muted-foreground"}`} onClick={() => changeView("own")}>自有商品库</button>
+      <button role="tab" aria-selected={false} disabled className="pb-3 text-muted-foreground" title="数据集尚未开放">数据集</button>
+    </div>
+    <Card className="mb-5 flex flex-wrap items-center gap-3 p-4">
+      <form className="flex min-w-60 flex-1 gap-2" onSubmit={event => { event.preventDefault(); setAfter(undefined); setKeyword(search); refresh(); }}>
+        <Input aria-label={displayingItems ? "搜索商品名称或标识" : "搜索批次名称"} placeholder={displayingItems ? "搜索商品名称或标识" : "搜索批次名称"} value={search} onChange={event => setSearch(event.target.value)} />
+        <Button type="submit" variant="outline">搜索</Button>
+      </form>
+      {batchId ? <Button variant="ghost" onClick={() => changeView("batches")}>返回批次</Button> : null}
+      <Button variant="outline" disabled={busy} onClick={refresh}>刷新</Button>
+      <Button variant="outline" disabled={!canManage} onClick={() => { setName(""); setDialog("manage"); }}>管理批次</Button>
+      {tab === "own" ? <><Button variant="outline" disabled={writeBlocked} onClick={()=>setDialog("import")}>Excel 导入</Button><Button asChild disabled={writeBlocked}><Link href="/workbench/data/mine/own/new" prefetch={false} aria-disabled={writeBlocked} onClick={event=>{if(writeBlocked)event.preventDefault()}}>添加自有商品</Link></Button></> : null}
+    </Card>
+    {supplyAvailable ? <ListingCommandFeedback state={supply} /> : null}
+    {transferred ? <Button asChild variant="outline" className="mb-4"><Link href={`/workbench/listing/waiting?preparation=${transferred}`}>查看待上传</Link></Button> : null}
+    {foreignPending ? <ConsoleState kind="unavailable" title="原身份下有待核实的操作">请回到原身份与企业后核实，操作键：{pending?.key}</ConsoleState> : pending ? <Card className="mb-4 space-y-3 border-border bg-muted p-4"><h2 className="font-semibold">结果待核实</h2><p className="break-all text-sm">操作键：{pending.key}</p><div className="flex gap-2"><Button disabled={busy} onClick={() => void command(pending.command, pending, true)}>核实原操作</Button>{error === "NOT_FOUND" ? <Button disabled={busy} variant="outline" onClick={() => void command(pending.command, pending)}>重试原请求</Button> : null}</div></Card> : null}
+    {error && error !== "OUTCOME_UNKNOWN" ? <p role="alert" className="mb-4 text-sm text-destructive">{failureText[error] ?? "暂时无法完成请求，请刷新或核实原操作。"}</p> : null}
+    {notice ? <p role="status" className="mb-4 break-all text-sm text-success-foreground">{notice}</p> : null}
+    <Card className="overflow-hidden rounded-xl border-border">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h2 className="font-semibold">{tab === "own" ? "自有商品库" : batchId ? "批次商品" : "商品批次"}</h2>
+        {!loading && total !== undefined ? <span className="text-sm text-muted-foreground">共 {total} {displayingItems ? "件商品" : "个批次"}</span> : null}
+      </div>
+      {loading ? <div className="p-6" role="status">正在读取商品资料…</div> : total === undefined ? null : total === 0 ? (
+        <div className="p-10 text-center text-sm text-muted-foreground">
+          {tab === "own" && keyword.trim() ? (
+            <div role="status">
+              <p>没有符合搜索条件的自有商品。</p>
+              <p>清空关键词后再次搜索可查看全部商品。</p>
+            </div>
+          ) : (
+            <>
+              {tab === "own" ? "还没有自有商品，添加商品后可继续适配。" : "暂无商品批次，采集商品后会保存到这里。"}
+              <div className="mt-4"><Button asChild variant="outline"><Link href="/workbench/supply/acquisition">去采集商品</Link></Button></div>
+            </>
+          )}
+        </div>
+      ) : displayingItems ?
+        <Table><TableHeader className="bg-muted"><TableRow><TableHead>商品</TableHead><TableHead>来源</TableHead><TableHead>保存时间</TableHead><TableHead>操作</TableHead></TableRow></TableHeader><TableBody>{items.map(item => <TableRow key={item.id}><TableCell>{item.source.kind==="own"?<Link className="flex items-center gap-3 text-left" href={`/workbench/data/mine/own/${item.id}`} prefetch={false}>{item.thumbnailUrl ? <Image unoptimized src={`/api/image-proxy?url=${encodeURIComponent(item.thumbnailUrl)}`} width={56} height={56} className="rounded-md object-cover" alt="" /> : <span aria-hidden="true" className="h-14 w-14 rounded-md bg-muted" />}<span><span className="block max-w-sm font-medium">{item.title || "未命名商品"}</span><span className="text-xs text-muted-foreground">{item.source.productKey}</span></span></Link>:<button className="flex items-center gap-3 text-left" onClick={() => void showDetail(item)}>{item.thumbnailUrl ? <Image unoptimized src={`/api/image-proxy?url=${encodeURIComponent(item.thumbnailUrl)}`} width={56} height={56} className="rounded-md object-cover" alt="" /> : <span aria-hidden="true" className="h-14 w-14 rounded-md bg-muted" />}<span><span className="block max-w-sm font-medium">{item.title || "未命名商品"}</span><span className="text-xs text-muted-foreground">{item.source.productKey}</span></span></button>}</TableCell><TableCell>{kindLabels[item.source.kind]}</TableCell><TableCell>{date(item.createdAt)}</TableCell><TableCell><div className="flex gap-2">{item.source.kind==="own"?<Button asChild size="sm" variant="outline"><Link href={`/workbench/data/mine/own/${item.id}`} prefetch={false}>查看</Link></Button>:<Button size="sm" variant="outline" onClick={() => void showDetail(item)}>查看</Button>}<Button size="sm" variant="ghost" disabled={writeBlocked} onClick={() => void showMove(item)}>移动批次</Button><Button size="sm" variant="ghost" disabled={writeBlocked} onClick={() => { setSelectedItem(item); setDialog("archive-item"); }}>归档</Button></div></TableCell></TableRow>)}</TableBody></Table> :
+        <Table><TableHeader className="bg-muted"><TableRow><TableHead>批次名称</TableHead><TableHead>来源方式</TableHead><TableHead>商品总量</TableHead><TableHead>创建时间</TableHead><TableHead>操作</TableHead></TableRow></TableHeader><TableBody>{batches.map(batch => <TableRow key={batch.id}><TableCell><button className="font-medium text-foreground hover:text-primary" onClick={() => changeView("batches", batch.id)}>{batch.name}</button></TableCell><TableCell><span className="rounded-full bg-success px-3 py-1 text-xs text-success-foreground">{kindLabels[batch.kind]}</span></TableCell><TableCell>{batch.count}</TableCell><TableCell>{date(batch.createdAt)}</TableCell><TableCell><div className="flex gap-2">{supplyAvailable && (batch.supplyTransferSupported || batch.kind==="sds_template") ? <Button size="sm" variant="outline" title={!batch.supplyTransferSupported && batch.kind==="sds_template"?"SDS 模板须先定制成品，再转入待上传":undefined} disabled={transferBlocked || batch.count===0 || !batch.supplyTransferSupported} onClick={()=>{setSelectedBatch(batch);setDialog("transfer")}}>转入待上传</Button> : null}<Button size="sm" variant="outline" onClick={() => changeView("batches", batch.id)}>查看商品</Button><Button size="sm" variant="ghost" disabled={writeBlocked} onClick={() => { setSelectedBatch(batch); setName(batch.name); setDialog("rename"); }}>重命名</Button><Button size="sm" variant="ghost" disabled={writeBlocked} onClick={() => { setSelectedBatch(batch); setDialog("archive-batch"); }}>归档</Button></div></TableCell></TableRow>)}</TableBody></Table>}
+      <div className="flex justify-end gap-2 border-t border-border p-4"><Button size="sm" variant="outline" disabled={!after || loading} onClick={() => { setAfter(undefined); setLoading(true); }}>首页</Button><Button size="sm" variant="outline" disabled={!next || loading} onClick={() => { setAfter(next); setLoading(true); }}>下一页</Button></div>
+    </Card>
+    {dialog ? <CollectionDialog title={dialog === "import" ? "Excel 导入自有商品" : dialog === "transfer" ? "转入待上传" : dialog === "manage" ? "批次管理" : dialog === "rename" ? "重命名批次" : dialog === "move" ? "移动批次" : dialog === "detail" ? "原始商品资料" : "归档确认"} onClose={() => { if (!busy) setDialog(null); }}>
+      {dialog === "manage" ? <><p className="text-sm text-muted-foreground">批次可重命名或归档，原始商品资料保留。</p><form className="flex gap-3" onSubmit={event => { event.preventDefault(); void command({ action: "create_batch", name }); }}><Input aria-label="新批次名称" placeholder="输入新批次名称" value={name} onChange={event => setName(event.target.value)} /><Button type="submit" disabled={writeBlocked || !name.trim()}>新建批次</Button></form><div className="flex flex-wrap gap-2">{batches.map(batch => <Button key={batch.id} variant="outline" disabled={writeBlocked} onClick={() => { setSelectedBatch(batch); setName(batch.name); setDialog("rename"); }}>{batch.name} · 重命名</Button>)}</div></> : null}
+      {dialog === "rename" && selectedBatch ? <form className="space-y-4" onSubmit={event => { event.preventDefault(); void command({ action: "rename_batch", batchId: selectedBatch.id, expectedRevision: selectedBatch.revision, name }); }}><Input aria-label="批次名称" value={name} onChange={event => setName(event.target.value)} /><Button type="submit" disabled={writeBlocked || !name.trim()}>保存名称</Button></form> : null}
+      {dialog === "archive-batch" && selectedBatch ? <><p>归档“{selectedBatch.name}”后将从列表隐藏，原始资料和发布记录保留。</p>{selectedBatch.kind === "amazon_data" ? <p>若此批次来自服务端抓取，归档不会取消原任务，后续结果仍会保存；需要停止时请取消原任务。</p> : null}<Button disabled={writeBlocked} onClick={() => void command({ action: "archive_batch", batchId: selectedBatch.id, expectedRevision: selectedBatch.revision })}>确认归档</Button></> : null}
+      {dialog === "archive-item" && selectedItem ? <><p>归档此商品后将从列表隐藏，原始资料和发布记录保留。</p><Button disabled={writeBlocked} onClick={() => void command({ action: "archive_item", itemId: selectedItem.id, expectedRevision: selectedItem.revision })}>确认归档</Button></> : null}
+      {dialog === "move" && selectedItem ? <form className="space-y-4" onSubmit={event => { event.preventDefault(); void command({ action: "move_item", itemId: selectedItem.id, targetBatchId: targetBatch, expectedRevision: selectedItem.revision }); }}><label className="grid gap-2">目标批次<Select value={targetBatch} onChange={event => setTargetBatch(event.target.value)}><option value="">选择批次</option>{batches.filter(batch => batch.id !== selectedItem.batchId).map(batch => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</Select></label><div className="flex gap-2">{moveAfter ? <Button type="button" variant="outline" disabled={writeBlocked} onClick={() => void showMove(selectedItem)}>返回首页批次</Button> : null}{moveNext ? <Button type="button" variant="outline" disabled={writeBlocked} onClick={() => void showMove(selectedItem,moveNext)}>下一页批次</Button> : null}</div>{busy ? <p role="status">正在读取目标批次…</p> : null}<p className="text-sm text-muted-foreground">移动只改变分组，原始资料保留。</p><Button type="submit" disabled={writeBlocked || !targetBatch}>确认移动</Button></form> : null}
+      {dialog === "transfer" && selectedBatch ? <TransferSelection scope={scope} batch={selectedBatch} blocked={transferBlocked} initialSelections={initialTransferSelection} submit={input=>void supply.execute("transfer",input)}/> : null}
+      {dialog === "import" ? <ExcelImportForm scope={scope} disabled={writeBlocked} onSubmit={input=>void command(input)}/> : null}
+      {dialog === "detail" ? detail ? <><ProductFacts detail={detail} />{offlineAvailable?<OfflineDiagnosticPanel item={detail.item}/>:null}<ContentAgentEntry source={detail.item.source} enabled={agentAvailable && context.permissions.includes("workbench.agent.use") && context.permissions.includes("local_agent.write")} /></> : detailFailure ? <p role="alert">{failureText[detailFailure]??"商品资料暂时无法读取，请关闭后重试。"}</p> : <p role="status">正在读取原始资料…</p> : null}
+    </CollectionDialog> : null}
+  </ConsolePage>;
+}
+
+export function CollectionDialog({ title, children, onClose, className }: { title: string; children: ReactNode; onClose: () => void; className?: string }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { const dialog = ref.current; if (dialog && !dialog.open) { if (typeof dialog.showModal === "function") dialog.showModal(); else dialog.setAttribute("open", ""); } }, []);
+  return <dialog ref={ref} aria-label={title} onCancel={event => { event.preventDefault(); onClose(); }} className={cn("m-auto max-h-[85vh] w-[min(960px,calc(100vw-32px))] overflow-auto rounded-lg border border-border bg-card p-6 text-card-foreground shadow-[0_24px_64px_var(--shadow-color)] backdrop:bg-[var(--overlay)]",className)}><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-bold">{title}</h2><Button variant="ghost" size="icon" aria-label="关闭弹窗" onClick={onClose}>×</Button></div><div className="space-y-4">{children}</div></dialog>;
+}
+function ContentAgentEntry({ source, enabled }: { source: CollectionItem["source"]; enabled: boolean }) {
+  const operation = collectionID.safeParse(source.operationId);
+  if (!enabled || source.kind !== "acquisition" || !operation.success) return null;
+  return <Button asChild><Link href={`/workbench/supply/acquisition/operation/${operation.data}?agent_kind=content`}>商品内容完善与本地化</Link></Button>;
+}
+function ProductFacts({ detail }: { detail: CollectionDetail }) {
+  const product = detail.product;
+  return <div className="space-y-5"><h3 className="text-lg font-semibold">{product.title || "未命名商品"}</h3><p className="break-all text-xs text-muted-foreground">{detail.item.source.productKey} · 原始版本 {detail.item.source.version}</p><section aria-label="来源与版本" className="space-y-3 rounded-xl border border-border p-4"><h4 className="font-semibold">来源与版本</h4><p className="break-all text-xs text-muted-foreground">保存记录：{detail.item.source.publicationId}</p>{product.sources?.length?product.sources.slice(0,20).map((source,index)=><dl key={index} className="space-y-1 break-all text-sm"><div><dt className="inline text-muted-foreground">来源：</dt><dd className="inline">{[source.platform,source.type,source.source_id].filter(Boolean).join(" · ")||"来源未标注"}</dd></div>{source.url?<div><dt className="inline text-muted-foreground">原始地址：</dt><dd className="inline">{source.url}</dd></div>:null}{source.source_version?<div><dt className="inline text-muted-foreground">来源版本：</dt><dd className="inline">{source.source_version}</dd></div>:null}{source.snapshot_id?<div><dt className="inline text-muted-foreground">来源快照：</dt><dd className="inline">{source.snapshot_id}</dd></div>:null}{source.checksum?<div><dt className="inline text-muted-foreground">证据校验值：</dt><dd className="inline">{source.checksum}</dd></div>:null}{source.captured_at&&source.captured_at!=="0001-01-01T00:00:00Z"?<div><dt className="inline text-muted-foreground">采集时间：</dt><dd className="inline">{date(source.captured_at)}</dd></div>:null}<AmazonObservation source={source}/></dl>):<p className="text-sm text-muted-foreground">未记录来源说明。</p>}{(product.sources?.length??0)>20?<p className="text-xs text-muted-foreground">完整来源可下载原始资料查看。</p>:null}{product.review?.needs_review?<p className="text-sm">来源资料仍需审核：{product.review.reasons?.join("、")}</p>:null}{product.warnings?.map((warning,index)=><p key={index} className="text-sm text-muted-foreground">{warning.message}{warning.field?`（${warning.field}）`:""}</p>)}</section><SourceQuotes quotes={detail.sourceQuotes} showUnknown={detail.item.source.kind==="amazon_data"}/><DescriptionView value={product.description} format={product.description_format} images={[...(product.images??[]),...(product.variants??[]).flatMap(v=>v.images??[])].map(v=>v.url)}/><dl className="grid grid-cols-2 gap-3 text-sm">{product.attributes?.map((attribute, index) => <div key={index}><dt className="text-muted-foreground">{attribute.name}</dt><dd>{attribute.value}</dd></div>)}</dl><div className="flex flex-wrap gap-3">{product.images?.map((image, index) => <Image key={`${image.url}:${index}`} unoptimized src={`/api/image-proxy?url=${encodeURIComponent(image.url)}`} width={128} height={128} className="rounded-lg object-contain" alt={`原始商品图片 ${index + 1}`} />)}</div><VariantImages variants={product.variants ?? []} showUnknown={detail.item.source.kind==="amazon_data"} /><Button variant="outline" onClick={() => downloadJSON(detail)}>下载原始资料</Button></div>;
+}
+function AmazonObservation({source}:{source:NonNullable<CollectionDetail["product"]["sources"]>[number]}) {
+  if(source.platform!=="amazon"||!source.metadata?.observation)return null;
+  let value:unknown;
+  try{value=JSON.parse(source.metadata.observation)}catch{value=null}
+  if(value&&typeof value==="object"&&!Array.isArray(value)&&Object.keys(value).length===2&&"scope" in value&&"parentASIN" in value){
+    if(value.scope==="selected_product"&&value.parentASIN===null)return <div className="text-muted-foreground">仅观察到当前已选商品，不代表完整规格族。</div>;
+    if(value.scope==="partial_family"&&typeof value.parentASIN==="string"&&/^[A-Z0-9]{10}$/.test(value.parentASIN)&&!source.source_id?.endsWith(value.parentASIN))return <div className="text-muted-foreground"><p>仅观察到部分规格，不代表完整规格族。</p><p>来源父 ASIN：{value.parentASIN}</p></div>;
+  }
+  return <div className="text-muted-foreground">来源观察范围无法识别，可下载原始资料查看。</div>;
+}
+function VariantImages({variants,showUnknown}:{variants:NonNullable<CollectionDetail["product"]["variants"]>;showUnknown:boolean}) {
+  const [limit,setLimit] = useState(20);
+  if (!variants.length) return null;
+  return <section aria-label="规格图片" className="space-y-3"><h4 className="font-semibold">规格图片</h4>
+    {variants.slice(0,limit).map((variant,index)=><VariantImageGroup key={index} variant={variant} index={index} showUnknown={showUnknown}/>)}
+    {variants.length>limit?<Button variant="outline" onClick={()=>setLimit(value=>value+20)}>查看更多规格（已显示 {limit}/{variants.length}）</Button>:null}
+  </section>;
+}
+function VariantImageGroup({variant,index,showUnknown}:{variant:NonNullable<CollectionDetail["product"]["variants"]>[number];index:number;showUnknown:boolean}) {
+  const [open,setOpen] = useState(false);
+  const [limit,setLimit] = useState(8);
+  const identity = variant.source_id || variant.sku || `规格 ${index+1}`;
+  const images = variant.images ?? [];
+  return <div role="group" aria-label={`规格 ${identity}`} className="rounded-lg border border-border p-3"><details onToggle={event=>setOpen(event.currentTarget.open)}>
+    <summary className="cursor-pointer break-words text-sm"><span className="font-medium">{identity}</span>{variant.attributes?.filter(attribute=>!attribute.name?.startsWith("source.price.")).map((attribute,i)=><span key={i} className="ml-3">{attribute.name}：{attribute.value}</span>)}<VariantSourcePrice attributes={variant.attributes} showUnknown={showUnknown}/></summary>
+    {open?<div className="mt-3 space-y-2">{images.length?<><div className="flex flex-wrap gap-3">{images.slice(0,limit).map((image,i)=><Image key={`${image.url}:${i}`} unoptimized src={`/api/image-proxy?url=${encodeURIComponent(image.url)}`} width={128} height={128} className="rounded-lg object-contain" alt={`${identity} 原始规格图片 ${i+1}`}/>)}</div>{images.length>limit?<Button variant="outline" onClick={()=>setLimit(value=>value+8)}>查看更多图片（已显示 {limit}/{images.length}）</Button>:null}</>:<p className="text-sm text-muted-foreground">未记录规格图片，缺失原因见来源说明。</p>}</div>:null}
+  </details></div>;
+}
+function downloadJSON(detail: CollectionDetail) { const url = URL.createObjectURL(new Blob([JSON.stringify(detail, null, 2)], { type: "application/json" })); const link = document.createElement("a"); link.href = url; link.download = `product-${detail.item.id}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+function date(value: string) { return new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(value)); }
+function codeOf(error: unknown) { return error instanceof CollectionAPIError ? error.code : "DEPENDENCY_UNAVAILABLE"; }

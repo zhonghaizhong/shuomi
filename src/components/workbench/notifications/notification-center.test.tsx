@@ -1,0 +1,202 @@
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { NotificationCenterPage, NotificationDetailPage, NotificationPopover } from "./notification-center";
+const fixture = vi.hoisted(() => ({ context: { user: { id: "actor" } as { id: string } | null, effectiveOrganization: { id: "org-a" } as { id: string } | null, effectiveMemberId: "member-a", roles: ["operator"], permissions: ["workbench.task.read"], selectionRequired: false, isLoading: false, isSwitching: false, error: null as { code: string } | null, blockingError: null as { code: string } | null } }));
+vi.mock("@/components/providers/workbench-context-provider", () => ({ useWorkbenchContext: () => fixture.context }));
+const id = "4841d296-ef14-4c16-8d25-a7667e534feb", snapshotID = "4f5e1184-83c7-45b0-9dd9-c61242c9fb25";
+function item(category: "official" | "business" = "official", organizationId = "") {
+  const source = category === "official" ? "official" : "workbench-task", type = category === "official" ? "PRODUCT" : "pending";
+  const ref = btoa(JSON.stringify({ source, entityId: id, type, revision: "1", organizationId })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return { id: ref, category, type, title: category === "official" ? "产品能力更新" : "任务需要确认", summary: "打开原业务页面查看当前状态", paragraphs: [], occurredAt: "2026-10-08T02:00:00Z", source, organizationId, attention: category === "business", read: false, target: { kind: "home", id: "" }, href: "/workbench" };
+}
+function list(category: "official" | "business" = "official", organization = "") { return { schemaVersion: "notification-center-v1", items: [item(category, organization)], coverage: [{ source: category === "official" ? "official" : "workbench-task", state: "AVAILABLE", complete: true, observedAt: "2026-10-09T00:00:00Z" }], exact: true, count: 121, unread: 121, pending: category === "business" ? 121 : 0, next: "" }; }
+function receipt(key: string, operation: string) { return Response.json({ key, operation, committedAt: "2026-10-09T00:00:00Z" }); }
+const clients: QueryClient[] = [];
+function mount(child: React.ReactNode) { const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); clients.push(client); return render(<QueryClientProvider client={client}>{child}</QueryClientProvider>); }
+beforeEach(() => { fixture.context = { user: { id: "actor" }, effectiveOrganization: { id: "org-a" }, effectiveMemberId: "member-a", roles: ["operator"], permissions: ["workbench.task.read"], selectionRequired: false, isLoading: false, isSwitching: false, error: null, blockingError: null }; });
+it("keeps full and compact pagination separate in the same query client",async()=>{
+ const fetch=vi.fn(async(url:unknown)=>{
+  if(String(url).endsWith("/identity"))return Response.json({userId:"actor"});
+  const size=Number(new URL(String(url),"http://localhost").searchParams.get("limit")||20);
+  return Response.json({...list(),items:Array.from({length:size},(_,index)=>({...item(),title:`Notice ${index}`,id:btoa(JSON.stringify({source:"official",entityId:`4841d296-ef14-4c16-8d25-${String(index).padStart(12,"0")}`,type:"PRODUCT",revision:"1",organizationId:""}))})),next:`cursor-${size}`});
+ });vi.stubGlobal("fetch",fetch);
+ mount(<><NotificationCenterPage expectedUserId="actor"/><NotificationPopover/></>);
+ await waitFor(()=>expect(screen.getAllByRole("link",{name:/Notice/})).toHaveLength(20));
+ fireEvent.click(screen.getByRole("button",{name:"通知"}));
+ await waitFor(()=>expect(screen.getAllByRole("region",{name:"官方消息列表"})).toHaveLength(2));
+ await waitFor(()=>expect(screen.getAllByRole("region",{name:"官方消息列表"}).map(panel=>within(panel).getAllByRole("link").length)).toEqual([20,4]));
+});
+afterEach(() => { cleanup(); clients.splice(0).forEach(c => c.clear()); vi.unstubAllGlobals(); });
+it("shows a dot before opening the panel and clears it when the last notification is read", async () => {
+  let unread = 1;
+  vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.endsWith("/identity")) return Response.json({ userId: "actor" });
+    if (url.endsWith("/snapshot")) return Response.json({ id: snapshotID, fingerprint: "a".repeat(64), expiresAt: "2026-10-09T00:05:00Z", count: 1 });
+    if (url.endsWith("/read-all")) {
+      unread = 0;
+      return receipt(new Headers(init?.headers).get("Idempotency-Key")!, "read-all");
+    }
+    if (url.includes("/business?")) return Response.json({ ...list("business", "org-a"), unread: 0 });
+    return Response.json({ ...list(), unread, count: 1, items: [{ ...item(), read: unread === 0 }] });
+  }));
+  mount(<NotificationPopover />);
+  const trigger = screen.getByRole("button", { name: "通知" });
+  await waitFor(() => expect(trigger).toHaveAccessibleDescription("有未读通知"));
+  expect(trigger).toHaveAttribute("aria-expanded", "false");
+  fireEvent.click(trigger);
+  expect(trigger).toHaveAccessibleDescription("有未读通知");
+  fireEvent.click(await screen.findByRole("button", { name: "全部已读" }));
+  await waitFor(() => expect(trigger).not.toHaveAccessibleDescription());
+});
+
+it("shows a business unread dot only for the currently authorized company", async () => {
+  const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.endsWith("/identity")) return Response.json({ userId: "actor" });
+    if (url.includes("/official?")) return Response.json({ ...list(), unread: 0 });
+    const org = new Headers(init?.headers).get("X-Expected-Organization-ID")!;
+    return Response.json({ ...list("business", org), unread: org === "org-a" ? 1 : 0 });
+  });
+  vi.stubGlobal("fetch", fetch);
+  const view = mount(<NotificationPopover />);
+  const trigger = screen.getByRole("button", { name: "通知" });
+  await waitFor(() => expect(trigger).toHaveAccessibleDescription("有未读通知"));
+  fixture.context.isSwitching = true;
+  view.rerender(<QueryClientProvider client={clients[0]}><NotificationPopover /></QueryClientProvider>);
+  expect(trigger).not.toHaveAccessibleDescription();
+  fixture.context.isSwitching = false;
+  fixture.context.effectiveOrganization = { id: "org-b" };
+  view.rerender(<QueryClientProvider client={clients[0]}><NotificationPopover /></QueryClientProvider>);
+  await waitFor(() => expect(fetch.mock.calls.some(([, init]) => new Headers(init?.headers).get("X-Expected-Organization-ID") === "org-b")).toBe(true));
+  expect(trigger).not.toHaveAccessibleDescription();
+});
+
+it("hides old unread counts and panel rows when permission changes within the same company", async () => {
+  let resolveRead!: (response: Response) => void;
+  const freshRead = new Promise<Response>(resolve => { resolveRead = resolve; });
+  const fetch = vi.fn(async (url: string) => {
+    if (url.endsWith("/identity")) return Response.json({ userId: "actor" });
+    if (url.includes("/official?")) return Response.json({ ...list(), unread: 0 });
+    if (fixture.context.permissions.length === 0) return freshRead;
+    return Response.json(list("business", "org-a"));
+  });
+  vi.stubGlobal("fetch", fetch);
+  const view = mount(<NotificationPopover />);
+  const trigger = screen.getByRole("button", { name: "通知" });
+  await waitFor(() => expect(trigger).toHaveAccessibleDescription("有未读通知"));
+  fireEvent.click(trigger);
+  fireEvent.click(await screen.findByRole("tab", { name: /商家经营/ }));
+  await screen.findByText("任务需要确认");
+  const before = fetch.mock.calls.length;
+  fixture.context.permissions = [];
+  view.rerender(<QueryClientProvider client={clients[0]}><NotificationPopover /></QueryClientProvider>);
+  expect(trigger).not.toHaveAccessibleDescription();
+  expect(screen.queryByText("任务需要确认")).toBeNull();
+  await waitFor(() => expect(fetch.mock.calls.slice(before).some(([url]) => url.includes("/business?"))).toBe(true));
+  resolveRead(Response.json({ ...list("business", "org-a"), items: [], count: 0, pending: 0, unread: 0 }));
+  await screen.findByText("暂无业务提醒");
+  expect(trigger).not.toHaveAccessibleDescription();
+});
+
+it("hides the other channel's cached unread dot after an explicit identity rejection", async () => {
+  let identityChanged = false;
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    if (url.endsWith("/identity")) return Response.json({ userId: "actor" });
+    if (url.includes("/business?")) return Response.json(list("business", "org-a"));
+    if (identityChanged) return Response.json({ code: "IDENTITY_CONTEXT_CHANGED" }, { status: 409 });
+    return Response.json({ ...list(), unread: 0 });
+  }));
+  mount(<NotificationPopover />);
+  const trigger = screen.getByRole("button", { name: "通知" });
+  await waitFor(() => expect(trigger).toHaveAccessibleDescription("有未读通知"));
+  fireEvent.click(trigger);
+  await screen.findByText("产品能力更新");
+  const refresh = screen.getByRole("button", { name: "刷新通知" });
+  await waitFor(() => expect(refresh).toBeEnabled());
+  identityChanged = true;
+  fireEvent.click(refresh);
+  await waitFor(() => expect(trigger).not.toHaveAccessibleDescription());
+  expect(screen.queryByRole("tab", { name: /商家经营/ })).toBeNull();
+});
+
+it("retries a failed identity read when the user opens the panel", async () => {
+  let identityUnavailable = true;
+  const fetch = vi.fn(async (url: string) => {
+    if (url.endsWith("/identity")) {
+      return identityUnavailable ? Response.json({}, { status: 503 }) : Response.json({ userId: "actor" });
+    }
+    if (url.includes("/business?")) return Response.json({ ...list("business", "org-a"), unread: 0 });
+    return Response.json(list());
+  });
+  vi.stubGlobal("fetch", fetch);
+  mount(<NotificationPopover />);
+  const trigger = screen.getByRole("button", { name: "通知" });
+  fireEvent.click(trigger);
+  await screen.findByText(/登录或企业上下文尚未确认/);
+  await waitFor(() => expect(clients[0].isFetching()).toBe(0));
+  fireEvent.click(trigger);
+
+  const priorIdentityReads = fetch.mock.calls.filter(([url]) => url.endsWith("/identity")).length;
+  identityUnavailable = false;
+  fireEvent.click(trigger);
+  await screen.findByText("产品能力更新");
+  await waitFor(() => expect(trigger).toHaveAccessibleDescription("有未读通知"));
+  expect(fetch.mock.calls.filter(([url]) => url.endsWith("/identity"))).toHaveLength(priorIdentityReads + 1);
+});
+
+it("keeps official and personal messages available when the organization read fails", async () => {
+  fixture.context.error = { code: "DEPENDENCY_UNAVAILABLE" }; fixture.context.user = null;
+  const fetch = vi.fn().mockImplementation((url: string) => Promise.resolve(Response.json(url.includes("/official") ? list() : { ...list("business"), items: [] })));
+  vi.stubGlobal("fetch", fetch); mount(<NotificationCenterPage expectedUserId="actor" />);
+  expect(await screen.findByText("产品能力更新")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("tab", { name: /商家经营/ }));
+  expect(await screen.findByText(/当前仅显示个人提醒/)).toBeInTheDocument();
+  await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes("/personal?"))).toBe(true));
+  expect(fetch.mock.calls.some(([url]) => String(url).includes("/business?"))).toBe(false);
+});
+it("all-read uses the complete category snapshot even under unread filtering", async () => {
+  const fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => Promise.resolve(url.endsWith("/snapshot") ? Response.json({ id: snapshotID, fingerprint: "a".repeat(64), expiresAt: "2026-10-09T00:05:00Z", count: 121 }) : url.endsWith("/read-all") ? receipt(new Headers(init?.headers).get("Idempotency-Key")!, "read-all") : Response.json(list())));
+  vi.stubGlobal("fetch", fetch); mount(<NotificationCenterPage expectedUserId="actor" />);
+  await screen.findByText("产品能力更新"); fireEvent.click(screen.getByRole("checkbox", { name: /仅看未读/ }));
+  await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes("filter=unread"))).toBe(true));
+  await waitFor(() => expect(screen.getByRole("button", { name: "全部已读" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "全部已读" }));
+  await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).endsWith("/read-all"))).toBe(true));
+  const snapshot = fetch.mock.calls.find(([url]) => String(url).endsWith("/snapshot"))!;
+  const submit = fetch.mock.calls.find(([url]) => String(url).endsWith("/read-all"))!;
+  expect(snapshot[1].body).toBe("{}"); expect(JSON.parse(submit[1].body)).toEqual({ id: snapshotID, fingerprint: "a".repeat(64) });
+});
+it("keeps the original snapshot key after response loss and verifies before continuing", async () => {
+  let snapshots = 0;
+  const fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+    if (url.endsWith("/snapshot")) { snapshots++; return Promise.resolve(snapshots === 1 ? Response.json({ code: "OUTCOME_UNKNOWN" }, { status: 503 }) : Response.json({ id: snapshotID, fingerprint: "a".repeat(64), expiresAt: "2026-10-09T00:05:00Z", count: 121 })); }
+    if (url.includes("/commands/")) return Promise.resolve(receipt(url.split("/").at(-1)!, "snapshot"));
+    if (url.endsWith("/read-all")) return Promise.resolve(receipt(new Headers(init?.headers).get("Idempotency-Key")!, "read-all"));
+    return Promise.resolve(Response.json(list()));
+  });
+  vi.stubGlobal("fetch", fetch); mount(<NotificationCenterPage expectedUserId="actor" />);
+  await screen.findByText("产品能力更新"); fireEvent.click(screen.getByRole("button", { name: "全部已读" }));
+  fireEvent.click(await screen.findByRole("button", { name: "核实原操作" }));
+  await waitFor(() => expect(snapshots).toBe(2));
+  const calls = fetch.mock.calls.filter(([url]) => String(url).endsWith("/snapshot"));
+  expect(new Headers(calls[0][1].headers).get("Idempotency-Key")).toBe(new Headers(calls[1][1].headers).get("Idempotency-Key"));
+  expect(fetch.mock.calls.filter(([url]) => String(url).endsWith("/read-all"))).toHaveLength(1);
+});
+it("hides previous company messages while switching context and reads the new company", async () => {
+  const fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => Promise.resolve(Response.json(url.includes("/official") ? list() : list("business", new Headers(init?.headers).get("X-Expected-Organization-ID")!))));
+  vi.stubGlobal("fetch", fetch); const rendered = mount(<NotificationCenterPage expectedUserId="actor" />);
+  await screen.findByText("产品能力更新"); fireEvent.click(screen.getByRole("tab", { name: /商家经营/ })); await screen.findByText("任务需要确认");
+  fixture.context.isSwitching = true; rendered.rerender(<QueryClientProvider client={clients[0]}><NotificationCenterPage expectedUserId="actor" /></QueryClientProvider>);
+  expect(screen.queryByText("任务需要确认")).not.toBeInTheDocument();
+  fixture.context.isSwitching = false; fixture.context.effectiveOrganization = { id: "org-b" };
+  rendered.rerender(<QueryClientProvider client={clients[0]}><NotificationCenterPage expectedUserId="actor" /></QueryClientProvider>);
+  await screen.findByText("任务需要确认"); expect(new Headers(fetch.mock.calls.at(-1)![1].headers).get("X-Expected-Organization-ID")).toBe("org-b");
+});
+it("opening detail only records reading, keeping pending business attention", async () => {
+  const value = { ...item("business", "org-a"), paragraphs: ["请在原任务页面确认。"] };
+  const fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => Promise.resolve(url.endsWith("/read") ? receipt(new Headers(init?.headers).get("Idempotency-Key")!, "read") : Response.json(value)));
+  vi.stubGlobal("fetch", fetch); mount(<NotificationDetailPage expectedUserId="actor" category="business" notificationRef={value.id} />);
+  await screen.findByText("仍待处理"); await waitFor(() => expect(fetch.mock.calls.filter(([url]) => String(url).endsWith("/read"))).toHaveLength(1));
+  expect(fetch.mock.calls.every(([url]) => String(url).startsWith("/api/notifications/"))).toBe(true);
+  expect(screen.getByRole("link", { name: "查看相关业务" })).toHaveAttribute("href", "/workbench");
+});
