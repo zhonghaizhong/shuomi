@@ -159,7 +159,7 @@ for (const [start, end] of [[0, 6], [6, 12], [12, lightModules.length]]) {
       const card = page.locator(selector).first();
       await expect(card).toBeVisible();
       const rgb = await card.evaluate(el => getComputedStyle(el).backgroundColor);
-      const channels = rgb.match(/[\\d.]+/g)?.slice(0, 3).map(Number) ?? [];
+      const channels = rgb.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [];
       expect(channels.length, route + ": card color missing").toBe(3);
       expect(Math.min(...channels), route + ": dark card background " + rgb).toBeGreaterThan(190);
     }
@@ -171,7 +171,7 @@ test("switching themes preserves menus and light-page selected card interaction"
   await page.getByRole("button", { name: "切换浅色主题" }).click();
   const nav = page.getByRole("navigation", { name: "工作台导航" });
   await nav.getByRole("link", { name: "经营建议", exact: true }).click();
-  await expect(page).toHaveURL(/#\\/workbench\\/overview\\/advice$/);
+  await expect(page).toHaveURL(new RegExp("#/workbench/overview/advice$"));
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
   await page.getByRole("button", { name: /转化率下降/ }).click();
   await expect(page.getByRole("heading", { name: "转化率下降" })).toBeVisible();
