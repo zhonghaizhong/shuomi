@@ -126,3 +126,65 @@ test("Vuexy light theme gives all cockpit subpages white panels and readable con
     await page.screenshot({ path: "test-results/cockpit-light-" + item.route + ".png", fullPage: true });
   }
 });
+
+
+const lightModules: Array<[string,string]> = [
+  ["/workbench",'[class*="metricsDigest"]'],
+  ["/workbench/supply",'[class*="supplyCard"]:not([class*="supplyCards"])'],
+  ["/workbench/data",'[class*="dataCard"]:not([class*="dataCards"])'],
+  ["/workbench/store-center",'[class*="storeModule"]'],
+  ["/workbench/plans",'[class*="planOverview"]'],
+  ["/workbench/account",'[class*="accountOverview"]'],
+  ["/workbench/ai",'[class*="aiCards"] article'],
+  ["/workbench/ai/tasks",'[class*="taskTable"]'],
+  ["/workbench/agents",'[class*="dataCard"]:not([class*="dataCards"])'],
+  ["/workbench/agents/market",'[class*="agentCards"] article'],
+  ["/workbench/agents/mine",'[class*="agentMine"] > article > section'],
+  ["/workbench/ai/projects",'[class*="metrics"] > article'],
+  ["/workbench/ai/knowledge",'[class*="metrics"] > article'],
+  ["/workbench/ai/reports",'[class*="metrics"] > article'],
+  ["/workbench/tools",'[class*="entry"]'],
+  ["/workbench/tools/official",'[class*="toolCard"]'],
+  ["/workbench/services",'[class*="homeCard"]:not([class*="homeCards"])'],
+  ["/workbench/services/market",'[class*="serviceCard"]'],
+  ["/workbench/agents/custom",'main header'],
+  ["/workbench/tools/custom",'main header'],
+  ["/workbench/store-products",'[class*="productMetrics"] article'],
+  ["/workbench/store-orders",'[class*="orderMetrics"] article'],
+];
+
+for (const [start, end] of [[0, 6], [6, 12], [12, 18], [18, lightModules.length]]) {
+  test(`light theme across workbench pages ${start + 1}-${end}: no dark cards`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/shuomi/#/workbench/overview/advice");
+    await page.getByRole("button", { name: "切换浅色主题" }).click();
+    for (const [route, selector] of lightModules.slice(start, end)) {
+      await page.goto("/shuomi/#" + route);
+      await expect(page.locator(".light .showcase-shell")).toBeVisible();
+      const card = page.locator(selector).first();
+      await expect(card).toBeVisible();
+      const rgb = await card.evaluate(el => getComputedStyle(el).backgroundColor);
+      const values = rgb.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [];
+      const channels = rgb.startsWith("color(srgb") ? values.map(value => value * 255) : values;
+      expect(channels.length, route + ": card color missing").toBe(3);
+      expect(rgb, route + ": card background transparent").not.toBe("rgba(0, 0, 0, 0)");
+      expect(Math.min(...channels), route + ": dark card background " + rgb).toBeGreaterThan(190);
+    }
+  });
+}
+
+test("switching themes preserves menus and light-page selected card interaction", async ({ page }) => {
+  await page.goto("/shuomi/#/workbench/tools");
+  await page.getByRole("button", { name: "切换浅色主题" }).click();
+  const nav = page.getByRole("navigation", { name: "工作台导航" });
+  await nav.getByRole("button", { name: "展开运营驾驶舱" }).click();
+  await nav.getByRole("link", { name: "经营建议", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp("#/workbench/overview/advice$"));
+  await expect(page.locator(".light .showcase-shell")).toBeVisible();
+  await page.getByRole("button", { name: /转化率下降/ }).click();
+  await expect(page.getByRole("heading", { name: "转化率下降" })).toBeVisible();
+  await page.getByRole("button", { name: "切换深色主题" }).click();
+  await expect(page.locator(".dark .showcase-shell")).toBeVisible();
+  await page.getByRole("button", { name: "切换浅色主题" }).click();
+  await expect(page.locator(".light .showcase-shell")).toBeVisible();
+});

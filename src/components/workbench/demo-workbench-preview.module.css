@@ -2290,3 +2290,130 @@
   color: #6758d1;
   background: #eeebff;
 }
+
+
+/* Full preview-site Vuexy light tokens, replacing dark-only hardcoded surfaces.
+   Scope to light mode so the existing dark mode and layout geometry stay intact. */
+:global(.light) .page {
+  --vuexy-light-bg:#f8f7fa;
+  --vuexy-light-card:#fff;
+  --vuexy-light-raised:#f8f7fb;
+  --vuexy-light-border:#e6e6f1;
+  --vuexy-light-text:#444050;
+  --vuexy-light-muted:#6f6b7d;
+  --vuexy-light-primary:#7367f0;
+  color:var(--vuexy-light-text);
+}
+:global(.light) .page :is(.header,.metric,.card,.filters,.list,.workflow,.unavailable) {
+  color:var(--vuexy-light-text);
+  border-color:var(--vuexy-light-border);
+  background:var(--vuexy-light-card);
+}
+:global(.light) .page :is(.header h1,.header h2,.card h2,.card h3,.rowMain strong,.listHeading h2) { color:var(--vuexy-light-text); }
+:global(.light) .page :is(.breadcrumb,.header p,.card p,.rowMain small,.metric small,.metric span,.footer,.unavailable p) { color:var(--vuexy-light-muted); }
+:global(.light) .page :is(.row,.step,.status,.supplyPills span) { color:var(--vuexy-light-text);border-color:var(--vuexy-light-border);background:var(--vuexy-light-raised); }
+:global(.light) .page :is(.row:hover,.step:hover) { border-color:#c8bfff;background:#f1efff; }
+:global(.light) .page :is(.filters select,.filters input,.filters button:not(.primary)) { color:#444050;border-color:#dbdade;background:#fff; }
+:global(.light) .page .primary { color:#fff;border-color:#7367f0;background:#7367f0; }
+:global(.light) .page .primary:hover {border-color:#675bd8;background:#675bd8;}
+:global(.light) .page input::placeholder {color:#827d90;opacity:1;}
+:global(.light) .page :is(input,select,textarea,button):focus-visible {outline:2px solid #7367f0;outline-offset:2px;}
+
+/* Supply market, data, store and account summary cards. */
+:global(.light) .page :is(
+  .supplyFlow,.supplyCard,.supplyFoot,.dataCard,.dataSteps article,.dataDetails article,
+  .storeModule,.storeDetails article,.profileBanner,.profileGrid > article,.profileGrid > aside,
+  .planOverview,.planEntrances article,.planBottom > article,.planBottom > aside,
+  .accountOverview,.accountModules,.accountBottom > article,.accountBottom > aside
+) {color:#444050;border-color:#e6e6f1;background:#fff;}
+:global(.light) .page :is(.supplyFoot,.profileFacts div,.profileStatus article,.accountModules footer) {color:#444050;border-color:#e6e6f1;background:#f8f7fb;}
+:global(.light) .page :is(.supplyFlow span,.supplyFoot span,.supplyCard p,.dataCard p,.dataSteps article p,.dataDetails article p,.storeModule p,.storeDetails article p,.profileBanner p,.accountModules article p) {color:#6f6b7d;}
+:global(.light) .page :is(.dataSteps article strong,.dataDetails h3,.storeDetails h3,.storeModule h2,.profileGrid h2,.planOverview h2,.accountModules h3) {color:#444050;}
+:global(.light) .supplyPreview :is(.supplyFlow,.supplyCard,.unavailable) {border-color:#e6e6f1;background:#fff;}
+:global(.light) .supplyPreview .supplyFoot {border-color:#e6e6f1;background:#f8f7fa;}
+:global(.light) .supplyPreview :is(.supplyFlow span,.supplyFoot span,.supplyCard p) {color:#6f6b7d;}
+:global(.light) .supplyPreview .supplyFoot strong {color:#444050;}
+/* Project, skill, knowledge and report panels use semantic variables. */
+:global(.light) .libraryHubPreview {
+  --library-surface:#fff;
+  --library-raised:#f8f7fa;
+  --library-border:#e6e6f1;
+  --library-text:#444050;
+  --library-muted:#6f6b7d;
+}
+:global(.light) .libraryHubPreview .metrics > article {
+  border-color:color-mix(in srgb,var(--metric-accent,#7367f0) 22%,#e6e6f1);
+  background:color-mix(in srgb,var(--metric-accent,#7367f0) 4%,#fff);
+}
+:global(.light) .libraryHubPreview .card {
+  border-color:color-mix(in srgb,var(--accent,#7367f0) 24%,#e6e6f1);
+  background:color-mix(in srgb,var(--accent,#7367f0) 4%,#fff);
+}
+:global(.light) .libraryHubPreview .cardHeading span,
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .metrics > article > strong {
+  background:color-mix(in srgb,var(--accent,var(--metric-accent,#7367f0)) 12%,#fff);
+}
+:global(.light) .libraryHubPreview :is(.rowValue,.arrow,.footer button,.listHeading .eyebrow) {color:#6658ce;}
+:global(.light) .libraryHubPreview .status {color:#6658ce;background:#efedff;}
+:global(.light) .libraryHubPreview .filters :is(select,input,button:not(.primary)) {border-color:#dbdade;color:#444050;background:#f8f7fa;}
+
+/* AI task center, AI workbench, and chat introduction. */
+:global(.light) .tasksPreview :is(.header,.taskSearch,.taskTable),
+:global(.light) .aiWorkbenchPreview :is(.supplyFlow,.aiHint),
+:global(.light) .chatLandingPreview .header {
+  color:#444050;border-color:#e6e6f1;background:#fff;
+}
+:global(.light) .tasksPreview .taskStats > button,
+:global(.light) .aiWorkbenchPreview .aiCards article {
+  color:#444050;
+  border-color:color-mix(in srgb,var(--accent,#7367f0) 22%,#e6e6f1);
+  background:color-mix(in srgb,var(--accent,#7367f0) 4%,#fff);
+}
+:global(.light) .aiWorkbenchPreview .aiCards article[data-card="0"] {
+  border-color:color-mix(in srgb,#00cfe8 22%,#e6e6f1);
+  background:color-mix(in srgb,#00cfe8 4%,#fff);
+}
+:global(.light) .tasksPreview :is(.taskColumns,.taskRow) {color:#444050;border-color:#e6e6f1;background:#f8f7fa;}
+:global(.light) .tasksPreview :is(.taskSearch input,.taskSearch button:not(.primary)) {color:#444050;border-color:#dbdade;background:#f8f7fa;}
+:global(.light) .tasksPreview :is(.taskStats small,.taskRow small,.taskColumns,.breadcrumb,.header p) {color:#6f6b7d;}
+:global(.light) .aiWorkbenchPreview :is(.aiCards p,.aiHint span,.supplyFlow span) {color:#6f6b7d;}
+:global(.light) .aiWorkbenchPreview .aiCards footer span {
+  border-color:color-mix(in srgb,var(--accent,#7367f0) 22%,#e6e6f1);
+  background:color-mix(in srgb,var(--accent,#7367f0) 9%,#fff);
+}
+
+/* Agent market, owned agents and service cards. */
+:global(.light) .agentsPreview :is(
+  .header,.capabilityBand article,.agentsBottom > article,.agentsBottom > aside,
+  .agentFilters,.agentMineToolbar,.agentMine > article > section,.agentMine > article > aside
+) {color:#444050;border-color:#e6e6f1;background:#fff;}
+:global(.light) .agentsPreview :is(.dataCard,.agentCards article) {
+  color:#444050;
+  border-color:color-mix(in srgb,var(--accent,#7367f0) 22%,#e6e6f1);
+  background:color-mix(in srgb,var(--accent,#7367f0) 4%,#fff);
+}
+:global(.light) .agentsPreview :is(.agentTags span,.agentsBottom article button) {color:#5d596c;border-color:#e6e6f1;background:#f8f7fa;}
+:global(.light) .agentsPreview :is(
+  .header h1,.agentMine h2,.agentMine h3,.agentMarket > header h2,
+  .capabilityBand h2,.agentsBottom h2,.agentsBottom aside h3,.agentMineToolbar strong
+) {color:#444050;}
+:global(.light) .agentsPreview :is(
+  .header p,.breadcrumb,.agentMine p,.agentMine dt,.agentMine > article > section > small,
+  .agentMarket > header p,.capabilityBand article p,.agentsBottom aside p,
+  .agentsBottom article button small,.agentCards p,.dataCard p
+) {color:#6f6b7d;}
+:global(.light) .agentsPreview :is(.agentFilters input,.agentMineToolbar input,.agentFilters button:not(.primary):not(.agentCategoryActive),.agentMineToolbar button:not(.primary):not(.agentCategoryActive)) {
+  color:#444050;border-color:#dbdade;background:#f8f7fa;
+}
+:global(.light) .agentsPreview :is(.agentFilters button.agentCategoryActive,.agentMineToolbar button.agentCategoryActive) {color:#fff;border-color:#7367f0;background:#7367f0;}
+:global(.light) .agentsPreview .agentCards footer button:not(:first-child) {color:#5d596c;border-color:#dbdade;background:#fff;}
+:global(.light) .agentsPreview .agentCards article > small {color:#a75a19;background:#fff1dd;}
+:global(.light) .agentsPreview.agentMarketReference .agentFilters > button:nth-child(-n+7):not(.agentCategoryActive),
+:global(.light) .agentsPreview.agentMarketReference .agentFilters > button:last-child,
+:global(.light) .agentsPreview.agentMarketReference .agentFilters > input {
+  color:#444050;border-color:#dbdade;background:#f8f7fa;
+}
+:global(.light) .agentsPreview.agentMarketReference .agentCards article {
+  border-color:color-mix(in srgb,var(--accent,#7367f0) 23%,#e6e6f1);
+  background:color-mix(in srgb,var(--accent,#7367f0) 4%,#fff);
+}
