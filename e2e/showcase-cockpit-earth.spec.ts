@@ -188,3 +188,85 @@ test("switching themes preserves menus and light-page selected card interaction"
   await page.getByRole("button", { name: "切换浅色主题" }).click();
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
 });
+
+
+/* User-provided 硕米Chat image is the page-title reference.
+   Verify the page-title panel only, never subsection/table column headers. */
+const standardPageHeaders = [
+  ["/workbench/ai/chat",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/overview/advice",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/overview/goals",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/agents/market",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai/tasks",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai/projects",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai/reports",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/store-products",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/data/api",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/tools",'[class*="page"] > header[class*="hero"]'],
+  ["/workbench/tools/official",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/tools/custom",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/agents/custom",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/services/market",'[class*="page"] > header[class*="head"]'],
+] as const;
+
+test("page title headers match Chat reference across modules and both themes", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/shuomi/#/workbench/ai/chat");
+  await expect(page.locator(".showcase-shell")).toBeVisible();
+  for (const theme of ["dark", "light"] as const) {
+    if (theme === "light") {
+      await page.getByRole("button", { name: "切换浅色主题" }).click();
+    }
+    for (const [route, selector] of standardPageHeaders) {
+      await page.goto("/shuomi/#" + route);
+      const header = page.locator(selector).first();
+      await expect(header, route + " must contain the standard header").toBeVisible();
+      const metrics = await header.evaluate(el => {
+        const title = el.querySelector("h1");
+        const paragraph = el.querySelector("p");
+        const titleStyle = title ? getComputedStyle(title) : null;
+        const descriptionStyle = paragraph ? getComputedStyle(paragraph) : null;
+        const headerStyle = getComputedStyle(el);
+        return {
+          height: el.getBoundingClientRect().height,
+          leftPad: headerStyle.paddingLeft,
+          rightPad: headerStyle.paddingRight,
+          radius: headerStyle.borderTopLeftRadius,
+          borderWidth: headerStyle.borderTopWidth,
+          titleSize: titleStyle?.fontSize,
+          titleLine: titleStyle?.lineHeight,
+          titleRule: titleStyle?.borderLeftWidth,
+          descriptionSize: descriptionStyle?.fontSize,
+          titleText: title?.textContent,
+        };
+      });
+      expect(metrics.height, route + ": header height").toBeGreaterThanOrEqual(129);
+      expect(metrics.leftPad, route + ": left padding").toBe("24px");
+      expect(metrics.rightPad, route + ": right padding").toBe("24px");
+      expect(metrics.radius, route + ": corner radius").toBe("6px");
+      expect(metrics.borderWidth, route + ": border").toBe("1px");
+      expect(metrics.titleSize, route + ": title typography").toBe("26px");
+      expect(metrics.titleLine, route + ": title line-height").toBe("34px");
+      expect(metrics.titleRule, route + ": title vertical rule").toBe("3px");
+      expect(metrics.descriptionSize, route + ": description typography").toBe("14px");
+      expect(metrics.titleText?.trim().length, route + ": title must be present").toBeGreaterThan(0);
+    }
+  }
+});
+
+test("standard headers keep actions clickable and adapt to narrow screens", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/shuomi/#/workbench/tools");
+  const header = page.locator('[class*="page"] > header[class*="hero"]').first();
+  await expect(header).toBeVisible();
+  const title = header.locator("h1");
+  await expect(title).toHaveCSS("font-size", "23px");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/shuomi/#/workbench/overview/advice");
+  await expect(page.locator('[class*="page"] > header[class*="header"]')).toBeVisible();
+  await page.getByRole("button", { name: "切换浅色主题" }).click();
+  await expect(page.locator(".light .showcase-shell")).toBeVisible();
+  await page.getByRole("button", { name: /转化率下降/ }).click();
+  await expect(page.getByRole("heading", { name: "转化率下降" })).toBeVisible();
+});

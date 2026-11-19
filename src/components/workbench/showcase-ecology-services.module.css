@@ -193,3 +193,76 @@
 :global(.light) .dialogBody :is(.progressSteps small,.drawerSummary small){color:#6f6b7d}
 :global(.light) .dialogBody .serviceCategory{background:#efecfb;color:#6555bb}
 :global(.light) .dialogHead,.light .dialogActions{border-color:#ddd9eb}
+
+
+/* Page-title standard, based on the supplied 硕米Chat screenshot.
+   Only the top-level page header is affected; data-table headings stay unchanged. */
+.page > .head {
+  box-sizing: border-box;
+  min-height: 130px;
+  padding: 20px 24px;
+  border: 1px solid #44485e;
+  border-radius: 6px;
+  background: #2f3349;
+  color: #e7e5f4;
+  box-shadow: none;
+}
+.page > .head small {
+  display: block;
+  margin: 0 0 6px;
+  color: #b7b1d6;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+.page > .head h1 {
+  margin: 0 0 5px;
+  padding-left: 12px;
+  border-left: 3px solid #00cfe8;
+  color: #f2f0fb;
+  font-size: 26px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.page > .head p {
+  margin: 0;
+  color: #c7c4df;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  letter-spacing: 0;
+}
+:global(.light) .page > .head {
+  color: #444050;
+  border-color: #ddd9e9;
+  background: #fff;
+  box-shadow: none;
+}
+:global(.light) .page > .head small { color: #6f6b7d; }
+:global(.light) .page > .head h1 { color: #444050; border-left-color: #00a8bd; }
+:global(.light) .page > .head p { color: #6f6b7d; }
+@media (max-width: 767px) {
+  .page > .head {
+    min-height: 112px;
+    padding: 16px 18px;
+    gap: 12px;
+  }
+  .page > .head small { font-size: 13px; line-height: 19px; }
+  .page > .head h1 {
+    font-size: 23px;
+    line-height: 30px;
+    white-space: normal;
+  }
+  .page > .head p { font-size: 13px; line-height: 20px; }
+}
+.page > .head {display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:0;}
+
+
+/* Proportional desktop scaling: preserve reference proportions on 2560px displays. */
+@media (min-width: 2400px) {
+  .page > .head { min-height: 152px; padding: 26px 30px; }
+  .page > .head h1 { font-size: 30px; line-height: 40px; }
+  .page > .head p { font-size: 15px; line-height: 24px; }
+}

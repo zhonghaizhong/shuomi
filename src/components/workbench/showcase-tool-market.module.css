@@ -69,3 +69,75 @@
 @media(max-width:1360px){.toolbar{align-items:stretch;flex-wrap:wrap}.searchTools{flex:1 1 300px}}
 @media(max-width:1100px){.toolGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.mineRow{grid-template-columns:1fr}}
 @media(max-width:767px){.page{width:calc(100% - 24px);padding:14px 0 25px}.header{align-items:flex-start;flex-wrap:wrap;padding:16px}.toolGrid{grid-template-columns:1fr}.categories{flex-wrap:wrap}.mineBar{flex-wrap:wrap}.mineBar input{flex:1 1 100%}.searchTools{min-width:0;flex:1 1 100%}}
+
+
+/* Page-title standard, based on the supplied 硕米Chat screenshot.
+   Only the top-level page header is affected; data-table headings stay unchanged. */
+.page > .header {
+  box-sizing: border-box;
+  min-height: 130px;
+  padding: 20px 24px;
+  border: 1px solid #44485e;
+  border-radius: 6px;
+  background: #2f3349;
+  color: #e7e5f4;
+  box-shadow: none;
+}
+.page > .header small {
+  display: block;
+  margin: 0 0 6px;
+  color: #b7b1d6;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+.page > .header h1 {
+  margin: 0 0 5px;
+  padding-left: 12px;
+  border-left: 3px solid #00cfe8;
+  color: #f2f0fb;
+  font-size: 26px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.page > .header p {
+  margin: 0;
+  color: #c7c4df;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  letter-spacing: 0;
+}
+:global(.light) .page > .header {
+  color: #444050;
+  border-color: #ddd9e9;
+  background: #fff;
+  box-shadow: none;
+}
+:global(.light) .page > .header small { color: #6f6b7d; }
+:global(.light) .page > .header h1 { color: #444050; border-left-color: #00a8bd; }
+:global(.light) .page > .header p { color: #6f6b7d; }
+@media (max-width: 767px) {
+  .page > .header {
+    min-height: 112px;
+    padding: 16px 18px;
+    gap: 12px;
+  }
+  .page > .header small { font-size: 13px; line-height: 19px; }
+  .page > .header h1 {
+    font-size: 23px;
+    line-height: 30px;
+    white-space: normal;
+  }
+  .page > .header p { font-size: 13px; line-height: 20px; }
+}
+
+
+/* Proportional desktop scaling: preserve reference proportions on 2560px displays. */
+@media (min-width: 2400px) {
+  .page > .header { min-height: 152px; padding: 26px 30px; }
+  .page > .header h1 { font-size: 30px; line-height: 40px; }
+  .page > .header p { font-size: 15px; line-height: 24px; }
+}
