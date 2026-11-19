@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 // NASA Blue Marble public-domain equirectangular texture. An orthographic
 // photograph covers only one hemisphere; 3D rotation needs the hidden side.
 const EARTH_TEXTURE = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Land_shallow_topo_2048.jpg/960px-Land_shallow_topo_2048.jpg";
+const CLOUD_TEXTURE = "https://threejs.org/examples/textures/planets/earth_clouds_1024.png";
 const TURN_DURATION_MS = 90_000;
 
 const VERTEX = `
@@ -14,19 +15,11 @@ void main(){vUv=(aPosition+1.0)*0.5;gl_Position=vec4(aPosition,0.0,1.0);}
 const FRAGMENT = `
 precision highp float;
 uniform sampler2D uEarth;
+uniform sampler2D uClouds;
+uniform float uCloudOpacity;
 uniform float uRotation;
 varying vec2 vUv;
 const float PI=3.141592653589793;
-float hash3(vec3 p){ return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453); }
-float cloudNoise(vec3 p) {
-  vec3 i=floor(p), f=fract(p);
-  f=f*f*(3.0-2.0*f);
-  float a=mix(hash3(i),hash3(i+vec3(1.0,0.0,0.0)),f.x);
-  float b=mix(hash3(i+vec3(0.0,1.0,0.0)),hash3(i+vec3(1.0,1.0,0.0)),f.x);
-  float c=mix(hash3(i+vec3(0.0,0.0,1.0)),hash3(i+vec3(1.0,0.0,1.0)),f.x);
-  float d=mix(hash3(i+vec3(0.0,1.0,1.0)),hash3(i+vec3(1.0,1.0,1.0)),f.x);
-  return mix(mix(a,b,f.y),mix(c,d,f.y),f.z);
-}
 void main(){
   vec2 p=(vUv-0.5)*2.0;
   float r2=dot(p,p);
@@ -37,13 +30,11 @@ void main(){
   float lon=atan(world.z,world.x),lat=asin(clamp(world.y,-1.0,1.0));
   vec2 uv=vec2(fract(0.5+lon/(2.0*PI)),0.5+lat/PI);
   vec3 earth=texture2D(uEarth,uv).rgb;
-  // Bright ocean blues and continuous, sphere-space cloud cover approximate
-  // the user's satellite photograph without any animation image frames.
+  // Genuine cloud imagery follows the rotating sphere continuously.
   float ocean=clamp((earth.b-earth.r)*3.0+(earth.b-earth.g)*2.0,0.0,1.0);
-  earth=mix(earth,max(earth,vec3(0.07,0.27,0.52)),ocean*0.72);
-  float clouds=cloudNoise(world*9.0)*0.59+cloudNoise(world*24.0)*0.28+cloudNoise(world*46.0)*0.13;
-  float cover=smoothstep(0.52,0.65,clouds)*0.75;
-  earth=mix(earth,vec3(0.91,0.95,0.99),cover);
+  earth=mix(earth,max(earth,vec3(0.06,0.23,0.47)),ocean*0.58);
+  float cloud=texture2D(uClouds,uv).r*uCloudOpacity;
+  earth=mix(earth,vec3(0.91,0.96,1.0),cloud);
   float sun=max(dot(normal,normalize(vec3(-0.38,0.48,0.80))),0.0);
   float rim=pow(1.0-normal.z,5.0);
   vec3 color=earth*(0.80+0.23*sun)+vec3(0.06,0.22,0.46)*rim;
@@ -70,8 +61,8 @@ export function SeamlessEarthGlobe(){
   const vs=compile(gl,gl.VERTEX_SHADER,VERTEX);
   const fs=compile(gl,gl.FRAGMENT_SHADER,FRAGMENT);
   if(!vs||!fs){if(vs)gl.deleteShader(vs);if(fs)gl.deleteShader(fs);canvas.dataset.globeStatus="unsupported";return;}
-  const program=gl.createProgram(),buffer=gl.createBuffer(),texture=gl.createTexture();
-  if(!program||!buffer||!texture){canvas.dataset.globeStatus="unsupported";return;}
+  const program=gl.createProgram(),buffer=gl.createBuffer(),texture=gl.createTexture(),cloudTexture=gl.createTexture();
+  if(!program||!buffer||!texture||!cloudTexture){canvas.dataset.globeStatus="unsupported";return;}
   gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);
   if(!gl.getProgramParameter(program,gl.LINK_STATUS)){canvas.dataset.globeStatus="unsupported";return;}
   gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
@@ -79,8 +70,16 @@ export function SeamlessEarthGlobe(){
   const position=gl.getAttribLocation(program,"aPosition");
   const rotation=gl.getUniformLocation(program,"uRotation");
   const sampler=gl.getUniformLocation(program,"uEarth");
+  const cloudSampler=gl.getUniformLocation(program,"uClouds");
+  const cloudOpacity=gl.getUniformLocation(program,"uCloudOpacity");
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,cloudTexture);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-  let disposed=false,loaded=false,visible=false,frame=0;
+  let disposed=false,loaded=false,cloudLoaded=false,visible=false,frame=0;
   const started=performance.now();
   const reduced=window.matchMedia("(prefers-reduced-motion: reduce)");
   function draw(now:number){
@@ -91,6 +90,8 @@ export function SeamlessEarthGlobe(){
    gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
    gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
    gl.uniform1i(sampler,0);
+   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,cloudTexture);
+   gl.uniform1i(cloudSampler,1);gl.uniform1f(cloudOpacity,cloudLoaded?0.55:0);
    // Constant angular velocity, and exactly identical at 0 and 2π.
    const phase=reduced.matches?0:((now-started)%TURN_DURATION_MS)/TURN_DURATION_MS;
    gl.uniform1f(rotation,1.21+phase*2*Math.PI);
@@ -124,15 +125,39 @@ export function SeamlessEarthGlobe(){
     canvas.dataset.globeStatus = "unavailable";
    }
   };
+  const cloudImage=new Image();cloudImage.crossOrigin="anonymous";
+  cloudImage.onload=()=>{
+   if(disposed)return;
+   const atlas=document.createElement("canvas");atlas.width=1024;atlas.height=512;
+   const ctx=atlas.getContext("2d");if(!ctx)return;
+   ctx.drawImage(cloudImage,0,0,1024,512);
+   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,cloudTexture);
+   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,atlas);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+   gl.generateMipmap(gl.TEXTURE_2D);
+   cloudLoaded=true;canvas.dataset.globeClouds="ready";draw(performance.now());
+  };
+  let cloudRemoteFallback=false;
+  cloudImage.onerror=()=>{
+   if(disposed)return;
+   if(!cloudRemoteFallback){cloudRemoteFallback=true;cloudImage.src=CLOUD_TEXTURE;}
+   else canvas.dataset.globeClouds="unavailable";
+  };
   const observer=new IntersectionObserver(entries=>{visible=!!entries[0]?.isIntersecting;update();});
   observer.observe(canvas);
   document.addEventListener("visibilitychange",update);reduced.addEventListener("change",update);
   const basePath=window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
   image.src=basePath+"/assets/cockpit/earth-blue-marble.jpg";
+  cloudImage.src=basePath+"/assets/cockpit/earth-clouds.png";
   return ()=>{
    disposed=true;cancelAnimationFrame(frame);image.onload=null;image.onerror=null;
+   cloudImage.onload=null;cloudImage.onerror=null;
    observer.disconnect();document.removeEventListener("visibilitychange",update);reduced.removeEventListener("change",update);
-   gl.deleteTexture(texture);gl.deleteBuffer(buffer);gl.deleteProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);
+   gl.deleteTexture(texture);gl.deleteTexture(cloudTexture);gl.deleteBuffer(buffer);gl.deleteProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);
   };
  },[]);
  return <canvas ref={ref} width={170} height={170} aria-hidden="true" data-globe-status="loading"/>;
