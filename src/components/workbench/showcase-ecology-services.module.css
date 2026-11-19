@@ -258,3 +258,11 @@
   .page > .head p { font-size: 13px; line-height: 20px; }
 }
 .page > .head {display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:0;}
+
+
+/* Proportional desktop scaling: preserve reference proportions on 2560px displays. */
+@media (min-width: 2400px) {
+  .page > .head { min-height: 152px; padding: 26px 30px; }
+  .page > .head h1 { font-size: 30px; line-height: 40px; }
+  .page > .head p { font-size: 15px; line-height: 24px; }
+}
