@@ -163,7 +163,8 @@
 :global(.light) .page .segments button[aria-pressed="true"],:global(.light) .drawerTabs button[aria-pressed="true"]{color:#6555d6;background:#ebe8fe;border-color:#7367f0}
 :global(.light) .page .primary,:global(.light) .dialog .primary,:global(.light) .drawer .primary{color:#fff;background:#7367f0;border-color:#7367f0}
 :global(.light) .searchBox input{color:#444050}
-@media(max-width:1450px){.segments button{min-width:0}.serviceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.segmentRow{align-items:flex-start;flex-direction:column}.segments{justify-content:flex-start;width:100%}}
+@media(max-width:1450px){.segments button{min-width:0}}
+@media(max-width:1250px){.serviceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.segmentRow{align-items:flex-start;flex-direction:column}.segments{justify-content:flex-start;width:100%}}
 @media(max-width:1050px){.howtoGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.joinGrid{grid-template-columns:1fr}.homeCards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.page{width:calc(100% - 24px);padding:14px 0 28px;gap:12px}.head{padding:15px 17px}.head h1{font-size:22px;line-height:30px}.head p{font-size:14px}.homeCards,.howtoGrid,.serviceGrid,.homeNotes,.marketNotes{grid-template-columns:1fr}.howto>header{flex-direction:column;gap:5px}.marketNotes article>div{grid-template-columns:repeat(3,minmax(0,1fr))}.filterBar{flex-wrap:wrap}.filterBar .searchBox{flex:1 1 100%}.filterBar select{flex:1;min-width:130px}.joinHero{flex-direction:column;align-items:stretch;padding:18px}.joinHero aside{flex:0 0 auto}.joinStep{grid-template-columns:39px 1fr;gap:10px}.joinStep em{grid-column:2;text-align:left}.segmentRow{padding:14px}.segments button{flex:1 1 auto}.dialogBody{padding:18px}.dialogHead{padding:17px}.homeCard{min-height:164px}}
 
