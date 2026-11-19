@@ -1,0 +1,112 @@
+"use client";
+import { useEffect, useRef } from "react";
+
+// NASA Blue Marble public-domain equirectangular texture. An orthographic
+// photograph covers only one hemisphere; 3D rotation needs the hidden side.
+const EARTH_TEXTURE = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Land_shallow_topo_2048.jpg/960px-Land_shallow_topo_2048.jpg";
+const TURN_DURATION_MS = 90_000;
+
+const VERTEX = \`
+attribute vec2 aPosition;
+varying vec2 vUv;
+void main(){vUv=(aPosition+1.0)*0.5;gl_Position=vec4(aPosition,0.0,1.0);}
+\`;
+const FRAGMENT = \`
+precision highp float;
+uniform sampler2D uEarth;
+uniform float uRotation;
+varying vec2 vUv;
+const float PI=3.141592653589793;
+void main(){
+  vec2 p=(vUv-0.5)*2.0;
+  float r2=dot(p,p);
+  if(r2>=0.985) discard;
+  vec3 normal=vec3(p.x,p.y,sqrt(max(0.0,1.0-r2)));
+  float s=sin(uRotation),c=cos(uRotation);
+  vec3 world=vec3(normal.x*c+normal.z*s,normal.y,-normal.x*s+normal.z*c);
+  float lon=atan(world.z,world.x),lat=asin(clamp(world.y,-1.0,1.0));
+  vec2 uv=vec2(fract(0.5+lon/(2.0*PI)),0.5+lat/PI);
+  vec3 earth=texture2D(uEarth,uv).rgb;
+  float sun=max(dot(normal,normalize(vec3(-0.38,0.48,0.80))),0.0);
+  float rim=pow(1.0-normal.z,5.0);
+  vec3 color=earth*(0.36+0.72*sun)+vec3(0.07,0.27,0.55)*rim;
+  float alpha=1.0-smoothstep(0.968,0.993,sqrt(r2));
+  gl_FragColor=vec4(color,alpha);
+}
+\`;
+
+function compile(gl:WebGLRenderingContext,type:number,code:string){
+ const shader=gl.createShader(type);
+ if(!shader)return null;
+ gl.shaderSource(shader,code);gl.compileShader(shader);
+ if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){gl.deleteShader(shader);return null;}
+ return shader;
+}
+
+export function SeamlessEarthGlobe(){
+ const ref=useRef<HTMLCanvasElement>(null);
+ useEffect(()=>{
+  const canvas=ref.current;
+  if(!canvas)return;
+  const gl=canvas.getContext("webgl",{alpha:true,antialias:true,premultipliedAlpha:false});
+  if(!gl){canvas.dataset.globeStatus="unsupported";return;}
+  const vs=compile(gl,gl.VERTEX_SHADER,VERTEX);
+  const fs=compile(gl,gl.FRAGMENT_SHADER,FRAGMENT);
+  if(!vs||!fs){if(vs)gl.deleteShader(vs);if(fs)gl.deleteShader(fs);canvas.dataset.globeStatus="unsupported";return;}
+  const program=gl.createProgram(),buffer=gl.createBuffer(),texture=gl.createTexture();
+  if(!program||!buffer||!texture){canvas.dataset.globeStatus="unsupported";return;}
+  gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);
+  if(!gl.getProgramParameter(program,gl.LINK_STATUS)){canvas.dataset.globeStatus="unsupported";return;}
+  gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+  const position=gl.getAttribLocation(program,"aPosition");
+  const rotation=gl.getUniformLocation(program,"uRotation");
+  const sampler=gl.getUniformLocation(program,"uEarth");
+  gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+  let disposed=false,loaded=false,visible=false,frame=0;
+  const started=performance.now();
+  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)");
+  function draw(now:number){
+   if(!gl||!canvas||disposed||!loaded)return;
+   const size=Math.min(400,Math.max(140,Math.round(canvas.clientWidth*Math.min(window.devicePixelRatio||1,2))));
+   if(canvas.width!==size||canvas.height!==size){canvas.width=size;canvas.height=size;}
+   gl.viewport(0,0,canvas.width,canvas.height);
+   gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+   gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
+   gl.uniform1i(sampler,0);
+   // Constant angular velocity, and exactly identical at 0 and 2π.
+   const phase=reduced.matches?0:((now-started)%TURN_DURATION_MS)/TURN_DURATION_MS;
+   gl.uniform1f(rotation,1.21+phase*2*Math.PI);
+   gl.drawArrays(gl.TRIANGLES,0,6);
+  }
+  function tick(now:number){draw(now);if(!disposed&&visible&&!document.hidden&&!reduced.matches)frame=requestAnimationFrame(tick);}
+  function update(){cancelAnimationFrame(frame);if(disposed||!loaded||!visible||document.hidden)return;
+   if(reduced.matches)draw(started);else frame=requestAnimationFrame(tick);}
+  const image=new Image();image.crossOrigin="anonymous";
+  image.onload=()=>{
+   if(disposed)return;
+   const atlas=document.createElement("canvas");atlas.width=1024;atlas.height=512;
+   const ctx=atlas.getContext("2d");if(!ctx)return;
+   ctx.drawImage(image,0,0,atlas.width,atlas.height);
+   gl.bindTexture(gl.TEXTURE_2D,texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,atlas);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+   gl.generateMipmap(gl.TEXTURE_2D);
+   loaded=true;draw(performance.now());canvas.dataset.globeStatus="ready";update();
+  };
+  image.onerror=()=>{if(!disposed)canvas.dataset.globeStatus="unavailable";};
+  const observer=new IntersectionObserver(entries=>{visible=!!entries[0]?.isIntersecting;update();});
+  observer.observe(canvas);
+  document.addEventListener("visibilitychange",update);reduced.addEventListener("change",update);
+  image.src=EARTH_TEXTURE;
+  return ()=>{
+   disposed=true;cancelAnimationFrame(frame);image.onload=null;image.onerror=null;
+   observer.disconnect();document.removeEventListener("visibilitychange",update);reduced.removeEventListener("change",update);
+   gl.deleteTexture(texture);gl.deleteBuffer(buffer);gl.deleteProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);
+  };
+ },[]);
+ return <canvas ref={ref} width={170} height={170} aria-hidden="true" data-globe-status="loading"/>;
+}
