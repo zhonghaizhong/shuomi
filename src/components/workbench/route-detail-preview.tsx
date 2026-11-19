@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./route-detail-preview.module.css";
 import { ChatNewPreview } from "./chat-new-preview";
@@ -161,10 +161,23 @@ function RoutePage({ page, pathname }: { page: { section: string; title: string;
   const [query, setQuery] = useState("");
   const [active, setActive] = useState("全部");
   const [message, setMessage] = useState("");
+  const [operation,setOperation] = useState<string|null>(null);
   const [filters, setFilters] = useState<Record<string,string>>({});
   const setFilter = (name:string, value:string) => setFilters(old=>({...old,[name]:value}));
   const resetFilters = () => setFilters({});
-  const submit = (label:string) => setMessage("演示交互：" + label + "。当前不会执行真实业务操作，也不会向服务器提交或保存数据。");
+  const scopedCommerce = pathname.startsWith("/workbench/data/") || pathname==="/workbench/stores" || pathname.startsWith("/workbench/store-") || pathname.startsWith("/workbench/plans/") || pathname.startsWith("/workbench/account/");
+  const submit = (label:string) => {
+    if(scopedCommerce && !/确认筛选|筛选$|^确定$/.test(label)){
+      setMessage("");setOperation(label);
+    } else {
+      setMessage("已更新演示筛选结果；不会向服务器提交或保存数据。");
+    }
+  };
+  useEffect(()=>{
+    if(!operation)return;
+    const handle=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();setOperation(null)}};
+    document.addEventListener("keydown",handle);return()=>document.removeEventListener("keydown",handle);
+  },[operation]);
   const header = <header className={styles.header}><div><div>{page.section}</div><h1>{page.title}</h1><p>{page.description}</p></div><div className={styles.headerActions}>{pathname === "/workbench/store-products" ? <button className={styles.primary} onClick={() => submit("同步平台商品")}>同步平台商品</button> : pathname === "/workbench/store-orders" ? <button className={styles.primary} onClick={() => submit("同步平台订单")}>同步平台订单</button> : pathname === "/workbench/data/market" ? <><button onClick={() => router.push("/workbench/data/api?preview=1")}>API管理</button><button onClick={() => router.push("/workbench/data/mine?preview=1")}>我的数据</button></> : pathname === "/workbench/data/api" ? <><button onClick={() => submit("开发文档")}>开发文档</button><button className={styles.primary} onClick={() => submit("创建 API 密钥")}>创建API密钥</button></> : pathname === "/workbench/services/market" ? null : null}</div></header>;
   const toolbar = (tabs: string[]) => <div className={styles.toolbar}>{tabs.map(tab => <button key={tab} className={active === tab ? styles.selected : ""} onClick={() => setActive(tab)}>{tab}</button>)}<input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索名称或关键词"/><button onClick={() => { setQuery(""); setActive("全部"); }}>重置</button><button className={styles.primary} onClick={() => submit("筛选")} >确认</button></div>;
   const isChatNew = pathname === "/workbench/ai/chat/new";
@@ -173,7 +186,16 @@ function RoutePage({ page, pathname }: { page: { section: string; title: string;
   const isSupplyPage = pathname.startsWith("/workbench/supply/catalogs") || pathname.startsWith("/workbench/supply/applications");
   const commerceArea = pathname.startsWith("/workbench/data/") ? "data" : pathname === "/workbench/stores" || pathname === "/workbench/store-products" || pathname.startsWith("/workbench/store-orders") ? "stores" : pathname.startsWith("/workbench/plans/") ? "plans" : pathname.startsWith("/workbench/account/") ? "account" : undefined;
   const libraryPage = pathname === "/workbench/ai/projects/templates" ? "project-templates" : pathname === "/workbench/ai/knowledge/official" ? "knowledge-official" : pathname === "/workbench/ai/knowledge/mine" ? "knowledge-mine" : pathname === "/workbench/ai/knowledge/team" ? "knowledge-team" : pathname === "/workbench/agents/skills/official" ? "skills-official" : pathname === "/workbench/agents/skills/mine" ? "skills-mine" : pathname === "/workbench/agents/skills/team" ? "skills-team" : pathname.startsWith("/workbench/ai/reports/") ? "report-list" : undefined;
-  return <main data-commerce-unified={commerceArea} data-library-page={libraryPage} data-task-detail={isTaskDetail ? pathname.split("/").at(-1) : undefined} className={`${styles.page} ${isChatNew ? styles.chatNewPage : ""} ${chatCollectionPage ? styles.chatCollectionPage : ""} ${isLibraryPage ? styles.libraryDetailPreview : ""} ${isSupplyPage ? styles.supplyDetailPreview : ""} ${isTaskDetail ? styles.taskDetailPreview : ""}`}>{message && <div className={styles.message} role="status">{message}<button onClick={() => setMessage("")}>×</button></div>}{header}
+  return <main data-commerce-unified={commerceArea} data-library-page={libraryPage} data-task-detail={isTaskDetail ? pathname.split("/").at(-1) : undefined} className={`${styles.page} ${isChatNew ? styles.chatNewPage : ""} ${chatCollectionPage ? styles.chatCollectionPage : ""} ${isLibraryPage ? styles.libraryDetailPreview : ""} ${isSupplyPage ? styles.supplyDetailPreview : ""} ${isTaskDetail ? styles.taskDetailPreview : ""}`}>{message && <div className={styles.message} role="status">{message}<button type="button" aria-label="关闭提示" onClick={() => setMessage("")}>×</button></div>}
+    {operation&&<div className={styles.operationBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setOperation(null)}}>
+      <section role="dialog" aria-modal="true" aria-label={operation} className={styles.operationDialog}>
+        <div className={styles.operationHead}><div><small>业务操作 · 演示预览</small><h2>{operation}</h2></div><button type="button" aria-label="关闭操作弹窗" onClick={()=>setOperation(null)}>×</button></div>
+        <p>此入口已响应点击，但 GitHub Pages 版本不连接真实业务服务。正式流程需要在已授权的工作台中完成，演示版不会提交申请、生成密钥、修改店铺或产生费用。</p>
+        <div className={styles.operationSummary}><b>当前所在页面</b><span>{page.section}</span><b>操作</b><span>{operation}</span><b>执行状态</b><span>未执行 · 等待正式业务系统接入</span></div>
+        <footer><button type="button" autoFocus onClick={()=>setOperation(null)}>返回页面</button></footer>
+      </section>
+    </div>}
+    {header}
     {pathname === "/workbench/stores" && <><section className={styles.metrics}>{[["已绑定店铺", "2 家", "当前账户"], ["正常店铺", "2 家", "授权连接正常"], ["即将到期", "0 家", "未来7天"], ["已到期", "2 家", "使用期限已过"], ["待处理", "2 家", "续期或异常"]].map(([a,b,c])=><article key={a}><span>{a}</span><strong>{b}</strong><small>{c}</small></article>)}</section><section className={styles.productFilters}><div className={styles.commerceFilterSelects}>{["全部站点","全部类型","全部分组","全部状态"].map(x=><FilterSelect key={x} label={x} filters={filters} setFilter={setFilter}/>)}</div><div className={styles.commerceFilterActions}><input aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={e=>setQuery(e.target.value)}/><button onClick={()=>{setQuery("");resetFilters()}}>重置</button><button className={styles.primary} onClick={()=>submit("确认筛选")}>确认</button></div></section><section className={styles.table}><header><h2>店铺列表 <small>共 2 家店铺</small></h2><button onClick={()=>submit("绑定新店铺")}>＋ 绑定新店铺</button></header><div className={styles.serviceRow}><span>店铺与平台</span><span>站点 / 类型</span><span>授权与网络</span><span>使用期限</span><span>管理操作</span></div>{[["一号店", "SHEIN · 美国站 · 半托管", "授权正常 · 网络正常", "月付 · 至 2026-09-30"], ["二号店", "SHEIN · 加拿大站 · 全托管", "授权正常 · 网络正常", "月付 · 至 2026-09-18"]].filter(row=>row.join(" ").includes(query)&&containsFilter(row,filters,"全部站点")&&containsFilter(row,filters,"全部类型")&&containsFilter(row,filters,"全部状态")&&(!filters["全部分组"]||filters["全部分组"]==="全部分组"||(filters["全部分组"]==="核心店铺"&&row[0]==="一号店")||(filters["全部分组"]==="加拿大市场"&&row[0]==="二号店"))).map((row,i)=><div className={styles.serviceRow} key={row[0]}><span><b>{row[0]}</b><small>店铺ID：SHEIN-{i?"CA-002":"US-001"}　·　{ i?"加拿大市场":"核心店铺"}</small></span><span>{row[1]}</span><span>{row[2]}</span><span>{row[3]}</span><span><button onClick={()=>submit("续费店铺")}>续费</button> <button onClick={()=>submit("管理店铺")}>管理</button></span></div>)}</section></>}
     {pathname === "/workbench/store-products" && <StoreProductsPage active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters}/>}
     {pathname === "/workbench/store-orders" && <OrderFulfillmentPage active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters}/>}
