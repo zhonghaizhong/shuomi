@@ -8,6 +8,11 @@ test("purple cockpit hero loads a real textured 3D globe without a GIF", async (
   await expect(page.locator('[data-dashboard="operations"]')).toBeVisible();
   const globe = page.locator('[data-dashboard="operations"] canvas[data-globe-status]');
   await expect(globe).toHaveAttribute("data-globe-status", "ready", { timeout: 30000 });
+  await expect(globe).toHaveAttribute("data-globe-clouds", "ready", { timeout: 30000 });
+  const earthMap = await page.request.get("http://127.0.0.1:4173/shuomi/assets/cockpit/earth-blue-marble.jpg");
+  const cloudsMap = await page.request.get("http://127.0.0.1:4173/shuomi/assets/cockpit/earth-clouds.png");
+  expect(earthMap.ok()).toBe(true);
+  expect(cloudsMap.ok()).toBe(true);
   await expect(globe).toBeVisible();
   const hero = page.locator('article[class*="overviewFeature"]');
   const heroBox = await hero.boundingBox();
