@@ -29,3 +29,11 @@ jobs:
       - run: pnpm run build:pages
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec playwright test --config playwright.tool-home.config.ts
+
+      - name: Save rendered tool market screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tool-market-home-screenshots
+          path: test-results/tool-market-home-*.png
+          if-no-files-found: ignore
