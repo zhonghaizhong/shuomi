@@ -1,8 +1,27 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
-import { copyFile } from "node:fs/promises";
+import { copyFile, mkdir, writeFile } from "node:fs/promises";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
+
+const blueMarbleTexture = {
+  name: "publish-blue-marble-texture",
+  // Cache the NASA satellite map with GitHub Pages when possible, so the
+  // 3D globe does not depend on an external request for every page visit.
+  async closeBundle() {
+    const url = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Land_shallow_topo_2048.jpg/960px-Land_shallow_topo_2048.jpg";
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      if (!response.ok) throw new Error("Earth texture HTTP " + response.status);
+      const folder = here + "/dist-pages/assets/cockpit";
+      await mkdir(folder, { recursive: true });
+      await writeFile(folder + "/earth-blue-marble.jpg", new Uint8Array(await response.arrayBuffer()));
+    } catch (error) {
+      // The renderer falls back to the original map URL, then the legacy SVG.
+      console.warn("Local Earth texture unavailable during build:", error);
+    }
+  },
+};
 
 const pagesFallback = {
   name: "github-pages-history-fallback",
@@ -14,7 +33,7 @@ const pagesFallback = {
 export default defineConfig({
   root: `${here}/showcase`,
   base: "/shuomi/",
-  plugins: [pagesFallback],
+  plugins: [pagesFallback, blueMarbleTexture],
   resolve: {
     alias: [
       { find: "@", replacement: `${here}/src` },
