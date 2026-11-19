@@ -14,6 +14,7 @@ export function ShowcaseAgentCustomization({ pathname, navigate }: { pathname: s
   const [data, setData] = useState<Submitted>({ name: "", scenario: "", direction: "商品与供应链", description: "", contact: "" });
   const [pending, setPending] = useState<Submitted | null>(null);
   const [saved, setSaved] = useState<Submitted | null>(() => {
+    if (typeof window === "undefined") return null;
     try { const value = sessionStorage.getItem(STORAGE); return value ? JSON.parse(value) as Submitted : null; }
     catch { return null; }
   });
