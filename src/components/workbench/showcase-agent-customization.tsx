@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import styles from "./showcase-agent-customization.module.css";
 
 type Submitted = { name: string; scenario: string; direction: string; description: string; contact: string };
@@ -104,10 +104,33 @@ export function ShowcaseAgentCustomization({ pathname, navigate }: { pathname: s
       </> : <div className={styles.card}><h2>暂无定制记录</h2><p>当前浏览器还没有本地演示需求；你可以提交一个演示申请，或切换查看示例。</p><button type="button" className={styles.primary} onClick={()=>route("/new")}>提交新需求</button></div>}
     </section>}
 
-    {pending ? <div className={styles.overlay}><section role="dialog" aria-modal="true" aria-labelledby="demo-confirm-title" className={styles.confirmDialog}>
-      <h2 id="demo-confirm-title">确认保存演示需求</h2><p>这次操作只在当前浏览器保存演示记录，不会向硕米平台真实提交，也不会通知专员。</p>
-      <strong>{pending.name}</strong>
-      <div className={styles.actions}><button type="button" onClick={()=>setPending(null)}>取消</button><button type="button" className={styles.primary} onClick={confirm}>确认保存演示记录</button></div>
-    </section></div> : null}
+    {pending ? <ShowcaseCustomizationConfirm draft={pending} onCancel={() => setPending(null)} onConfirm={confirm} /> : null}
   </div>;
+}
+
+function ShowcaseCustomizationConfirm({ draft, onCancel, onConfirm }: {
+  draft: Submitted; onCancel: () => void; onConfirm: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement;
+    const element = dialog.current;
+    if (element && !element.open) element.showModal();
+    return () => {
+      element?.close();
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
+    };
+  }, []);
+  return <dialog ref={dialog} className={styles.confirmDialog}
+    aria-labelledby="demo-confirm-title"
+    onCancel={event => { event.preventDefault(); onCancel(); }}
+    onClick={event => { if (event.target === event.currentTarget) onCancel(); }}>
+    <h2 id="demo-confirm-title">确认保存演示需求</h2>
+    <p>这次操作只在当前浏览器保存演示记录，不会向硕米平台真实提交，也不会通知专员。</p>
+    <strong>{draft.name}</strong>
+    <div className={styles.actions}>
+      <button type="button" onClick={onCancel}>取消</button>
+      <button type="button" className={styles.primary} onClick={onConfirm}>确认保存演示记录</button>
+    </div>
+  </dialog>;
 }
