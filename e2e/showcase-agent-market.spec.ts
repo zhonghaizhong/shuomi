@@ -69,6 +69,10 @@ test("customization request requires consent, confirms demo-only save and shows 
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(page.getByRole("dialog")).toContainText("不会向硕米平台真实提交");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(submit).toBeFocused();
+  await submit.click();
   await page.getByRole("dialog").getByRole("button", { name: "取消" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await submit.click();
