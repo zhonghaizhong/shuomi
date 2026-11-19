@@ -8,10 +8,27 @@ button { font: inherit; }
 .showcase-brand-message { display: flex; align-items: center; gap: 16px; }
 .showcase-brand-message strong { color: #e2e2f0; font-size: 14px; }
 .showcase-brand-message span { padding-left: 16px; border-left: 1px solid #7367f0; color: #acabc1; font-size: 10px; letter-spacing: .18em; }
-.showcase-top-actions { display: flex; align-items: center; gap: 14px; color: #acabc1; font-size: 12px; }
-.showcase-top-actions button, .showcase-menu-fab { border: 1px solid #44485e; border-radius: 7px; background: #393d55; color: #e2e2f0; padding: 8px 11px; cursor: pointer; }
+.showcase-top-actions { display: flex; align-items: center; gap: 10px; color: #cfcde4; }
+.showcase-action-icon, .showcase-account-icon { position: relative; display: inline-flex; width: 36px; min-width: 36px; height: 36px; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 6px; background: transparent; color: inherit; text-decoration: none; cursor: pointer; }
+.showcase-action-icon:hover { background: rgba(255,255,255,.07); color: #fff; }
+.showcase-action-icon:focus-visible, .showcase-account-icon:focus-visible { outline: 2px solid #7367f0; outline-offset: 2px; }
+.showcase-action-wrap { position: relative; }
+.showcase-notification-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border: 1px solid #2f3349; border-radius: 50%; background: #ff4c51; }
+.showcase-account-icon { width: 42px; min-width: 42px; height: 42px; border: 2px solid #7367f0; border-radius: 50%; color: #d9d6ff; background: linear-gradient(145deg,#535b80,#30364f); }
+.showcase-account-icon:hover { border-color: #9289ff; background: linear-gradient(145deg,#606a94,#393f5e); }
+.showcase-account-icon > i { position: absolute; right: 0; bottom: 0; width: 10px; height: 10px; border: 2px solid #2f3349; border-radius: 50%; background: #28c76f; }
+.showcase-action-popover { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; display: grid; min-width: 174px; gap: 5px; padding: 12px 14px; border: 1px solid #44485e; border-radius: 8px; background: #2f3349; box-shadow: 0 12px 28px rgba(12,14,24,.32); color: #e2e2f0; font-size: 13px; }
+.showcase-action-popover span { color: #acabc1; font-size: 12px; }
+.showcase-menu-fab { border: 1px solid #44485e; border-radius: 7px; background: #393d55; color: #e2e2f0; padding: 8px 11px; cursor: pointer; }
+.light .showcase-shell { background: #f8f7fa; }
+.light .showcase-topbar { border-color: #e6e6f1; background: #fff; }
+.light .showcase-brand-message strong { color: #444050; }
+.light .showcase-brand-message span { color: #6f6b7d; }
+.light .showcase-top-actions { color: #444050; }
+.light .showcase-action-popover { border-color: #e6e6f1; background: #fff; color: #444050; }
+.light .showcase-action-popover span { color: #6f6b7d; }
 .showcase-content { max-width: none; margin: 0; padding: 24px 28px 48px; }
 .showcase-content .page { min-height: 400px; }
 .showcase-menu-fab { position: fixed; bottom: 20px; left: 20px; z-index: 5; background: #7367f0; }
 @media (max-width: 900px) { .showcase-topbar { padding: 0 18px; } .showcase-content { padding: 18px; } }
-@media (max-width: 767px) { .showcase-shell { display: block; } .showcase-sidebar { position: relative; width: 100%; height: auto; max-height: 45vh; overflow: auto; } .showcase-topbar { height: 60px; padding: 0 12px; } .showcase-brand-message { gap: 8px; } .showcase-brand-message strong { font-size: 12px; } .showcase-brand-message span { padding-left: 8px; font-size: 8px; } .showcase-top-actions > span { display: none; } .showcase-content { padding: 14px 12px 32px; } }
+@media (max-width: 767px) { .showcase-shell { display: block; } .showcase-sidebar { position: relative; width: 100%; height: auto; max-height: 45vh; overflow: auto; } .showcase-topbar { height: 60px; padding: 0 12px; } .showcase-brand-message { gap: 8px; } .showcase-brand-message strong { font-size: 12px; } .showcase-brand-message span { padding-left: 8px; font-size: 8px; } .showcase-top-actions { gap: 2px; } .showcase-action-icon { width: 32px; min-width: 32px; height: 32px; } .showcase-account-icon { width: 36px; min-width: 36px; height: 36px; } .showcase-content { padding: 14px 12px 32px; } }
