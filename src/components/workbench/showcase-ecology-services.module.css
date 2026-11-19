@@ -1,0 +1,195 @@
+
+.page{box-sizing:border-box;display:grid;gap:14px;width:calc(100% - 48px);max-width:1600px;margin:0 auto;padding:20px 0 34px;color:#cfcde4;font-size:14px;line-height:1.5}
+.page *{box-sizing:border-box}
+.head,.segmentRow,.marketControls,.recordsPanel,.homeCard,.howto,.homeNotes article,.marketNotes article,.joinHero,.joinFlow,.joinAside,.serviceCard{min-width:0;border:1px solid #44485e;border-radius:6px;background:#2f3349}
+.head{min-height:109px;padding:18px 22px;display:flex;flex-direction:column;justify-content:center;gap:5px}
+.head small{font-size:13px;color:#acabc1}
+.head h1{margin:0;padding-left:12px;border-left:3px solid #7367f0;font-size:26px;line-height:34px;letter-spacing:-.01em;color:#e6e4f1}
+.head p{margin:0;color:#acabc1;font-size:15px;line-height:23px}
+.page button,.dialog button,.drawer button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:0 14px;border:1px solid #555a73;border-radius:6px;background:#393d55;color:#cfcde4;font-size:14px;font-weight:550;white-space:nowrap;cursor:pointer}
+.page button:hover,.dialog button:hover,.drawer button:hover{border-color:#8a7aff}
+.page button:focus-visible,.page input:focus-visible,.page select:focus-visible,.dialog button:focus-visible,.drawer button:focus-visible{outline:2px solid #aaa0ff;outline-offset:2px}
+.page .primary,.dialog .primary,.drawer .primary{color:#fff;background:#7367f0;border-color:#7367f0}
+.page .primary:hover,.dialog .primary:hover,.drawer .primary:hover{background:#8175f5}
+.homeCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.homeCard{--accent:#7367f0;position:relative;display:flex;flex-direction:column;gap:12px;min-height:190px;padding:20px;box-shadow:inset 3px 0 var(--accent)}
+.cardHead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cardHead h2{margin:0;color:var(--accent);font-size:20px;line-height:26px}
+.cardHead span{padding:5px 10px;border:1px solid #555a73;border-radius:5px;color:#b5b2ca;font-size:12px;white-space:nowrap}
+.homeCard p{flex:1;margin:0;color:#c0bed2;font-size:15px;line-height:1.58}
+.homeCard button{align-self:flex-end;border-color:color-mix(in srgb,var(--accent),#44485e 70%);color:var(--accent)}
+.howto{padding:19px 20px;display:grid;gap:14px}
+.howto>header{display:flex;align-items:baseline;gap:20px}
+.howto h2,.marketNotes h2{margin:0;color:#e6e4f1;font-size:19px;white-space:nowrap}
+.howto header p,.marketNotes article p{margin:0;color:#acabc1;font-size:14px}
+.howtoGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.howtoGrid article{min-width:0;display:grid;grid-template-columns:36px 1fr;gap:7px 10px;align-content:start;min-height:132px;padding:14px;border:1px solid #555a73;border-radius:6px;background:#393d55}
+.howtoGrid b{grid-row:span 2;display:grid;place-items:center;width:36px;height:36px;border:1px solid #62a9ff;border-radius:6px;color:#62a9ff;font-size:15px}
+.howtoGrid article[data-step="1"] b{color:#4fd1bd;border-color:#4fd1bd}
+.howtoGrid article[data-step="2"] b{color:#ad8aff;border-color:#ad8aff}
+.howtoGrid article[data-step="3"] b{color:#f4bf64;border-color:#f4bf64}
+.howtoGrid h3{margin:2px 0;color:#e2e0f0;font-size:16px;line-height:25px}
+.howtoGrid p{grid-column:1/-1;margin:3px 0 0;color:#c1bfd1;font-size:14px;line-height:1.6}
+.homeNotes,.marketNotes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.homeNotes article{padding:18px 20px;min-height:124px}
+.homeNotes small{color:#8fcaff;font-size:13px}
+.homeNotes article:nth-child(2) small{color:#7be1c8}
+.homeNotes h3{margin:5px 0 9px;color:#e6e4f1;font-size:17px}
+.homeNotes p{margin:0;color:#acabc1;font-size:14px;line-height:1.6}
+.marketControls{padding:14px 18px;display:grid;gap:12px}
+.marketControls .segmentRow{padding:0;border:none;background:transparent;min-height:44px}
+.segmentRow{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:66px;padding:12px 18px}
+.segmentRow>div:first-child{display:grid;gap:3px;min-width:0}
+.segmentRow strong{color:#e2e0f0;font-size:16px;font-weight:650}
+.segmentRow small{font-size:13px;color:#acabc1}
+.segments{display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.segments button{min-width:116px;padding:0 13px;border-color:#555a73;background:#30354b}
+.segments button[aria-pressed="true"]{background:#3e3d68;border-color:#7367f0;color:#c3baff}
+.filterBar{display:flex;align-items:center;gap:10px;min-height:50px;padding:12px 0 0;border-top:1px solid #44485e}
+.segmentRow+.filterBar{border-top:0}
+.page>.filterBar{padding:10px 14px;min-height:64px;border:1px solid #44485e;border-radius:6px;background:#2f3349}
+.searchBox{display:flex;align-items:center;gap:9px;min-width:0;flex:1 1 240px;padding:0 12px;border:1px solid #555a73;border-radius:6px;background:#393d55;color:#a4a4bb}
+.searchBox:focus-within{border-color:#887cf7;box-shadow:0 0 0 2px #7367f022}
+.searchBox input{flex:1;width:100%;height:39px;min-width:0;outline:0;border:0;background:transparent;color:#e2e0f0;font:inherit;font-size:14px}
+.searchBox input::placeholder{color:#acabc1}
+.filterBar select{height:41px;width:146px;min-width:100px;padding:0 12px;border:1px solid #555a73;border-radius:6px;background:#393d55;color:#cfcde4;font:inherit;font-size:14px}
+.filterBar>button{min-width:80px;height:40px}
+.serviceGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.serviceCard{--accent:#7367f0;position:relative;display:flex;flex-direction:column;gap:14px;min-height:276px;padding:18px 18px 14px;box-shadow:inset 2px 0 var(--accent)}
+.serviceCardTitle{display:flex;align-items:center;gap:8px;color:var(--accent)}
+.serviceCardTitle h2{margin:0;font-size:19px;line-height:26px;color:var(--accent)}
+.serviceCard>p{flex:1;margin:0;min-height:42px;color:#cfcde4;font-size:14px;line-height:1.6}
+.points{display:grid;gap:8px;padding-top:10px;border-top:1px solid #44485e}
+.points>strong{font-size:14px;color:var(--accent)}
+.points ul{display:grid;gap:5px;list-style:none;margin:0;padding:12px 10px;background:#393d55;border-radius:6px}
+.points li{display:flex;align-items:center;gap:8px;color:#cfcde4;font-size:13px}
+.points li::before{content:"";height:5px;width:5px;flex:0 0 5px;background:var(--accent);border-radius:50%}
+.serviceCard>button{width:100%;min-height:36px;margin-top:auto;color:var(--accent);background:color-mix(in srgb,var(--accent),#393d55 88%);border-color:color-mix(in srgb,var(--accent),#555a73 70%)}
+.marketNotes{gap:14px}
+.marketNotes article{display:grid;gap:10px;padding:16px 18px;min-height:124px}
+.marketNotes article:nth-child(1){box-shadow:inset 3px 0 #4fd1bd}
+.marketNotes article:nth-child(2){box-shadow:inset 3px 0 #62a9ff}
+.marketNotes article>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.marketNotes span{display:grid;place-items:center;min-height:29px;padding:3px 7px;border:1px solid #555a73;border-radius:5px;background:#393d55;color:#cfcde4;font-size:13px;text-align:center}
+.marketNotes article p{line-height:1.5}
+.recordsPanel{padding:16px 18px;display:grid;gap:12px;min-height:330px}
+.recordsPanel>header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.recordsPanel h2{font-size:18px;margin:0}
+.recordsPanel header small{font-size:13px;color:#acabc1}
+.tableScroll{overflow-x:auto}
+.records{min-width:850px;display:grid;gap:6px}
+.tableHeader,.recordRow{display:grid;grid-template-columns:minmax(145px,1.15fr) minmax(105px,.8fr) minmax(185px,1.45fr) minmax(130px,.95fr) 110px;gap:12px;align-items:center;padding:10px 16px}
+.tableHeader{min-height:38px;border:1px solid #555a73;border-radius:6px;background:#393d55;color:#bdbbd1;font-size:13px;font-weight:650}
+.recordRow{min-height:64px;border:1px solid #44485e;border-radius:6px;background:#33384e;color:#cfcde4;font-size:14px}
+.recordRow>div:first-child{display:grid;gap:3px}
+.recordRow strong{color:#cfcde4;font-size:14px}
+.recordRow small{font-size:12px;color:#acabc1}
+.recordRow time{color:#acabc1;font-size:13px}
+.recordRow button{min-height:32px;padding:0 12px;font-size:13px}
+.status{display:inline-flex;align-items:center;justify-content:center;min-width:92px;min-height:27px;padding:3px 12px;border-radius:6px;background:#234460;color:#93d3ff;font-size:13px;font-weight:650}
+.status[data-status="待确认"],.status[data-status="待验收"]{background:#543f28;color:#ffbe70}
+.status[data-status="已完成"]{background:#234938;color:#8de3aa}
+.empty{padding:22px;border:1px solid #555a73;border-radius:6px;color:#bdbbd1;background:#34384e}
+.joinHero{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:156px;padding:22px 24px}
+.joinHero>div{flex:1;min-width:0}
+.joinHero>div>small{font-size:14px;color:#71dcc4;font-weight:700}
+.joinHero h2{font-size:24px;color:#e7e5f2;margin:4px 0 9px}
+.joinHero p{font-size:15px;line-height:1.55;color:#cfcde4;margin:0}
+.joinHero aside{display:grid;gap:6px;flex:0 0 300px;padding:16px 18px;border-radius:6px;background:#393d55}
+.joinHero aside span,.joinHero aside small{color:#acabc1;font-size:13px}
+.joinHero aside strong{font-size:22px;color:#ffb957}
+.joinGrid{display:grid;grid-template-columns:minmax(0,1.95fr) minmax(315px,1fr);gap:16px}
+.joinFlow,.joinAside{padding:20px;display:grid;align-content:start;gap:11px}
+.joinFlow h2,.joinAside h2{font-size:20px;color:#e4e2f1;margin:0 0 5px}
+.joinStep{display:grid;grid-template-columns:40px minmax(0,1fr) 85px;gap:14px;align-items:center;min-height:67px;padding:10px 13px;border:1px solid #555a73;border-radius:6px;background:#393d55}
+.joinStep>b{display:grid;place-items:center;width:39px;height:39px;border:1px solid #62a9ff;border-radius:6px;color:#62a9ff;font-size:15px}
+.joinStep[data-step="1"]>b{color:#4fd1bd;border-color:#4fd1bd}
+.joinStep[data-step="2"]>b{color:#ad8aff;border-color:#ad8aff}
+.joinStep[data-step="3"]>b{color:#ffb957;border-color:#ffb957}
+.joinStep span{display:grid;gap:4px;min-width:0}
+.joinStep strong{font-size:15px;color:#b8d7ff}
+.joinStep[data-step="1"] strong{color:#77dfc7}
+.joinStep[data-step="2"] strong{color:#c4a7ff}
+.joinStep[data-step="3"] strong{color:#ffcb8b}
+.joinStep small{font-size:13px;line-height:1.5;color:#c1bfd1}
+.joinStep em{color:#a6a5b9;text-align:right;font-size:13px;font-style:normal}
+.joinInfo{display:grid;gap:5px;padding:12px 13px;border:1px solid #555a73;border-radius:6px;background:#393d55}
+.joinInfo strong{font-size:14px;color:#9ecaff}
+.joinInfo:nth-of-type(2) strong{color:#7be1c8}
+.joinInfo p{margin:0;color:#bfbdd1;font-size:13px}
+.joinAside>.primary{width:100%;min-height:44px;margin-top:2px}
+.joinNotice{padding:15px;border-left:3px solid #ad8aff;border-radius:6px;background:#393d55}
+.joinNotice strong{color:#c9b0ff;font-size:15px}
+.joinNotice p{margin:7px 0 0;color:#c0bed1;font-size:13px;line-height:1.6}
+.dialog,.drawer{box-sizing:border-box;border:1px solid #555a73;background:#2f3349;color:#cfcde4;box-shadow:0 22px 80px #070911a0;max-height:85dvh;overflow-y:auto;padding:0;border-radius:8px}
+.dialog{width:min(580px,calc(100vw - 32px))}
+.drawer{position:fixed;top:0;right:0;bottom:0;left:auto;margin:0 0 0 auto;width:min(500px,calc(100vw - 18px));max-height:100dvh;min-height:100dvh;border-radius:8px 0 0 8px}
+.dialog::backdrop,.drawer::backdrop{background:#070b17ba}
+.dialogHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:19px 22px;border-bottom:1px solid #44485e}
+.dialogHead h2{font-size:20px;margin:0;line-height:1.4;color:#e6e4f1}
+.dialogHead button{padding:0;width:35px;height:35px;min-height:35px}
+.dialogBody{padding:20px 22px 24px;display:grid;align-content:start;gap:14px}
+.dialogBody h3{font-size:17px;color:#e6e4f1;margin:4px 0 0}
+.dialogBody p{color:#c0bed0;font-size:14px;margin:0;line-height:1.6}
+.dialogServiceHeader p{margin:10px 0 0}
+.serviceCategory{display:inline-flex;padding:4px 12px;border-radius:6px;background:#393d55;color:#8ddef3;font-size:13px}
+.dialogList{list-style:none;display:grid;gap:9px;margin:0;padding:0}
+.dialogList li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #555a73;border-radius:6px;background:#393d55;color:#cfcde4;font-size:14px}
+.dialogList svg{flex:none;color:#4fd1bd;margin-top:2px}
+.dialogHighlights{display:grid;gap:8px}
+.dialogHighlights>div{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:6px;background:#393d55;font-size:13px}
+.dialogHighlights svg{flex:none;color:#b6acff}
+.dialogBody .disclaimer{padding:12px;border:1px solid #555a73;border-radius:6px;background:#34394f;color:#c0bccc;font-size:13px;line-height:1.5}
+.dialogActions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-top:8px;padding-top:12px;border-top:1px solid #44485e}
+.drawerSummary{display:grid;justify-items:start;gap:10px;padding:16px;background:#393d55;border-radius:6px}
+.drawerSummary small{color:#acabc1}
+.drawerSummary h3{font-size:21px;margin:0}
+.progressSteps{display:grid;gap:10px}
+.progressSteps>div{display:grid;grid-template-columns:38px 1fr;gap:11px;align-items:center;padding:12px;border:1px solid #555a73;border-radius:6px;background:#393d55}
+.progressSteps b{display:grid;place-items:center;width:37px;height:37px;border:1px solid #686a82;border-radius:6px;color:#aaa9be}
+.progressSteps [data-complete="true"] b{color:#7ce3c5;border-color:#4fd1bd}
+.progressSteps [data-active="true"]{border-color:#7367f0}
+.progressSteps span{display:grid;gap:3px}
+.progressSteps strong{color:#e2e0ef;font-size:14px}
+.progressSteps small{color:#acabc1;font-size:12px}
+.drawerTabs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.drawerTabs button[aria-pressed="true"]{color:#c4bdff;background:#45406f;border-color:#7367f0}
+:global(.light) .page{color:#444050}
+:global(.light) .head,:global(.light) .marketControls,:global(.light) .segmentRow,:global(.light) .recordsPanel,:global(.light) .homeCard,:global(.light) .howto,:global(.light) .homeNotes article,:global(.light) .marketNotes article,:global(.light) .joinHero,:global(.light) .joinFlow,:global(.light) .joinAside,:global(.light) .serviceCard,:global(.light) .dialog,:global(.light) .drawer{background:#fff;border-color:#dcd9e9;color:#444050}
+:global(.light) .head h1,:global(.light) .howto h2,:global(.light) .marketNotes h2,:global(.light) .joinHero h2,:global(.light) .joinFlow h2,:global(.light) .joinAside h2,:global(.light) .dialogHead h2{color:#444050}
+:global(.light) .head p,:global(.light) .homeCard p,:global(.light) .joinHero p,:global(.light) .homeNotes p,:global(.light) .serviceCard>p,:global(.light) .marketNotes article p{color:#6f6b7d}
+:global(.light) .page :is(.howtoGrid article,.points ul,.marketNotes span,.recordRow,.joinStep,.joinInfo,.joinNotice,.searchBox,.filterBar select),:global(.light) .dialogBody :is(.dialogList li,.dialogHighlights>div,.drawerSummary,.progressSteps>div){background:#f8f7fb;border-color:#ddd9eb;color:#444050}
+:global(.light) .page button:not(.primary),:global(.light) .drawer button:not(.primary),:global(.light) .dialog button:not(.primary){background:#f6f4fb;border-color:#ddd9eb;color:#444050}
+:global(.light) .page .segments button[aria-pressed="true"],:global(.light) .drawerTabs button[aria-pressed="true"]{color:#6555d6;background:#ebe8fe;border-color:#7367f0}
+:global(.light) .page .primary,:global(.light) .dialog .primary,:global(.light) .drawer .primary{color:#fff;background:#7367f0;border-color:#7367f0}
+:global(.light) .searchBox input{color:#444050}
+@media(max-width:1450px){.segments button{min-width:0}}
+@media(max-width:1250px){.serviceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.segmentRow{align-items:flex-start;flex-direction:column}.segments{justify-content:flex-start;width:100%}}
+@media(max-width:1050px){.howtoGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.joinGrid{grid-template-columns:1fr}.homeCards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.page{width:calc(100% - 24px);padding:14px 0 28px;gap:12px}.head{padding:15px 17px}.head h1{font-size:22px;line-height:30px}.head p{font-size:14px}.homeCards,.howtoGrid,.serviceGrid,.homeNotes,.marketNotes{grid-template-columns:1fr}.howto>header{flex-direction:column;gap:5px}.marketNotes article>div{grid-template-columns:repeat(3,minmax(0,1fr))}.filterBar{flex-wrap:wrap}.filterBar .searchBox{flex:1 1 100%}.filterBar select{flex:1;min-width:130px}.joinHero{flex-direction:column;align-items:stretch;padding:18px}.joinHero aside{flex:0 0 auto}.joinStep{grid-template-columns:39px 1fr;gap:10px}.joinStep em{grid-column:2;text-align:left}.segmentRow{padding:14px}.segments button{flex:1 1 auto}.dialogBody{padding:18px}.dialogHead{padding:17px}.homeCard{min-height:164px}}
+
+/* Full light-mode parity: keep contrast readable in cards, status tables,
+   side panels and dialogs while retaining the same functional hierarchy. */
+:global(.light) .page :is(.howtoGrid h3,.recordsPanel h2,.homeNotes h3,.serviceCardTitle h2,.joinInfo strong,.joinNotice strong,.cardHead h2){color:#444050}
+:global(.light) .page :is(.howtoGrid p,.points li,.recordRow strong,.recordRow time,.recordRow small,.joinStep small,.joinStep em,.joinInfo p,.joinNotice p,.segments small,.filterBar select,.homeCard .cardHead span){color:#6f6b7d}
+:global(.light) .page .joinStep strong{color:#6555cd}
+:global(.light) .page .joinStep[data-step="1"] strong{color:#087f6c}
+:global(.light) .page .joinStep[data-step="3"] strong{color:#9c600a}
+:global(.light) .page .tableHeader{background:#f2effa;border-color:#ddd9eb;color:#6f6b7d}
+:global(.light) .page .recordRow{background:#fff;border-color:#e5e1ec}
+:global(.light) .page .joinHero aside{background:#f4f1fa}
+:global(.light) .page .joinHero aside span,:global(.light) .page .joinHero aside small{color:#6f6b7d}
+:global(.light) .page .joinHero aside strong{color:#a86c16}
+:global(.light) .page .searchBox input{color:#444050}
+:global(.light) .page .serviceCard>button{color:#5143bc}
+:global(.light) .page .cardHead h2{color:#5143bc}
+:global(.light) .page .recordRow .status{color:#146a96;background:#e2f2fd}
+:global(.light) .page .recordRow .status[data-status="待确认"],:global(.light) .page .recordRow .status[data-status="待验收"]{color:#905b1a;background:#fff0d9}
+:global(.light) .page .recordRow .status[data-status="已完成"]{color:#12764e;background:#dff5e8}
+:global(.light) .dialogBody h3,:global(.light) .drawer .dialogBody h3,:global(.light) .dialogBody .drawerSummary h3{color:#444050}
+:global(.light) .dialogBody p,:global(.light) .drawer .dialogBody p,:global(.light) .dialogBody .dialogServiceHeader p,:global(.light) .dialogBody .disclaimer{color:#6f6b7d}
+:global(.light) .dialogBody .disclaimer{background:#f6f3fb;border-color:#ddd9eb}
+:global(.light) .dialogBody :is(.progressSteps strong,.dialogList li,.dialogHighlights>div){color:#444050}
+:global(.light) .dialogBody :is(.progressSteps small,.drawerSummary small){color:#6f6b7d}
+:global(.light) .dialogBody .serviceCategory{background:#efecfb;color:#6555bb}
+:global(.light) .dialogHead,.light .dialogActions{border-color:#ddd9eb}
