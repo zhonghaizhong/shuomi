@@ -1577,3 +1577,175 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Scoped Vuexy visual system: data, store center, plans and account overviews.
+   Business copy, card count, menu structure and actions remain unchanged. */
+.page[data-commerce-unified]{
+  box-sizing:border-box;width:calc(100% - 48px);max-width:1600px;
+  margin:0 auto;padding:20px 0 34px;gap:16px;color:#cfcde4;
+}
+.page[data-commerce-unified] *{box-sizing:border-box;min-width:0}
+.page[data-commerce-unified] :is(.header,.dataCard,.dataSteps article,.dataDetails article,
+.storeModule,.storeDetails article,.planOverview,.planEntrances article,
+.planBottom>article,.planBottom>aside,.accountOverview,.accountModules,
+.accountBottom>article,.accountBottom>aside,.accountModules article,
+.accountSettings>section,.profileBanner,.profileGrid>article,
+.profileGrid>aside,.profileStatus article){
+  border:1px solid #44485e;border-radius:6px;background:#2f3349;box-shadow:none;
+}
+.page[data-commerce-unified] .header{
+  min-height:110px;display:flex;align-items:center;padding:18px 24px;
+}
+.page[data-commerce-unified] .header h1{
+  margin:6px 0;padding-left:12px;border-left:3px solid #7367f0;
+  font-size:clamp(23px,1.35vw,30px);line-height:1.3;font-weight:700;
+  color:#e6e4f1;white-space:nowrap;
+}
+.page[data-commerce-unified] .breadcrumb{font-size:13px;color:#acabc1}
+.page[data-commerce-unified] .header p{margin:0;color:#acabc1;font-size:15px;line-height:1.6}
+.page[data-commerce-unified] :is(h2,h3){line-height:1.35}
+.page[data-commerce-unified] :is(.dataCards,.dataSteps>div,.dataDetails,.storeDetails,
+.planEntrances>div,.planBottom,.accountModules>div,.accountBottom){gap:14px}
+.page[data-commerce-unified] :is(.dataCard,.storeModule){
+  padding:18px 20px 14px;min-height:164px;
+  border-left:2px solid var(--accent,#7367f0);
+}
+.page[data-commerce-unified] :is(.dataCard h2,.storeModule h2){
+  font-size:19px;font-weight:700;line-height:26px;color:var(--accent,#7367f0);
+}
+.page[data-commerce-unified] :is(.dataCard p,.storeModule p){
+  margin:12px 0;color:#cfcde4;font-size:14px;line-height:1.6;
+}
+.page[data-commerce-unified] :is(.dataSteps>header,.planEntrances>header,
+.accountOverview>header,.accountModules>header){align-items:baseline;gap:20px}
+.page[data-commerce-unified] :is(.dataSteps h2,.planEntrances h2,
+.accountOverview h2,.accountModules h2){font-size:18px;color:#e6e4f1}
+.page[data-commerce-unified] :is(.dataSteps>header p,.planEntrances>header span,
+.accountOverview>header span,.accountModules>header span){font-size:14px;color:#acabc1}
+.page[data-commerce-unified] .dataSteps article{min-height:145px;padding:15px;gap:7px 10px}
+.page[data-commerce-unified] .dataSteps article b{
+  border-radius:6px;width:40px;height:40px;font-size:16px;font-weight:700
+}
+.page[data-commerce-unified] .dataSteps article strong{font-size:15px;line-height:1.4}
+.page[data-commerce-unified] .dataSteps article p{font-size:14px;line-height:1.6;color:#cfcde4}
+.page[data-commerce-unified] :is(.dataDetails article,.storeDetails article){min-height:162px;padding:18px;gap:16px}
+.page[data-commerce-unified] :is(.dataDetails article p,.storeDetails article p,
+.dataDetails li span,.storeDetails li span){color:#c0bed1;font-size:14px;line-height:1.6}
+.page[data-commerce-unified] :is(.dataDetails h3,.storeDetails h3){color:#e6e4f1;font-size:17px}
+.page[data-commerce-unified] :is(.dataDetails article>div>span,.storeDetails article>div>span){color:#87bbff}
+.page[data-commerce-unified] :is(.dataCard button,.storeModule button,.planActions button,
+.planEntrances article button,.planBottom button,.accountModules button,
+.accountBottom button,.profileGrid button,.accountSettings button){
+  min-height:37px;padding:0 14px;border:1px solid #555a73;border-radius:6px;
+  color:#cfcde4;background:#393d55;font-size:14px;font-weight:550;
+  white-space:nowrap;cursor:pointer;
+}
+.page[data-commerce-unified] :is(.planEntrances article button,.planActions button:last-child,
+.accountModules article button,.accountSettings>footer button:last-child){
+  border-color:#7367f0;background:#7367f0;color:#fff;
+}
+.page[data-commerce-unified] button:focus-visible,
+.page[data-commerce-unified] input:focus-visible,
+.page[data-commerce-unified] select:focus-visible{
+  outline:2px solid #a79dff;outline-offset:2px
+}
+.page[data-commerce-unified] button:hover{border-color:#8e80ff}
+.page[data-commerce-unified] :is(.planOverview,.planBottom>article,.planBottom>aside,
+.accountOverview,.accountModules,.accountBottom>article,.accountBottom>aside){padding:18px 20px}
+.page[data-commerce-unified] .planOverview{
+  gap:16px;grid-template-columns:minmax(240px,1fr) minmax(450px,2.25fr) auto;min-height:175px;
+}
+.page[data-commerce-unified] .planOverview h2{font-size:22px;color:#e6e4f1}
+.page[data-commerce-unified] .planOverview p{color:#cfcde4;font-size:14px}
+.page[data-commerce-unified] .planStats{min-width:0}
+.page[data-commerce-unified] .planStats div{padding:0 14px;border-color:#44485e}
+.page[data-commerce-unified] .planStats strong{font-size:19px;color:#aab9ff}
+.page[data-commerce-unified] .planStats div:nth-child(4) strong{color:#ffbd62}
+.page[data-commerce-unified] .planStats :is(span,small){font-size:13px;color:#acabc1}
+.page[data-commerce-unified] .planEntrances article{
+  padding:16px 15px;min-height:156px;display:flex;flex-direction:column;
+  box-shadow:inset 2px 0 0 #7367f0;
+}
+.page[data-commerce-unified] .planEntrances article[data-step="1"]{box-shadow:inset 2px 0 0 #4fd1bd}
+.page[data-commerce-unified] .planEntrances article[data-step="2"]{box-shadow:inset 2px 0 0 #ad8aff}
+.page[data-commerce-unified] .planEntrances article[data-step="3"]{box-shadow:inset 2px 0 0 #f4bf64}
+.page[data-commerce-unified] .planEntrances article[data-step="4"]{box-shadow:inset 2px 0 0 #f38eb3}
+.page[data-commerce-unified] .planEntrances article :is(p,b){color:#c3c1d3;font-size:13px;line-height:1.55}
+.page[data-commerce-unified] .planBottom{grid-template-columns:minmax(0,1.55fr) minmax(320px,.85fr)}
+.page[data-commerce-unified] .usageBar>div{gap:10px;align-items:center}
+.page[data-commerce-unified] .usageBar :is(span,small){color:#acabc1}
+.page[data-commerce-unified] .accountOverview article{
+  min-height:76px;padding:13px 14px;border:1px solid #44485e;border-radius:6px;
+  background:#393d55
+}
+.page[data-commerce-unified] .accountOverview article strong{font-size:16px;color:#aeb5ff}
+.page[data-commerce-unified] .accountOverview article :is(span,small){color:#b4b1c7;font-size:13px}
+.page[data-commerce-unified] .accountModules article{
+  padding:17px 18px;min-height:180px;outline:0!important;
+  box-shadow:inset 2px 0 0 #4fd1bd
+}
+.page[data-commerce-unified] .accountModules article[data-step="1"]{box-shadow:inset 2px 0 0 #62a9ff}
+.page[data-commerce-unified] .accountModules article[data-step="2"]{box-shadow:inset 2px 0 0 #ad8aff}
+.page[data-commerce-unified] .accountModules article p{font-size:14px;color:#cfcde4;line-height:1.6}
+.page[data-commerce-unified] .accountModules article>span{
+  border-radius:5px;background:#393d55;color:#c5c2d6;font-size:13px
+}
+.page[data-commerce-unified] :is(.accountBottom>article>div,.accountBottom>aside>div,
+.profileFacts>div,.profilePair,.profileStatus article){border-color:#44485e}
+.page[data-commerce-unified] :is(.accountBottom small,.accountBottom span,
+.profileBanner p,.profileFacts span,.profileGrid aside p,.profilePair span,
+.accountSettings>section>header span){color:#bdbacd;font-size:13px}
+.page[data-commerce-unified] .profileBanner{padding:20px 24px}
+.page[data-commerce-unified] :is(.profileGrid>article,.profileGrid>aside){padding:20px}
+.page[data-commerce-unified] .profileGrid{gap:14px}
+.page[data-commerce-unified] .profileGrid h2{font-size:18px;color:#e6e4f1}
+.page[data-commerce-unified] :is(.accountFields input,.accountSettings input){
+  min-height:40px;background:#393d55;color:#e6e4f1;border:1px solid #555a73;
+  border-radius:6px;padding:9px 12px;font-size:14px
+}
+.page[data-commerce-unified] :is(.accountContacts article,.accountSecurity,
+.profileStatus article){background:#393d55;border-color:#44485e;border-radius:6px}
+.page[data-commerce-unified] :is(.accountSettings>section>header,.profileGrid header){gap:12px}
+@media(max-width:1300px){
+  .page[data-commerce-unified] .planOverview{grid-template-columns:1fr}
+  .page[data-commerce-unified] .planActions{display:flex;flex-wrap:wrap}
+  .page[data-commerce-unified] .planEntrances>div{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:950px){
+  .page[data-commerce-unified] .dataSteps>div{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .page[data-commerce-unified] :is(.dataDetails,.storeDetails,.planBottom,.profileGrid,.accountBottom){grid-template-columns:1fr}
+  .page[data-commerce-unified] .planEntrances>div{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .page[data-commerce-unified] .header h1{white-space:normal}
+}
+@media(max-width:700px){
+  .page[data-commerce-unified]{width:calc(100% - 24px);padding-top:14px;gap:12px}
+  .page[data-commerce-unified] .header{padding:16px}
+  .page[data-commerce-unified] .header h1{font-size:23px}
+  .page[data-commerce-unified] :is(.dataCards,.dataSteps>div,.accountModules>div,.planEntrances>div){grid-template-columns:1fr}
+  .page[data-commerce-unified] .planStats{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+  .page[data-commerce-unified] .planStats div{border-left:none;padding:0}
+}
+/* Light scheme, scoped to these workbench areas only. */
+:global(.light) .page[data-commerce-unified]{color:#444050}
+:global(.light) .page[data-commerce-unified] :is(.header,.dataCard,.dataSteps article,.dataDetails article,
+.storeModule,.storeDetails article,.planOverview,.planEntrances article,.planBottom>article,
+.planBottom>aside,.accountOverview,.accountModules,.accountBottom>article,.accountBottom>aside,
+.accountModules article,.accountSettings>section,.profileBanner,.profileGrid>article,
+.profileGrid>aside,.profileStatus article){border-color:#ddd9e9;background:#fff}
+:global(.light) .page[data-commerce-unified] :is(.header h1,.planOverview h2,.profileGrid h2,
+.dataDetails h3,.storeDetails h3,.dataSteps h2,.planEntrances h2){color:#444050}
+:global(.light) .page[data-commerce-unified] :is(.header p,.dataCard p,.storeModule p,
+.dataSteps article p,.dataDetails article p,.storeDetails article p,.planOverview p,
+.accountModules article p,.profileBanner p){color:#6f6b7d}
+:global(.light) .page[data-commerce-unified] :is(.accountOverview article,.accountContacts article,
+.accountSecurity,.profileStatus article){background:#f8f7fb;border-color:#ddd9e9}
+:global(.light) .page[data-commerce-unified] :is(.accountFields input,.accountSettings input){
+  background:#f8f7fb;color:#444050;border-color:#dad6e4
+}
+:global(.light) .page[data-commerce-unified] :is(.dataCard button,.storeModule button,
+.profileGrid button,.accountSettings button){color:#555061;background:#f8f7fb;border-color:#dad6e4}
+:global(.light) .page[data-commerce-unified] :is(.planEntrances article button,
+.planActions button:last-child,.accountModules article button,.accountSettings>footer button:last-child){
+  color:#fff;background:#7367f0;border-color:#7367f0
+}
