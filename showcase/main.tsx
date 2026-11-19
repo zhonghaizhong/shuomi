@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Bell, Headset, MoonStar, PanelLeftClose, PanelLeftOpen, UserRound } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ShowcaseTopbarActions, ShowcaseNotifications } from "./topbar-interactions";
 import { DemoWorkbenchPreview } from "@/components/workbench/demo-workbench-preview";
 import { CockpitPreview } from "@/components/workbench/cockpit/cockpit-preview";
 import { ConsoleNavigation } from "@/components/workbench/console/console-navigation";
@@ -11,8 +12,7 @@ import "./showcase.css";
 function Showcase() {
   const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showAccount, setShowAccount] = useState(false);
+  const [readNoticeIds,setReadNoticeIds] = useState<number[]>([4]);
   const [isLightTheme, setIsLightTheme] = useState(false);
   const cockpitPermissions = ["workbench.cockpit.goals.read", "workbench.cockpit.stores.read", "workbench.cockpit.alerts.read", "workbench.cockpit.advice.read"];
   return <div className={isLightTheme ? "light" : "dark"}>
@@ -24,14 +24,9 @@ function Showcase() {
     <div className="showcase-main">
       <header className="showcase-topbar">
         <div className="showcase-brand-message"><strong>打造属于自己的AI电商团队</strong><span>SHUOMI AI ENGINE</span></div>
-        <div className="showcase-top-actions" aria-label="全局操作">
-          <a className="showcase-action-icon" href="mailto:support@shuomiai.com" aria-label="联系客户" title="联系客户"><Headset size={19} aria-hidden="true" /></a>
-          <div className="showcase-action-wrap"><button className="showcase-action-icon" type="button" aria-label="通知" title="通知" aria-expanded={showNotifications} onClick={() => { setShowNotifications(value => !value); setShowAccount(false); }}><Bell size={19} aria-hidden="true" /><i className="showcase-notification-dot" /></button>{showNotifications ? <div className="showcase-action-popover"><strong>通知</strong><span>3 条未读通知</span></div> : null}</div>
-          <button className="showcase-action-icon" type="button" aria-label={isLightTheme ? "切换深色主题" : "切换浅色主题"} title={isLightTheme ? "切换深色主题" : "切换浅色主题"} onClick={() => setIsLightTheme(value => !value)}><MoonStar size={19} aria-hidden="true" /></button>
-          <div className="showcase-action-wrap"><button className="showcase-account-icon" type="button" aria-label="示例用户账户" title="示例用户" aria-expanded={showAccount} onClick={() => { setShowAccount(value => !value); setShowNotifications(false); }}><UserRound size={21} aria-hidden="true" /><i /></button>{showAccount ? <div className="showcase-action-popover"><strong>示例用户</strong><span>演示账户</span></div> : null}</div>
-        </div>
+        <ShowcaseTopbarActions navigate={router.push} pathname={router.pathname} light={isLightTheme} onTheme={() => setIsLightTheme(value => !value)} read={readNoticeIds} />
       </header>
-      <main className="showcase-content">{router.pathname === "/workbench" ? <CockpitPreview /> : <DemoWorkbenchPreview pathname={router.pathname} />}</main>
+      <main className="showcase-content">{router.pathname === "/workbench/notifications" ? <ShowcaseNotifications navigate={router.push} read={readNoticeIds} markRead={id => setReadNoticeIds(ids => ids.includes(id) ? ids : [...ids,id])} markAll={ids => setReadNoticeIds(current => [...new Set([...current,...ids])])} /> : router.pathname === "/workbench" ? <CockpitPreview /> : <DemoWorkbenchPreview pathname={router.pathname} />}</main>
     </div>
   </div>;
   </div>;
