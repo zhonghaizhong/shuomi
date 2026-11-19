@@ -1,0 +1,39 @@
+name: Verify Tool Market Figma Home
+on:
+  push:
+    branches:
+      - fix/tool-market-overview-figma-20261119
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  figma-home:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm run build:pages
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright test --config playwright.tool-home.config.ts
+
+      - name: Save rendered tool market screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tool-market-home-screenshots
+          path: test-results/tool-market-home-*.png
+          if-no-files-found: ignore
