@@ -2183,3 +2183,110 @@
 :global(.light) .cockpitPreview .adviceConfirm {border-color:#e2deeb;background:#f9f8fc}
 :global(.light) .cockpitPreview .adviceConfirm > div {border-color:#e2deeb;color:#575267;background:#fff}
 :global(.light) .cockpitPreview .adviceConfirm button:not(.primary) {color:#685bcf;font-weight:650}
+
+
+/* Vuexy light-mode cascade repair for all Operations Dashboard subpages.
+   Keep card geometry, routing and dark-mode styles unchanged. */
+:global(.light) .cockpitPreview {
+  color: #444050;
+}
+:global(.light) .cockpitPreview .header {
+  border-bottom-color: #ddd9e9;
+}
+:global(.light) .cockpitPreview .header h1 {
+  color: #444050;
+  border-left-color: #7367f0;
+}
+:global(.light) .cockpitPreview .header :is(p,.breadcrumb) {
+  color: #6f6b7d;
+}
+:global(.light) .cockpitPreview :is(.goalPanel,.matrixPanel,.goalMetrics article,.alertMetrics article) {
+  background: #fff;
+  border-color: #e2deeb;
+  box-shadow: 0 4px 18px #45405f0c;
+}
+:global(.light) .cockpitPreview :is(.goalPanel h2,.matrixPanel h2) {
+  color: #444050;
+}
+:global(.light) .cockpitPreview :is(.goalPanel p,.matrixPanel > header p,.goalMetrics article small,.alertMetrics article small) {
+  color: #6f6b7d;
+}
+:global(.light) .cockpitPreview :is(.goalMetrics article,.alertMetrics article) > strong {
+  background: color-mix(in srgb, var(--metric-accent, var(--accent, #7367f0)) 12%, white);
+}
+:global(.light) .cockpitPreview .goalMetrics article > strong {
+  color: var(--metric-accent, #7367f0);
+}
+:global(.light) .cockpitPreview .goalMetrics article b {
+  color: var(--metric-accent, #7367f0);
+}
+:global(.light) .cockpitPreview .alertMetrics article b {
+  color: var(--accent, #7367f0);
+}
+:global(.light) .cockpitPreview :is(.goalFilters,.matrixFilters,.alertFilters) {
+  border-color: #e2deeb;
+  background: #f8f7fa;
+}
+:global(.light) .cockpitPreview :is(.goalFilters,.matrixFilters,.alertFilters) :is(select,input,button:not(.primary)),
+:global(.light) .cockpitPreview :is(.goalRow,.matrixRow,.alertRow) button,
+:global(.light) .cockpitPreview .matrixPanel > header button {
+  border-color: #dbd7e7;
+  background: #fff;
+  color: #444050;
+}
+:global(.light) .cockpitPreview :is(.goalFilters,.matrixFilters,.alertFilters) input::placeholder {
+  color: #827d90;
+  opacity: 1;
+}
+:global(.light) .cockpitPreview :is(.goalFilters,.matrixFilters,.alertFilters) button.primary {
+  color: #fff;
+  border-color: #7367f0;
+  background: #7367f0;
+}
+:global(.light) .cockpitPreview :is(.goalColumns,.matrixColumns,.alertColumns) {
+  color: #6f6b7d;
+  border-color: #e2deeb;
+  background: #f3f2f7;
+}
+:global(.light) .cockpitPreview :is(.goalRow,.matrixRow,.alertRow) {
+  color: #5d596c;
+  border-color: #e6e6f1;
+  background: #fff;
+}
+:global(.light) .cockpitPreview :is(.goalRow,.matrixRow,.alertRow):hover {
+  border-color: #b4a9fa;
+  background: #faf9ff;
+}
+:global(.light) .cockpitPreview :is(.goalRow,.matrixRow,.alertRow) strong {
+  color: #444050;
+}
+:global(.light) .cockpitPreview :is(.goalRow,.matrixRow,.alertRow) small,
+:global(.light) .cockpitPreview .matrixPanel > footer,
+:global(.light) .cockpitPreview .matrixPanel > footer span {
+  color: #6f6b7d;
+}
+:global(.light) .cockpitPreview .goalRow > span:nth-child(6) b,
+:global(.light) .cockpitPreview .matrixRow > b:last-child[data-status="正常"] {
+  color: #167a43;
+  background: #e5f6ec;
+}
+:global(.light) .cockpitPreview .goalRow > span:nth-child(6) b[data-state="草稿"] {
+  color: #6f6b7d;
+  background: #f2f1f5;
+}
+:global(.light) .cockpitPreview .matrixRow > b:last-child[data-status="需关注"],
+:global(.light) .cockpitPreview .alertRow > span:first-child b:not([data-level="高风险"]):not([data-level="提醒"]),
+:global(.light) .cockpitPreview .alertRow > b[data-state]:not([data-state="处理中"]) {
+  color: #a75a19;
+  background: #fff1dd;
+}
+:global(.light) .cockpitPreview .matrixRow > b:last-child[data-status="异常"],
+:global(.light) .cockpitPreview .alertRow > span:first-child b[data-level="高风险"] {
+  color: #b72a38;
+  background: #ffecef;
+}
+:global(.light) .cockpitPreview .alertRow > span:first-child b[data-level="提醒"],
+:global(.light) .cockpitPreview .alertRow > b[data-state="处理中"] {
+  color: #6758d1;
+  background: #eeebff;
+}
