@@ -837,3 +837,11 @@
 }
 .page.page > .header > div:first-child > div:first-child {font-size:14px;line-height:20px;color:#b7b1d6;}
 :global(.light) .page.page > .header > div:first-child > div:first-child {color:#6f6b7d;}
+
+
+/* Proportional desktop scaling: preserve reference proportions on 2560px displays. */
+@media (min-width: 2400px) {
+  .page.page > .header { min-height: 152px; padding: 26px 30px; }
+  .page.page > .header h1 { font-size: 30px; line-height: 40px; }
+  .page.page > .header p { font-size: 15px; line-height: 24px; }
+}
