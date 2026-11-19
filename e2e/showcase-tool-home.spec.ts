@@ -5,7 +5,7 @@ test("Figma tool-market home has exact sections and unchanged content",async({pa
  await page.goto(home);
  await expect(page.getByRole("heading",{name:"连接工具能力，让业务流程更高效"})).toBeVisible();
  const overview=page.locator("[data-tool-home]");
- await expect(overview.locator('[class*="entry"] article')).toHaveCount(3);
+ await expect(overview.locator('section[class*="entries"] > article')).toHaveCount(3);
  await expect(overview.locator('[class*="capabilityGrid"] article')).toHaveCount(4);
  await expect(overview.locator('[class*="steps"] li')).toHaveCount(4);
  await expect(overview.locator('[class*="notes"] > section')).toHaveCount(2);
@@ -18,9 +18,9 @@ test("Figma card selection changes highlight without navigating",async({page})=>
  const area=page.locator("[data-tool-home]");
  for(const [i,label] of ["选择官方工具卡片","选择我的工具卡片","选择工具定制卡片"].entries()){
   await area.getByRole("button",{name:label}).click();
-  await expect(area.locator('[class*="entry"]').nth(i)).toHaveAttribute("data-selected","true");
+  await expect(area.locator('section[class*="entries"] > article').nth(i)).toHaveAttribute("data-selected","true");
   await expect(page).toHaveURL(/#\/workbench\/tools$/);
-  await expect(area.locator('[class*="entry"][data-selected="true"]')).toHaveCount(1);
+  await expect(area.locator('section[class*="entries"] > article[data-selected="true"]')).toHaveCount(1);
  }
 });
 test("navigate to all three subpages and return twice without broken links",async({page})=>{
