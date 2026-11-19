@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 
 // NASA Blue Marble public-domain equirectangular texture. An orthographic
 // photograph covers only one hemisphere; 3D rotation needs the hidden side.
-const EARTH_TEXTURE = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Land_shallow_topo_2048.jpg/960px-Land_shallow_topo_2048.jpg";
+const EARTH_TEXTURE = "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg";
 const CLOUD_TEXTURE = "https://threejs.org/examples/textures/planets/earth_clouds_1024.png";
 const TURN_DURATION_MS = 90_000;
 
