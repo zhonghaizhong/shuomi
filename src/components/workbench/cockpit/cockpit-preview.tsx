@@ -2,6 +2,7 @@
 
 import { Activity, ArrowRight, Search, ShoppingCart, Store, TriangleAlert } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./cockpit-preview.module.css";
 import { SeamlessEarthGlobe } from "./seamless-earth-globe";
 
@@ -23,6 +24,7 @@ const alerts = [
 ] as const;
 
 export function CockpitPreview() {
+  const router = useRouter();
   const emptyFilters = { platform: "全部平台", site: "全部站点", type: "全部店铺类型", time: "全部时间", search: "" };
   const [filters, setFilters] = useState(emptyFilters);
   const [activeFilters, setActiveFilters] = useState(emptyFilters);
@@ -64,9 +66,9 @@ export function CockpitPreview() {
       <article className={styles.aiTasksCard}>
         <header><h2>AI 执行与待办</h2><span>3 项重点待办</span></header>
         <div className={styles.aiTasksList}>
-          <div data-tone="running"><i/><span><strong>AI 正在执行</strong><small>春季广告投放优化</small></span><button type="button">查看进度</button></div>
-          <div data-tone="pending"><i/><span><strong>等待你确认</strong><small>当前项目待确认任务</small></span><button type="button">去确认</button></div>
-          <div data-tone="risk"><i/><span><strong>建议立即处理</strong><small>一号店库存补货风险</small></span><button type="button">去处理</button></div>
+          <div data-tone="running"><i/><span><strong>AI 正在执行</strong><small>春季广告投放优化</small></span><button type="button" onClick={() => router.push("/workbench/ai/tasks/running")}>查看进度</button></div>
+          <div data-tone="pending"><i/><span><strong>等待你确认</strong><small>当前项目待确认任务</small></span><button type="button" onClick={() => router.push("/workbench/ai/tasks/pending")}>去确认</button></div>
+          <div data-tone="risk"><i/><span><strong>建议立即处理</strong><small>一号店库存补货风险</small></span><button type="button" onClick={() => router.push("/workbench/overview/alerts")}>去处理</button></div>
         </div>
       </article>
     </section>
@@ -102,7 +104,7 @@ export function CockpitPreview() {
       </div>
     </section>
     <article className={styles.supportTracker}>
-      <header><h2>经营预警</h2><button type="button" className={styles.alertLink}>查看全部预警 <ArrowRight size={13}/></button></header>
+      <header><h2>经营预警</h2><button type="button" className={styles.alertLink} onClick={() => router.push("/workbench/overview/alerts")}>查看全部预警 <ArrowRight size={13}/></button></header>
       <div className={styles.supportTrackerBody}>
         <div className={styles.supportAlertSummary}>
           <div className={styles.alertCountSummary}><strong>{alerts.length}</strong><small>项</small><span>待处理预警</span></div>
@@ -122,7 +124,7 @@ export function CockpitPreview() {
     </section>
 
     <section className={`${styles.panel} ${styles.storeMatrixPanel}`}>
-      <header><div><span>店铺矩阵</span><h2>{visibleStores.length} 家店铺 · GMV / 净利润 / 环比</h2></div><button className={styles.linkButton}>查看全部店铺 <ArrowRight size={13}/></button></header>
+      <header><div><span>店铺矩阵</span><h2>{visibleStores.length} 家店铺 · GMV / 净利润 / 环比</h2></div><button className={styles.linkButton} onClick={() => router.push("/workbench/overview/stores")}>查看全部店铺 <ArrowRight size={13}/></button></header>
       <div className={styles.matrixTable} role="table" aria-label="店铺经营数据">
         <div className={styles.matrixHead} role="row"><span><input type="checkbox" aria-label="全选当前页店铺"/></span><b>店铺</b><b>平台 / 站点</b><b>GMV</b><b>净利润</b><b>环比</b><b>经营状态</b><b>GMV 占比</b></div>
         {pageStores.map(row => {

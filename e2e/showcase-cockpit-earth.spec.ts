@@ -57,3 +57,44 @@ test("prefers reduced motion keeps globe still, without layout changes", async (
   const second = await globe.screenshot();
   expect(first.equals(second)).toBe(true);
 });
+
+
+test("cockpit quick actions navigate to the intended existing pages", async ({ page }) => {
+  await page.goto(cockpit);
+  await page.getByRole("button", { name: "查看全部预警" }).click();
+  await expect(page).toHaveURL(/#\/workbench\/overview\/alerts/);
+  await page.goto(cockpit);
+  await page.getByRole("button", { name: "查看全部店铺" }).click();
+  await expect(page).toHaveURL(/#\/workbench\/overview\/stores/);
+  for (const [action, route] of [["查看进度", "running"], ["去确认", "pending"]]) {
+    await page.goto(cockpit);
+    await page.getByRole("button", { name: action, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp("#/workbench/ai/tasks/" + route));
+  }
+  await page.goto(cockpit);
+  await page.getByRole("button", { name: "去处理" }).click();
+  await expect(page).toHaveURL(/#\/workbench\/overview\/alerts/);
+});
+
+test("cockpit second-level navigation keeps correct targets and active path during repeated switches", async ({ page }) => {
+  await page.goto(cockpit);
+  const nav = page.getByRole("navigation", { name: "工作台导航" });
+  const routes = [
+    ["目标管理", "goals"],
+    ["店铺矩阵", "stores"],
+    ["经营预警", "alerts"],
+    ["经营建议", "advice"],
+  ];
+  for (const [label, route] of [...routes, ...routes.slice().reverse()]) {
+    await nav.getByRole("link", { name: label, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp("#/workbench/overview/" + route + "$"));
+    await expect(nav.getByRole("link", { name: label, exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(nav.getByRole("button", { name: "收起运营驾驶舱" })).toHaveAttribute("aria-expanded", "true");
+  }
+  await nav.getByRole("link", { name: "运营驾驶舱", exact: true }).click();
+  await expect(page).toHaveURL(/#\/workbench$/);
+  await nav.getByRole("button", { name: "收起运营驾驶舱" }).click();
+  await expect(nav.getByRole("button", { name: "展开运营驾驶舱" })).toHaveAttribute("aria-expanded", "false");
+  await nav.getByRole("button", { name: "展开运营驾驶舱" }).click();
+  await expect(nav.getByRole("link", { name: "经营预警", exact: true })).toBeVisible();
+});
