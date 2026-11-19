@@ -1172,3 +1172,77 @@
 @media (prefers-reduced-motion: reduce) {
   .overviewGlobe > canvas { transition: none; }
 }
+
+
+/* Operations Dashboard home: full Vuexy light parity.
+   The feature hero intentionally stays violet; data cards and controls turn light. */
+:global(.light) .page {
+  --surface:#fff;
+  --surface-raised:#f8f7fa;
+  --surface-inset:#f8f7fa;
+  --line:#e6e6f1;
+  --line-soft:#e6e6f1;
+  --text:#444050;
+  --muted:#6f6b7d;
+  --subtle:#817c90;
+  color:#444050;
+  background:transparent;
+}
+:global(.light) .page :is(.metrics article,.panel,.middleGrid>.panel:first-child,.bottomGrid>.panel:first-child,.supportTracker,.metricsDigest) {
+  color:#444050;
+  border-color:#e6e6f1;
+  background:#fff;
+  box-shadow:0 5px 20px #45405f0e;
+}
+:global(.light) .page .aiTasksCard {
+  color:#444050;
+  border-color:#e6e6f1;
+  background:#fff!important;
+  box-shadow:0 5px 20px #45405f0e;
+}
+:global(.light) .page :is(.bottomGrid>.sideStack>.panel:first-child,.bottomGrid>.sideStack>.panel:nth-child(2)) {
+  color:#444050;border-color:#e6e6f1;background:#fff;
+}
+:global(.light) .page :is(.metrics article header,.metrics article>strong,.panel h2,.alerts strong,.tasks strong,.tableRow>span strong,.matrixStore strong,.digestLead strong,.digestMain strong) {color:#444050;}
+:global(.light) .page :is(.heroCopy p,.metrics article p,.panel>header span,.alerts article span,.tasks article span,.tableRow>span small,.tableHead,.matrixHead,.digestLabel,.digestDetails small) {color:#6f6b7d;}
+:global(.light) .page .metrics article header small {
+  color:#685bcf;
+  border-color:#dcd6f4;
+  background:#eeebff;
+}
+:global(.light) .page .filters {
+  color:#444050;border-color:#e6e6f1;background:#fff;box-shadow:0 3px 14px #45405f0c;
+}
+:global(.light) .page .filters :is(select,input) {
+  color:#444050;border-color:#dbdade;background:#f8f7fa;
+}
+:global(.light) .page .filters :is(select,input):hover {border-color:#b6acf1;background:#fff;}
+:global(.light) .page :is(.tableHead,.matrixHead) {
+  color:#6f6b7d;border-color:#e6e6f1;background:#f4f3f8;
+}
+:global(.light) .page :is(.tableRow,.matrixRow) {
+  color:#444050;border-color:#e6e6f1;background:#fff;
+}
+:global(.light) .page :is(.tableRow:nth-child(odd),.matrixRow:nth-child(odd)) {background:#fcfbfe;}
+:global(.light) .page :is(.tableRow:hover,.matrixRow:hover) {background:#f1efff;}
+:global(.light) .page .matrixStore>i {
+  color:#685bcf;background:#eeebff;
+}
+:global(.light) .page :is(.aiTasksCard>header>span,.aiTasksList>div,.supportAlertSummary li,.matrixFooter button:not(.currentPage)) {
+  color:#444050;border-color:#e6e6f1;background:#f8f7fa;
+}
+:global(.light) .page .aiTasksList>div:hover {background:#f1efff;}
+:global(.light) .page :is(.aiTasksList>div strong,.supportAlertSummary li strong,.digestDetails strong) {color:#444050;}
+:global(.light) .page :is(.aiTasksList>div small,.supportAlertSummary li span,.supportAlertSummary li small) {color:#6f6b7d;}
+:global(.light) .page .alertCountSummary {
+  color:#444050;border-color:#f4dfc9;background:linear-gradient(100deg,#fff4e7,#faf8fb);
+}
+:global(.light) .page :is(.matrixFooter button.currentPage,.filters button:last-child) {color:#fff;border-color:#7367f0;background:#7367f0;}
+:global(.light) .page :is(.linkButton,.chatLink,.alertLink,.tasks article button) {color:#6658ce;}
+:global(.light) .page :is(.linkButton,.chatLink,.alertLink,.tasks article button):hover {color:#5144bb;}
+:global(.light) .page .alerts article small {color:#b72a38;border-color:#f6c6cd;background:#ffecef;}
+:global(.light) .page .alerts article[data-tone="medium"] small {color:#aa671a;border-color:#f6d9aa;background:#fff1df;}
+:global(.light) .page .tableRow em {color:#177b4d;border-color:#bee6cc;background:#e4f7ec;}
+:global(.light) .page .tableRow em[data-status="需关注"] {color:#a75a19;border-color:#f6d9aa;background:#fff1df;}
+:global(.light) .page .tableRow em[data-status="异常"] {color:#b72a38;border-color:#f6c6cd;background:#ffecef;}
+:global(.light) .page :is(button,input,select):focus-visible {outline:2px solid #7367f0;outline-offset:2px;}
