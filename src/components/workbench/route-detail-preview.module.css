@@ -646,3 +646,110 @@
 .card .primary,.noticeBar .primary,.table .primary){
   color:#fff!important;background:#7367f0!important;border-color:#7367f0!important
 }
+
+
+/* Second-pass visual and interaction audit for the four online commerce modules */
+.page[data-commerce-unified]{font-size:15px;gap:18px;padding-top:24px}
+.page[data-commerce-unified] .header{min-height:130px;padding:21px 26px;border-color:#494e67}
+.page[data-commerce-unified] .header h1{font-size:clamp(24px,1.35vw,30px);letter-spacing:-.025em}
+.page[data-commerce-unified] .header p{font-size:14px;line-height:1.65}
+.page[data-commerce-unified] :is(.card,.table,.split>article,.twoCards>article,.metrics>article,.productMetrics article,.orderMetrics article,.noticeBar){border-color:#484d66}
+.page[data-commerce-unified] :is(.card,.split>article,.twoCards>article){padding:22px;min-height:170px}
+.page[data-commerce-unified] .card{display:flex;flex-direction:column;gap:12px;min-height:226px;position:relative;overflow:hidden}
+.page[data-commerce-unified] .card::before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;border-radius:4px;background:#8bbaff}
+.page[data-commerce-unified] .card[data-tone="1"]::before{background:#49d6bd}
+.page[data-commerce-unified] .card[data-tone="2"]::before{background:#a989f7}
+.page[data-commerce-unified] .card[data-tone="3"]::before{background:#efb968}
+.page[data-commerce-unified] .card :is(h2,h3){margin:0;line-height:1.35;font-weight:700}
+.page[data-commerce-unified] .card h3{font-size:18px}
+.page[data-commerce-unified] .card h2{font-size:clamp(17px,1vw,23px);color:#e8e5f4}
+.page[data-commerce-unified] .card p{margin:0;color:#c5c1d6;line-height:1.65}
+.page[data-commerce-unified] .card small{font-size:13px;color:#aeb0c7;line-height:1.5}
+.page[data-commerce-unified] .card .cardActions{margin-top:auto}
+.page[data-commerce-unified] .card:hover{border-color:#6a658b;box-shadow:0 9px 28px #10132627}
+.page[data-commerce-unified] :is(.metrics strong,.productMetrics strong,.orderMetrics strong){font-size:clamp(22px,1.12vw,28px);font-weight:750}
+.page[data-commerce-unified] :is(.metrics>article,.productMetrics article,.orderMetrics article){min-height:103px;gap:9px;padding:18px 20px}
+.page[data-commerce-unified] :is(.productTabs,.orderTabs,.tabs){min-height:63px;padding:10px 13px}
+.page[data-commerce-unified] :is(.productTabs button,.orderTabs button,.tabs button){font-size:14px;font-weight:600;min-height:38px}
+.page[data-commerce-unified] :is(.productTabs .selected,.orderTabs .selected,.tabs .selected){background:#45416f!important;border-color:#7367f0!important;color:#d7ceff!important;box-shadow:inset 0 0 0 1px #7367f066}
+.page[data-commerce-unified] .productFilters{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:72px;padding:13px 15px;flex-wrap:wrap}
+.page[data-commerce-unified] .commerceFilterSelects{display:flex;align-items:center;gap:9px;flex:0 1 auto;min-width:0}
+.page[data-commerce-unified] :is(.filterSelect,.toolbar select){height:40px;min-width:125px;width:auto;max-width:166px;padding:0 12px;border:1px solid #555b75;border-radius:6px;background:#393d55;color:#dcd8ea;font-size:14px;cursor:pointer}
+.page[data-commerce-unified] .filterSelect:focus-visible{outline:2px solid #b1a6ff;outline-offset:2px}
+.page[data-commerce-unified] .commerceFilterActions{display:flex;flex:1 1 270px;justify-content:flex-end;align-items:center;gap:9px;min-width:0}
+.page[data-commerce-unified] .commerceFilterActions input{flex:1 1 auto;min-width:145px;max-width:420px}
+.page[data-commerce-unified] .commerceFilterActions button{height:40px;min-width:70px;white-space:nowrap}
+.page[data-commerce-unified] :is(.productTable,.orderTable,.table){padding:17px 18px}
+.page[data-commerce-unified] :is(.productTableHead,.orderTableHead,.tableHead){min-height:43px;padding-top:12px;padding-bottom:12px}
+.page[data-commerce-unified] :is(.productTableRow,.orderTableRow,.serviceRow){min-height:73px;border-bottom:1px solid #444a62}
+.page[data-commerce-unified] :is(.productTableRow:hover,.orderTableRow:hover,.serviceRow:hover){background:#393e5440}
+.page[data-commerce-unified] :is(.productTableRow button,.orderTableRow button,.serviceRow button){min-height:34px;border-radius:6px}
+.page[data-commerce-unified] :is(.table h2,.split h2,.twoCards h2){font-size:19px;line-height:1.4;color:#e8e5f4}
+.page[data-commerce-unified] .noticeBar{padding:18px 21px}
+.page[data-commerce-unified] :is(.toolbar,.searchRow){gap:9px;min-height:70px;padding:12px 15px}
+.page[data-commerce-unified] .toolbar input{min-width:180px}
+.page[data-commerce-unified] .disabledStatus{display:inline-flex;align-items:center;min-height:33px;padding:5px 13px;border:1px solid #50556f;border-radius:6px;color:#a2a0b7;background:#393d55;font-size:13px}
+.page[data-commerce-unified] .message{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;color:#a5e1cf}
+.page[data-commerce-unified] .message button{border:1px solid #3e846d;background:#275044;color:#bff4e4;border-radius:5px;min-width:28px;min-height:28px;cursor:pointer}
+.page[data-commerce-unified] .operationBackdrop{position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:20px;background:#050917b5;backdrop-filter:blur(3px)}
+.page[data-commerce-unified] .operationDialog{width:min(570px,100%);border:1px solid #555a73;border-radius:10px;background:#30344b;box-shadow:0 24px 80px #060a16b3;padding:0;color:#e4e1f0}
+.page[data-commerce-unified] .operationHead{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:19px 22px;border-bottom:1px solid #494e66}
+.page[data-commerce-unified] .operationHead small{display:block;color:#a99efc;font-size:12px;margin-bottom:4px}
+.page[data-commerce-unified] .operationHead h2{margin:0;font-size:21px;color:#e8e6f4}
+.page[data-commerce-unified] .operationHead button{display:grid;place-items:center;width:34px;height:34px;border:1px solid #5a607c;border-radius:6px;background:#393e56;color:#d4d0e2;cursor:pointer}
+.page[data-commerce-unified] .operationDialog>p{margin:0;padding:20px 22px 14px;color:#c9c5d5;font-size:14px;line-height:1.8}
+.page[data-commerce-unified] .operationSummary{display:grid;grid-template-columns:124px minmax(0,1fr);gap:8px 12px;margin:0 22px;padding:15px;border:1px solid #4b516c;border-radius:6px;background:#3a3e57;font-size:13px}
+.page[data-commerce-unified] .operationSummary b{color:#a9a3ca}
+.page[data-commerce-unified] .operationSummary span{color:#e1deef}
+.page[data-commerce-unified] .operationDialog footer{display:flex;justify-content:flex-end;padding:18px 22px}
+.page[data-commerce-unified] .operationDialog footer button{min-height:40px;padding:0 18px;border:1px solid #7367f0;border-radius:6px;background:#7367f0;color:#fff;cursor:pointer}
+:global(.light) .page[data-commerce-unified] :is(.filterSelect,.toolbar select){background:#faf9fd;color:#514d60;border-color:#d8d5e6}
+:global(.light) .page[data-commerce-unified] :is(.card,.table,.split>article,.twoCards>article,.metrics>article,.productMetrics article,.orderMetrics article){background:#fff;border-color:#dcd9e9}
+:global(.light) .page[data-commerce-unified] .card h2{color:#454151}
+:global(.light) .page[data-commerce-unified] .card p{color:#6f6b7d}
+:global(.light) .page[data-commerce-unified] :is(.productTabs .selected,.orderTabs .selected,.tabs .selected){background:#edeaff!important;color:#6756d5!important;border-color:#7367f0!important}
+:global(.light) .page[data-commerce-unified] .operationDialog{background:#fff;border-color:#ddd8eb;color:#454050}
+:global(.light) .page[data-commerce-unified] .operationHead{border-color:#dedbe7}
+:global(.light) .page[data-commerce-unified] .operationHead h2{color:#454050}
+:global(.light) .page[data-commerce-unified] .operationDialog>p{color:#6f6b7d}
+:global(.light) .page[data-commerce-unified] .operationSummary{background:#f7f6fb;border-color:#ddd9e9}
+:global(.light) .page[data-commerce-unified] .operationSummary :is(b,span){color:#5b566a}
+@media(min-width:1850px) and (min-height:1050px){
+ .page[data-commerce-unified]{gap:21px;padding-top:29px}
+ .page[data-commerce-unified] .header{min-height:147px;padding:24px 28px}
+ .page[data-commerce-unified] .card{min-height:250px}
+ .page[data-commerce-unified] :is(.metrics>article,.productMetrics article,.orderMetrics article){min-height:116px}
+ .page[data-commerce-unified] .productFilters{min-height:78px}
+ .page[data-commerce-unified] :is(.table,.productTable,.orderTable){padding:21px 22px}
+ .page[data-commerce-unified] :is(.productTableRow,.orderTableRow,.serviceRow){min-height:82px}
+}
+@media(max-width:1350px){
+ .page[data-commerce-unified] .productFilters{align-items:stretch}
+ .page[data-commerce-unified] .commerceFilterSelects{flex-wrap:wrap;flex:1 1 100%}
+ .page[data-commerce-unified] .commerceFilterActions{flex:1 1 100%}
+ .page[data-commerce-unified] .commerceFilterActions input{max-width:none}
+}
+@media(max-width:700px){
+ .page[data-commerce-unified] .header{min-height:0;padding:17px}
+ .page[data-commerce-unified] .commerceFilterSelects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .page[data-commerce-unified] .commerceFilterSelects select{max-width:none;width:100%;min-width:0}
+ .page[data-commerce-unified] .commerceFilterActions{flex-wrap:wrap}
+ .page[data-commerce-unified] .commerceFilterActions input{flex:1 1 100%}
+ .page[data-commerce-unified] .operationSummary{grid-template-columns:1fr}
+}
+
+
+.page[data-commerce-unified] .rolePermissions{display:grid;gap:13px;padding:17px 19px;border:1px solid #515671;border-radius:6px;background:#2f3349}
+.page[data-commerce-unified] .rolePermissions header{display:flex;align-items:center;gap:16px}
+.page[data-commerce-unified] .rolePermissions header strong{font-size:16px;color:#e7e3f4}
+.page[data-commerce-unified] .rolePermissions header small{font-size:13px;color:#bab5ce}
+.page[data-commerce-unified] .rolePermissions>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.page[data-commerce-unified] .rolePermissions article{display:grid;gap:6px;min-height:91px;padding:14px 16px;border:1px solid #555a72;border-radius:6px;background:#393d55}
+.page[data-commerce-unified] .rolePermissions article strong{font-size:15px;color:#aba0ff}
+.page[data-commerce-unified] .rolePermissions article span{font-size:14px;color:#e2deed}
+.page[data-commerce-unified] .rolePermissions article small{font-size:12px;color:#b0acc1}
+:global(.light) .page[data-commerce-unified] .rolePermissions{background:#fff;border-color:#ddd9e9}
+:global(.light) .page[data-commerce-unified] .rolePermissions header strong{color:#454050}
+:global(.light) .page[data-commerce-unified] .rolePermissions article{background:#f8f7fb;border-color:#ddd9e9}
+:global(.light) .page[data-commerce-unified] .rolePermissions article span{color:#454050}
+@media(max-width:780px){.page[data-commerce-unified] .rolePermissions>div{grid-template-columns:1fr}.page[data-commerce-unified] .rolePermissions header{align-items:flex-start;flex-direction:column;gap:5px}}
