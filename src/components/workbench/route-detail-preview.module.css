@@ -737,3 +737,19 @@
  .page[data-commerce-unified] .commerceFilterActions input{flex:1 1 100%}
  .page[data-commerce-unified] .operationSummary{grid-template-columns:1fr}
 }
+
+
+.page[data-commerce-unified] .rolePermissions{display:grid;gap:13px;padding:17px 19px;border:1px solid #515671;border-radius:6px;background:#2f3349}
+.page[data-commerce-unified] .rolePermissions header{display:flex;align-items:center;gap:16px}
+.page[data-commerce-unified] .rolePermissions header strong{font-size:16px;color:#e7e3f4}
+.page[data-commerce-unified] .rolePermissions header small{font-size:13px;color:#bab5ce}
+.page[data-commerce-unified] .rolePermissions>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.page[data-commerce-unified] .rolePermissions article{display:grid;gap:6px;min-height:91px;padding:14px 16px;border:1px solid #555a72;border-radius:6px;background:#393d55}
+.page[data-commerce-unified] .rolePermissions article strong{font-size:15px;color:#aba0ff}
+.page[data-commerce-unified] .rolePermissions article span{font-size:14px;color:#e2deed}
+.page[data-commerce-unified] .rolePermissions article small{font-size:12px;color:#b0acc1}
+:global(.light) .page[data-commerce-unified] .rolePermissions{background:#fff;border-color:#ddd9e9}
+:global(.light) .page[data-commerce-unified] .rolePermissions header strong{color:#454050}
+:global(.light) .page[data-commerce-unified] .rolePermissions article{background:#f8f7fb;border-color:#ddd9e9}
+:global(.light) .page[data-commerce-unified] .rolePermissions article span{color:#454050}
+@media(max-width:780px){.page[data-commerce-unified] .rolePermissions>div{grid-template-columns:1fr}.page[data-commerce-unified] .rolePermissions header{align-items:flex-start;flex-direction:column;gap:5px}}
