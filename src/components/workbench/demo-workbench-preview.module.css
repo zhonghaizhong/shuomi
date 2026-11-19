@@ -1112,3 +1112,242 @@
   .chatLandingPreview :global([class*="scenarios"]) > * { min-height: 8rem; padding: 16px 18px; }
 }
 
+
+
+/* Agent-market showcase: match the already-approved Vuexy dark workspace.
+   Scoped here so knowledge, supply market, navigation and production pages stay untouched. */
+.agentsPreview {
+  width: calc(100% - 48px);
+  max-width: 1600px;
+  margin-inline: auto;
+  padding-block: 20px 32px;
+  gap: 16px;
+  color: #cfcde4;
+}
+.agentsPreview .header {
+  min-height: 116px;
+  padding: 20px 26px;
+  border: 1px solid #44485e;
+  border-radius: 6px;
+  background: #2f3349;
+}
+.agentsPreview .header > div:first-child { flex: 1; min-width: 0; }
+.agentsPreview .breadcrumb { color: #acabc1; font-size: 15px; }
+.agentsPreview .header h1 {
+  margin: 7px 0 9px;
+  border-left-color: #7367f0;
+  color: #cfcde4;
+  font-size: 30px;
+  letter-spacing: 0;
+}
+.agentsPreview .header p { color: #acabc1; font-size: 16px; line-height: 1.6; }
+.agentsPreview .primary {
+  min-height: 42px;
+  padding: 0 18px;
+  border-color: #7367f0;
+  border-radius: 6px;
+  color: #fff;
+  background: #7367f0;
+  font-size: 15px;
+}
+.agentsPreview .primary:hover { border-color: #8b80ff; background: #8175f5; }
+
+.agentsPreview .dataCards { gap: 16px; }
+.agentsPreview .dataCard {
+  min-width: 0;
+  min-height: 218px;
+  padding: 22px 24px;
+  border-color: color-mix(in srgb, var(--accent), #44485e 76%);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent), #2f3349 95%);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.agentsPreview .dataCard h2 { color: var(--accent); font-size: 21px; }
+.agentsPreview .dataCard p { margin: 18px 0 16px; color: #cfcde4; font-size: 16px; line-height: 1.6; }
+.agentsPreview .dataCard > div { flex-wrap: wrap; gap: 12px; }
+.agentsPreview .dataCard > div span { color: #acabc1; font-size: 14px; }
+.agentsPreview .dataCard button {
+  min-height: 42px;
+  padding-inline: 18px;
+  border-color: #7367f0;
+  border-radius: 6px;
+  color: #fff;
+  background: #7367f0;
+  font-size: 15px;
+}
+.agentsPreview .dataCard button:hover { border-color: #8b80ff; background: #8175f5; }
+
+.agentsPreview .capabilityBand,
+.agentsPreview .agentsBottom { gap: 16px; }
+.agentsPreview .capabilityBand > header,
+.agentsPreview .agentsBottom article > header { flex-wrap: wrap; gap: 8px 20px; }
+.agentsPreview .capabilityBand h2,
+.agentsPreview .agentsBottom h2 { color: #cfcde4; font-size: 20px; }
+.agentsPreview .capabilityBand > header span,
+.agentsPreview .agentsBottom article > header span { color: #acabc1; font-size: 15px; }
+.agentsPreview .capabilityBand > div { gap: 16px; }
+.agentsPreview .capabilityBand article {
+  min-width: 0;
+  min-height: 148px;
+  padding: 20px;
+  border-color: #44485e;
+  border-radius: 6px;
+  background: #2f3349;
+}
+.agentsPreview .capabilityBand article b { font-size: 17px; }
+.agentsPreview .capabilityBand article p { color: #acabc1; font-size: 15px; line-height: 1.55; }
+.agentsPreview .agentsBottom > article,
+.agentsPreview .agentsBottom > aside {
+  min-width: 0;
+  padding: 22px;
+  border-color: #44485e;
+  border-radius: 6px;
+  background: #2f3349;
+}
+.agentsPreview .agentsBottom article > div { gap: 12px; }
+.agentsPreview .agentsBottom article button {
+  min-width: 0;
+  min-height: 86px;
+  padding: 14px;
+  border: 1px solid #555a73;
+  border-radius: 6px;
+  background: #393d55;
+}
+.agentsPreview .agentsBottom article button:hover { border-color: #7367f0; outline: 0; }
+.agentsPreview .agentsBottom article button strong { font-size: 16px; }
+.agentsPreview .agentsBottom article button small { color: #acabc1; font-size: 14px; line-height: 1.5; }
+.agentsPreview .agentsBottom article button b { border-radius: 6px; }
+.agentsPreview .agentsBottom aside h3 { color: #cfcde4; font-size: 18px; }
+.agentsPreview .agentsBottom aside p { color: #acabc1; font-size: 15px; line-height: 1.6; }
+
+.agentsPreview .agentMarket { gap: 16px; }
+.agentsPreview .agentMarket > header h2 { color: #cfcde4; font-size: 20px; }
+.agentsPreview .agentMarket > header p { color: #acabc1; font-size: 15px; }
+.agentsPreview .agentFilters,
+.agentsPreview .agentMineToolbar {
+  align-items: center;
+  gap: 10px;
+  min-height: 68px;
+  padding: 12px 14px;
+  border: 1px solid #44485e;
+  border-radius: 6px;
+  background: #2f3349;
+}
+.agentsPreview .agentFilters { flex-wrap: nowrap; }
+.agentsPreview .agentFilters button,
+.agentsPreview .agentMineToolbar button {
+  flex: 0 0 auto;
+  min-width: 65px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-color: #555a73;
+  border-radius: 6px;
+  color: #cfcde4;
+  background: #393d55;
+  font-size: 14px;
+}
+.agentsPreview .agentFilters button.agentCategoryActive,
+.agentsPreview .agentMineToolbar button.agentCategoryActive {
+  border-color: #7367f0;
+  color: #fff;
+  background: #7367f0;
+}
+.agentsPreview .agentFilters input,
+.agentsPreview .agentMineToolbar input {
+  flex: 1 1 210px;
+  min-width: 160px;
+  min-height: 44px;
+  margin-left: auto;
+  border-color: #555a73;
+  border-radius: 6px;
+  color: #cfcde4;
+  background: #393d55;
+  font-size: 15px;
+}
+.agentsPreview .agentFilters input:focus,
+.agentsPreview .agentMineToolbar input:focus { outline: 2px solid #7367f0; outline-offset: 1px; }
+.agentsPreview .agentFilters button.primary,
+.agentsPreview .agentMineToolbar button.primary { border-color: #7367f0; color: #fff; background: #7367f0; }
+.agentsPreview .agentFilters button.primary:hover,
+.agentsPreview .agentMineToolbar button.primary:hover { border-color: #8b80ff; background: #8175f5; }
+.agentsPreview .agentCards { gap: 16px; }
+.agentsPreview .agentCards article {
+  min-width: 0;
+  min-height: 236px;
+  padding: 20px 22px;
+  border-color: color-mix(in srgb, var(--accent), #44485e 75%);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent), #2f3349 95%);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.agentsPreview .agentCards h3 { color: var(--accent); font-size: 20px; line-height: 1.35; }
+.agentsPreview .agentCards p { color: #cfcde4; font-size: 15px; line-height: 1.6; }
+.agentsPreview .agentCards article > div { flex-wrap: wrap; }
+.agentsPreview .agentCards article > div span { border-radius: 6px; font-size: 13px; }
+.agentsPreview .agentCards footer button {
+  min-height: 42px;
+  border-color: #555a73;
+  border-radius: 6px;
+  color: #cfcde4;
+  background: #393d55;
+  font-size: 14px;
+}
+.agentsPreview .agentCards footer button:first-child { border-color: #7367f0; color: #fff; background: #7367f0; }
+.agentsPreview .agentCards footer button:hover { border-color: #8b80ff; }
+.agentsPreview .agentCards footer button:first-child:hover { background: #8175f5; }
+.agentsPreview .agentCards article > small { border-radius: 6px; color: #ffb96b; background: #493923; font-size: 14px; }
+.agentsPreview .agentMineToolbar strong { color: #cfcde4; font-size: 16px; }
+.agentsPreview .agentMine > article { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 16px; }
+.agentsPreview .agentMine > article > section,
+.agentsPreview .agentMine > article > aside {
+  min-width: 0;
+  padding: 22px;
+  border-color: #44485e;
+  border-radius: 6px;
+  background: #2f3349;
+  box-shadow: inset 3px 0 0 #7367f0;
+}
+.agentsPreview .agentMine h2,
+.agentsPreview .agentMine h3 { color: #cfcde4; font-size: 20px; }
+.agentsPreview .agentMine p { color: #acabc1; font-size: 15px; line-height: 1.6; }
+.agentsPreview .agentTags span { border-radius: 6px; color: #cfcde4; background: #393d55; font-size: 14px; }
+.agentsPreview .agentMine > article > section > small { color: #acabc1; font-size: 14px; }
+.agentsPreview .agentMine > article > section > footer b { color: #28c76f; font-size: 14px; }
+.agentsPreview .agentMine > article > section > footer button {
+  min-height: 42px;
+  padding-inline: 16px;
+  border-color: #555a73;
+  border-radius: 6px;
+  color: #cfcde4;
+  background: #393d55;
+  font-size: 14px;
+}
+.agentsPreview .agentMine > article > section > footer button:hover { border-color: #7367f0; }
+.agentsPreview .agentMine > article > section > footer button:last-child { border-color: #7367f0; color: #fff; background: #7367f0; }
+.agentsPreview .agentMine > article > section > footer button:last-child:hover { background: #8175f5; }
+.agentsPreview .agentMine > article > aside > p { border-bottom-color: #44485e; }
+.agentsPreview .agentMine dl { gap: 12px; }
+.agentsPreview .agentMine dl div { grid-template-columns: 100px minmax(0, 1fr); font-size: 14px; }
+.agentsPreview .agentMine dt { color: #acabc1; }
+
+@media (max-width: 1140px) {
+  .agentsPreview .agentFilters { flex-wrap: wrap; }
+  .agentsPreview .agentFilters input { flex: 1 1 260px; margin-left: 0; }
+  .agentsPreview .agentCards, .agentsPreview .dataCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .agentsPreview .capabilityBand > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .agentsPreview .agentMine > article { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 767px) {
+  .agentsPreview { width: calc(100% - 24px); padding-block: 14px 24px; }
+  .agentsPreview .header { flex-wrap: wrap; padding: 18px; }
+  .agentsPreview .header h1 { font-size: 24px; }
+  .agentsPreview .header p { font-size: 14px; }
+  .agentsPreview .agentFilters input,
+  .agentsPreview .agentMineToolbar input { flex: 1 1 100%; min-width: 0; margin-left: 0; }
+  .agentsPreview .agentCards,
+  .agentsPreview .dataCards,
+  .agentsPreview .capabilityBand > div,
+  .agentsPreview .agentsBottom { grid-template-columns: minmax(0, 1fr); }
+  .agentsPreview .agentMine > article > section > footer { flex-wrap: wrap; }
+  .agentsPreview .agentMine > article > section > footer b { flex: 1 1 100%; }
+}
