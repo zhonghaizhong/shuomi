@@ -98,3 +98,30 @@ test("cockpit second-level navigation keeps correct targets and active path duri
   await nav.getByRole("button", { name: "展开运营驾驶舱" }).click();
   await expect(nav.getByRole("link", { name: "经营预警", exact: true })).toBeVisible();
 });
+
+
+test("Vuexy light theme gives all cockpit subpages white panels and readable content", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const pages = [
+    { route: "goals", panel: '[class*="goalPanel"]', content: '[class*="goalRow"]' },
+    { route: "stores", panel: '[class*="matrixPanel"]', content: '[class*="matrixRow"]' },
+    { route: "alerts", panel: '[class*="matrixPanel"]', content: '[class*="alertRow"]' },
+    { route: "advice", panel: '[class*="adviceDetail"]', content: '[class*="adviceOptions"] button' },
+  ];
+  for (const item of pages) {
+    await page.goto("/shuomi/#/workbench/overview/" + item.route);
+    await page.getByRole("button", { name: "切换浅色主题" }).click();
+    await expect(page.locator(".light .showcase-shell")).toBeVisible();
+    const shellBg = await page.locator(".showcase-shell").evaluate(el => getComputedStyle(el).backgroundColor);
+    const sidebarBg = await page.locator(".console-sidebar").evaluate(el => getComputedStyle(el).backgroundColor);
+    const panelBg = await page.locator(item.panel).first().evaluate(el => getComputedStyle(el).backgroundColor);
+    const text = await page.locator(item.panel).first().evaluate(el => getComputedStyle(el).color);
+    expect(shellBg).toBe("rgb(248, 247, 250)");
+    expect(sidebarBg).toBe("rgb(255, 255, 255)");
+    expect(panelBg).toBe("rgb(255, 255, 255)");
+    expect(text).not.toBe("rgb(207, 205, 228)");
+    const contentBg = await page.locator(item.content).first().evaluate(el => getComputedStyle(el).backgroundColor);
+    expect(contentBg).not.toBe("rgb(47, 51, 73)");
+    await page.screenshot({ path: "test-results/cockpit-light-" + item.route + ".png", fullPage: true });
+  }
+});
