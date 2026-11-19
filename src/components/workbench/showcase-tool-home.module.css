@@ -125,3 +125,11 @@
 }
 .page > .hero {display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:0;}
 .page > .hero h1 {margin:0 0 5px;padding-left:12px;white-space:normal;}
+
+
+/* Proportional desktop scaling: preserve reference proportions on 2560px displays. */
+@media (min-width: 2400px) {
+  .page > .hero { min-height: 152px; padding: 26px 30px; }
+  .page > .hero h1 { font-size: 30px; line-height: 40px; }
+  .page > .hero p { font-size: 15px; line-height: 24px; }
+}
