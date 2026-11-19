@@ -9,7 +9,7 @@ const blueMarbleTexture = {
   // Cache the NASA satellite map with GitHub Pages when possible, so the
   // 3D globe does not depend on an external request for every page visit.
   async closeBundle() {
-    const url = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Land_shallow_topo_2048.jpg/960px-Land_shallow_topo_2048.jpg";
+    const url = "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg";
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error("Earth texture HTTP " + response.status);
