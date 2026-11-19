@@ -7,6 +7,8 @@ import { hasRouteDetailPreview, RouteDetailPreview } from "./route-detail-previe
 import { ChatIntroduction } from "./ai-workbench/chat-introduction";
 import { ShowcaseAgentDialog, type AgentPreviewDialog } from "./showcase-agent-dialog";
 import { ShowcaseAgentCustomization } from "./showcase-agent-customization";
+import { ShowcaseToolMarket } from "./showcase-tool-market";
+import { ShowcaseToolCustomization } from "./showcase-tool-customization";
 
 type Row = { title: string; detail: string; value?: string; state?: string };
 type PageSpec = { section: string; title: string; description: string; metrics?: [string, string, string][]; cards?: [string, string, string][]; rows?: Row[]; filters?: string[]; layout?: "supply" | "data" | "ai" | "agents" | "agentMarket" | "agentMine" | "tools" | "services" | "serviceJoin" | "storeCenter" | "plans" | "account" | "accountProfile" | "accountSettings" | "goals" | "storeMatrix" | "alerts" | "advice" | "tasks" | "libraryHub" | "unavailable" };
@@ -107,6 +109,8 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   const chooseAction = (label: string) => setNotice(`${label}：已在原型中打开，可继续查看演示内容。`);
 
   if (pathname.startsWith("/workbench/agents/custom")) return <ShowcaseAgentCustomization pathname={pathname} navigate={router.push} />;
+  if (pathname === "/workbench/tools/official" || pathname === "/workbench/tools/mine") return <ShowcaseToolMarket pathname={pathname} navigate={router.push} />;
+  if (pathname.startsWith("/workbench/tools/custom")) return <ShowcaseToolCustomization pathname={pathname} navigate={router.push} />;
   if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div> : null}
