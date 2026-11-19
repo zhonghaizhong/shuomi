@@ -79,3 +79,7 @@
 :global(.light) .page button.primary{color:#fff;background:#7367f0;border-color:#7367f0;}
 @media(max-width:1100px){.featureGrid{grid-template-columns:repeat(2,minmax(0,1fr));}.formLayout,.split{grid-template-columns:1fr;}}
 @media(max-width:767px){.page{width:calc(100% - 24px);padding:14px 0 26px;}.header{flex-wrap:wrap;padding:16px;}.two,.featureGrid,.steps{grid-template-columns:1fr;}.formIntro{align-items:flex-start;flex-direction:column;}.upload{max-width:100%;}}
+
+.confirmDialog { box-sizing: border-box; max-height: 85vh; overflow-y: auto; color: #cfcde4; }
+.confirmDialog::backdrop { background: rgba(6,9,18,.75); }
+:global(.light) .confirmDialog { color: #444050; background: #fff; border-color: #ddd9ec; }
