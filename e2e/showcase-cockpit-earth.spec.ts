@@ -23,7 +23,13 @@ test("purple cockpit hero loads a real textured 3D globe without a GIF", async (
   expect(globeBox!.width).toBeLessThanOrEqual(201);
   expect(globeBox!.x).toBeGreaterThan(heroBox!.x);
   expect(globeBox!.x + globeBox!.width).toBeLessThanOrEqual(heroBox!.x + heroBox!.width + 1);
-  await expect(page.locator('[class*="overviewGlobe"] > svg')).toHaveCSS("opacity", "0");
+  await expect(page.locator('[class*="overviewGlobe"] svg')).toHaveCount(0);
+  await expect(page.getByRole("heading", {name:"经营全局 · 一屏掌握"})).toBeVisible();
+  await expect(page.getByText("汇聚多店铺经营表现、核心指标与风险动态，让每一次决策都有清晰依据。")).toBeVisible();
+  const copy = await page.locator('[class*="overviewFeature"] [class*="heroCopy"]').boundingBox();
+  expect(copy).not.toBeNull();
+  expect(copy!.x + copy!.width).toBeLessThanOrEqual(globeBox!.x + 2);
+  await page.screenshot({path:"test-results/cockpit-hero-2560.png",fullPage:true});
   await globe.screenshot({ path: "test-results/globe-3d-loaded.png" });
 });
 
