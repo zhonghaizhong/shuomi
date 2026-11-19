@@ -2128,3 +2128,57 @@
 }
 :global(.light) .cockpitPreview .adviceDetail :is(.adviceStats strong,.aiEvidence b,.adviceOptions button strong) { color: #464052; }
 :global(.light) .cockpitPreview .adviceDetail :is(.adviceStats span,.aiEvidence small,.adviceOptions button small,.adviceDetail>header p) { color: #6f6b7d; }
+
+
+/* Light business-advice refinement: scoped to the existing two-panel page. */
+:global(.light) .cockpitPreview:has(.adviceWorkspace) { color:#29423b }
+:global(.light) .cockpitPreview:has(.adviceWorkspace) .header {border-bottom-color:#dbe8e3}
+:global(.light) .cockpitPreview:has(.adviceWorkspace) .header h1 {color:#203b34;border-left-color:#087f6c}
+:global(.light) .cockpitPreview:has(.adviceWorkspace) :is(.header p,.breadcrumb) {color:#687e76}
+:global(.light) .cockpitPreview .adviceFilters {border-color:#dbe8e3;background:#fff;box-shadow:0 5px 20px #24483c0b}
+:global(.light) .cockpitPreview .adviceFilters :is(select,input,button:not(.primary)) {border-color:#cfdfd9;background:#f7faf9;color:#304b42}
+:global(.light) .cockpitPreview .adviceFilters input::placeholder {color:#71857e;opacity:1}
+:global(.light) .cockpitPreview :is(.adviceFilters .primary,.adviceDetail .primary,.adviceConfirm button.primary) {border-color:#087f6c;background:#087f6c;color:#fff}
+:global(.light) .cockpitPreview :is(.adviceFilters .primary,.adviceDetail .primary,.adviceConfirm button.primary):hover {border-color:#066b5b;background:#066b5b}
+:global(.light) .cockpitPreview :is(.adviceFilters select,.adviceFilters input,.adviceFilters button,.adviceWorkspace button):focus-visible {outline:2px solid #087f6c;outline-offset:2px}
+:global(.light) .cockpitPreview .adviceWorkspace > aside,
+:global(.light) .cockpitPreview .adviceDetail {border-color:#dce8e4;color:#304840;background:#fff;box-shadow:0 12px 30px #163e3410}
+:global(.light) .cockpitPreview .adviceWorkspace > aside header,
+:global(.light) .cockpitPreview .adviceDetail > header {border-bottom-color:#dfeae5}
+:global(.light) .cockpitPreview .adviceWorkspace > aside h2,
+:global(.light) .cockpitPreview .adviceDetail :is(h2,h3) {color:#243d36}
+:global(.light) .cockpitPreview .adviceWorkspace > aside header span,
+:global(.light) .cockpitPreview .adviceDetail > header > div > span {color:#087f6c;border-color:#c9e6dc;background:#e9f7f0}
+:global(.light) .cockpitPreview .adviceWorkspace > aside > button {color:#2d453d;border-color:#dae8e2;background:#f7faf8;box-shadow:none}
+:global(.light) .cockpitPreview .adviceWorkspace > aside > button:hover {border-color:#84bdaa;background:#f0f8f4}
+:global(.light) .cockpitPreview .adviceWorkspace > aside > .adviceSelected,
+:global(.light) .cockpitPreview .adviceWorkspace > aside > .adviceSelected:hover {border-color:#087f6c;background:linear-gradient(100deg,#e5f5ec,#f2faf5);box-shadow:inset 3px 0 #087f6c,0 7px 19px #124c3910}
+:global(.light) .cockpitPreview .adviceWorkspace > aside > button strong {color:#263f36}
+:global(.light) .cockpitPreview .adviceWorkspace > aside > button span {color:#657b72}
+:global(.light) .cockpitPreview .adviceWorkspace > aside > button b {color:#476258;border-top-color:#dce8e2}
+:global(.light) .cockpitPreview .adviceWorkspace > aside > button:nth-of-type(1) strong small,
+:global(.light) .cockpitPreview .adviceWorkspace > aside > button:nth-of-type(3) strong small {color:#a25120;background:#fff0dd}
+:global(.light) .cockpitPreview .adviceWorkspace > aside > button:nth-of-type(2) strong small {color:#176a89;background:#e5f5fc}
+:global(.light) .cockpitPreview .adviceWorkspace > aside > button:nth-of-type(4) strong small {color:#087f6c;background:#e2f5ed}
+:global(.light) .cockpitPreview .adviceDetail > header p {color:#687c73}
+:global(.light) .cockpitPreview .adviceStats div {border-color:#d8e8df;background:#f5faf7}
+:global(.light) .cockpitPreview .adviceStats div:first-child {border-color:#a4d5c0;background:#e8f7ee}
+:global(.light) .cockpitPreview .adviceStats span,
+:global(.light) .cockpitPreview .aiEvidence small {color:#617a6f}
+:global(.light) .cockpitPreview .adviceStats strong {color:#28443b}
+:global(.light) .cockpitPreview .adviceStats div:first-child strong {color:#087f6c}
+:global(.light) .cockpitPreview .adviceDetail h3::before {background:#087f6c}
+:global(.light) .cockpitPreview .aiEvidence {border-color:#dbe7e1;background:#f8fbf9}
+:global(.light) .cockpitPreview .aiEvidence span {border-color:#e0ebe5;background:#fff}
+:global(.light) .cockpitPreview .aiEvidence b {color:#304940}
+:global(.light) .cockpitPreview .adviceOptions button {border-color:#d8e6df;color:#2b453c;background:#f7faf9}
+:global(.light) .cockpitPreview .adviceOptions button:hover {border-color:#86c3ab;background:#eff8f3}
+:global(.light) .cockpitPreview .adviceOptions button.optionSelected,
+:global(.light) .cockpitPreview .adviceOptions button.optionSelected:hover {border-color:#087f6c;background:#e9f7ef;box-shadow:inset 3px 0 #087f6c}
+:global(.light) .cockpitPreview .adviceOptions button span {color:#087f6c}
+:global(.light) .cockpitPreview .adviceOptions button span b {color:#fff;background:#087f6c}
+:global(.light) .cockpitPreview .adviceOptions button strong {color:#29453b}
+:global(.light) .cockpitPreview .adviceOptions button small {color:#63786e}
+:global(.light) .cockpitPreview .adviceConfirm {border-color:#d8e7e0;background:#f8fbf9}
+:global(.light) .cockpitPreview .adviceConfirm > div {border-color:#dbe8e2;color:#345046;background:#fff}
+:global(.light) .cockpitPreview .adviceConfirm button:not(.primary) {color:#087f6c;font-weight:650}
