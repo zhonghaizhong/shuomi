@@ -1051,3 +1051,29 @@
   .filterActions { grid-template-columns:minmax(0,1fr) auto; }
   .filterActions .search { grid-column:1/-1; }
 }
+
+
+/* Approved photographic Earth: only the globe inside the cockpit hero changes. */
+.earthDisplay {
+  position: relative;
+  display: block;
+  width: min(100%, 170px);
+  aspect-ratio: 1;
+  flex: none;
+  isolation: isolate;
+  filter: drop-shadow(0 0 17px rgb(105 201 255 / 31%));
+}
+.earthDisplay img,
+.earthDisplay canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: contain;
+}
+.earthDisplay canvas { pointer-events: none; }
+@media (min-width: 1920px) and (min-height: 1100px) {
+  .earthDisplay { width: min(100%, 200px); }
+}
