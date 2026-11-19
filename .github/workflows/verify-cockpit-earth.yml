@@ -1,0 +1,31 @@
+name: Verify Cockpit Rotating Earth
+on:
+  push:
+    branches:
+      - feat/cockpit-rotating-earth-20261119
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  verify-earth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm run build:pages
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright test --config playwright.cockpit-earth.config.ts
