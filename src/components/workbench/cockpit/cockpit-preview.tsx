@@ -47,32 +47,16 @@ export function CockpitPreview() {
     <section className={styles.metrics} aria-label="经营指标">
       <article className={`${styles.featureMetric} ${styles.overviewFeature}`} data-tone="blue">
         <div className={styles.overviewMain}>
-          <div className={styles.heroCopy}><span>运营总览</span><h1>经营全局 · 一屏掌握</h1><p>当前：全部 {visibleStores.length} 家店铺 · 全部时间 · 演示数据</p></div>
+          <div className={styles.heroCopy}>
+            <div className={styles.heroEyebrow}><span className={styles.heroPulse} aria-hidden="true" />运营总览 <span className={styles.heroEnglish}>OPERATIONS OVERVIEW</span></div>
+            <h1>经营全局 · 一屏掌握</h1>
+            <p className={styles.heroIntro}>汇聚多店铺经营表现、核心指标与风险动态，让每一次决策都有清晰依据。</p>
+            <div className={styles.heroScope}>当前：全部 {visibleStores.length} 家店铺 <i aria-hidden="true" /> 全部时间 <i aria-hidden="true" /> 演示数据</div>
+            <div className={styles.heroHighlights} aria-label="经营总览能力"><span>多店数据统一查看</span><span>经营风险快速识别</span><span>AI 执行与待办追踪</span></div>
+          </div>
           <div className={styles.overviewAside}>
             <div className={styles.overviewGlobe} aria-hidden="true">
-            <SeamlessEarthGlobe />
-            <svg viewBox="0 0 200 200" fill="none">
-              <defs>
-                <linearGradient id="cockpit-globe-line" x1="28" y1="28" x2="172" y2="172"><stop stopColor="#ECFCFF"/><stop offset=".48" stopColor="#9AE8FF"/><stop offset="1" stopColor="#C0B7FF"/></linearGradient>
-                <clipPath id="cockpit-globe-clip"><circle cx="100" cy="100" r="78"/></clipPath>
-                <filter id="cockpit-globe-line-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.4"/></filter>
-              </defs>
-              <circle cx="100" cy="100" r="78" stroke="url(#cockpit-globe-line)" strokeWidth="1.8" strokeOpacity=".9"/>
-              <g className={styles.globeWire} clipPath="url(#cockpit-globe-clip)" fill="none" stroke="url(#cockpit-globe-line)" strokeLinecap="round">
-                <path d="M30 59c20-10 42-15 70-15s50 5 70 15M25 76c20-12 45-18 75-18s55 6 75 18M22 100c22-8 48-12 78-12s56 4 78 12M25 124c20 12 45 18 75 18s55-6 75-18M30 141c20 10 42 15 70 15s50-5 70-15" strokeWidth="1" strokeDasharray="2 4" opacity=".26"/>
-                <path d="M24 100c20-16 46-24 76-24s56 8 76 24M24 100c20 16 46 24 76 24s56-8 76-24" strokeWidth="2.8" opacity=".36" filter="url(#cockpit-globe-line-glow)"/>
-                <path d="M24 100c20-16 46-24 76-24s56 8 76 24M24 100c20 16 46 24 76 24s56-8 76-24" strokeWidth="1.3" opacity=".85"/>
-                <path d="M22 100h156" strokeWidth="1.6" opacity=".82"/>
-              </g>
-              <g className={styles.globeMeridians} clipPath="url(#cockpit-globe-clip)" fill="none" stroke="url(#cockpit-globe-line)" strokeLinecap="round">
-                <ellipse cx="100" cy="100" rx="68" ry="78" strokeWidth="1" strokeDasharray="2 4" opacity=".25"/>
-                <ellipse cx="100" cy="100" rx="54" ry="78" strokeWidth="1" strokeDasharray="2 4" opacity=".2"/>
-                <ellipse cx="100" cy="100" rx="42" ry="78" strokeWidth="2.8" opacity=".38" filter="url(#cockpit-globe-line-glow)"/>
-                <ellipse cx="100" cy="100" rx="42" ry="78" strokeWidth="1.35" opacity=".94"/>
-                <ellipse cx="100" cy="100" rx="22" ry="78" strokeWidth="1.2" opacity=".68"/>
-                <path d="M100 22v156" strokeWidth="1" opacity=".46"/>
-              </g>
-            </svg>
+              <SeamlessEarthGlobe />
             </div>
           </div>
         </div>
