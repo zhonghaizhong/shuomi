@@ -56,7 +56,7 @@ export function SeamlessEarthGlobe(){
  useEffect(()=>{
   const canvas=ref.current;
   if(!canvas)return;
-  const gl=canvas.getContext("webgl",{alpha:true,antialias:true,premultipliedAlpha:false});
+  const gl=canvas.getContext("webgl",{alpha:true,antialias:true,premultipliedAlpha:false,preserveDrawingBuffer:true});
   if(!gl){canvas.dataset.globeStatus="unsupported";return;}
   const vs=compile(gl,gl.VERTEX_SHADER,VERTEX);
   const fs=compile(gl,gl.FRAGMENT_SHADER,FRAGMENT);
