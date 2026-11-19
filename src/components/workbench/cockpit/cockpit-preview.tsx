@@ -3,6 +3,7 @@
 import { Activity, ArrowRight, Search, ShoppingCart, Store, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import styles from "./cockpit-preview.module.css";
+import { SeamlessEarthGlobe } from "./seamless-earth-globe";
 
 const stores = [
   { name: "一号店", platform: "SHEIN", site: "美国站", type: "自营店", gmv: "¥41,320", profit: "¥7,354", trend: "+12.8%", status: "正常" },
@@ -49,6 +50,7 @@ export function CockpitPreview() {
           <div className={styles.heroCopy}><span>运营总览</span><h1>经营全局 · 一屏掌握</h1><p>当前：全部 {visibleStores.length} 家店铺 · 全部时间 · 演示数据</p></div>
           <div className={styles.overviewAside}>
             <div className={styles.overviewGlobe} aria-hidden="true">
+            <SeamlessEarthGlobe />
             <svg viewBox="0 0 200 200" fill="none">
               <defs>
                 <linearGradient id="cockpit-globe-line" x1="28" y1="28" x2="172" y2="172"><stop stopColor="#ECFCFF"/><stop offset=".48" stopColor="#9AE8FF"/><stop offset="1" stopColor="#C0B7FF"/></linearGradient>

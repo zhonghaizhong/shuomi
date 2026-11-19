@@ -1051,3 +1051,35 @@
   .filterActions { grid-template-columns:minmax(0,1fr) auto; }
   .filterActions .search { grid-column:1/-1; }
 }
+
+
+/* Continuous satellite Earth: align with the original wireframe fallback.
+   Only the purple cockpit hero's globe is affected. */
+.overviewGlobe > canvas,
+.overviewGlobe > svg {
+  grid-area: 1 / 1;
+}
+.overviewGlobe > canvas {
+  display: block;
+  width: min(100%, 170px);
+  height: auto;
+  max-height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 18px #79ccff52);
+  transition: opacity .25s ease;
+}
+.overviewGlobe > canvas[data-globe-status="ready"] {
+  opacity: 1;
+}
+.overviewGlobe:has(> canvas[data-globe-status="ready"]) > svg {
+  opacity: 0;
+  animation: none;
+  pointer-events: none;
+}
+@media (min-width: 1920px) and (min-height: 1100px) {
+  .overviewGlobe > canvas { width: min(100%, 200px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overviewGlobe > canvas { transition: none; }
+}
