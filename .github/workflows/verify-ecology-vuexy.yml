@@ -29,9 +29,13 @@ jobs:
       - run: pnpm run build:pages
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec playwright test --config playwright.ecology.config.ts
+      - run: pnpm exec playwright test --config playwright.cockpit-globe.config.ts
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ecology-figma-comparison
-          path: test-results/ecology-*.png
+          path: |
+            test-results/ecology-*.png
+            test-results/cockpit-hero-2560.png
+            test-results/globe-3d-loaded.png
           if-no-files-found: ignore
