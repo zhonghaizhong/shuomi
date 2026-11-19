@@ -147,8 +147,8 @@ const lightModules: Array<[string,string]> = [
   ["/workbench/tools/official",'[class*="toolCard"]'],
   ["/workbench/services",'[class*="homeCard"]:not([class*="homeCards"])'],
   ["/workbench/services/market",'[class*="serviceCard"]'],
-  ["/workbench/agents/custom",'[class*="featureGrid"] article'],
-  ["/workbench/tools/custom",'[class*="featureGrid"] article'],
+  ["/workbench/agents/custom",'main header'],
+  ["/workbench/tools/custom",'main header'],
   ["/workbench/store-products",'[class*="productMetrics"] article'],
   ["/workbench/store-orders",'[class*="orderMetrics"] article'],
 ];
