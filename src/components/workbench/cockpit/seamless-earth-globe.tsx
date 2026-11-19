@@ -114,11 +114,21 @@ export function SeamlessEarthGlobe(){
    gl.generateMipmap(gl.TEXTURE_2D);
    loaded=true;draw(performance.now());canvas.dataset.globeStatus="ready";update();
   };
-  image.onerror=()=>{if(!disposed)canvas.dataset.globeStatus="unavailable";};
+  let remoteFallbackUsed = false;
+  image.onerror=()=>{
+   if (disposed) return;
+   if (!remoteFallbackUsed) {
+    remoteFallbackUsed = true;
+    image.src = EARTH_TEXTURE;
+   } else {
+    canvas.dataset.globeStatus = "unavailable";
+   }
+  };
   const observer=new IntersectionObserver(entries=>{visible=!!entries[0]?.isIntersecting;update();});
   observer.observe(canvas);
   document.addEventListener("visibilitychange",update);reduced.addEventListener("change",update);
-  image.src=EARTH_TEXTURE;
+  const basePath=window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
+  image.src=basePath+"/assets/cockpit/earth-blue-marble.jpg";
   return ()=>{
    disposed=true;cancelAnimationFrame(frame);image.onload=null;image.onerror=null;
    observer.disconnect();document.removeEventListener("visibilitychange",update);reduced.removeEventListener("change",update);
