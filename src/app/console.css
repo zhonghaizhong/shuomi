@@ -1050,3 +1050,32 @@
 @media (min-width:1920px) {
   .dark .console-theme .console-topbar { max-width:1600px; }
 }
+
+
+/* Keep Vuexy sidebar navigation legible against the white light-mode rail.
+   Previously the dark sidebar text (#acabc1) was reused on a white surface. */
+.light .console-theme .console-sidebar {
+  color: #5d596c;
+  box-shadow: 2px 0 12px #45405f0d;
+}
+.light .console-theme .console-sidebar .console-nav-row {
+  color: #5d596c;
+}
+.light .console-theme .console-sidebar .console-nav-row:hover {
+  color: #7367f0;
+  background: #f1effe;
+}
+.light .console-theme .console-sidebar .console-nav-row:has(>a[aria-current="page"]),
+.light .console-theme .console-sidebar .console-nav-row:has(>button[aria-expanded="true"]) {
+  color: #fff;
+  background: linear-gradient(90deg,#7367f0,#6559dc);
+}
+.light .console-theme .console-sidebar .console-nav-level-2 > ul {
+  border-left-color: #e6e6f1;
+}
+.light .console-theme .console-sidebar .console-nav-chevron {
+  color: #79758a;
+}
+.light .console-theme .console-sidebar-head .console-brand small {
+  color: #827d90;
+}
