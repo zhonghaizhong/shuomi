@@ -108,9 +108,10 @@ test("Vuexy light theme gives all cockpit subpages white panels and readable con
     { route: "alerts", panel: '[class*="matrixPanel"]', content: '[class*="alertRow"]' },
     { route: "advice", panel: '[class*="adviceDetail"]', content: '[class*="adviceOptions"] button' },
   ];
+  await page.goto("/shuomi/#/workbench/overview/goals");
+  await page.getByRole("button", { name: "切换浅色主题" }).click();
   for (const item of pages) {
     await page.goto("/shuomi/#/workbench/overview/" + item.route);
-    await page.getByRole("button", { name: "切换浅色主题" }).click();
     await expect(page.locator(".light .showcase-shell")).toBeVisible();
     const shellBg = await page.locator(".showcase-shell").evaluate(el => getComputedStyle(el).backgroundColor);
     const sidebarBg = await page.locator(".console-sidebar").evaluate(el => getComputedStyle(el).backgroundColor);
