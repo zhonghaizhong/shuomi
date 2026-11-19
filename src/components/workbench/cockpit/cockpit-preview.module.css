@@ -821,8 +821,6 @@
   .overviewFeature .heroCopy h1 { margin-bottom:10px; color:#fff; font-size:clamp(28px,1.35vw,36px); font-weight:750; line-height:1.2; letter-spacing:-.025em; }
   .overviewFeature .heroCopy p { max-width:100%; color:#f3efff; font-size:clamp(15px,.7vw,18px); font-weight:500; line-height:1.55; }
   .overviewGlobe { display:grid; width:100%; min-height:0; flex:1; aspect-ratio:auto; place-items:center; justify-self:end; opacity:.94; perspective:620px; }
-  .overviewGlobe svg { display:block; width:min(100%,170px); max-height:100%; height:auto; filter:drop-shadow(0 0 18px #79ccff52); transform-origin:50% 50%; animation:globeBreath 6s ease-in-out infinite; }
-  .overviewGlobe .globeMeridians { transform-box:fill-box; transform-origin:50% 50%; transform-style:preserve-3d; animation:globeMeridianTurn 24s linear infinite; }
   .overviewFeature .heroCopy { box-sizing:border-box; height:100%; align-self:stretch; justify-content:center; }
   .bottomGrid>.sideStack { box-sizing:border-box; width:100%; min-width:0; padding:0; }
   .bottomGrid>.sideStack>.panel { box-sizing:border-box; width:100%; min-width:0; }
@@ -844,7 +842,6 @@
   .metrics article { min-height:300px; height:300px; padding:24px; }
   .overviewFeature { min-height:0!important; height:100%; }
   .overviewMain { grid-template-columns:minmax(0,1fr) 260px; gap:26px; }
-  .overviewGlobe svg { width:min(100%,200px); }
   .metricSummaryCards article { padding:24px; }
   .overviewFeature .featureValues strong { font-size:clamp(24px,1.08vw,30px); }
   .metrics article header { font-size:17px; }
@@ -1019,17 +1016,6 @@
 .matrixRow { font-size:var(--cockpit-text-body); }
 .matrixStore>strong>small,.matrixProgress>small,.matrixFooter { font-size:var(--cockpit-text-sm); }
 .matrixRow em { font-size:var(--cockpit-text-xs); }
-@keyframes globeBreath {
-  0%,100% { opacity:.82; transform:scale(.98); }
-  50% { opacity:1; transform:scale(1.015); }
-}
-@keyframes globeMeridianTurn {
-  from { transform:perspective(620px) rotateY(0deg); }
-  to { transform:perspective(620px) rotateY(360deg); }
-}
-@media (prefers-reduced-motion:reduce) {
-  .overviewGlobe svg,.overviewGlobe .globeMeridians { animation:none; }
-}
 
 /* Align filter and search groups with the two cards below. */
 .overviewFilters { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; gap:18px; }
@@ -1053,32 +1039,135 @@
 }
 
 
-/* Continuous satellite Earth: align with the original wireframe fallback.
-   Only the purple cockpit hero's globe is affected. */
-.overviewGlobe > canvas,
-.overviewGlobe > svg {
-  grid-area: 1 / 1;
-}
+/* Only the real WebGL globe remains: the legacy wireframe and its animations
+   have been removed from the DOM and the CSS. */
 .overviewGlobe > canvas {
   display: block;
   width: min(100%, 170px);
+  aspect-ratio: 1 / 1;
   height: auto;
   max-height: 100%;
   opacity: 0;
   pointer-events: none;
-  filter: drop-shadow(0 0 18px #79ccff52);
-  transition: opacity .25s ease;
+  filter: drop-shadow(0 0 15px #79ccff50);
+  transition: opacity .3s ease;
 }
-.overviewGlobe > canvas[data-globe-status="ready"] {
-  opacity: 1;
+.overviewGlobe > canvas[data-globe-status="ready"] { opacity: 1; }
+.overviewFeature .heroCopy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  overflow: visible;
+  min-width: 0;
 }
-.overviewGlobe:has(> canvas[data-globe-status="ready"]) > svg {
-  opacity: 0;
-  animation: none;
-  pointer-events: none;
+.overviewFeature .heroEyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 11px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: .03em;
+}
+.heroPulse {
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9ff3de;
+  box-shadow: 0 0 0 4px #b7ffdd2d;
+}
+.overviewFeature .heroEnglish {
+  margin-left: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  color: #e8e4ffbf;
+  white-space: nowrap;
+}
+.overviewFeature .heroCopy h1 {
+  margin: 0 0 10px;
+  font-size: clamp(26px, 1.36vw, 36px);
+  line-height: 1.18;
+  letter-spacing: -.035em;
+  font-weight: 780;
+  color: #fff;
+  white-space: nowrap;
+}
+.overviewFeature .heroCopy .heroIntro {
+  max-width: 460px;
+  margin: 0 0 11px;
+  color: #f6f3ff;
+  font-size: clamp(13px, .67vw, 16px);
+  font-weight: 450;
+  line-height: 1.55;
+}
+.overviewFeature .heroScope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 14px;
+  color: #f2eeff;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 650;
+}
+.heroScope i {
+  flex: 0 0 3px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #e1d8ff;
+}
+.overviewFeature .heroHighlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  max-width: 100%;
+}
+.overviewFeature .heroHighlights span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 4px 9px;
+  border: 1px solid #ffffff44;
+  border-radius: 5px;
+  color: #fff;
+  background: #ffffff16;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.overviewFeature .heroHighlights span::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #d5cdff;
+}
+.overviewFeature .heroHighlights span:nth-child(2)::before { background: #9ee5ff; }
+.overviewFeature .heroHighlights span:nth-child(3)::before { background: #a9f1db; }
+@media (min-width: 1100px) and (max-width: 1439px) {
+  .overviewMain { grid-template-columns: minmax(0,1fr) 180px; }
+  .overviewAside { display: flex; align-items: center; justify-content: center; }
+  .overviewGlobe { display: grid; width: 100%; place-items: center; }
 }
 @media (min-width: 1920px) and (min-height: 1100px) {
   .overviewGlobe > canvas { width: min(100%, 200px); }
+  .overviewFeature .heroEyebrow { margin-bottom: 14px; }
+  .overviewFeature .heroCopy .heroIntro { margin-bottom: 15px; }
+}
+@media (max-width: 1099px) {
+  .overviewFeature .heroHighlights span { white-space: normal; }
+  .overviewFeature .heroEnglish { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .overviewGlobe > canvas { transition: none; }
