@@ -2493,3 +2493,11 @@
 .page.page > .header p {font-size:14px;line-height:22px;margin:0;color:#c7c4df;}
 :global(.light) .page.page > .header p {color:#6f6b7d;}
 @media(max-width:767px){.page.page > .header h1{font-size:23px;line-height:30px;white-space:normal}.page.page > .header p{font-size:13px;line-height:20px}}
+
+
+/* Proportional desktop scaling: preserve reference proportions on 2560px displays. */
+@media (min-width: 2400px) {
+  .page.page > .header { min-height: 152px; padding: 26px 30px; }
+  .page.page > .header h1 { font-size: 30px; line-height: 40px; }
+  .page.page > .header p { font-size: 15px; line-height: 24px; }
+}
