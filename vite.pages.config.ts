@@ -16,6 +16,14 @@ const blueMarbleTexture = {
       const folder = here + "/dist-pages/assets/cockpit";
       await mkdir(folder, { recursive: true });
       await writeFile(folder + "/earth-blue-marble.jpg", new Uint8Array(await response.arrayBuffer()));
+      try {
+        const cloudUrl = "https://threejs.org/examples/textures/planets/earth_clouds_1024.png";
+        const cloud = await fetch(cloudUrl, { signal: AbortSignal.timeout(20000) });
+        if (!cloud.ok) throw new Error("Cloud texture HTTP " + cloud.status);
+        await writeFile(folder + "/earth-clouds.png", new Uint8Array(await cloud.arrayBuffer()));
+      } catch (error) {
+        console.warn("Earth cloud texture unavailable during build:", error);
+      }
     } catch (error) {
       // The renderer falls back to the original map URL, then the legacy SVG.
       console.warn("Local Earth texture unavailable during build:", error);
