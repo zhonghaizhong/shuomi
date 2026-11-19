@@ -193,21 +193,21 @@ test("switching themes preserves menus and light-page selected card interaction"
 /* User-provided 硕米Chat image is the page-title reference.
    Verify the page-title panel only, never subsection/table column headers. */
 const standardPageHeaders = [
-  ["/workbench/ai/chat",'[class*="demo-workbench-preview_page"] > [class*="demo-workbench-preview_header"]'],
-  ["/workbench/ai",'[class*="demo-workbench-preview_page"] > [class*="demo-workbench-preview_header"]'],
-  ["/workbench/overview/advice",'[class*="demo-workbench-preview_page"] > [class*="demo-workbench-preview_header"]'],
-  ["/workbench/overview/goals",'[class*="demo-workbench-preview_page"] > [class*="demo-workbench-preview_header"]'],
-  ["/workbench/agents/market",'[class*="demo-workbench-preview_page"] > [class*="demo-workbench-preview_header"]'],
-  ["/workbench/ai/tasks",'[class*="demo-workbench-preview_page"] > [class*="demo-workbench-preview_header"]'],
-  ["/workbench/ai/projects",'[class*="demo-workbench-preview_page"] > [class*="demo-workbench-preview_header"]'],
-  ["/workbench/ai/reports",'[class*="demo-workbench-preview_page"] > [class*="demo-workbench-preview_header"]'],
-  ["/workbench/store-products",'[class*="route-detail-preview_page"] > [class*="route-detail-preview_header"]'],
-  ["/workbench/data/api",'[class*="route-detail-preview_page"] > [class*="route-detail-preview_header"]'],
-  ["/workbench/tools",'[class*="showcase-tool-home_page"] > [class*="showcase-tool-home_hero"]'],
-  ["/workbench/tools/official",'[class*="showcase-tool-market_page"] > [class*="showcase-tool-market_header"]'],
-  ["/workbench/tools/custom",'[class*="showcase-tool-customization_page"] > [class*="showcase-tool-customization_header"]'],
-  ["/workbench/agents/custom",'[class*="showcase-agent-customization_page"] > [class*="showcase-agent-customization_header"]'],
-  ["/workbench/services/market",'[class*="showcase-ecology-services_page"] > [class*="showcase-ecology-services_head"]'],
+  ["/workbench/ai/chat",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/overview/advice",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/overview/goals",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/agents/market",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai/tasks",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai/projects",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai/reports",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/store-products",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/data/api",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/tools",'[class*="page"] > header[class*="hero"]'],
+  ["/workbench/tools/official",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/tools/custom",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/agents/custom",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/services/market",'[class*="page"] > header[class*="head"]'],
 ] as const;
 
 test("page title headers match Chat reference across modules and both themes", async ({ page }) => {
@@ -258,13 +258,13 @@ test("page title headers match Chat reference across modules and both themes", a
 test("standard headers keep actions clickable and adapt to narrow screens", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/shuomi/#/workbench/tools");
-  const header = page.locator('[class*="showcase-tool-home_page"] > [class*="showcase-tool-home_hero"]').first();
+  const header = page.locator('[class*="page"] > header[class*="hero"]').first();
   await expect(header).toBeVisible();
   const title = header.locator("h1");
   await expect(title).toHaveCSS("font-size", "23px");
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/shuomi/#/workbench/overview/advice");
-  await expect(page.locator('[class*="demo-workbench-preview_page"] > [class*="demo-workbench-preview_header"]')).toBeVisible();
+  await expect(page.locator('[class*="page"] > header[class*="header"]')).toBeVisible();
   await page.getByRole("button", { name: "切换浅色主题" }).click();
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
   await page.getByRole("button", { name: /转化率下降/ }).click();
