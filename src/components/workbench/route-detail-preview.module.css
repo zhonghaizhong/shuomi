@@ -458,3 +458,191 @@
 @media (max-width: 640px) { .taskDetailPreview { width: calc(100% - 24px); padding-top: 14px; } .taskDetailPreview .header { display: block; padding: 16px; } .taskDetailPreview .headerActions { margin-top: 12px; } .taskDetailPreview .taskDetailHead { display: none; } .taskDetailPreview .taskDetailRow, .taskDetailPreview[data-task-detail="scheduled"] .taskDetailRow { grid-template-columns: 1fr auto; min-width: 0; gap: 8px; } .taskDetailPreview .taskDetailRow > span:nth-child(2), .taskDetailPreview .taskDetailRow > span:nth-child(4), .taskDetailPreview[data-task-detail="scheduled"] .taskDetailRow > span:nth-child(3) { display: none; } .taskDetailPreview:not([data-task-detail="scheduled"]) .taskDetailRow > span:nth-child(3), .taskDetailPreview[data-task-detail="scheduled"] .taskDetailRow > span:nth-child(5) { justify-self: end; } .taskDetailPreview .toolbar { flex-wrap: wrap; } .taskDetailPreview .toolbar input { flex-basis: 100%; } }
 
 
+
+
+/* Targeted Vuexy theme for the 4 requested online modules' subpages.
+   Original business data, filter choices, tables, form fields and handlers are unchanged. */
+.page[data-commerce-unified]{
+  box-sizing:border-box;display:grid;gap:14px;width:calc(100% - 48px);
+  max-width:1600px;margin:0 auto;padding:20px 0 34px;color:#cfcde4;font-size:14px;
+}
+.page[data-commerce-unified] *{box-sizing:border-box}
+.page[data-commerce-unified] :is(.header,.sectionTitle,.category,.filterBox,.table,
+.split>article,.twoCards>article,.stepbar,.tabs,.toolbar,.metrics>article,
+.card,.noticeBar,.searchRow,.productMetrics article,.productTabs,.productFilters,
+.productTable,.orderMetrics article,.orderTabs,.orderTable,.formGrid,
+.referralRules>article){
+  background:#2f3349;border:1px solid #44485e;border-radius:6px;box-shadow:none;
+}
+.page[data-commerce-unified] .header{
+  min-height:108px;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;
+}
+.page[data-commerce-unified] .header>div:first-child>div{
+  color:#acabc1;font-size:13px;line-height:1.5
+}
+.page[data-commerce-unified] .header h1{
+  margin:6px 0;padding-left:12px;border-left:3px solid #7367f0;
+  font-size:26px;line-height:1.3;color:#e6e4f1;white-space:nowrap;
+}
+.page[data-commerce-unified] :is(.header p,.sectionTitle p,.category p,.filterBox p){
+  color:#acabc1;font-size:14px;line-height:1.6
+}
+.page[data-commerce-unified] :is(.sectionTitle h2,.category h2,.filterBox h2,
+.table h2,.split h2,.split h3,.twoCards h2){color:#e6e4f1}
+.page[data-commerce-unified] :is(.cards,.split,.metrics,.twoCards,.fourCards,
+.productMetrics,.orderMetrics){gap:14px}
+.page[data-commerce-unified] :is(.card,.split>article,.twoCards>article){
+  min-height:0;padding:18px
+}
+.page[data-commerce-unified] .card{min-height:184px}
+.page[data-commerce-unified] .card h3{
+  font-size:18px;line-height:1.4;color:#8dbfff
+}
+.page[data-commerce-unified] .card[data-tone="1"] h3{color:#65d9c8}
+.page[data-commerce-unified] .card[data-tone="2"] h3{color:#c4a7ff}
+.page[data-commerce-unified] .card[data-tone="3"] h3{color:#ffca7b}
+.page[data-commerce-unified] :is(.card p,.split p,.twoCards p){
+  font-size:14px;line-height:1.65;color:#cfcde4
+}
+.page[data-commerce-unified] :is(.cardTitle span,.tags small,.serviceTags span,
+.sourceTiles span,.serviceLine,.split aside){
+  background:#393d55;border:1px solid #44485e;border-radius:6px;color:#c5c2d7
+}
+.page[data-commerce-unified] .tabs{
+  padding:10px 12px;gap:9px;min-height:57px;flex-wrap:nowrap
+}
+.page[data-commerce-unified] .tabs b{color:#ada7f9;font-size:13px}
+.page[data-commerce-unified] :is(.toolbar,.category,.productFilters){
+  min-height:59px;padding:10px 12px;gap:9px
+}
+.page[data-commerce-unified] .category{justify-content:space-between}
+.page[data-commerce-unified] .category>div{margin-right:auto}
+.page[data-commerce-unified] :is(.toolbar input,.searchRow input,.productFilters input,
+.formGrid input,.formGrid select,.card input,.card select,.toolbar select){
+  min-height:41px;padding:9px 12px;color:#e6e4f1;background:#393d55;
+  border:1px solid #555a73;border-radius:6px;font-size:14px
+}
+.page[data-commerce-unified] input::placeholder{color:#acabc1}
+.page[data-commerce-unified] :is(.headerActions button,.toolbar button,.category button,
+.tabs button,.table button,.split button,.card button,.twoCards button,
+.searchRow button,.noticeBar button,.productFilters button,.productTableRow button,
+.productTabs button,.orderTabs button,.orderTableRow button){
+  min-height:38px;padding:0 13px;border:1px solid #555a73;border-radius:6px;
+  background:#393d55;color:#cfcde4;font-size:14px;font-weight:550;cursor:pointer;
+}
+.page[data-commerce-unified] :is(.headerActions .primary,.toolbar .primary,.card .primary,
+.productFilters .primary,.noticeBar .primary,.productTable .primary,.orderTable .primary,
+.table .primary,.split .primary,.twoCards .primary,.category .primary){
+  background:#7367f0!important;border-color:#7367f0!important;color:#fff!important;
+}
+.page[data-commerce-unified] .selected{
+  background:#44406e!important;border-color:#7367f0!important;color:#c6beff!important;
+}
+.page[data-commerce-unified] button:focus-visible,
+.page[data-commerce-unified] input:focus-visible,
+.page[data-commerce-unified] select:focus-visible{
+  outline:2px solid #a89fff;outline-offset:2px
+}
+.page[data-commerce-unified] button:hover{border-color:#988cff}
+.page[data-commerce-unified] :is(.metrics>article,.productMetrics article,
+.orderMetrics article){
+  min-height:87px;padding:13px 15px;align-content:center
+}
+.page[data-commerce-unified] :is(.metrics span,.productMetrics article>div,
+.orderMetrics article>div,.metrics small,.productMetrics small,.orderMetrics small){
+  color:#bdbacf;font-size:13px
+}
+.page[data-commerce-unified] :is(.metrics strong,.productMetrics strong,
+.orderMetrics strong){font-size:23px;color:#a9bcff}
+.page[data-commerce-unified] :is(.productTabs,.orderTabs){
+  gap:9px;padding:8px 11px;min-height:55px
+}
+.page[data-commerce-unified] :is(.productTabs button,.orderTabs button,.tabs button){
+  min-width:85px;white-space:nowrap;background:transparent;border-color:transparent
+}
+.page[data-commerce-unified] :is(.productTable,.orderTable,.table){
+  padding:14px 16px;overflow-x:auto
+}
+.page[data-commerce-unified] :is(.productTableHead,.orderTableHead,.tableHead){
+  background:#393d55;border:1px solid #44485e;border-radius:6px;
+  color:#d0cee0;font-size:13px;font-weight:650
+}
+.page[data-commerce-unified] :is(.productTableRow,.orderTableRow,.table .serviceRow,
+.keyRow){
+  color:#cfcde4;border-bottom:1px solid #44485e;font-size:14px
+}
+.page[data-commerce-unified] :is(.table>div:not(header),.productTableRow,.orderTableRow){
+  min-height:58px;align-items:center
+}
+.page[data-commerce-unified] .table>div:not(header){border-color:#44485e}
+.page[data-commerce-unified] :is(.serviceRow span:nth-child(2),.keyRow,
+.serviceLine small){color:#bbc2dd}
+.page[data-commerce-unified] .noticeBar{
+  min-height:71px;gap:14px;padding:15px 18px;align-items:center;color:#cfcde4
+}
+.page[data-commerce-unified] .noticeBar b{color:#b6adff}
+.page[data-commerce-unified] .noticeBar span{font-size:14px;color:#cfcde4;line-height:1.6}
+.page[data-commerce-unified] .noticeBar button{background:#393d55;min-height:36px}
+.page[data-commerce-unified] :is(.stepbar,.serviceLine){
+  min-height:69px;padding:12px 16px
+}
+.page[data-commerce-unified] .stepbar{color:#cfcde4}
+.page[data-commerce-unified] .stepbar em{
+  border-color:#7367f0;border-radius:6px;color:#b5aaff;font-weight:700
+}
+.page[data-commerce-unified] .table header{gap:16px}
+.page[data-commerce-unified] :is(.table h2,.split h2,.split h3){font-size:18px}
+.page[data-commerce-unified] .split progress{accent-color:#7367f0}
+.page[data-commerce-unified] .message{
+  background:#234438;border:1px solid #388d6a;border-radius:6px;color:#aaf0d0
+}
+@media(max-width:1350px){
+  .page[data-commerce-unified] .orderMetrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .page[data-commerce-unified] .productMetrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .page[data-commerce-unified] .header h1{white-space:normal}
+}
+@media(max-width:950px){
+  .page[data-commerce-unified] :is(.cards,.fourCards,.split,.twoCards){grid-template-columns:repeat(2,minmax(0,1fr))}
+  .page[data-commerce-unified] :is(.toolbar,.category,.header){flex-wrap:wrap}
+}
+@media(max-width:700px){
+  .page[data-commerce-unified]{width:calc(100% - 24px);padding-top:14px;gap:12px}
+  .page[data-commerce-unified] .header{padding:16px}
+  .page[data-commerce-unified] .header h1{font-size:23px}
+  .page[data-commerce-unified] :is(.cards,.fourCards,.split,.twoCards){grid-template-columns:1fr}
+  .page[data-commerce-unified] :is(.metrics,.productMetrics,.orderMetrics){grid-template-columns:repeat(2,minmax(0,1fr))}
+  .page[data-commerce-unified] .toolbar input{flex-basis:100%}
+}
+:global(.light) .page[data-commerce-unified]{color:#444050}
+:global(.light) .page[data-commerce-unified] :is(.header,.category,.filterBox,.table,
+.split>article,.twoCards>article,.stepbar,.tabs,.toolbar,.metrics>article,
+.card,.noticeBar,.searchRow,.productMetrics article,.productTabs,.productFilters,
+.productTable,.orderMetrics article,.orderTabs,.orderTable){
+  background:#fff;border-color:#ddd9e9
+}
+:global(.light) .page[data-commerce-unified] :is(.header h1,.card h3,
+.sectionTitle h2,.category h2,.table h2,.split h2,.split h3){color:#444050}
+:global(.light) .page[data-commerce-unified] :is(.header p,.card p,.split p,.twoCards p,
+.metrics span,.metrics small,.table>div:not(header),.noticeBar span){
+  color:#6f6b7d
+}
+:global(.light) .page[data-commerce-unified] :is(.toolbar input,.searchRow input,
+.productFilters input,.formGrid input,.formGrid select,.card input,.card select){
+  color:#444050;background:#f8f7fb;border-color:#ddd9e9
+}
+:global(.light) .page[data-commerce-unified] :is(.productTableHead,.orderTableHead,.tableHead,
+.serviceLine,.sourceTiles span,.split aside,.cardTitle span,.tags small,.serviceTags span){
+  background:#f8f7fb;border-color:#ddd9e9;color:#555061
+}
+:global(.light) .page[data-commerce-unified] :is(.toolbar button,.category button,
+.tabs button,.productTabs button,.orderTabs button,.table button,.split button,
+.headerActions button,.noticeBar button,.productFilters button,.card button){
+  color:#555061;background:#f8f7fb;border-color:#ddd9e9
+}
+:global(.light) .page[data-commerce-unified] .selected{
+  color:#6554d7!important;background:#ebe8ff!important;border-color:#7367f0!important
+}
+:global(.light) .page[data-commerce-unified] :is(.headerActions .primary,.toolbar .primary,
+.card .primary,.noticeBar .primary,.table .primary){
+  color:#fff!important;background:#7367f0!important;border-color:#7367f0!important
+}
