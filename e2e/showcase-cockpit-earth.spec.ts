@@ -32,6 +32,7 @@ test("Earth visibly rotates between real-time frames", async ({ page }) => {
   await page.goto(cockpit);
   const globe = page.locator('canvas[data-globe-status]');
   await expect(globe).toHaveAttribute("data-globe-status", "ready", { timeout: 30000 });
+  await expect(globe).toHaveAttribute("data-globe-clouds", "ready", { timeout: 30000 });
   const first = await globe.screenshot();
   await page.waitForTimeout(1800);
   const second = await globe.screenshot();
@@ -44,6 +45,7 @@ test("prefers reduced motion keeps globe still, without layout changes", async (
   await page.goto(cockpit);
   const globe = page.locator('canvas[data-globe-status]');
   await expect(globe).toHaveAttribute("data-globe-status", "ready", { timeout: 30000 });
+  await expect(globe).toHaveAttribute("data-globe-clouds", "ready", { timeout: 30000 });
   const first = await globe.screenshot();
   await page.waitForTimeout(750);
   const second = await globe.screenshot();
