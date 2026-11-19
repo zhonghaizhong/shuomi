@@ -103,3 +103,16 @@ test("centered Vuexy layouts at 1440 and 2560 do not overflow or clip key conten
   }
  }
 });
+
+
+test("light theme maintains contrast for service points, filters and details",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(root+"/market");
+ await page.evaluate(()=>document.documentElement.classList.add("light"));
+ const color=await page.locator('[class*="serviceCard"] [class*="points"] li').first().evaluate(el=>getComputedStyle(el).color);
+ expect(color).toBe("rgb(111, 107, 125)");
+ await page.locator('article[class*="serviceCard"]').first().getByRole("button",{name:"查看详情"}).click();
+ await expect(page.getByRole("dialog")).toBeVisible();
+ await page.screenshot({path:"test-results/ecology-light-market-1440.png",fullPage:true});
+ await page.keyboard.press("Escape");
+});
