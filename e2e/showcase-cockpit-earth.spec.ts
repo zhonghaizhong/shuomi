@@ -144,7 +144,7 @@ const lightModules: Array<[string,string]> = [
   ["/workbench/ai/reports",'[class*="metrics"] > article'],
   ["/workbench/tools",'[class*="entry"]'],
   ["/workbench/tools/official",'[class*="toolCard"]'],
-  ["/workbench/services",'[class*="homeCard"]'],
+  ["/workbench/services",'[class*="homeCard"]:not([class*="homeCards"])'],
   ["/workbench/services/market",'[class*="serviceCard"]'],
 ];
 
