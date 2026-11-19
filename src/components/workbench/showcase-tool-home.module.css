@@ -43,3 +43,19 @@
 @media (max-width:1300px){.hero h1{white-space:normal;}.process .sectionHeading{align-items:start;flex-direction:column;gap:5px;}.process{min-height:0;}}
 @media (max-width:1050px){.capabilityGrid{grid-template-columns:repeat(2,minmax(0,1fr));}.entries{grid-template-columns:repeat(2,minmax(0,1fr));}.bottom{grid-template-columns:minmax(0,1fr);}.notes{grid-template-columns:repeat(2,minmax(0,1fr));}.process{min-height:0;}}
 @media (max-width:700px){.page{width:calc(100% - 24px);padding-block:14px 28px;}.hero{padding:15px 18px;}.hero h1{font-size:21px;line-height:29px;}.entries,.capabilityGrid,.notes{grid-template-columns:minmax(0,1fr);}.sectionHeading{align-items:flex-start;flex-direction:column;gap:3px;}.step h3{white-space:normal;}.steps{grid-template-columns:minmax(0,1fr);}.entry{min-height:160px;}.note{min-height:0;}}
+
+
+/* Vuexy light theme: official tools homepage previously had no light-mode rules. */
+:global(.light) .page {color:#444050;}
+:global(.light) .page :is(.hero,.entry,.capability,.process,.note) {
+  color:#444050;border-color:#e6e6f1;background:#fff;box-shadow:0 3px 13px #45405f0b;
+}
+:global(.light) .page :is(.hero h1,.sectionHeading h2,.note h2){color:#444050;}
+:global(.light) .page :is(.eyebrow,.hero p,.sectionHeading p,.entryDescription,.capability p,.step p,.note p){color:#6f6b7d;}
+:global(.light) .page .entryTitle {color:#444050;}
+:global(.light) .page .entry[data-selected="true"] {border-color:#7367f0;background:#f7f5ff;box-shadow:inset 0 0 0 1px #7367f055;}
+:global(.light) .page .entryAction {color:#6658ce;border-color:#dcd6f2;background:#f3f1ff;}
+:global(.light) .page .entryAction:hover {background:#eae6ff;border-color:#7367f0;}
+:global(.light) .page .step {color:#444050;border-color:#e6e6f1;background:#f8f7fa;}
+:global(.light) .page .selectCard:focus-visible,
+:global(.light) .page .entryAction:focus-visible {outline-color:#7367f0;}
