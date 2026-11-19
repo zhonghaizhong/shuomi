@@ -129,6 +129,7 @@ test("Vuexy light theme gives all cockpit subpages white panels and readable con
 
 
 const lightModules: Array<[string,string]> = [
+  ["/workbench",'[class*="metricsDigest"]'],
   ["/workbench/supply",'[class*="supplyCard"]:not([class*="supplyCards"])'],
   ["/workbench/data",'[class*="dataCard"]:not([class*="dataCards"])'],
   ["/workbench/store-center",'[class*="storeModule"]'],
@@ -146,9 +147,13 @@ const lightModules: Array<[string,string]> = [
   ["/workbench/tools/official",'[class*="toolCard"]'],
   ["/workbench/services",'[class*="homeCard"]:not([class*="homeCards"])'],
   ["/workbench/services/market",'[class*="serviceCard"]'],
+  ["/workbench/agents/custom",'[class*="featureGrid"] article'],
+  ["/workbench/tools/custom",'[class*="featureGrid"] article'],
+  ["/workbench/store-products",'[class*="productMetrics"] article'],
+  ["/workbench/store-orders",'[class*="orderMetrics"] article'],
 ];
 
-for (const [start, end] of [[0, 6], [6, 12], [12, lightModules.length]]) {
+for (const [start, end] of [[0, 6], [6, 12], [12, 18], [18, lightModules.length]]) {
   test(`light theme across workbench pages ${start + 1}-${end}: no dark cards`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/shuomi/#/workbench/overview/advice");
