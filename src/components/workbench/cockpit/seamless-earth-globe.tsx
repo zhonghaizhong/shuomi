@@ -6,12 +6,12 @@ import { useEffect, useRef } from "react";
 const EARTH_TEXTURE = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Land_shallow_topo_2048.jpg/960px-Land_shallow_topo_2048.jpg";
 const TURN_DURATION_MS = 90_000;
 
-const VERTEX = \`
+const VERTEX = `
 attribute vec2 aPosition;
 varying vec2 vUv;
 void main(){vUv=(aPosition+1.0)*0.5;gl_Position=vec4(aPosition,0.0,1.0);}
-\`;
-const FRAGMENT = \`
+`;
+const FRAGMENT = `
 precision highp float;
 uniform sampler2D uEarth;
 uniform float uRotation;
@@ -33,7 +33,7 @@ void main(){
   float alpha=1.0-smoothstep(0.968,0.993,sqrt(r2));
   gl_FragColor=vec4(color,alpha);
 }
-\`;
+`;
 
 function compile(gl:WebGLRenderingContext,type:number,code:string){
  const shader=gl.createShader(type);
