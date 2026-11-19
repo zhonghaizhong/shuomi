@@ -61,5 +61,6 @@ test("Figma layout 1440 and 2560 keeps centered cards, no overflow or clipping",
    expect(rect.width).toBeGreaterThan(250);
   }
   if(width===2560){expect(bounds!.x).toBeGreaterThan(450);expect(width-bounds!.x-bounds!.width).toBeGreaterThan(250);}
+  if(width===1440||width===2560) await page.screenshot({path:`test-results/tool-market-home-${width}.png`,fullPage:true});
  }
 });
