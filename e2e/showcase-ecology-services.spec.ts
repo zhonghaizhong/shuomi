@@ -98,6 +98,12 @@ test("centered Vuexy layouts at 1440 and 2560 do not overflow or clip key conten
    const dim=await page.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));
    expect(dim.scroll,route+":"+width).toBeLessThanOrEqual(dim.width+2);
    if(width===2560){expect(bounds!.x).toBeGreaterThan(350);expect(width-bounds!.x-bounds!.width).toBeGreaterThan(250);}
+   if(route==="/market"){
+     const tops=await page.locator('article[class*="serviceCard"]').evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().top));
+     expect(tops).toHaveLength(4);
+     for(const top of tops) expect(Math.abs(top-tops[0]),"Figma service-card row alignment at "+width).toBeLessThan(2);
+   }
+
    if(route==="")await page.screenshot({path:"test-results/ecology-home-"+width+".png",fullPage:true});
    if(width===2560&&route==="/market")await page.screenshot({path:"test-results/ecology-market-2560.png",fullPage:true});
   }
