@@ -108,7 +108,7 @@ test("API, store and account destructive business actions open honest preview di
   await page.getByRole("button",{name:label,exact:true}).click();
   const modal=page.getByRole("dialog",{name:label.includes("绑定新店铺")?"绑定新店铺":label});
   await expect(modal,route).toBeVisible();
-  await expect(modal).toContainText("不会向服务器");
+  await expect(modal).toContainText("不会提交申请");
   await page.keyboard.press("Escape");
   await expect(modal).toHaveCount(0);
  }
