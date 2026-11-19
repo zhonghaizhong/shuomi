@@ -91,7 +91,7 @@ test("stores, bills, enterprise members and referrals filter instead of placehol
  await expect(page.getByText("二号店", {exact:true})).toBeVisible();
  await page.goto(base+"/plans/orders");
  await page.getByRole("combobox",{name:"全部状态"}).selectOption("已支付");
- await expect(page.locator('[data-commerce-unified] .serviceRow')).toHaveCount(2);
+ await expect(page.locator('[data-commerce-unified] div[class*="serviceRow"]')).toHaveCount(2);
  await page.goto(base+"/account/organization/members");
  await page.getByRole("combobox",{name:"全部角色"}).selectOption("运营负责人");
  await expect(page.locator('[data-commerce-unified] div[class*="serviceRow"]')).toHaveCount(1);
@@ -106,7 +106,7 @@ test("API, store and account destructive business actions open honest preview di
  for(const [route,label] of [["/data/api","创建API密钥"],["/stores","＋ 绑定新店铺"],["/account/referrals/withdrawals","申请提现"]]){
   await page.goto(base+route);
   await page.getByRole("button",{name:label,exact:true}).click();
-  const modal=page.getByRole("dialog",{name:label});
+  const modal=page.getByRole("dialog",{name:label.includes("绑定新店铺")?"绑定新店铺":label});
   await expect(modal,route).toBeVisible();
   await expect(modal).toContainText("不会向服务器");
   await page.keyboard.press("Escape");
