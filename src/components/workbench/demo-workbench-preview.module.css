@@ -1749,3 +1749,105 @@
 .planActions button:last-child,.accountModules article button,.accountSettings>footer button:last-child){
   color:#fff;background:#7367f0;border-color:#7367f0
 }
+
+
+/* Premium second pass for the four existing online hub pages.
+   Do not alter navigation structure, copy or widget behavior. */
+.page[data-commerce-unified]{gap:19px;font-size:15px;padding-top:24px}
+.page[data-commerce-unified] .header{min-height:136px;padding:22px 27px;border-color:#494e67}
+.page[data-commerce-unified] .header h1{font-size:clamp(24px,1.28vw,31px);font-weight:750;letter-spacing:-.03em}
+.page[data-commerce-unified] .header p{line-height:1.65;font-size:14px}
+.page[data-commerce-unified] :is(.dataCard,.storeModule,.planEntrances article,.accountModules article){
+  border-color:#4a4e69;position:relative;overflow:hidden;transition:border-color .17s,box-shadow .17s;
+}
+.page[data-commerce-unified] :is(.dataCard:hover,.storeModule:hover,.planEntrances article:hover,.accountModules article:hover){
+  border-color:#747095;box-shadow:0 8px 28px #0b102b24
+}
+.page[data-commerce-unified] :is(.dataCards,.storeCards,.planEntrances>div,.accountModules>div){gap:15px}
+.page[data-commerce-unified] :is(.dataCard,.storeModule){
+  min-height:209px;padding:21px 22px;gap:14px
+}
+.page[data-commerce-unified] :is(.dataCard h2,.storeModule h2){font-size:20px;line-height:28px;letter-spacing:-.012em}
+.page[data-commerce-unified] :is(.dataCard p,.storeModule p){font-size:14px;line-height:1.75;color:#c8c5d9}
+.page[data-commerce-unified] :is(.dataCard button,.storeModule button){min-height:40px;border-radius:6px;padding:0 15px;font-weight:650}
+.page[data-commerce-unified] :is(.dataCard .statusTag,.storeModule .statusTag){border-radius:5px}
+.page[data-commerce-unified] :is(.dataSteps,.planEntrances,.accountModules){gap:14px}
+.page[data-commerce-unified] :is(.dataSteps>header,.planEntrances>header,.accountOverview>header,.accountModules>header){min-height:32px;gap:18px}
+.page[data-commerce-unified] :is(.dataSteps h2,.planEntrances h2,.accountOverview h2,.accountModules h2){font-size:19px;letter-spacing:-.012em}
+.page[data-commerce-unified] .dataSteps article{
+  min-height:175px;gap:9px 11px;padding:19px;border-color:#4a506c
+}
+.page[data-commerce-unified] .dataSteps article strong{font-size:16px;line-height:1.45;color:#e9e6f6}
+.page[data-commerce-unified] .dataSteps article p{font-size:14px;line-height:1.75;color:#c4c2d5}
+.page[data-commerce-unified] :is(.dataDetails,.storeDetails){gap:15px}
+.page[data-commerce-unified] :is(.dataDetails article,.storeDetails article){
+  min-height:207px;padding:21px;gap:17px;border-color:#4a506a
+}
+.page[data-commerce-unified] :is(.dataDetails h3,.storeDetails h3){font-size:18px;font-weight:700;color:#e6e4f1}
+.page[data-commerce-unified] :is(.dataDetails p,.storeDetails p){font-size:14px;line-height:1.7;color:#c8c5d8}
+.page[data-commerce-unified] :is(.dataDetails article small,.storeDetails article small){color:#b8b2ca}
+.page[data-commerce-unified] :is(.storeDetails article>div:last-child,.dataDetails article>div:last-child){gap:9px}
+.page[data-commerce-unified] .planOverview{min-height:209px;gap:19px;padding:23px 25px}
+.page[data-commerce-unified] .planOverview h2{font-size:24px;letter-spacing:-.03em}
+.page[data-commerce-unified] .planStats strong{font-size:21px}
+.page[data-commerce-unified] .planStats :is(span,small){font-size:13px}
+.page[data-commerce-unified] .planEntrances article{
+  min-height:194px;padding:19px 19px 16px;gap:12px
+}
+.page[data-commerce-unified] .planEntrances article h3{font-size:17px;color:#e7e4f3}
+.page[data-commerce-unified] .planEntrances article p{font-size:14px;line-height:1.65}
+.page[data-commerce-unified] .planEntrances article button{min-height:39px}
+.page[data-commerce-unified] :is(.planBottom>article,.planBottom>aside){min-height:207px;padding:21px 23px}
+.page[data-commerce-unified] .usageBar{gap:12px}
+.page[data-commerce-unified] .accountOverview{min-height:152px;padding:20px 23px}
+.page[data-commerce-unified] .accountOverview>div{gap:15px}
+.page[data-commerce-unified] .accountOverview article{
+  min-height:81px;padding:14px 17px;gap:8px
+}
+.page[data-commerce-unified] .accountOverview article strong{font-size:18px}
+.page[data-commerce-unified] .accountModules{padding:22px 23px}
+.page[data-commerce-unified] .accountModules article{
+  min-height:211px;padding:20px;gap:12px
+}
+.page[data-commerce-unified] .accountModules h3{font-size:20px;font-weight:700;line-height:1.4}
+.page[data-commerce-unified] .accountModules article>span{padding:5px 10px}
+.page[data-commerce-unified] .accountModules article p{font-size:14px;line-height:1.75;margin:4px 0 10px}
+.page[data-commerce-unified] .accountModules footer{min-height:46px;padding:8px 10px;background:#393d55;border-radius:6px}
+.page[data-commerce-unified] .accountModules article button{min-height:38px}
+.page[data-commerce-unified] :is(.accountBottom>article,.accountBottom>aside){min-height:208px;padding:21px 23px}
+.page[data-commerce-unified] .accountBottom>article>div{min-height:48px}
+.page[data-commerce-unified] :is(.accountBottom h2,.profileGrid h2){font-size:18px}
+.page[data-commerce-unified] .accountBottom>aside>div{min-height:64px;padding:12px 78px 12px 15px}
+.page[data-commerce-unified] .profileBanner{padding:21px 25px;min-height:132px}
+.page[data-commerce-unified] .profileBanner h2{font-size:22px;color:#e6e4f1}
+.page[data-commerce-unified] :is(.profileGrid>article,.profileGrid>aside){padding:22px}
+.page[data-commerce-unified] .accountSettings>section{padding:22px;gap:17px}
+.page[data-commerce-unified] .accountSettings h2{font-size:18px}
+.page[data-commerce-unified] :is(.accountFields input,.accountSettings input){font-size:14px}
+.page[data-commerce-unified] :is(.accountContacts article,.accountSecurity){min-height:104px}
+:global(.light) .page[data-commerce-unified] :is(.dataCard,.storeModule,.planEntrances article,.accountModules article){border-color:#ddd9e9;background:#fff}
+:global(.light) .page[data-commerce-unified] :is(.dataCard p,.storeModule p,.dataSteps article p,.dataDetails p,.storeDetails p,.planEntrances article p,.accountModules article p){color:#6f6b7d}
+:global(.light) .page[data-commerce-unified] :is(.dataSteps article strong,.planEntrances article h3,.profileBanner h2){color:#454050}
+:global(.light) .page[data-commerce-unified] .accountModules footer{background:#f7f5fb}
+@media(min-width:1850px) and (min-height:1100px){
+ .page[data-commerce-unified]{gap:23px;padding-top:29px}
+ .page[data-commerce-unified] .header{min-height:155px;padding:25px 30px}
+ .page[data-commerce-unified] :is(.dataCard,.storeModule){min-height:251px;padding:25px 26px}
+ .page[data-commerce-unified] .dataSteps article{min-height:224px;padding:24px}
+ .page[data-commerce-unified] :is(.dataDetails article,.storeDetails article){min-height:255px;padding:25px}
+ .page[data-commerce-unified] .planOverview{min-height:246px}
+ .page[data-commerce-unified] .planEntrances article{min-height:240px;padding:23px}
+ .page[data-commerce-unified] :is(.planBottom>article,.planBottom>aside){min-height:249px}
+ .page[data-commerce-unified] .accountOverview{min-height:177px}
+ .page[data-commerce-unified] .accountModules article{min-height:259px;padding:25px}
+ .page[data-commerce-unified] :is(.accountBottom>article,.accountBottom>aside){min-height:245px}
+}
+@media(max-width:1200px){
+ .page[data-commerce-unified] .dataSteps article{min-height:164px}
+ .page[data-commerce-unified] :is(.dataCard,.storeModule){min-height:174px}
+}
+@media(max-width:700px){
+ .page[data-commerce-unified] .header{min-height:0;padding:17px}
+ .page[data-commerce-unified] .planOverview{min-height:0}
+ .page[data-commerce-unified] :is(.dataCard,.storeModule,.dataSteps article,.dataDetails article,.storeDetails article,.planEntrances article,.accountModules article){min-height:0}
+}
