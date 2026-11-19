@@ -162,7 +162,7 @@ for (const [start, end] of [[0, 6], [6, 12], [12, lightModules.length]]) {
       const values = rgb.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? [];
       const channels = rgb.startsWith("color(srgb") ? values.map(value => value * 255) : values;
       expect(channels.length, route + ": card color missing").toBe(3);
-      expect(rgb, route + ": card background transparent").not.toMatch(/rgba\\(0, 0, 0, 0\\)/);
+      expect(rgb, route + ": card background transparent").not.toBe("rgba(0, 0, 0, 0)");
       expect(Math.min(...channels), route + ": dark card background " + rgb).toBeGreaterThan(190);
     }
   });
