@@ -49,7 +49,7 @@ export function CockpitPreview() {
         <div className={styles.overviewMain}>
           <div className={styles.heroCopy}><span>运营总览</span><h1>经营全局 · 一屏掌握</h1><p>当前：全部 {visibleStores.length} 家店铺 · 全部时间 · 演示数据</p></div>
           <div className={styles.overviewAside}>
-            <div className={styles.overviewGlobe} aria-hidden="true"><CockpitRotatingEarth /></div>
+            <div className={styles.overviewGlobe}><CockpitRotatingEarth /></div>
           </div>
         </div>
       </article>
