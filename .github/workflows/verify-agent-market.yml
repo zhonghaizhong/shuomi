@@ -2,7 +2,11 @@ name: Verify Agent Market Showcase
 on:
   push:
     branches:
+      - main
       - audit/agent-market-e2e-20261119
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 jobs:
   audit:
