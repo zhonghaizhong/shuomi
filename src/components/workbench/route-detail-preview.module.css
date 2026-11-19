@@ -753,3 +753,21 @@
 :global(.light) .page[data-commerce-unified] .rolePermissions article{background:#f8f7fb;border-color:#ddd9e9}
 :global(.light) .page[data-commerce-unified] .rolePermissions article span{color:#454050}
 @media(max-width:780px){.page[data-commerce-unified] .rolePermissions>div{grid-template-columns:1fr}.page[data-commerce-unified] .rolePermissions header{align-items:flex-start;flex-direction:column;gap:5px}}
+
+
+/* Detail pages: fix later dark-only rules winning the light theme cascade. */
+:global(.light) .page {color:#444050;}
+:global(.light) .page[data-commerce-unified] :is(.header,.rolePermissions,.card,.table,.split>article,.twoCards>article,.noticeBar) {
+  color:#444050;background:#fff;border-color:#e6e6f1;
+}
+:global(.light) .page[data-commerce-unified] :is(.header h1,.card h2,.card h3,.table h2,.split h2,.split h3,.twoCards h2) {color:#444050;}
+:global(.light) .page[data-commerce-unified] :is(.header p,.card p,.card small,.table p,.split p,.twoCards p) {color:#6f6b7d;}
+:global(.light) .page[data-commerce-unified] :is(.productTableRow,.orderTableRow,.serviceRow) {border-bottom-color:#e6e6f1;}
+:global(.light) .page[data-commerce-unified] :is(.productTableRow:hover,.orderTableRow:hover,.serviceRow:hover) {background:#f8f7fa;}
+:global(.light) .page[data-commerce-unified] :is(.disabledStatus,.operationHead button) {color:#6f6b7d;border-color:#ddd9e9;background:#f8f7fa;}
+:global(.light) .page[data-commerce-unified] .operationHead button {color:#444050;}
+:global(.light) .page[data-commerce-unified] .operationDialog {color:#444050;background:#fff;border-color:#ddd9e9;}
+:global(.light) .page[data-commerce-unified] :is(.operationSummary,.rolePermissions article) {color:#444050;background:#f8f7fa;border-color:#ddd9e9;}
+:global(.light) .page[data-commerce-unified] :is(.operationHead h2,.rolePermissions header strong,.rolePermissions article span) {color:#444050;}
+:global(.light) .page[data-commerce-unified] :is(.toolbar input,.toolbar select,.filterSelect,.formGrid input,.formGrid select) {color:#444050;border-color:#dbdade;background:#fff;}
+:global(.light) .page[data-commerce-unified] :is(.productTabs .selected,.orderTabs .selected,.tabs .selected) {color:#6658ce!important;background:#eeebff!important;border-color:#7367f0!important;}
