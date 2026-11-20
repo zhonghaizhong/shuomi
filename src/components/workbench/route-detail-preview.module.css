@@ -1004,3 +1004,42 @@
 :global(.light) .page .referralRules h3 {color:#444050;}
 :global(.light) .page .referralRules p {color:#625d70;}
 :global(.light) .page .noticeBar>div b {color:#6254c8;}
+
+
+/* Second pass: table headers, counters and action controls were still styled as dark. */
+:global(.light) .page :is(.tableHead,.productTableHead,.orderTableHead) {
+  color:#625d70;
+  background:#f4f3f8;
+  border-color:#e3dfed;
+}
+:global(.light) .page :is(.tableHead,.productTableHead,.orderTableHead) :is(span,strong,b,small) {color:#625d70;}
+:global(.light) .page :is(
+  .table>header,.table>header small,.toolbar>p,.sectionTitle>p,
+  .category>p,.table>p,.chatCollectionPage>p
+) {color:#625d70;}
+:global(.light) .page :is(
+  .table button:not(.primary),.toolbar button:not(.primary),
+  .productTableRow button,.orderTableRow button,
+  .serviceRow button,.chatList article button
+) {color:#6254c8;background:#f2efff;border-color:#d9d2f7;}
+:global(.light) .page :is(
+  .table button:not(.primary),.toolbar button:not(.primary),
+  .productTableRow button,.orderTableRow button,.serviceRow button
+):hover {color:#5144b9;background:#eae5ff;border-color:#7367f0;}
+:global(.light) .page :is(
+  .table button.primary,.toolbar button.primary,.primary,.searchRow button
+) {color:#fff;background:#7367f0;border-color:#7367f0;}
+:global(.light) .page .scheduledMetrics>article>strong {
+  color:#6254c8;
+  background:#eeebff;
+  border-color:#d9d2f7;
+}
+:global(.light) .page .scheduledMetrics>article:nth-child(2)>strong {color:#9e5f17;background:#fff2df;}
+:global(.light) .page .scheduledMetrics>article:nth-child(3)>strong {color:#176990;background:#e6f5fc;}
+:global(.light) .page .card :is(h3,strong) {color:#444050;}
+:global(.light) .page .card :is(p,small,span:not(.badge)) {color:#625d70;}
+:global(.light) .page .card .knowledgeTag {color:#14764d;background:#e4f7ec;}
+:global(.light) .page .skillItem .knowledgeTag {color:#14764d;background:#e4f7ec;}
+:global(.light) .page .skillItem .skillItemBody > div strong {color:#444050;}
+:global(.light) .page .skillItem .skillItemBody > div span {color:#625d70;}
+:global(.light) .page .skillItem .skillItemBody > div .statusTag {color:#14764d;background:#e4f7ec;}
