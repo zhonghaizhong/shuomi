@@ -86,5 +86,7 @@ test("customization request is validated and switches between demo progress and 
  await expect(page).toHaveURL(/agents\/custom\/progress/);
  const progress=page.locator('[data-agent-customization="progress"]');
  await expect(progress.getByText("SHEIN 商品资料规范化")).toBeVisible();
- await progress.getByRole("button",{name:"暂无记录"}).click().catch(()=>{});
+ await progress.getByRole("button",{name:"本地演示记录"}).click();
+ await expect(progress.getByText("SHEIN 商品资料规范化")).toBeVisible();
+ await expect(progress.getByText("未提交服务器")).toBeVisible();
 });
