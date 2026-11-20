@@ -340,6 +340,7 @@ test("light mode has no severely invisible ordinary text across sampled workbenc
     "/workbench/store-products","/workbench/store-orders"
   ];
   const seen=new Set<string>();
+  const allLow:string[]=[];
   for (const route of routes) {
     if (seen.has(route)) continue;
     seen.add(route);
@@ -387,6 +388,7 @@ test("light mode has no severely invisible ordinary text across sampled workbenc
       }
       return bad.slice(0,12);
     });
-    expect(low, route+" has invisible or severely low-contrast ordinary text").toEqual([]);
+    if(low.length)allLow.push(route+": "+low.join(" | "));
   }
+  expect(allLow, "Pages with unreadable foreground/background colors").toEqual([]);
 });
