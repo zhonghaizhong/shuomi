@@ -173,3 +173,36 @@ test("listing management overview follows Figma entry and conditional flow", asy
  await overview.getByRole("button",{name:"查看已上传"}).click();
  await expect(page).toHaveURL(/#\/workbench\/listing\/uploaded/);
 });
+
+test("listing four-stage Figma flow has distinct functional screens",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(entry+"/listing/waiting");
+ const waiting=page.locator('[data-listing-stage="waiting"]');
+ await expect(waiting.getByRole("heading",{name:"商品上传流程"})).toBeVisible();
+ await expect(waiting.getByRole("heading",{name:"选择商品"})).toBeVisible();
+ await expect(waiting.getByRole("heading",{name:"目标平台与店铺"})).toBeVisible();
+ await expect(waiting.getByRole("heading",{name:"启用规则"})).toBeVisible();
+ await expect(waiting.getByRole("heading",{name:"启用智能体"})).toBeVisible();
+ await expect(waiting.getByRole("button",{name:"确认提交"})).toBeDisabled();
+ await waiting.getByLabel("本次批次 / 产品集").selectOption("美国站商品");
+ await waiting.getByLabel("本次目标店铺").selectOption("一号店 · 全托");
+ await expect(waiting.getByRole("button",{name:"确认提交"})).toBeEnabled();
+ await waiting.getByRole("button",{name:"确认提交"}).click();
+ await expect(waiting.getByRole("status")).toContainText("演示任务已配置");
+ await waiting.getByRole("button",{name:"待补全",exact:true}).click();
+ const missing=page.locator('[data-listing-stage="missing"]');
+ await expect(missing.getByRole("heading",{name:"商品列表（共 4 个演示商品）"})).toBeVisible();
+ await missing.getByRole("button",{name:"查看并补全"}).first().click();
+ const dialog=page.getByRole("dialog",{name:"查看并补全"});
+ await expect(dialog.getByText("商品品牌（必填）")).toBeVisible();
+ await dialog.getByRole("button",{name:"返回列表"}).click();
+ await missing.getByRole("button",{name:"待审核",exact:true}).click();
+ const review=page.locator('[data-listing-stage="review"]');
+ await expect(review.getByRole("heading",{name:"为什么需要人工审核 AI 建议？"})).toBeVisible();
+ await review.getByRole("button",{name:"审核 AI 建议"}).first().click();
+ await expect(page.getByRole("dialog",{name:"审核智能体建议"})).toBeVisible();
+ await page.getByRole("button",{name:"返回列表"}).click();
+ await review.getByRole("button",{name:"已上传",exact:true}).click();
+ await expect(page.locator("[data-showcase-uploaded]")).toBeVisible();
+ await expect(page.getByText(/已上传记录只读/)).toBeVisible();
+});
