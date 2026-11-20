@@ -65,20 +65,22 @@ it("shows the task center independently of Chat using the existing run read perm
  expect(screen.queryByRole("button",{name:"展开任务中心"})).not.toBeInTheDocument();
  expect(screen.queryByRole("link",{name:"硕米Chat"})).not.toBeInTheDocument();
 });
-it("places My Listing beneath My Stores and preserves listing context",()=>{
+it("places My Listing beside My Stores and preserves listing context",()=>{
  const id="11111111-1111-4111-8111-111111111111";
  query.value=`preparation=${id}&store=${id}&operation=${id}&mode=platform`;
  render(<ConsoleNavigation pathname="/workbench/listing/missing" ariaLabel="主导航" supplyChainAvailable supplyCompletionDraftsAvailable/>);
  const listing=screen.getByRole("link",{name:"我的刊登"});
  const store=screen.getByRole("link",{name:"店铺中心"});
  const myStores=screen.getByRole("link",{name:"我的店铺"});
- expect(listing.closest("li")).toHaveClass("console-nav-level-3");
+ expect(listing.closest("li")).toHaveClass("console-nav-level-2");
+ expect(myStores.closest("li")).toHaveClass("console-nav-level-2");
  expect(store.compareDocumentPosition(listing)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
  expect(myStores.compareDocumentPosition(listing)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+ expect(screen.queryByRole("button",{name:"展开我的店铺"})).not.toBeInTheDocument();
  expect(screen.queryByRole("link",{name:"商品刊登"})).not.toBeInTheDocument();
  expect(Object.fromEntries(new URL(listing.getAttribute("href")!,"https://test.invalid").searchParams)).toEqual({preparation:id,store:id,operation:id});
  const active=screen.getByRole("link",{name:"待补全"});
- expect(active.closest("li")).toHaveClass("console-nav-level-4");
+ expect(active.closest("li")).toHaveClass("console-nav-level-3");
  expect(active).toHaveAttribute("aria-current","page");
  query.value="";
 });
