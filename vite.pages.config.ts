@@ -33,7 +33,9 @@ const blueMarbleTexture = {
 
 const pagesFallback = {
   name: "github-pages-history-fallback",
-  async closeBundle() {
+  // writeBundle runs after the HTML asset is emitted. closeBundle can execute
+  // before Rolldown has finished writing it in Vite 8.
+  async writeBundle() {
     await copyFile(`${here}/dist-pages/index.html`, `${here}/dist-pages/404.html`);
   },
 };
