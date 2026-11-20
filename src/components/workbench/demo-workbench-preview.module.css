@@ -2501,3 +2501,48 @@
   .page.page > .header h1 { font-size: 30px; line-height: 40px; }
   .page.page > .header p { font-size: 15px; line-height: 24px; }
 }
+
+
+/* Alert list secondary metadata was still #acabc1 on white cards. */
+:global(.light) .cockpitPreview .alertRow > span:first-child small,
+:global(.light) .cockpitPreview .alertRow > strong small,
+:global(.light) .cockpitPreview .alertRow > span:nth-child(3) {color:#625d70;}
+:global(.light) .cockpitPreview .alertRow > strong {color:#444050;}
+:global(.light) .cockpitPreview .alertRow > button {color:#6254c8;border-color:#dcd7eb;background:#f4f2ff;}
+:global(.light) .cockpitPreview .alertRow:hover {background:#f6f4ff;border-color:#a99af7;}
+
+
+/* Whole-workbench light text legibility: retain accent borders, never pastel headings on white. */
+:global(.light) .supplyPreview .supplyCard :is(h2,h3,strong),
+:global(.light) .page :is(.dataCard h2,.dataCard h3,.dataSteps h2,.dataDetails h3,.storeModule h2,.planOverview h2,.planEntrances h2,.planBottom h2,.accountOverview h2,.accountModules h2,.accountBottom h2,.profileGrid h2,.profileBanner h2),
+:global(.light) .agentsPreview :is(.dataCard h2,.dataCard h3,.agentCards h2,.agentCards h3),
+:global(.light) .aiWorkbenchPreview .aiCards :is(h2,h3) {color:#444050;}
+:global(.light) .page :is(.supplyCard header span,.dataCard div span,.dataSteps > header p,.dataDetails p,.storeModule p,.storeDetails p,.planOverview p,.planStats span,.planStats small,.planEntrances > header span,.planEntrances article p,.planEntrances article > b,.planBottom p,.planBottom > aside > div span,.planBottom > aside > footer,.accountOverview > header span,.accountOverview article > span,.accountOverview article small,.accountModules > header span,.accountModules article > span,.accountModules p,.accountModules footer small,.accountBottom > header span,.accountBottom > article > div span,.accountBottom > article > div small,.accountBottom > aside > div span,.profileBanner p,.profileBanner dt,.profileGrid header span,.profileFacts b,.profileStatus article span,.profilePair b,.aiHint span) {color:#625d70;}
+:global(.light) .page :is(.planBottom > article > p,.planBottom > aside > p,.accountBottom > article > p,.accountBottom > aside > p,.planOverview > p) {color:#625d70;}
+:global(.light) .page :is(.accountModules footer b,.accountOverview article strong,.profileBanner > div > span,.profileBanner dl div:last-child dd,.profilePair:last-child span,.accountContacts article > b,.accountSecurity > b) {color:#6254c8;}
+:global(.light) .page :is(.accountContacts em,.accountSecurity em,.profileStatus article em) {color:#14764d;}
+:global(.light) .page :is(.accountContacts small,.accountSecurity small,.accountFields label,.accountSettings > section > header span,.profileGrid > aside > p) {color:#625d70;}
+:global(.light) .page :is(.accountOverview h2,.accountModules h3,.accountBottom h3,.accountSettings h2,.profileGrid h3) {color:#444050;}
+:global(.light) .page :is(.planBottom > aside > div button,.planBottom > aside > footer button,.accountBottom > aside > div button) {color:#6254c8;border-color:#d9d3f2;background:#f0edff;}
+:global(.light) .aiWorkbenchPreview .aiCards :is(p,small) {color:#625d70;}
+:global(.light) .agentsPreview :is(.agentCards p,.dataCard p,.dataCard > div span,.capabilityBand article p,.agentsBottom article p) {color:#625d70;}
+:global(.light) .agentsPreview .agentCards article > small {color:#176990;background:#e5f5fc;}
+:global(.light) .tasksPreview .taskRow button {color:#6254c8;}
+:global(.light) .tasksPreview .taskRow :is(strong,b) {color:#444050;}
+:global(.light) .tasksPreview :is(.taskRow small,.taskColumns,.taskSearch p) {color:#625d70;}
+:global(.light) .tasksPreview .taskRow b[data-state="待你确认"],
+:global(.light) .tasksPreview .taskRow b[data-state="待确认"] {color:#9e5f17;background:#fff2df;}
+:global(.light) .tasksPreview .taskRow b[data-state="进行中"] {color:#176990;background:#e4f5fc;}
+:global(.light) .tasksPreview .taskRow b[data-state="已完成"] {color:#14764d;background:#e3f6e9;}
+:global(.light) .tasksPreview .taskRow b[data-state="异常"] {color:#b52d3a;background:#ffecef;}
+:global(.light) .tasksPreview .taskRow b[data-state="定时运行"] {color:#6254c8;background:#efedff;}
+:global(.light) .libraryHubPreview :is(.rowValue,.arrow,.footer button,.listHeading .eyebrow,.card button:not(.primary)) {color:#6254c8;}
+:global(.light) .libraryHubPreview .card button:not(.primary) {border-color:#ddd7f2;background:#f4f2ff;}
+:global(.light) .libraryHubPreview .status {color:#6254c8;background:#eeebff;}
+
+
+/* Final text-audit exceptions: usage figures, AI task hints and secondary list actions. */
+:global(.light) .page .usageBar small {color:#625d70;}
+:global(.light) .tasksPreview .taskNote {color:#625d70;}
+:global(.light) .libraryHubPreview .secondary {color:#6254c8;border-color:#ddd7f2;background:#f3f1ff;}
+:global(.light) .libraryHubPreview .secondary:hover {color:#5144bb;background:#eae6ff;}

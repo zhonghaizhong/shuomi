@@ -845,3 +845,37 @@
   .page.page > .header h1 { font-size: 30px; line-height: 40px; }
   .page.page > .header p { font-size: 15px; line-height: 24px; }
 }
+
+
+/* Nested detail panels with hardcoded dark surfaces and text colors. */
+:global(.light) .page :is(.warehouses article,.sourceTiles span,.serviceLine,.split aside,.twoCards aside,.serviceTags span) {
+  color:#444050;background:#f8f7fb;border-color:#ddd9e9;
+}
+:global(.light) .page :is(.warehouses article h2,.twoCards aside h3,.serviceLine strong,.split aside h3) {color:#444050;}
+:global(.light) .page :is(.warehouses article p,.twoCards aside p,.sourceTiles small,.serviceLine small) {color:#6f6b7d;}
+:global(.light) .page[data-commerce-unified] :is(.rolePermissions header small,.rolePermissions article small,.operationHead small) {color:#6f6b7d;}
+:global(.light) .page[data-commerce-unified] .operationHead small {color:#6254c8;}
+:global(.light) .page[data-commerce-unified] .operationSummary b {color:#5d596c;}
+:global(.light) .page[data-commerce-unified] .operationSummary span {color:#444050;}
+:global(.light) .page[data-commerce-unified] :is(.tableHead,.productTableHead,.orderTableHead) {color:#6f6b7d;background:#f4f3f8;border-color:#e6e6f1;}
+
+
+/* Detail pages: restore dark metadata on light product/order statistic cards and tables. */
+:global(.light) .page :is(.productMetrics article>div,.orderMetrics article>div,.productMetrics article small,.orderMetrics article small,.productTable h2 small,.productTable>header>small,.orderTable h2 small,.orderTable>header>small,.productTableRow>span small,.orderTableRow>span small,.orderTableRow>span:nth-child(2) small,.orderTableRow>small,.productTable>footer,.orderTable>footer) {color:#625d70;}
+:global(.light) .page :is(.productMetrics strong,.orderMetrics strong,.productTableRow strong,.orderTableRow strong) {color:#444050;}
+:global(.light) .page :is(.productTableRow,.orderTableRow,.serviceRow,.keyRow) {color:#444050;border-color:#e6e6f1;}
+:global(.light) .page :is(.productTableHead,.orderTableHead,.tableHead) {color:#625d70;background:#f4f3f8;}
+:global(.light) .page .orderTableRow .statusTag[data-state="待发货"],
+:global(.light) .page .orderTableRow .statusTag[data-state="待揽收"] {color:#9e5f17;background:#fff2df;}
+:global(.light) .page .orderTableRow .statusTag[data-state="运输中"] {color:#176990;background:#e4f5fc;}
+:global(.light) .page .orderTableRow .statusTag[data-state="已完成"],
+:global(.light) .page .orderTableRow .statusTag[data-state="已签收"] {color:#14764d;background:#e3f6e9;}
+:global(.light) .page .orderTableRow .statusTag[data-state="异常订单"],
+:global(.light) .page .orderTableRow .statusTag[data-state="地址异常"] {color:#b52d3a;background:#ffecef;}
+:global(.light) .page .orderTableRow>small {color:#9e5f17;}
+:global(.light) .page[data-commerce-unified] :is(.metrics span,.metrics small,.productMetrics article>div,.orderMetrics article>div) {color:#625d70;}
+:global(.light) .page[data-commerce-unified] :is(.metrics strong,.productMetrics strong,.orderMetrics strong) {color:#444050;}
+
+
+/* Product listing and order tab subtitle text. */
+:global(.light) .page :is(.productTabs small,.orderTabs small,.productTable > header small,.productFilters small,.orderTable > header small) {color:#625d70;}

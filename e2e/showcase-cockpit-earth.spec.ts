@@ -270,3 +270,125 @@ test("standard headers keep actions clickable and adapt to narrow screens", asyn
   await page.getByRole("button", { name: /转化率下降/ }).click();
   await expect(page.getByRole("heading", { name: "转化率下降" })).toBeVisible();
 });
+
+
+/* Regression for previously unstyled light-mode nested surfaces.
+   Test rendered RGB and foreground/background contrast, not just CSS presence. */
+const lightDetailSurfaces = [
+  {route:"/workbench/tools/official", target:'[class*="toolCard"]', text:"h3"},
+  {route:"/workbench/agents/custom", target:'[class*="featureGrid"] article', text:"h3"},
+  {route:"/workbench/tools/custom", target:'[class*="features"] article', text:"h3"},
+  {route:"/workbench/agents/custom/new", target:'[class*="formLayout"] input:not([type="checkbox"]):not([type="file"])', text:null},
+  {route:"/workbench/tools/custom/new", target:'[class*="formLayout"] input:not([type="checkbox"]):not([type="file"])', text:null},
+  {route:"/workbench/store-products", target:'[class*="productMetrics"] article', text:"strong"},
+  {route:"/workbench/store-orders", target:'[class*="orderMetrics"] article', text:"strong"},
+] as const;
+
+test("light mode nested cards and controls are light and text is readable", async ({page}) => {
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto("/shuomi/#/workbench/tools");
+  await page.getByRole("button", {name:"切换浅色主题"}).click();
+  for (const item of lightDetailSurfaces) {
+    await page.goto("/shuomi/#"+item.route);
+    await expect(page.locator(".light .showcase-shell")).toBeVisible();
+    const target=page.locator(item.target).first();
+    await expect(target, item.route).toBeVisible();
+    const colors=await target.evaluate((element, childSelector) => {
+      function channels(value:string) {
+        const values=value.match(/[\d.]+/g)?.slice(0,3).map(Number)??[];
+        return value.startsWith("color(srgb")?values.map(v=>v*255):values;
+      }
+      function brightness(c:number[]) {return (c[0]*.2126+c[1]*.7152+c[2]*.0722);}
+      const style=getComputedStyle(element);
+      const foreground=childSelector ? element.querySelector(childSelector) : element;
+      const fg=foreground?getComputedStyle(foreground).color:"";
+      return {background:style.backgroundColor,foreground:fg,backgroundBrightness:brightness(channels(style.backgroundColor)),foregroundBrightness:brightness(channels(fg))};
+    },item.text);
+    expect(colors.background, item.route+" unexpectedly transparent").not.toBe("rgba(0, 0, 0, 0)");
+    expect(colors.backgroundBrightness, item.route+" has dark card").toBeGreaterThan(190);
+    expect(colors.foregroundBrightness, item.route+" has too-light text").toBeLessThan(190);
+  }
+});
+
+test("tool modal in light theme has light nested details with readable labels", async ({page}) => {
+  await page.goto("/shuomi/#/workbench/tools/official");
+  await page.getByRole("button", {name:"切换浅色主题"}).click();
+  // Download dialogs are rendered conditionally; find the real install action.
+  const download=page.getByRole("button", {name:"介绍"}).first();
+  await expect(download).toBeVisible();
+  await download.click();
+  const details=page.locator('[class*="downloadDetails"]');
+  await expect(details).toBeVisible();
+  const background=await details.evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(background).not.toBe("rgb(39, 52, 72)");
+  const label=details.locator("dt").first();
+  await expect(label).toBeVisible();
+  await expect(label).toHaveCSS("color","rgb(111, 107, 125)");
+});
+
+
+test("light mode has no severely invisible ordinary text across sampled workbench pages", async ({page}) => {
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto("/shuomi/#/workbench/overview/advice");
+  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  const routes = [
+    "/workbench","/workbench/overview/goals","/workbench/overview/stores",
+    "/workbench/overview/alerts","/workbench/overview/advice",
+    ...lightModules.map(([route])=>route),
+    "/workbench/agents/custom","/workbench/tools/custom",
+    "/workbench/agents/custom/new","/workbench/tools/custom/new",
+    "/workbench/store-products","/workbench/store-orders"
+  ];
+  const seen=new Set<string>();
+  const allLow:string[]=[];
+  for (const route of routes) {
+    if (seen.has(route)) continue;
+    seen.add(route);
+    await page.goto("/shuomi/#"+route);
+    await expect(page.locator(".light .showcase-shell")).toBeVisible();
+    const low=await page.evaluate(() => {
+      function rgb(value:string):number[]|null {
+        let x:number[]=[];
+        const m=value.match(/[\d.]+/g);
+        if(!m||m.length<3)return null;
+        x=m.slice(0,3).map(Number);
+        if(value.startsWith("color(srgb")) x=x.map(v=>v*255);
+        return x;
+      }
+      function lum(c:number[]) {
+        const linear=c.map(v=>{const n=v/255;return n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4);});
+        return linear[0]*.2126+linear[1]*.7152+linear[2]*.0722;
+      }
+      const bad:string[]=[];
+      const roots=document.querySelectorAll('main h1,main h2,main h3,main p,main label,main dt,main dd,main small,main button,main a');
+      for(const node of Array.from(roots).slice(0,260)) {
+        const el=node as HTMLElement;
+        const txt=(el.textContent||"").trim().slice(0,35);
+        if(!txt||!el.getClientRects().length||el.getBoundingClientRect().height<5)continue;
+        const style=getComputedStyle(el);
+        if(style.visibility!=="visible"||style.opacity==="0"||style.display==="none"||style.color==="transparent")continue;
+        const fg=rgb(style.color);if(!fg)continue;
+        // The purple hero is intentionally gradient-backed in both themes.
+        if(el.closest('[class*="featureMetric"]'))continue;
+        let anc:Element|null=el;let bg:number[]|null=null;let complex=false;
+        while(anc) {
+          const cs=getComputedStyle(anc);
+          if(cs.backgroundImage!=="none"){complex=true;break;}
+          const v=cs.backgroundColor;
+          const alpha=v.startsWith("rgba(") ? Number(v.match(/,\s*([\d.]+)\)$/)?.[1]??1) : 1;
+          if(v && alpha>=.98 && v!=="transparent") {
+            const c=rgb(v);
+            if(c){bg=c;break;}
+          }
+          anc=anc.parentElement;
+        }
+        if(complex||!bg)continue;
+        const a=lum(fg),b=lum(bg),ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+        if(ratio<2.5)bad.push(txt+" ("+ratio.toFixed(2)+":1, "+style.color+" / "+bg.map(Math.round).join(",")+")");
+      }
+      return bad.slice(0,12);
+    });
+    if(low.length)allLow.push(route+": "+low.join(" | "));
+  }
+  expect(allLow, "Pages with unreadable foreground/background colors").toEqual([]);
+});
