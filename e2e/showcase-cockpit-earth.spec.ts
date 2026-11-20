@@ -348,7 +348,7 @@ test("light mode has no severely invisible ordinary text across sampled workbenc
     const low=await page.evaluate(() => {
       function rgb(value:string):number[]|null {
         let x:number[]=[];
-        const m=value.match(/[\\d.]+/g);
+        const m=value.match(/[\d.]+/g);
         if(!m||m.length<3)return null;
         x=m.slice(0,3).map(Number);
         if(value.startsWith("color(srgb")) x=x.map(v=>v*255);
