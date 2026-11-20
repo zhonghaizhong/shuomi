@@ -122,3 +122,41 @@
   .userMessage, .assistantMessage { max-width: 100%; }
   .proposal dl { grid-template-columns: 6rem minmax(0, 1fr); }
 }
+
+
+/* Functional Chat pages also use this CSS module; previous showcase-only light fixes missed them. */
+:global(.light) .landingCard :is(h2,.subtitle),:global(.light) .step h3 {color:#444050;}
+:global(.light) .example strong {color:#6254c8;}
+:global(.light) .stepHeading > :first-child {color:#6254c8;border-color:#ddd7f2;background:#f1efff;}
+:global(.light) .landingCard :is(p,small),:global(.light) .step p {color:#625d70;}
+:global(.light) .conversationLink,:global(.light) .userMessage,:global(.light) .assistantMessage {color:#444050;}
+:global(.light) .conversationLink:hover {background:#f1efff;}
+:global(.light) .conversationText small,:global(.light) .conversationLink time {color:#625d70;}
+:global(.light) .openConversation,:global(.light) .proposalHead {color:#6254c8;}
+:global(.light) .composePanel,:global(.light) .messagePanel,:global(.light) .conversationHeader,:global(.light) .createPanel {
+  color:#444050;border-color:#ddd9e9;background:#fff;
+}
+:global(.light) .userMessage {background:#eeebff;}
+:global(.light) .assistantMessage {background:#f8f7fa;}
+:global(.light) .messages small,:global(.light) .composer p,:global(.light) .composeFooter p,
+:global(.light) .formGrid label,:global(.light) .promptLabel {color:#625d70;}
+:global(.light) .composeLabel textarea {color:#444050;}
+:global(.light) .composeLabel textarea::placeholder {color:#6f6b7d;opacity:1;}
+
+
+/* Chat home and conversation views: Vuexy light visual hierarchy. */
+:global(.light) .landingCard,:global(.light) .step,:global(.light) .createPanel,
+:global(.light) .conversationHeader,:global(.light) .messagePanel,:global(.light) .composer {
+  color:#444050;border:1px solid #e3dfed;background:#fff;border-radius:8px;box-shadow:0 6px 20px #4139540a;
+}
+:global(.light) .landingCard {box-shadow:inset 3px 0 #7367f0,0 6px 20px #4139540a;}
+:global(.light) .landingCard:nth-child(2) {box-shadow:inset 3px 0 #2a9e8c,0 6px 20px #4139540a;}
+:global(.light) .landingCard:nth-child(3) {box-shadow:inset 3px 0 #8c78dc,0 6px 20px #4139540a;}
+:global(.light) .example {color:#444050;border-color:#e3dfed;background:#f8f7fb;}
+:global(.light) .tags > * {color:#6254c8;border-color:#e0daf6;background:#f3f1ff;}
+:global(.light) .composePanel {border-color:#ddd9e9;background:#fff;}
+:global(.light) .composeLabel textarea {background:transparent;}
+:global(.light) .conversationRows {border:1px solid #e3dfed;border-radius:8px;background:#fff;}
+:global(.light) .conversationLink + .conversationLink {border-top-color:#ece9f3;}
+:global(.light) .conversationLink:hover {background:#f3f1ff;}
+:global(.light) .openConversation {color:#6254c8;}
