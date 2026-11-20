@@ -1043,3 +1043,61 @@
 :global(.light) .page .skillItem .skillItemBody > div strong {color:#444050;}
 :global(.light) .page .skillItem .skillItemBody > div span {color:#625d70;}
 :global(.light) .page .skillItem .skillItemBody > div .statusTag {color:#14764d;background:#e4f7ec;}
+
+
+/* Correct actual task/project/report table-head class names and status chips. */
+:global(.light) .page :is(.taskDetailHead,.projectTableHead,.reportTableHead) {
+  color:#625d70;
+  background:#f4f3f8;
+  border:1px solid #e3dfed;
+}
+:global(.light) .page :is(.taskDetailHead,.projectTableHead,.reportTableHead) span {color:#625d70;}
+:global(.light) .page :is(.taskDetailRow,.projectRow,.reportRow) {
+  color:#444050;
+  border-bottom-color:#e3dfed;
+}
+:global(.light) .page .taskDetailRow > span[data-status*="执行中"],
+:global(.light) .page[data-task-detail="running"] .taskDetailRow > span:nth-child(3) {
+  color:#176990;
+  background:#e4f5fc;
+}
+:global(.light) .page .taskDetailRow > span[data-status="已完成"],
+:global(.light) .page[data-task-detail="completed"] .taskDetailRow > span:nth-child(3),
+:global(.light) .page .taskDetailRow > span[data-status^="已启用"] {
+  color:#14764d;
+  background:#e4f7ec;
+}
+:global(.light) .page .taskDetailRow > span[data-status="待你确认"],
+:global(.light) .page[data-task-detail="pending"] .taskDetailRow > span:nth-child(3) {
+  color:#9e5f17;
+  background:#fff2df;
+}
+:global(.light) .page .taskDetailRow > span[data-status="需要处理"],
+:global(.light) .page[data-task-detail="errors"] .taskDetailRow > span:nth-child(3) {
+  color:#b52d3a;
+  background:#ffecef;
+}
+:global(.light) .page[data-task-detail="scheduled"] .taskDetailRow > span:nth-child(5) {
+  color:#14764d;
+  background:#e4f7ec;
+}
+:global(.light) .page[data-task-detail="scheduled"] .taskDetailRow > span[data-status^="已暂停"] {
+  color:#625d70;
+  background:#f0eef4;
+}
+:global(.light) .page .projectRow > button,
+:global(.light) .page .reportRow button {
+  color:#6254c8;
+  background:#f2efff;
+  border-color:#d9d2f7;
+}
+:global(.light) .page .projectRow > button:hover,
+:global(.light) .page .reportRow button:hover {
+  color:#5144b9;
+  background:#eae6ff;
+  border-color:#7367f0;
+}
+:global(.light) .page .projectRow > span:nth-child(4),
+:global(.light) .page .projectRow > span:last-child {color:#6254c8;}
+:global(.light) .page .reportRow :is(span,strong,small) {color:#444050;}
+:global(.light) .page .reportRow small {color:#625d70;}
