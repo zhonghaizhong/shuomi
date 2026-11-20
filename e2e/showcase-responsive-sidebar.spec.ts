@@ -111,16 +111,16 @@ test("my listing and all stages are nested beneath my stores", async ({ page }) 
   for(const label of ["硕米自营","硕米优选","货盘集成","优选申请"]) {
     await expect(nav.getByRole("link",{name:label,exact:true})).toBeVisible();
   }
-  await expect(nav.getByRole("link",{name:"我的刊登",exact:true})).toHaveCount(0);
+  await expect(nav.getByRole("link",{name:"刊登管理",exact:true})).toHaveCount(0);
   await nav.getByRole("button",{name:"展开店铺中心"}).click();
   const stores=nav.getByRole("link",{name:"我的店铺",exact:true});
-  const listing=nav.getByRole("link",{name:"我的刊登",exact:true});
+  const listing=nav.getByRole("link",{name:"刊登管理",exact:true});
   await expect(stores).toBeVisible();
   await expect(listing).toBeVisible();
   await expect(stores.locator("xpath=ancestor::li[1]")).toHaveClass(/console-nav-level-2/);
   await expect(listing.locator("xpath=ancestor::li[1]")).toHaveClass(/console-nav-level-2/);
   await expect(nav.getByRole("button",{name:"展开我的店铺"})).toHaveCount(0);
-  await nav.getByRole("button",{name:"展开我的刊登"}).click();
+  await nav.getByRole("button",{name:"展开刊登管理"}).click();
   const stages = [
     ["待上传","waiting"],
     ["待补全","missing"],
@@ -133,10 +133,10 @@ test("my listing and all stages are nested beneath my stores", async ({ page }) 
     await stage.click();
     await expect(page).toHaveURL(new RegExp("#/workbench/listing/"+route+"(?:[?]|$)"));
     await expect(page.locator("main.showcase-content")).toBeVisible();
-    await expect(nav.getByRole("button",{name:"收起我的刊登"})).toBeVisible();
+    await expect(nav.getByRole("button",{name:"收起刊登管理"})).toBeVisible();
   }
-  await nav.getByRole("button",{name:"收起我的刊登"}).click();
-  await expect(nav.getByRole("button",{name:"展开我的刊登"})).toBeVisible();
+  await nav.getByRole("button",{name:"收起刊登管理"}).click();
+  await expect(nav.getByRole("button",{name:"展开刊登管理"})).toBeVisible();
 });
 
 test("supply overview describes sourcing without publishing management", async ({page})=>{
@@ -147,6 +147,6 @@ test("supply overview describes sourcing without publishing management", async (
     await expect(main.getByRole("heading",{name,exact:true})).toBeVisible();
   }
   await expect(main.getByRole("heading",{name:"我的供应链"})).toHaveCount(0);
-  await expect(main.getByRole("heading",{name:"我的刊登"})).toHaveCount(0);
+  await expect(main.getByRole("heading",{name:"刊登管理"})).toHaveCount(0);
   await expect(main.getByText("完成平台适配与审核")).toHaveCount(0);
 });
