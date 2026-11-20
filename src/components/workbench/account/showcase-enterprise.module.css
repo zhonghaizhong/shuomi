@@ -180,3 +180,35 @@
  .resourceStrip>.metrics{grid-template-columns:1fr}
  .heading h1{font-size:22px}
 }
+
+
+/* Final Figma section density: resources note and audit filters/table. */
+.resourceNotice{
+ margin:0;padding:2px 0 4px;
+ color:var(--muted);font-size:12px;line-height:1.5;
+}
+.auditTablePanel{
+ padding:13px 16px 12px;
+}
+.auditTablePanel .filters{
+ padding:0;margin:0 0 12px;
+ gap:9px;
+}
+.auditTablePanel .filters label{
+ min-width:125px;flex:0 1 auto;
+}
+.auditTablePanel .filters input{
+ flex:1 1 200px;
+}
+.auditTablePanel .pagination{
+ margin-top:12px;padding:2px 0;
+}
+.auditTablePanel .tableScroller table{
+ min-width:780px;
+}
+.auditTablePanel .tableScroller td{
+ height:55px;
+}
+.auditTablePanel .tableScroller button{
+ min-height:29px;
+}
