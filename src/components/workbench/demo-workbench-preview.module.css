@@ -3032,3 +3032,59 @@
 :global(.light) .agentsPreview:not(.agentMarketReference) .dataCard button{
  background:#087f6c;border-color:#087f6c;color:#fff;
 }
+
+/* Approved Vuexy standard overrides Figma-only agent visual styling; content and flows stay intact. */
+.agentsPreview{
+ --agent-surface:#2f3349;--agent-raised:#393d55;--agent-border:#44485e;
+ --agent-text:#cfcde4;--agent-muted:#acabc1;--agent-primary:#7367f0;
+ --agent-selected:#474075;--agent-muted-chip:#393d55;
+ color:var(--agent-text);
+}
+:global(.light) .agentsPreview{
+ --agent-surface:#fff;--agent-raised:#f8f7fa;--agent-border:#ddd9e9;
+ --agent-text:#444050;--agent-muted:#6f6b7d;--agent-primary:#7367f0;
+ --agent-selected:#efecff;--agent-muted-chip:#f8f7fa;
+ color:var(--agent-text);
+}
+.agentsPreview.agentsPreview>.header{background:var(--agent-surface);border-color:var(--agent-border);}
+.agentsPreview.agentsPreview>.header h1{color:var(--agent-text);border-left-color:#00cfe8;}
+:global(.light) .agentsPreview.agentsPreview>.header h1{border-left-color:#00a8bd;}
+.agentsPreview.agentsPreview>.header .breadcrumb,.agentsPreview.agentsPreview>.header p{color:var(--agent-muted);}
+.agentsPreview.agentsPreview .primary,
+.agentsPreview.agentsPreview .dataCard button,
+.agentsPreview.agentMarketReference .agentCards footer button:nth-child(2),
+.agentsPreview.agentMarketReference .agentFilters>button.primary:nth-last-child(2),
+.agentsPreview .agentMineToolbar>.primary{
+ background:#7367f0;border-color:#7367f0;color:#fff;
+}
+:global(.light) .agentsPreview.agentsPreview .primary,
+:global(.light) .agentsPreview.agentsPreview .dataCard button,
+:global(.light) .agentsPreview.agentMarketReference .agentFilters>button.primary:nth-last-child(2),
+:global(.light) .agentsPreview.agentMarketReference .agentCards footer button:nth-child(2),
+:global(.light) .agentsPreview .agentMineToolbar>.primary{
+ background:#7367f0;border-color:#7367f0;color:#fff;
+}
+.agentsPreview.agentMarketReference .agentFilters>button.agentCategoryActive,
+.agentsPreview .agentMineToolbar>button.agentCategoryActive{background:var(--agent-selected)!important;border-color:#7367f0!important;color:#dcd8ff!important;}
+:global(.light) .agentsPreview.agentMarketReference .agentFilters>button.agentCategoryActive,
+:global(.light) .agentsPreview .agentMineToolbar>button.agentCategoryActive{
+ background:#efecff!important;border-color:#7367f0!important;color:#6254c8!important;
+}
+.agentsPreview.agentMarketReference .agentCards article,
+.agentsPreview .agentMine>article>section,.agentsPreview .agentMine>article>aside,
+.agentsPreview:not(.agentMarketReference) :is(.dataCard,.capabilityBand article,.agentsBottom>article,.agentsBottom>aside){
+ background:var(--agent-surface);border-color:var(--agent-border);
+}
+:global(.light) .agentsPreview.agentMarketReference .agentCards article,
+:global(.light) .agentsPreview .agentMine>article>section,:global(.light) .agentsPreview .agentMine>article>aside,
+:global(.light) .agentsPreview:not(.agentMarketReference) :is(.dataCard,.capabilityBand article,.agentsBottom>article,.agentsBottom>aside){
+ background:#fff;border-color:#ddd9e9;color:#444050;
+}
+.agentsPreview.agentMarketReference .agentCards article p,.agentsPreview .agentMine>article p{color:var(--agent-text);}
+.agentsPreview .agentMine>article :is(small,dt),.agentsPreview .agentMine>article>aside>p{color:var(--agent-muted);}
+:global(.light) .agentsPreview.agentMarketReference .agentCards article p,:global(.light) .agentsPreview .agentMine>article :is(p,dd,.agentTags span){color:#444050;}
+:global(.light) .agentsPreview .agentMine>article :is(small,dt),:global(.light) .agentsPreview .agentMine>article>aside>p{color:#6f6b7d;}
+.agentsPreview.agentMarketReference .agentCards footer button:not(:nth-child(2)){background:var(--agent-raised);border-color:var(--agent-border);color:var(--agent-text);}
+:global(.light) .agentsPreview.agentMarketReference .agentCards footer button:not(:nth-child(2)){background:#f8f7fa;border-color:#ddd9e9;color:#444050;}
+.agentsPreview.agentMarketReference .agentCards footer .agentMarketStatus{background:var(--agent-raised);color:var(--agent-muted);}
+:global(.light) .agentsPreview.agentMarketReference .agentCards footer .agentMarketStatus{background:#f8f7fa;color:#6f6b7d;}
