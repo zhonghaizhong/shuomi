@@ -2539,3 +2539,10 @@
 :global(.light) .libraryHubPreview :is(.rowValue,.arrow,.footer button,.listHeading .eyebrow,.card button:not(.primary)) {color:#6254c8;}
 :global(.light) .libraryHubPreview .card button:not(.primary) {border-color:#ddd7f2;background:#f4f2ff;}
 :global(.light) .libraryHubPreview .status {color:#6254c8;background:#eeebff;}
+
+
+/* Final text-audit exceptions: usage figures, AI task hints and secondary list actions. */
+:global(.light) .page .usageBar small {color:#625d70;}
+:global(.light) .tasksPreview .taskNote {color:#625d70;}
+:global(.light) .libraryHubPreview .secondary {color:#6254c8;border-color:#ddd7f2;background:#f3f1ff;}
+:global(.light) .libraryHubPreview .secondary:hover {color:#5144bb;background:#eae6ff;}
