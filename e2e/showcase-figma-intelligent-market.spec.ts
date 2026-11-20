@@ -34,7 +34,7 @@ test("intelligent market and customization routes have readable dark and light s
    });
    expect(isPale(props.bg),route+" "+mode+" header background").toBe(mode==="light");
    expect(ratio(props.bg,props.fg),route+" "+mode+" title contrast").toBeGreaterThanOrEqual(4.5);
-   const cards=root.locator('[class*="agentCards"] article,[class*="agentMine"] > article > section,[class*="agentMine"] > article > aside,[class*="featureGrid"] article,[class*="card"],[class*="dataCard"]');
+   const cards=root.locator('[class*="agentCards"] article,[class*="agentMine"] > article > section,[class*="agentMine"] > article > aside,[class*="featureGrid"] article,article[class*="card"],article[class*="dataCard"],[class*="sideCards"] > article');
    for(let i=0;i<Math.min(await cards.count(),4);i++){
     const el=cards.nth(i);
     if(!(await el.isVisible()))continue;
