@@ -334,3 +334,37 @@
     min-height:56px;
   }
 }
+
+
+/* Mid-width desktop/tablet workbench has a persistent left navigation.
+   Stacking is required here: a 260px right column would overlap the send button. */
+@media (min-width:601px) and (max-width:1000px) {
+  .workspace[data-chat-active="true"],
+  .workspace[data-chat-active="true"][data-context-open="false"] {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(560px,auto) auto;
+    height:auto;
+    min-height:0;
+  }
+  .workspace[data-chat-active="true"] .composer {
+    box-sizing:border-box;
+    min-height:560px;
+    height:auto;
+  }
+  .workspace[data-chat-active="true"] .modePanel {
+    position:relative;
+    width:100%;
+    min-height:0;
+    height:auto;
+    max-height:none;
+  }
+  .workspace[data-chat-active="true"][data-context-open="false"] .modePanel {
+    height:56px;
+    min-height:56px;
+    padding:8px 12px;
+    justify-content:center;
+  }
+  .workspace[data-chat-active="true"][data-context-open="false"] .contextHead {
+    justify-content:flex-end;
+  }
+}
