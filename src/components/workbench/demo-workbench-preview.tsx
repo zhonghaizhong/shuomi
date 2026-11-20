@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import styles from "./demo-workbench-preview.module.css";
 import { hasRouteDetailPreview, RouteDetailPreview } from "./route-detail-preview";
 import { ChatIntroduction } from "./ai-workbench/chat-introduction";
+import { ShowcaseActionDialog, type DemoGoal } from "./showcase-action-dialog";
 import { ShowcaseAgentDialog, type AgentPreviewDialog } from "./showcase-agent-dialog";
 import { ShowcaseAgentCustomization } from "./showcase-agent-customization";
 import { ShowcaseToolMarket } from "./showcase-tool-market";
@@ -94,6 +95,8 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
+  const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [demoGoals, setDemoGoals] = useState<DemoGoal[]>([]);
   const [selectedAdvice, setSelectedAdvice] = useState("库存不足");
   const [agentCategory, setAgentCategory] = useState("全部");
   const [agentStatus, setAgentStatus] = useState("全部");
@@ -108,7 +111,17 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
     { title: "最近更新", detail: "保留近期处理记录，方便继续跟进。", value: "查看记录", state: "已更新" },
   ] };
   const rows = useMemo(() => (page.rows ?? []).filter(row => `${row.title} ${row.detail} ${row.state ?? ""}`.toLowerCase().includes(query.toLowerCase())), [page.rows, query]);
-  const chooseAction = (label: string) => setNotice(`${label}：已在原型中打开，可继续查看演示内容。`);
+  const chooseAction = (label: string) => {
+    if (label.startsWith("筛选") || label.startsWith("搜索")) return;
+    setNotice("");
+    setActiveAction(label);
+  };
+  const closeAction = () => setActiveAction(null);
+  const createGoal = (goal: DemoGoal) => {
+    setDemoGoals(current => [...current, goal]);
+    setActiveAction(null);
+    setNotice(`已添加「${goal.name}」到当前演示列表；未提交正式业务数据。`);
+  };
 
   if (pathname.startsWith("/workbench/agents/custom")) return <ShowcaseAgentCustomization pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/tools") return <ShowcaseToolHome navigate={router.push} />;
@@ -130,6 +143,7 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
 
   return <div data-commerce-unified={unifiedArea} data-library-hub={page.layout === "libraryHub" ? pathname.split("/").at(-1) : undefined} className={`${styles.page} ${isCockpitPreview ? styles.cockpitPreview : ""} ${isAiWorkbenchPreview ? styles.aiWorkbenchPreview : ""} ${page.layout === "goals" ? styles.goalsPreview : ""} ${page.layout === "storeMatrix" ? styles.storeMatrixPreview : ""} ${page.layout === "libraryHub" ? styles.libraryHubPreview : ""} ${pathname.startsWith("/workbench/supply") ? styles.supplyPreview : ""} ${page.layout === "tasks" ? styles.tasksPreview : ""} ${["agents", "agentMarket", "agentMine"].includes(page.layout ?? "") ? styles.agentsPreview : ""} ${page.layout === "agentMarket" ? styles.agentMarketReference : ""}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")} aria-label="关闭提示">×</button></div> : null}
+    {activeAction ? <ShowcaseActionDialog action={activeAction} onClose={closeAction} onCreateGoal={createGoal} /> : null}
     {showcaseDialog ? <ShowcaseAgentDialog key={`${showcaseDialog.kind}:${showcaseDialog.title}`} dialog={showcaseDialog} onClose={() => setShowcaseDialog(null)} onSaveModel={(title,model) => { setModelPreferences(current => ({...current,[title]:model})); setShowcaseDialog(null); setNotice(`${title}：已保存本地演示模型选择，不影响正式工作台配置。`); }} /> : null}
     {page.layout === "agentMine" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>智能市场 / 我的智能体</div><h1>我的智能体</h1><p>管理已启用的智能体，查看运行状态并快速进入使用。</p></div><button className={styles.primary} onClick={() => router.push("/workbench/agents/market?preview=1")}>前往智能体市场</button></header>
@@ -153,7 +167,7 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
     </> : page.layout === "goals" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>运营驾驶舱 / 目标管理</div><h1>目标管理</h1><p>为不同店铺、指标和周期建立独立目标，分别跟踪执行进度。</p></div><button className={styles.primary} onClick={() => chooseAction("新建目标")}>新建目标</button></header>
       <section className={styles.goalMetrics}>{[["3", "全部目标", "当前管理的目标"], ["2", "已生效", "正在持续跟踪"], ["1", "草稿", "等待启用的目标"]].map(([value, label, hint], i) => <article key={label} data-step={i}><strong>{value}</strong><span><b>{label}</b><small>{hint}</small></span></article>)}</section>
-      <section className={styles.goalPanel}><header><div><h2>我的经营目标</h2><p>按平台、站点、店铺类型及店铺名称筛选目标；每条目标独立管理。</p></div></header><div className={`${styles.goalFilters} ${styles.cockpitFilterRow}`}><div className={styles.cockpitFilterSelects}><select aria-label="平台"><option>平台：SHEIN</option><option>全部平台</option></select><select aria-label="站点"><option>站点：全部站点</option><option>美国站</option></select><select aria-label="店铺类型"><option>店铺类型：全部类型</option><option>自营店</option></select></div><div className={styles.cockpitFilterActions}><input aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={event => setQuery(event.target.value)}/><button onClick={() => setQuery("")}>重置</button><button className={styles.primary} onClick={() => chooseAction("筛选目标")}>确定</button></div></div><div className={styles.goalTable}><div className={styles.goalColumns}><b>目标名称</b><b>目标指标</b><b>适用店铺</b><b>目标周期</b><b>目标值</b><b>状态</b><b>操作</b></div>{[["月度利润目标", "盈利表现", "预计净利润", "一号店、二号店", "2026年10月 · 每月", "¥30,000", "已生效", "待数据同步"], ["店铺销售目标", "经营规模", "销售额", "二号店", "每周", "¥80,000", "已生效", "待数据同步"], ["新品订单目标", "新品转化", "成交订单数", "新品测试店", "每月", "500 单", "草稿", "尚未启用"]].filter(row => row.join(" ").toLowerCase().includes(query.toLowerCase())).map(row => <div className={styles.goalRow} key={row[0]}><span><strong>{row[0]}</strong><small>{row[1]}</small></span><span>{row[2]}</span><span>{row[3]}</span><span>{row[4]}</span><strong>{row[5]}</strong><span><b data-state={row[6]}>{row[6]}</b><small>{row[7]}</small></span><button onClick={() => chooseAction(`${row[0]} 操作`)}>操作</button></div>)}</div></section>
+      <section className={styles.goalPanel}><header><div><h2>我的经营目标</h2><p>按平台、站点、店铺类型及店铺名称筛选目标；每条目标独立管理。</p></div></header><div className={`${styles.goalFilters} ${styles.cockpitFilterRow}`}><div className={styles.cockpitFilterSelects}><select aria-label="平台"><option>平台：SHEIN</option><option>全部平台</option></select><select aria-label="站点"><option>站点：全部站点</option><option>美国站</option></select><select aria-label="店铺类型"><option>店铺类型：全部类型</option><option>自营店</option></select></div><div className={styles.cockpitFilterActions}><input aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={event => setQuery(event.target.value)}/><button onClick={() => setQuery("")}>重置</button><button className={styles.primary} onClick={() => chooseAction("筛选目标")}>确定</button></div></div><div className={styles.goalTable}><div className={styles.goalColumns}><b>目标名称</b><b>目标指标</b><b>适用店铺</b><b>目标周期</b><b>目标值</b><b>状态</b><b>操作</b></div>{[["月度利润目标", "盈利表现", "预计净利润", "一号店、二号店", "2026年10月 · 每月", "¥30,000", "已生效", "待数据同步"], ["店铺销售目标", "经营规模", "销售额", "二号店", "每周", "¥80,000", "已生效", "待数据同步"], ["新品订单目标", "新品转化", "成交订单数", "新品测试店", "每月", "500 单", "草稿", "尚未启用"], ...demoGoals.map(goal => [goal.name, "自定义目标", goal.metric, goal.store, goal.period, goal.metric === "净利润率" ? `${goal.value}%` : goal.metric === "成交订单数" ? `${goal.value} 单` : `¥${goal.value}`, "草稿", "当前演示新增"])].filter(row => row.join(" ").toLowerCase().includes(query.toLowerCase())).map(row => <div className={styles.goalRow} key={row[0]}><span><strong>{row[0]}</strong><small>{row[1]}</small></span><span>{row[2]}</span><span>{row[3]}</span><span>{row[4]}</span><strong>{row[5]}</strong><span><b data-state={row[6]}>{row[6]}</b><small>{row[7]}</small></span><button onClick={() => chooseAction(`${row[0]} 操作`)}>操作</button></div>)}</div></section>
     </> : page.layout === "accountSettings" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>{page.section}</div><h1>账户设置</h1><p>修改账户信息、联络与登录安全</p></div></header>
       <form className={styles.accountSettings} onSubmit={event => { event.preventDefault(); setNotice("账户设置已保存（本地预览，不会修改真实账户）。"); }}><section><header><h2>账户信息</h2><span>用户名用于平台内展示；地区信息用于本地化服务</span></header><div className={styles.accountFields}><label>用户名<input defaultValue="zhonghaizhong"/><small>用于平台内展示，不作为登录账号</small></label><label>国家 / 地区<input defaultValue="中国大陆"/></label><label>省 / 州<input defaultValue="浙江省"/></label><label>城市<input defaultValue="杭州市"/></label></div></section><section><header><h2>联系方式</h2><span>更换手机号或邮箱时，需要单独完成身份验证</span></header><div className={styles.accountContacts}><article><b>手</b><div><strong>手机号 <em>已验证</em></strong><span>+86 138 **** 6688</span><small>用于验证码登录与安全验证</small></div><button type="button" onClick={() => chooseAction("更换手机号")}>更换手机号</button></article><article><b>邮</b><div><strong>邮箱 <em>已验证</em></strong><span>zh***@example.com</span><small>用于接收账户与安全通知</small></div><button type="button" onClick={() => chooseAction("更换邮箱")}>更换邮箱</button></article></div></section><section><header><h2>登录与安全</h2><span>通过手机验证码修改登录密码</span></header><div className={styles.accountSecurity}><b>锁</b><div><strong>登录密码 <em>已设置</em></strong><small>上次修改：2026-07-18</small></div><button type="button" onClick={() => chooseAction("修改密码")}>修改密码</button></div></section><footer><button type="reset">取消</button><button type="submit">保存更改</button></footer></form>
