@@ -133,3 +133,99 @@ button { font: inherit; }
  .showcase-notice-row{grid-template-columns:8px minmax(0,1fr);gap:10px}
  .showcase-notice-row>span:last-child{grid-column:2;display:flex;justify-content:space-between}
 }
+
+/* Theme parity: readable light surfaces and accessible dark text, 2026-11-20 */
+.light .showcase-shell {
+  color: var(--foreground);
+  background: var(--background);
+}
+.light .showcase-content,
+.light .showcase-notifications {
+  color: var(--foreground);
+}
+.light .showcase-action-icon:hover,
+.light .showcase-action-icon[aria-expanded="true"],
+.light .showcase-top-actions .showcase-action-icon:hover,
+.light .showcase-top-actions .showcase-action-icon[aria-expanded="true"] {
+  background: #e9e5fb;
+  color: #5144b0;
+}
+.light .showcase-account-icon {
+  background: #f0edff;
+  border-color: #7464d5;
+  color: #5144b0;
+}
+.light .showcase-account-icon:hover { background: #e8e3fa; }
+.light .showcase-account-icon > i,
+.light .showcase-notification-dot { border-color: #fff; }
+.light .showcase-menu-fab { color: #fff; }
+.light .showcase-menu-head { border-bottom-color: #d8e4ee; }
+.light .showcase-menu-head strong,
+.light .showcase-menu-options strong,
+.light .showcase-support-body h3,
+.light .showcase-support-body label { color: #172b45; }
+.light .showcase-menu-head small,
+.light .showcase-menu-options small,
+.light .showcase-menu-options p,
+.light .showcase-support-body p { color: #52677d; }
+.light .showcase-popover :is(.showcase-menu-options > button, .showcase-account-links > button, .showcase-menu-head > button):hover {
+  background: #e9f0fa;
+  border-color: #b8cae0;
+}
+.light .showcase-support-body textarea {
+  color: #172b45;
+  background: #fff;
+  border-color: #c9d9e8;
+}
+.light .showcase-support-body textarea::placeholder { color: #61758b; }
+.light .showcase-support-body .showcase-menu-back { color: #5144b0; }
+.light .showcase-account-links button > svg { color: #5144b0; }
+.light .showcase-confirm-overlay { background: #14243a88; }
+.light .showcase-confirm {
+  background: #fff;
+  color: #172b45;
+  border-color: #d8e4ee;
+  box-shadow: 0 20px 70px #172b4529;
+}
+.light .showcase-confirm h2 { color: #172b45; }
+.light .showcase-confirm p { color: #52677d; }
+.light .showcase-confirm > svg { color: #ad5f27; }
+.light .showcase-notification-heading,
+.light .showcase-notification-board { color: #172b45; }
+.light .showcase-notification-heading h1,
+.light .showcase-notice-controls strong,
+.light .showcase-notice-detail h2 { color: #172b45; }
+.light .showcase-notification-heading :is(small,p),
+.light .showcase-notice-detail :is(small,p),
+.light .showcase-notice-note,
+.light .showcase-notice-empty { color: #52677d; }
+.light .showcase-notice-tabs { background: #f1f5fa; }
+.light .showcase-notice-tabs button { color: #496177; }
+.light .showcase-notice-tabs button[aria-selected="true"] {
+  color: #5144b0; background: #ebe8fc; border-color: #c6bdf5;
+}
+.light .showcase-notice-tabs > span { color: #245daf; }
+.light .showcase-notice-controls label { color: #496177; }
+.light .showcase-notice-controls button,
+.light .showcase-notice-return {
+  background: #fff;
+  color: #172b45;
+  border-color: #c9d9e8;
+}
+.light .showcase-notice-controls button:hover:not(:disabled),
+.light .showcase-notice-return:hover { background: #edf3fa; }
+.light .showcase-notice-row { background: #fff; color: #172b45; border-color: #d8e4ee; }
+.light .showcase-notice-row:hover { background: #f1f5fa; border-color: #a4bfe0; }
+.light .showcase-notice-row :is(strong,small) { color: #172b45; }
+.light .showcase-notice-row small,
+.light .showcase-notice-row time { color: #52677d; }
+.light .showcase-notice-row em { color: #245daf; background: #e9f2ff; }
+.light .showcase-notice-detail { background: #fff; color: #172b45; }
+.light .showcase-notice-row[data-read="true"] { opacity: 1; background: #f6f8fb; }
+.light .showcase-action-popover { box-shadow: 0 12px 28px #172b4520; }
+.dark .showcase-brand-message span,
+.dark .showcase-action-popover span,
+.dark .showcase-notice-row time { color: #bbb9d0; }
+.dark .showcase-notice-tabs button { color: #d5d0e6; }
+.dark .showcase-notice-note,
+.dark .showcase-notice-empty { color: #c7c2db; }
