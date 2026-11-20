@@ -16,3 +16,10 @@
 .primary{border:1px solid #7367f0;background:#7367f0;color:#fff}
 .close:focus-visible,.form :is(input,select):focus-visible,.actions button:focus-visible{outline:2px solid var(--ring,#7367f0);outline-offset:2px}
 @media(max-width:520px){.fields{grid-template-columns:1fr}.header,.form,.information{padding-left:16px;padding-right:16px}}
+
+.form textarea{width:100%;min-height:94px;resize:vertical;padding:10px 12px;border:1px solid var(--input,#44485e);border-radius:6px;background:var(--secondary,#393d55);color:var(--foreground,#e2e2f0);font:inherit;line-height:1.5}
+.detail{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:start;border-bottom:1px solid var(--border,#44485e);padding:5px 0 12px}
+.detail span{font-size:13px;color:var(--muted-foreground,#acabc1)}
+.detail strong{font-weight:600;overflow-wrap:anywhere}
+.detail p{margin:0;overflow-wrap:anywhere}
+@media(max-width:520px){.detail{grid-template-columns:1fr;gap:4px}}
