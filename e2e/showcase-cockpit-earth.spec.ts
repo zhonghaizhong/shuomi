@@ -492,6 +492,7 @@ test("chat context right rail collapses without overflow and restores in light/d
     await page.getByRole("button",{name:"发送消息"}).click();
     const workspace=page.locator('[class*="_workspace_"]').first();
     const panel=page.getByRole("complementary",{name:"会话上下文"});
+    if(size.width<=600)await page.getByRole("button",{name:"展开会话面板"}).click();
     const collapse=page.getByRole("button",{name:"收起会话面板"});
     await expect(panel).toBeVisible();
     await expect(collapse).toBeVisible();
