@@ -879,3 +879,75 @@
 
 /* Product listing and order tab subtitle text. */
 :global(.light) .page :is(.productTabs small,.orderTabs small,.productTable > header small,.productFilters small,.orderTable > header small) {color:#625d70;}
+
+
+/* Full light-mode parity for deep route detail modules.
+   These are independent from the workbench landing cards and previously retained
+   dark panels on Chat histories, tasks, projects, knowledge, skills and reports. */
+:global(.light) .page {
+  color:#444050;
+}
+:global(.light) .page :is(
+  .searchRow,.chatList,.toolbar,.table,.category,.filterBox,.sectionTitle,
+  .card,.stepbar,.tabs,.split>article,.twoCards>article,.metrics>article,
+  .skillItem,.skillTeamEmpty,.knowledgeMineEmpty,.historyEmpty,.emptyState,
+  .chatCompose,.formGrid,.scheduledMetrics>article
+) {
+  color:#444050;
+  background:#fff;
+  border-color:#e3dfed;
+  box-shadow:0 5px 18px #41395409;
+}
+:global(.light) .page :is(.chatList article,.table>div:not(header),.card>div,.category>div) {
+  border-color:#ece9f3;
+}
+:global(.light) .page :is(.chatList article:hover,.table>div:not(header):hover) {
+  background:#f8f7fb;
+}
+:global(.light) .page :is(
+  .searchRow input,.toolbar input,.toolbar select,.category input,.filterBox input,
+  .card input,.chatCompose textarea,.formGrid textarea,.formGrid input,.formGrid select,
+  .scheduleFields input,.scheduleFields select
+) {
+  color:#444050;
+  background:#f8f7fa;
+  border-color:#dbdade;
+}
+:global(.light) .page :is(input,textarea)::placeholder {color:#6f6b7d;opacity:1;}
+:global(.light) .page :is(
+  .chatList article strong,.table h2,.table strong,.card h2,.card h3,
+  .category h2,.metrics strong,.skillItem h3,.skillTeamEmpty h2,
+  .knowledgeMineEmpty h2,.emptyState h2,.sectionTitle h2
+) {color:#444050;}
+:global(.light) .page :is(
+  .chatList article p,.chatList article>span,.table p,.table small,
+  .toolbar p,.card p,.card small,.category p,.metrics small,.metrics span,
+  .skillItem p,.skillTeamEmpty p,.knowledgeMineEmpty p,.emptyState p,
+  .chatCollectionPage>p,.scheduledMetrics small
+) {color:#625d70;}
+:global(.light) .page .chatList article>b {
+  color:#6254c8;
+  background:#eeebff;
+  border-color:#d9d2f7;
+}
+:global(.light) .page :is(
+  .chatList article button,.cardActions button:not(.primary),
+  .category button:not(.selected),.toolbar button:not(.primary),
+  .filterBox button:not(.primary),.skillItem .cardActions button:not(.primary),
+  .skillTeamEmpty .cardActions button:not(.primary)
+) {color:#6254c8;background:#f3f1ff;border-color:#d9d2f7;}
+:global(.light) .page :is(
+  .category button.selected,.tabs .selected,.selected,.toolbar .primary,
+  .cardActions .primary
+) {color:#fff;background:#7367f0;border-color:#7367f0;}
+:global(.light) .page .skillItemMark {background:#eeebff;color:#6254c8;}
+:global(.light) .page .skillItem .knowledgeTag {color:#14764d;background:#e4f7ec;}
+:global(.light) .page :is(.skillTeamEmpty>div>span,.knowledgeMineEmpty>div>span) {color:#6254c8;}
+:global(.light) .page .scheduledMetrics>article {
+  background:#fff!important;
+  border-color:#e3dfed;
+}
+:global(.light) .page .scheduledMetrics>article :is(span,strong,small) {color:#444050;}
+:global(.light) .page .scheduledMetrics>article small {color:#625d70;}
+:global(.light) .page .noticeBar {color:#5d596c;background:#f9f7fc;border-color:#e3dfed;}
+:global(.light) .page .noticeBar :is(strong,b) {color:#5144b9;}
