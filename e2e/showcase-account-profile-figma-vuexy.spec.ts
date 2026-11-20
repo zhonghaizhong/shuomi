@@ -53,7 +53,7 @@ test("business portrait maintenance saves a demo update and cancellation reverts
  await expect(root).toContainText("电商服务商");
  await root.getByRole("button",{name:"维护经营画像"}).click();
  await root.getByRole("checkbox",{name:"电商服务商"}).uncheck();
- await root.getByRole("button",{name:"取消"}).click();
+ await root.locator("footer").getByRole("button",{name:"取消"}).click();
  await expect(root).toContainText("电商服务商");
 });
 test("personal and enterprise authentication never report a real successful verification",async({page})=>{
