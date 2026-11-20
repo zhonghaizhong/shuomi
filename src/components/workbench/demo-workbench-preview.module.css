@@ -2582,3 +2582,64 @@
 :global(.light) .libraryHubPreview[data-library-hub="projects"] .rowMain small {color:#625d70;}
 :global(.light) .libraryHubPreview[data-library-hub="projects"] .filters :is(input,select) {color:#444050;border-color:#dbdade;background:#fff;}
 :global(.light) .libraryHubPreview[data-library-hub="projects"] .filters input::placeholder {color:#6f6b7d;opacity:1;}
+
+
+/* Light-theme visual composition: Chat landing, Task Center and Project Center.
+   Surface hierarchy mirrors Vuexy: canvas #f8f7fa, white cards, #7367f0 actions. */
+:global(.light) .chatLandingPreview :global([class*="landingCard"]) {
+  border:1px solid #e3dfed;
+  border-radius:8px;
+  background:#fff;
+  box-shadow:inset 3px 0 #7367f0,0 7px 22px #4139540c;
+}
+:global(.light) .chatLandingPreview :global([class*="landingCard"]):nth-child(2) {box-shadow:inset 3px 0 #2a9e8c,0 7px 22px #4139540c;}
+:global(.light) .chatLandingPreview :global([class*="landingCard"]):nth-child(3) {box-shadow:inset 3px 0 #8c78dc,0 7px 22px #4139540c;}
+:global(.light) .chatLandingPreview :global([class*="landingCard"]) h2 {font-size:20px;line-height:1.4;font-weight:700;}
+:global(.light) .chatLandingPreview :global([class*="landingCard"]) :global([class*="entryActions"]) {gap:12px;padding-top:12px;border-top:1px solid #ece9f3;}
+:global(.light) .chatLandingPreview :global([class*="landingCard"]) :global([class*="tags"]) > * {color:#6254c8;border-color:#e3def5;background:#f3f1ff;}
+:global(.light) .chatLandingPreview :global([class*="landingCard"]) :global([class*="example"]) {border-radius:6px;background:#f8f7fb;}
+:global(.light) .chatLandingPreview :global([class*="steps"]) > li > *,
+:global(.light) .chatLandingPreview :global([class*="scenarios"]) > * {
+  color:#444050;border:1px solid #e3dfed;border-radius:8px;background:#fff;
+  box-shadow:0 4px 15px #41395409;
+}
+:global(.light) .chatLandingPreview :global([class*="stepHeading"]) h3,
+:global(.light) .chatLandingPreview :global([class*="scenarios"]) h3 {color:#444050;font-weight:700;}
+:global(.light) .chatLandingPreview :global([class*="introSection"]) > h2 {color:#444050;}
+:global(.light) .tasksPreview .taskStats > button {
+  border-radius:8px;
+  border-color:#e2deed;
+  background:#fff;
+  box-shadow:inset 3px 0 var(--accent,#7367f0),0 6px 20px #4139540b;
+  transition:background .18s,border-color .18s,transform .18s;
+}
+:global(.light) .tasksPreview .taskStats > button:hover {border-color:#b9aff7;background:#f9f7ff;transform:translateY(-1px);}
+:global(.light) .tasksPreview .taskStats > button > b {font-weight:700;font-size:18px;}
+:global(.light) .tasksPreview .taskSearch {border:1px solid #e3dfed;border-radius:8px;background:#fff;box-shadow:0 5px 16px #41395408;}
+:global(.light) .tasksPreview .taskSearch :is(input,button:not(.primary)) {border:1px solid #dbd7e7;border-radius:6px;background:#f8f7fa;color:#444050;}
+:global(.light) .tasksPreview .taskTable {border:1px solid #e3dfed;border-radius:8px;background:#fff;box-shadow:0 6px 20px #41395409;}
+:global(.light) .tasksPreview .taskColumns {border-color:#e7e3ef;background:#f4f3f8;color:#625d70;}
+:global(.light) .tasksPreview .taskRow {border-color:#e8e5f0;background:#fff;color:#444050;}
+:global(.light) .tasksPreview .taskRow:nth-of-type(even) {background:#fcfbfe;}
+:global(.light) .tasksPreview .taskRow:hover {border-color:#c8bff8;background:#f7f5ff;}
+:global(.light) .tasksPreview .taskRow button {color:#6254c8;font-weight:650;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .metrics > article {
+  border:1px solid #e3dfed;
+  border-radius:8px;
+  background:#fff;
+  box-shadow:inset 3px 0 var(--metric-accent,#7367f0),0 6px 18px #4139540b;
+}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .card {
+  border:1px solid #e3dfed;
+  border-radius:8px;
+  background:#fff;
+  box-shadow:inset 3px 0 var(--accent,#7367f0),0 6px 20px #4139540b;
+}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .cardHeading span {border:1px solid #ddd7f4;border-radius:5px;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .filters,
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .list {border:1px solid #e3dfed;border-radius:8px;background:#fff;box-shadow:0 5px 16px #41395409;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .row {border:1px solid #e7e3ee;border-radius:6px;background:#faf9fc;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .row:hover {border-color:#c8bff8;background:#f3f1ff;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .rowMain strong,
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .listHeading h2 {color:#444050;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .metrics > article > strong {font-weight:750;}
