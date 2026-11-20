@@ -9,7 +9,7 @@ export function ListingStageTabs({ current, context, counts }: {
   counts?: SupplyStagePage["counts"];
 }) {
   return (
-    <nav aria-label="商品刊登阶段" className="mb-4 flex flex-wrap gap-2 border-b border-border pb-3">
+    <nav aria-label="刊登管理阶段" className="mb-4 flex flex-wrap gap-2 border-b border-border pb-3">
       {listingStages.map(({ id, label }) => {
         const active = current === id;
         const count = counts && (id === "waiting" ? counts.waiting + counts.ready : counts[id]);
