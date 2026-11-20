@@ -1385,3 +1385,220 @@
 }
 :global(.light) .supplyDetailPreview .operationDialog :is(h2,strong) {color:var(--supply-light-text);}
 :global(.light) .supplyDetailPreview .operationDialog p {color:var(--supply-light-muted);}
+
+
+/* My Account detail pages: Figma content with unified Vuexy design, scoped to account routes. */
+.page[data-commerce-unified="account"] {
+  --account-card:#2f3349;
+  --account-sub:#393d55;
+  --account-text:#e2e2f0;
+  --account-muted:#acabc1;
+  --account-line:#44485e;
+  --account-purple:#7367f0;
+  --account-cyan:#00cfe8;
+  --account-green:#28c76f;
+  --account-orange:#ff9f43;
+  display:grid;gap:24px;
+  width:100%;max-width:1600px;margin-inline:auto;min-width:0;
+  color:var(--account-text);font-size:15px;line-height:1.6;
+}
+.page[data-commerce-unified="account"] :is(
+ .header,.metrics>article,.split>article,.table,.toolbar,.tabs,.noticeBar,
+ .category,.referralRules>article,.rolePermissions,.accountOrgIdentity,
+ .accountOrgManagement,.accountOrgManagement>div>article
+) {
+  border:1px solid var(--account-line);
+  border-radius:7px;
+  background:var(--account-card);
+  box-shadow:0 2px 8px rgb(0 0 0 / 4%);
+  color:var(--account-text);
+}
+.page[data-commerce-unified="account"] .header {
+  display:flex;align-items:center;min-height:136px;
+  padding:22px 26px;
+}
+.page[data-commerce-unified="account"] .header h1 {
+  margin:8px 0 7px;padding-left:12px;
+  border-left:4px solid var(--account-purple);
+  color:var(--account-text);
+  font-size:clamp(26px,1.6vw,32px);
+  font-weight:700;line-height:1.3;
+}
+.page[data-commerce-unified="account"] .header :is(p,div:first-child>div) {
+  color:var(--account-muted);
+  font-size:15px;
+  line-height:1.6;
+}
+.page[data-commerce-unified="account"] .metrics {
+  gap:24px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.page[data-commerce-unified="account"] .metrics>article {
+  --account-tone:var(--account-cyan);
+  min-height:96px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:16px 18px;
+  border-color:color-mix(in srgb,var(--account-tone) 35%,var(--account-line));
+  background:color-mix(in srgb,var(--account-tone) 8%,var(--account-card));
+}
+.page[data-commerce-unified="account"] .metrics>article:nth-child(2) {--account-tone:var(--account-purple);}
+.page[data-commerce-unified="account"] .metrics>article:nth-child(3) {--account-tone:var(--account-orange);}
+.page[data-commerce-unified="account"] .metrics>article:nth-child(4) {--account-tone:var(--account-green);}
+.page[data-commerce-unified="account"] .metrics>article>strong {
+  display:grid;place-items:center;
+  min-width:58px;min-height:58px;flex:0 0 auto;
+  border:1px solid color-mix(in srgb,var(--account-tone) 32%,var(--account-line));
+  border-radius:6px;
+  background:color-mix(in srgb,var(--account-tone) 18%,var(--account-card));
+  color:var(--account-tone);
+  font-size:clamp(22px,1.5vw,30px);
+  font-weight:650;
+  font-variant-numeric:tabular-nums;
+  line-height:1.2;
+}
+.page[data-commerce-unified="account"] .metrics>article :is(span,small) {
+  color:var(--account-text);
+  font-size:14px;line-height:1.5;
+}
+.page[data-commerce-unified="account"] .metrics>article small {color:var(--account-muted);font-size:13px;}
+.page[data-commerce-unified="account"] :is(.split,.toolbar,.table,.category,.rolePermissions,.accountOrgManagement) {
+  min-width:0;
+}
+.page[data-commerce-unified="account"] :is(.split>article,.table,.noticeBar,.rolePermissions) {padding:22px 24px;}
+.page[data-commerce-unified="account"] :is(.split h2,.table h2,.category h2,.referralRules h3,.rolePermissions header strong) {
+  color:var(--account-text);
+  font-size:20px;
+  font-weight:600;
+  line-height:1.4;
+}
+.page[data-commerce-unified="account"] :is(.split p,.noticeBar span,.table small,.rolePermissions small,.referralRules p) {
+  color:var(--account-muted);
+  font-size:14px;
+  line-height:1.6;
+}
+.page[data-commerce-unified="account"] .toolbar {
+  display:flex;gap:10px;
+  flex-wrap:wrap;align-items:center;
+  padding:18px 20px;
+}
+.page[data-commerce-unified="account"] :is(.toolbar input,.toolbar select,.formGrid input,.formGrid select,.split input,.split select) {
+  min-height:42px;
+  padding:9px 12px;
+  border:1px solid var(--account-line);
+  border-radius:6px;
+  background:var(--account-sub);
+  color:var(--account-text);
+  font-size:14px;
+}
+.page[data-commerce-unified="account"] :is(.toolbar input,.formGrid input)::placeholder {color:var(--account-muted);opacity:1;}
+.page[data-commerce-unified="account"] :is(.toolbar button,.table button,.noticeBar button,.split button,.tabs button,.rolePermissions button,.accountOrgManagement button) {
+  min-height:40px;
+  padding:0 15px;
+  border:1px solid var(--account-line);
+  border-radius:6px;
+  background:var(--account-sub);
+  color:var(--account-text);
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+}
+.page[data-commerce-unified="account"] :is(button.primary,.selected) {
+  background:var(--account-purple)!important;
+  border-color:var(--account-purple)!important;
+  color:#fff!important;
+}
+.page[data-commerce-unified="account"] .tableHead {
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  padding:12px 18px;
+  border-bottom:1px solid var(--account-line);
+  background:var(--account-sub);
+  color:var(--account-text);
+  font-size:14px;
+  font-weight:600;
+}
+.page[data-commerce-unified="account"] .serviceRow {
+  min-height:74px;
+  align-items:center;
+  padding:12px 18px;
+  gap:12px;
+  border-color:var(--account-line);
+  color:var(--account-text);
+  font-size:14px;
+}
+.page[data-commerce-unified="account"] .serviceRow span {font-size:14px;line-height:1.5;}
+.page[data-commerce-unified="account"] .serviceRow button {min-height:36px;}
+.page[data-commerce-unified="account"] .accountOrgIdentity {
+  display:flex;align-items:center;gap:18px;padding:22px 24px;
+}
+.page[data-commerce-unified="account"] .accountOrgAvatar {
+  display:grid;place-items:center;
+  width:64px;height:64px;flex:0 0 64px;
+  border:1px solid color-mix(in srgb,var(--account-purple) 55%,var(--account-line));
+  border-radius:9px;background:color-mix(in srgb,var(--account-purple) 16%,var(--account-card));
+  color:#aaa3ff;font-size:25px;font-weight:700;
+}
+.page[data-commerce-unified="account"] .accountOrgIdentity h2 {margin:0;color:var(--account-text);font-size:21px;}
+.page[data-commerce-unified="account"] .accountOrgIdentity p {margin:5px 0 0;color:var(--account-muted);font-size:14px;}
+.page[data-commerce-unified="account"] .accountOrgIdentity>span {
+  margin-left:auto;padding:7px 12px;flex:0 0 auto;
+  border-radius:6px;background:color-mix(in srgb,var(--account-green) 13%,var(--account-card));
+  color:var(--account-green);font-size:13px;
+}
+.page[data-commerce-unified="account"] .accountOrgManagement {padding:22px 24px;display:grid;gap:18px;}
+.page[data-commerce-unified="account"] .accountOrgManagement>header h2 {margin:0;color:var(--account-text);font-size:20px;}
+.page[data-commerce-unified="account"] .accountOrgManagement>header p {margin:3px 0 0;color:var(--account-muted);font-size:14px;}
+.page[data-commerce-unified="account"] .accountOrgManagement>div {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;
+}
+.page[data-commerce-unified="account"] .accountOrgManagement>div>article {
+  min-height:215px;padding:20px;display:flex;flex-direction:column;
+  box-shadow:inset 3px 0 0 var(--account-purple);
+}
+.page[data-commerce-unified="account"] .accountOrgManagement>div>article>b {color:#aaa3ff;font-size:20px;}
+.page[data-commerce-unified="account"] .accountOrgManagement h3 {font-size:19px;margin:10px 0;color:var(--account-text);}
+.page[data-commerce-unified="account"] .accountOrgManagement p {margin:0 0 16px;color:var(--account-muted);font-size:14px;line-height:1.6;}
+.page[data-commerce-unified="account"] .accountOrgManagement button {margin-top:auto;align-self:flex-start;}
+.page[data-commerce-unified="account"] .rolePermissions {display:grid;gap:16px;}
+.page[data-commerce-unified="account"] .rolePermissions>header {display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.page[data-commerce-unified="account"] .rolePermissions>div {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
+.page[data-commerce-unified="account"] .rolePermissions article {
+  display:flex;flex-direction:column;gap:8px;
+  min-height:165px;padding:18px;
+  border:1px solid var(--account-line);border-radius:7px;background:var(--account-sub);
+}
+.page[data-commerce-unified="account"] .rolePermissions article strong {font-size:17px;color:var(--account-text);}
+.page[data-commerce-unified="account"] .rolePermissions article span {font-size:15px;color:var(--account-muted);}
+.page[data-commerce-unified="account"] .rolePermissions article button {margin-top:auto;}
+:global(.light) .page[data-commerce-unified="account"] {
+  --account-card:#fff;--account-sub:#f7f7fb;--account-text:#444050;
+  --account-muted:#6d6878;--account-line:#e5e1ef;
+}
+:global(.light) .page[data-commerce-unified="account"] :is(.header,.metrics>article,.table,.toolbar,.rolePermissions,.accountOrgIdentity,.accountOrgManagement,.accountOrgManagement>div>article) {
+  color:var(--account-text);
+}
+:global(.light) .page[data-commerce-unified="account"] .header h1,
+:global(.light) .page[data-commerce-unified="account"] .accountOrgManagement h3 {color:var(--account-text);}
+:global(.light) .page[data-commerce-unified="account"] .accountOrgAvatar {color:#6254c8;}
+@media(max-width:1250px) {
+  .page[data-commerce-unified="account"] .accountOrgManagement>div {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .page[data-commerce-unified="account"] .metrics {gap:14px;}
+}
+@media(max-width:900px) {
+  .page[data-commerce-unified="account"] .metrics {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .page[data-commerce-unified="account"] .rolePermissions>div {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:620px) {
+  .page[data-commerce-unified="account"] {gap:16px;}
+  .page[data-commerce-unified="account"] .header {padding:18px;min-height:118px;}
+  .page[data-commerce-unified="account"] .header h1 {font-size:24px;}
+  .page[data-commerce-unified="account"] .metrics,
+  .page[data-commerce-unified="account"] .rolePermissions>div,
+  .page[data-commerce-unified="account"] .accountOrgManagement>div {grid-template-columns:minmax(0,1fr);}
+  .page[data-commerce-unified="account"] :is(.table,.accountOrgManagement,.rolePermissions) {padding:16px;}
+  .page[data-commerce-unified="account"] .accountOrgIdentity {padding:16px;flex-wrap:wrap;}
+  .page[data-commerce-unified="account"] .accountOrgIdentity>span {margin-left:0;}
+}
