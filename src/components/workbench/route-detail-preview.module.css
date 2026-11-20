@@ -1168,3 +1168,80 @@
   border-color:#44485e;
   color:#cfcde4;
 }
+
+/* Unified light theme for library and commerce detail views · 2026-11-20 */
+/* Scope every override to light mode; retain the established dark Vuexy design. */
+:global(.light) .libraryDetailPreview {
+  --light-surface:#ffffff;
+  --light-surface-subtle:#f7f7fa;
+  --light-border:#e3dfed;
+  --light-text:#444050;
+  --light-muted:#625d70;
+  color:var(--light-text);
+}
+:global(.light) .libraryDetailPreview :is(
+ .header,.category,.filterBox,.table,.split>article,.tabs,.toolbar,
+ .metrics>article,.card,.emptyState,.knowledgeMineEmpty,.knowledgeTeamEmpty,
+ .skillTeamEmpty,.twoCards>article,.warehouses>article,.stepbar
+) {
+ background:var(--light-surface);
+ border-color:var(--light-border);
+ color:var(--light-text);
+ box-shadow:none;
+}
+:global(.light) .libraryDetailPreview :is(.header h1,.header h2,.table h2,.category h2,.filterBox h2,.split h2,.split h3,.twoCards h2,.warehouses h2,.emptyState h2,.knowledgeMineEmpty h2,.knowledgeTeamEmpty h2,.skillTeamEmpty h2,.card h3,.projectRow strong) {color:var(--light-text);}
+:global(.light) .libraryDetailPreview :is(
+ .header>div:first-child>div,.header p,.category p,.filterBox p,.card p,.split p,
+ .twoCards p,.warehouses article p,.emptyState p,.knowledgeMineEmpty p,
+ .knowledgeTeamEmpty p,.skillTeamEmpty p,.metrics small,.table h2 small,
+ .table header small,.serviceRow span:nth-child(2)
+) {color:var(--light-muted);}
+:global(.light) .libraryDetailPreview :is(
+ .toolbar,.searchRow,.tableHead,.projectTableHead,.reportTableHead
+) {background:var(--light-surface-subtle);border-color:var(--light-border);color:var(--light-text);}
+:global(.light) .libraryDetailPreview :is(.tableHead,.projectTableHead,.reportTableHead) span {color:var(--light-muted);}
+:global(.light) .libraryDetailPreview :is(.table>div:not(header),.projectRow,.reportRow,.skillItem,.serviceRow) {
+ color:var(--light-text);border-color:var(--light-border);
+}
+:global(.light) .libraryDetailPreview .projectRow>span:nth-child(4),
+:global(.light) .libraryDetailPreview .projectRow>span:last-child,
+:global(.light) .libraryDetailPreview .reportActions button:last-child {
+ color:#6254c8;
+}
+:global(.light) .libraryDetailPreview :is(
+ .toolbar input,.searchRow input,.category input,.formGrid input,.formGrid select,
+ .formGrid textarea,select,textarea
+) {
+ background:#fff;border-color:#dcd7e8;color:var(--light-text);
+ color-scheme:light;
+}
+:global(.light) .libraryDetailPreview :is(input,textarea)::placeholder {color:#777182;opacity:1;}
+:global(.light) .libraryDetailPreview :is(
+ .headerActions button,.toolbar button,.category button,.tabs button,.table button,
+ .split button,.card button,.twoCards button,.emptyState button,.searchRow button,
+ .projectRow>button,.reportActions button,.cardActions button:not(.primary)
+) {
+ background:#f8f7fa;color:var(--light-text);border-color:#ded9e9;
+}
+:global(.light) .libraryDetailPreview :is(
+ .headerActions button,.toolbar button,.category button,.tabs button,.table button,
+ .split button,.card button,.twoCards button,.emptyState button,.searchRow button,
+ .projectRow>button,.reportActions button
+):hover:not(:disabled) {background:#efecfa;border-color:#c9bff0;color:#5144b0;}
+:global(.light) .libraryDetailPreview .primary,
+:global(.light) .libraryDetailPreview .cards .card .primary {
+ background:#7367f0!important;border-color:#7367f0!important;color:#fff!important;
+}
+:global(.light) .libraryDetailPreview .selected {background:#efecff!important;color:#6254c8!important;border-color:#bcb1f3!important;}
+:global(.light) .libraryDetailPreview .cards .card {
+ background:color-mix(in srgb,var(--card-accent,#7367f0),#ffffff 97%);
+ border-color:color-mix(in srgb,var(--card-accent,#7367f0),#e3dfed 82%);
+ box-shadow:inset 3px 0 0 var(--card-accent,#7367f0);
+}
+:global(.light) .libraryDetailPreview .cards .card h3 {color:color-mix(in srgb,var(--card-accent,#7367f0),#333047 45%);}
+:global(.light) .libraryDetailPreview .cards .card p {color:var(--light-muted);}
+:global(.light) .libraryDetailPreview .cards .card button {
+ border-color:#7367f0;background:#7367f0;color:#fff;
+}
+:global(.light) .libraryDetailPreview :is(.emptyState article,.knowledgeMineEmpty,.knowledgeTeamEmpty,.skillTeamEmpty) {background:#fff;border-color:var(--light-border);}
+:global(.light) .libraryDetailPreview :is(.skillItem,.row,.serviceRow):hover {background:#f7f5ff;}
