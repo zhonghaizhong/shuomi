@@ -32,6 +32,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build interactive static showcase
         run: pnpm run build:pages
+      - name: Install Chromium for sidebar regression checks
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify sidebar on desktop and small screens
+        run: pnpm exec playwright test --config playwright.sidebar.config.ts
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist-pages
