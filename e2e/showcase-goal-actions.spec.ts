@@ -15,15 +15,16 @@ test("new goal opens a theme-aware form and creates a local draft",async({page})
   await expect(page.getByText("演示十一月利润目标")).toBeVisible();
   await expect(page.getByText("未提交正式业务数据")).toBeVisible();
 });
-test("an unfinished demo operation does not pretend to have succeeded",async({page})=>{
+test("goal row opens a real detail dialog instead of a fake success toast",async({page})=>{
   await page.goto(root+"/overview/goals");
   await page.getByRole("button",{name:"新建目标"}).click();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog",{name:"新建目标"})).toHaveCount(0);
   await page.getByRole("button",{name:"操作"}).first().click();
   const dialog=page.getByRole("dialog");
-  await expect(dialog).toContainText("尚未连接对应的业务流程");
+  await expect(dialog).toContainText("月度利润目标");
+  await expect(dialog).toContainText("当前状态");
   await expect(page.getByText("已在原型中打开")).toHaveCount(0);
-  await dialog.getByRole("button",{name:"知道了"}).click();
+  await dialog.getByRole("button",{name:"返回列表"}).click();
   await expect(dialog).toHaveCount(0);
 });
