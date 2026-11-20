@@ -2546,3 +2546,39 @@
 :global(.light) .tasksPreview .taskNote {color:#625d70;}
 :global(.light) .libraryHubPreview .secondary {color:#6254c8;border-color:#ddd7f2;background:#f3f1ff;}
 :global(.light) .libraryHubPreview .secondary:hover {color:#5144bb;background:#eae6ff;}
+
+
+/* Focused light audit for 硕米Chat, Task Center, and Project Center. */
+:global(.light) .chatLandingPreview :global([class*="landingCard"]) :is(h2,strong),
+:global(.light) .chatLandingPreview :global([class*="stepHeading"]) h3 {color:#444050;}
+:global(.light) .chatLandingPreview :global([class*="landingCard"]) :is(p,small),
+:global(.light) .chatLandingPreview :global([class*="steps"]) > li > * p {color:#625d70;}
+:global(.light) .chatLandingPreview :global([class*="example"]) {color:#444050;background:#f8f7fa;border-color:#ddd9e9;}
+:global(.light) .chatLandingPreview :global([class*="example"]) strong {color:#6254c8;}
+:global(.light) .chatLandingPreview :global([class*="stepHeading"]) span {color:#6254c8;border-color:#d9d3f2;background:#f1efff;}
+:global(.light) .tasksPreview {color:#444050;}
+:global(.light) .tasksPreview .taskStats > button {color:#444050;}
+:global(.light) .tasksPreview .taskStats header {color:#444050;}
+:global(.light) .tasksPreview .taskStats :is(header span,small) {color:#625d70;}
+:global(.light) .tasksPreview .taskStats > button > b {color:#444050;}
+:global(.light) .tasksPreview .taskStats > button[aria-pressed="true"],
+:global(.light) .tasksPreview .taskStats > button[aria-current="true"] {border-color:#7367f0;background:#f0edff;}
+:global(.light) .tasksPreview .taskTable > header strong {color:#444050;}
+:global(.light) .tasksPreview .taskTable > header span {color:#625d70;}
+:global(.light) .tasksPreview .taskRow > span:not(:first-child) {color:#625d70;}
+:global(.light) .tasksPreview .taskSearch button:not(.primary) {color:#444050;background:#f8f7fa;border-color:#dbdade;}
+:global(.light) .tasksPreview .taskSearch :is(input,button):focus-visible {outline:2px solid #7367f0;outline-offset:2px;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] {color:#444050;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .metrics > article > span,
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .metrics > article > strong {color:#444050;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .metrics > article > strong {
+  border:1px solid color-mix(in srgb,var(--metric-accent,#7367f0) 25%,#ddd9e9);
+  background:color-mix(in srgb,var(--metric-accent,#7367f0) 8%,#fff);
+}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .metrics > article > small {color:#625d70;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .cardHeading h2 {color:#444050;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .cardHeading span {color:#6254c8;background:#eeebff;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .card p,
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .rowMain small {color:#625d70;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .filters :is(input,select) {color:#444050;border-color:#dbdade;background:#fff;}
+:global(.light) .libraryHubPreview[data-library-hub="projects"] .filters input::placeholder {color:#6f6b7d;opacity:1;}
