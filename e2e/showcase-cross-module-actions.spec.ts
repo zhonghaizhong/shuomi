@@ -8,13 +8,13 @@ test("task and project creation produce visible local drafts",async({page})=>{
  await expect(task).toBeVisible();
  await task.getByRole("textbox",{name:"任务名称"}).fill("演示自定义任务");
  await task.getByRole("button",{name:"创建演示草稿"}).click();
- await expect(page.getByText("演示自定义任务")).toBeVisible();
+ await expect(page.getByText("演示自定义任务", {exact:true})).toBeVisible();
  await page.goto(base+"/ai/projects");
  await page.getByRole("button",{name:/新建项目/}).click();
  const project=page.getByRole("dialog",{name:"新建项目"});
  await project.getByRole("textbox",{name:"项目名称"}).fill("演示增长项目");
  await project.getByRole("button",{name:"创建演示草稿"}).click();
- await expect(page.getByText("演示增长项目")).toBeVisible();
+ await expect(page.getByText("演示增长项目", {exact:true})).toBeVisible();
 });
 
 test("uploaded products support filter, pagination, detail and reset",async({page})=>{
