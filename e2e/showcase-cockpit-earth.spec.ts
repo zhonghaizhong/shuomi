@@ -401,7 +401,7 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
   const screens=[
     {route:"/workbench/ai/chat",surfaces:['[class*="landingCard"]','[class*="example"]','[class*="steps"] > li > *']},
     {route:"/workbench/ai/tasks",surfaces:['[class*="taskStats"] > button','[class*="taskSearch"]','[class*="taskTable"]','[class*="taskRow"]']},
-    {route:"/workbench/ai/projects",surfaces:['[class*="metrics"] > article','[class*="cards"] > article','[class*="filters"]','[class*="list"]']},
+    {route:"/workbench/ai/projects",surfaces:['[class*="metrics"] > article','[class*="filters"]','[class*="list"]','[class*="row"]:not([class*="rowMain"]):not([class*="rowValue"]):not([class*="rowDot"])']},
   ] as const;
   for(const screen of screens) {
     await page.goto("/shuomi/#"+screen.route);
