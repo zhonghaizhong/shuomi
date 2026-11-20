@@ -206,3 +206,32 @@ test("listing four-stage Figma flow has distinct functional screens",async({page
  await expect(page.locator("[data-showcase-uploaded]")).toBeVisible();
  await expect(page.getByText(/已上传记录只读/)).toBeVisible();
 });
+
+test("listing overview uses aligned Vuexy cards and readable theme surfaces",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(entry+"/listing");
+ const root=page.locator('[data-listing-management-overview]');
+ await expect(root.getByRole("heading",{name:"从商品数据到平台上传的统一管理"})).toBeVisible();
+ const cards=root.locator('section[aria-label="刊登管理主要入口"] article');
+ await expect(cards).toHaveCount(3);
+ const rects=await cards.evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {top:r.top,width:r.width,height:r.height}}));
+ expect(Math.max(...rects.map(x=>x.top))-Math.min(...rects.map(x=>x.top))).toBeLessThan(2);
+ expect(Math.max(...rects.map(x=>x.width))-Math.min(...rects.map(x=>x.width))).toBeLessThan(2);
+ expect(Math.max(...rects.map(x=>x.height))-Math.min(...rects.map(x=>x.height))).toBeLessThan(2);
+ const stepCards=root.locator('section[aria-labelledby="listing-main-flow"] article');
+ await expect(stepCards).toHaveCount(4);
+ const stepTops=await stepCards.evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().top));
+ expect(Math.max(...stepTops)-Math.min(...stepTops)).toBeLessThan(2);
+ const enableLight=page.getByRole("button",{name:"切换浅色主题"});
+ if(await enableLight.isVisible())await enableLight.click();
+ const background=await cards.first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ expect(background).toBe("rgb(255, 255, 255)");
+ const button=cards.first().getByRole("button");
+ await expect(button).toBeVisible();
+ const height=await button.evaluate(el=>el.getBoundingClientRect().height);
+ expect(height).toBeGreaterThanOrEqual(40);
+ await page.setViewportSize({width:390,height:844});
+ await expect(cards.first()).toBeVisible();
+ const overflow=await root.evaluate(el=>el.scrollWidth>el.clientWidth+2);
+ expect(overflow).toBe(false);
+});
