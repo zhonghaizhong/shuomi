@@ -1079,3 +1079,110 @@
 .light .console-theme .console-sidebar-head .console-brand small {
   color: #827d90;
 }
+
+/* Shared workspace contrast and light-surface consistency, 2026-11-20 */
+/* Apply to the selected theme only. Do not change spacing or component geometry. */
+.light .console-theme {
+  --background: #f4f7fb;
+  --foreground: #172b45;
+  --card: #ffffff;
+  --card-foreground: #172b45;
+  --popover: #ffffff;
+  --popover-foreground: #172b45;
+  --secondary: #f1f5fa;
+  --secondary-foreground: #172b45;
+  --muted: #f1f5fa;
+  --muted-foreground: #52677d;
+  --border: #d8e4ee;
+  --input: #cbd9e7;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #496177;
+  --sidebar-border: #d8e4ee;
+  --console-card-surface: #ffffff;
+  --console-card-hover: #f6f9fc;
+  --console-card-border: #d8e4ee;
+  --console-soft: #f1f5fa;
+  --console-border: #d8e4ee;
+  --console-muted: #52677d;
+  --control-background: #ffffff;
+  --surface-raised: #f1f5fa;
+  color: var(--foreground);
+  background: var(--background);
+  color-scheme: light;
+}
+.light .console-theme .console-topbar {
+  background: #ffffff;
+  border-color: #d8e4ee;
+  color: #172b45;
+}
+.light .console-theme .console-brand-message { color: #172b45; }
+.light .console-theme .console-brand-message > span { color: #52677d; }
+.light .console-theme .console-search,
+.light .console-theme .console-search:focus-within {
+  background: #f6f9fc;
+  color: #496177;
+  border-color: #cbd9e7;
+}
+.light .console-theme .console-search input { color: #172b45; }
+.light .console-theme .console-search input::placeholder { color: #61758b; }
+.light .console-theme .console-global-actions > button,
+.light .console-theme .console-global-actions .console-user-trigger,
+.light .console-theme .console-global-actions .console-notification-trigger {
+  color: #172b45;
+  border-color: #cbd9e7;
+  background: #ffffff;
+}
+.light .console-theme .console-global-actions > button:hover,
+.light .console-theme .console-global-actions .console-user-trigger:hover,
+.light .console-theme .console-global-actions .console-notification-trigger:hover {
+  color: #087f6c;
+  background: #e5f5f0;
+  border-color: #8bc7b8;
+}
+.light .console-theme .console-global-actions .console-icon-action,
+.light .console-theme .console-global-actions .console-notification-trigger {
+  color: #496177;
+}
+.light .console-theme .console-global-actions .console-app-popover,
+.light .console-theme .console-global-actions .console-utility-popover,
+.light .console-theme .console-user-popover {
+  background: #fff;
+  color: #172b45;
+  border-color: #d8e4ee;
+}
+.light .console-theme .console-app-popover-head span { color: #52677d; }
+.light .console-theme .console-app-links a { color: #172b45; }
+.light .console-theme .console-app-links a:hover { background: #f1f5fa; }
+.light .console-theme .console-app-glyph {
+  background: #e5f5f0;
+  color: #087f6c;
+}
+.light .console-theme .console-content {
+  color: #172b45;
+}
+.light .console-theme .console-page-header :is(h1,h2),
+.light .console-theme .console-page :is(.console-description,.console-breadcrumb) {
+  color: inherit;
+}
+.light .console-theme .console-description,
+.light .console-theme .console-breadcrumb { color: #52677d !important; }
+.light .console-theme :is(input,textarea,select):not([type="checkbox"]):not([type="radio"]) {
+  color-scheme: light;
+}
+.light .console-theme :is(input,textarea,select):not([type="checkbox"]):not([type="radio"])::placeholder {
+  color: #61758b;
+}
+.light .console-theme :is(.console-user-popover,.console-global-actions) :is(button,a):focus-visible,
+.light .console-theme .console-search:focus-within {
+  outline-color: #087f6c;
+}
+.dark .console-theme {
+  --muted-foreground: #c3c5d8;
+  --sidebar-foreground: #dddceb;
+  --console-muted: #c3c5d8;
+}
+.dark .console-theme .console-sidebar-head .console-brand small { color: #bbb9d0; }
+.dark .console-theme .console-search input::placeholder { color: #b7bfd2; }
+.dark .console-theme .console-brand-message > span { color: #c3c5d8; }
+.dark .console-theme .console-description,
+.dark .console-theme .console-breadcrumb { color: #c3c5d8; }
