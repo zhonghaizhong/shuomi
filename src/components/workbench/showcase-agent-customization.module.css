@@ -339,3 +339,52 @@
  color:#172b45;background:#f1f5fa;border-color:#d8e4ee;
 }
 :global(.light) .page.page .formLayout :is(input,textarea)::placeholder{color:#62768a;}
+
+/* Approved Vuexy standard: Figma is functional reference, not customization visual theme. */
+.page{
+ --custom-surface:#2f3349;--custom-raised:#393d55;--custom-border:#44485e;
+ --custom-text:#cfcde4;--custom-muted:#acabc1;--custom-primary:#7367f0;
+ --custom-focus:#a099ff;color:var(--custom-text);
+}
+:global(.light) .page{
+ --custom-surface:#fff;--custom-raised:#f8f7fa;--custom-border:#ddd9e9;
+ --custom-text:#444050;--custom-muted:#6f6b7d;--custom-primary:#7367f0;
+ --custom-focus:#7367f0;color:var(--custom-text);
+}
+.page.page :is(.header,.card,.hero,.featureGrid article,.confirmDialog){
+ background:var(--custom-surface);border-color:var(--custom-border);color:var(--custom-text);
+}
+.page.page>.header h1{color:var(--custom-text);border-left-color:#00cfe8;}
+:global(.light) .page.page>.header h1{border-left-color:#00a8bd;}
+.page.page>.header small,.page.page>.header p{color:var(--custom-muted);}
+.page.page button.primary,:global(.light) .page.page button.primary{
+ background:#7367f0;border-color:#7367f0;color:#fff;
+}
+.page.page button.primary:hover:not(:disabled),:global(.light) .page.page button.primary:hover:not(:disabled){
+ background:#8175f5;border-color:#8175f5;color:#fff;
+}
+.page.page :is(.directions button[aria-pressed="true"],.progressToolbar button[aria-pressed="true"]){
+ color:#cfc7ff;border-color:#7367f0;background:#474075;
+}
+:global(.light) .page.page :is(.directions button[aria-pressed="true"],.progressToolbar button[aria-pressed="true"]){
+ color:#6254c8;border-color:#7367f0;background:#efecff;
+}
+.page.page .upload{color:#bdb5ff;border-color:#7367f0;background:var(--custom-raised);}
+:global(.light) .page.page .upload{color:#6254c8;border-color:#7367f0;background:#f4f2ff;}
+.page.page :is(.steps>div,.sideSteps p,.progressSteps>div,.formLayout form .disclaimer,.demoLabel){
+ background:var(--custom-raised);border-color:var(--custom-border);color:var(--custom-text);
+}
+.page.page .formLayout :is(input:not([type="checkbox"]):not([type="file"]),select,textarea){
+ background:var(--custom-raised);border-color:var(--custom-border);color:var(--custom-text);
+}
+:global(.light) .page.page .formLayout :is(input:not([type="checkbox"]):not([type="file"]),select,textarea){
+ background:#f8f7fa;border-color:#ddd9e9;color:#444050;
+}
+.page.page :is(.steps small,.progressSteps small,.progressSteps em,.sideSteps p,.featureGrid p,.hero p,.card>p,.confirmDialog p){
+ color:var(--custom-muted);
+}
+.page.page .progressSteps>div:nth-child(2){
+ background:color-mix(in srgb,#7367f0,var(--custom-raised) 91%);border-color:#7367f0;
+}
+.page.page .progressSteps>div:nth-child(2) b{color:#c7beff;border-color:#7367f0;}
+:global(.light) .page.page .progressSteps>div:nth-child(2) b{color:#6254c8;}
