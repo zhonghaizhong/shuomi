@@ -275,7 +275,7 @@ test("standard headers keep actions clickable and adapt to narrow screens", asyn
 /* Regression for previously unstyled light-mode nested surfaces.
    Test rendered RGB and foreground/background contrast, not just CSS presence. */
 const lightDetailSurfaces = [
-  {route:"/workbench/tools/mine", target:'[class*="mineGuide"] > div', text:"strong"},
+  {route:"/workbench/tools/official", target:'[class*="toolCard"]', text:"h3"},
   {route:"/workbench/agents/custom", target:'[class*="featureGrid"] article', text:"h3"},
   {route:"/workbench/tools/custom", target:'[class*="features"] article', text:"h3"},
   {route:"/workbench/agents/custom/new", target:'[class*="formLayout"] input:not([type="checkbox"]):not([type="file"])', text:null},
@@ -295,7 +295,7 @@ test("light mode nested cards and controls are light and text is readable", asyn
     await expect(target, item.route).toBeVisible();
     const colors=await target.evaluate((element, childSelector) => {
       function channels(value:string) {
-        const values=value.match(/[\\d.]+/g)?.slice(0,3).map(Number)??[];
+        const values=value.match(/[\d.]+/g)?.slice(0,3).map(Number)??[];
         return value.startsWith("color(srgb")?values.map(v=>v*255):values;
       }
       function brightness(c:number[]) {return (c[0]*.2126+c[1]*.7152+c[2]*.0722);}
@@ -314,7 +314,7 @@ test("tool modal in light theme has light nested details with readable labels", 
   await page.goto("/shuomi/#/workbench/tools/official");
   await page.getByRole("button", {name:"切换浅色主题"}).click();
   // Download dialogs are rendered conditionally; find the real install action.
-  const download=page.getByRole("button", {name:/下载|安装/}).first();
+  const download=page.getByRole("button", {name:"介绍"}).first();
   await expect(download).toBeVisible();
   await download.click();
   const details=page.locator('[class*="downloadDetails"]');
