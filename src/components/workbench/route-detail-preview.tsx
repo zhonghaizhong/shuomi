@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import styles from "./route-detail-preview.module.css";
 import { ChatNewPreview } from "./chat-new-preview";
 import { PreferredApplicationPreview } from "./preferred-application-preview";
+import { AccountProfilePreview } from "./account-profile-preview";
 
 const routes: Record<string, { section: string; title: string; description: string }> = {
   "/workbench/ai/chat/new": { section: "AI工作台 / 硕米Chat", title: "新建会话", description: "有什么想交给硕米？直接描述问题或工作目标，硕米协助整理并回复。" },
@@ -87,6 +88,7 @@ export function RouteDetailPreview({ pathname }: { pathname: string }) {
   const page = routes[pathname];
   if (!page) return null;
   if (pathname === "/workbench/supply/applications" || pathname.startsWith("/workbench/supply/applications/")) return <PreferredApplicationPreview key={pathname} pathname={pathname} />;
+  if (pathname === "/workbench/account/profile/business" || pathname === "/workbench/account/profile/verification") return <AccountProfilePreview key={pathname} pathname={pathname} />;
   return <RoutePage key={pathname} page={page} pathname={pathname} />;
 }
 
