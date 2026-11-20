@@ -97,4 +97,4 @@
 .dialog :is(.heading p,.info p,.modelOption small,.current p){color:var(--agent-dialog-muted);}
 .dialog :is(.modelOption,.close,.secondary,.current){background:var(--agent-dialog-raised);border-color:var(--agent-dialog-border);color:var(--agent-dialog-text);}
 .dialog .tags span{color:var(--agent-dialog-text);background:var(--agent-dialog-raised);}
-.dialog :is(.primary,.secondary,.modelOption,.close):focus-visible{outline:2px solid:#7367f0;outline-offset:2px;}
+.dialog :is(.primary,.secondary,.modelOption,.close):focus-visible{outline:2px solid #7367f0;outline-offset:2px;}
