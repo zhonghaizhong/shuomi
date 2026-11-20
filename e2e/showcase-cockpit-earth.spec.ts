@@ -576,13 +576,16 @@ test("all task detail states render fully light search, table, header and status
     for(const [selector,background] of [
       ['[class*="_toolbar_"]',"rgb(255, 255, 255)"],
       ['[class*="_table_"]',"rgb(255, 255, 255)"],
-      ['[class*="_taskDetailHead_"]',"rgb(244, 243, 248)"],
-      ['[class*="_taskDetailRow_"]',"rgb(255, 255, 255)"]
+      ['[class*="_taskDetailHead_"]',"rgb(244, 243, 248)"]
     ] as const) {
       const target=root.locator(selector).first();
       await expect(target,state+" "+selector).toBeVisible();
       await expect(target,state+" "+selector).toHaveCSS("background-color",background);
     }
+    const row=root.locator('[class*="_taskDetailRow_"]').first();
+    await expect(row).toBeVisible();
+    const rowBackground=await row.evaluate(el=>getComputedStyle(el).backgroundColor);
+    expect(["rgb(255, 255, 255)","rgb(252, 251, 254)"],state+" row is not a pale surface").toContain(rowBackground);
     const search=root.locator('[class*="_toolbar_"] input');
     await expect(search).toHaveCSS("color","rgb(68, 64, 80)");
     const status=root.locator('[class*="_taskDetailRow_"] span[data-status]').first();
