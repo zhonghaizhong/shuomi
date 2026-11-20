@@ -10,7 +10,7 @@ const details = [
  "/data/market","/data/api","/data/mine",
  "/stores","/store-products","/store-orders",
  "/plans/options","/plans/entitlements","/plans/usage","/plans/top-up","/plans/orders",
- "/account/organization","/account/organization/members",
+ "/account/organization","/account/organization/members","/account/organization/roles",
  "/account/organization/resources","/account/organization/audit",
  "/account/referrals","/account/referrals/center","/account/referrals/earnings",
  "/account/referrals/withdrawals","/account/referrals/rules",
@@ -62,7 +62,7 @@ test("market filters, store tabs and permissions panels remain interactive",asyn
  await page.getByRole("button",{name:"在售",exact:true}).click();
  await expect(page.locator('[data-commerce-unified] [class*="selected"]').first()).toBeVisible();
  await page.goto(root+"/account/organization/members");
- await expect(page.getByRole("heading",{level:1,name:"成员与权限"})).toBeVisible();
+ await expect(page.getByRole("heading",{level:1,name:"成员管理"})).toBeVisible();
  await page.getByRole("button",{name:"角色权限"}).first().click();
  await expect(page.getByRole("button",{name:"角色权限"}).first()).toHaveClass(/selected/);
 });
@@ -85,5 +85,56 @@ test("light theme keeps readable text and labels in all four scoped modules",asy
   const header=page.locator('[data-commerce-unified] header[class*="header"]').first();
   const bg=await header.evaluate(el=>getComputedStyle(el).backgroundColor);
   expect(bg,route).toBe("rgb(255, 255, 255)");
+ }
+});
+
+test("Figma account navigation, enterprise roles and referrals keep correct routes and components",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(root+"/account");
+ const nav=page.getByRole("navigation",{name:"工作台导航"});
+ await nav.getByRole("button",{name:"展开我的账户"}).click();
+ for(const name of ["账户资料","企业空间","推广与收益"]){
+  await expect(nav.getByRole("link",{name,exact:true})).toBeVisible();
+ }
+ await nav.getByRole("button",{name:"展开企业空间"}).click();
+ for(const [label,route] of [["成员管理","members"],["角色权限","roles"],["资源与额度","resources"],["操作记录","audit"]] as const){
+  const link=nav.getByRole("link",{name:label,exact:true});
+  await expect(link).toBeVisible();
+  await link.click();
+  await expect(page).toHaveURL(new RegExp("#/workbench/account/organization/"+route));
+  await expect(page.getByRole("heading",{level:1,name:label})).toBeVisible();
+ }
+ await page.goto(root+"/account/organization");
+ for(const heading of ["成员管理","角色权限","资源与额度","操作记录"]){
+  await expect(page.getByRole("heading",{name:heading,exact:true})).toBeVisible();
+ }
+ await page.goto(root+"/account/referrals");
+ await expect(page.getByRole("heading",{name:"推广与收益管理"})).toBeVisible();
+ for(const label of ["推广中心","收益明细","提现管理","推广规则"]){
+  await expect(page.getByRole("heading",{name:label,exact:true})).toBeVisible();
+ }
+});
+test("account Figma leaf forms, filters and theme surfaces remain responsive",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(root+"/account/profile/verification");
+ await page.getByRole("button",{name:"企业认证"}).click();
+ await expect(page.getByRole("heading",{name:"企业主体信息"})).toBeVisible();
+ await expect(page.getByPlaceholder("请输入统一社会信用代码")).toBeVisible();
+ await page.getByRole("button",{name:"个人认证"}).click();
+ await expect(page.getByPlaceholder("请输入身份证号码")).toBeVisible();
+ await page.goto(root+"/account/referrals/earnings");
+ await expect(page.getByText("¥11,120")).toBeVisible();
+ await page.getByRole("textbox",{name:"搜索来源用户或订单号"}).fill("chen");
+ await expect(page.getByText("zhang***")).toHaveCount(0);
+ await expect(page.getByText("chen***")).toBeVisible();
+ for(const route of ["/account","/account/profile","/account/organization","/account/organization/roles","/account/referrals","/account/referrals/withdrawals"]){
+   await page.goto(root+route);
+   const enableLight=page.getByRole("button",{name:"切换浅色主题"});
+   if(await enableLight.isVisible())await enableLight.click();
+   const rootElement=page.locator('[data-commerce-unified="account"]');
+   await expect(rootElement).toBeVisible();
+   const heading=rootElement.locator("header[class*='header']").first();
+   const bg=await heading.evaluate(el=>getComputedStyle(el).backgroundColor);
+   expect(bg,route+" should have a white heading card").toBe("rgb(255, 255, 255)");
  }
 });
