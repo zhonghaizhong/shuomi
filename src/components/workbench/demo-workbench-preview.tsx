@@ -6,6 +6,7 @@ import styles from "./demo-workbench-preview.module.css";
 import { hasRouteDetailPreview, RouteDetailPreview } from "./route-detail-preview";
 import { ChatIntroduction } from "./ai-workbench/chat-introduction";
 import { ShowcaseActionDialog, type DemoGoal, type DemoDraft, type DemoDetail } from "./showcase-action-dialog";
+import { ShowcaseUploadedPreview } from "./showcase-uploaded-preview";
 import { ShowcaseAgentDialog, type AgentPreviewDialog } from "./showcase-agent-dialog";
 import { ShowcaseAgentCustomization } from "./showcase-agent-customization";
 import { ShowcaseToolMarket } from "./showcase-tool-market";
@@ -153,6 +154,7 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   if (pathname === "/workbench/tools/official" || pathname === "/workbench/tools/mine") return <ShowcaseToolMarket pathname={pathname} navigate={router.push} />;
   if (pathname.startsWith("/workbench/tools/custom")) return <ShowcaseToolCustomization pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/services" || pathname === "/workbench/services/market" || pathname === "/workbench/services/mine" || pathname === "/workbench/services/join") return <ShowcaseEcologyServices pathname={pathname} navigate={router.push} />;
+  if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview />;
   if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div> : null}
