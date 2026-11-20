@@ -90,3 +90,20 @@ test("customization request is validated and switches between demo progress and 
  await expect(progress.getByText("SHEIN 商品资料规范化")).toBeVisible();
  await expect(progress.getByText("未提交服务器")).toBeVisible();
 });
+
+test("My Agents model settings dialog retains demo selection across submenu navigation",async({page})=>{
+ await page.goto(base+"/agents/mine");
+ const root=page.locator("[data-intelligent-market='agentMine']");
+ await root.getByRole("button",{name:"模型设置"}).first().click();
+ let dialog=page.getByRole("dialog",{name:"模型设置"});
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole("button",{name:/自定义模型/}).click();
+ await dialog.getByRole("button",{name:"保存设置"}).click();
+ await root.getByRole("button",{name:"前往智能体市场"}).click();
+ await page.locator("[data-intelligent-market='agentMarket']").getByRole("button",{name:"我的智能体"}).click();
+ await page.locator("[data-intelligent-market='agentMine']").getByRole("button",{name:"模型设置"}).first().click();
+ dialog=page.getByRole("dialog",{name:"模型设置"});
+ await expect(dialog.getByRole("button",{name:/自定义模型/})).toHaveAttribute("aria-pressed","true");
+ await page.keyboard.press("Escape");
+ await expect(dialog).not.toBeVisible();
+});
