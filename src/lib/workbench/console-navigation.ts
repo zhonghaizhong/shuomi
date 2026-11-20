@@ -39,12 +39,6 @@ export const consoleNavigation: readonly ConsoleNavNode[] = [
       pending("货盘选品", "supply/catalogs/selection"),
       pending("申请对接", "supply/catalogs/apply"),
     ]),
-    pending("我的供应链", "supply/mine/procurement", [
-      {label:"待上传",href:"/workbench/listing/waiting",availability:"connected"},
-      {label:"待补全",href:"/workbench/listing/missing",availability:"connected"},
-      {label:"待审核",href:"/workbench/listing/review",availability:"connected"},
-      {label:"已上传",href:"/workbench/listing/uploaded",availability:"connected"},
-    ]),
     pending("优选申请", "supply/applications", [
       pending("发起申请", "supply/applications/new"),
       pending("申请记录", "supply/applications/records"),
@@ -55,7 +49,17 @@ export const consoleNavigation: readonly ConsoleNavNode[] = [
   pending("生态服务", "services", [pending("服务市场", "services/market"), pending("我的服务", "services/mine"), pending("申请加入", "services/join")]),
   pending("数据服务", "data", [pending("数据市场", "data/market"), pending("API管理", "data/api"), pending("我的数据", "data/mine")]),
   { label: "商品刊登", href: listingHome, availability: "unavailable" },
-  pending("店铺中心", "store-center", [{ label: "我的店铺", href: "/workbench/stores", availability: "connected" }, pending("店铺商品", "store-products")]),
+  pending("店铺中心", "store-center", [
+    { label: "我的店铺", href: "/workbench/stores", availability: "connected", children: [
+      pending("我的供应链", "supply/mine/procurement", [
+        {label:"待上传",href:"/workbench/listing/waiting",availability:"connected"},
+        {label:"待补全",href:"/workbench/listing/missing",availability:"connected"},
+        {label:"待审核",href:"/workbench/listing/review",availability:"connected"},
+        {label:"已上传",href:"/workbench/listing/uploaded",availability:"connected"},
+      ]),
+    ] },
+    pending("店铺商品", "store-products"),
+  ]),
   pending("订单管理", "store-orders", [
     pending("订单处理", "store-orders/fulfill?step=source"),
     pending("采购与收货", "store-orders/fulfill?step=purchase"),
