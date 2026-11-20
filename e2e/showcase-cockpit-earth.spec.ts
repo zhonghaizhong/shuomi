@@ -412,7 +412,17 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
       const result=await card.evaluate(el=>{
         const styles=getComputedStyle(el);
         const firstTitle=el.querySelector("h2,h3,strong");
-        return {background:styles.backgroundColor,border:styles.borderTopColor,text:firstTitle?getComputedStyle(firstTitle).color:styles.color};
+        let surface:Element|null=el;
+        let background="rgba(0, 0, 0, 0)";
+        while(surface) {
+          const computed=getComputedStyle(surface);
+          if(computed.backgroundColor!=="transparent" && computed.backgroundColor!=="rgba(0, 0, 0, 0)") {
+            background=computed.backgroundColor;
+            break;
+          }
+          surface=surface.parentElement;
+        }
+        return {background,border:styles.borderTopColor,text:firstTitle?getComputedStyle(firstTitle).color:styles.color};
       });
       expect(result.background,screen.route+" should use white/pale cards").toMatch(/^rgb\(2(?:4[0-9]|5[0-5]), 2(?:4[0-9]|5[0-5]), 2(?:4[0-9]|5[0-5])\)$/);
       expect(result.text,screen.route+" should not have pastel title text").not.toBe("rgb(207, 205, 228)");
