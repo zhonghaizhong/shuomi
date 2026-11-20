@@ -69,3 +69,34 @@ test("desktop collapsed state can become a mobile drawer after resize", async ({
   await expect(sidebar.locator(".console-brand-label")).toBeVisible();
   await expect(sidebar.getByRole("link", { name: "AI工作台" })).toBeVisible();
 });
+
+
+test("light-mode chat collections never retain dark background colors", async ({ page }) => {
+  for (const route of ["/ai/chat/recent", "/ai/chat/saved"]) {
+    await page.goto(entry + route);
+    await page.getByRole("button", { name: "切换浅色主题" }).click();
+    const input = page.getByPlaceholder(/搜索.*标题或内容/);
+    await expect(input).toBeVisible();
+    const listRow = page.locator("main.showcase-content article").first();
+    await expect(listRow).toBeVisible();
+    const surfaces = await page.evaluate(() => {
+      const input = document.querySelector("main.showcase-content input[placeholder]")!;
+      const search = input.parentElement!;
+      const list = document.querySelector("main.showcase-content article")!.parentElement!;
+      const title = list.querySelector("article strong")!;
+      const parse = (s: string) => (s.match(/[\\d.]+/g) ?? []).slice(0,3).map(Number);
+      return {
+        search: parse(getComputedStyle(search).backgroundColor),
+        input: parse(getComputedStyle(input).backgroundColor),
+        list: parse(getComputedStyle(list).backgroundColor),
+        title: parse(getComputedStyle(title).color),
+      };
+    });
+    for (const name of ["search","input","list"] as const) {
+      const rgb = surfaces[name];
+      expect(rgb.length, `${route}: ${name} must have an opaque surface`).toBe(3);
+      expect(rgb[0] + rgb[1] + rgb[2], `${route}: ${name} must be light`).toBeGreaterThan(600);
+    }
+    expect(surfaces.title[0] + surfaces.title[1] + surfaces.title[2], `${route}: title must be dark`).toBeLessThan(400);
+  }
+});
