@@ -54,15 +54,15 @@ export function ShowcaseUploadedPreview(){
    </div>
    <div className={styles.listTitle}><h2>已上传商品</h2><span>共 {filtered.length} 条演示记录</span></div>
    <div className={styles.tableScroll}><div className={styles.table}>
-    <div className={styles.columns}><span>商品名称 / SKU</span><span>批次</span><span>目标平台 / 站点</span><span>平台商品ID / 草稿</span><span>上传时间</span><span>发布方式</span><span>操作</span></div>
+    <div className={styles.columns}><span>商品名称 / SKU</span><span>批次</span><span>目标平台 / 站点</span><span>平台商品ID / 草稿</span><span>上传时间</span><span>提交方式 / 状态</span><span>操作</span></div>
     {visible.map(item=><div className={styles.item} key={item.sku}>
-      <span><b>{item.name}</b><small>{item.sku}</small></span><span>{item.batch}</span><span>{item.platform}<small>{item.site}</small></span><span>{item.productId}</span><span>{item.time}</span><span className={styles.method} data-draft={item.method==="发布到草稿箱"}>{item.method}</span><button type="button" onClick={()=>setSelected(item)}>查看商品</button>
+      <span><b>{item.name}</b><small>{item.sku}</small></span><span>{item.batch}</span><span>{item.platform}<small>{item.site}</small></span><span>{item.productId}</span><span>{item.time}</span><span className={styles.method} data-draft={item.method==="发布到草稿箱"}>{item.method}<small>{item.method==="发布到草稿箱"?"平台草稿 · 未上架":"提交平台 · 审核中（演示）"}</small></span><button type="button" onClick={()=>setSelected(item)}>查看商品</button>
     </div>)}
    </div></div>
    {!filtered.length?<div className={styles.empty}>没有符合筛选条件的商品。可重置筛选后重新查看。</div>:null}
    <footer className={styles.pagination}><span>第 {page} / {pages} 页 · 每页最多 4 条</span><div><button type="button" disabled={page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={page>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}>下一页</button></div></footer>
   </section>
   <p className={styles.disclaimer}>此页面仅展示原型演示记录。平台受理、审核中、平台草稿、已上架应分别核实；已上传记录只读，后续上架管理请进入「店铺商品」。</p>
-  {selected&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null);}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看商品详情"><header><div><small>已上传 / 查看商品</small><h2>{selected.name}</h2></div><button type="button" ref={closeDetail} aria-label="关闭商品详情" onClick={()=>setSelected(null)}>×</button></header><dl>{[["SKU",selected.sku],["批次",selected.batch],["平台与站点",selected.platform+" · "+selected.site],["平台商品ID",selected.productId],["上传时间",selected.time],["发布方式",selected.method]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><p>原提交版本与上传记录只读。演示数据未核验真实平台受理、审核或上架状态；后续上架请进入店铺商品。</p><footer><button type="button" onClick={()=>setSelected(null)}>返回商品列表</button></footer></section></div>}
+  {selected&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null);}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看商品详情"><header><div><small>已上传 / 查看商品</small><h2>{selected.name}</h2></div><button type="button" ref={closeDetail} aria-label="关闭商品详情" onClick={()=>setSelected(null)}>×</button></header><dl>{[["SKU",selected.sku],["批次",selected.batch],["平台与站点",selected.platform+" · "+selected.site],["平台商品ID",selected.productId],["上传时间",selected.time],["发布方式",selected.method],["平台状态",selected.method==="发布到草稿箱"?"平台草稿 · 未上架":"提交平台 · 审核中（演示）"]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><p>原提交版本与上传记录只读。演示数据未核验真实平台受理、审核或上架状态；后续上架请进入店铺商品。</p><footer><button type="button" onClick={()=>setSelected(null)}>返回商品列表</button></footer></section></div>}
  </div>;
 }
