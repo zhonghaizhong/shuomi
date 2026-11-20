@@ -141,3 +141,19 @@
   .page > .header h1 { font-size: 30px; line-height: 40px; }
   .page > .header p { font-size: 15px; line-height: 24px; }
 }
+
+
+/* Light-mode parity for the cards/dialog content omitted by the original theme. */
+:global(.light) .page :is(.mineGuide>div,.tags span,.empty,.notice),
+:global(.light) .dialog :is(.downloadDetails,.demoNote) {
+  color:#444050;background:#f8f7fb;border-color:#ddd9e9;
+}
+:global(.light) .page :is(.mineGuide>div strong,.mineGuide h3,.mineCard h2,.mineBar strong) {color:#444050;}
+:global(.light) .page :is(.mineGuide>div p,.tags span,.mineCard footer) {color:#6f6b7d;}
+:global(.light) .dialog :is(.downloadDetails dt,.demoNote p) {color:#6f6b7d;}
+:global(.light) .dialog :is(.downloadDetails dd,.downloadDetails strong,.demoNote strong,.heading h2) {color:#444050;}
+:global(.light) .page .enabled {color:#14764d;background:#e2f6e9;}
+:global(.light) .page .developing {color:#166c94;background:#e4f5fd;}
+:global(.light) .page .disabled {color:#696577;background:#f1f0f5;}
+:global(.light) .page .notice {background:#fff;}
+:global(.light) .page :is(.categories button[aria-pressed="true"],.statusFilter button[aria-pressed="true"]) {color:#fff;background:#7367f0;border-color:#7367f0;}
