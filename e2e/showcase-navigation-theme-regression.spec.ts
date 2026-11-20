@@ -80,3 +80,53 @@ test("light and dark modes apply to the document and interactive overlays", asyn
     await page.keyboard.press("Escape");
   }
 });
+
+
+test("light chat collections keep readable cards and controls", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(base + "/ai/chat/recent");
+  await page.getByRole("button", { name: "切换浅色主题" }).click();
+  const main = page.locator("main.showcase-content");
+  const search = main.getByPlaceholder("搜索会话标题或内容");
+  await expect(search).toBeVisible();
+  const rows = main.locator("article").filter({ hasText: "一号店转化率下降分析" });
+  await expect(rows).toBeVisible();
+  const appearance = await page.evaluate(() => {
+    const input = document.querySelector('input[placeholder="搜索会话标题或内容"]')!;
+    const list = input.closest("section")?.nextElementSibling ?? input.parentElement?.nextElementSibling;
+    const row = Array.from(document.querySelectorAll("article")).find(el => el.textContent?.includes("一号店转化率下降分析"))!;
+    const title = row.querySelector("strong")!;
+    const description = row.querySelector("p")!;
+    const rgb = (element: Element, prop: "color" | "backgroundColor") => getComputedStyle(element)[prop];
+    return { searchBg: rgb(input,"backgroundColor"), rowBg: rgb(row.parentElement!,"backgroundColor"), title: rgb(title,"color"), description: rgb(description,"color") };
+  });
+  expect(appearance.searchBg).not.toBe("rgb(37, 41, 60)");
+  expect(appearance.rowBg).not.toBe("rgb(47, 51, 73)");
+  expect(appearance.title).not.toBe("rgb(226, 226, 240)");
+  expect(appearance.description).not.toBe("rgb(172, 171, 193)");
+  await search.fill("美国宠物用品");
+  await main.getByRole("button", { name: "确定" }).click();
+  await expect(main.getByText("美国宠物用品选品分析")).toBeVisible();
+  await expect(main.getByText("一号店转化率下降分析")).toHaveCount(0);
+  await page.goto(base + "/ai/chat/saved");
+  await expect(main.locator("article").first()).toBeVisible();
+  const savedPanelColor = await main.locator("article").first().evaluate(el => getComputedStyle(el.parentElement!).backgroundColor);
+  expect(savedPanelColor).not.toBe("rgb(47, 51, 73)");
+});
+
+test("mobile navigation can be reopened after a viewport resize", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(base);
+  await page.getByRole("button", { name: "收窄侧栏" }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const open = page.getByRole("button", { name: "打开侧边栏" });
+  await expect(open).toBeVisible();
+  await open.click();
+  const shell = page.locator(".showcase-shell");
+  await expect(shell).toHaveAttribute("data-mobile-menu-open", "true");
+  await expect(page.getByRole("navigation", { name: "工作台导航" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(shell).not.toHaveAttribute("data-mobile-menu-open", "true");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(page.getByRole("button", { name: "展开侧栏" })).toBeVisible();
+});
