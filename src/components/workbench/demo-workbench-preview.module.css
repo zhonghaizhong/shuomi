@@ -2757,3 +2757,16 @@
 :global(.light) .page .supplyFlow article:nth-child(3) b {color:#9e5f17;}
 :global(.light) .page .accountModules article > span,
 :global(.light) .page .accountOverview article > span {color:#625d70;}
+
+
+/* Full-route light audit: shared footer actions and fallback placeholders. */
+:global(.light) .page .footer button {color:#6254c8;}
+:global(.light) .page .footer button:hover {color:#5144b9;}
+:global(.light) .page .unavailable {
+  color:#444050;background:#fff;border-color:#e3dfed;
+}
+:global(.light) .page .unavailable :is(h2,h3,strong) {color:#444050;}
+:global(.light) .page .unavailable :is(span,p,small) {color:#625d70;}
+:global(.light) .page .unavailable .secondary {color:#6254c8;background:#f3f1ff;border-color:#d9d2f7;}
+:global(.light) .page .supplyFlow article strong,
+:global(.light) .page .aiWorkbenchPreview .supplyFlow article strong {color:#444050;}
