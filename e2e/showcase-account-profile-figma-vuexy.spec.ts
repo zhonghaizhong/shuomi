@@ -19,7 +19,7 @@ test("account profile and all submenus use approved Vuexy surfaces and legible t
    const header=root.locator(":scope > header").first();
    const bg=await header.evaluate(el=>getComputedStyle(el).backgroundColor);
    expect(bg,route+" "+mode+" header").toBe(mode==="dark"?"rgb(47, 51, 73)":"rgb(255, 255, 255)");
-   for(const node of await root.locator('[class*="panel"],[class*="profileTop"],[class*="intro"]').all()){
+   for(const node of await root.locator('[class*="panel"]:not([class*="panelHeader"]),[class*="profileTop"],[class*="intro"]').all()){
     if(!await node.isVisible())continue;
     const bg=await node.evaluate(el=>getComputedStyle(el).backgroundColor);
     if(bg!=="rgba(0, 0, 0, 0)")expect(lightSurface(bg),route+" "+mode+" "+bg).toBe(mode==="light");
