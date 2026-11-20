@@ -133,3 +133,9 @@
   .page > .hero h1 { font-size: 30px; line-height: 40px; }
   .page > .hero p { font-size: 15px; line-height: 24px; }
 }
+
+
+/* Accent remains on vertical rails; light theme card text uses readable foregrounds. */
+:global(.light) .page :is(.note>span,.step h3,.capability h3,.entryTitle) {color:#444050;}
+:global(.light) .page :is(.step p,.note p,.capability p,.entryDescription) {color:#625d70;}
+:global(.light) .page .number {color:#6254c8;border-color:#7367f0;}
