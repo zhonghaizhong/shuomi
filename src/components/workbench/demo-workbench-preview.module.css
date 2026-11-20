@@ -2731,3 +2731,29 @@
   --sumi-fg-rose:#b52d3a;
   --sumi-fg-lavender:#6254c8;
 }
+
+
+/* Generic/placeholder workbench pages: light list actions and labels.
+   Shared by deep menu routes that intentionally show an introductory state. */
+:global(.light) .page .listHeading .eyebrow {color:#6254c8;}
+:global(.light) .page .listHeading :is(h2,strong) {color:#444050;}
+:global(.light) .page .listHeading button.secondary,
+:global(.light) .page .secondary {
+  color:#6254c8;
+  background:#f2efff;
+  border-color:#d9d2f7;
+}
+:global(.light) .page .secondary:hover {color:#5144b9;background:#eae6ff;border-color:#7367f0;}
+:global(.light) .page .row :is(.rowValue,.arrow) {color:#6254c8;}
+:global(.light) .page .row :is(.rowMain strong,.rowMain small) {color:#444050;}
+:global(.light) .page .row .rowMain small {color:#625d70;}
+:global(.light) .page .unavailable :is(p,small,span) {color:#625d70;}
+:global(.light) .page :is(.dataCard,.storeModule,.planBottom,.profileBanner) :is(button:not(.primary),a) {
+  color:#6254c8;
+}
+:global(.light) .page .dataCard :is(.secondary,.rowValue) {color:#6254c8;}
+:global(.light) .page .supplyFlow b {color:#176990;}
+:global(.light) .page .supplyFlow article:nth-child(2) b {color:#14764d;}
+:global(.light) .page .supplyFlow article:nth-child(3) b {color:#9e5f17;}
+:global(.light) .page .accountModules article > span,
+:global(.light) .page .accountOverview article > span {color:#625d70;}
