@@ -58,7 +58,7 @@ export function PreferredApplicationPreview({pathname}:{pathname:string}){
  const [focusedId,setFocusedId]=useState(isRecord?"SQ-20260815-003":"SQ-20260821-015");
  const [detailOpen,setDetailOpen]=useState<Product|null>(null);
  const [demoSubmitted,setDemoSubmitted]=useState(false);
- useEffect(()=>{try{const raw=sessionStorage.getItem(STORAGE);if(raw){const d=JSON.parse(raw);if(Array.isArray(d.selected))setSelected(d.selected);if(d.draft)setDraft(d.draft)}}catch{}},[]);
+ useEffect(()=>{try{const raw=sessionStorage.getItem(STORAGE);if(raw){const d=JSON.parse(raw);if(Array.isArray(d.selected))setSelected(d.selected);if(d.draft)setDraft(d.draft)}if(sessionStorage.getItem(STORAGE+"-edit")==="1"){setStep("supply");sessionStorage.removeItem(STORAGE+"-edit");}}catch{}},[]);
  const persist=(nextSelected:string[],nextSupply:Supply)=>{try{sessionStorage.setItem(STORAGE,JSON.stringify({selected:nextSelected,draft:nextSupply}))}catch{}};
  const go=(path:string)=>{setNotice("");router.push(base+path+"?preview=1")};
  const select=(sku:string)=>{const v=selected.includes(sku)?selected.filter(x=>x!==sku):[...selected,sku];setSelected(v);persist(v,draft);};
@@ -74,7 +74,7 @@ export function PreferredApplicationPreview({pathname}:{pathname:string}){
  const metrics=isRecord?[["9","全部记录","历史审核记录"],["8","已通过","审核已完成"],["1","未通过","可修改后重申"]]:isProgress?[["5","全部申请","申请总记录"],["1","待受理","等待平台处理"],["1","审核中","平台正在审核"],["1","已通过","审核已完成"],["2","未通过","可修改后重申"]]:[["34","可申请商品","符合申请条件"],["3","审核中","平台审核进行中"],["1","未通过","可修改后再申请"],["8","已通过","审核已完成"]];
  const title=isRecord?"申请记录":isProgress?"申请进度":isNew?(step==="select"?"选择申请商品":"填写供货信息"):"发起申请";
  const description=isRecord?"仅记录已完成审核的申请；未通过可查看原因、修改资料后重新申请。":isProgress?"查看每笔申请的审核状态，未通过可修改资料后重新提交。":isNew?(step==="select"?"从「已上传 · 自有商品库」中按合集名称及申请状态查询，选择可申请商品。":"填写供货、交付及合作信息，完成后提交优选申请审核。"):"将「已上传 · 自有商品库」中符合条件的商品提交优选申请。";
- const edit=()=>{setStep("supply");go("/new");setNotice("原审核记录保留；此处为演示草稿，尚未产生新的正式申请。");};
+ const edit=()=>{try{sessionStorage.setItem(STORAGE+"-edit","1")}catch{}go("/new");};
  return <div className={styles.page} data-preferred-application={isRecord?"records":isProgress?"progress":isNew?step:"overview"}>
    <SectionHead title={title} description={description}>
      {(isRecord||isProgress)?<button className={styles.primary} onClick={()=>{setStep("select");go("/new");}}>发起新申请</button>:
@@ -113,7 +113,7 @@ export function PreferredApplicationPreview({pathname}:{pathname:string}){
        <label className={styles.full}>供货价说明<textarea value={draft.pricing} onChange={e=>change("pricing",e.target.value)} placeholder="例如：含税 / 不含运费，可由专员进一步确认"/></label>
      </div></section><section className={styles.panel}><h2>合作与资质</h2><p>只保留平台评估所需的必要信息</p><div className={styles.fieldGrid}>
        <label className={styles.full}>售后政策<textarea required value={draft.returns} onChange={e=>change("returns",e.target.value)} placeholder="简要说明退换货及质量保障"/></label>
-       <label className={styles.full}>商品资质<input type="file" accept=".jpg,.jpeg,.png,.pdf" multiple onChange={e=>setAttachments([...e.target.files??[]].filter(x=>x.size<=20*1024*1024).map(x=>x.name))}/><small>支持 JPG / PNG / PDF，单个文件不超过 20MB</small>{attachments.length>0&&<small>已选择：{attachments.join("、")}</small>}</label>
+       <label className={styles.full}>商品资质<input type="file" accept=".jpg,.jpeg,.png,.pdf" multiple onChange={e=>setAttachments(Array.from(e.currentTarget.files??[]).filter(x=>x.size<=20*1024*1024).map(x=>x.name))}/><small>支持 JPG / PNG / PDF，单个文件不超过 20MB</small>{attachments.length>0&&<small>已选择：{attachments.join("、")}</small>}</label>
        <aside><b>服务说明</b><p>如涉及资料整理、技术对接或上架服务，专员将另行确认内容与费用。</p></aside>
      </div></section></div>
      <footer className={styles.formActions}><span>提交前请核对资料；平台需要补充时可在申请进度中处理。</span><button type="button" onClick={saveDraft}>保存草稿</button><button type="button" onClick={()=>setStep("select")}>返回选择商品</button><button className={styles.primary} type="submit">提交申请</button></footer>
