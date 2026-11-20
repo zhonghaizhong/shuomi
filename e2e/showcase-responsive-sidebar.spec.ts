@@ -241,6 +241,8 @@ test("listing four subpages share aligned Vuexy typography, cards and controls",
   await page.setViewportSize({width:1440,height:900});
   for(const route of ["waiting","missing","review","uploaded"]){
     await page.goto(entry+"/listing/"+route);
+    const enableDark=page.getByRole("button",{name:"切换深色主题"});
+    if(await enableDark.isVisible())await enableDark.click();
     const root=route==="uploaded"?page.locator("[data-showcase-uploaded]"):page.locator('[data-listing-stage="'+route+'"]');
     await expect(root).toBeVisible();
     const heading=root.locator("header").first();
