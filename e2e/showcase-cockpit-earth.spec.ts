@@ -481,3 +481,53 @@ test("new Chat conversation light theme never leaves dark input or mode panels",
   await page.getByRole("button",{name:"切换浅色主题"}).click();
   await expect(workspace.locator('[class*="_modePanel_"]')).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
 });
+
+
+test("chat context right rail collapses without overflow and restores in light/dark mode", async ({page}) => {
+  for(const size of [{width:1440,height:900},{width:820,height:900},{width:390,height:844}]){
+    await page.setViewportSize(size);
+    await page.goto("/shuomi/#/workbench/ai/chat/new");
+    const lightSwitch=page.getByRole("button",{name:"切换浅色主题"});
+    if(await lightSwitch.isVisible().catch(()=>false)) await lightSwitch.click();
+    await page.locator("#chat-new-prompt").fill("帮我整理本周店铺经营目标");
+    await page.locator("#chat-new-prompt").press("Control+Enter");
+    await expect(page.getByRole("complementary",{name:"会话上下文"})).toBeVisible();
+    const workspace=page.locator('[class*="_workspace_"]').first();
+    const panel=page.getByRole("complementary",{name:"会话上下文"});
+    if(size.width<=600)await page.getByRole("button",{name:"展开会话面板"}).click();
+    const collapse=page.getByRole("button",{name:"收起会话面板"});
+    await expect(panel).toBeVisible();
+    await expect(collapse).toBeVisible();
+    const expanded=await panel.boundingBox();
+    const sendButton=page.getByRole("button",{name:"发送消息"});
+    await sendButton.scrollIntoViewIfNeeded();
+    const sendHit=await sendButton.evaluate(el=>{const b=el.getBoundingClientRect();const hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return {clickable:hit===el || el.contains(hit),button:{x:b.x,y:b.y,width:b.width,height:b.height},hit:hit?.tagName+"."+(String(hit?.className||"").slice(0,80))};});
+    expect(sendHit.clickable,"right context must not overlap send button at "+size.width+": "+JSON.stringify(sendHit)).toBe(true);
+    await collapse.click();
+    await expect(workspace).toHaveAttribute("data-context-open","false");
+    await expect(panel).toHaveAttribute("data-collapsed","true");
+    await expect(page.getByRole("button",{name:"展开会话面板"})).toBeVisible();
+    await expect(panel.locator('[class*="_contextBody_"]')).toHaveCount(0);
+    const rail=await panel.boundingBox();
+    const toggle=await page.getByRole("button",{name:"展开会话面板"}).boundingBox();
+    expect(rail).not.toBeNull();expect(toggle).not.toBeNull();
+    if(size.width>1100)expect(rail!.width).toBeLessThan(expanded!.width);
+    else expect(rail!.height).toBeLessThan(expanded!.height);
+    expect(toggle!.x).toBeGreaterThanOrEqual(rail!.x-1);
+    expect(toggle!.x+toggle!.width).toBeLessThanOrEqual(rail!.x+rail!.width+1);
+    expect(toggle!.y).toBeGreaterThanOrEqual(rail!.y-1);
+    expect(toggle!.y+toggle!.height).toBeLessThanOrEqual(rail!.y+rail!.height+1);
+    if(size.width>1100)expect(rail!.width).toBeLessThanOrEqual(66);
+    await page.screenshot({path:"test-results/chat-context-collapsed-"+size.width+".png",fullPage:false});
+    await page.getByRole("button",{name:"展开会话面板"}).click();
+    await expect(workspace).toHaveAttribute("data-context-open","true");
+    await expect(panel.locator('[class*="_contextBody_"]')).toBeVisible();
+    await expect(page.getByRole("button",{name:"收起会话面板"})).toBeVisible();
+    if(size.width===1440){
+      await page.getByRole("button",{name:"切换深色主题"}).click();
+      await page.getByRole("button",{name:"收起会话面板"}).click();
+      await expect(panel).toHaveAttribute("data-collapsed","true");
+      await expect(page.getByRole("button",{name:"展开会话面板"})).toBeVisible();
+    }
+  }
+});

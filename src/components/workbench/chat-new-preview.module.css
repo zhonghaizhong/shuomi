@@ -220,3 +220,151 @@
 @media(max-width:1100px){.examples>div{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.workspace{grid-template-columns:1fr}.workspace:not([data-chat-active="true"]){height:auto;min-height:0}.workspace:not([data-chat-active="true"]) .composer{height:auto;min-height:520px}.workspace:not([data-chat-active="true"]) .modePanel{height:auto}.workspace:not([data-chat-active="true"]) .composer textarea{min-height:280px}.workspace:not([data-chat-active="true"]) .modePanel{min-height:0}.composer,.modePanel{min-height:0}.modePanel{padding:18px}.modeList{grid-template-columns:repeat(3,minmax(0,1fr))}.modeList button{min-height:54px;padding:10px}.examples{margin-top:2px}.workspace:not([data-chat-active="true"]) .examples>div{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.workspace{gap:12px}.workspace:not([data-chat-active="true"]) .composer{min-height:460px}.workspace:not([data-chat-active="true"]) .composer textarea{min-height:240px}.composer{padding:16px}.composerIntro h2{font-size:22px}.composerIntro p{font-size:14px}.composer textarea{min-height:180px;flex:none;padding:12px;font-size:15px}.composerFooter{align-items:stretch;flex-direction:column}.composerTools{flex-wrap:wrap}.sendGroup .primary{width:100%}.modeList{grid-template-columns:1fr 1fr;gap:8px}.modeList strong{font-size:13px}.examples>header{gap:8px}.examples h2{font-size:16px}.examples>header p{font-size:13px}.examples>div{grid-template-columns:1fr}.examples>div>button{min-height:86px;padding:12px}.drawer{padding:20px 16px 16px}.storeFilters{grid-template-columns:1fr}.drawerFooter{flex-wrap:wrap}.drawerFooter>span{width:100%}.scheduleFields{grid-template-columns:1fr}.scheduleFields>p{grid-column:auto}.confirmSummary{grid-template-columns:90px minmax(0,1fr)}}
+
+
+/* Right-hand context rail: compact, centered and consistent across themes.
+   Keep all collapsed contents out of the rail instead of clipping them. */
+.workspace[data-chat-active="true"][data-context-open="false"] {
+  grid-template-columns:minmax(0,1fr) 64px;
+}
+.workspace[data-chat-active="true"] .modePanel {
+  box-sizing:border-box;
+  min-width:0;
+}
+.workspace[data-chat-active="true"][data-context-open="false"] .modePanel {
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  width:100%;
+  overflow:hidden;
+  padding:12px 8px;
+}
+.workspace[data-chat-active="true"][data-context-open="false"] .contextHead {
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+}
+.contextToggle {
+  box-sizing:border-box;
+  display:inline-grid;
+  flex:0 0 36px;
+  width:36px;
+  height:36px;
+  place-items:center;
+  padding:0;
+  border:1px solid var(--cn-border-strong);
+  border-radius:8px;
+  background:var(--cn-raised);
+  color:var(--cn-text);
+  cursor:pointer;
+  transition:background-color .16s,border-color .16s,color .16s;
+}
+.contextToggle:hover {
+  color:var(--cn-link);
+  border-color:var(--cn-primary);
+  background:var(--cn-hover);
+}
+.contextToggle:focus-visible {outline:2px solid var(--cn-primary);outline-offset:2px;}
+.contextToggle svg {display:block;flex:none;}
+:global(.light) .workspace .contextToggle {
+  color:#6254c8;
+  border-color:#d9d2f7;
+  background:#f3f1ff;
+}
+:global(.light) .workspace .contextToggle:hover {
+  color:#5144b9;
+  border-color:#7367f0;
+  background:#eae6ff;
+}
+@media (max-width:900px) and (min-width:601px) {
+  .workspace[data-chat-active="true"][data-context-open="false"] {
+    grid-template-columns:minmax(0,1fr) 64px;
+  }
+}
+@media (max-width:600px) {
+  .workspace[data-chat-active="true"][data-context-open="false"] {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(0,1fr) 56px;
+  }
+  .workspace[data-chat-active="true"][data-context-open="false"] .modePanel {
+    box-sizing:border-box;
+    width:100%;
+    height:56px;
+    min-height:56px;
+    padding:8px 12px;
+    justify-content:center;
+  }
+  .workspace[data-chat-active="true"][data-context-open="false"] .contextHead {
+    justify-content:flex-end;
+  }
+}
+
+
+/* Mobile chat is a vertical document, not a fixed-height desktop grid.
+   Let the composer grow so the context panel cannot cover its footer/send button. */
+@media (max-width:600px) {
+  .workspace[data-chat-active="true"],
+  .workspace[data-chat-active="true"][data-context-open="false"] {
+    height:auto;
+    min-height:0;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(560px,auto) auto;
+    align-items:stretch;
+  }
+  .workspace[data-chat-active="true"] .composer {
+    box-sizing:border-box;
+    height:auto;
+    min-height:560px;
+  }
+  .workspace[data-chat-active="true"] .modePanel {
+    position:relative;
+    box-sizing:border-box;
+    height:auto;
+    max-height:none;
+    min-height:0;
+  }
+  .workspace[data-chat-active="true"][data-context-open="false"] .modePanel {
+    height:56px;
+    min-height:56px;
+  }
+}
+
+
+/* Mid-width desktop/tablet workbench has a persistent left navigation.
+   Stacking is required here: a 260px right column would overlap the send button. */
+@media (min-width:601px) and (max-width:1100px) {
+  .workspace[data-chat-active="true"],
+  .workspace[data-chat-active="true"][data-context-open="false"] {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(560px,auto) auto;
+    height:auto;
+    min-height:0;
+  }
+  .workspace[data-chat-active="true"] .composer {
+    box-sizing:border-box;
+    min-height:560px;
+    height:auto;
+  }
+  .workspace[data-chat-active="true"] .modePanel {
+    position:relative;
+    width:100%;
+    min-height:0;
+    height:auto;
+    max-height:none;
+  }
+  .workspace[data-chat-active="true"][data-context-open="false"] .modePanel {
+    height:56px;
+    min-height:56px;
+    padding:8px 12px;
+    justify-content:center;
+  }
+  .workspace[data-chat-active="true"][data-context-open="false"] .contextHead {
+    justify-content:flex-end;
+  }
+}
