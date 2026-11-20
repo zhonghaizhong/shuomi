@@ -15,7 +15,7 @@ const steps=[
  {title:"优选合作",detail:"符合条件的商品可提交优选申请"},
 ];
 
-export function SupplyOverview({marketAvailable,preparationAvailable}:{marketAvailable:boolean;preparationAvailable:boolean}){
+export function SupplyOverview({marketAvailable}:{marketAvailable:boolean;preparationAvailable:boolean}){
  const context=useWorkbenchContext();
  const scope=context.user&&context.effectiveOrganization?{userId:context.user.id,organizationId:context.effectiveOrganization.id}:null;
  const ready=marketAvailable&&!!scope&&!context.isLoading&&!context.isSwitching&&!context.selectionRequired&&!context.error&&!context.blockingError;
