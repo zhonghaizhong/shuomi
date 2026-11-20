@@ -49,14 +49,13 @@ export const consoleNavigation: readonly ConsoleNavNode[] = [
   pending("生态服务", "services", [pending("服务市场", "services/market"), pending("我的服务", "services/mine"), pending("申请加入", "services/join")]),
   pending("数据服务", "data", [pending("数据市场", "data/market"), pending("API管理", "data/api"), pending("我的数据", "data/mine")]),
   pending("店铺中心", "store-center", [
-    { label: "我的店铺", href: "/workbench/stores", availability: "connected", children: [
-      {label:"我的刊登",href:listingHome,availability:"connected",children:[
-        {label:"待上传",href:"/workbench/listing/waiting",availability:"connected"},
-        {label:"待补全",href:"/workbench/listing/missing",availability:"connected"},
-        {label:"待审核",href:"/workbench/listing/review",availability:"connected"},
-        {label:"已上传",href:"/workbench/listing/uploaded",availability:"connected"},
-      ]},
-    ] },
+    { label: "我的店铺", href: "/workbench/stores", availability: "connected" },
+    {label:"我的刊登",href:listingHome,availability:"connected",children:[
+      {label:"待上传",href:"/workbench/listing/waiting",availability:"connected"},
+      {label:"待补全",href:"/workbench/listing/missing",availability:"connected"},
+      {label:"待审核",href:"/workbench/listing/review",availability:"connected"},
+      {label:"已上传",href:"/workbench/listing/uploaded",availability:"connected"},
+    ]},
     pending("店铺商品", "store-products"),
   ]),
   pending("订单管理", "store-orders", [
