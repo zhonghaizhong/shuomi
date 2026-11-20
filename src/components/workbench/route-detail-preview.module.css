@@ -1101,3 +1101,18 @@
 :global(.light) .page .projectRow > span:last-child {color:#6254c8;}
 :global(.light) .page .reportRow :is(span,strong,small) {color:#444050;}
 :global(.light) .page .reportRow small {color:#625d70;}
+
+
+/* High-specificity light override for nested skill and knowledge collection cards. */
+:global(.light) .page.libraryDetailPreview .card :is(h2,h3,strong) {color:#444050;}
+:global(.light) .page.libraryDetailPreview .card p {color:#625d70;}
+:global(.light) .page.libraryDetailPreview .skillItem,
+:global(.light) .page.libraryDetailPreview .skillTeamEmpty,
+:global(.light) .page.libraryDetailPreview .knowledgeMineEmpty {
+  color:#444050;background:#fff;border-color:#e3dfed;
+}
+:global(.light) .page.libraryDetailPreview .skillItem h3,
+:global(.light) .page.libraryDetailPreview .skillTeamEmpty h2 {color:#444050;}
+:global(.light) .page.libraryDetailPreview .skillItem p,
+:global(.light) .page.libraryDetailPreview .skillTeamEmpty p {color:#625d70;}
+:global(.light) .page.libraryDetailPreview .skillItem .knowledgeTag {color:#14764d;background:#e4f7ec;}
