@@ -1337,3 +1337,34 @@
     border-color:var(--sidebar-border);
   }
 }
+
+
+/* Fourth-level supply chain stages under Store Center > My Stores > My Supply Chain. */
+.console-theme .console-sidebar .console-nav-level-3 > ul {
+  margin: 2px 0 6px 6px;
+  padding-left: 8px;
+  border-left: 1px solid var(--sidebar-border);
+}
+.console-theme .console-sidebar .console-nav-level-4 > .console-nav-row {
+  min-height: 30px;
+  border-radius: 6px;
+}
+.console-theme .console-sidebar .console-nav-level-4 > .console-nav-row > a {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 30px;
+  padding: 5px 7px;
+  font-size: var(--label-text-size);
+  color: var(--sidebar-foreground);
+  white-space: nowrap;
+}
+.console-theme .console-sidebar .console-nav-level-4 > .console-nav-row > a:hover {
+  background: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+}
+.console-theme .console-sidebar .console-nav-level-4 > .console-nav-row > a[aria-current="page"] {
+  color: var(--primary);
+  background: var(--sidebar-accent);
+  font-weight: 650;
+}
