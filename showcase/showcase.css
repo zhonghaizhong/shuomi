@@ -303,6 +303,11 @@ button { font: inherit; }
     background:var(--sidebar);
     justify-content:space-between;align-items:center;
   }
+  .showcase-shell > .showcase-sidebar .console-sidebar-head .console-brand {
+    display:flex !important;width:auto !important;height:60px !important;
+    min-width:0;min-height:0 !important;flex:1 1 auto !important;
+    justify-content:flex-start !important;gap:10px;
+  }
   .showcase-shell > .showcase-sidebar .console-brand-label {
     display:block !important;position:static !important;clip-path:none !important;
     width:auto !important;height:auto !important;overflow:visible !important;
