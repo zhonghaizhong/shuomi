@@ -4,6 +4,8 @@ const preferredRoutes=["/supply/applications","/supply/applications/new","/suppl
 const url=(route:string)=>"/shuomi/#/workbench"+route;
 const channels=(color:string)=>color.match(/\d+(?:\.\d+)?/g)?.slice(0,3).map(Number)??[];
 const pale=(color:string)=>{const c=channels(color);return c.length===3&&c.every(n=>n>=220);};
+const turnLight=async(page:any)=>{const b=page.getByRole("button",{name:"切换浅色主题"});if(await b.count())await b.click();};
+const turnDark=async(page:any)=>{const b=page.getByRole("button",{name:"切换深色主题"});if(await b.count())await b.click();};
 const contrast=(a:string,b:string)=>{
  const lum=(v:string)=>{const c=channels(v).map(n=>{const x=n/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return c.length===3?c[0]*.2126+c[1]*.7152+c[2]*.0722:0;};
  const [x,y]=[lum(a),lum(b)].sort((a,b)=>b-a);return(x+.05)/(y+.05);
@@ -12,13 +14,14 @@ test("cargo integration routes keep theme-consistent surfaces",async({page})=>{
  test.setTimeout(130000);
  for(const route of catalogRoutes){
   await page.goto(url(route));
+  await turnDark(page);
   const root=page.locator('[class*="supplyDetailPreview"]');
   await expect(root).toBeVisible();
   const first=root.locator('[class*="header"],[class*="filterBox"],[class*="twoCards"]>article').first();
   await expect(first).toBeVisible();
   let bg=await first.evaluate(el=>getComputedStyle(el).backgroundColor);
   expect(pale(bg),route+" dark").toBeFalsy();
-  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  await turnLight(page);
   bg=await first.evaluate(el=>getComputedStyle(el).backgroundColor);
   expect(pale(bg),route+" light").toBeTruthy();
  }
@@ -27,6 +30,7 @@ test("Figma preferred application submenus have legible dark/light card, text an
  test.setTimeout(150000);
  for(const route of preferredRoutes){
   await page.goto(url(route));
+  await turnDark(page);
   const root=page.locator("[data-preferred-application]");
   await expect(root,route).toBeVisible();
   const panel=root.locator('[class*="heading"]').first();
