@@ -160,3 +160,21 @@
 :global(.light) .conversationLink + .conversationLink {border-top-color:#ece9f3;}
 :global(.light) .conversationLink:hover {background:#f3f1ff;}
 :global(.light) .openConversation {color:#6254c8;}
+
+
+/* Shadcn outline actions inside Chat introduction inherited a dark button surface
+   even when the containing landing card was white. */
+:global(.light) .landingCard .entryActions :is(a,button) {
+  color:#6254c8;
+  background:#f3f1ff;
+  border:1px solid #dcd6f5;
+}
+:global(.light) .landingCard .entryActions :is(a,button):hover {
+  color:#5144b9;
+  background:#eae6ff;
+  border-color:#7367f0;
+}
+:global(.light) .landingCard .entryActions :is(a,button):focus-visible {
+  outline:2px solid #7367f0;
+  outline-offset:2px;
+}
