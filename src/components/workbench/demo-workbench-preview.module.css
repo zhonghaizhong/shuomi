@@ -2643,3 +2643,35 @@
 :global(.light) .libraryHubPreview[data-library-hub="projects"] .rowMain strong,
 :global(.light) .libraryHubPreview[data-library-hub="projects"] .listHeading h2 {color:#444050;}
 :global(.light) .libraryHubPreview[data-library-hub="projects"] .metrics > article > strong {font-weight:750;}
+
+/* Supply market overview: complete light-mode hierarchy for catalogs and preferred applications. */
+:global(.light) .supplyPreview {color:#444050;}
+:global(.light) .supplyPreview :is(.header,.supplyFlow,.supplyCard,.unavailable) {
+  background:#fff;
+  border-color:#e3dfed;
+}
+:global(.light) .supplyPreview :is(.header h1,.supplyCard h2,.unavailable h2) {color:#444050;}
+:global(.light) .supplyPreview :is(.header p,.supplyFlow span,.supplyCard p,.supplyFoot span,.unavailable p,.unavailable small) {
+  color:#625d70;
+}
+:global(.light) .supplyPreview .supplyFlow article {border-color:#e3dfed;}
+:global(.light) .supplyPreview .supplyFlow b {
+  background:color-mix(in srgb,var(--accent,#7367f0),#fff 89%);
+  color:#6254c8;
+}
+:global(.light) .supplyPreview .supplyCard header span {
+  color:#625d70;
+  border-color:#e3dfed;
+  background:#f8f7fa;
+}
+:global(.light) .supplyPreview .supplyFoot,
+:global(.light) .supplyPreview .supplyPills span {
+  background:#f8f7fa;
+  border-color:#e3dfed;
+  color:#444050;
+}
+:global(.light) .supplyPreview .supplyCard button:not(:disabled) {
+  background:#7367f0;
+  color:#fff;
+  border-color:#7367f0;
+}
