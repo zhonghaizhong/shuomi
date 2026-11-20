@@ -374,7 +374,7 @@ test("light mode has no severely invisible ordinary text across sampled workbenc
           const cs=getComputedStyle(anc);
           if(cs.backgroundImage!=="none"){complex=true;break;}
           const v=cs.backgroundColor;
-          const alpha=v.startsWith("rgba(") ? Number(v.match(/,\\s*([\\d.]+)\\)$/)?.[1]??1) : 1;
+          const alpha=v.startsWith("rgba(") ? Number(v.match(/,\s*([\d.]+)\)$/)?.[1]??1) : 1;
           if(v && alpha>=.98 && v!=="transparent") {
             const c=rgb(v);
             if(c){bg=c;break;}
