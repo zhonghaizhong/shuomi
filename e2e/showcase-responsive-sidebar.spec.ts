@@ -101,29 +101,33 @@ test("light-mode chat collections never retain dark background colors", async ({
   }
 });
 
-test("supply market navigation mirrors Figma nested structure", async ({ page }) => {
+test("my supply chain and all stages are nested beneath my stores", async ({ page }) => {
   await page.setViewportSize({width:1440,height:900});
   await page.goto(entry);
   const nav=page.getByRole("navigation",{name:"工作台导航"});
-  const supply=nav.getByRole("button",{name:"展开供应市场"});
-  await supply.click();
-  for(const label of ["硕米自营","硕米优选","货盘集成","我的供应链","优选申请"]) {
+  await nav.getByRole("button",{name:"展开供应市场"}).click();
+  for(const label of ["硕米自营","硕米优选","货盘集成","优选申请"]) {
     await expect(nav.getByRole("link",{name:label,exact:true})).toBeVisible();
   }
-  await expect(nav.getByRole("link",{name:"在线采集",exact:true})).toHaveCount(0);
-  for (const [parent,labels,route] of [
-    ["货盘集成",["货盘选品","申请对接"],"/supply/catalogs/selection"],
-    ["我的供应链",["待上传","待补全","待审核","已上传"],"/listing/waiting"],
-    ["优选申请",["发起申请","申请记录"],"/supply/applications/records"],
-  ] as const) {
-    await nav.getByRole("button",{name:`展开${parent}`}).click();
-    for(const label of labels){
-      await expect(nav.getByRole("link",{name:label,exact:true})).toBeVisible();
-    }
-    await nav.locator(`a[href$="#/workbench${route}"]`).click();
-    await expect(page).toHaveURL(new RegExp(`#/workbench${route.replaceAll("/","\\\\/")}`));
+  await expect(nav.getByRole("link",{name:"我的供应链",exact:true})).toHaveCount(0);
+  await nav.getByRole("button",{name:"展开店铺中心"}).click();
+  await nav.getByRole("button",{name:"展开我的店铺"}).click();
+  await expect(nav.getByRole("link",{name:"我的供应链",exact:true})).toBeVisible();
+  await nav.getByRole("button",{name:"展开我的供应链"}).click();
+  const stages = [
+    ["待上传","waiting"],
+    ["待补全","missing"],
+    ["待审核","review"],
+    ["已上传","uploaded"],
+  ] as const;
+  for(const [label,route] of stages) {
+    const stage=nav.getByRole("link",{name:label,exact:true});
+    await expect(stage).toBeVisible();
+    await stage.click();
+    await expect(page).toHaveURL(new RegExp("#/workbench/listing/"+route+"(?:\\\\?|$)"));
     await expect(page.locator("main.showcase-content")).toBeVisible();
-    await nav.getByRole("button",{name:`收起${parent}`}).click();
-    await expect(nav.getByRole("button",{name:`展开${parent}` })).toBeVisible();
+    await expect(nav.getByRole("button",{name:"收起我的供应链"})).toBeVisible();
   }
+  await nav.getByRole("button",{name:"收起我的供应链"}).click();
+  await expect(nav.getByRole("button",{name:"展开我的供应链"})).toBeVisible();
 });
