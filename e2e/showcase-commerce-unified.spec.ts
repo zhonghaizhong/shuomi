@@ -106,7 +106,7 @@ test("Figma account navigation, enterprise roles and referrals keep correct rout
   await expect(link).toBeVisible();
   await link.click();
   await expect(page).toHaveURL(new RegExp("#/workbench/account/organization/"+route));
-  await expect(page.getByRole("heading",{level:1,name:route==="members"?"成员与权限":label})).toBeVisible();
+  await expect(page.getByRole("heading",{level:1,name:route==="members"||route==="roles"?"成员与权限":label})).toBeVisible();
  }
  await page.goto(root+"/account/organization");
  for(const heading of ["成员管理","角色权限","资源与额度","操作记录"]){
