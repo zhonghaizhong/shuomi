@@ -875,3 +875,7 @@
 :global(.light) .page .orderTableRow>small {color:#9e5f17;}
 :global(.light) .page[data-commerce-unified] :is(.metrics span,.metrics small,.productMetrics article>div,.orderMetrics article>div) {color:#625d70;}
 :global(.light) .page[data-commerce-unified] :is(.metrics strong,.productMetrics strong,.orderMetrics strong) {color:#444050;}
+
+
+/* Product listing and order tab subtitle text. */
+:global(.light) .page :is(.productTabs small,.orderTabs small,.productTable > header small,.productFilters small,.orderTable > header small) {color:#625d70;}
