@@ -1684,3 +1684,39 @@
 @media(max-width:620px){
  .page[data-commerce-unified="account"] .accountReferralLink {grid-template-columns:minmax(0,1fr);}
 }
+
+
+/* Account enterprise storage and audit timeline details. */
+.page[data-commerce-unified="account"] :is(.accountResourceInfo,.accountAuditRecent) {
+  display:grid;gap:12px;min-width:0;
+  padding:22px 24px;border:1px solid var(--account-line);
+  border-radius:7px;background:var(--account-card);
+}
+.page[data-commerce-unified="account"] :is(.accountResourceInfo,.accountAuditRecent)>header {
+  display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+}
+.page[data-commerce-unified="account"] :is(.accountResourceInfo,.accountAuditRecent) h2 {
+  margin:0;color:var(--account-text);font-size:20px;font-weight:600;
+}
+.page[data-commerce-unified="account"] :is(.accountResourceInfo,.accountAuditRecent) :is(p,small) {
+  margin:0;color:var(--account-muted);font-size:14px;line-height:1.6;
+}
+.page[data-commerce-unified="account"] .accountResourceInfo p {
+  padding:12px 15px;border:1px solid var(--account-line);
+  border-radius:6px;background:var(--account-sub);color:var(--account-text);
+}
+.page[data-commerce-unified="account"] .accountAuditRecent article {
+  display:flex;align-items:center;gap:18px;min-height:52px;
+  padding:12px 16px;border-bottom:1px solid var(--account-line);
+}
+.page[data-commerce-unified="account"] .accountAuditRecent article:last-child {border-bottom:0;}
+.page[data-commerce-unified="account"] .accountAuditRecent article b {
+  min-width:165px;color:var(--account-text);font-size:14px;font-weight:600;
+}
+.page[data-commerce-unified="account"] .accountAuditRecent article span {
+  color:var(--account-muted);font-size:14px;line-height:1.5;
+}
+@media(max-width:620px){
+ .page[data-commerce-unified="account"] :is(.accountResourceInfo,.accountAuditRecent){padding:16px;}
+ .page[data-commerce-unified="account"] .accountAuditRecent article{display:grid;gap:3px;}
+}
