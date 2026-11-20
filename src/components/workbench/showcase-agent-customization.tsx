@@ -71,7 +71,7 @@ export function ShowcaseAgentCustomization({ pathname, navigate }: { pathname: s
         <h3>基本信息</h3>
         <div className={styles.two}>
           <label>需求名称 *<input aria-label="需求名称" required placeholder="例如：SHEIN商品批量优化智能体" maxLength={100} value={data.name} onChange={e=>setData(p=>({...p,name:e.target.value}))}/></label>
-          <label>主要使用场景 *<input aria-label="主要使用场景" required placeholder="请选择使用场景" maxLength={100} value={data.scenario} onChange={e=>setData(p=>({...p,scenario:e.target.value}))}/></label>
+          <label>主要使用场景 *<select aria-label="主要使用场景" required value={data.scenario} onChange={e=>setData(p=>({...p,scenario:e.target.value}))}><option value="">请选择使用场景</option><option>商品与供应链管理</option><option>店铺经营与运营</option><option>数据分析与决策</option><option>其他业务流程</option></select></label>
         </div>
         <fieldset className={styles.directions}><legend>定制方向 *</legend>{["商品与供应链","店铺运营","数据分析","其他"].map(v=><button type="button" key={v} aria-pressed={direction===v} onClick={()=>setDirection(v)}>{v}</button>)}</fieldset>
         <h3>需求描述</h3>
