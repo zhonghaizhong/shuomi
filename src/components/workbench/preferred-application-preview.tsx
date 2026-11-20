@@ -9,11 +9,14 @@ type Product={sku:string;name:string;group:string;source:string;category:string;
 type RecordRow={id:string;count:number;date:string;status:Exclude<Status,"可申请">;note:string};
 const items:Product[]=[
  {sku:"OWN-240824-001",name:"轻量防晒连帽外套",group:"新品开发",source:"手动上传",category:"服装",status:"可申请"},
- {sku:"OWN-240824-002",name:"多功能折叠收纳箱",group:"核心商品",source:"企业商品库",category:"家居",status:"可申请"},
- {sku:"OWN-240824-003",name:"轻奢链条单肩包",group:"箱包配件",source:"手动上传",category:"箱包",status:"可申请"},
- {sku:"OWN-240823-004",name:"陶瓷餐具礼盒套装",group:"家居系列",source:"企业商品库",category:"家居",status:"可申请"},
- {sku:"OWN-240823-ERP",name:"示例审核中商品",group:"核心商品",source:"工具市场插件",category:"家居",status:"审核中"},
- {sku:"OWN-240823-PLG",name:"示例未通过商品",group:"家居系列",source:"手动上传",category:"家居",status:"未通过"}
+ {sku:"OWN-240824-002",name:"多功能折叠收纳箱",group:"核心商品",source:"企业商品库",category:"家居",status:"审核中"},
+ {sku:"OWN-240823-ERP",name:"陶瓷餐具礼盒套装",group:"家居系列",source:"工具市场插件",category:"家居",status:"已通过"},
+ {sku:"OWN-240823-PLG",name:"轻奢链条单肩包",group:"箱包配件",source:"手动上传",category:"箱包",status:"未通过"}
+];
+const overviewItems=[
+ {sku:"OWN-240824-001",name:"轻量防晒连帽外套",group:"新品开发"},
+ {sku:"OWN-240824-002",name:"多功能折叠收纳箱",group:"核心商品"},
+ {sku:"OWN-240824-003",name:"轻奢链条单肩包",group:"箱包配件"}
 ];
 const pending:RecordRow[]=[
  {id:"SQ-20260824-001",count:4,date:"08月24日 10:30",status:"审核中",note:"平台正在审核，请以正式业务系统反馈为准。"},
@@ -90,19 +93,18 @@ export function PreferredApplicationPreview({pathname}:{pathname:string}){
         <article><h2>申请流程</h2><p>提交后由专员联系并完成评估</p><div className={styles.flow}>{["选择商品","供货信息","平台评估","确认合作"].map((t,i)=><div key={t}><b>{String(i+1).padStart(2,"0")}</b><span>{t}</span></div>)}</div></article>
       </section>
       <section className={styles.infoBanner}><div><b>服务说明</b><p>如涉及商品资料整理、系统技术对接或上架服务，将由专员确认具体服务内容及费用。</p></div><button onClick={()=>go("/progress")}>查看申请进度</button></section>
-      <section className={styles.panel}><div className={styles.panelHeading}><h2>可申请商品</h2><span>仅显示自有商品库 · 已上传</span></div><div className={styles.tableScroll}><table><thead><tr><th>商品</th><th>所属分组</th><th>商品归属 / 上传状态</th><th>申请状态</th></tr></thead><tbody>{items.filter(p=>p.status==="可申请").slice(0,3).map(p=><tr key={p.sku}><td><strong>{p.name}</strong><small>SKU {p.sku}</small></td><td>{p.group}</td><td>自有商品库 · 已上传</td><td><StatusLabel status={p.status}/></td></tr>)}</tbody></table></div></section>
+      <section className={styles.panel}><div className={styles.panelHeading}><h2>可申请商品</h2><span>仅显示自有商品库 · 已上传</span></div><div className={styles.tableScroll}><table><thead><tr><th>商品</th><th>所属分组</th><th>商品归属 / 上传状态</th><th>申请状态</th></tr></thead><tbody>{overviewItems.map(p=><tr key={p.sku}><td><strong>{p.name}</strong><small>SKU {p.sku}</small></td><td>{p.group}</td><td>自有商品库 · 已上传</td><td><StatusLabel status={p.status}/></td></tr>)}</tbody></table></div></section>
    </>}
    {isNew && (step==="select"?<>
-     <section className={styles.filterPanel}><div className={styles.filters}>
-       <label>商品来源<select value={source} onChange={e=>setSource(e.target.value)}>{["全部来源","手动上传","企业商品库","工具市场插件"].map(x=><option key={x}>{x}</option>)}</select></label>
-       <label>自定义分类<select value={category} onChange={e=>setCategory(e.target.value)}>{["全部分类","服装","家居","箱包"].map(x=><option key={x}>{x}</option>)}</select></label>
-       <label>所属分组<select value={group} onChange={e=>setGroup(e.target.value)}>{["全部分组","新品开发","核心商品","箱包配件","家居系列"].map(x=><option key={x}>{x}</option>)}</select></label>
-       <label>申请状态<select value={status} onChange={e=>setStatus(e.target.value)}>{["全部状态","可申请","待受理","审核中","已通过","未通过"].map(x=><option key={x}>{x}</option>)}</select></label>
-     </div><div className={styles.searchActions}><input aria-label="搜索商品名称或SKU" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")setFilter({search,status,source,category,group});}} placeholder="搜索合集名称、商品名称或SKU"/><button onClick={reset}>重置</button><button className={styles.primary} onClick={()=>setFilter({search,status,source,category,group})}>确认</button></div></section>
+     <section className={styles.filterPanel}><div className={styles.filters}><label><select aria-label="筛选申请状态" value={status} onChange={e=>setStatus(e.target.value)}>{["全部状态","可申请","审核中","已通过","未通过"].map(x=><option key={x}>{x}</option>)}</select></label></div><div className={styles.searchActions}><input aria-label="搜索商品名称或SKU" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")setFilter({search,status,source,category,group});}} placeholder="搜索合集名称、商品名称或SKU"/><button onClick={reset}>重置</button><button className={styles.primary} onClick={()=>setFilter({search,status,source,category,group})}>确认</button></div></section>
      <section className={styles.panel}><div className={styles.panelHeading}><h2>自有商品库 · 已上传</h2><span>符合条件 · 4 件示例</span></div>
        <div className={styles.selectionSummary}><strong>已选择 {selected.length} 件</strong><span>请点击商品右侧「发起申请」填写供货信息。</span><button className={styles.primary} onClick={advance} disabled={!selected.length}>填写供货信息</button></div>
        <div className={styles.tableScroll}><table><thead><tr><th className={styles.checkboxCol}><input type="checkbox" aria-label="全选可申请商品" checked={items.filter(p=>p.status==="可申请").every(p=>selected.includes(p.sku))} onChange={e=>{const skus=items.filter(p=>p.status==="可申请").map(p=>p.sku),v=e.target.checked?[...new Set([...selected,...skus])]:selected.filter(x=>!skus.includes(x));setSelected(v);persist(v,draft);}}/></th><th>商品（全选可申请）</th><th>上传状态 / 商品归属</th><th>所属分组</th><th>申请状态</th><th>操作</th></tr></thead>
-       <tbody>{rows.map(p=><tr key={p.sku}><td><input type="checkbox" aria-label={"选择"+p.name} disabled={p.status!=="可申请"} checked={selected.includes(p.sku)} onChange={()=>select(p.sku)}/></td><td><strong>{p.name}</strong><small>SKU {p.sku}</small></td><td>已上传 · 自有商品库</td><td>{p.group}</td><td><StatusLabel status={p.status}/></td><td><button className={styles.textButton} onClick={()=>{if(p.status!=="可申请"){setDetailOpen(p);return;}const next=selected.includes(p.sku)?selected:[...selected,p.sku];setSelected(next);persist(next,draft);setNotice("");setStep("supply");}}>{p.status==="可申请"?"发起申请":"查看详情"}</button></td></tr>)}</tbody></table>{!rows.length&&<p className={styles.empty}>无符合条件的商品，请重置筛选。</p>}</div>
+       <tbody>{rows.map(p=><tr key={p.sku}><td><input type="checkbox" aria-label={"选择"+p.name} disabled={p.status!=="可申请"} checked={selected.includes(p.sku)} onChange={()=>select(p.sku)}/></td><td><strong>{p.name}</strong><small>SKU {p.sku}</small></td><td>已上传 · 自有商品库</td><td>{p.group}</td><td><StatusLabel status={p.status}/></td><td>{p.status==="可申请"?
+ <button className={styles.primary} onClick={()=>{const next=selected.includes(p.sku)?selected:[...selected,p.sku];setSelected(next);persist(next,draft);setNotice("");setStep("supply");}}>发起申请</button>:
+ p.status==="审核中"?<button className={styles.textButton} onClick={()=>go("/progress")}>查看进度</button>:
+ p.status==="已通过"?<button className={styles.textButton} onClick={()=>go("/records")}>查看结果</button>:
+ <><button className={styles.textButton} onClick={()=>setDetailOpen(p)}>查看原因</button><button className={styles.primary} onClick={()=>{const next=selected.includes(p.sku)?selected:[...selected,p.sku];setSelected(next);persist(next,draft);setStep("supply");}}>再次发起申请</button></>}</td></tr>)}</tbody></table>{!rows.length&&<p className={styles.empty}>无符合条件的商品，请重置筛选。</p>}</div>
      </section>
    </>:<form className={styles.form} onSubmit={submit}><div className={styles.selectionSummary}><strong>已选择 {selected.length} 件</strong><span>所选商品统一用于本次申请，请继续补充供货与合作信息。</span><button type="button" onClick={()=>setStep("select")}>返回修改商品</button></div>
      <div className={styles.formColumns}><section className={styles.panel}><h2>供货与交付</h2><p>填写本次申请统一适用的基础供货信息</p><div className={styles.fieldGrid}>
