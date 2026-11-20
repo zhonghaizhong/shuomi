@@ -118,7 +118,7 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
     if (label.startsWith("筛选") || label.startsWith("搜索")) return;
     if (label === "查看原预警") { router.push("/workbench/overview/alerts?preview=1"); return; }
     if (label.includes("导出")) {
-      const cell = (v: string | undefined) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+      const cell = (v: string | undefined) => { const raw=String(v ?? ""); const safe=/^[=+\-@\t\r]/.test(raw) ? "'" + raw : raw; return '"' + safe.replace(/"/g, '""') + '"'; };
       const data = [["名称","说明","数值","状态"], ...rows.map(row => [row.title,row.detail,row.value ?? "",row.state ?? ""])];
       const blob = new Blob(["\uFEFF" + data.map(row => row.map(cell).join(",")).join("\r\n")], {type:"text/csv;charset=utf-8"});
       const url = URL.createObjectURL(blob);
