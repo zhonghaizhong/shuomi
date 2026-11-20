@@ -1,0 +1,101 @@
+"use client";
+
+import {useEffect,useState,type FormEvent} from "react";
+import {useRouter} from "next/navigation";
+import styles from "./account-profile-preview.module.css";
+
+const base="/workbench/account/profile";
+type Business={roles:string[];shops:string;platforms:string[];sites:string[];types:string[];supply:string[];services:string[];other:string};
+type Account={name:string;country:string;province:string;city:string};
+const defaultAccount:Account={name:"sumi_demo",country:"中国大陆",province:"浙江省",city:"杭州市"};
+const defaultBusiness:Business={roles:["跨境电商卖家"],shops:"已有店铺",platforms:["Amazon","SHEIN"],sites:["美国站"],types:["自营店"],supply:["有自有工厂"],services:["选品分析","店铺运营"],other:""};
+const keys={account:"shuomi-demo-account-settings",business:"shuomi-demo-business-profile"};
+const read=<T,>(key:string,fallback:T):T=>{try{const v=sessionStorage.getItem(key);return v?{...fallback,...JSON.parse(v)}:fallback}catch{return fallback}};
+const write=(key:string,v:unknown)=>{try{sessionStorage.setItem(key,JSON.stringify(v))}catch{}};
+const toggled=(list:string[],entry:string,checked:boolean)=>checked?[...new Set([...list,entry])]:list.filter(x=>x!==entry);
+const fieldName=(s:string)=>s.trim()||"未填写";
+const maskIdentity=(s:string)=>s?Array.from({length:Math.min(s.length,8)}).map(()=>"•").join(""):"";
+type Mode="overview"|"settings"|"business"|"verification";
+
+function Options({label,values,selected,onChange}:{label:string;values:string[];selected:string[];onChange:(next:string[])=>void}){
+ return <fieldset className={styles.options}><legend>{label}</legend><div>{values.map(v=><label key={v}><input type="checkbox" checked={selected.includes(v)} onChange={e=>onChange(toggled(selected,v,e.target.checked))}/><span>{v}</span></label>)}</div></fieldset>;
+}
+function Header({mode,onBack}:{mode:Mode,onBack:()=>void}){
+ const title={overview:"账户资料",settings:"账户设置",business:"经营画像",verification:"认证信息"}[mode];
+ const desc={overview:"管理个人资料、联系方式和经营画像",settings:"修改账户信息、联系方式与登录安全",business:"让系统理解你的经营阶段、资源条件和实际需求",verification:"完成个人或企业主体认证，便于后续业务服务与合作申请时核验主体信息。"}[mode];
+ return <header className={styles.header}><div><small>我的账户 / 账户资料{mode==="overview"?"":" / "+title}</small><h1>{title}</h1><p>{desc}</p></div>{mode!=="overview"&&<button type="button" onClick={onBack}>返回账户资料</button>}</header>;
+}
+function DemoNote({children}:{children:React.ReactNode}){return <p className={styles.note}>{children??"这里仅展示本地演示数据，不会写入真实账户。"}</p>;}
+export function AccountProfilePreview({pathname}:{pathname:string}){
+ const router=useRouter();
+ const mode:Mode=pathname.endsWith("/settings")?"settings":pathname.endsWith("/business")?"business":pathname.endsWith("/verification")?"verification":"overview";
+ const go=(path:string)=>router.push(base+path+"?preview=1");
+ const [account,setAccount]=useState<Account>(defaultAccount);
+ const [business,setBusiness]=useState<Business>(defaultBusiness);
+ const [savedAccount,setSavedAccount]=useState<Account>(defaultAccount);
+ const [savedBusiness,setSavedBusiness]=useState<Business>(defaultBusiness);
+ const [editingBusiness,setEditingBusiness]=useState(false);
+ const [identityType,setIdentityType]=useState<"个人认证"|"企业认证">("个人认证");
+ const [notice,setNotice]=useState("");
+ const [changeContact,setChangeContact]=useState<string|null>(null);
+ const [verificationFiles,setVerificationFiles]=useState<Record<string,string>>({});
+ const [personal,setPersonal]=useState({name:"",id:""});
+ const [enterprise,setEnterprise]=useState({name:"",credit:"",representative:""});
+ useEffect(()=>{const a=read(keys.account,defaultAccount),b=read(keys.business,defaultBusiness);setAccount(a);setSavedAccount(a);setBusiness(b);setSavedBusiness(b);},[]);
+ useEffect(()=>{setNotice("");setChangeContact(null);setEditingBusiness(false)},[pathname]);
+ useEffect(()=>{if(mode!=="verification")return;const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape")setChangeContact(null)};document.addEventListener("keydown",onKey);return()=>document.removeEventListener("keydown",onKey)},[mode]);
+ const saveAccount=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const v={...account,name:account.name.trim()};if(!v.name){setNotice("用户名不能为空");return;}write(keys.account,v);setSavedAccount(v);setNotice("账户展示资料已保存到本次演示浏览器，不会修改真实账户。");};
+ const saveBusiness=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();write(keys.business,business);setSavedBusiness(business);setEditingBusiness(false);setNotice("经营画像已保存在本地演示中，真实资料未更改。");};
+ const saveFile=(label:string,files:FileList|null)=>{
+   if(!files?.length)return;
+   const f=files[0];
+   if(f.size>20*1024*1024){setNotice("文件过大：单个文件不得超过20MB。");return;}
+   if(!["image/jpeg","image/png","application/pdf"].includes(f.type)){setNotice("请上传 JPG、PNG 或 PDF。");return;}
+   setVerificationFiles(v=>({...v,[label]:f.name}));
+ };
+ const verify=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const required=identityType==="个人认证"?["身份证人像面","身份证国徽面"]:["营业执照"];if(required.some(x=>!verificationFiles[x])){setNotice("请补齐对应证件文件后再确认。");return;}setNotice("已完成表单校验。当前演示站没有身份认证后端，未上传证件、未产生认证申请。");};
+ const closeContact=()=>setChangeContact(null);
+ return <div className={styles.page} data-account-profile-page={mode}>
+   <Header mode={mode} onBack={()=>go("")}/>
+   {mode==="overview"&&<>
+     <section className={styles.profileTop}><div><div className={styles.avatar} aria-hidden="true">S</div><div><h2>示例用户</h2><p>用户名：{savedAccount.name} · 手机号已验证</p><span className={styles.success}>已实名认证 · 示例状态</span></div></div><dl><div><dt>用户编号</dt><dd>SUMI-20260812</dd></div><div><dt>注册时间</dt><dd>2026年8月10日</dd></div><div><dt>最近登录</dt><dd>演示时间 14:32</dd></div></dl></section>
+     <div className={styles.overviewGrid}><section className={styles.panel}><header className={styles.panelHeader}><div><h2>账户设置</h2><p>用于账户识别与联系方式管理</p></div><button className={styles.primary} onClick={()=>go("/settings")}>编辑资料</button></header><dl className={styles.facts}>{[["用户名",savedAccount.name],["手机号码","+86 138 **** 8899 · 已验证"],["邮箱地址","user@sumi.ai · 已验证"],["所在地区",[savedAccount.country,savedAccount.province,savedAccount.city].filter(Boolean).join(" · ")],["注册时间","2026年8月10日"]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+      <h3>账号状态</h3><div className={styles.stateGrid}>{[["手机验证","已完成","用于验证码登录与安全验证"],["邮箱地址","已验证","用于接收账户与安全通知"],["登录密码","已设置","上次修改：演示信息"]].map(([name,state,hint])=><article key={name}><strong>{name}</strong><b className={styles.success}>{state}</b><small>{hint}</small></article>)}</div></section>
+      <section className={styles.panel}><header className={styles.panelHeader}><div><h2>经营画像</h2><p>帮助系统理解你的业务背景</p></div><button onClick={()=>go("/business")}>编辑画像</button></header><dl className={styles.pairs}>{[["用户角色",savedBusiness.roles.join("、")],["店铺情况",savedBusiness.shops],["工厂情况",savedBusiness.supply.join("、")],["经营平台",savedBusiness.platforms.join("、")],["经营站点",savedBusiness.sites.join("、")],["店铺类型",savedBusiness.types.join("、")],["所需服务",savedBusiness.services.join("、")]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value||"未设置"}</dd></div>)}</dl></section></div>
+     <section className={styles.linkPanel}><h2>认证信息</h2><p>按个人或企业主体分别核对认证资料与状态。</p><button onClick={()=>go("/verification")}>查看认证信息</button></section>
+   </>}
+   {mode==="settings"&&<form className={styles.settings} onSubmit={saveAccount} onReset={()=>{setAccount(savedAccount);setNotice("");}}>
+      <section className={styles.panel}><header className={styles.panelHeader}><h2>账户信息</h2><p>用户名用于平台内展示；地区信息用于本地化服务</p></header><div className={styles.fields}>
+       <label>用户名<input aria-label="用户名" required value={account.name} onChange={e=>setAccount(v=>({...v,name:e.target.value}))} maxLength={45}/><small>用于平台内展示，不作为登录账号</small></label>
+       <label>国家 / 地区<input aria-label="国家 / 地区" value={account.country} onChange={e=>setAccount(v=>({...v,country:e.target.value}))}/></label>
+       <label>省 / 州<input aria-label="省 / 州" value={account.province} onChange={e=>setAccount(v=>({...v,province:e.target.value}))}/></label>
+       <label>城市<input aria-label="城市" value={account.city} onChange={e=>setAccount(v=>({...v,city:e.target.value}))}/></label>
+      </div></section>
+      <section className={styles.panel}><header className={styles.panelHeader}><h2>联系方式</h2><p>更换手机号或邮箱时，需要单独完成身份验证</p></header><div className={styles.contacts}>{[["手机号","+86 138 **** 6688","用于验证码登录与安全验证","更换手机号"],["邮箱","zh***@example.com","用于接收账户与安全通知","更换邮箱"]].map(([name,value,description,action])=><article key={name}><div className={styles.identityIcon} aria-hidden="true">{name==="手机号"?"M":"@"}</div><div><strong>{name} <span className={styles.success}>已验证</span></strong><p>{value}</p><small>{description}</small></div><button type="button" onClick={()=>setChangeContact(action)}>{action}</button></article>)}</div></section>
+      <section className={styles.panel}><header className={styles.panelHeader}><h2>登录与安全</h2><p>通过手机验证码修改登录密码</p></header><div className={styles.contacts}><article><div className={styles.identityIcon} aria-hidden="true">••</div><div><strong>登录密码 <span className={styles.success}>已设置</span></strong><small>上次修改：2026-07-18</small></div><button type="button" onClick={()=>setChangeContact("修改密码")}>修改密码</button></article></div></section>
+      <div className={styles.actions}><span>密码请前往安全设置修改。仅修改当前演示资料。</span><button type="reset">取消</button><button className={styles.primary} type="submit">保存更改</button></div>
+   </form>}
+   {mode==="business"&&<>
+      <section className={styles.intro}><h2>完善经营画像，让系统知道如何为你工作</h2><p>画像不会改变首页，也不会自动替你做决定；它用于业务分类、统计分析和服务沟通，让智能体与服务更贴近你的真实经营情况。</p></section>
+      {!editingBusiness?<><div className={styles.toolbar}><h2>维护经营画像</h2><button className={styles.primary} onClick={()=>setEditingBusiness(true)}>维护经营画像</button></div>
+      <div className={styles.benefits}>{[["01","让智能体更懂你的业务","结合角色、店铺阶段、平台与站点，减少重复说明。"],["02","让执行建议更符合实际","根据店铺类型、工厂与供应链条件判断可执行范围。"],["03","让服务沟通更高效","提前了解所需服务，减少无关信息和重复沟通。"]].map(([n,title,desc])=><article key={n}><b>{n}</b><h3>{title}</h3><p>{desc}</p></article>)}</div>
+      <section className={styles.panel}><header className={styles.panelHeader}><h2>当前经营画像</h2><small>可随业务变化重新维护 · 演示资料</small></header><dl className={styles.businessSummary}>{[["角色",savedBusiness.roles],["店铺",savedBusiness.shops],["平台",savedBusiness.platforms],["站点",savedBusiness.sites],["工厂 / 供应链",savedBusiness.supply],["服务需求",savedBusiness.services]].map(([name,value])=><div key={String(name)}><dt>{name}</dt><dd>{Array.isArray(value)?value.join("、"):value||"未设置"}</dd></div>)}</dl></section></>:<form className={styles.panel} onSubmit={saveBusiness}><header className={styles.panelHeader}><div><h2>维护经营画像</h2><p>按当前经营情况选择，支持多选，可随时调整</p></div><button type="button" onClick={()=>{setBusiness(savedBusiness);setEditingBusiness(false)}}>取消</button></header><div className={styles.businessForm}>
+        <Options label="1. 你是什么角色？" values={["跨境电商创业者","跨境电商卖家","工厂或供应商","企业电商团队","OPC电商社区或园区","电商服务商","其他"]} selected={business.roles} onChange={v=>setBusiness(x=>({...x,roles:v}))}/>
+        <fieldset className={styles.options}><legend>2. 你目前有没有店铺？</legend><div>{["暂时没有店铺","正在准备开店","已有店铺","有多个店铺或店群"].map(x=><label key={x}><input type="radio" name="shop-status" checked={business.shops===x} onChange={()=>setBusiness(v=>({...v,shops:x}))}/>{x}</label>)}</div></fieldset>
+        <div className={styles.optionStack}><h3>3. 选择店铺平台、经营站点与店铺类型</h3><Options label="店铺平台（可多选）" values={["Amazon","SHEIN","Temu","TikTok Shop","Walmart","Shopee","Lazada","AliExpress","Etsy","独立站"]} selected={business.platforms} onChange={v=>setBusiness(x=>({...x,platforms:v}))}/><Options label="经营站点（可多选）" values={["美国站","加拿大站","日本站","英国站","欧洲站"]} selected={business.sites} onChange={v=>setBusiness(x=>({...x,sites:v}))}/><Options label="店铺类型（可多选）" values={["全托店","半托店","自营店"]} selected={business.types} onChange={v=>setBusiness(x=>({...x,types:v}))}/></div>
+        <div className={styles.optionStack}><Options label="4. 你是否拥有工厂或供应链？" values={["有自有工厂","有长期合作工厂","有稳定供应链资源","暂时没有工厂或供应链资源","其他"]} selected={business.supply} onChange={v=>setBusiness(x=>({...x,supply:v}))}/><label>其他情况<input value={business.other} onChange={e=>setBusiness(v=>({...v,other:e.target.value}))} placeholder="按需填写其他情况"/></label></div>
+        <Options label="5. 你目前需要什么服务？" values={["选品分析","店铺运营","智能商品优化","供应链对接","AI团队协作","商品刊登"]} selected={business.services} onChange={v=>setBusiness(x=>({...x,services:v}))}/>
+       </div><DemoNote>经营画像仅用于需求识别与服务推荐，不会自动修改店铺设置或替你执行操作。</DemoNote><footer className={styles.actions}><button type="button" onClick={()=>{setBusiness(savedBusiness);setEditingBusiness(false)}}>取消</button><button className={styles.primary} type="submit">保存修改</button></footer></form>}
+   </>}
+   {mode==="verification"&&<>
+      <div className={styles.tabs} role="tablist" aria-label="主体认证类型">{(["个人认证","企业认证"] as const).map(v=><button role="tab" key={v} aria-selected={identityType===v} onClick={()=>{setIdentityType(v);setNotice("");setVerificationFiles({})}}>{v}</button>)}<span>{identityType==="个人认证"?"适用于个人账户主体认证":"适用于公司或其他企业主体认证"}</span></div>
+      <section className={styles.panel}><header className={styles.panelHeader}><div><h2>{identityType}</h2><p>认证流程：提交资料 · 信息审核 · 认证完成</p></div><span className={styles.warning}>当前状态：未认证（演示）</span></header>
+       <form onSubmit={verify} className={styles.verifyForm}><h3>{identityType==="个人认证"?"个人身份信息":"企业主体信息"}</h3><p>{identityType==="个人认证"?"请确保身份信息与证件内容一致":"请确保企业名称、信用代码与营业执照一致"}</p>
+       {identityType==="个人认证"?<><div className={styles.fields}><label>真实姓名<input autoComplete="off" required placeholder="请输入真实姓名" value={personal.name} onChange={e=>setPersonal(v=>({...v,name:e.target.value}))}/></label><label>身份证号码<input autoComplete="off" required placeholder="请输入身份证号码" value={personal.id} onChange={e=>setPersonal(v=>({...v,id:e.target.value}))}/></label></div><h3>身份证照片</h3><div className={styles.uploadGrid}>{["身份证人像面","身份证国徽面"].map(v=><label className={styles.upload} key={v}><strong>＋</strong><span>上传{v.replace("身份证","")}</span><input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={e=>saveFile(v,e.target.files)}/><small>{verificationFiles[v]??"JPG / PNG / PDF"}</small></label>)}</div><p>支持识别身份证信息；上传后请核对姓名、证件号码及照片内容（正式系统功能）。</p></>:<><div className={styles.fields}><label>企业名称<input required value={enterprise.name} onChange={e=>setEnterprise(v=>({...v,name:e.target.value}))} placeholder="请输入营业执照上的企业名称"/></label><label>统一社会信用代码<input required value={enterprise.credit} onChange={e=>setEnterprise(v=>({...v,credit:e.target.value}))} placeholder="请输入统一社会信用代码"/></label><label>法定代表人<input required value={enterprise.representative} onChange={e=>setEnterprise(v=>({...v,representative:e.target.value}))} placeholder="请输入法定代表人姓名"/></label></div><h3>营业执照</h3><label className={styles.upload}><strong>＋</strong><span>上传营业执照</span><input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={e=>saveFile("营业执照",e.target.files)}/><small>{verificationFiles["营业执照"]??"JPG / PNG / PDF"}</small></label><p>支持识别营业执照信息；上传后请核对企业名称、信用代码及法定代表人（正式系统功能）。</p></>}
+       <footer className={styles.actions}><span>提交即表示已阅读认证信息使用说明。演示环境不上传或保存证件。</span><button className={styles.primary} type="submit">提交认证</button></footer></form>
+      </section>
+   </>}
+   {notice&&<div role="status" className={styles.feedback}>{notice}<button onClick={()=>setNotice("")}>关闭</button></div>}
+   {changeContact&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)closeContact()}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label={changeContact}><header><h2>{changeContact}</h2><button onClick={closeContact} aria-label="关闭操作">×</button></header><p>该操作需要正式工作台的短信/邮箱验证码和身份验证服务。当前展示站不发送验证码，不会修改真实联系方式或密码。</p><footer><button className={styles.primary} onClick={closeContact}>知道了</button></footer></section></div>}
+  </div>;
+}
