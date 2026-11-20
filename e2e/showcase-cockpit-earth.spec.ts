@@ -440,16 +440,16 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
 test("new Chat conversation light theme never leaves dark input or mode panels", async ({page}) => {
   await page.setViewportSize({width:1440,height:900});
   await page.goto("/shuomi/#/workbench/ai/chat/new");
-  const workspace=page.locator('[class*="chat-new-preview_workspace"]');
+  const workspace=page.locator('[class*="_workspace_"]');
   await expect(workspace).toBeVisible();
   await page.getByRole("button",{name:"切换浅色主题"}).click();
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
   const panels=[
-    '[class*="chat-new-preview_composer"]',
-    '[class*="chat-new-preview_modePanel"]',
-    '[class*="chat-new-preview_composer"] textarea',
-    '[class*="chat-new-preview_modeList"] button',
-    '[class*="chat-new-preview_examples"] button'
+    '[class*="_composer_"]',
+    '[class*="_modePanel_"]',
+    '[class*="_composer_"] textarea',
+    '[class*="_modeList_"] button',
+    '[class*="_examples_"] button'
   ];
   for(const selector of panels){
     const target=workspace.locator(selector).first();
@@ -478,7 +478,7 @@ test("new Chat conversation light theme never leaves dark input or mode panels",
   await drawer.getByRole("button",{name:"关闭"}).click();
   await expect(drawer).toHaveCount(0);
   await page.getByRole("button",{name:"切换深色主题"}).click();
-  await expect(workspace.locator('[class*="chat-new-preview_composer"]')).toHaveCSS("background-color","rgb(47, 51, 73)");
+  await expect(workspace.locator('[class*="_composer_"]')).toHaveCSS("background-color","rgb(47, 51, 73)");
   await page.getByRole("button",{name:"切换浅色主题"}).click();
-  await expect(workspace.locator('[class*="chat-new-preview_modePanel"]')).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
+  await expect(workspace.locator('[class*="_modePanel_"]')).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
 });
