@@ -845,3 +845,16 @@
   .page.page > .header h1 { font-size: 30px; line-height: 40px; }
   .page.page > .header p { font-size: 15px; line-height: 24px; }
 }
+
+
+/* Nested detail panels with hardcoded dark surfaces and text colors. */
+:global(.light) .page :is(.warehouses article,.sourceTiles span,.serviceLine,.split aside,.twoCards aside,.serviceTags span) {
+  color:#444050;background:#f8f7fb;border-color:#ddd9e9;
+}
+:global(.light) .page :is(.warehouses article h2,.twoCards aside h3,.serviceLine strong,.split aside h3) {color:#444050;}
+:global(.light) .page :is(.warehouses article p,.twoCards aside p,.sourceTiles small,.serviceLine small) {color:#6f6b7d;}
+:global(.light) .page[data-commerce-unified] :is(.rolePermissions header small,.rolePermissions article small,.operationHead small) {color:#6f6b7d;}
+:global(.light) .page[data-commerce-unified] .operationHead small {color:#6254c8;}
+:global(.light) .page[data-commerce-unified] .operationSummary b {color:#5d596c;}
+:global(.light) .page[data-commerce-unified] .operationSummary span {color:#444050;}
+:global(.light) .page[data-commerce-unified] :is(.tableHead,.productTableHead,.orderTableHead) {color:#6f6b7d;background:#f4f3f8;border-color:#e6e6f1;}
