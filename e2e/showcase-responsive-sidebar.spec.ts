@@ -235,3 +235,51 @@ test("listing overview uses aligned Vuexy cards and readable theme surfaces",asy
  const overflow=await root.evaluate(el=>el.scrollWidth>el.clientWidth+2);
  expect(overflow).toBe(false);
 });
+
+
+test("listing four subpages share aligned Vuexy typography, cards and controls",async({page})=>{
+  await page.setViewportSize({width:1440,height:900});
+  for(const route of ["waiting","missing","review","uploaded"]){
+    await page.goto(entry+"/listing/"+route);
+    const root=route==="uploaded"?page.locator("[data-showcase-uploaded]"):page.locator('[data-listing-stage="'+route+'"]');
+    await expect(root).toBeVisible();
+    const heading=root.locator("header").first();
+    const bg=await heading.evaluate(el=>getComputedStyle(el).backgroundColor);
+    expect(bg,route+" must use dark card surface initially").toBe("rgb(47, 51, 73)");
+    const headingFont=await root.locator("h1").first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+    expect(headingFont,route+" title must be readable").toBeGreaterThanOrEqual(26);
+    const contentWidth=await root.evaluate(el=>el.getBoundingClientRect().width);
+    expect(contentWidth).toBeLessThanOrEqual(1601);
+    if(route==="waiting"){
+      const cards=root.locator("section").filter({has:root.getByRole("heading",{name:"选择商品"})}).first().locator("article");
+      await expect(cards).toHaveCount(4);
+      const tops=await cards.evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().top));
+      expect(Math.max(...tops)-Math.min(...tops)).toBeLessThan(2);
+    }
+    if(route==="missing"||route==="review"){
+      const cards=root.locator("section").filter({has:root.getByText("全部商品", {exact:true})}).first();
+      if(route==="missing")await expect(cards.locator("article")).toHaveCount(4);
+      const source=root.getByRole("combobox",{name:"商品来源"});
+      await source.selectOption("自有商品库");
+      root.getByRole("button",{name:"确认",exact:true}).first().click();
+      await expect(root.getByRole("heading",{name:/商品列表（共 2 个演示商品）/})).toBeVisible();
+      root.getByRole("button",{name:"重置"}).click();
+      await expect(root.getByRole("heading",{name:/商品列表（共 4 个演示商品）/})).toBeVisible();
+    }
+    const enableLight=page.getByRole("button",{name:"切换浅色主题"});
+    if(await enableLight.isVisible())await enableLight.click();
+    const lightBg=await heading.evaluate(el=>getComputedStyle(el).backgroundColor);
+    expect(lightBg,route+" light title background").toBe("rgb(255, 255, 255)");
+    const darkText=await root.locator("h1").first().evaluate(el=>getComputedStyle(el).color);
+    expect(darkText,route+" light heading contrast").toBe("rgb(68, 64, 80)");
+    const inputs=route==="waiting"?root.locator("select"):root.locator("input,select");
+    await expect(inputs.first()).toBeVisible();
+    const inputHeight=await inputs.first().evaluate(el=>el.getBoundingClientRect().height);
+    expect(inputHeight).toBeGreaterThanOrEqual(40);
+  }
+  await page.setViewportSize({width:390,height:844});
+  await page.goto(entry+"/listing/missing");
+  const root=page.locator('[data-listing-stage="missing"]');
+  const spill=await root.evaluate(el=>el.scrollWidth>el.clientWidth+2);
+  expect(spill,"horizontal overflow stays within the internal table").toBe(false);
+});
