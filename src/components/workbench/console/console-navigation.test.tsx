@@ -69,7 +69,7 @@ it("places My Listing beside My Stores and preserves listing context",()=>{
  const id="11111111-1111-4111-8111-111111111111";
  query.value=`preparation=${id}&store=${id}&operation=${id}&mode=platform`;
  render(<ConsoleNavigation pathname="/workbench/listing/missing" ariaLabel="主导航" supplyChainAvailable supplyCompletionDraftsAvailable/>);
- const listing=screen.getByRole("link",{name:"我的刊登"});
+ const listing=screen.getByRole("link",{name:"刊登管理"});
  const store=screen.getByRole("link",{name:"店铺中心"});
  const myStores=screen.getByRole("link",{name:"我的店铺"});
  expect(listing.closest("li")).toHaveClass("console-nav-level-2");
@@ -368,15 +368,15 @@ it("retains three-level route trails outside the plans module", () => {
 
 it("reflects installed capability on the nested My Listing entry",()=>{
  const view=render(<ConsoleNavigation pathname="/workbench/listing/waiting" ariaLabel="主导航"/>);
- expect(screen.getByRole("link",{name:"我的刊登"})).toHaveAttribute("title","我的刊登：业务暂未启用");
+ expect(screen.getByRole("link",{name:"刊登管理"})).toHaveAttribute("title","刊登管理：业务暂未启用");
  view.rerender(<ConsoleNavigation pathname="/workbench/listing/waiting" ariaLabel="主导航" supplyCompletionDraftsAvailable/>);
- expect(screen.getByRole("link",{name:"我的刊登"})).toHaveAttribute("title","我的刊登");
+ expect(screen.getByRole("link",{name:"刊登管理"})).toHaveAttribute("title","刊登管理");
 });
 it("preserves valid context and skips invalid or repeated listing parameters",()=>{
  const id="11111111-1111-4111-8111-111111111111";
  query.value="preparation="+id+"&store=bad&operation="+id+"&operation="+id;
  render(<ConsoleNavigation pathname="/workbench/listing/waiting" ariaLabel="主导航" supplyChainAvailable/>);
- expect(screen.getByRole("link",{name:"我的刊登"})).toHaveAttribute("href","/workbench/listing?preparation="+id);
+ expect(screen.getByRole("link",{name:"刊登管理"})).toHaveAttribute("href","/workbench/listing?preparation="+id);
  query.value="";
 });
 it.each(["official", "mine"]) ("keeps knowledge category %s under one second-level entry", category => {
