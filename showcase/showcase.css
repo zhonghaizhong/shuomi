@@ -466,3 +466,37 @@ html.light body {background:#f8f7fa;color:#444050;}
   color-scheme:light;
 }
 .light .showcase-content :is(input,textarea)::placeholder {color:#777182;opacity:1;}
+
+
+/* Enterprise-only Figma page shell: prevent Vuexy purple chrome from overriding enterprise palette. */
+.showcase-shell:has([data-enterprise-space]){background:#0b1422}
+.showcase-shell:has([data-enterprise-space]) .showcase-main{background:#0b1422}
+.showcase-shell:has([data-enterprise-space]) .showcase-topbar{
+ background:#15243a;border-bottom-color:#2f4965;color:#e4edf8;
+}
+.showcase-shell:has([data-enterprise-space]) .showcase-brand-message span{
+ border-left-color:#1976d2;color:#bbccdb;
+}
+.showcase-shell:has([data-enterprise-space]) .showcase-top-actions{color:#e4edf8}
+.showcase-shell:has([data-enterprise-space]) .showcase-content{
+ background:#0b1422;
+}
+.showcase-shell:has([data-enterprise-space]) .showcase-sidebar{
+ background:#0b1422;border-right-color:#2f4965;
+}
+.showcase-shell:has([data-enterprise-space]) .showcase-account-icon{
+ border-color:#1976d2;background:#1d334a;color:#e4edf8;
+}
+.light .showcase-shell:has([data-enterprise-space]),
+.light .showcase-shell:has([data-enterprise-space]) .showcase-main,
+.light .showcase-shell:has([data-enterprise-space]) .showcase-content{background:#f7fafd}
+.light .showcase-shell:has([data-enterprise-space]) .showcase-topbar{
+ background:#fff;border-bottom-color:#dce8ed;color:#263949;
+}
+.light .showcase-shell:has([data-enterprise-space]) .showcase-top-actions{color:#263949}
+.light .showcase-shell:has([data-enterprise-space]) .showcase-sidebar{
+ background:#fff;border-right-color:#dce8ed;
+}
+.light .showcase-shell:has([data-enterprise-space]) .showcase-account-icon{
+ background:#e6f3f0;border-color:#087f6c;color:#087f6c;
+}
