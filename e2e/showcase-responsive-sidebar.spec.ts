@@ -103,7 +103,7 @@ test("light-mode chat collections never retain dark background colors", async ({
   }
 });
 
-test("my supply chain and all stages are nested beneath my stores", async ({ page }) => {
+test("my listing and all stages are nested beneath my stores", async ({ page }) => {
   await page.setViewportSize({width:1440,height:900});
   await page.goto(entry);
   const nav=page.getByRole("navigation",{name:"工作台导航"});
@@ -111,11 +111,11 @@ test("my supply chain and all stages are nested beneath my stores", async ({ pag
   for(const label of ["硕米自营","硕米优选","货盘集成","优选申请"]) {
     await expect(nav.getByRole("link",{name:label,exact:true})).toBeVisible();
   }
-  await expect(nav.getByRole("link",{name:"我的供应链",exact:true})).toHaveCount(0);
+  await expect(nav.getByRole("link",{name:"我的刊登",exact:true})).toHaveCount(0);
   await nav.getByRole("button",{name:"展开店铺中心"}).click();
   await nav.getByRole("button",{name:"展开我的店铺"}).click();
-  await expect(nav.getByRole("link",{name:"我的供应链",exact:true})).toBeVisible();
-  await nav.getByRole("button",{name:"展开我的供应链"}).click();
+  await expect(nav.getByRole("link",{name:"我的刊登",exact:true})).toBeVisible();
+  await nav.getByRole("button",{name:"展开我的刊登"}).click();
   const stages = [
     ["待上传","waiting"],
     ["待补全","missing"],
@@ -128,8 +128,20 @@ test("my supply chain and all stages are nested beneath my stores", async ({ pag
     await stage.click();
     await expect(page).toHaveURL(new RegExp("#/workbench/listing/"+route+"(?:[?]|$)"));
     await expect(page.locator("main.showcase-content")).toBeVisible();
-    await expect(nav.getByRole("button",{name:"收起我的供应链"})).toBeVisible();
+    await expect(nav.getByRole("button",{name:"收起我的刊登"})).toBeVisible();
   }
-  await nav.getByRole("button",{name:"收起我的供应链"}).click();
-  await expect(nav.getByRole("button",{name:"展开我的供应链"})).toBeVisible();
+  await nav.getByRole("button",{name:"收起我的刊登"}).click();
+  await expect(nav.getByRole("button",{name:"展开我的刊登"})).toBeVisible();
+});
+
+test("supply overview describes sourcing without publishing management", async ({page})=>{
+  await page.goto(entry+"/supply");
+  const main=page.locator("main.showcase-content");
+  await expect(main.getByRole("heading",{name:"发现优质货源，连接多元供货渠道"})).toBeVisible();
+  for(const name of ["硕米自营","硕米优选","货盘集成","优选申请"]) {
+    await expect(main.getByRole("heading",{name,exact:true})).toBeVisible();
+  }
+  await expect(main.getByRole("heading",{name:"我的供应链"})).toHaveCount(0);
+  await expect(main.getByRole("heading",{name:"我的刊登"})).toHaveCount(0);
+  await expect(main.getByText("完成平台适配与审核")).toHaveCount(0);
 });
