@@ -37,7 +37,7 @@ export function ShowcaseAgentCustomization({ pathname, navigate }: { pathname: s
   }
   const headerDescription = isNew ? "填写核心需求即可，提交后由专员联系评估方案与费用。" : isProgress
     ? "查看定制申请的当前状态、办理进展和下一步安排。" : "针对独特业务场景，定制专属于你的AI电商智能体。";
-  return <div className={styles.page}>
+  return <div data-agent-customization={isNew ? "new" : isProgress ? "progress" : "overview"} className={styles.page}>
     <header className={styles.header}>
       <div><small>智能市场 / 智能体定制{isNew ? " / 提交定制需求" : isProgress ? " / 定制进度" : ""}</small><h1>{isNew ? "提交定制需求" : isProgress ? "我的定制需求" : "智能体定制"}</h1><p>{headerDescription}</p></div>
       <div className={styles.headerActions}>
