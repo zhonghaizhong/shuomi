@@ -1272,3 +1272,42 @@
 :global(.light) .page:not(.libraryDetailPreview):not(.chatNewPage):not(.chatCollectionPage):not(.taskDetailPreview) :is(
  .toolbar input,.filterBox input,.table input
 )::placeholder {color:#777182;opacity:1;}
+
+/* Skills Mine: restore all surfaces and text in light mode (screenshot regression). */
+:global(.light) .libraryDetailPreview[data-library-page="skills-mine"] :is(.skillListHeading,.skillItem) {
+  background:#ffffff;
+  border-color:#e3dfed;
+  color:#444050;
+}
+:global(.light) .libraryDetailPreview[data-library-page="skills-mine"] :is(.skillListHeading h2,.skillItem h3) {
+  color:#444050;
+}
+:global(.light) .libraryDetailPreview[data-library-page="skills-mine"] :is(.skillListHeading p,.skillItem p) {
+  color:#625d70;
+}
+:global(.light) .libraryDetailPreview[data-library-page="skills-mine"] .skillListHeading span {
+  color:#147a52;
+}
+:global(.light) .libraryDetailPreview[data-library-page="skills-mine"] .skillItemMark {
+  background:#f0edff;
+  color:#6254c8;
+}
+:global(.light) .libraryDetailPreview[data-library-page="skills-mine"] .skillItem .knowledgeTag {
+  background:#e7f7ed;
+  color:#167a4e;
+}
+:global(.light) .libraryDetailPreview[data-library-page="skills-mine"] .skillItem .cardActions button:not(.primary) {
+  background:#f8f7fa;
+  color:#444050;
+  border-color:#dbdade;
+}
+:global(.light) .libraryDetailPreview[data-library-page="skills-mine"] .skillItem .cardActions button:not(.primary):hover {
+  background:#f0edff;
+  color:#6254c8;
+  border-color:#bdb2f2;
+}
+:global(.light) .libraryDetailPreview[data-library-page="skills-mine"] :is(.skillListHeading>button,.skillItem .cardActions button.primary) {
+  background:#7367f0;
+  color:#ffffff;
+  border-color:#7367f0;
+}
