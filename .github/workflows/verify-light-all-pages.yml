@@ -1,0 +1,38 @@
+name: Audit All Light Mode Pages
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  all-light-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm run build:pages
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright test --config playwright.light-all-pages.config.ts
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: light-all-pages-audit
+          path: |
+            test-results/light-audit/**/*
+            test-results/light-audit-report.json
+          if-no-files-found: ignore
