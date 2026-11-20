@@ -392,3 +392,36 @@ test("light mode has no severely invisible ordinary text across sampled workbenc
   }
   expect(allLow, "Pages with unreadable foreground/background colors").toEqual([]);
 });
+
+
+test("Chat, task center and project center light visual surfaces follow Vuexy", async ({page}) => {
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto("/shuomi/#/workbench/ai/chat");
+  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  const screens=[
+    {route:"/workbench/ai/chat",surfaces:['[class*="landingCard"]','[class*="example"]','[class*="steps"] > li > *']},
+    {route:"/workbench/ai/tasks",surfaces:['[class*="taskStats"] > button','[class*="taskSearch"]','[class*="taskTable"]','[class*="taskRow"]']},
+    {route:"/workbench/ai/projects",surfaces:['[class*="metrics"] > article','[class*="cards"] > article','[class*="filters"]','[class*="list"]']},
+  ] as const;
+  for(const screen of screens) {
+    await page.goto("/shuomi/#"+screen.route);
+    await expect(page.locator(".light .showcase-shell")).toBeVisible();
+    for(const selector of screen.surfaces){
+      const card=page.locator(selector).first();
+      await expect(card,screen.route+" "+selector).toBeVisible();
+      const result=await card.evaluate(el=>{
+        const styles=getComputedStyle(el);
+        const firstTitle=el.querySelector("h2,h3,strong");
+        return {background:styles.backgroundColor,border:styles.borderTopColor,text:firstTitle?getComputedStyle(firstTitle).color:styles.color};
+      });
+      expect(result.background,screen.route+" should use white/pale cards").toMatch(/rgb\\(2(?:4[0-9]|5[0-5]), 2(?:4[0-9]|5[0-5]), 2(?:4[0-9]|5[0-5])\\)/);
+      expect(result.text,screen.route+" should not have pastel title text").not.toBe("rgb(207, 205, 228)");
+    }
+    await page.screenshot({path:"test-results/vuexy-light-"+screen.route.split("/").at(-1)+".png",fullPage:true});
+  }
+  await page.goto("/shuomi/#/workbench/ai/tasks");
+  await page.getByRole("button",{name:"切换深色主题"}).click();
+  await expect(page.locator(".dark .showcase-shell")).toBeVisible();
+  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  await expect(page.locator(".light .showcase-shell")).toBeVisible();
+});
