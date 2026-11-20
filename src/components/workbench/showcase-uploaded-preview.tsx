@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./showcase-uploaded-preview.module.css";
 
@@ -18,6 +18,15 @@ export function ShowcaseUploadedPreview(){
  const [platform,setPlatform]=useState("全部平台"),[site,setSite]=useState("全部站点"),[method,setMethod]=useState("全部方式"),[query,setQuery]=useState("");
  const [filters,setFilters]=useState({platform:"全部平台",site:"全部站点",method:"全部方式",query:""});
  const [page,setPage]=useState(1),[selected,setSelected]=useState<Item|null>(null);
+ const closeDetail=useRef<HTMLButtonElement>(null);
+ useEffect(()=>{
+   if(!selected)return;
+   const previous=document.activeElement as HTMLElement|null;
+   closeDetail.current?.focus();
+   const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape"){e.preventDefault();setSelected(null);}};
+   document.addEventListener("keydown",onKey);
+   return()=>{document.removeEventListener("keydown",onKey);previous?.focus?.();};
+ },[selected]);
  const filtered=useMemo(()=>records.filter(item=>
   (filters.platform==="全部平台"||item.platform===filters.platform)&&
   (filters.site==="全部站点"||item.site===filters.site)&&
@@ -54,6 +63,6 @@ export function ShowcaseUploadedPreview(){
    <footer className={styles.pagination}><span>第 {page} / {pages} 页 · 每页最多 4 条</span><div><button type="button" disabled={page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={page>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}>下一页</button></div></footer>
   </section>
   <p className={styles.disclaimer}>此页面展示的商品及时间均为原型演示记录，并非真实店铺上传状态。</p>
-  {selected&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null);}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看商品详情"><header><div><small>已上传 / 查看商品</small><h2>{selected.name}</h2></div><button type="button" aria-label="关闭商品详情" onClick={()=>setSelected(null)}>×</button></header><dl>{[["SKU",selected.sku],["批次",selected.batch],["平台与站点",selected.platform+" · "+selected.site],["平台商品ID",selected.productId],["上传时间",selected.time],["发布方式",selected.method]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><p>演示详情仅用于核对字段布局，不会打开真实的平台商品或修改上传记录。</p><footer><button type="button" onClick={()=>setSelected(null)}>返回商品列表</button></footer></section></div>}
+  {selected&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null);}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看商品详情"><header><div><small>已上传 / 查看商品</small><h2>{selected.name}</h2></div><button type="button" ref={closeDetail} aria-label="关闭商品详情" onClick={()=>setSelected(null)}>×</button></header><dl>{[["SKU",selected.sku],["批次",selected.batch],["平台与站点",selected.platform+" · "+selected.site],["平台商品ID",selected.productId],["上传时间",selected.time],["发布方式",selected.method]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><p>演示详情仅用于核对字段布局，不会打开真实的平台商品或修改上传记录。</p><footer><button type="button" onClick={()=>setSelected(null)}>返回商品列表</button></footer></section></div>}
  </div>;
 }
