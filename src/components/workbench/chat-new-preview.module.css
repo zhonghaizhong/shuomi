@@ -304,3 +304,33 @@
     justify-content:flex-end;
   }
 }
+
+
+/* Mobile chat is a vertical document, not a fixed-height desktop grid.
+   Let the composer grow so the context panel cannot cover its footer/send button. */
+@media (max-width:600px) {
+  .workspace[data-chat-active="true"],
+  .workspace[data-chat-active="true"][data-context-open="false"] {
+    height:auto;
+    min-height:0;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(560px,auto) auto;
+    align-items:stretch;
+  }
+  .workspace[data-chat-active="true"] .composer {
+    box-sizing:border-box;
+    height:auto;
+    min-height:560px;
+  }
+  .workspace[data-chat-active="true"] .modePanel {
+    position:relative;
+    box-sizing:border-box;
+    height:auto;
+    max-height:none;
+    min-height:0;
+  }
+  .workspace[data-chat-active="true"][data-context-open="false"] .modePanel {
+    height:56px;
+    min-height:56px;
+  }
+}
