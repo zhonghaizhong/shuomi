@@ -79,7 +79,7 @@ export const consoleNavigation: readonly ConsoleNavNode[] = [
       { label: "经营画像", href: "/workbench/account/profile/business", availability: "connected" },
       { label: "认证信息", href: "/workbench/account/profile/verification", availability: "connected" },
     ] },
-    { label: "企业空间", href: "/workbench/account/organization", availability: "connected", children: [{ label: "成员与权限", href: "/workbench/account/organization/members", availability: "connected" }, { label: "资源与额度", href: "/workbench/account/organization/resources", availability: "connected" }, { label: "操作记录", href: "/workbench/account/organization/audit", availability: "connected" }] },
+    { label: "企业空间", href: "/workbench/account/organization", availability: "connected", children: [{ label: "成员管理", href: "/workbench/account/organization/members", availability: "connected" }, { label: "角色权限", href: "/workbench/account/organization/roles", availability: "connected" }, { label: "资源与额度", href: "/workbench/account/organization/resources", availability: "connected" }, { label: "操作记录", href: "/workbench/account/organization/audit", availability: "connected" }] },
     { label: "推广与收益", href: "/workbench/account/referrals", availability: "connected", children: [
       { label: "推广中心", href: "/workbench/account/referrals/center", availability: "connected" },
       { label: "收益明细", href: "/workbench/account/referrals/earnings", availability: "connected" },
