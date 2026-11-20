@@ -1245,3 +1245,30 @@
 }
 :global(.light) .libraryDetailPreview :is(.emptyState article,.knowledgeMineEmpty,.knowledgeTeamEmpty,.skillTeamEmpty) {background:#fff;border-color:var(--light-border);}
 :global(.light) .libraryDetailPreview :is(.skillItem,.row,.serviceRow):hover {background:#f7f5ff;}
+
+/* Light fallback for ordinary detail-page shells; protects non-library routes. */
+:global(.light) .page:not(.libraryDetailPreview):not(.chatNewPage):not(.chatCollectionPage):not(.taskDetailPreview) {
+ color:#444050;
+}
+:global(.light) .page:not(.libraryDetailPreview):not(.chatNewPage):not(.chatCollectionPage):not(.taskDetailPreview) :is(
+ .header,.filterBox,.table,.toolbar,.tabs,.category
+) {
+ background:#fff;
+ border-color:#e3dfed;
+ color:#444050;
+}
+:global(.light) .page:not(.libraryDetailPreview):not(.chatNewPage):not(.chatCollectionPage):not(.taskDetailPreview) :is(
+ .header h1,.header h2,.table h2,.category h2,.filterBox h2,.sectionTitle h2
+) {color:#444050;}
+:global(.light) .page:not(.libraryDetailPreview):not(.chatNewPage):not(.chatCollectionPage):not(.taskDetailPreview) :is(
+ .header p,.header>div:first-child>div,.filterBox p,.category p,.table h2 small,.table header small
+) {color:#625d70;}
+:global(.light) .page:not(.libraryDetailPreview):not(.chatNewPage):not(.chatCollectionPage):not(.taskDetailPreview) :is(
+ .tableHead,.productTableHead,.orderTableHead,.projectTableHead,.reportTableHead
+) {background:#f4f3f8;border-color:#e3dfed;color:#5d596c;}
+:global(.light) .page:not(.libraryDetailPreview):not(.chatNewPage):not(.chatCollectionPage):not(.taskDetailPreview) :is(
+ .table input:not([type="checkbox"]),.toolbar input,.filterBox input,.toolbar select,.filterBox select
+) {background:#fff;color:#444050;border-color:#dbdade;color-scheme:light;}
+:global(.light) .page:not(.libraryDetailPreview):not(.chatNewPage):not(.chatCollectionPage):not(.taskDetailPreview) :is(
+ .toolbar input,.filterBox input,.table input
+)::placeholder {color:#777182;opacity:1;}
