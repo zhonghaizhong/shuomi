@@ -196,3 +196,20 @@
   .page > .header h1 { font-size: 30px; line-height: 40px; }
   .page > .header p { font-size: 15px; line-height: 24px; }
 }
+
+
+/* Tool customization: form, steps and status surfaces must follow Vuexy light. */
+:global(.light) .page :is(.steps>div,.sideStep,.progressSteps>div,.formLayout form .disclaimer,.demoLabel) {
+  color:#444050;background:#f8f7fa;border-color:#ded9e9;
+}
+:global(.light) .page :is(.steps strong,.sideStep strong,.progressSteps strong,.formHead h2,.progressTop h2,.formLayout form h3,.features h3) {color:#444050;}
+:global(.light) .page :is(.steps small,.sideStep p,.progressSteps em,.formHead span,.progressTop p,.formLayout form>p,.consent,.formLayout form .disclaimer) {color:#6f6b7d;}
+:global(.light) .page .formLayout label:not(.consent):not(.upload) {color:#444050;}
+:global(.light) .page .formLayout :is(input:not([type="checkbox"]):not([type="file"]),textarea) {color:#444050;background:#fff;border-color:#dbdade;}
+:global(.light) .page :is(.kinds button[aria-pressed="true"],.progressTop button[aria-pressed="true"]) {color:#fff;background:#7367f0;border-color:#7367f0;}
+:global(.light) .page .upload {color:#6254c8;background:#f4f2ff;border-color:#7367f0;}
+:global(.light) .page :is(.steps b,.progressSteps b,.demoLabel) {color:#6254c8;}
+:global(.light) .page .hero aside {border-left-color:#ddd9e9;}
+:global(.light) .page .hero aside p {color:#6f6b7d;}
+:global(.light) .confirmDialog :is(h2,strong) {color:#444050;}
+:global(.light) .confirmDialog p {color:#6f6b7d;}
