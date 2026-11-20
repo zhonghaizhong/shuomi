@@ -1311,3 +1311,77 @@
   color:#ffffff;
   border-color:#7367f0;
 }
+
+/* Supply Market: light-mode parity for catalog integrations and preferred applications. */
+:global(.light) .supplyDetailPreview {
+  --supply-light-text:#444050;
+  --supply-light-muted:#625d70;
+  --supply-light-border:#e3dfed;
+  --supply-light-surface:#ffffff;
+  --supply-light-raised:#f8f7fa;
+  color:var(--supply-light-text);
+}
+:global(.light) .supplyDetailPreview :is(
+  .header,.filterBox,.table,.split>article,.twoCards>article,
+  .warehouses>article,.metrics>article,.noticeBar,.category,.toolbar,
+  .split aside,.twoCards aside
+) {
+  background:var(--supply-light-surface);
+  border-color:var(--supply-light-border);
+  color:var(--supply-light-text);
+}
+:global(.light) .supplyDetailPreview :is(
+  .header h1,h2,h3,.filterBox h2,.table h2,.split h2,.split h3,
+  .twoCards h2,.twoCards h3,.warehouses article h2,
+  .twoCards aside h3,.table>div>span:first-child
+) {color:var(--supply-light-text);}
+:global(.light) .supplyDetailPreview :is(
+  .header>div:first-child>div,.header p,.filterBox>p,
+  .split>article>p,.split aside p,.twoCards p,.twoCards aside p,
+  .warehouses article p,.table>header small,.table>div small,
+  .metrics small,.sourceTiles small,.noticeBar span
+) {color:var(--supply-light-muted);}
+:global(.light) .supplyDetailPreview :is(.metrics span,.twoCards>article h2,.warehouses article>strong,.noticeBar b) {
+  color:#6254c8;
+}
+:global(.light) .supplyDetailPreview .metrics strong {color:var(--supply-light-text);}
+:global(.light) .supplyDetailPreview :is(
+  .toolbar,.tableHead,.sourceTiles>span,.twoCards aside,.split aside
+) {background:var(--supply-light-raised);border-color:var(--supply-light-border);color:var(--supply-light-text);}
+:global(.light) .supplyDetailPreview .tableHead {font-weight:650;color:#5d596c;}
+:global(.light) .supplyDetailPreview .table>div:not(header):not(.tableHead) {
+  background:#fff;color:var(--supply-light-text);border-color:var(--supply-light-border);
+}
+:global(.light) .supplyDetailPreview :is(.serviceRow,.sourceTiles>span,.warehouses article hr,.twoCards aside hr) {
+  border-color:var(--supply-light-border);
+}
+:global(.light) .supplyDetailPreview :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select) {
+  background:#fff;color:var(--supply-light-text);border-color:#dbdade;color-scheme:light;
+}
+:global(.light) .supplyDetailPreview :is(input,textarea)::placeholder {
+  color:#777182;opacity:1;
+}
+:global(.light) .supplyDetailPreview :is(
+  .toolbar button:not(.primary),.split button:not(.primary),.table button:not(.primary),
+  .twoCards button:not(.primary),.warehouses button:not(.primary),
+  .category button:not(.primary),.noticeBar button:not(.primary)
+) {
+  background:var(--supply-light-raised);
+  color:var(--supply-light-text);
+  border-color:#dbdade;
+}
+:global(.light) .supplyDetailPreview :is(
+  .toolbar button:not(.primary),.split button:not(.primary),.table button:not(.primary),
+  .twoCards button:not(.primary),.warehouses button:not(.primary),
+  .category button:not(.primary),.noticeBar button:not(.primary)
+):hover:not(:disabled) {background:#f0edff;color:#6254c8;border-color:#c8bff0;}
+:global(.light) .supplyDetailPreview .primary {background:#7367f0!important;border-color:#7367f0!important;color:#fff!important;}
+:global(.light) .supplyDetailPreview .selected {background:#f0edff!important;border-color:#bdb2f2!important;color:#6254c8!important;}
+:global(.light) .supplyDetailPreview .warehouses>article>b {background:#e7f5fb;color:#176783;}
+:global(.light) .supplyDetailPreview .twoCards>article>div>b,
+:global(.light) .supplyDetailPreview .table>div>b:last-child {color:#147a52;}
+:global(.light) .supplyDetailPreview .operationDialog {
+  background:#fff;color:var(--supply-light-text);border-color:var(--supply-light-border);
+}
+:global(.light) .supplyDetailPreview .operationDialog :is(h2,strong) {color:var(--supply-light-text);}
+:global(.light) .supplyDetailPreview .operationDialog p {color:var(--supply-light-muted);}
