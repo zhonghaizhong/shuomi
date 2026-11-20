@@ -19,7 +19,8 @@ test("light theme uses readable pale surfaces on every library subpage",async({p
  await page.setViewportSize({width:1600,height:900});
  for(const route of routes){
    await page.goto("/shuomi/#/workbench"+route);
-   await page.getByRole("button",{name:"切换浅色主题"}).click();
+   const enableLight=page.getByRole("button",{name:"切换浅色主题"});
+   if(await enableLight.isVisible())await enableLight.click();
    const canvas=page.locator('[class*="libraryDetailPreview"]');
    await expect(canvas).toBeVisible();
    const surfaces=canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
@@ -33,7 +34,8 @@ test("light theme uses readable pale surfaces on every library subpage",async({p
 });
 test("recent projects filter/table/buttons stay on the same light theme",async({page})=>{
  await page.goto("/shuomi/#/workbench/ai/projects/recent");
- await page.getByRole("button",{name:"切换浅色主题"}).click();
+ const enableLight=page.getByRole("button",{name:"切换浅色主题"});
+   if(await enableLight.isVisible())await enableLight.click();
  const root=page.locator('[class*="libraryDetailPreview"]');
  const surfaces=["header","table","projectTableHead","searchRow","projectRow"];
  for(const name of surfaces){
