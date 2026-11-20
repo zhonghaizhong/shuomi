@@ -20,6 +20,21 @@ uniform float uCloudOpacity;
 uniform float uRotation;
 varying vec2 vUv;
 const float PI=3.141592653589793;
+// Equirectangular atlases occasionally have mismatched first/last columns.
+// Cross-fade only within the narrow longitude join to prevent a rotating seam.
+vec4 sampleWrapped(sampler2D atlas,vec2 uv){
+  const float seam=0.009;
+  vec4 base=texture2D(atlas,uv);
+  if(uv.x<seam){
+    vec4 left=texture2D(atlas,vec2(1.0-seam+uv.x,uv.y));
+    return mix(left,base,smoothstep(0.0,seam,uv.x));
+  }
+  if(uv.x>1.0-seam){
+    vec4 right=texture2D(atlas,vec2(uv.x-1.0+seam,uv.y));
+    return mix(base,right,smoothstep(1.0-seam,1.0,uv.x));
+  }
+  return base;
+}
 void main(){
   vec2 p=(vUv-0.5)*2.0;
   float r2=dot(p,p);
@@ -29,11 +44,13 @@ void main(){
   vec3 world=vec3(normal.x*c+normal.z*s,normal.y,-normal.x*s+normal.z*c);
   float lon=atan(world.z,world.x),lat=asin(clamp(world.y,-1.0,1.0));
   vec2 uv=vec2(fract(0.5+lon/(2.0*PI)),0.5+lat/PI);
-  vec3 earth=texture2D(uEarth,uv).rgb;
+  vec3 earth=sampleWrapped(uEarth,uv).rgb;
   // Genuine cloud imagery follows the rotating sphere continuously.
   float ocean=clamp((earth.b-earth.r)*3.0+(earth.b-earth.g)*2.0,0.0,1.0);
   earth=mix(earth,max(earth,vec3(0.06,0.23,0.47)),ocean*0.58);
-  float cloud=texture2D(uClouds,uv).r*uCloudOpacity;
+  vec4 cloudTexel=sampleWrapped(uClouds,uv);
+  // Transparent-white pixels in the cloud PNG must never render as white streaks.
+  float cloud=smoothstep(0.035,0.94,min(cloudTexel.r,cloudTexel.a))*uCloudOpacity;
   earth=mix(earth,vec3(0.91,0.96,1.0),cloud);
   float sun=max(dot(normal,normalize(vec3(-0.38,0.48,0.80))),0.0);
   float rim=pow(1.0-normal.z,5.0);
