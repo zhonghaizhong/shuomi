@@ -113,8 +113,13 @@ test("my listing and all stages are nested beneath my stores", async ({ page }) 
   }
   await expect(nav.getByRole("link",{name:"我的刊登",exact:true})).toHaveCount(0);
   await nav.getByRole("button",{name:"展开店铺中心"}).click();
-  await nav.getByRole("button",{name:"展开我的店铺"}).click();
-  await expect(nav.getByRole("link",{name:"我的刊登",exact:true})).toBeVisible();
+  const stores=nav.getByRole("link",{name:"我的店铺",exact:true});
+  const listing=nav.getByRole("link",{name:"我的刊登",exact:true});
+  await expect(stores).toBeVisible();
+  await expect(listing).toBeVisible();
+  await expect(stores.locator("xpath=ancestor::li[1]")).toHaveClass(/console-nav-level-2/);
+  await expect(listing.locator("xpath=ancestor::li[1]")).toHaveClass(/console-nav-level-2/);
+  await expect(nav.getByRole("button",{name:"展开我的店铺"})).toHaveCount(0);
   await nav.getByRole("button",{name:"展开我的刊登"}).click();
   const stages = [
     ["待上传","waiting"],
