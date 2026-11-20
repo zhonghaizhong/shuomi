@@ -1602,3 +1602,85 @@
   .page[data-commerce-unified="account"] .accountOrgIdentity {padding:16px;flex-wrap:wrap;}
   .page[data-commerce-unified="account"] .accountOrgIdentity>span {margin-left:0;}
 }
+
+
+/* Figma account data tables, referrals controls and verification form. */
+.page[data-commerce-unified="account"] .accountTableColumns,
+.page[data-commerce-unified="account"] .accountTableRow {
+  display:grid;grid-template-columns:1.05fr 1fr 1.3fr 1fr 1fr .9fr;
+  align-items:center;gap:12px;min-width:780px;
+  padding:13px 18px;
+  border-bottom:1px solid var(--account-line);
+}
+.page[data-commerce-unified="account"] .accountTableColumns {
+  min-height:48px;background:var(--account-sub);
+  font-size:14px;font-weight:600;color:var(--account-text);
+}
+.page[data-commerce-unified="account"] .accountTableRow {
+  min-height:70px;font-size:14px;color:var(--account-text);
+}
+.page[data-commerce-unified="account"] .accountTableRow span {min-width:0;overflow-wrap:anywhere;}
+.page[data-commerce-unified="account"] .accountEmpty {
+  padding:20px;color:var(--account-muted);font-size:14px;
+}
+.page[data-commerce-unified="account"] .accountReferralLink {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;
+}
+.page[data-commerce-unified="account"] .accountReferralLink article {
+  min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:12px;
+  min-height:172px;padding:22px;
+  border:1px solid var(--account-line);
+  border-radius:7px;background:var(--account-card);
+}
+.page[data-commerce-unified="account"] .accountReferralLink h2 {
+  margin:0;font-size:18px;color:var(--account-text);
+}
+.page[data-commerce-unified="account"] .accountReferralLink p {
+  margin:0;color:var(--account-muted);overflow-wrap:anywhere;
+  font-size:14px;line-height:1.5;
+}
+.page[data-commerce-unified="account"] .accountReferralLink button {
+  min-height:40px;margin-top:auto;padding:0 16px;
+  border:1px solid var(--account-line);border-radius:6px;
+  background:var(--account-sub);color:var(--account-text);
+  font-size:14px;font-weight:600;cursor:pointer;
+}
+.page[data-commerce-unified="account"] .accountVerificationForm {
+  display:grid;gap:16px;margin-top:18px;
+}
+.page[data-commerce-unified="account"] .accountVerificationForm label {
+  display:grid;gap:7px;color:var(--account-text);font-size:14px;
+}
+.page[data-commerce-unified="account"] .accountVerificationForm :is(input:not([type=checkbox]),select) {
+  display:block;min-height:42px;width:100%;max-width:100%;
+  padding:9px 12px;border:1px solid var(--account-line);
+  border-radius:6px;background:var(--account-sub);
+  color:var(--account-text);font-size:14px;
+}
+.page[data-commerce-unified="account"] .accountVerificationForm input[type="file"] {
+  padding:8px;min-height:44px;
+}
+.page[data-commerce-unified="account"] .accountVerificationForm input[type="file"]::file-selector-button {
+  margin-right:10px;padding:6px 10px;
+  border:1px solid var(--account-line);border-radius:6px;
+  background:var(--account-card);color:var(--account-text);
+}
+.page[data-commerce-unified="account"] .accountVerificationForm button {
+  width:fit-content;min-height:42px;
+}
+.page[data-commerce-unified="account"] .accountVerificationForm small {
+  color:var(--account-muted);font-size:13px;line-height:1.6;
+}
+.page[data-commerce-unified="account"] :is(.referralRules>article,.accountReferralLink article) {
+  border-color:var(--account-line);
+  background:var(--account-card);
+}
+.page[data-commerce-unified="account"] .referralRules h3 {color:var(--account-text);}
+.page[data-commerce-unified="account"] .referralRules p {color:var(--account-muted);}
+.page[data-commerce-unified="account"] .table {overflow-x:auto;}
+@media(max-width:900px){
+ .page[data-commerce-unified="account"] .accountReferralLink {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:620px){
+ .page[data-commerce-unified="account"] .accountReferralLink {grid-template-columns:minmax(0,1fr);}
+}
