@@ -4,6 +4,7 @@ const routes=[
  "/supply/catalogs",
  "/supply/catalogs/selection",
  "/supply/catalogs/apply",
+ "/supply/applications",
  "/supply/applications/new",
  "/supply/applications/progress",
  "/supply/applications/records",
@@ -42,4 +43,17 @@ test("catalog and application surfaces restore dark theme",async({page})=>{
  await expect(item).toBeVisible();
  const bg=await item.evaluate(el=>getComputedStyle(el).backgroundColor);
  expect(isPale(bg)).toBeFalsy();
+});
+
+test("preferred application overview links to both submenus",async({page})=>{
+ await page.goto("/shuomi/#/workbench/supply/applications");
+ await page.getByRole("button",{name:"切换浅色主题"}).click();
+ const overview=page.locator('[class*="supplyDetailPreview"]');
+ await expect(overview.getByRole("heading",{name:"发起优选申请"})).toBeVisible();
+ await overview.getByRole("button",{name:"发起申请",exact:true}).click();
+ await expect(page).toHaveURL(/#\/workbench\/supply\/applications\/new/);
+ await page.goto("/shuomi/#/workbench/supply/applications");
+ await page.getByRole("button",{name:"切换浅色主题"}).click();
+ await page.getByRole("button",{name:"查看申请记录"}).click();
+ await expect(page).toHaveURL(/#\/workbench\/supply\/applications\/records/);
 });
