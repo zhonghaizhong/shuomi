@@ -102,6 +102,7 @@ test("Figma account navigation, enterprise roles and referrals keep correct rout
  if(await enterpriseToggle.count())await enterpriseToggle.click();
  for(const [label,route] of [["成员管理","members"],["角色权限","roles"],["资源与额度","resources"],["操作记录","audit"]] as const){
   const link=nav.getByRole("link",{name:label,exact:true});
+  await expect(link,`Figma enterprise child ${label} must appear exactly once`).toHaveCount(1);
   await expect(link).toBeVisible();
   await link.click();
   await expect(page).toHaveURL(new RegExp("#/workbench/account/organization/"+route));
