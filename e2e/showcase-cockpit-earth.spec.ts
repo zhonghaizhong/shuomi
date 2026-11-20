@@ -461,7 +461,7 @@ test("new Chat conversation light theme never leaves dark input or mode panels",
     if(visual.gradient!=="none") {
       expect(visual.gradient,selector+": dark gradient in light mode").toContain("rgb(255, 255, 255)");
     } else {
-      const channels=visual.background.match(/[\\d.]+/g)?.slice(0,3).map(Number)??[];
+      const channels=visual.background.match(/[\d.]+/g)?.slice(0,3).map(Number)??[];
       expect(channels.length,selector).toBe(3);
       expect(Math.min(...channels),selector+": dark card in light mode").toBeGreaterThan(225);
     }
