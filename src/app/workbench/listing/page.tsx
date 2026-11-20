@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import { isAcquisitionUUID } from "@/lib/contracts/product-acquisition";
 import { listingStageHref } from "@/lib/workbench/listing-navigation";
+import { ListingOverview } from "@/components/workbench/listing/listing-overview";
 
 export default async function Page({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  await connection();
@@ -12,5 +13,7 @@ export default async function Page({searchParams}:{searchParams:Promise<Record<s
   if(typeof value!=="string"||!isAcquisitionUUID(value))notFound();
   return value;
  };
- redirect(listingStageHref("waiting",{preparation:read("preparation"),store:read("store"),operation:read("operation"),plan:read("plan")}));
+ const context={preparation:read("preparation"),store:read("store"),operation:read("operation"),plan:read("plan")};
+ if(Object.values(context).some(Boolean))redirect(listingStageHref("waiting",context));
+ return <ListingOverview/>;
 }
