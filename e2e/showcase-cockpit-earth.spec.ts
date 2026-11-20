@@ -499,8 +499,9 @@ test("chat context right rail collapses without overflow and restores in light/d
     await expect(collapse).toBeVisible();
     const expanded=await panel.boundingBox();
     const sendButton=page.getByRole("button",{name:"发送消息"});
-    const canSend=await sendButton.evaluate(el=>{const b=el.getBoundingClientRect();const hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return hit===el || el.contains(hit);});
-    expect(canSend,"right context must not overlap send button at "+size.width).toBe(true);
+    await sendButton.scrollIntoViewIfNeeded();
+    const sendHit=await sendButton.evaluate(el=>{const b=el.getBoundingClientRect();const hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return {clickable:hit===el || el.contains(hit),button:{x:b.x,y:b.y,width:b.width,height:b.height},hit:hit?.tagName+"."+(String(hit?.className||"").slice(0,80))};});
+    expect(sendHit.clickable,"right context must not overlap send button at "+size.width+": "+JSON.stringify(sendHit)).toBe(true);
     await collapse.click();
     await expect(workspace).toHaveAttribute("data-context-open","false");
     await expect(panel).toHaveAttribute("data-collapsed","true");
