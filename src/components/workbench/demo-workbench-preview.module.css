@@ -2971,3 +2971,34 @@
  .agentsPreview.agentMarketReference .agentFilters>button:nth-child(-n+7){flex:1 1 22%;}
  .agentsPreview.agentMarketReference .agentFilters>input{flex:1 1 100%;max-width:none;}
 }
+
+/* Agent light-mode final cascade: newer Figma semantic colors supersede legacy violet rules. */
+:global(.light) .agentsPreview.agentsPreview .primary,
+:global(.light) .agentsPreview.agentsPreview .dataCard button,
+:global(.light) .agentsPreview.agentMarketReference .agentFilters>button.primary:nth-last-child(2),
+:global(.light) .agentsPreview.agentMarketReference .agentCards footer button:nth-child(2),
+:global(.light) .agentsPreview .agentMineToolbar>.primary{
+ color:#fff;background:#087f6c;border-color:#087f6c;
+}
+:global(.light) .agentsPreview.agentMarketReference .agentCards article,
+:global(.light) .agentsPreview .agentMine>article>section,
+:global(.light) .agentsPreview .agentMine>article>aside{
+ background:#fff;border-color:#d8e4ee;color:#172b45;
+}
+:global(.light) .agentsPreview .agentMine>article :is(p,dd,.agentTags span){
+ color:#172b45;
+}
+:global(.light) .agentsPreview .agentMine>article :is(small,dt){
+ color:#496177;
+}
+:global(.light) .agentsPreview.agentMarketReference .agentCards article p{color:#172b45;}
+:global(.light) .agentsPreview.agentMarketReference .agentCards footer button:not(:nth-child(2)){
+ color:#172b45;background:#f1f5fa;border-color:#d8e4ee;
+}
+:global(.light) .agentsPreview.agentMarketReference .agentCards footer .agentMarketStatus{
+ color:#496177;background:#eff4fa;
+}
+:global(.light) .agentsPreview.agentMarketReference .agentFilters>button.agentCategoryActive,
+:global(.light) .agentsPreview .agentMineToolbar>button.agentCategoryActive{
+ color:#087f6c!important;border-color:#087f6c!important;background:#e5f5f0!important;
+}
