@@ -992,3 +992,15 @@
   --sumi-fg-rose:#b52d3a;
   --sumi-fg-lavender:#6254c8;
 }
+
+
+/* Referral rules are a separate card family and must also switch to light. */
+:global(.light) .page .referralRules>article {
+  color:#444050;
+  background:#fff;
+  border:1px solid #e3dfed;
+  box-shadow:0 5px 18px #41395409;
+}
+:global(.light) .page .referralRules h3 {color:#444050;}
+:global(.light) .page .referralRules p {color:#625d70;}
+:global(.light) .page .noticeBar>div b {color:#6254c8;}
