@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { ShowcaseTopbarActions, ShowcaseNotifications } from "./topbar-interactions";
 import { DemoWorkbenchPreview } from "@/components/workbench/demo-workbench-preview";
 import { CockpitPreview } from "@/components/workbench/cockpit/cockpit-preview";
@@ -8,6 +8,17 @@ import { ConsoleNavigation } from "@/components/workbench/console/console-naviga
 import { ShowcaseNavigation, useRouter } from "./next-navigation";
 import "@/app/globals.css";
 import "./showcase.css";
+
+// Vuexy-style outlined panel icon, with direction reflecting the sidebar state.
+function SidebarToggleGlyph({ collapsed }: { collapsed: boolean }) {
+  return <svg className="showcase-sidebar-toggle-glyph" width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect x="2.25" y="2.5" width="15.5" height="15" rx="2.25" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7.25 3.5V16.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    {collapsed
+      ? <path d="M10.25 10H15M12.5 7.75L15 10L12.5 12.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      : <path d="M15 10H10.25M12.75 7.75L10.25 10L12.75 12.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />}
+  </svg>;
+}
 
 function Showcase() {
   const router = useRouter();
@@ -41,7 +52,7 @@ function Showcase() {
   <div className="console-frame showcase-shell console-theme" data-sidebar-collapsed={sidebarCollapsed || undefined} data-mobile-menu-open={mobileMenuOpen || undefined}>
     {mobileMenuOpen && <button type="button" className="showcase-sidebar-backdrop" aria-label="关闭导航菜单" onClick={() => setMobileMenuOpen(false)} />}
     <aside className="console-sidebar showcase-sidebar" id="workbench-desktop-navigation" data-mobile-open={mobileMenuOpen || undefined}>
-      <div className="console-sidebar-head"><a className="console-brand" href="/shuomi/#/workbench" aria-label="硕米智能引擎首页" onClick={event => { event.preventDefault(); router.push("/workbench"); }}><img src="/shuomi/console/sumi-logo.png" alt="" width="42" height="42" /><span className="console-brand-label"><strong>硕米智能引擎</strong><small>SHUOMI AI ENGINE</small></span></a><button className="showcase-sidebar-mobile-close" type="button" aria-label="关闭侧边栏" title="关闭侧边栏" onClick={() => setMobileMenuOpen(false)}><X size={20} aria-hidden="true" /></button><button className="console-sidebar-toggle" type="button" aria-label={sidebarCollapsed ? "展开侧栏" : "收窄侧栏"} title={sidebarCollapsed ? "展开侧栏" : "收窄侧栏"} aria-expanded={!sidebarCollapsed} aria-controls="workbench-desktop-navigation" onClick={() => setSidebarCollapsed(value => !value)}>{sidebarCollapsed ? <PanelLeftOpen aria-hidden="true" size={18} /> : <PanelLeftClose aria-hidden="true" size={18} />}</button></div>
+      <div className="console-sidebar-head"><a className="console-brand" href="/shuomi/#/workbench" aria-label="硕米智能引擎首页" onClick={event => { event.preventDefault(); router.push("/workbench"); }}><img src="/shuomi/console/sumi-logo.png" alt="" width="42" height="42" /><span className="console-brand-label"><strong>硕米智能引擎</strong><small>SHUOMI AI ENGINE</small></span></a><button className="showcase-sidebar-mobile-close" type="button" aria-label="关闭侧边栏" title="关闭侧边栏" onClick={() => setMobileMenuOpen(false)}><X size={20} aria-hidden="true" /></button><button className="console-sidebar-toggle" type="button" aria-label={sidebarCollapsed ? "展开侧栏" : "收窄侧栏"} title={sidebarCollapsed ? "展开侧栏" : "收窄侧栏"} aria-expanded={!sidebarCollapsed} aria-controls="workbench-desktop-navigation" onClick={() => setSidebarCollapsed(value => !value)}><SidebarToggleGlyph collapsed={sidebarCollapsed} /></button></div>
       <ConsoleNavigation pathname={router.pathname} ariaLabel="工作台导航" onNavigate={() => setMobileMenuOpen(false)} showcaseMode dataServicesAvailable reportCenterAvailable toolMarketAvailable supplyMarketAvailable productAcquisitionAvailable productCollectionsAvailable supplyChainAvailable supplyPreparationAvailable supplyCompletionDraftsAvailable knowledgeAvailable projectCenterAvailable operationsCockpitAvailable cockpitPermissions={cockpitPermissions} storeProductsAvailable storeOrdersAvailable fulfillmentAvailable aiWorkbenchAvailable nativeRunsAvailable={false} productReviewAvailable ecoservicesAvailable sheinRecordsAvailable />
     </aside>
     <div className="showcase-main">
