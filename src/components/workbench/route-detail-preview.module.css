@@ -879,3 +879,156 @@
 
 /* Product listing and order tab subtitle text. */
 :global(.light) .page :is(.productTabs small,.orderTabs small,.productTable > header small,.productFilters small,.orderTable > header small) {color:#625d70;}
+
+
+/* Task center deep pages: the .taskDetailPreview selectors below are intentionally
+   scoped to the real page component. Generic light overrides missed this view. */
+:global(.light) .page.taskDetailPreview {
+  --task-light-surface:#fff;
+  --task-light-raised:#f8f7fa;
+  --task-light-line:#e3dfed;
+  --task-light-text:#444050;
+  --task-light-muted:#625d70;
+  --task-light-primary:#7367f0;
+  color:var(--task-light-text);
+}
+:global(.light) .page.taskDetailPreview .toolbar,
+:global(.light) .page.taskDetailPreview .table,
+:global(.light) .page.taskDetailPreview .metrics>article {
+  color:var(--task-light-text);
+  border:1px solid var(--task-light-line);
+  background:var(--task-light-surface);
+  box-shadow:0 5px 16px #4139540a;
+}
+:global(.light) .page.taskDetailPreview .toolbar {
+  padding:12px 14px;
+}
+:global(.light) .page.taskDetailPreview .toolbar input {
+  color:var(--task-light-text);
+  background:var(--task-light-raised);
+  border:1px solid #dbdade;
+}
+:global(.light) .page.taskDetailPreview .toolbar input::placeholder {
+  color:#6f6b7d;
+  opacity:1;
+}
+:global(.light) .page.taskDetailPreview :is(.toolbar button,.headerActions button) {
+  color:#6254c8;
+  background:#f1efff;
+  border:1px solid #d9d2f7;
+}
+:global(.light) .page.taskDetailPreview :is(.toolbar button,.headerActions button):hover {
+  color:#5144b9;
+  background:#e8e4ff;
+  border-color:#7367f0;
+}
+:global(.light) .page.taskDetailPreview :is(.toolbar .primary,.headerActions .primary,.table>header button) {
+  color:#fff;
+  background:#7367f0;
+  border-color:#7367f0;
+}
+:global(.light) .page.taskDetailPreview .table > header h2 {
+  color:var(--task-light-text);
+}
+:global(.light) .page.taskDetailPreview .taskDetailHead {
+  color:#5d596c;
+  background:#f4f3f8;
+  border:1px solid #e3dfed;
+  font-weight:650;
+}
+:global(.light) .page.taskDetailPreview .taskDetailHead>span {
+  color:#5d596c;
+}
+:global(.light) .page.taskDetailPreview .taskDetailRow {
+  color:var(--task-light-muted);
+  background:#fff;
+  border-bottom:1px solid #e8e5f0;
+}
+:global(.light) .page.taskDetailPreview .taskDetailRow:nth-of-type(even) {
+  background:#fcfbfe;
+}
+:global(.light) .page.taskDetailPreview .taskDetailRow>span:first-child {
+  color:var(--task-light-text);
+  font-weight:650;
+}
+:global(.light) .page.taskDetailPreview .taskDetailRow>span:not(:first-child) {
+  color:#625d70;
+}
+:global(.light) .page.taskDetailPreview .taskDetailRow>span:last-child:not([data-status]) {
+  color:#6254c8;
+  font-weight:600;
+}
+:global(.light) .page.taskDetailPreview:not([data-task-detail="scheduled"]) .taskDetailRow>span:nth-child(3),
+:global(.light) .page.taskDetailPreview[data-task-detail="scheduled"] .taskDetailRow>span:nth-child(5) {
+  color:#6254c8;
+  background:#efecff;
+  border:1px solid #ded7f5;
+}
+:global(.light) .page.taskDetailPreview[data-task-detail="running"] .taskDetailRow>span:nth-child(3),
+:global(.light) .page.taskDetailPreview .taskDetailRow>span[data-status*="执行中"] {
+  color:#176990;
+  background:#e6f5fc;
+  border-color:#c6e3f1;
+}
+:global(.light) .page.taskDetailPreview[data-task-detail="pending"] .taskDetailRow>span:nth-child(3),
+:global(.light) .page.taskDetailPreview .taskDetailRow>span[data-status="待你确认"] {
+  color:#9e5f17;
+  background:#fff2df;
+  border-color:#f1d8b1;
+}
+:global(.light) .page.taskDetailPreview[data-task-detail="completed"] .taskDetailRow>span:nth-child(3),
+:global(.light) .page.taskDetailPreview .taskDetailRow>span[data-status="已完成"],
+:global(.light) .page.taskDetailPreview .taskDetailRow>span[data-status^="已启用"] {
+  color:#14764d;
+  background:#e4f7ec;
+  border-color:#bfe7cf;
+}
+:global(.light) .page.taskDetailPreview[data-task-detail="errors"] .taskDetailRow>span:nth-child(3),
+:global(.light) .page.taskDetailPreview .taskDetailRow>span[data-status="需要处理"] {
+  color:#b52d3a;
+  background:#ffecef;
+  border-color:#efc5ce;
+}
+:global(.light) .page.taskDetailPreview[data-task-detail="scheduled"] .taskDetailRow>span:nth-child(5) {
+  color:#14764d;
+  background:#e4f7ec;
+  border-color:#bfe7cf;
+}
+:global(.light) .page.taskDetailPreview[data-task-detail="scheduled"] .taskDetailRow>span[data-status^="已暂停"] {
+  color:#625d70;
+  background:#f2f0f5;
+  border-color:#ddd9e9;
+}
+:global(.light) .page.taskDetailPreview>p,
+:global(.light) .page.taskDetailPreview .metrics :is(span,small) {
+  color:#625d70;
+}
+:global(.light) .page.taskDetailPreview .metrics strong {
+  color:#444050;
+}
+:global(.light) .page.taskDetailPreview .scheduledMetrics>article {
+  border-color:var(--task-light-line);
+  background:#fff;
+}
+:global(.light) .page.taskDetailPreview .scheduledMetrics>article>strong {
+  color:#6254c8;
+  background:#efecff;
+}
+:global(.light) .page.taskDetailPreview .scheduledMetrics>article:nth-child(1)>strong {
+  color:#14764d;
+  background:#e4f7ec;
+}
+:global(.light) .page.taskDetailPreview .scheduledMetrics>article:nth-child(2)>strong {
+  color:#9e5f17;
+  background:#fff2df;
+}
+:global(.light) .page.taskDetailPreview .scheduledMetrics>article:nth-child(3)>strong {
+  color:#176990;
+  background:#e6f5fc;
+}
+:global(.light) .page.taskDetailPreview .scheduledMetrics>article :is(span,small) {
+  color:#625d70;
+}
+:global(.light) .page.taskDetailPreview .scheduledMetrics>article>span {
+  color:#444050;
+}
