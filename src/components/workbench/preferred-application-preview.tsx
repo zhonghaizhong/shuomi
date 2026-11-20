@@ -74,7 +74,7 @@ export function PreferredApplicationPreview({pathname}:{pathname:string}){
  const metrics=isRecord?[["9","全部记录","历史审核记录"],["8","已通过","审核已完成"],["1","未通过","可修改后重申"]]:isProgress?[["5","全部申请","申请总记录"],["1","待受理","等待平台处理"],["1","审核中","平台正在审核"],["1","已通过","审核已完成"],["2","未通过","可修改后重申"]]:[["34","可申请商品","符合申请条件"],["3","审核中","平台审核进行中"],["1","未通过","可修改后再申请"],["8","已通过","审核已完成"]];
  const title=isRecord?"申请记录":isProgress?"申请进度":isNew?(step==="select"?"选择申请商品":"填写供货信息"):"发起申请";
  const description=isRecord?"仅记录已完成审核的申请；未通过可查看原因、修改资料后重新申请。":isProgress?"查看每笔申请的审核状态，未通过可修改资料后重新提交。":isNew?(step==="select"?"从「已上传 · 自有商品库」中按合集名称及申请状态查询，选择可申请商品。":"填写供货、交付及合作信息，完成后提交优选申请审核。"):"将「已上传 · 自有商品库」中符合条件的商品提交优选申请。";
- const edit=()=>{try{sessionStorage.setItem(STORAGE+"-edit","1")}catch{}go("/new");};
+ const edit=()=>{try{const current=sessionStorage.getItem(STORAGE);const saved=current?JSON.parse(current):null;const selectedProducts=Array.isArray(saved?.selected)&&saved.selected.length?saved.selected:items.filter(p=>p.status==="可申请").slice(0,Math.min(2,focused.count)).map(p=>p.sku);sessionStorage.setItem(STORAGE,JSON.stringify({selected:selectedProducts,draft:saved?.draft??emptySupply}));sessionStorage.setItem(STORAGE+"-edit","1");}catch{}go("/new");};
  return <div className={styles.page} data-preferred-application={isRecord?"records":isProgress?"progress":isNew?step:"overview"}>
    <SectionHead title={title} description={description}>
      {(isRecord||isProgress)?<button className={styles.primary} onClick={()=>{setStep("select");go("/new");}}>发起新申请</button>:
