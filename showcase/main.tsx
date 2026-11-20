@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ShowcaseTopbarActions, ShowcaseNotifications } from "./topbar-interactions";
@@ -14,6 +14,18 @@ function Showcase() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [readNoticeIds,setReadNoticeIds] = useState<number[]>([4]);
   const [isLightTheme, setIsLightTheme] = useState(false);
+  // Match the document-level theme to the preview. Portaled menus and dialogs
+  // render outside .showcase-shell and otherwise inherit the dark root palette.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("light", isLightTheme);
+    root.classList.toggle("dark", !isLightTheme);
+    root.style.colorScheme = isLightTheme ? "light" : "dark";
+    return () => {
+      root.classList.remove("light", "dark");
+      root.style.removeProperty("color-scheme");
+    };
+  }, [isLightTheme]);
   const cockpitPermissions = ["workbench.cockpit.goals.read", "workbench.cockpit.stores.read", "workbench.cockpit.alerts.read", "workbench.cockpit.advice.read"];
   return <div className={isLightTheme ? "light" : "dark"}>
   <div className="console-frame showcase-shell console-theme" data-sidebar-collapsed={sidebarCollapsed || undefined}>
