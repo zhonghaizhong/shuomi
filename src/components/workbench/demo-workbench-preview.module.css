@@ -3002,3 +3002,33 @@
 :global(.light) .agentsPreview .agentMineToolbar>button.agentCategoryActive{
  color:#087f6c!important;border-color:#087f6c!important;background:#e5f5f0!important;
 }
+
+/* Intelligent market overview: use the same dark blue/light teal surfaces as its three destinations. */
+.agentsPreview:not(.agentMarketReference) :is(.dataCard,.capabilityBand article,.agentsBottom>article,.agentsBottom>aside){
+ background:var(--agent-surface);border-color:var(--agent-border);color:var(--agent-text);
+}
+.agentsPreview:not(.agentMarketReference) :is(.dataCard p,.capabilityBand article p,.agentsBottom p,.dataCard>div span){
+ color:var(--agent-muted);
+}
+.agentsPreview:not(.agentMarketReference) :is(.capabilityBand h2,.agentsBottom h2,.agentsBottom h3){
+ color:var(--agent-text);
+}
+.agentsPreview:not(.agentMarketReference) .dataCard{
+ border-radius:8px;box-shadow:inset 3px 0 0 var(--accent,#62a9ff);
+}
+.agentsPreview:not(.agentMarketReference) .dataCard h2{color:var(--accent,#62a9ff);}
+.agentsPreview:not(.agentMarketReference) .dataCard button{
+ border-color:var(--agent-primary);background:var(--agent-primary);color:#fff;
+}
+.agentsPreview:not(.agentMarketReference) .agentsBottom :is(button,.agentsBottom b){
+ border-color:var(--agent-border);background:var(--agent-raised);color:var(--agent-text);
+}
+:global(.light) .agentsPreview:not(.agentMarketReference) :is(.dataCard,.capabilityBand article,.agentsBottom>article,.agentsBottom>aside){
+ background:#fff;border-color:#d8e4ee;color:#172b45;
+}
+:global(.light) .agentsPreview:not(.agentMarketReference) :is(.dataCard p,.capabilityBand article p,.agentsBottom p,.dataCard>div span){
+ color:#496177;
+}
+:global(.light) .agentsPreview:not(.agentMarketReference) .dataCard button{
+ background:#087f6c;border-color:#087f6c;color:#fff;
+}
