@@ -2643,3 +2643,50 @@
 :global(.light) .libraryHubPreview[data-library-hub="projects"] .rowMain strong,
 :global(.light) .libraryHubPreview[data-library-hub="projects"] .listHeading h2 {color:#444050;}
 :global(.light) .libraryHubPreview[data-library-hub="projects"] .metrics > article > strong {font-weight:750;}
+
+
+/* Page-by-page Chromium contrast audit corrections: light text on light cards.
+   Centralized by component family rather than per-route exceptions. */
+:global(.light) .cockpitPreview :is(.goalMetrics article,.alertMetrics article) > strong {
+  color:#176990;
+}
+:global(.light) .cockpitPreview :is(.goalMetrics article,.alertMetrics article):nth-child(2) > strong {
+  color:#14764d;
+}
+:global(.light) .cockpitPreview :is(.goalMetrics article,.alertMetrics article):nth-child(3) > strong {
+  color:#9e5f17;
+}
+:global(.light) .cockpitPreview .alertMetrics article:nth-child(4) > strong {color:#6254c8;}
+:global(.light) .cockpitPreview .goalRow :is(small,strong),
+:global(.light) .cockpitPreview .goalRow>span:first-child strong {color:#444050;}
+:global(.light) .cockpitPreview .goalRow small {color:#625d70;}
+:global(.light) .cockpitPreview .goalRow > span:nth-child(6) b {color:#14764d;background:#e3f6e9;}
+:global(.light) .aiWorkbenchPreview .supplyFlow b {color:#176990;border-color:#bfdde9;background:#e7f5fd;}
+:global(.light) .aiWorkbenchPreview .supplyFlow article:nth-child(2) b {color:#14764d;border-color:#c0e7cc;background:#e6f6ed;}
+:global(.light) .aiWorkbenchPreview .supplyFlow article:nth-child(3) b {color:#9e5f17;border-color:#f0ddc4;background:#fff2e2;}
+:global(.light) .aiWorkbenchPreview .aiCards article footer span {color:#176990;border-color:#c9e4f1;background:#e8f6fc;}
+:global(.light) .aiWorkbenchPreview .aiCards article:nth-child(2) footer span {color:#14764d;border-color:#bde3cd;background:#e9f6ee;}
+:global(.light) .aiWorkbenchPreview .aiCards article:nth-child(3) footer span {color:#9e5f17;border-color:#f3dcc1;background:#fff2e2;}
+:global(.light) .aiWorkbenchPreview .aiHint strong {color:#444050;}
+:global(.light) .aiWorkbenchPreview .aiHint button {color:#6254c8;}
+:global(.light) .libraryHubPreview .metrics>article>strong {color:#444050;}
+:global(.light) .libraryHubPreview .metrics>article>span {color:#625d70;}
+:global(.light) .libraryHubPreview .cardHeading span,
+:global(.light) .libraryHubPreview .rowValue,
+:global(.light) .libraryHubPreview .listHeading .eyebrow {color:#6254c8;}
+:global(.light) .libraryHubPreview .card :is(h2,h3,strong) {color:#444050;}
+:global(.light) .libraryHubPreview .card :is(p,small) {color:#625d70;}
+:global(.light) .libraryHubPreview .card .status {color:#14764d;background:#e7f7ed;}
+:global(.light) .supplyPreview .supplyFlow b {color:#176990;border-color:#c5deee;background:#e7f5fd;}
+:global(.light) .supplyPreview .supplyFlow article:nth-child(2) b {color:#14764d;border-color:#c0e7cc;background:#e6f6ed;}
+:global(.light) .supplyPreview .supplyFlow article:nth-child(3) b {color:#6254c8;border-color:#ded5fa;background:#eeebff;}
+:global(.light) .supplyPreview .supplyFlow article:nth-child(4) b {color:#9e5f17;border-color:#f3dcc1;background:#fff2e2;}
+:global(.light) .supplyPreview .supplyCard :is(.primary,strong,h2,h3) {color:#444050;}
+:global(.light) .supplyPreview .supplyCard button.primary {color:#fff;}
+:global(.light) .page :is(.planStats strong,.accountOverview article strong,.accountModules article strong) {color:#444050;}
+:global(.light) .page :is(.planStats div:nth-child(4) strong,.accountModules footer b) {color:#6254c8;}
+:global(.light) .page :is(.profileBanner dl dd,.profileStatus article strong,.profileFacts strong) {color:#444050;}
+:global(.light) .page :is(.profileBanner dl dt,.profileFacts span,.profileStatus article small) {color:#625d70;}
+:global(.light) .page .accountBottom {color:#444050;background:#fff;border-color:#e3dfed;}
+:global(.light) .page .accountBottom :is(h2,h3,strong) {color:#444050;}
+:global(.light) .page .accountBottom :is(span,p,small) {color:#625d70;}
