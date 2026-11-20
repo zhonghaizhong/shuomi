@@ -937,7 +937,7 @@
   .skillTeamEmpty .cardActions button:not(.primary)
 ) {color:#6254c8;background:#f3f1ff;border-color:#d9d2f7;}
 :global(.light) .page :is(
-  .category button.selected,.tabs .selected,.selected,.toolbar .primary,
+  .category button.selected,.tabs button.selected,.toolbar .primary,
   .cardActions .primary
 ) {color:#fff;background:#7367f0;border-color:#7367f0;}
 :global(.light) .page .skillItemMark {background:#eeebff;color:#6254c8;}
