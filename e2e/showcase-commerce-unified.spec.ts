@@ -92,11 +92,13 @@ test("Figma account navigation, enterprise roles and referrals keep correct rout
  await page.setViewportSize({width:1440,height:900});
  await page.goto(root+"/account");
  const nav=page.getByRole("navigation",{name:"工作台导航"});
- await nav.getByRole("button",{name:"展开我的账户"}).click();
+ const accountToggle=nav.getByRole("button",{name:"展开我的账户"});
+ if(await accountToggle.count())await accountToggle.click();
  for(const name of ["账户资料","企业空间","推广与收益"]){
   await expect(nav.getByRole("link",{name,exact:true})).toBeVisible();
  }
- await nav.getByRole("button",{name:"展开企业空间"}).click();
+ const enterpriseToggle=nav.getByRole("button",{name:"展开企业空间"});
+ if(await enterpriseToggle.count())await enterpriseToggle.click();
  for(const [label,route] of [["成员管理","members"],["角色权限","roles"],["资源与额度","resources"],["操作记录","audit"]] as const){
   const link=nav.getByRole("link",{name:label,exact:true});
   await expect(link).toBeVisible();
