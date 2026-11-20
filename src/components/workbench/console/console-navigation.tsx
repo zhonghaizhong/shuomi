@@ -131,13 +131,7 @@ function markPreviewNavigationAvailable(node: ConsoleNavNode): ConsoleNavNode {
       { label: "订单履约", href: "/workbench/store-orders", availability: "connected" },
     ] };
   }
-  if (node.href === "/workbench/account/organization") {
-    return { ...node, availability: "connected", children: [
-      ...(children ?? []).filter(child => child.label !== "成员与权限"),
-      { label: "成员管理", href: "/workbench/account/organization/members", availability: "connected" },
-      { label: "角色权限", href: "/workbench/account/organization/members?view=roles", availability: "connected" },
-    ] };
-  }
+  // Account submenus already match Figma in consoleNavigation. Do not append duplicate entries or redirect the roles link to a query string.
   return { ...node, availability: "connected", ...(children ? { children } : {}) };
 }
 function MarketBranch({node,pathname,trail,onNavigate,userId}:{node:ConsoleNavNode;pathname:string;trail:readonly string[];onNavigate?:()=>void;userId:string}){
