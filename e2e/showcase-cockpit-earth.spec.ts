@@ -531,3 +531,33 @@ test("chat context right rail collapses without overflow and restores in light/d
     }
   }
 });
+
+
+test("light hero keeps high-contrast subtitle and luminous main title during globe rotation", async ({page}) => {
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto(cockpit);
+  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  const hero=page.locator('[data-dashboard="operations"] [class*="overviewFeature"]').first();
+  const title=hero.getByRole("heading",{name:"经营全局 · 一屏掌握"});
+  const intro=hero.locator('[class*="heroIntro"]');
+  const globe=hero.locator("canvas[data-globe-status]");
+  await expect(title).toBeVisible();
+  await expect(globe).toHaveAttribute("data-globe-status","ready",{timeout:30000});
+  await expect(globe).toHaveAttribute("data-globe-clouds","ready",{timeout:30000});
+  const visual=await title.evaluate(el=>{
+    const css=getComputedStyle(el);
+    return {gradient:css.backgroundImage,clip:css.backgroundClip,fill:css.getPropertyValue("-webkit-text-fill-color")};
+  });
+  expect(visual.gradient).toContain("linear-gradient");
+  expect(visual.clip).toContain("text");
+  expect(visual.fill).toBe("rgba(0, 0, 0, 0)");
+  const introText=await intro.evaluate(el=>getComputedStyle(el).color);
+  expect(introText).toBe("rgb(249, 247, 255)");
+  await page.screenshot({path:"test-results/cockpit-hero-light-gradient.png",fullPage:false});
+  await globe.screenshot({path:"test-results/cockpit-globe-seam-first.png"});
+  await page.waitForTimeout(1200);
+  await expect(globe).toHaveAttribute("data-globe-status","ready");
+  await globe.screenshot({path:"test-results/cockpit-globe-seam-rotating.png"});
+  await page.getByRole("button",{name:"切换深色主题"}).click();
+  await expect(intro).toHaveCSS("color","rgb(249, 247, 255)");
+});

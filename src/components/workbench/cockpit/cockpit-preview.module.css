@@ -1288,3 +1288,49 @@
 :global(.light) .page .matrixRow em[data-status="需关注"] {color:#9e5f17;background:#fff2df;}
 :global(.light) .page .matrixRow em[data-status="异常"] {color:#b52d3a;background:#ffecef;}
 :global(.light) .page .matrixFooter :is(span,button:not(.currentPage)) {color:#5d596c;}
+
+
+/* Hero typography stays bright on the violet panel even in Vuexy light mode.
+   Prevent generic light-card text overrides from making it unreadable. */
+.page .overviewFeature .heroCopy h1 {
+  color:#fff;
+  background:linear-gradient(100deg,#ffffff 4%,#b7f3ff 34%,#fff2bf 63%,#ffd1ee 83%,#ffffff 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 1px 7px #30218f35);
+}
+.page .overviewFeature .heroCopy .heroIntro {
+  color:#f9f7ff;
+  font-weight:520;
+  text-shadow:0 1px 2px #2619763d;
+}
+.page .overviewFeature .heroEyebrow,
+.page .overviewFeature .heroScope {color:#fff;}
+.page .overviewFeature .heroEnglish {color:#f0ebff;}
+.page .overviewFeature .heroHighlights span {
+  color:#fff;
+  border-color:#ffffff55;
+  background:#ffffff1c;
+}
+:global(.light) .page .overviewFeature .heroCopy h1 {
+  color:#fff;
+  background:linear-gradient(100deg,#ffffff 4%,#b7f3ff 34%,#fff2bf 63%,#ffd1ee 83%,#ffffff 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+:global(.light) .page .overviewFeature .heroCopy .heroIntro {
+  color:#f9f7ff;
+  text-shadow:0 1px 2px #2619763d;
+}
+:global(.light) .page .overviewFeature :is(.heroEyebrow,.heroScope,.heroHighlights span) {color:#fff;}
+:global(.light) .page .overviewFeature .heroEnglish {color:#f0ebff;}
+@media (forced-colors:active) {
+  .page .overviewFeature .heroCopy h1,
+  :global(.light) .page .overviewFeature .heroCopy h1 {
+    background:none;
+    -webkit-text-fill-color:currentColor;
+    filter:none;
+  }
+}
