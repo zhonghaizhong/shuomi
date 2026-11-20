@@ -48,6 +48,15 @@ test("collapsed sidebar keeps navigation usable in both themes and all toggle st
     const shell = page.locator(".showcase-shell");
     await expect(shell).toHaveAttribute("data-sidebar-collapsed", "true");
     const side = page.locator(".showcase-sidebar");
+    const width = await side.evaluate(el => el.getBoundingClientRect().width);
+    expect(width, "collapsed sidebar should be compact, not a full-width empty column").toBeGreaterThanOrEqual(72);
+    expect(width).toBeLessThanOrEqual(80);
+    const menuItems = side.locator(".console-nav-level-1 > .console-nav-row > a");
+    const menuBox = await menuItems.first().boundingBox();
+    const sideBox = await side.boundingBox();
+    expect(menuBox).not.toBeNull();
+    expect(sideBox).not.toBeNull();
+    expect(Math.abs(menuBox!.x + menuBox!.width / 2 - (sideBox!.x + sideBox!.width / 2))).toBeLessThanOrEqual(4);
     const background = await side.evaluate(el => getComputedStyle(el).backgroundColor);
     if (light) expect(background).not.toBe("rgb(12, 20, 39)");
     await page.getByRole("button", { name: "展开侧栏" }).click();
