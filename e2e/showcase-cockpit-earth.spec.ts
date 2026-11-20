@@ -270,3 +270,58 @@ test("standard headers keep actions clickable and adapt to narrow screens", asyn
   await page.getByRole("button", { name: /转化率下降/ }).click();
   await expect(page.getByRole("heading", { name: "转化率下降" })).toBeVisible();
 });
+
+
+/* Regression for previously unstyled light-mode nested surfaces.
+   Test rendered RGB and foreground/background contrast, not just CSS presence. */
+const lightDetailSurfaces = [
+  {route:"/workbench/tools/mine", target:'[class*="mineGuide"] > div', text:"strong"},
+  {route:"/workbench/agents/custom", target:'[class*="featureGrid"] article', text:"h3"},
+  {route:"/workbench/tools/custom", target:'[class*="features"] article', text:"h3"},
+  {route:"/workbench/agents/custom/new", target:'[class*="formLayout"] input:not([type="checkbox"]):not([type="file"])', text:null},
+  {route:"/workbench/tools/custom/new", target:'[class*="formLayout"] input:not([type="checkbox"]):not([type="file"])', text:null},
+  {route:"/workbench/store-products", target:'[class*="productMetrics"] article', text:"strong"},
+  {route:"/workbench/store-orders", target:'[class*="orderMetrics"] article', text:"strong"},
+] as const;
+
+test("light mode nested cards and controls are light and text is readable", async ({page}) => {
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto("/shuomi/#/workbench/tools");
+  await page.getByRole("button", {name:"切换浅色主题"}).click();
+  for (const item of lightDetailSurfaces) {
+    await page.goto("/shuomi/#"+item.route);
+    await expect(page.locator(".light .showcase-shell")).toBeVisible();
+    const target=page.locator(item.target).first();
+    await expect(target, item.route).toBeVisible();
+    const colors=await target.evaluate((element, childSelector) => {
+      function channels(value:string) {
+        const values=value.match(/[\\d.]+/g)?.slice(0,3).map(Number)??[];
+        return value.startsWith("color(srgb")?values.map(v=>v*255):values;
+      }
+      function brightness(c:number[]) {return (c[0]*.2126+c[1]*.7152+c[2]*.0722);}
+      const style=getComputedStyle(element);
+      const foreground=childSelector ? element.querySelector(childSelector) : element;
+      const fg=foreground?getComputedStyle(foreground).color:"";
+      return {background:style.backgroundColor,foreground:fg,backgroundBrightness:brightness(channels(style.backgroundColor)),foregroundBrightness:brightness(channels(fg))};
+    },item.text);
+    expect(colors.background, item.route+" unexpectedly transparent").not.toBe("rgba(0, 0, 0, 0)");
+    expect(colors.backgroundBrightness, item.route+" has dark card").toBeGreaterThan(190);
+    expect(colors.foregroundBrightness, item.route+" has too-light text").toBeLessThan(190);
+  }
+});
+
+test("tool modal in light theme has light nested details with readable labels", async ({page}) => {
+  await page.goto("/shuomi/#/workbench/tools/official");
+  await page.getByRole("button", {name:"切换浅色主题"}).click();
+  // Download dialogs are rendered conditionally; find the real install action.
+  const download=page.getByRole("button", {name:/下载|安装/}).first();
+  await expect(download).toBeVisible();
+  await download.click();
+  const details=page.locator('[class*="downloadDetails"]');
+  await expect(details).toBeVisible();
+  const background=await details.evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(background).not.toBe("rgb(39, 52, 72)");
+  const label=details.locator("dt").first();
+  await expect(label).toBeVisible();
+  await expect(label).toHaveCSS("color","rgb(111, 107, 125)");
+});
