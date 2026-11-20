@@ -124,7 +124,7 @@ test("my supply chain and all stages are nested beneath my stores", async ({ pag
     const stage=nav.getByRole("link",{name:label,exact:true});
     await expect(stage).toBeVisible();
     await stage.click();
-    await expect(page).toHaveURL(new RegExp("#/workbench/listing/"+route+"(?:\\\\?|$)"));
+    await expect(page).toHaveURL(new RegExp("#/workbench/listing/"+route+"(?:[?]|$)"));
     await expect(page.locator("main.showcase-content")).toBeVisible();
     await expect(nav.getByRole("button",{name:"收起我的供应链"})).toBeVisible();
   }
