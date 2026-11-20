@@ -170,3 +170,7 @@
 :global(.light) .page :is(.steps b,.sideSteps b,.progressSteps b,.demoLabel) {color:#6254c8;}
 :global(.light) .confirmDialog :is(h2,strong) {color:#444050;}
 :global(.light) .confirmDialog p {color:#6f6b7d;}
+
+
+/* Required-fields helper label on the creation form. */
+:global(.light) .page .formIntro small {color:#625d70;}
