@@ -24,7 +24,7 @@ export default async function Page({params,searchParams}:{params:Promise<{stage:
    const value=query[key];
    return typeof value==="string"&&isAcquisitionUUID(value)?[[key,value]]:[];
   }));
-  return <ConsolePage title="商品刊登" breadcrumbs={route.trail} description="按目标店铺整理商品资料并查看上传结果。">
+  return <ConsolePage title="刊登管理" breadcrumbs={route.trail} description="按目标店铺整理商品资料并查看上传结果。">
     <ListingStageTabs current={stage.data} context={context}/>
     <ConsoleState kind="unavailable" title="平台处理尚未配置">此阶段需要正式官方应用、SHEIN 渠道及供应链运行配置。已保存的商品和待上传批次仍保留在原入口。</ConsoleState>
   </ConsolePage>;
