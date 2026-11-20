@@ -157,3 +157,9 @@
 :global(.light) .page .disabled {color:#696577;background:#f1f0f5;}
 :global(.light) .page .notice {background:#fff;}
 :global(.light) .page :is(.categories button[aria-pressed="true"],.statusFilter button[aria-pressed="true"]) {color:#fff;background:#7367f0;border-color:#7367f0;}
+
+
+/* Per-tool accent text was pastel-on-white and failed contrast checks. */
+:global(.light) .page .toolCard h3 {color:#444050;}
+:global(.light) .page .mineCard h2 {color:#444050;}
+:global(.light) .page .toolCard p {color:#625d70;}
