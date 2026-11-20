@@ -23,7 +23,7 @@ const subscribe = (notify: () => void) => { window.addEventListener("membership-
 const noPending = () => null;
 const isAuthorityFailure = (failure: unknown): failure is MemberError => failure instanceof MemberError && (failure.status === 401 || failure.status === 403 || ["IDENTITY_CONTEXT_CHANGED", "ORGANIZATION_CONTEXT_CHANGED", "ORGANIZATION_SELECTION_REQUIRED"].includes(failure.code));
 
-export function MembersPage({ expectedUserId }: { expectedUserId: string }) {
+export function MembersPage({ expectedUserId, initialTab = "members" }: { expectedUserId: string; initialTab?: "members"|"roles" }) {
   const context = useWorkbenchContext(); const [leaving, setLeaving] = useState(false);
   useEffect(() => { const click = (event: MouseEvent) => { const link = event.target instanceof Element ? event.target.closest("a") : null; if (link && new URL(link.href, location.href).pathname === "/api/zitadel-auth/logout") setLeaving(true); }; document.addEventListener("click", click, true); return () => document.removeEventListener("click", click, true); }, []);
   const org = context.effectiveOrganization;
@@ -32,12 +32,12 @@ export function MembersPage({ expectedUserId }: { expectedUserId: string }) {
   if (leaving || context.user?.id !== expectedUserId) content = <MemberFailure code="AUTHENTICATION_REQUIRED" />;
   else if (context.isSwitching || context.isLoading) content = <ConsoleState kind="loading" title="正在确认当前企业">旧成员资料已清除。</ConsoleState>;
   else if (!org || context.selectionRequired || context.error || context.blockingError) content = <MemberFailure code={context.blockingError?.code ?? context.error?.code ?? "ORGANIZATION_SELECTION_REQUIRED"} />;
-  else return <ScopedMembers key={scope} scope={{ expectedUserId, expectedOrganizationId: org.id }} />;
-  return <AccountShell pathname="/workbench/account/organization/members" title="成员与权限">{content}</AccountShell>;
+  else return <ScopedMembers key={`${scope}:${initialTab}`} initialTab={initialTab} scope={{ expectedUserId, expectedOrganizationId: org.id }} />;
+  return <AccountShell pathname={initialTab==="roles"?"/workbench/account/organization/roles":"/workbench/account/organization/members"} title={initialTab==="roles"?"角色权限":"成员管理"}>{content}</AccountShell>;
 }
 
-function ScopedMembers({ scope }: { scope:MemberScope }) {
-  const [tab,setTab]=useState<"roles"|"members">("members"),[inviteRequest,setInviteRequest]=useState(0),[canInvite,setCanInvite]=useState(false);
+function ScopedMembers({ scope, initialTab }: { scope:MemberScope; initialTab:"roles"|"members" }) {
+  const [tab,setTab]=useState<"roles"|"members">(initialTab),[inviteRequest,setInviteRequest]=useState(0),[canInvite,setCanInvite]=useState(false);
 
   const [memberTab,setMemberTab]=useState<"formal"|"inviting">("formal");
   const [offset, setOffset] = useState(0); const [selected, setSelected] = useState<string | null>(null);
@@ -115,7 +115,7 @@ function ScopedMembers({ scope }: { scope:MemberScope }) {
     try { persist(command); setChosen(command.key); setSelected(null); void run(command.key,command); }
     catch { setError("OPERATION_STORAGE_UNAVAILABLE"); }
   };
-  return <AccountShell pathname="/workbench/account/organization/members" title="成员与权限" description={tab === "roles" ? "系统仅保留管理员角色；其他角色由企业自定义。角色只控制模块是否可用。" : "邀请成员、分配角色并管理业务权限；资源与消费上限统一在「资源与额度」中分配。"} actions={tab==="members" && canManage ? <Button disabled={!canInvite || busy} onClick={()=>setInviteRequest(value=>value+1)}>邀请成员</Button> : undefined}><div className={styles.page}>
+  return <AccountShell pathname={initialTab==="roles"?"/workbench/account/organization/roles":"/workbench/account/organization/members"} title={tab==="roles"?"角色权限":"成员管理"} description={tab === "roles" ? "系统仅保留管理员角色；其他角色由企业自定义。角色只控制模块是否可用。" : "邀请成员、分配角色并管理业务权限；资源与消费上限统一在「资源与额度」中分配。"} actions={tab==="members" && canManage ? <Button disabled={!canInvite || busy} onClick={()=>setInviteRequest(value=>value+1)}>邀请成员</Button> : undefined}><div className={styles.page}>
     <div className={styles.sectionTabs} role="tablist" aria-label="成员与权限"><button role="tab" aria-selected={tab==="roles"} onClick={()=>setTab("roles")}>角色权限</button><button role="tab" aria-selected={tab==="members"} onClick={()=>setTab("members")}>成员管理</button></div>
     {tab==="roles" && !authorityError ? <RolePermissions scope={scope} onChanged={()=>void query.refetch()} onAuthorityFailure={quarantine}/> : null}
     <div hidden={tab!=="members"}>
