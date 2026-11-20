@@ -489,7 +489,8 @@ test("chat context right rail collapses without overflow and restores in light/d
     await page.goto("/shuomi/#/workbench/ai/chat/new");
     await page.getByRole("button",{name:"切换浅色主题"}).click();
     await page.locator("#chat-new-prompt").fill("帮我整理本周店铺经营目标");
-    await page.getByRole("button",{name:"发送消息"}).click();
+    await page.locator("#chat-new-prompt").press("Control+Enter");
+    await expect(page.getByRole("complementary",{name:"会话上下文"})).toBeVisible();
     const workspace=page.locator('[class*="_workspace_"]').first();
     const panel=page.getByRole("complementary",{name:"会话上下文"});
     if(size.width<=600)await page.getByRole("button",{name:"展开会话面板"}).click();
@@ -497,6 +498,9 @@ test("chat context right rail collapses without overflow and restores in light/d
     await expect(panel).toBeVisible();
     await expect(collapse).toBeVisible();
     const expanded=await panel.boundingBox();
+    const sendButton=page.getByRole("button",{name:"发送消息"});
+    const canSend=await sendButton.evaluate(el=>{const b=el.getBoundingClientRect();const hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return hit===el || el.contains(hit);});
+    expect(canSend,"right context must not overlap send button at "+size.width).toBe(true);
     await collapse.click();
     await expect(workspace).toHaveAttribute("data-context-open","false");
     await expect(panel).toHaveAttribute("data-collapsed","true");
