@@ -342,3 +342,63 @@ button { font: inherit; }
 @media (prefers-reduced-motion:reduce) {
   .showcase-shell > .showcase-sidebar {transition:none}
 }
+
+/* Vuexy-inspired sidebar toggle appearance: states consistent across themes. */
+@media (min-width:901px) {
+  .showcase-shell .showcase-sidebar .console-sidebar-toggle {
+    display:inline-grid;
+    flex:0 0 34px;
+    width:34px;
+    height:34px;
+    min-height:34px;
+    place-items:center;
+    padding:0;
+    margin:0;
+    border:1px solid transparent;
+    border-radius:8px;
+    background:transparent;
+    color:#aaa9c4;
+    cursor:pointer;
+    transition:color .15s ease, background-color .15s ease, border-color .15s ease;
+  }
+  .dark .showcase-shell .showcase-sidebar .console-sidebar-toggle:hover {
+    color:#c9c4ff;
+    border-color:#7367f044;
+    background:#7367f020;
+  }
+  .dark .showcase-shell .showcase-sidebar .console-sidebar-toggle:active {
+    color:#fff;
+    background:#7367f038;
+  }
+  .light .showcase-shell .showcase-sidebar .console-sidebar-toggle {
+    color:#686381;
+  }
+  .light .showcase-shell .showcase-sidebar .console-sidebar-toggle:hover {
+    color:#6556cc;
+    border-color:#7367f03d;
+    background:#7367f013;
+  }
+  .light .showcase-shell .showcase-sidebar .console-sidebar-toggle:active {
+    color:#5144b0;
+    background:#7367f024;
+  }
+  .showcase-shell .showcase-sidebar .console-sidebar-toggle:focus-visible {
+    outline:2px solid #7367f0;
+    outline-offset:2px;
+  }
+  .showcase-shell .showcase-sidebar .showcase-sidebar-toggle-glyph {
+    display:block;
+    width:19px;
+    height:19px;
+    flex:none;
+  }
+  .showcase-shell[data-sidebar-collapsed] > .showcase-sidebar .console-sidebar-toggle {
+    display:grid !important;
+    width:36px;
+    height:34px;
+    min-height:34px;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .showcase-shell .showcase-sidebar .console-sidebar-toggle { transition:none; }
+}
