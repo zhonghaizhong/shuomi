@@ -2675,3 +2675,106 @@
   color:#fff;
   border-color:#7367f0;
 }
+
+
+/* My Account Figma + Vuexy styling: scoped to account overview/profile/settings only. */
+.page[data-commerce-unified="account"] {
+  --acc-surface:#2f3349; --acc-inset:#393d55; --acc-ink:#e2e2f0;
+  --acc-muted:#acabc1; --acc-stroke:#44485e; --acc-primary:#7367f0;
+  --acc-info:#00cfe8; --acc-success:#28c76f; --acc-warning:#ff9f43;
+  width:100%;max-width:1600px;margin-inline:auto;min-width:0;
+  gap:24px;color:var(--acc-ink);font-size:15px;line-height:1.6;
+}
+.page[data-commerce-unified="account"] :is(.header,.accountOverview,.accountModules,.accountBottom>article,.accountBottom>aside,.accountModules article,.accountSettings>section,.profileBanner,.profileGrid>article,.profileGrid>aside,.profileStatus article) {
+  background:var(--acc-surface);border:1px solid var(--acc-stroke);
+  border-radius:7px;box-shadow:0 2px 8px rgb(0 0 0 / 4%);
+}
+.page[data-commerce-unified="account"] .header {
+  min-height:136px;padding:22px 26px;display:flex;align-items:center;
+}
+.page[data-commerce-unified="account"] .header h1 {
+  margin:8px 0 7px;padding-left:12px;border-left:4px solid var(--acc-primary);
+  color:var(--acc-ink);font-size:clamp(26px,1.6vw,32px);font-weight:700;
+  line-height:1.3;
+}
+.page[data-commerce-unified="account"] .header p {color:var(--acc-muted);font-size:15px;line-height:1.6;}
+.page[data-commerce-unified="account"] :is(.accountOverview,.accountModules,.accountBottom>article,.accountBottom>aside,.accountSettings>section,.profileGrid>article,.profileGrid>aside) {padding:22px 24px;gap:16px;}
+.page[data-commerce-unified="account"] :is(.accountOverview h2,.accountModules h2,.accountBottom h2,.accountSettings h2,.profileGrid h2) {
+  font-size:20px;font-weight:600;line-height:1.4;color:var(--acc-ink);
+}
+.page[data-commerce-unified="account"] :is(.accountOverview>header span,.accountModules>header span,.accountBottom header span,.accountSettings>section>header span,.profileGrid header span) {
+  font-size:14px;color:var(--acc-muted);
+}
+.page[data-commerce-unified="account"] .accountOverview>div {gap:16px;}
+.page[data-commerce-unified="account"] .accountOverview article {
+  min-height:92px;gap:6px;padding:16px 18px;
+  border:1px solid var(--acc-stroke);border-radius:7px;background:var(--acc-inset);
+}
+.page[data-commerce-unified="account"] .accountOverview article>span {font-size:14px;color:var(--acc-muted);}
+.page[data-commerce-unified="account"] .accountOverview article strong {font-size:19px;font-weight:650;color:var(--acc-ink);}
+.page[data-commerce-unified="account"] .accountOverview article small {font-size:13px;color:var(--acc-muted);}
+.page[data-commerce-unified="account"] .accountModules>div {gap:24px;}
+.page[data-commerce-unified="account"] .accountModules article {
+  --acc-tone:var(--acc-info);min-height:232px;gap:13px;padding:22px 24px;
+  box-shadow:inset 3px 0 0 var(--acc-tone);
+}
+.page[data-commerce-unified="account"] .accountModules article[data-step="0"] {--acc-tone:var(--acc-success);outline:0;}
+.page[data-commerce-unified="account"] .accountModules article[data-step="1"] {--acc-tone:var(--acc-info);}
+.page[data-commerce-unified="account"] .accountModules article[data-step="2"] {--acc-tone:var(--acc-primary);}
+.page[data-commerce-unified="account"] .accountModules h3 {font-size:20px;font-weight:600;line-height:1.4;color:var(--acc-ink);}
+.page[data-commerce-unified="account"] .accountModules article>span {
+  width:fit-content;font-size:13px;padding:5px 10px;border:1px solid color-mix(in srgb,var(--acc-tone) 34%,var(--acc-stroke));
+  background:color-mix(in srgb,var(--acc-tone) 12%,var(--acc-surface));color:var(--acc-tone);
+}
+.page[data-commerce-unified="account"] .accountModules p {
+  margin:8px 0;font-size:15px;line-height:1.6;color:var(--acc-ink);
+}
+.page[data-commerce-unified="account"] .accountModules footer {padding:11px 12px;border-radius:6px;background:var(--acc-inset);}
+.page[data-commerce-unified="account"] .accountModules footer small {font-size:13px;color:var(--acc-muted);}
+.page[data-commerce-unified="account"] .accountModules footer b {font-size:14px;color:var(--acc-ink);}
+.page[data-commerce-unified="account"] :is(.accountModules button,.accountBottom button,.accountSettings button,.profileGrid button) {
+  min-height:40px;padding:0 16px;border:1px solid var(--acc-primary);border-radius:6px;
+  background:var(--acc-primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;
+}
+.page[data-commerce-unified="account"] .accountBottom {grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:24px;}
+.page[data-commerce-unified="account"] .accountBottom>article>div {
+  min-height:64px;gap:12px;grid-template-columns:9px 110px minmax(140px,.8fr) minmax(0,1.3fr);
+  border-color:var(--acc-stroke);font-size:14px;
+}
+.page[data-commerce-unified="account"] .accountBottom :is(strong,small,span) {font-size:14px;line-height:1.5;}
+.page[data-commerce-unified="account"] .accountBottom :is(span,small) {color:var(--acc-muted);}
+.page[data-commerce-unified="account"] .accountBottom>aside>div {border-color:var(--acc-stroke);border-radius:6px;padding:15px 90px 15px 16px;min-height:74px;}
+.page[data-commerce-unified="account"] .accountBottom>aside>div button {min-height:36px;background:var(--acc-inset);border-color:var(--acc-stroke);color:var(--acc-ink);}
+.page[data-commerce-unified="account"] .accountSettings {gap:24px;}
+.page[data-commerce-unified="account"] .accountSettings :is(input:not([type=checkbox]),select) {
+  min-height:42px;padding:9px 12px;border:1px solid var(--acc-stroke);
+  border-radius:6px;background:var(--acc-inset);color:var(--acc-ink);font-size:15px;
+}
+.page[data-commerce-unified="account"] .accountSettings :is(label,small) {font-size:14px;line-height:1.5;color:var(--acc-muted);}
+.page[data-commerce-unified="account"] .accountContacts article {border-color:var(--acc-stroke);background:var(--acc-inset);}
+.page[data-commerce-unified="account"] .accountSecurity {border-color:var(--acc-stroke);background:var(--acc-inset);}
+.page[data-commerce-unified="account"] .profileGrid {gap:24px;}
+.page[data-commerce-unified="account"] .profileFacts div {min-height:72px;padding:12px 14px;background:var(--acc-inset);border-color:var(--acc-stroke);border-radius:6px;}
+.page[data-commerce-unified="account"] .profileFacts b {font-size:13px;color:var(--acc-muted);}
+.page[data-commerce-unified="account"] .profileFacts span {font-size:15px;color:var(--acc-ink);}
+.page[data-commerce-unified="account"] .profilePair {font-size:15px;line-height:1.6;border-color:var(--acc-stroke);}
+.page[data-commerce-unified="account"] .profilePair b {color:var(--acc-muted);}
+.page[data-commerce-unified="account"] .profilePair span {color:var(--acc-ink);}
+.page[data-commerce-unified="account"] .profileGrid>aside>p {font-size:14px;color:var(--acc-muted);}
+:global(.light) .page[data-commerce-unified="account"] {
+  --acc-surface:#fff;--acc-inset:#f7f7fb;--acc-ink:#444050;
+  --acc-muted:#6d6878;--acc-stroke:#e5e1ef;
+}
+:global(.light) .page[data-commerce-unified="account"] :is(.accountOverview article strong,.accountModules h3,.profileGrid h2,.accountBottom strong,.accountSettings h2) {color:var(--acc-ink);}
+:global(.light) .page[data-commerce-unified="account"] :is(.accountModules footer,.profileFacts div,.accountBottom>aside>div,.accountContacts article) {background:var(--acc-inset);color:var(--acc-ink);}
+@media(max-width:1080px) {
+ .page[data-commerce-unified="account"] .accountBottom,.page[data-commerce-unified="account"] .profileGrid {grid-template-columns:minmax(0,1fr);}
+ .page[data-commerce-unified="account"] .accountModules>div {gap:16px;}
+}
+@media(max-width:760px){
+ .page[data-commerce-unified="account"] {gap:16px;}
+ .page[data-commerce-unified="account"] .accountOverview>div,.page[data-commerce-unified="account"] .accountModules>div {grid-template-columns:1fr;}
+ .page[data-commerce-unified="account"] .accountBottom>article>div {grid-template-columns:9px 92px minmax(0,1fr);}
+ .page[data-commerce-unified="account"] .accountBottom>article>div small {grid-column:3;}
+ .page[data-commerce-unified="account"] :is(.accountOverview,.accountModules,.accountBottom>article,.accountBottom>aside,.accountSettings>section,.profileGrid>article,.profileGrid>aside){padding:17px;}
+}
