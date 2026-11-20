@@ -12,7 +12,7 @@ test("new goal opens a theme-aware form and creates a local draft",async({page})
   await dialog.getByRole("spinbutton",{name:"目标值"}).fill("12000");
   await dialog.getByRole("button",{name:"添加到演示列表"}).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByText("演示十一月利润目标")).toBeVisible();
+  await expect(page.getByText("演示十一月利润目标", {exact:true})).toBeVisible();
   await expect(page.getByText("未提交正式业务数据")).toBeVisible();
 });
 test("goal row opens a real detail dialog instead of a fake success toast",async({page})=>{
