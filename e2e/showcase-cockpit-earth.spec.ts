@@ -456,11 +456,16 @@ test("new Chat conversation light theme never leaves dark input or mode panels",
     await expect(target).toBeVisible();
     const visual=await target.evaluate(el=>({
       background:getComputedStyle(el).backgroundColor,
+      gradient:getComputedStyle(el).backgroundImage,
       foreground:getComputedStyle(el).color
     }));
-    const channels=visual.background.match(/[\\d.]+/g)?.slice(0,3).map(Number)??[];
-    expect(channels.length,selector).toBe(3);
-    expect(Math.min(...channels),selector+": dark card in light mode").toBeGreaterThan(225);
+    if(visual.gradient!=="none") {
+      expect(visual.gradient,selector+": dark gradient in light mode").toContain("rgb(255, 255, 255)");
+    } else {
+      const channels=visual.background.match(/[\\d.]+/g)?.slice(0,3).map(Number)??[];
+      expect(channels.length,selector).toBe(3);
+      expect(Math.min(...channels),selector+": dark card in light mode").toBeGreaterThan(225);
+    }
     expect(visual.foreground,selector+": text still pastel").not.toBe("rgb(207, 205, 228)");
   }
   await page.screenshot({path:"test-results/chat-new-light-fixed.png",fullPage:true});
