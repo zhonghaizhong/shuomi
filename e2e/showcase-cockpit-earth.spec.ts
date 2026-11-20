@@ -567,7 +567,7 @@ test("all task detail states render fully light search, table, header and status
   await page.setViewportSize({width:1440,height:900});
   await page.goto("/shuomi/#/workbench/ai/tasks/running");
   await page.getByRole("button",{name:"切换浅色主题"}).click();
-  const states=["running","pending","completed","errors","scheduled"] as const;
+  const states=["running","completed","errors","scheduled"] as const;
   for (const state of states) {
     await page.goto("/shuomi/#/workbench/ai/tasks/"+state);
     await expect(page.locator(".light .showcase-shell")).toBeVisible();
@@ -595,6 +595,18 @@ test("all task detail states render fully light search, table, header and status
     expect(color.foreground,state+" status text still pale").not.toBe("rgb(98, 169, 255)");
     await page.screenshot({path:"test-results/task-"+state+"-light.png",fullPage:false});
   }
+  // Pending uses a separate task-center overview component in the showcase.
+  await page.goto("/shuomi/#/workbench/ai/tasks/pending");
+  await expect(page.locator(".light .showcase-shell")).toBeVisible();
+  const pending=page.locator('[class*="_tasksPreview_"]').first();
+  await expect(pending).toBeVisible();
+  for (const selector of ['[class*="_taskSearch_"]','[class*="_taskTable_"]']) {
+    const surface=pending.locator(selector).first();
+    await expect(surface).toBeVisible();
+    await expect(surface).toHaveCSS("background-color","rgb(255, 255, 255)");
+  }
+  await expect(pending.locator('[class*="_taskColumns_"]')).toHaveCSS("background-color","rgb(244, 243, 248)");
+  await page.screenshot({path:"test-results/task-pending-light.png",fullPage:false});
   await page.goto("/shuomi/#/workbench/ai/tasks/running");
   const root=page.locator('main[data-task-detail="running"]');
   const input=root.locator('[class*="_toolbar_"] input');
