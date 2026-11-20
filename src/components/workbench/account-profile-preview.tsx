@@ -13,8 +13,6 @@ const keys={account:"shuomi-demo-account-settings",business:"shuomi-demo-busines
 const read=<T,>(key:string,fallback:T):T=>{try{const v=sessionStorage.getItem(key);return v?{...fallback,...JSON.parse(v)}:fallback}catch{return fallback}};
 const write=(key:string,v:unknown)=>{try{sessionStorage.setItem(key,JSON.stringify(v))}catch{}};
 const toggled=(list:string[],entry:string,checked:boolean)=>checked?[...new Set([...list,entry])]:list.filter(x=>x!==entry);
-const fieldName=(s:string)=>s.trim()||"未填写";
-const maskIdentity=(s:string)=>s?Array.from({length:Math.min(s.length,8)}).map(()=>"•").join(""):"";
 type Mode="overview"|"settings"|"business"|"verification";
 
 function Options({label,values,selected,onChange}:{label:string;values:string[];selected:string[];onChange:(next:string[])=>void}){
