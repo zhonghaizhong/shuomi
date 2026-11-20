@@ -48,7 +48,6 @@ export const consoleNavigation: readonly ConsoleNavNode[] = [
   pending("工具市场", "tools", [pending("官方工具", "tools/official"), pending("我的工具", "tools/mine"), pending("工具定制", "tools/custom")]),
   pending("生态服务", "services", [pending("服务市场", "services/market"), pending("我的服务", "services/mine"), pending("申请加入", "services/join")]),
   pending("数据服务", "data", [pending("数据市场", "data/market"), pending("API管理", "data/api"), pending("我的数据", "data/mine")]),
-  { label: "商品刊登", href: listingHome, availability: "unavailable" },
   pending("店铺中心", "store-center", [
     { label: "我的店铺", href: "/workbench/stores", availability: "connected", children: [
       {label:"我的刊登",href:listingHome,availability:"connected",children:[
