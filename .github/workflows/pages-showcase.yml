@@ -10,7 +10,10 @@ permissions:
 
 concurrency:
   group: github-pages-showcase
-  cancel-in-progress: true
+  # Keep the active deployment alive when other contributors push to main.
+  # GitHub Actions will queue the most recent pending run instead of cancelling
+  # every in-progress build before the website can be published.
+  cancel-in-progress: false
 
 jobs:
   build:
