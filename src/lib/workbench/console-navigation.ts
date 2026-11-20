@@ -51,12 +51,12 @@ export const consoleNavigation: readonly ConsoleNavNode[] = [
   { label: "商品刊登", href: listingHome, availability: "unavailable" },
   pending("店铺中心", "store-center", [
     { label: "我的店铺", href: "/workbench/stores", availability: "connected", children: [
-      pending("我的供应链", "supply/mine/procurement", [
+      {label:"我的刊登",href:listingHome,availability:"connected",children:[
         {label:"待上传",href:"/workbench/listing/waiting",availability:"connected"},
         {label:"待补全",href:"/workbench/listing/missing",availability:"connected"},
         {label:"待审核",href:"/workbench/listing/review",availability:"connected"},
         {label:"已上传",href:"/workbench/listing/uploaded",availability:"connected"},
-      ]),
+      ]},
     ] },
     pending("店铺商品", "store-products"),
   ]),
