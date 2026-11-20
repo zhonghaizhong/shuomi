@@ -13,11 +13,13 @@ export function ShowcaseActionDialog({action,detail,onClose,onCreateGoal,onCreat
  const [name,setName]=useState(""),[description,setDescription]=useState(""),[metric,setMetric]=useState("预计净利润");
  const [store,setStore]=useState("一号店"),[period,setPeriod]=useState("每月"),[value,setValue]=useState("");
  const first=useRef<HTMLButtonElement>(null),panel=useRef<HTMLElement>(null);
+ const closeRef=useRef(onClose);
+ closeRef.current=onClose;
  useEffect(()=>{
    const previous=document.activeElement as HTMLElement|null;
    first.current?.focus();
    const onKey=(event:KeyboardEvent)=>{
-     if(event.key==="Escape"){event.preventDefault();onClose();}
+     if(event.key==="Escape"){event.preventDefault();closeRef.current();}
      if(event.key!=="Tab"||!panel.current)return;
      const items=Array.from(panel.current.querySelectorAll<HTMLElement>("button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]"));
      if(!items.length)return;
@@ -26,7 +28,7 @@ export function ShowcaseActionDialog({action,detail,onClose,onCreateGoal,onCreat
    };
    document.addEventListener("keydown",onKey);
    return()=>{document.removeEventListener("keydown",onKey);previous?.focus?.();};
- },[onClose]);
+ },[]);
  const submit=(e:FormEvent<HTMLFormElement>)=>{
    e.preventDefault();
    if(!name.trim())return;
