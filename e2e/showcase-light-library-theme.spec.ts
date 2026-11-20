@@ -47,3 +47,23 @@ test("recent projects filter/table/buttons stay on the same light theme",async({
  }
  await expect(root.getByRole("heading",{name:"最近访问"}).first()).toBeVisible();
 });
+
+test("My Skills remains fully light, including saved skill header and item",async({page})=>{
+ await page.goto("/shuomi/#/workbench/agents/skills/mine");
+ await page.getByRole("button",{name:"切换浅色主题"}).click();
+ const root=page.locator('[data-library-page="skills-mine"]');
+ await expect(root.getByRole("heading",{name:"我的技能"}).first()).toBeVisible();
+ for(const part of ["skillListHeading","skillItem"]){
+   const element=root.locator('[class*="'+part+'"]').first();
+   await expect(element).toBeVisible();
+   const bg=await element.evaluate(el=>getComputedStyle(el).backgroundColor);
+   expect(bg,part+" should be white in light theme").toBe("rgb(255, 255, 255)");
+ }
+ const title=root.getByRole("heading",{name:"商品标题规范化"});
+ await expect(title).toBeVisible();
+ const text=await title.evaluate(el=>getComputedStyle(el).color);
+ expect(text).toBe("rgb(68, 64, 80)");
+ await page.getByRole("button",{name:"切换深色主题"}).click();
+ const dark=await root.locator('[class*="skillItem"]').first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ expect(dark).not.toBe("rgb(255, 255, 255)");
+});
