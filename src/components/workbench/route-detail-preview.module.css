@@ -1103,3 +1103,68 @@
   outline: 2px solid #7367f0;
   outline-offset: 2px;
 }
+
+
+/* Reliable theme baseline: light is the fallback; only explicit dark roots use dark chat cards. */
+.chatCollectionPage .searchRow {
+  background:#fff;
+  border-color:#e3dfed;
+}
+.chatCollectionPage .searchRow input {
+  background:#f8f7fa;
+  border-color:#dedbe6;
+  color:#444050;
+}
+.chatCollectionPage .searchRow input::placeholder {color:#777182;opacity:1}
+.chatCollectionPage .chatList {
+  background:#fff;
+  border-color:#e3dfed;
+}
+.chatCollectionPage .chatList article {border-color:#ece9f3;color:#444050}
+.chatCollectionPage .chatList article strong {color:#444050}
+.chatCollectionPage .chatList article>div p,
+.chatCollectionPage .chatList article>span,
+.chatCollectionPage .chatList>p,
+.chatCollectionPage>p {color:#625d70}
+.chatCollectionPage .chatList article>b {
+  background:#f1efff;
+  border-color:#ddd7f4;
+  color:#6254c8;
+}
+.chatCollectionPage .chatList article>b:empty::before {color:#6254c8}
+.chatCollectionPage .chatList article button {
+  background:#f8f7fa;
+  border-color:#ddd9e9;
+  color:#625d70;
+}
+:global(.dark) .chatCollectionPage .searchRow {
+  background:#2f3349;
+  border-color:#44485e;
+}
+:global(.dark) .chatCollectionPage .searchRow input {
+  background:#25293c;
+  border-color:#44485e;
+  color:#e2e2f0;
+}
+:global(.dark) .chatCollectionPage .searchRow input::placeholder {color:#89889d}
+:global(.dark) .chatCollectionPage .chatList {
+  background:#2f3349;
+  border-color:#44485e;
+}
+:global(.dark) .chatCollectionPage .chatList article {border-color:#44485e;color:#e2e2f0}
+:global(.dark) .chatCollectionPage .chatList article strong {color:#e2e2f0}
+:global(.dark) .chatCollectionPage .chatList article>div p,
+:global(.dark) .chatCollectionPage .chatList article>span,
+:global(.dark) .chatCollectionPage .chatList>p,
+:global(.dark) .chatCollectionPage>p {color:#acabc1}
+:global(.dark) .chatCollectionPage .chatList article>b {
+  background:#7367f018;
+  border-color:#7367f055;
+  color:#aba4f6;
+}
+:global(.dark) .chatCollectionPage .chatList article>b:empty::before {color:#62a9ff}
+:global(.dark) .chatCollectionPage .chatList article button {
+  background:#393d55;
+  border-color:#44485e;
+  color:#cfcde4;
+}
