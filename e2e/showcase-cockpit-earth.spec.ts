@@ -435,3 +435,45 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
   await page.getByRole("button",{name:"切换浅色主题"}).click();
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
 });
+
+
+test("new Chat conversation light theme never leaves dark input or mode panels", async ({page}) => {
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto("/shuomi/#/workbench/ai/chat/new");
+  const workspace=page.locator('[class*="chat-new-preview_workspace"]');
+  await expect(workspace).toBeVisible();
+  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  await expect(page.locator(".light .showcase-shell")).toBeVisible();
+  const panels=[
+    '[class*="chat-new-preview_composer"]',
+    '[class*="chat-new-preview_modePanel"]',
+    '[class*="chat-new-preview_composer"] textarea',
+    '[class*="chat-new-preview_modeList"] button',
+    '[class*="chat-new-preview_examples"] button'
+  ];
+  for(const selector of panels){
+    const target=workspace.locator(selector).first();
+    await expect(target).toBeVisible();
+    const visual=await target.evaluate(el=>({
+      background:getComputedStyle(el).backgroundColor,
+      foreground:getComputedStyle(el).color
+    }));
+    const channels=visual.background.match(/[\\d.]+/g)?.slice(0,3).map(Number)??[];
+    expect(channels.length,selector).toBe(3);
+    expect(Math.min(...channels),selector+": dark card in light mode").toBeGreaterThan(225);
+    expect(visual.foreground,selector+": text still pastel").not.toBe("rgb(207, 205, 228)");
+  }
+  await page.screenshot({path:"test-results/chat-new-light-fixed.png",fullPage:true});
+  await page.getByRole("button",{name:"执行定时任务"}).click();
+  await expect(page.getByRole("button",{name:"执行定时任务"})).toHaveAttribute("aria-pressed","true");
+  await page.getByRole("button",{name:"资源与能力"}).click();
+  const drawer=page.getByRole("dialog",{name:"选择资源与能力"});
+  await expect(drawer).toBeVisible();
+  await expect(drawer).toHaveCSS("background-color","rgb(255, 255, 255)");
+  await drawer.getByRole("button",{name:"关闭"}).click();
+  await expect(drawer).toHaveCount(0);
+  await page.getByRole("button",{name:"切换深色主题"}).click();
+  await expect(workspace.locator('[class*="chat-new-preview_composer"]')).toHaveCSS("background-color","rgb(47, 51, 73)");
+  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  await expect(workspace.locator('[class*="chat-new-preview_modePanel"]')).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
+});
