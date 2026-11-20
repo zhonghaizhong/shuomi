@@ -84,7 +84,7 @@ test("light-mode chat collections never retain dark background colors", async ({
       const search = input.parentElement!;
       const list = document.querySelector("main.showcase-content article")!.parentElement!;
       const title = list.querySelector("article strong")!;
-      const parse = (s: string) => (s.match(/[\\d.]+/g) ?? []).slice(0,3).map(Number);
+      const parse = (s: string) => (s.match(/[0-9.]+/g) ?? []).slice(0,3).map(Number);
       return {
         search: parse(getComputedStyle(search).backgroundColor),
         input: parse(getComputedStyle(input).backgroundColor),
