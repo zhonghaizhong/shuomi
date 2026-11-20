@@ -7,6 +7,7 @@ import { hasRouteDetailPreview, RouteDetailPreview } from "./route-detail-previe
 import { ChatIntroduction } from "./ai-workbench/chat-introduction";
 import { ShowcaseActionDialog, type DemoGoal, type DemoDraft, type DemoDetail } from "./showcase-action-dialog";
 import { ShowcaseUploadedPreview } from "./showcase-uploaded-preview";
+import { ShowcaseListingStage } from "./listing/showcase-listing-stages";
 import { ListingOverview } from "./listing/listing-overview";
 import { ShowcaseAgentDialog, type AgentPreviewDialog } from "./showcase-agent-dialog";
 import { ShowcaseAgentCustomization } from "./showcase-agent-customization";
@@ -156,6 +157,9 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   if (pathname.startsWith("/workbench/tools/custom")) return <ShowcaseToolCustomization pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/services" || pathname === "/workbench/services/market" || pathname === "/workbench/services/mine" || pathname === "/workbench/services/join") return <ShowcaseEcologyServices pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/listing") return <ListingOverview navigate={href=>router.push(`${href}?preview=1`)} />;
+  if (pathname === "/workbench/listing/waiting") return <ShowcaseListingStage stage="waiting" />;
+  if (pathname === "/workbench/listing/missing") return <ShowcaseListingStage stage="missing" />;
+  if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" />;
   if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview />;
   if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
