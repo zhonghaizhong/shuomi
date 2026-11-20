@@ -8,6 +8,7 @@ import { ChatIntroduction } from "./ai-workbench/chat-introduction";
 import { ShowcaseActionDialog, type DemoGoal, type DemoDraft, type DemoDetail } from "./showcase-action-dialog";
 import { ShowcaseUploadedPreview } from "./showcase-uploaded-preview";
 import { ShowcaseListingStage } from "./listing/showcase-listing-stages";
+import { ShowcaseEnterprise } from "./account/showcase-enterprise";
 import { ListingOverview } from "./listing/listing-overview";
 import { ShowcaseAgentDialog, type AgentPreviewDialog } from "./showcase-agent-dialog";
 import { ShowcaseAgentCustomization } from "./showcase-agent-customization";
@@ -161,6 +162,12 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   if (pathname === "/workbench/listing/missing") return <ShowcaseListingStage stage="missing" />;
   if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" />;
   if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview />;
+  if (pathname === "/workbench/account/organization" || pathname.startsWith("/workbench/account/organization/")) {
+    const stage = pathname.split("/").pop();
+    if (stage === "organization" || stage === "members" || stage === "roles" || stage === "resources" || stage === "audit") {
+      return <ShowcaseEnterprise key={stage} screen={stage === "organization" ? "overview" : stage} />;
+    }
+  }
   if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div> : null}
