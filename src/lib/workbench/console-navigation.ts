@@ -41,6 +41,7 @@ export const consoleNavigation: readonly ConsoleNavNode[] = [
     ]),
     pending("优选申请", "supply/applications", [
       pending("发起申请", "supply/applications/new"),
+      pending("申请进度", "supply/applications/progress"),
       pending("申请记录", "supply/applications/records"),
     ]),
   ]),
