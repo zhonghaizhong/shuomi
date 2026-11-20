@@ -150,3 +150,26 @@ test("supply overview describes sourcing without publishing management", async (
   await expect(main.getByRole("heading",{name:"刊登管理"})).toHaveCount(0);
   await expect(main.getByText("完成平台适配与审核")).toHaveCount(0);
 });
+
+test("listing management overview follows Figma entry and conditional flow", async ({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(entry+"/listing");
+ const overview=page.locator("[data-listing-management-overview]");
+ await expect(overview.getByRole("heading",{name:"从商品数据到平台上传的统一管理"})).toBeVisible();
+ for(const name of ["商品数据","待上传配置","上传记录","选择商品","选择目标店铺","配置规则与智能体","确认提交","待补全 · 必填信息补齐后继续","待审核 · 应用后明确继续上传"]){
+   await expect(overview.getByRole("heading",{name,exact:true})).toBeVisible();
+ }
+ await expect(overview.getByText("适配规则必选；智能体按需使用")).toBeVisible();
+ await expect(overview.getByText(/系统定时发送未开放/)).toBeVisible();
+ await overview.getByRole("button",{name:"进入待上传"}).click();
+ await expect(page).toHaveURL(/#\/workbench\/listing\/waiting/);
+ await page.goto(entry+"/listing");
+ await overview.getByRole("button",{name:"进入待补全"}).click();
+ await expect(page).toHaveURL(/#\/workbench\/listing\/missing/);
+ await page.goto(entry+"/listing");
+ await overview.getByRole("button",{name:"进入待审核"}).click();
+ await expect(page).toHaveURL(/#\/workbench\/listing\/review/);
+ await page.goto(entry+"/listing");
+ await overview.getByRole("button",{name:"查看已上传"}).click();
+ await expect(page).toHaveURL(/#\/workbench\/listing\/uploaded/);
+});
