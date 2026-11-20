@@ -1720,3 +1720,28 @@
  .page[data-commerce-unified="account"] :is(.accountResourceInfo,.accountAuditRecent){padding:16px;}
  .page[data-commerce-unified="account"] .accountAuditRecent article{display:grid;gap:3px;}
 }
+
+
+/* Figma account tables: matching header and row columns. */
+.page[data-commerce-unified="account"] :is(.accountMembersGrid,.accountResourcesGrid,.accountAuditGrid) {
+  display:grid;
+  align-items:center;
+  gap:12px;
+  padding:13px 18px;
+  min-width:840px;
+}
+.page[data-commerce-unified="account"] .accountMembersGrid {
+  grid-template-columns:minmax(120px,1.2fr) minmax(115px,1fr) minmax(112px,1fr) minmax(140px,1.3fr) minmax(84px,.7fr) minmax(100px,.9fr) minmax(85px,.7fr);
+}
+.page[data-commerce-unified="account"] .accountResourcesGrid {
+  grid-template-columns:minmax(120px,1.1fr) minmax(110px,.9fr) minmax(90px,.9fr) minmax(108px,.9fr) minmax(136px,1fr) minmax(115px,1fr) minmax(82px,.7fr);
+}
+.page[data-commerce-unified="account"] .accountAuditGrid {
+  grid-template-columns:minmax(120px,1.1fr) minmax(105px,.85fr) minmax(200px,2fr) minmax(120px,1.1fr) minmax(98px,.8fr) minmax(85px,.7fr);
+}
+.page[data-commerce-unified="account"] :is(.accountMembersGrid,.accountResourcesGrid,.accountAuditGrid)>span {
+  min-width:0;overflow-wrap:anywhere;line-height:1.5;
+}
+.page[data-commerce-unified="account"] :is(.accountMembersGrid,.accountResourcesGrid,.accountAuditGrid) button {
+  justify-self:start;
+}
