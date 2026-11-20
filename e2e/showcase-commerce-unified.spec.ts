@@ -43,10 +43,11 @@ test("all Figma-derived subpages are styled without changing copy or nested navi
  await page.setViewportSize({width:1440,height:900});
  for(const route of details){
   await page.goto(root+route);
-  const layout=page.locator('[data-commerce-unified]');
+  const enterprise=route.startsWith("/account/organization");
+  const layout=enterprise?page.locator("[data-enterprise-space]"):page.locator('[data-commerce-unified]');
   await expect(layout,route).toBeVisible();
-  await expect(layout.locator('header[class*="header"] h1'),route).toBeVisible();
-  const bg=await layout.locator('header[class*="header"]').evaluate(el=>getComputedStyle(el).backgroundColor);
+  await expect(layout.locator('header[class*="header"] h1,header[class*="heading"] h1'),route).toBeVisible();
+  const bg=await layout.locator('header[class*="header"],header[class*="heading"]').first().evaluate(el=>getComputedStyle(el).backgroundColor);
   expect(bg,route).toBe("rgb(47, 51, 73)");
   const box=await layout.boundingBox();expect(box).not.toBeNull();expect(box!.width).toBeLessThanOrEqual(1601);
  }
@@ -62,9 +63,9 @@ test("market filters, store tabs and permissions panels remain interactive",asyn
  await page.getByRole("button",{name:"在售",exact:true}).click();
  await expect(page.locator('[data-commerce-unified] [class*="selected"]').first()).toBeVisible();
  await page.goto(root+"/account/organization/members");
- await expect(page.getByRole("heading",{level:1,name:"成员管理"})).toBeVisible();
- await page.getByRole("button",{name:"角色权限"}).first().click();
- await expect(page.getByRole("button",{name:"角色权限"}).first()).toHaveClass(/selected/);
+ await expect(page.getByRole("heading",{level:1,name:"成员与权限"})).toBeVisible();
+ await page.locator('[data-enterprise-space="members"]').getByRole("button",{name:"角色权限"}).first().click();
+ await expect(page.locator('[data-enterprise-space="roles"]')).toBeVisible();
 });
 test("plans options and account profile forms retain content and local-only confirmation",async({page})=>{
  await page.goto(root+"/plans/options");
