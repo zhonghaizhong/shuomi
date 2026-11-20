@@ -16,8 +16,10 @@ test("desktop sidebar collapses to a compact, aligned icon rail at four sizes", 
     expect(actualWidth, `collapsed width at ${width}px`).toBeLessThanOrEqual(77);
     await expect(page.getByRole("button", { name: "展开侧栏" })).toBeVisible();
     await page.getByRole("button", { name: "展开侧栏" }).click();
-    const expandedWidth = await sidebar.evaluate(el => el.getBoundingClientRect().width);
-    expect(expandedWidth, `expanded width at ${width}px`).toBeGreaterThanOrEqual(225);
+    await expect.poll(
+      () => sidebar.evaluate(el => el.getBoundingClientRect().width),
+      { message: `expanded width at ${width}px` },
+    ).toBeGreaterThanOrEqual(225);
   }
 });
 
