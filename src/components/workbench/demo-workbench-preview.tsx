@@ -7,6 +7,7 @@ import { hasRouteDetailPreview, RouteDetailPreview } from "./route-detail-previe
 import { ChatIntroduction } from "./ai-workbench/chat-introduction";
 import { ShowcaseActionDialog, type DemoGoal, type DemoDraft, type DemoDetail } from "./showcase-action-dialog";
 import { ShowcaseUploadedPreview } from "./showcase-uploaded-preview";
+import { AccountProfilePreview } from "./account-profile-preview";
 import { ShowcaseListingStage } from "./listing/showcase-listing-stages";
 import { ShowcaseEnterprise } from "./account/showcase-enterprise";
 import { ListingOverview } from "./listing/listing-overview";
@@ -167,6 +168,7 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   if (pathname === "/workbench/listing/waiting") return <ShowcaseListingStage stage="waiting" />;
   if (pathname === "/workbench/listing/missing") return <ShowcaseListingStage stage="missing" />;
   if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" />;
+  if (pathname === "/workbench/account/profile" || pathname === "/workbench/account/profile/settings") return <AccountProfilePreview key={pathname} pathname={pathname} />;
   if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview />;
   if (pathname === "/workbench/account/organization" || pathname.startsWith("/workbench/account/organization/")) {
     const stage = pathname.split("/").pop();
