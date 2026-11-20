@@ -504,7 +504,8 @@ test("chat context right rail collapses without overflow and restores in light/d
     const rail=await panel.boundingBox();
     const toggle=await page.getByRole("button",{name:"展开会话面板"}).boundingBox();
     expect(rail).not.toBeNull();expect(toggle).not.toBeNull();
-    expect(rail!.width).toBeLessThan(expanded!.width);
+    if(size.width>600)expect(rail!.width).toBeLessThan(expanded!.width);
+    else expect(rail!.height).toBeLessThan(expanded!.height);
     expect(toggle!.x).toBeGreaterThanOrEqual(rail!.x-1);
     expect(toggle!.x+toggle!.width).toBeLessThanOrEqual(rail!.x+rail!.width+1);
     expect(toggle!.y).toBeGreaterThanOrEqual(rail!.y-1);
