@@ -402,3 +402,67 @@ button { font: inherit; }
 @media (prefers-reduced-motion:reduce) {
   .showcase-shell .showcase-sidebar .console-sidebar-toggle { transition:none; }
 }
+
+/* Showcase light design tokens — ensure root, dialogs and workspace agree. */
+html.light:has(.showcase-shell) {
+  --background:#f8f7fa;
+  --foreground:#444050;
+  --card:#ffffff;
+  --card-foreground:#444050;
+  --popover:#ffffff;
+  --popover-foreground:#444050;
+  --secondary:#f4f3f8;
+  --secondary-foreground:#444050;
+  --muted:#f4f3f8;
+  --muted-foreground:#625d70;
+  --primary:#7367f0;
+  --primary-foreground:#ffffff;
+  --accent:#f0edff;
+  --accent-foreground:#6254c8;
+  --border:#e3dfed;
+  --input:#dbdade;
+  --ring:#7367f0;
+  --sidebar:#ffffff;
+  --sidebar-foreground:#625d70;
+  --sidebar-accent:#f0edff;
+  --sidebar-accent-foreground:#6254c8;
+  --sidebar-border:#e3dfed;
+  --console-card-surface:#ffffff;
+  --console-card-border:#e3dfed;
+  --console-card-hover:#f8f7fa;
+  --console-muted:#625d70;
+  color-scheme:light;
+}
+.light .showcase-shell.console-theme {
+  --background:#f8f7fa;
+  --foreground:#444050;
+  --card:#ffffff;
+  --card-foreground:#444050;
+  --secondary:#f4f3f8;
+  --secondary-foreground:#444050;
+  --muted:#f4f3f8;
+  --muted-foreground:#625d70;
+  --primary:#7367f0;
+  --primary-foreground:#ffffff;
+  --accent:#f0edff;
+  --accent-foreground:#6254c8;
+  --border:#e3dfed;
+  --input:#dbdade;
+  --ring:#7367f0;
+  --sidebar:#ffffff;
+  --sidebar-foreground:#625d70;
+  --sidebar-accent:#f0edff;
+  --sidebar-accent-foreground:#6254c8;
+  --sidebar-border:#e3dfed;
+  --console-card-surface:#ffffff;
+  --console-card-border:#e3dfed;
+  --console-card-hover:#f8f7fa;
+  --console-muted:#625d70;
+  color-scheme:light;
+}
+html.light body {background:#f8f7fa;color:#444050;}
+.light .showcase-content {color:#444050;}
+.light .showcase-content :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]) {
+  color-scheme:light;
+}
+.light .showcase-content :is(input,textarea)::placeholder {color:#777182;opacity:1;}
