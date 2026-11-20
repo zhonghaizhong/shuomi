@@ -25,7 +25,11 @@ function Showcase() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [readNoticeIds,setReadNoticeIds] = useState<number[]>([4]);
-  const [isLightTheme, setIsLightTheme] = useState(false);
+  // Preserve the selected theme across refreshes and direct navigation.
+  const [isLightTheme, setIsLightTheme] = useState(() => {
+    try { return window.localStorage.getItem("shuomi-showcase-theme") === "light"; }
+    catch { return false; }
+  });
   // Match the document-level theme to the preview. Portaled menus and dialogs
   // render outside .showcase-shell and otherwise inherit the dark root palette.
   useEffect(() => {
@@ -33,6 +37,8 @@ function Showcase() {
     root.classList.toggle("light", isLightTheme);
     root.classList.toggle("dark", !isLightTheme);
     root.style.colorScheme = isLightTheme ? "light" : "dark";
+    try { window.localStorage.setItem("shuomi-showcase-theme", isLightTheme ? "light" : "dark"); }
+    catch { /* Storage can be blocked; theme still works for this session. */ }
     return () => {
       root.classList.remove("light", "dark");
       root.style.removeProperty("color-scheme");
