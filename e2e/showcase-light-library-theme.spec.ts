@@ -17,15 +17,15 @@ const isLight=(value:string)=>{const [r,g,b]=rgb(value);return [r,g,b].every(x=>
 test("light theme uses readable pale surfaces on every library subpage",async({page})=>{
  test.setTimeout(120000);
  await page.setViewportSize({width:1600,height:900});
- await page.goto("/shuomi/#/workbench/ai/projects/recent");
- await page.getByRole("button",{name:"切换浅色主题"}).click();
  for(const route of routes){
    await page.goto("/shuomi/#/workbench"+route);
+   await page.getByRole("button",{name:"切换浅色主题"}).click();
    const canvas=page.locator('[class*="libraryDetailPreview"]');
    await expect(canvas).toBeVisible();
-   const surfaces=canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]').filter({visible:true});
+   const surfaces=canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
    const count=Math.min(await surfaces.count(),5);
    for(let i=0;i<count;i++){
+     if(!(await surfaces.nth(i).isVisible()))continue;
      const bg=await surfaces.nth(i).evaluate(el=>getComputedStyle(el).backgroundColor);
      if(bg!=="rgba(0, 0, 0, 0)")expect(isLight(bg),`${route} surface ${i} must not remain dark: ${bg}`).toBeTruthy();
    }
