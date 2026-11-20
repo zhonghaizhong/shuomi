@@ -74,7 +74,9 @@ test("desktop collapsed state can become a mobile drawer after resize", async ({
 test("light-mode chat collections never retain dark background colors", async ({ page }) => {
   for (const route of ["/ai/chat/recent", "/ai/chat/saved"]) {
     await page.goto(entry + route);
-    await page.getByRole("button", { name: "切换浅色主题" }).click();
+    const enableLight = page.getByRole("button", { name: "切换浅色主题" });
+    if (await enableLight.isVisible()) await enableLight.click();
+    await expect(page.locator("html")).toHaveClass(/light/);
     const input = page.getByPlaceholder(/搜索.*标题或内容/);
     await expect(input).toBeVisible();
     const listRow = page.locator("main.showcase-content article").first();
