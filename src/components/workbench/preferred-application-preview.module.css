@@ -73,3 +73,18 @@
 .page .formColumns .panel:nth-child(2)>h2{border-left:3px solid #087f6c;color:#70d3bf;padding-left:12px}
 :global(.light) .page .formColumns .panel:first-child>h2{color:#276fa7}
 :global(.light) .page .formColumns .panel:nth-child(2)>h2{color:#087f6c}
+
+/* Figma selection view is a single horizontal status/search toolbar. */
+.page[data-preferred-application="select"] .filterPanel{display:grid;grid-template-columns:minmax(150px,200px) minmax(0,1fr);gap:10px;align-items:center;padding:14px 16px}
+.page[data-preferred-application="select"] .filters{display:block}
+.page[data-preferred-application="select"] .filters label{display:block}
+.page[data-preferred-application="select"] .searchActions{display:flex;gap:9px;align-items:center;min-width:0}
+.page[data-preferred-application="select"] .searchActions input{max-width:none;flex:1;min-width:0;margin:0}
+.page[data-preferred-application="select"] .tableScroll .primary{min-height:34px;padding:5px 12px}
+.page[data-preferred-application="select"] td:last-child{min-width:180px}
+.page[data-preferred-application="select"] td:last-child button+button{margin-left:6px}
+.page .metrics .metric>strong{font-variant-numeric:tabular-nums}
+:global(.light) .page .tableScroll thead th{background:#eff7f5;color:#496177}
+.page[data-preferred-application="select"] .selectionSummary{margin-bottom:6px}
+.page[data-preferred-application="select"] .selectionSummary .primary{padding:5px 12px}
+@media(max-width:850px){.page[data-preferred-application="select"] .filterPanel{grid-template-columns:1fr}.page[data-preferred-application="select"] .searchActions{flex-wrap:wrap}.page[data-preferred-application="select"] .searchActions input{flex-basis:100%}}
