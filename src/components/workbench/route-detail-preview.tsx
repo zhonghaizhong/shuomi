@@ -188,11 +188,14 @@ function RoutePage({ page, pathname }: { page: { section: string; title: string;
   const resetFilters = () => setFilters({});
   const scopedCommerce = pathname.startsWith("/workbench/data/") || pathname==="/workbench/stores" || pathname.startsWith("/workbench/store-") || pathname.startsWith("/workbench/plans/") || pathname.startsWith("/workbench/account/");
   const submit = (label:string) => {
-    if(scopedCommerce && !/确认筛选|筛选$|^确定$/.test(label)){
-      setMessage("");setOperation(label);
-    } else {
-      setMessage("已更新演示筛选结果；不会向服务器提交或保存数据。");
+    // Filters are local and immediately update the visible collection.
+    // Every other action must open a scoped dialog rather than fake a save.
+    if(/确认筛选|筛选$|^确定$/.test(label)){
+      setMessage("已根据当前筛选条件更新演示列表，未请求真实业务数据。");
+      return;
     }
+    setMessage("");
+    setOperation(label);
   };
   useEffect(()=>{
     if(!operation)return;
