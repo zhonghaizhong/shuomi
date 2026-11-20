@@ -561,3 +561,46 @@ test("light hero keeps high-contrast subtitle and luminous main title during glo
   await page.getByRole("button",{name:"切换深色主题"}).click();
   await expect(intro).toHaveCSS("color","rgb(249, 247, 255)");
 });
+
+
+test("all task detail states render fully light search, table, header and status, and preserve interactions", async ({page}) => {
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto("/shuomi/#/workbench/ai/tasks/running");
+  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  const states=["running","pending","completed","errors","scheduled"] as const;
+  for (const state of states) {
+    await page.goto("/shuomi/#/workbench/ai/tasks/"+state);
+    await expect(page.locator(".light .showcase-shell")).toBeVisible();
+    const root=page.locator("main[data-task-detail='"+state+"']");
+    await expect(root).toBeVisible();
+    for(const [selector,background] of [
+      ['[class*="_toolbar_"]',"rgb(255, 255, 255)"],
+      ['[class*="_table_"]',"rgb(255, 255, 255)"],
+      ['[class*="_taskDetailHead_"]',"rgb(244, 243, 248)"],
+      ['[class*="_taskDetailRow_"]',"rgb(255, 255, 255)"]
+    ] as const) {
+      const target=root.locator(selector).first();
+      await expect(target,state+" "+selector).toBeVisible();
+      await expect(target,state+" "+selector).toHaveCSS("background-color",background);
+    }
+    const search=root.locator('[class*="_toolbar_"] input');
+    await expect(search).toHaveCSS("color","rgb(68, 64, 80)");
+    const status=root.locator('[class*="_taskDetailRow_"] span[data-status]').first();
+    await expect(status).toBeVisible();
+    const color=await status.evaluate(el=>({background:getComputedStyle(el).backgroundColor,foreground:getComputedStyle(el).color}));
+    expect(color.background,state+" contains a dark status chip").not.toMatch(/^rgb\((?:2[0-9]|3[0-9]|4[0-9]), /);
+    expect(color.foreground,state+" status text still pale").not.toBe("rgb(98, 169, 255)");
+    await page.screenshot({path:"test-results/task-"+state+"-light.png",fullPage:false});
+  }
+  await page.goto("/shuomi/#/workbench/ai/tasks/running");
+  const root=page.locator('main[data-task-detail="running"]');
+  const input=root.locator('[class*="_toolbar_"] input');
+  await input.fill("春季广告投放优化");
+  await expect(root.locator('[class*="_taskDetailRow_"]')).toHaveCount(1);
+  await input.fill("");
+  await expect(root.locator('[class*="_taskDetailRow_"]')).toHaveCount(5);
+  await page.getByRole("button",{name:"切换深色主题"}).click();
+  await expect(root.locator('[class*="_table_"]').first()).toHaveCSS("background-color","rgb(47, 51, 73)");
+  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  await expect(root.locator('[class*="_table_"]').first()).toHaveCSS("background-color","rgb(255, 255, 255)");
+});
