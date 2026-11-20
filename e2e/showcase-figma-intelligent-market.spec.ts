@@ -117,3 +117,23 @@ test("My Agents model settings dialog retains demo selection across submenu navi
  await page.keyboard.press("Escape");
  await expect(dialog).not.toBeVisible();
 });
+
+test("approved Vuexy visual palette takes precedence over Figma visual skin",async({page})=>{
+ test.setTimeout(130000);
+ for(const route of ["/agents","/agents/market","/agents/mine","/agents/custom","/agents/custom/new","/agents/custom/progress"]){
+  await page.goto(base+route);
+  const root=page.locator("[data-intelligent-market],[data-agent-customization]");
+  const header=root.locator(":scope > header").first();
+  for(const mode of ["dark","light"] as const){
+   await setTheme(page,mode);
+   await expect(header).toBeVisible();
+   const bg=await header.evaluate(el=>getComputedStyle(el).backgroundColor);
+   expect(bg,route+" "+mode+" header").toBe(mode==="dark"?"rgb(47, 51, 73)":"rgb(255, 255, 255)");
+   const primary=root.locator("button[class*='primary']").first();
+   if(await primary.count()){
+    const buttonBg=await primary.evaluate(el=>getComputedStyle(el).backgroundColor);
+    expect(buttonBg,route+" "+mode+" primary").toBe("rgb(115, 103, 240)");
+   }
+  }
+ }
+});
