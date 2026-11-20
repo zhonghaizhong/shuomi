@@ -1032,3 +1032,74 @@
 :global(.light) .page.taskDetailPreview .scheduledMetrics>article>span {
   color:#444050;
 }
+
+
+/* Light theme for showcase chat collections: avoid leaking dark-only colors. */
+:global(.light) .chatCollectionPage .searchRow {
+  background: #ffffff;
+  border-color: #e3dfed;
+  box-shadow: 0 3px 12px #41395408;
+}
+:global(.light) .chatCollectionPage .searchRow input {
+  background: #f8f7fa;
+  border-color: #dedbe6;
+  color: #444050;
+}
+:global(.light) .chatCollectionPage .searchRow input::placeholder {
+  color: #777182;
+  opacity: 1;
+}
+:global(.light) .chatCollectionPage .searchRow input:focus-visible {
+  outline: 2px solid #7367f0;
+  outline-offset: 1px;
+}
+:global(.light) .chatCollectionPage .searchRow button {
+  border-color: #7367f0;
+  background: #7367f0;
+  color: #ffffff;
+}
+:global(.light) .chatCollectionPage .searchRow button:hover {
+  background: #6254dc;
+}
+:global(.light) .chatCollectionPage .chatList {
+  background: #ffffff;
+  border-color: #e3dfed;
+  box-shadow: 0 3px 12px #41395408;
+}
+:global(.light) .chatCollectionPage .chatList article {
+  border-color: #ece9f3;
+  color: #444050;
+}
+:global(.light) .chatCollectionPage .chatList article:hover {
+  background: #faf9ff;
+}
+:global(.light) .chatCollectionPage .chatList article>b {
+  color: #6254c8;
+  background: #f1efff;
+  border-color: #ddd7f4;
+}
+:global(.light) .chatCollectionPage .chatList article>b:empty::before {
+  color: #6254c8;
+}
+:global(.light) .chatCollectionPage .chatList article strong {
+  color: #444050;
+}
+:global(.light) .chatCollectionPage .chatList article>div p,
+:global(.light) .chatCollectionPage .chatList article>span,
+:global(.light) .chatCollectionPage .chatList>p {
+  color: #625d70;
+}
+:global(.light) .chatCollectionPage .chatList article button {
+  background: #f8f7fa;
+  border-color: #ddd9e9;
+  color: #625d70;
+}
+:global(.light) .chatCollectionPage .chatList article button:hover {
+  background: #f1efff;
+  border-color: #7367f0;
+  color: #6254c8;
+}
+:global(.light) .chatCollectionPage .chatList article button:focus-visible {
+  outline: 2px solid #7367f0;
+  outline-offset: 2px;
+}
