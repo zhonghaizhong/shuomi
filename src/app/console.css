@@ -1186,3 +1186,48 @@
 .dark .console-theme .console-brand-message > span { color: #c3c5d8; }
 .dark .console-theme .console-description,
 .dark .console-theme .console-breadcrumb { color: #c3c5d8; }
+
+/* Sidebar collapse and nested menu accessibility parity, 2026-11-20 */
+@media (min-width: 768px) {
+  .light .console-frame[data-sidebar-collapsed] .console-sidebar,
+  .light .console-frame[data-sidebar-collapsed] .console-sidebar-head {
+    background: var(--sidebar);
+    color: var(--sidebar-foreground);
+    border-color: var(--sidebar-border);
+  }
+  .dark .console-frame[data-sidebar-collapsed] .console-sidebar,
+  .dark .console-frame[data-sidebar-collapsed] .console-sidebar-head {
+    background: var(--sidebar);
+    color: var(--sidebar-foreground);
+    border-color: var(--sidebar-border);
+  }
+  .console-frame[data-sidebar-collapsed] .console-sidebar .console-nav-row > a {
+    min-width: 0;
+    min-height: 44px;
+    border-radius: 9px;
+  }
+  .console-frame[data-sidebar-collapsed] .console-sidebar .console-nav-level-1 {
+    max-width: 100%;
+  }
+  .console-frame[data-sidebar-collapsed] .console-sidebar .console-nav {
+    padding-inline: 0;
+  }
+}
+.light .console-theme .console-sidebar-toggle {
+  color: #496177;
+}
+.light .console-theme .console-sidebar-toggle:hover {
+  color: #087f6c;
+  background: #e5f5f0;
+}
+.console-theme .console-sidebar-toggle:focus-visible,
+.console-theme .console-nav-row > button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.console-theme .console-nav-row > button[aria-expanded="true"] {
+  color: var(--sidebar-accent-foreground);
+}
+.light .console-theme .console-nav-row > button[aria-expanded="true"] .console-nav-chevron {
+  color: currentColor;
+}
