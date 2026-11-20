@@ -41,7 +41,7 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
  const [enterprise,setEnterprise]=useState({name:"",credit:"",representative:""});
  useEffect(()=>{const a=read(keys.account,defaultAccount),b=read(keys.business,defaultBusiness);setAccount(a);setSavedAccount(a);setBusiness(b);setSavedBusiness(b);},[]);
  useEffect(()=>{setNotice("");setChangeContact(null);setEditingBusiness(false)},[pathname]);
- useEffect(()=>{if(mode!=="verification")return;const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape")setChangeContact(null)};document.addEventListener("keydown",onKey);return()=>document.removeEventListener("keydown",onKey)},[mode]);
+ useEffect(()=>{if(!changeContact)return;const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape")setChangeContact(null)};document.addEventListener("keydown",onKey);return()=>document.removeEventListener("keydown",onKey)},[changeContact]);
  const saveAccount=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const v={...account,name:account.name.trim()};if(!v.name){setNotice("用户名不能为空");return;}write(keys.account,v);setSavedAccount(v);setNotice("账户展示资料已保存到本次演示浏览器，不会修改真实账户。");};
  const saveBusiness=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();write(keys.business,business);setSavedBusiness(business);setEditingBusiness(false);setNotice("经营画像已保存在本地演示中，真实资料未更改。");};
  const saveFile=(label:string,files:FileList|null)=>{
