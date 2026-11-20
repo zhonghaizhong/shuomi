@@ -38,7 +38,17 @@ test("intelligent market and customization routes have readable dark and light s
    for(let i=0;i<Math.min(await cards.count(),4);i++){
     const el=cards.nth(i);
     if(!(await el.isVisible()))continue;
-    const color=await el.evaluate(e=>getComputedStyle(e).backgroundColor);
+    const color=await el.evaluate(e=>{
+      // Transparent inner articles inherit the visible card surface.
+      // Check the first painted ancestor rather than treating transparency as black.
+      let current:Element|null=e;
+      while(current){
+       const color=getComputedStyle(current).backgroundColor;
+       if(color!=="rgba(0, 0, 0, 0)" && color!=="transparent")return color;
+       current=current.parentElement;
+      }
+      return "rgba(0, 0, 0, 0)";
+    });
     expect(isPale(color),route+" "+mode+" card "+i+" "+color).toBe(mode==="light");
    }
   }
