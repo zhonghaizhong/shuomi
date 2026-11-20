@@ -73,7 +73,7 @@ describe("Figma Console navigation contract", () => {
     expect(account?.children?.map((item) => item.label)).toEqual(["账户资料", "企业空间", "推广与收益"]);
     expect(account?.children?.map((item) => item.children?.map((child) => child.label))).toEqual([
       ["账户设置", "经营画像", "认证信息"],
-      ["成员与权限", "资源与额度", "操作记录"],
+      ["成员管理", "角色权限", "资源与额度", "操作记录"],
       ["推广中心", "收益明细", "提现管理", "推广规则"],
     ]);
   });
@@ -83,7 +83,8 @@ describe("Figma Console navigation contract", () => {
       ["/workbench/account/profile/settings", ["我的账户", "账户资料", "账户设置"]],
       ["/workbench/account/profile/business", ["我的账户", "账户资料", "经营画像"]],
       ["/workbench/account/profile/verification", ["我的账户", "账户资料", "认证信息"]],
-      ["/workbench/account/organization/members", ["我的账户", "企业空间", "成员与权限"]],
+      ["/workbench/account/organization/members", ["我的账户", "企业空间", "成员管理"]],
+      ["/workbench/account/organization/roles", ["我的账户", "企业空间", "角色权限"]],
       ["/workbench/account/organization/resources", ["我的账户", "企业空间", "资源与额度"]],
       ["/workbench/account/organization/audit", ["我的账户", "企业空间", "操作记录"]],
       ["/workbench/account/referrals/center", ["我的账户", "推广与收益", "推广中心"]],
@@ -105,7 +106,7 @@ describe("Figma Console navigation contract", () => {
   it("connects the delivered members page with its sibling leaves", () => {
     const route = findConsoleRoute("/workbench/account/organization/members");
     expect(route?.node.availability).toBe("connected");
-    expect(route?.trail.map(node => node.label)).toEqual(["我的账户", "企业空间", "成员与权限"]);
+    expect(route?.trail.map(node => node.label)).toEqual(["我的账户", "企业空间", "成员管理"]);
     expect(findConsoleRoute("/workbench/account/referrals")?.node.availability).toBe("connected");
   });
   it("keeps the profile and enterprise leaves connected together", () => {
