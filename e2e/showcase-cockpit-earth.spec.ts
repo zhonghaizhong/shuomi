@@ -367,12 +367,15 @@ test("light mode has no severely invisible ordinary text across sampled workbenc
         const style=getComputedStyle(el);
         if(style.visibility!=="visible"||style.opacity==="0"||style.display==="none"||style.color==="transparent")continue;
         const fg=rgb(style.color);if(!fg)continue;
+        // The purple hero is intentionally gradient-backed in both themes.
+        if(el.closest('[class*="featureMetric"]'))continue;
         let anc:Element|null=el;let bg:number[]|null=null;let complex=false;
         while(anc) {
           const cs=getComputedStyle(anc);
           if(cs.backgroundImage!=="none"){complex=true;break;}
           const v=cs.backgroundColor;
-          if(v && !v.startsWith("rgba(0, 0, 0, 0)") && v!=="transparent") {
+          const alpha=v.startsWith("rgba(") ? Number(v.match(/,\\s*([\\d.]+)\\)$/)?.[1]??1) : 1;
+          if(v && alpha>=.98 && v!=="transparent") {
             const c=rgb(v);
             if(c){bg=c;break;}
           }
