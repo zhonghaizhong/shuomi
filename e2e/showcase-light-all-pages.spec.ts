@@ -7,7 +7,7 @@ function navigationRoutes(nodes: readonly ConsoleNavNode[]): string[] {
   const found: string[] = [];
   for (const n of nodes) {
     if (n.href.startsWith("/workbench") && !n.href.includes("["))
-      found.push(n.href.split("?")[0].split("#")[0]);
+      found.push(n.href.split("#")[0]);
     if (n.children) found.push(...navigationRoutes(n.children));
   }
   return found;
