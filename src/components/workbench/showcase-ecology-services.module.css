@@ -273,3 +273,9 @@
 :global(.light) .page :is(.homeNotes h3,.howtoGrid h3,.homeCard h2,.homeCard h3,.serviceCardTitle h2) {color:#444050;}
 :global(.light) .page :is(.homeCard .cardHead span,.homeNotes article > span,.homeCard .cardHead small) {color:#625d70;}
 :global(.light) .page :is(.homeNotes article:nth-child(1) > span,.homeNotes article:nth-child(2) > span) {color:#6254c8;}
+
+
+/* Informational eyebrow labels and market descriptions must be legible on white. */
+:global(.light) .page .homeNotes small,
+:global(.light) .page .homeNotes article:nth-child(2) small {color:#6254c8;}
+:global(.light) .page .segmentRow small {color:#625d70;}
