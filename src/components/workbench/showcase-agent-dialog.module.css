@@ -74,3 +74,27 @@
  background:#e5f5f0;border-color:#087f6c;
 }
 :global(.light) .dialog .current{background:#f1f5fa;}
+
+/* Approved Vuexy dialog theme: no Figma-derived blue/teal UI skin. */
+.dialog{
+ --agent-dialog-surface:#2f3349;--agent-dialog-raised:#393d55;--agent-dialog-border:#44485e;
+ --agent-dialog-text:#cfcde4;--agent-dialog-muted:#acabc1;--agent-dialog-primary:#7367f0;
+ background:var(--agent-dialog-surface);border-color:var(--agent-dialog-border);color:var(--agent-dialog-text);
+}
+:global(.light) .dialog{
+ --agent-dialog-surface:#fff;--agent-dialog-raised:#f8f7fa;--agent-dialog-border:#ddd9e9;
+ --agent-dialog-text:#444050;--agent-dialog-muted:#6f6b7d;--agent-dialog-primary:#7367f0;
+ background:#fff;border-color:#ddd9e9;color:#444050;
+}
+.dialog .modelOption[aria-pressed="true"]{border-color:#7367f0;background:#393b64;}
+:global(.light) .dialog .modelOption[aria-pressed="true"]{background:#efecff;border-color:#7367f0;}
+.dialog .modelOption[aria-pressed="true"] b{color:#c9c2ff;background:#353451;}
+:global(.light) .dialog .modelOption[aria-pressed="true"] b{color:#6254c8;background:#fff;}
+.dialog .primary,.dialog .primary:hover,:global(.light) .dialog .primary,:global(.light) .dialog .primary:hover{
+ color:#fff;background:#7367f0;border-color:#7367f0;
+}
+.dialog :is(.heading h2,.info h3,.modelOptions h3,.modelOption strong,.current strong){color:var(--agent-dialog-text);}
+.dialog :is(.heading p,.info p,.modelOption small,.current p){color:var(--agent-dialog-muted);}
+.dialog :is(.modelOption,.close,.secondary,.current){background:var(--agent-dialog-raised);border-color:var(--agent-dialog-border);color:var(--agent-dialog-text);}
+.dialog .tags span{color:var(--agent-dialog-text);background:var(--agent-dialog-raised);}
+.dialog :is(.primary,.secondary,.modelOption,.close):focus-visible{outline:2px solid:#7367f0;outline-offset:2px;}
