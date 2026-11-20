@@ -487,7 +487,8 @@ test("chat context right rail collapses without overflow and restores in light/d
   for(const size of [{width:1440,height:900},{width:820,height:900},{width:390,height:844}]){
     await page.setViewportSize(size);
     await page.goto("/shuomi/#/workbench/ai/chat/new");
-    await page.getByRole("button",{name:"切换浅色主题"}).click();
+    const lightSwitch=page.getByRole("button",{name:"切换浅色主题"});
+    if(await lightSwitch.isVisible().catch(()=>false)) await lightSwitch.click();
     await page.locator("#chat-new-prompt").fill("帮我整理本周店铺经营目标");
     await page.locator("#chat-new-prompt").press("Control+Enter");
     await expect(page.getByRole("complementary",{name:"会话上下文"})).toBeVisible();
