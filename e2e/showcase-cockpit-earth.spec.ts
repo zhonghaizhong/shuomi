@@ -325,3 +325,65 @@ test("tool modal in light theme has light nested details with readable labels", 
   await expect(label).toBeVisible();
   await expect(label).toHaveCSS("color","rgb(111, 107, 125)");
 });
+
+
+test("light mode has no severely invisible ordinary text across sampled workbench pages", async ({page}) => {
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto("/shuomi/#/workbench/overview/advice");
+  await page.getByRole("button",{name:"切换浅色主题"}).click();
+  const routes = [
+    "/workbench","/workbench/overview/goals","/workbench/overview/stores",
+    "/workbench/overview/alerts","/workbench/overview/advice",
+    ...lightModules.map(([route])=>route),
+    "/workbench/agents/custom","/workbench/tools/custom",
+    "/workbench/agents/custom/new","/workbench/tools/custom/new",
+    "/workbench/store-products","/workbench/store-orders"
+  ];
+  const seen=new Set<string>();
+  for (const route of routes) {
+    if (seen.has(route)) continue;
+    seen.add(route);
+    await page.goto("/shuomi/#"+route);
+    await expect(page.locator(".light .showcase-shell")).toBeVisible();
+    const low=await page.evaluate(() => {
+      function rgb(value:string):number[]|null {
+        let x:number[]=[];
+        const m=value.match(/[\\d.]+/g);
+        if(!m||m.length<3)return null;
+        x=m.slice(0,3).map(Number);
+        if(value.startsWith("color(srgb")) x=x.map(v=>v*255);
+        return x;
+      }
+      function lum(c:number[]) {
+        const linear=c.map(v=>{const n=v/255;return n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4);});
+        return linear[0]*.2126+linear[1]*.7152+linear[2]*.0722;
+      }
+      const bad:string[]=[];
+      const roots=document.querySelectorAll('main h1,main h2,main h3,main p,main label,main dt,main dd,main small,main button,main a');
+      for(const node of Array.from(roots).slice(0,260)) {
+        const el=node as HTMLElement;
+        const txt=(el.textContent||"").trim().slice(0,35);
+        if(!txt||!el.getClientRects().length||el.getBoundingClientRect().height<5)continue;
+        const style=getComputedStyle(el);
+        if(style.visibility!=="visible"||style.opacity==="0"||style.display==="none"||style.color==="transparent")continue;
+        const fg=rgb(style.color);if(!fg)continue;
+        let anc:Element|null=el;let bg:number[]|null=null;let complex=false;
+        while(anc) {
+          const cs=getComputedStyle(anc);
+          if(cs.backgroundImage!=="none"){complex=true;break;}
+          const v=cs.backgroundColor;
+          if(v && !v.startsWith("rgba(0, 0, 0, 0)") && v!=="transparent") {
+            const c=rgb(v);
+            if(c){bg=c;break;}
+          }
+          anc=anc.parentElement;
+        }
+        if(complex||!bg)continue;
+        const a=lum(fg),b=lum(bg),ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+        if(ratio<2.5)bad.push(txt+" ("+ratio.toFixed(2)+":1, "+style.color+" / "+bg.map(Math.round).join(",")+")");
+      }
+      return bad.slice(0,12);
+    });
+    expect(low, route+" has invisible or severely low-contrast ordinary text").toEqual([]);
+  }
+});
