@@ -186,7 +186,6 @@ function RoutePage({ page, pathname }: { page: { section: string; title: string;
   const [filters, setFilters] = useState<Record<string,string>>({});
   const setFilter = (name:string, value:string) => setFilters(old=>({...old,[name]:value}));
   const resetFilters = () => setFilters({});
-  const scopedCommerce = pathname.startsWith("/workbench/data/") || pathname==="/workbench/stores" || pathname.startsWith("/workbench/store-") || pathname.startsWith("/workbench/plans/") || pathname.startsWith("/workbench/account/");
   const submit = (label:string) => {
     // Filters are local and immediately update the visible collection.
     // Every other action must open a scoped dialog rather than fake a save.
