@@ -115,7 +115,24 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   const rows = useMemo(() => [...(page.rows ?? []), ...demoDrafts.filter(d => (d.kind === "project" && pathname.startsWith("/workbench/ai/projects")) || (d.kind === "knowledge" && pathname.startsWith("/workbench/ai/knowledge")) || (d.kind === "skill" && pathname.startsWith("/workbench/agents/skills"))).map(d => ({title:d.name,detail:d.description || `关联店铺：${d.store} · 当前演示草稿`,state:"草稿",value:"本次演示新增"}))].filter(row => `${row.title} ${row.detail} ${row.state ?? ""}`.toLowerCase().includes(query.toLowerCase())), [page.rows, query, demoDrafts, pathname]);
   const chooseAction = (label: string) => {
     if (label.startsWith("筛选") || label.startsWith("搜索")) return;
+    if (label === "查看原预警") { router.push("/workbench/overview/alerts?preview=1"); return; }
+    if (label.includes("导出")) {
+      const cell = (v: string | undefined) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+      const data = [["名称","说明","数值","状态"], ...rows.map(row => [row.title,row.detail,row.value ?? "",row.state ?? ""])];
+      const blob = new Blob(["\uFEFF" + data.map(row => row.map(cell).join(",")).join("\r\n")], {type:"text/csv;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "shuomi-demo-records.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setNotice("已导出当前可见的演示记录，不包含真实业务数据。");
+      return;
+    }
     setNotice("");
+    setSelectedDetail(null);
     setActiveAction(label);
   };
   const closeAction = () => { setActiveAction(null); setSelectedDetail(null); };
