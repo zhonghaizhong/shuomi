@@ -36,6 +36,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Verify sidebar on desktop and small screens
         run: pnpm exec playwright test --config playwright.sidebar.config.ts
+      - name: Verify showcase action dialogs and cross-module flows
+        run: pnpm exec playwright test --config playwright.showcase-interactions.config.ts
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist-pages
