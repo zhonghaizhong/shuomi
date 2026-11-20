@@ -30,3 +30,47 @@
 :global(.light) .current { color: #444050; background: #f1eefb; }
 :global(.light) .modelOption[aria-pressed="true"] { background: #efecff; }
 @media (max-width: 560px) { .dialog { padding: 18px; } .modelOption { align-items: flex-start; flex-direction: column; } }
+
+/* Intelligent market dialog semantic palette — Figma dark blue/light teal. */
+.dialog{
+ --agent-dialog-surface:#142237;--agent-dialog-raised:#1c3047;
+ --agent-dialog-border:#30465c;--agent-dialog-text:#edf5ff;
+ --agent-dialog-muted:#b5c8da;--agent-dialog-primary:#1670ce;
+ background:var(--agent-dialog-surface);color:var(--agent-dialog-text);
+ border-color:var(--agent-dialog-border);
+}
+:global(.light) .dialog{
+ --agent-dialog-surface:#fff;--agent-dialog-raised:#f1f5fa;
+ --agent-dialog-border:#d8e4ee;--agent-dialog-text:#172b45;
+ --agent-dialog-muted:#496177;--agent-dialog-primary:#087f6c;
+ background:var(--agent-dialog-surface);color:var(--agent-dialog-text);
+ border-color:var(--agent-dialog-border);
+}
+.dialog .heading h2,.dialog :is(.info h3,.modelOptions h3,.modelOption strong,.current strong){color:var(--agent-dialog-text);}
+.dialog :is(.heading p,.info p,.modelOption small,.current p){color:var(--agent-dialog-muted);}
+.dialog :is(.modelOption,.close,.secondary,.current){
+ background:var(--agent-dialog-raised);border-color:var(--agent-dialog-border);
+ color:var(--agent-dialog-text);
+}
+.dialog .modelOption[aria-pressed="true"]{
+ background:color-mix(in srgb,var(--agent-dialog-primary),var(--agent-dialog-surface) 90%);
+ border-color:var(--agent-dialog-primary);
+}
+.dialog .modelOption b{
+ color:var(--agent-dialog-text);background:var(--agent-dialog-surface);
+}
+.dialog .modelOption[aria-pressed="true"] b{
+ color:var(--agent-dialog-primary);background:var(--agent-dialog-surface);
+}
+.dialog .tags span{color:var(--agent-dialog-text);background:var(--agent-dialog-raised);}
+.dialog .demoNote{border-color:var(--agent-dialog-border);}
+.dialog .primary,.dialog .primary:hover{
+ color:#fff;background:var(--agent-dialog-primary);border-color:var(--agent-dialog-primary);
+}
+.dialog :is(.primary,.secondary,.modelOption,.close):focus-visible{
+ outline:2px solid var(--agent-dialog-primary);outline-offset:2px;
+}
+:global(.light) .dialog .modelOption[aria-pressed="true"]{
+ background:#e5f5f0;border-color:#087f6c;
+}
+:global(.light) .dialog .current{background:#f1f5fa;}
