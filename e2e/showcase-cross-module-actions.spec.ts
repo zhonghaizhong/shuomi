@@ -26,7 +26,8 @@ test("uploaded products support filter, pagination, detail and reset",async({pag
  await expect(main.getByText("共 3 条演示记录")).toBeVisible();
  await main.getByRole("button",{name:"查看商品"}).first().click();
  await expect(page.getByRole("dialog",{name:"查看商品详情"})).toContainText("SKU");
- await page.getByRole("button",{name:"关闭商品详情"}).click();
+ await page.keyboard.press("Escape");
+ await expect(page.getByRole("dialog",{name:"查看商品详情"})).toHaveCount(0);
  await main.getByRole("button",{name:"重置"}).click();
  await expect(main.getByText("共 6 条演示记录")).toBeVisible();
  await main.getByRole("button",{name:"下一页"}).click();
