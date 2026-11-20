@@ -36,7 +36,7 @@ for (let i = 0; i < routes.length; i += CHUNK_SIZE) chunks.push(routes.slice(i,i
 
 type Audit = {
   darkSurfaces: {selector:string;background:string,area:number}[];
-  missingContrast: {text:string,ratio:number,foreground:string,background:string}[];
+  missingContrast: {text:string,ratio:number,foreground:string,background:string,selector:string,parent:string}[];
   path:string;
 };
 const auditInBrowser = () => {
@@ -95,7 +95,7 @@ const auditInBrowser = () => {
     if(!fore || !back)continue;
     const a=lightness(fore),b=lightness(back);
     const ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
-    if(ratio<2.5)missingContrast.push({text,ratio:Number(ratio.toFixed(2)),foreground:css.color,background:back.map(v=>Math.round(v)).join(",")});
+    if(ratio<2.5)missingContrast.push({text,ratio:Number(ratio.toFixed(2)),foreground:css.color,background:back.map(v=>Math.round(v)).join(","),selector:el.tagName.toLowerCase()+"."+String(el.className).split(" ")[0],parent:el.parentElement?.tagName.toLowerCase()+"."+String(el.parentElement?.className||"").split(" ")[0]});
   }
   return {darkSurfaces:darkSurfaces.slice(0,20),missingContrast:missingContrast.slice(0,25),path:location.hash} as Audit;
 };
