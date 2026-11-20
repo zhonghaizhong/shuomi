@@ -74,10 +74,8 @@ export function ConsoleNavigation({ pathname, ariaLabel, onNavigate, showcaseMod
   const nodes = (demoPreview ? consoleNavigation.filter(entry => ["/workbench", "/workbench/ai", "/workbench/supply", "/workbench/agents", "/workbench/tools", "/workbench/services", "/workbench/data", "/workbench/store-center", "/workbench/plans", "/workbench/account"].includes(entry.href)) : consoleNavigation.filter(entry => !researchWorkflows.some(workflow => workflow.root === entry.href))).map(entry => {
     const connected = entry.href === "/workbench" && operationsCockpitAvailable || firstConnectedConsoleEntry(entry.href, entryCapabilities) !== null;
     const node = { ...entry, availability: connected ? "connected" as const : "unavailable" as const };
-    if (node.href === "/workbench/account" && !demoPreview) {
-      // Keep the full route trail for detail breadcrumbs and section highlighting.
-      return { ...node, children: node.children?.map(child => ({ ...child, children: undefined })) };
-    }
+    // Keep the complete account navigation tree in production as well as the showcase.
+    // Previously its third-level menus were removed outside preview mode.
     if (!demoPreview && node.href === "/workbench" && operationsCockpitAvailable) return { ...node, availability: "connected" as const, children: node.children?.map(child => {
       const mode = child.href.split("/").at(-1), permission = mode === "stores" ? "workbench.cockpit.stores.read" : `workbench.cockpit.${mode}.read`;
       return { ...child, availability: cockpitPermissions.includes(permission) ? "connected" as const : "unavailable" as const };
