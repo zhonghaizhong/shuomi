@@ -87,12 +87,11 @@ export function ConsoleNavigation({ pathname, ariaLabel, onNavigate, showcaseMod
  if(node.href === "/workbench/store-center") return demoPreview
       ? {...node,availability:"connected" as const,children:[...(node.children?.map(child=>({...child,availability:"connected" as const}))??[]),{label:"订单履约",href:"/workbench/store-orders",availability:"connected" as const}]}
       : {...node,children:node.children?.map(child =>
-          child.href === "/workbench/stores"
-            ? {...child,children:child.children?.map(sub => ({
-                ...sub,
+          child.href === listingHome
+            ? {...child,
                 availability:supplyChainAvailable || supplyPreparationAvailable || supplyCompletionDraftsAvailable ? "connected" as const : "unavailable" as const,
-                children:sub.children?.map(stage=>({...stage,availability:supplyChainAvailable || supplyPreparationAvailable || supplyCompletionDraftsAvailable ? "connected" as const : "unavailable" as const})),
-              }))}
+                children:child.children?.map(stage=>({...stage,availability:supplyChainAvailable || supplyPreparationAvailable || supplyCompletionDraftsAvailable ? "connected" as const : "unavailable" as const})),
+              }
             : child.href === "/workbench/store-products" ? {...child,availability:storeProductsAvailable ? "connected" as const:"unavailable" as const}
             : child.href === "/workbench/store-orders" ? {...child,availability:storeOrdersAvailable ? "connected" as const:"unavailable" as const} :child)};
     if(node.href==="/workbench/services"&&ecoservicesAvailable)return {...node,availability:"connected" as const,children:node.children?.map(child=>({...child,availability:"connected" as const}))};
