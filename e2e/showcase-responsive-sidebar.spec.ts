@@ -253,13 +253,13 @@ test("listing four subpages share aligned Vuexy typography, cards and controls",
     const contentWidth=await root.evaluate(el=>el.getBoundingClientRect().width);
     expect(contentWidth).toBeLessThanOrEqual(1601);
     if(route==="waiting"){
-      const cards=root.locator("section").filter({has:root.getByRole("heading",{name:"选择商品"})}).first().locator("article");
+      const cards=root.locator('section[class*="configuration"] > article');
       await expect(cards).toHaveCount(4);
       const tops=await cards.evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().top));
       expect(Math.max(...tops)-Math.min(...tops)).toBeLessThan(2);
     }
     if(route==="missing"||route==="review"){
-      const cards=root.locator("section").filter({has:root.getByText("全部商品", {exact:true})}).first();
+      const cards=root.locator('section[class*="summary"]');
       if(route==="missing")await expect(cards.locator("article")).toHaveCount(4);
       const source=root.getByRole("combobox",{name:"商品来源"});
       await source.selectOption("自有商品库");
