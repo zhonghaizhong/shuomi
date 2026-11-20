@@ -1368,3 +1368,61 @@
   background: var(--sidebar-accent);
   font-weight: 650;
 }
+
+
+/* Figma account nav: left plus icon, aligned second/third levels, no trailing arrows. */
+.console-nav-figma-account > .console-nav-row {
+  display:flex;align-items:center;gap:0;
+  min-height:34px;
+  border-radius:7px;
+}
+.console-nav-figma-account > .console-nav-row > button.console-nav-figma-expand{
+  display:grid;place-items:center;
+  flex:0 0 19px;width:19px;min-width:19px;min-height:19px;height:19px;
+  margin:0 0 0 8px;padding:0;
+  border:1px solid #2671a9;border-radius:5px;
+  background:transparent;color:#328ddf;
+}
+.console-nav-figma-account > .console-nav-row > button.console-nav-figma-expand:hover{
+  background:rgba(25,118,210,.12);
+}
+.console-nav-figma-account > .console-nav-row > a {
+  display:flex;align-items:center;flex:1;min-width:0;
+  padding:7px 8px 7px 8px;gap:6px;
+  font-size:13px;font-weight:500;line-height:1.3;
+}
+.console-nav-figma-account.console-nav-level-2 > .console-nav-row>a{padding-left:5px}
+.console-nav-figma-account.console-nav-level-3 > .console-nav-row>a{
+  padding:5px 8px 5px 11px;font-size:12px;
+}
+.console-nav-figma-account.console-nav-level-2>ul{
+  margin:2px 0 5px 22px;
+  padding-left:11px;
+  border-left:1px solid rgba(75,124,162,.26);
+}
+.console-nav-figma-account.console-nav-level-1>ul{
+  padding-left:10px;margin-top:2px;
+}
+.console-nav-figma-account > .console-nav-row[data-active]{
+  color:#59a6ff;
+}
+.console-nav-figma-account > .console-nav-row:has(a[aria-current="page"]){
+  background:#1b3e59;color:#59a6ff;
+}
+.console-nav-figma-account.console-nav-level-1 > .console-nav-row[data-active],
+.console-nav-figma-account.console-nav-level-2 > .console-nav-row[data-active] {
+  background:rgba(30,79,113,.65);
+}
+.console-nav-figma-account > .console-nav-row[data-active] > a{
+  color:#59a6ff;
+}
+.light .console-nav-figma-account > .console-nav-row > button.console-nav-figma-expand{
+  border-color:#087f6c;color:#087f6c;
+}
+.light .console-nav-figma-account > .console-nav-row[data-active],
+.light .console-nav-figma-account > .console-nav-row:has(a[aria-current="page"]){
+  background:#e6f3f0;color:#087f6c;
+}
+.light .console-nav-figma-account > .console-nav-row[data-active]>a{
+  color:#087f6c;
+}
