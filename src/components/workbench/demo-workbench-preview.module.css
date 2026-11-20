@@ -2778,3 +2778,22 @@
  .page[data-commerce-unified="account"] .accountBottom>article>div small {grid-column:3;}
  .page[data-commerce-unified="account"] :is(.accountOverview,.accountModules,.accountBottom>article,.accountBottom>aside,.accountSettings>section,.profileGrid>article,.profileGrid>aside){padding:17px;}
 }
+
+
+/* Account action hierarchy: only true primary actions are purple. */
+.page[data-commerce-unified="account"] :is(.accountSettings button,.profileGrid button,.accountBottom button) {
+  border-color:var(--acc-stroke);
+  background:var(--acc-inset);
+  color:var(--acc-ink);
+}
+.page[data-commerce-unified="account"] :is(.accountSettings>footer button:last-child,.accountModules article button) {
+  border-color:var(--acc-primary);
+  background:var(--acc-primary);
+  color:#fff;
+}
+.page[data-commerce-unified="account"] :is(.accountSettings button,.profileGrid button,.accountBottom button):hover {
+  border-color:var(--acc-primary);
+}
+.page[data-commerce-unified="account"] :is(button,input,select):focus-visible {
+  outline:2px solid var(--acc-primary);outline-offset:2px;
+}
