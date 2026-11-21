@@ -34,3 +34,30 @@
 .page .helpSteps{display:grid;gap:12px;margin:0;padding:0 0 0 24px;font-size:14px;line-height:1.6;color:var(--st-text)}
 .page .helpSteps li::marker{color:var(--st-accent);font-weight:700}
 .page .dialog>.hint{padding:12px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-surface)}
+
+/* My Stores follows Figma asset-list structure; colors follow confirmed Vuexy. */
+.page .filters{grid-template-columns:minmax(180px,1.5fr) repeat(5,minmax(96px,1fr)) auto auto;gap:8px;padding:10px}
+.page .metricCard{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:14px;min-height:92px}
+.page .metricCard>strong{display:grid;place-items:center;width:60px;height:60px;flex:none;border-radius:10px;background:color-mix(in srgb,var(--st-accent) 16%,var(--st-surface));color:var(--st-accent);font-size:26px}
+.page .metricCard>div{display:grid;gap:6px;min-width:0}.page .metricCard>div>span{font-size:15px;color:var(--st-text);font-weight:650}.page .metricCard small{font-size:12px;color:var(--st-muted)}
+.page .attention{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border:1px solid color-mix(in srgb,#e8a44e 40%,var(--st-line));border-radius:8px;background:color-mix(in srgb,#e8a44e 8%,var(--st-bg));font-size:14px}
+.page .panel>header>button{margin-left:auto}
+.page .storeList{gap:12px}
+.page .storeList article.storeCard{display:grid;gap:14px;padding:18px;min-height:0}
+.page .storeList .storeTop{display:flex;align-items:center;gap:14px;width:100%;flex:initial;min-width:0}
+.page .storeIdentity{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.page .storeIdentity>div{display:grid;gap:5px;min-width:0}
+.page .storeAvatar{display:grid;place-items:center;width:42px;height:42px;border-radius:9px;background:var(--st-accent);color:#fff;font-size:20px;font-weight:700}
+.page .storeTags{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;flex:1}
+.page .storeTags span{border-radius:6px;padding:5px 9px;background:var(--st-bg);border:1px solid var(--st-line);font-size:12px;white-space:nowrap}
+.page .storeStatus{display:flex;flex-direction:row;gap:12px;flex:none;font-size:13px;color:#dca65a}
+.page .storeFacts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;gap:0;padding:12px 0;border-block:1px solid var(--st-line)}
+.page .storeFacts>div{display:grid;gap:7px;min-width:0;padding:0 16px;border-left:1px solid var(--st-line)}
+.page .storeFacts>div:first-child{padding-left:0;border-left:0}
+.page .storeFacts small{font-size:12px;color:var(--st-muted)}
+.page .storeFacts strong{font-size:16px;color:var(--st-text)}
+.page .storeBottom{display:flex;justify-content:space-between;align-items:center;width:100%;gap:14px;font-size:13px;color:var(--st-muted)}
+.page .storeButtons{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.page .storeButtons button{min-height:36px;padding:7px 12px}
+@media(max-width:1250px){.page .filters{grid-template-columns:repeat(3,minmax(0,1fr))}.page .filters label{grid-column:span 2}.page .storeTop{flex-wrap:wrap}.page .storeStatus{flex-basis:100%}}
+@media(max-width:680px){.page .filters{grid-template-columns:repeat(2,minmax(0,1fr))}.page .filters label{grid-column:1/-1}.page .storeFacts{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:15px}.page .storeFacts>div:nth-child(3){padding-left:0;border-left:0}.page .storeBottom{align-items:flex-start;flex-direction:column}.page .storeButtons{justify-content:flex-start}}
