@@ -25,10 +25,10 @@ type Mode="overview"|"settings"|"business"|"verification";
 function Options({label,values,selected,onChange}:{label:string;values:string[];selected:string[];onChange:(next:string[])=>void}){
  return <fieldset className={styles.options}><legend>{label}</legend><div>{values.map(v=><label key={v}><input type="checkbox" checked={selected.includes(v)} onChange={e=>onChange(toggled(selected,v,e.target.checked))}/><span>{v}</span></label>)}</div></fieldset>;
 }
-function Header({mode,onBack}:{mode:Mode,onBack:()=>void}){
+function Header({mode}:{mode:Mode}){
  const title={overview:"账户资料",settings:"账户设置",business:"经营画像",verification:"认证信息"}[mode];
  const desc={overview:"管理个人资料、联系方式和经营画像",settings:"修改账户信息、联系方式与登录安全",business:"让系统理解你的经营阶段、资源条件和实际需求",verification:"完成个人或企业主体认证，便于后续业务服务与合作申请时核验主体信息。"}[mode];
- return <header className={styles.header}><div><small>我的账户 / 账户资料{mode==="overview"?"":" / "+title}</small><h1>{title}</h1><p>{desc}</p></div>{mode!=="overview"&&<button type="button" onClick={onBack}>返回账户资料</button>}</header>;
+ return <header className={styles.header}><div><small>我的账户 / 账户资料{mode==="overview"?"":" / "+title}</small><h1>{title}</h1><p>{desc}</p></div></header>;
 }
 function DemoNote({children}:{children:React.ReactNode}){return <p className={styles.note}>{children??"这里仅展示本地演示数据，不会写入真实账户。"}</p>;}
 export function AccountProfilePreview({pathname}:{pathname:string}){
@@ -96,7 +96,7 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
    closeContact();
  };
  return <div className={styles.page} data-account-profile-page={mode}>
-   <Header mode={mode} onBack={()=>go("")}/>
+   <Header mode={mode}/>
    <nav className={styles.profileSubnav} aria-label="账户资料二级导航">{([["账户概览",""],["账户设置","/settings"],["经营画像","/business"],["认证信息","/verification"]] as const).map(([title,route])=><button key={title} type="button" aria-current={pathname===base+route?"page":undefined} onClick={()=>go(route)}>{title}</button>)}</nav>
    {mode==="overview"&&<>
      <section className={styles.profileTop}><div><div className={styles.avatar} aria-hidden="true">S</div><div><h2>{tenant.admin}</h2><p>用户名：{savedAccount.name} · 手机号已验证</p><span className={styles.success}>已实名认证 · 示例状态</span></div></div><dl><div><dt>用户编号</dt><dd>{tenant.userId}</dd></div><div><dt>注册时间</dt><dd>2026年11月21日</dd></div><div><dt>最近登录</dt><dd>演示时间 14:32</dd></div></dl></section>
