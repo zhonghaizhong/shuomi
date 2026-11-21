@@ -118,7 +118,7 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
    </form>}
    {mode==="business"&&<>
       <section className={styles.intro}><h2>完善经营画像，让系统知道如何为你工作</h2><p>画像不会改变首页，也不会自动替你做决定；它用于业务分类、统计分析和服务沟通，让智能体与服务更贴近你的真实经营情况。</p></section>
-      {!editingBusiness?<><div className={styles.toolbar}><h2>维护经营画像</h2><button className={styles.primary} onClick={()=>setEditingBusiness(true)}>维护经营画像</button></div>
+      {!editingBusiness?<><div className={styles.toolbar}><h2>当前画像资料</h2><button className={styles.primary} onClick={()=>setEditingBusiness(true)}>维护经营画像</button></div>
       <div className={styles.benefits}>{[["01","让智能体更懂你的业务","结合角色、店铺阶段、平台与站点，减少重复说明。"],["02","让执行建议更符合实际","根据店铺类型、工厂与供应链条件判断可执行范围。"],["03","让服务沟通更高效","提前了解所需服务，减少无关信息和重复沟通。"]].map(([n,title,desc])=><article key={n}><b>{n}</b><h3>{title}</h3><p>{desc}</p></article>)}</div>
       <section className={styles.panel}><header className={styles.panelHeader}><h2>当前经营画像</h2><small>可随业务变化重新维护 · 演示资料</small></header><dl className={styles.businessSummary}>{[["角色",savedBusiness.roles],["店铺",savedBusiness.shops],["平台",savedBusiness.platforms],["站点",savedBusiness.sites],["工厂 / 供应链",savedBusiness.supply],["服务需求",savedBusiness.services]].map(([name,value])=><div key={String(name)}><dt>{name}</dt><dd>{Array.isArray(value)?value.join("、"):value||"未设置"}</dd></div>)}</dl></section></>:<form className={styles.panel} onSubmit={saveBusiness}><header className={styles.panelHeader}><div><h2>维护经营画像</h2><p>按当前经营情况选择，支持多选，可随时调整</p></div></header><div className={styles.businessForm}>
         <Options label="1. 你是什么角色？" values={["跨境电商创业者","跨境电商卖家","工厂或供应商","企业电商团队","OPC电商社区或园区","电商服务商","其他"]} selected={business.roles} onChange={v=>setBusiness(x=>({...x,roles:v}))}/>
