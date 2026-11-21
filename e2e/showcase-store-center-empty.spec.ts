@@ -25,7 +25,7 @@ test("store showcase keeps temporary onboarding drafts separate from authenticat
  await dialog.getByRole("textbox",{name:"店铺名称"}).fill("演示新店铺");
  await dialog.getByRole("button",{name:"创建演示店铺"}).click();
  await expect(root.getByText("演示新店铺",{exact:true})).toBeVisible();
- await expect(root.locator('[class*="pending"]').getByText("待授权",{exact:true})).toBeVisible();
+ await expect(root.getByText("待授权",{exact:true}).first()).toBeVisible();
  await page.goto(prefix+"/store-products");
  await expect(root.getByRole("heading",{name:"暂无已同步商品"})).toBeVisible();
  await page.goto(prefix+"/store-orders");
@@ -67,7 +67,8 @@ test("store management supports filtering, renaming, removing, and Escape to clo
  await expect(edit).toBeVisible();
  await page.keyboard.press("Escape");
  await expect(edit).toHaveCount(0);
- await root.getByRole("button",{name:"管理名称"}).click();
+ await root.getByRole("button",{name:"管理"}).click();
+ await page.getByRole("dialog",{name:"店铺详情"}).getByRole("button",{name:"修改名称"}).click();
  await edit.getByRole("textbox",{name:"店铺名称"}).fill("更新店铺");
  await edit.getByRole("button",{name:"保存修改"}).click();
  await expect(root.getByText("更新店铺",{exact:true})).toBeVisible();
