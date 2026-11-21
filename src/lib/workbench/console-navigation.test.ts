@@ -4,19 +4,19 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 describe("Figma Console navigation contract", () => {
-  it("keeps the existing exact-version product selector in the smart market breadcrumb", () => {
+  it("keeps the existing exact-version product selector in the AI workbench breadcrumb", () => {
     const route = findConsoleRoute("/workbench/agents/skills/official/use");
-    expect(route?.trail.map(node => node.label)).toEqual(["智能市场", "技能库", "官方模板", "选择已有商品"]);
+    expect(route?.trail.map(node => node.label)).toEqual(["AI工作台", "技能库", "官方模板", "选择已有商品"]);
   });
-  it("places the skill library under smart market without a duplicate in AI workbench", () => {
+  it("places the skill library under AI workbench without a duplicate in smart market", () => {
     const market = findConsoleRoute("/workbench/agents")!.node;
     const ai = findConsoleRoute("/workbench/ai")!.node;
-    expect(market.children!.some(node => node.label === "技能库")).toBe(true);
-    expect(ai.children!.some(node => node.label === "技能库")).toBe(false);
+    expect(market.children!.some(node => node.label === "技能库")).toBe(false);
+    expect(ai.children!.some(node => node.label === "技能库")).toBe(true);
     for (const category of ["official", "mine", "team"]) {
       const route = findConsoleRoute(`/workbench/agents/skills/${category}`)!;
-      expect(route.trail[0]).toBe(market);
-      expect(route.trail.map(node=>node.label).slice(0,2)).toEqual(["智能市场", "技能库"]);
+      expect(route.trail[0]).toBe(ai);
+      expect(route.trail.map(node=>node.label).slice(0,2)).toEqual(["AI工作台", "技能库"]);
       expect(route.node.href).toBe(`/workbench/agents/skills/${category}`);
     }
   });
