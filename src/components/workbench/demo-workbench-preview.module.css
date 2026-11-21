@@ -3297,3 +3297,37 @@
 .page.page.agentsPreview.agentMarketReference > .header p{
  font-size:14px;line-height:22px;
 }
+
+/* 套餐与权益 homepage: approved Vuexy layout; Figma-owned five business links unchanged. */
+.page[data-commerce-unified="plans"]{--plans-bg:#2f3349;--plans-inset:#393d55;--plans-line:#44485e;--plans-text:#e2e2f0;--plans-muted:#acabc1;--plans-primary:#7367f0;gap:24px}
+:global(.light) .page[data-commerce-unified="plans"]{--plans-bg:#fff;--plans-inset:#f8f7fa;--plans-line:#e6e6f0;--plans-text:#444050;--plans-muted:#6f6b7d}
+.page[data-commerce-unified="plans"] :is(.header,.planOverview,.planEntrances,.planBottom>article,.planBottom>aside){
+ background:var(--plans-bg);color:var(--plans-text);border:1px solid var(--plans-line);border-radius:8px;
+}
+.page[data-commerce-unified="plans"]>.header{min-height:116px;padding:20px 24px}
+.page[data-commerce-unified="plans"]>.header h1{font-size:29px;line-height:1.3;border-left:3px solid var(--plans-primary);color:var(--plans-text)}
+.page[data-commerce-unified="plans"]>.header p{font-size:14px;color:var(--plans-muted)}
+.page[data-commerce-unified="plans"] :is(.planOverview,.planEntrances,.planBottom>article,.planBottom>aside){padding:24px}
+.page[data-commerce-unified="plans"] :is(.planEntrances,.planBottom){gap:20px}
+.page[data-commerce-unified="plans"] :is(.planOverview h2,.planEntrances h2,.planBottom h2){color:var(--plans-text);font-size:20px}
+.page[data-commerce-unified="plans"] :is(.planOverview p,.planEntrances span,.planBottom p,.planBottom small,.planBottom span){color:var(--plans-muted)}
+.page[data-commerce-unified="plans"] .planStats>div{
+ background:var(--plans-inset);border:1px solid var(--plans-line);border-radius:7px;padding:15px 17px;
+}
+.page[data-commerce-unified="plans"] .planStats strong{color:var(--plans-text);font-variant-numeric:tabular-nums}
+.page[data-commerce-unified="plans"] .planEntrances>div{gap:16px}
+.page[data-commerce-unified="plans"] .planEntrances article{
+ min-height:190px;background:var(--plans-inset);border:1px solid var(--plans-line);border-radius:8px;padding:20px;
+}
+.page[data-commerce-unified="plans"] .planEntrances article h3{color:var(--plans-text);font-size:18px}
+.page[data-commerce-unified="plans"] .planEntrances article p{color:var(--plans-muted);font-size:14px;line-height:1.55}
+.page[data-commerce-unified="plans"] :is(.planEntrances button,.planBottom button,.planActions button){
+ border:1px solid var(--plans-primary);border-radius:6px;background:var(--plans-primary);color:#fff;
+ font-size:14px;min-height:39px;
+}
+.page[data-commerce-unified="plans"] .planBottom{grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:24px}
+.page[data-commerce-unified="plans"] .usageBar{border-color:var(--plans-line)}
+.page[data-commerce-unified="plans"] .usageBar :is(strong,span){color:var(--plans-text)}
+.page[data-commerce-unified="plans"] .usageBar i{background:var(--plans-inset);border-radius:99px}
+@media(max-width:1000px){.page[data-commerce-unified="plans"] .planBottom{grid-template-columns:1fr}}
+@media(max-width:700px){.page[data-commerce-unified="plans"]{gap:16px}.page[data-commerce-unified="plans"] :is(.planOverview,.planEntrances,.planBottom>article,.planBottom>aside){padding:17px}}
