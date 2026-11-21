@@ -69,3 +69,5 @@
 .reviewFooter>div{display:flex;gap:8px;flex-wrap:wrap}
 .reviewFooter button{min-height:40px}
 @media(max-width:800px){.modal.reviewModal{padding:14px}.reviewModal .reviewWorkspace{grid-template-columns:minmax(0,1fr)!important}.reviewModal .reviewWorkspace aside{max-height:210px!important;overflow:auto}.reviewModal .reviewWorkspace [role="log"]{max-height:220px;min-height:140px}.reviewFooter>div{justify-content:flex-end}}
+
+.resolveCheck{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--cn-muted);min-height:40px}.modal .resolveCheck input{width:16px;height:16px;min-height:16px;accent-color:#7367f0;margin:0;padding:0;flex-shrink:0}
