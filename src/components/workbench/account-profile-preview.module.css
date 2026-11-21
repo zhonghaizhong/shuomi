@@ -31,3 +31,11 @@
 .profileSubnav button:hover{border-color:var(--profile-border);background:var(--profile-raised)}
 .profileSubnav button[aria-current="page"]{background:color-mix(in srgb,var(--profile-primary) 12%,var(--profile-raised));border-color:color-mix(in srgb,var(--profile-primary) 38%,var(--profile-border));color:var(--profile-text);font-weight:700}
 @media(max-width:750px){.profileSubnav{padding:9px;gap:5px}.profileSubnav button{padding:6px 9px;font-size:12px}}
+
+/* Account profile uses the same Vuexy module rhythm as Enterprise/Referrals. */
+.page{gap:24px}
+.header h1{border-left-color:var(--profile-primary)}
+.panel{padding:24px}
+.overviewGrid{gap:24px}
+.panelHeader{gap:14px}
+@media(max-width:700px){.page{gap:16px}.panel{padding:17px}.overviewGrid{gap:14px}}
