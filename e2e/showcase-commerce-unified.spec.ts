@@ -98,15 +98,16 @@ test("Figma account navigation, enterprise roles and referrals keep correct rout
  for(const name of ["账户资料","企业空间","推广与收益"]){
   await expect(nav.getByRole("link",{name,exact:true})).toBeVisible();
  }
- const enterpriseToggle=nav.getByRole("button",{name:"展开企业空间"});
- if(await enterpriseToggle.count())await enterpriseToggle.click();
+ // Account third-level pages live in the content tabs, not in the left sidebar.
+ for(const label of ["账户资料","企业空间","推广与收益"]){
+  await expect(nav.getByRole("link",{name:label,exact:true})).toBeVisible();
+  await expect(nav.getByRole("button",{name:"展开"+label})).toHaveCount(0);
+ }
  for(const [label,route] of [["成员管理","members"],["角色权限","roles"],["资源与额度","resources"],["操作记录","audit"]] as const){
-  const link=nav.getByRole("link",{name:label,exact:true});
-  await expect(link,`Figma enterprise child ${label} must appear exactly once`).toHaveCount(1);
-  await expect(link).toBeVisible();
-  await link.click();
-  await expect(page).toHaveURL(new RegExp("#/workbench/account/organization/"+route));
-  await expect(page.getByRole("heading",{level:1,name:route==="members"||route==="roles"?"成员与权限":label})).toBeVisible();
+  await expect(nav.getByRole("link",{name:label,exact:true})).toHaveCount(0);
+  await page.goto(root+"/account/organization/"+route);
+  await expect(page.locator('[data-account-suite]')).toBeVisible();
+  await expect(page.getByRole("navigation",{name:"企业空间业务导航"}).getByRole("button",{name:label,exact:true})).toHaveAttribute("aria-current","page");
  }
  await page.goto(root+"/account/organization");
  for(const heading of ["成员管理","角色权限","资源与额度","操作记录"]){
