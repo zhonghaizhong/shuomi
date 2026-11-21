@@ -129,3 +129,46 @@
 .page.page > .header{min-height:130px;padding:20px 24px;border:1px solid var(--st-line);border-radius:6px}
 .page.page > .header h1{font-size:26px;line-height:34px;border-left-width:3px;margin:6px 0 5px}
 .page.page > .header p{font-size:14px;line-height:22px}
+
+
+/* Figma 1560:359, 1604:359, 1608:359 — Vuexy-styled store onboarding and actions. */
+.authDialog{width:min(720px,calc(100vw - 32px));max-height:min(92dvh,920px);padding:26px 28px;gap:18px;border-radius:10px}
+.authDialog>header{padding-bottom:14px;border-bottom:1px solid var(--st-line)}
+.authDialog>header h2{font-size:22px}
+.authDialog form{gap:18px}
+.bindingGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px 16px}
+.bindingGrid>label{grid-column:span 2;min-width:0}
+.bindingGrid>label:nth-child(n+4){grid-column:span 2}
+.bindingGrid small{display:block;color:var(--st-muted);font-size:12px;font-weight:400;line-height:1.5;min-height:18px}
+.authDialog :is(input,select){height:42px;border-radius:6px}
+.authSection{display:grid;gap:13px}
+.authSection>strong{font-size:14px}
+.authOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.authOptions button{display:grid;justify-items:start;align-content:center;text-align:left;gap:5px;min-height:72px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-control);padding:10px 15px}
+.authOptions button b{font-size:14px}
+.authOptions button small{font-size:12px;color:var(--st-muted)}
+.authOptions button.authSelected{border-color:var(--st-accent);background:color-mix(in srgb,var(--st-accent) 10%,var(--st-bg))}
+.authSection label{display:grid;gap:7px}
+.passwordField{display:flex;align-items:center;gap:8px;padding:0 4px 0 0;border:1px solid var(--st-line);border-radius:6px;background:var(--st-control)}
+.passwordField input{flex:1;min-width:0;background:transparent;border:0}
+.passwordField button{flex:none;padding:5px 10px;min-height:32px;height:32px;white-space:nowrap}
+.verification{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.verification>strong{font-size:13px}
+.verification>small{color:var(--st-muted);font-size:12px}
+.codeModes{display:flex;gap:4px;padding:4px;border-radius:8px;background:var(--st-surface);border:1px solid var(--st-line)}
+.codeModes button{min-height:30px;padding:5px 12px;font-size:13px;border:0;border-radius:6px}
+.codeModes button[aria-pressed="true"]{color:white;background:var(--st-accent)}
+.fixedIp{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 16px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-surface)}
+.fixedIp>div{min-width:0}
+.fixedIp strong{font-size:13px}
+.fixedIp p{margin:6px 0 0;color:var(--st-muted);font-size:12px;line-height:1.5}
+.authDialog .toggleLabel{display:flex;align-items:center;gap:7px;flex:none;font-size:12px}
+.toggleLabel input{width:20px;height:20px;accent-color:var(--st-accent)}
+.warning{border:1px solid var(--st-line);border-radius:6px;padding:10px 12px;background:var(--st-surface);font-size:13px;color:var(--st-text)}
+.inlineLink{border:0!important;min-height:22px!important;padding:0 4px!important;background:transparent!important;color:var(--st-accent)!important;font-size:12px!important}
+.moreDialog{width:min(360px,calc(100vw - 32px))}
+.moreActions{display:grid;gap:6px}
+.moreActions button{width:100%;text-align:left}
+.groupBackdrop{z-index:10030}
+@media(max-width:730px){.authDialog{padding:18px;max-height:calc(100dvh - 20px)}.bindingGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bindingGrid>label,.bindingGrid>label:nth-child(n+4){grid-column:span 1}.authOptions{grid-template-columns:1fr}.verification{align-items:flex-start;flex-direction:column}.fixedIp{align-items:flex-start}}
+@media(max-width:480px){.bindingGrid{grid-template-columns:minmax(0,1fr)}.fixedIp{flex-direction:column}}
