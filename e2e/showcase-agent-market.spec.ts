@@ -59,7 +59,7 @@ test("model setting selection is saved in this preview and can be reopened", asy
 test("customization request requires consent, confirms demo-only save and shows progress", async ({ page }) => {
   await page.goto(base + "/custom/new");
   await page.getByLabel("需求名称").fill("测试智能体需求");
-  await page.getByLabel("主要使用场景").selectOption({label:"跨境店铺商品资料处理"});
+  await page.getByLabel("主要使用场景").selectOption({label:"商品与供应链管理"});
   await page.getByLabel("希望智能体完成什么？").fill("核对商品数据并整理结果");
   await page.getByLabel("联系人", { exact: true }).fill("测试员");
   await page.getByLabel("手机或微信").fill("demo-contact");
