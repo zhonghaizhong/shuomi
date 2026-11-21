@@ -3293,3 +3293,7 @@
 :global(.light) .agentsPreview.agentMarketReference .agentCards article h3{
  color:#444050;
 }
+
+.page.page.agentsPreview.agentMarketReference > .header p{
+ font-size:14px;line-height:22px;
+}
