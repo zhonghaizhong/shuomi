@@ -104,9 +104,11 @@ test("Figma binding group and owner affordances preserve draft and follow compan
  await expect(owner).toContainText("成员与权限");
  await owner.getByRole("button",{name:"暂不添加"}).click();
  await expect(form).toBeVisible();
+ await form.getByLabel("负责人").selectOption("林晨");
  await form.getByRole("button",{name:"提交授权"}).click();
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByText("店铺运营组",{exact:true})).toBeVisible();
+ await expect(area.getByText("林晨",{exact:true})).toBeVisible();
 });
 test("Figma more-operation menu wires rename, reauthorization and safe unlink",async({page})=>{
  const area=await createDemo(page,"待操作店铺");
