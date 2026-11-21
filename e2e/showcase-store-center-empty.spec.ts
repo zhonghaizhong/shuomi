@@ -140,6 +140,20 @@ test("enter-store is a full five-tab Figma detail view rather than a generic wor
  await page.getByRole("button",{name:"返回我的店铺"}).click();
  await expect(area.getByText("负责人演示",{exact:true})).toBeVisible();
 });
+test("store settings are staged until Save, and returning discards uncommitted edits",async({page})=>{
+ const area=await createDemo(page,"待保存设置");
+ await area.getByRole("button",{name:"管理",exact:true}).click();
+ const details=page.getByRole("region",{name:"店铺详情页面"});
+ await details.getByLabel("店铺负责人").fill("未保存负责人");
+ await page.getByRole("button",{name:"返回我的店铺"}).click();
+ await expect(area.getByText("未保存负责人",{exact:true})).toHaveCount(0);
+ await area.getByRole("button",{name:"管理",exact:true}).click();
+ await expect(details.getByLabel("店铺负责人")).toHaveValue("");
+ await details.getByLabel("店铺负责人").fill("已确认负责人");
+ await details.getByRole("button",{name:"保存设置"}).click();
+ await page.getByRole("button",{name:"返回我的店铺"}).click();
+ await expect(area.getByText("已确认负责人",{exact:true})).toBeVisible();
+});
 test("Figma group creation, rename and deletion preserve store rather than unlink it",async({page})=>{
  const area=await createDemo(page,"分组店铺");
  await area.getByRole("button",{name:"管理分组"}).click();
