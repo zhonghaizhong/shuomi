@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import styles from "./chat-new-preview.module.css";
+import {readPreviewProjects, createPreviewProject, savePreviewProject, projectTemplates} from "./showcase-project-data";
+import {useRouter} from "next/navigation";
 import {readEnabledPreviewSkills,readPersonalPreviewSkills,savePersonalPreviewSkill} from "./showcase-skill-library";
 
 const modes = [
@@ -34,9 +36,13 @@ type ApprovalKind = "knowledge" | "skill" | "report";
 type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; approval?: ApprovalKind };
 
 export function ChatNewPreview({ onAction }: Props) {
+  const router=useRouter();
+  const [projectEntry]=useState(()=>{const q=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const id=q.get("projectId");const template=projectTemplates.find(t=>t.name===q.get("projectTemplate"));const project=readPreviewProjects().find(p=>p.id===id&&p.status!=="已归档");return {mode:q.get("projectMode"),template,project}});
+  const [linkedProjectId,setLinkedProjectId]=useState(projectEntry.project?.id||"");
+  const [projectName,setProjectName]=useState(projectEntry.template?.name||"");
   const [skillEntry] = useState(()=>{const query=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const mode=query.get("skillMode");const name=query.get("skill")||"";return {mode,name}});
-  const [modeIndex, setModeIndex] = useState(skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
-  const [draft, setDraft] = useState(skillEntry.mode==="edit"&&readPersonalPreviewSkills().some(s=>s.name===skillEntry.name)?"编辑技能："+skillEntry.name:"");
+  const [modeIndex, setModeIndex] = useState(projectEntry.mode==="create"?2:skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
+  const [draft, setDraft] = useState(skillEntry.mode==="edit"&&readPersonalPreviewSkills().some(s=>s.name===skillEntry.name)?"编辑技能："+skillEntry.name:projectEntry.template?projectEntry.template.description:projectEntry.project?"继续推进："+projectEntry.project.name:"");
   const [drawer, setDrawer] = useState<"resources" | "stores" | null>(null);
   const [resourceTab, setResourceTab] = useState("我的知识库");
   const [resourceSearch, setResourceSearch] = useState("");
@@ -48,8 +54,8 @@ export function ChatNewPreview({ onAction }: Props) {
   const [scheduleTime, setScheduleTime] = useState("09:00");
   const [scheduleWeekday, setScheduleWeekday] = useState("1");
   const [scheduleMonthday, setScheduleMonthday] = useState("1");
-  const [selectedResources, setSelectedResources] = useState<string[]>(()=>skillEntry.mode==="reference"&&[...readEnabledPreviewSkills(),...readPersonalPreviewSkills().map(s=>s.name)].includes(skillEntry.name)?[skillEntry.name]:[]);
-  const [selectedStores, setSelectedStores] = useState<string[]>([]);
+  const [selectedResources, setSelectedResources] = useState<string[]>(()=>skillEntry.mode==="reference"&&[...readEnabledPreviewSkills(),...readPersonalPreviewSkills().map(s=>s.name)].includes(skillEntry.name)?[skillEntry.name]:projectEntry.project?[projectEntry.project.name]:[]);
+  const [selectedStores, setSelectedStores] = useState<string[]>(projectEntry.project&&projectEntry.project.scope!=="通用业务"?projectEntry.project.scope.split("、"):[]);
   const [pendingResources, setPendingResources] = useState<string[]>([]);
   const [pendingStores, setPendingStores] = useState<string[]>([]);
   const [files, setFiles] = useState<string[]>([]);
@@ -112,7 +118,7 @@ export function ChatNewPreview({ onAction }: Props) {
     }
     setConfirmation(true);
   };
-  const visibleResources = (resourceTab==="我的技能"?[...readEnabledPreviewSkills(),...readPersonalPreviewSkills().map(s=>s.name)]:resourceGroups[resourceTab] ?? []).filter(item => item.toLowerCase().includes(resourceSearch.toLowerCase()));
+  const visibleResources = (resourceTab==="我的项目"?readPreviewProjects().filter(p=>p.status!=="已归档").map(p=>p.name):resourceTab==="我的技能"?[...readEnabledPreviewSkills(),...readPersonalPreviewSkills().map(s=>s.name)]:resourceGroups[resourceTab] ?? []).filter(item => item.toLowerCase().includes(resourceSearch.toLowerCase()));
   const visibleStores = stores.filter(row =>
     row.join(" ").toLowerCase().includes(storeSearch.toLowerCase()) &&
     (!storePlatform || row[1] === storePlatform) &&
@@ -125,7 +131,7 @@ export function ChatNewPreview({ onAction }: Props) {
     : scheduleFrequency === "weekly"
       ? "每" + weekdayNames[Number(scheduleWeekday)] + " " + scheduleTime
       : "每月 " + scheduleMonthday + " 日 " + scheduleTime;
-  const startNewConversation = () => { setChatActive(false); setMessages([]); setDraft(""); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); };
+  const startNewConversation = () => { setChatActive(false); setMessages([]); setDraft(""); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
   const buildApprovalPreview = (index: number, request: string): Omit<PreviewMessage, "id"> | null => {
     if (index === 3) return {
       role: "assistant",
@@ -148,6 +154,7 @@ export function ChatNewPreview({ onAction }: Props) {
     if (!message.approval) return;
     const labels: Record<ApprovalKind, string> = { knowledge: "知识库", skill: "技能", report: "报告" };
     const label = labels[message.approval];
+    if(confirm&&message.approval==="report"&&linkedProjectId){const p=readPreviewProjects().find(p=>p.id===linkedProjectId&&p.status!=="已归档");const name=message.text.split("\n").find(x=>x.startsWith("报告主题："))?.slice(5).trim();if(p&&name){try{savePreviewProject({...p,reports:[...p.reports,name],updated:Date.now()})}catch{onAction("本地成果保存失败");return}}}
     if(confirm&&message.approval==="skill"){const goal=message.text.split("\n").find(line=>line.startsWith("技能目标："))?.slice(5).trim();if(goal)savePersonalPreviewSkill({name:skillEntry.mode==="edit"&&skillEntry.name?skillEntry.name:goal,description:goal});}
     setMessages(current => current.map(item => item.id === message.id ? { ...item, approval: undefined } : item).concat({
       id: Date.now(),
@@ -160,6 +167,11 @@ export function ChatNewPreview({ onAction }: Props) {
     const request = draft.trim();
     const storeLabel = selectedStores.length ? selectedStores.join("、") : "未指定店铺";
     const resourceLabel = selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配";
+    if(modeIndex===2){
+      if(linkedProjectId){onAction("当前会话已经关联项目，请继续描述工作或新建会话。");setConfirmation(false);return;}
+      if(!projectName.trim()){onAction("请填写项目名称");return;}
+      try{const p=createPreviewProject({name:projectName,goal:request,scope:selectedStores.join("、"),template:projectEntry.template?.name,resources:selectedResources});setLinkedProjectId(p.id);setSelectedResources(old=>[...new Set([...old,p.name])]);setMessages([{id:Date.now(),role:"user",text:request},{id:Date.now()+1,role:"assistant",text:"已创建本地演示项目："+p.name+"。当前会话已关联该项目，可返回项目中心查看目标、里程碑及进展。"}]);setConfirmation(false);setChatActive(true);setModeIndex(0);setDraft("");return;}catch{onAction("本地项目保存失败，请检查浏览器存储权限");return;}
+    }
     const replyByMode = [
       "",
       ["【定时任务演示草案】", "任务：" + request, "执行安排：" + scheduleDescription, "监控范围：" + storeLabel, "你可以继续补充时间、频率或异常提醒规则。"].join("\n"),
@@ -201,7 +213,7 @@ export function ChatNewPreview({ onAction }: Props) {
         </footer>
       </section>
       <aside className={styles.modePanel} aria-label={chatActive ? "会话上下文" : "选择执行方式"} data-collapsed={chatActive && !contextOpen}>
-        {chatActive ? <><header className={styles.contextHead}><div><span>会话面板</span><h2>会话上下文</h2></div><button type="button" className={styles.contextToggle} aria-label={contextOpen ? "收起会话面板" : "展开会话面板"} title={contextOpen ? "收起会话面板" : "展开会话面板"} aria-expanded={contextOpen} aria-controls="chat-context-body" onClick={() => setContextOpen(open => !open)}>{contextOpen ? <PanelRightClose size={18} strokeWidth={1.8} aria-hidden="true" /> : <PanelRightOpen size={18} strokeWidth={1.8} aria-hidden="true" />}</button></header>{contextOpen && <div id="chat-context-body" className={styles.contextBody}><section><span>当前方式</span><strong>{mode.title}</strong><small>{mode.detail}</small></section><section><span>关联店铺</span>{selectedStores.length ? selectedStores.map(item => <b key={item}>{item}</b>) : <small>尚未关联店铺</small>}<button onClick={() => { setPendingStores(selectedStores); setDrawer("stores"); }}>管理店铺 →</button></section><section><span>引用资源</span>{selectedResources.length ? selectedResources.map(item => <b key={item}>{item}</b>) : <small>需要时再关联知识、技能或项目</small>}<button onClick={() => { setPendingResources(selectedResources); setDrawer("resources"); }}>管理资源 →</button></section><div className={styles.contextHint}>可随时补充店铺和资料范围，聊天记录会继续保留。</div></div>}</> : <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modes.map((item, index) => <button key={item.title} className={index === modeIndex ? styles.modeSelected : ""} onClick={() => setModeIndex(index)} aria-pressed={index === modeIndex}>
+        {chatActive ? <><header className={styles.contextHead}><div><span>会话面板</span><h2>会话上下文</h2></div><button type="button" className={styles.contextToggle} aria-label={contextOpen ? "收起会话面板" : "展开会话面板"} title={contextOpen ? "收起会话面板" : "展开会话面板"} aria-expanded={contextOpen} aria-controls="chat-context-body" onClick={() => setContextOpen(open => !open)}>{contextOpen ? <PanelRightClose size={18} strokeWidth={1.8} aria-hidden="true" /> : <PanelRightOpen size={18} strokeWidth={1.8} aria-hidden="true" />}</button></header>{contextOpen && <div id="chat-context-body" className={styles.contextBody}><section><span>当前方式</span><strong>{mode.title}</strong><small>{mode.detail}</small></section><section><span>关联店铺</span>{selectedStores.length ? selectedStores.map(item => <b key={item}>{item}</b>) : <small>尚未关联店铺</small>}<button onClick={() => { setPendingStores(selectedStores); setDrawer("stores"); }}>管理店铺 →</button></section><section><span>引用资源</span>{selectedResources.length ? selectedResources.map(item => <b key={item}>{item}</b>) : <small>需要时再关联知识、技能或项目</small>}<button onClick={() => { setPendingResources(selectedResources); setDrawer("resources"); }}>管理资源 →</button></section>{linkedProjectId&&<section><span>关联项目</span><strong>{readPreviewProjects().find(p=>p.id===linkedProjectId)?.name}</strong><button onClick={()=>router.push("/workbench/ai/projects/active?preview=1")}>查看关联项目</button></section>}<div className={styles.contextHint}>可随时补充店铺和资料范围，聊天记录会继续保留。</div></div>}</> : <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modes.map((item, index) => <button key={item.title} className={index === modeIndex ? styles.modeSelected : ""} onClick={() => setModeIndex(index)} aria-pressed={index === modeIndex}>
           <i data-tone={index} /><span><strong>{item.title}</strong></span>
         </button>)}</div></section><section className={styles.examples}>
         <header><h2>试试这样说</h2><span>·</span><p>点击示例可放入输入区</p></header>
@@ -238,6 +250,7 @@ export function ChatNewPreview({ onAction }: Props) {
           <label><span>执行时间</span><input type="time" value={scheduleTime} onChange={event => setScheduleTime(event.target.value)} /></label>
           <p>确认后会生成定时任务演示草案，不会真实创建任务。</p>
         </section>}
+        {modeIndex===2&&<section className={styles.scheduleFields}><label><span>项目名称</span><input aria-label="项目名称" value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="请输入项目名称" required/></label>{projectEntry.template&&<p>项目模板：{projectEntry.template.name}</p>}<p>确认后保存本地演示项目并自动关联会话。</p></section>}
         <div className={styles.confirmSummary}>{modeIndex === 1 && <><span>执行安排</span><strong>{scheduleDescription}</strong></>}<span>执行方式</span><strong>{mode.title}</strong><span>工作内容</span><p>{draft}</p><span>关联店铺</span><p>{selectedStores.length ? selectedStores.join("、") : "未关联店铺"}</p><span>引用资源</span><p>{selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配"}</p></div>
         <footer className={styles.drawerFooter}><button onClick={() => setConfirmation(false)}>返回修改</button><button className={styles.primary} onClick={confirmAction}>确认并继续</button></footer>
       </section>
