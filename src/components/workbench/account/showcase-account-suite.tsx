@@ -1,5 +1,5 @@
 "use client";
-import {useState} from "react";
+import {useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
 import {showcaseTenant as tenant} from "./showcase-tenant";
 import {useShowcaseSuite,addAudit,totalEarnings,availableEarnings,permissionOptions,type Member,type SuiteState} from "./showcase-account-state";
@@ -21,12 +21,14 @@ const screens:Record<string,[string,string]>={
  "/referrals/rules":["推广规则","了解推广关系、收益记录及模拟结算方式。"]
 };
 type Modal="invite"|"member"|"role"|"permissions"|"storage"|"earning"|"payout"|"withdraw"|null;
-const menu=[["企业空间","/organization"],["成员与权限","/organization/members"],["角色权限","/organization/roles"],["资源与额度","/organization/resources"],["操作记录","/organization/audit"],["推广与收益","/referrals"],["推广中心","/referrals/center"],["收益明细","/referrals/earnings"],["提现管理","/referrals/withdrawals"],["推广规则","/referrals/rules"]] as const;
+const menu=[["企业空间","/organization"],["成员管理","/organization/members"],["角色权限","/organization/roles"],["资源与额度","/organization/resources"],["操作记录","/organization/audit"],["推广与收益","/referrals"],["推广中心","/referrals/center"],["收益明细","/referrals/earnings"],["提现管理","/referrals/withdrawals"],["推广规则","/referrals/rules"]] as const;
 export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const router=useRouter();const {state,commit}=useShowcaseSuite();
  const suffix=pathname.slice(root.length)||"/organization";const [title,desc]=screens[suffix]||screens["/organization"];
  const [modal,setModal]=useState<Modal>(null);const [permissions,setPermissions]=useState<string[]>([]);const [name,setName]=useState("");const [email,setEmail]=useState("");const [role,setRole]=useState("商品运营");const [selected,setSelected]=useState("");const [amount,setAmount]=useState("100");const [account,setAccount]=useState("");const [query,setQuery]=useState("");const [applied,setApplied]=useState("");const [notice,setNotice]=useState("");const [error,setError]=useState("");
  const enterprise=suffix.startsWith("/organization"),overview=suffix==="/organization",referral=suffix.startsWith("/referrals");
+ const sectionMenu=enterprise?menu.slice(0,5):menu.slice(5);
+ useEffect(()=>{if(!modal)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setModal(null)};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[modal]);
  const currentMember=state.members.find(x=>x.id===selected);
  const activeMembers=state.members.filter(x=>x.status==="正常");
  const balance=availableEarnings(state);
@@ -60,7 +62,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const tiles=(items:[string,string,string][]) => <div className={s.metrics}>{items.map(([label,value,hint],i)=><article key={label} data-tone={i}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}</div>;
  return <main className={s.page} data-account-suite={suffix}>
   <header className={s.hero}><div><small>我的账户 / {enterprise?"企业空间":"推广与收益"}{overview||suffix==="/referrals"?"":" / "+title}</small><h1>{title}</h1><p>{desc}</p></div><div className={s.heroActions}><button onClick={()=>nav("")}>我的账户</button>{suffix==="/organization/members"&&<button className={s.primary} onClick={()=>open("invite")}>邀请成员</button>}{suffix==="/organization/roles"&&<button className={s.primary} onClick={()=>open("role")}>新建角色</button>}{suffix==="/referrals/withdrawals"&&<button className={s.primary} disabled={!balance||!state.payoutAccount} onClick={()=>open("withdraw")}>申请模拟提现</button>}</div></header>
-  <nav className={s.subNavigation} aria-label="我的账户业务导航">{menu.map(([label,path])=><button key={path} type="button" aria-current={suffix===path?"page":undefined} onClick={()=>nav(path)}>{label}</button>)}</nav>
+  <nav className={s.subNavigation} aria-label={enterprise?"企业空间业务导航":"推广与收益业务导航"}>{sectionMenu.map(([label,path])=><button key={path} type="button" aria-current={suffix===path?"page":undefined} onClick={()=>nav(path)}>{label}</button>)}</nav>
   {notice&&<div className={s.notice} role="status">{notice}<button onClick={()=>setNotice("")} aria-label="关闭消息">×</button></div>}
   <section className={s.identity}><div className={s.avatar}>硕</div><div className={s.identityInfo}><h2>{tenant.name}</h2><p><span className={s.approved}>已认证（模拟）</span> 企业编号：{tenant.id} · 管理员：{tenant.admin}</p></div><span className={s.mode}>演示企业空间 · 不影响真实账户</span></section>
   {overview&&<>{tiles([["企业成员",String(activeMembers.length),"当前启用成员"],["已绑定店铺","0","尚未开始经营"],["AI 积分","0","尚未充值"],["可提现",money(balance),"推广收益可用余额"]])}
