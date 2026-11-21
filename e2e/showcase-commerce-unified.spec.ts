@@ -204,3 +204,33 @@ test("plans usage flow filters and top-up estimates work without issuing real ch
  await page.goto(root+"/plans/orders");
  await expect(page.locator('[data-commerce-unified="plans"] [class*="metrics"] article')).toHaveCount(4);
 });
+
+
+test("plans details show selected transaction with aligned columns and close safely",async({page})=>{
+ await page.goto(root+"/plans/usage");
+ const usage=page.locator('[data-commerce-unified="plans"]');
+ const usageColumns=usage.locator('[class*="planUsageColumns"]');
+ await expect(usageColumns).toHaveCount(5);
+ await expect(usageColumns.first().locator("span")).toHaveCount(7);
+ await usage.getByRole("button",{name:"详情"}).first().click();
+ const detail=page.getByRole("dialog",{name:"流水详情"});
+ await expect(detail).toBeVisible();
+ await expect(detail).toContainText("商品标题与卖点优化");
+ await detail.getByRole("button",{name:"关闭",exact:true}).click();
+ await expect(detail).toHaveCount(0);
+ await page.goto(root+"/plans/orders");
+ const orders=page.locator('[data-commerce-unified="plans"]');
+ await expect(orders.locator('[class*="planOrderColumns"]').first().locator("span")).toHaveCount(6);
+ await orders.getByRole("button",{name:"详情"}).first().click();
+ const orderDialog=page.getByRole("dialog",{name:"订单详情"});
+ await expect(orderDialog).toContainText("一号店续费 2 期");
+ await orderDialog.getByRole("button",{name:"关闭",exact:true}).click();
+ await expect(orderDialog).toHaveCount(0);
+});
+test("plans overview omits unnecessary actions for normal account states",async({page})=>{
+ await page.goto(root+"/plans");
+ const overview=page.locator('[data-commerce-unified="plans"]');
+ await expect(overview).toContainText("暂无待处理");
+ await expect(overview).toContainText("无需充值");
+ await expect(overview.getByRole("button",{name:"查看账单"})).toBeVisible();
+});
