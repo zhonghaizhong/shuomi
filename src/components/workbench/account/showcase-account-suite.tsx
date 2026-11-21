@@ -1,0 +1,99 @@
+"use client";
+import {useState} from "react";
+import {useRouter} from "next/navigation";
+import {showcaseTenant as tenant} from "./showcase-tenant";
+import {useShowcaseSuite,addAudit,totalEarnings,availableEarnings,type Member,type SuiteState} from "./showcase-account-state";
+import s from "./showcase-account-suite.module.css";
+const root="/workbench/account";
+const goPath=(path:string)=>root+path+"?preview=1";
+const money=(n:number)=>"¥"+n.toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const timestamp=(n:number)=>new Date(n).toLocaleString("zh-CN");
+const screens:Record<string,[string,string]>={
+ "/organization":["企业空间","统一管理当前企业的成员、角色、资源及操作记录。"],
+ "/organization/members":["成员与权限","管理真实的演示成员记录；新增成员在模拟审核通过后加入企业。"],
+ "/organization/roles":["角色权限","设置企业内的业务角色，权限修改同步到成员记录。"],
+ "/organization/resources":["资源与额度","查看店铺、积分、数据与存储资源，资源不足时不可分配。"],
+ "/organization/audit":["操作记录","查询当前企业的演示操作记录，支持筛选与查看。"],
+ "/referrals":["推广与收益","创建推广入口，查看邀请、收益、结算与提现记录。"],
+ "/referrals/center":["推广中心","分享专属推广链接，跟进模拟邀请及推广转化。"],
+ "/referrals/earnings":["收益明细","查看模拟收益来源、时间与结算状态。"],
+ "/referrals/withdrawals":["提现管理","模拟登记收款方式并提交提现，审核自动通过。"],
+ "/referrals/rules":["推广规则","了解推广关系、收益记录及模拟结算方式。"]
+};
+type Modal="invite"|"member"|"role"|"earning"|"payout"|"withdraw"|null;
+const menu=[["企业空间","/organization"],["成员与权限","/organization/members"],["角色权限","/organization/roles"],["资源与额度","/organization/resources"],["操作记录","/organization/audit"],["推广与收益","/referrals"],["推广中心","/referrals/center"],["收益明细","/referrals/earnings"],["提现管理","/referrals/withdrawals"],["推广规则","/referrals/rules"]] as const;
+export function ShowcaseAccountSuite({pathname}:{pathname:string}){
+ const router=useRouter();const {state,commit}=useShowcaseSuite();
+ const suffix=pathname.slice(root.length)||"/organization";const [title,desc]=screens[suffix]||screens["/organization"];
+ const [modal,setModal]=useState<Modal>(null);const [name,setName]=useState("");const [email,setEmail]=useState("");const [role,setRole]=useState("商品运营");const [selected,setSelected]=useState("");const [amount,setAmount]=useState("100");const [account,setAccount]=useState("");const [query,setQuery]=useState("");const [applied,setApplied]=useState("");const [notice,setNotice]=useState("");const [error,setError]=useState("");
+ const enterprise=suffix.startsWith("/organization"),overview=suffix==="/organization",referral=suffix.startsWith("/referrals");
+ const currentMember=state.members.find(x=>x.id===selected);
+ const activeMembers=state.members.filter(x=>x.status==="正常");
+ const balance=availableEarnings(state);
+ const change=(next:SuiteState,message:string)=>{if(commit(next)){setNotice(message);setError("");setModal(null);return true}setError("当前浏览器存储不可用，操作未保存。");return false};
+ const close=()=>{setModal(null);setError("");setSelected("");setName("");setEmail("");setRole("商品运营");setAmount("100");setAccount("")};
+ const open=(target:Modal,id="")=>{close();setModal(target);setSelected(id);if(target==="member"){const m=state.members.find(x=>x.id===id);if(m)setRole(m.role)}};
+ const addMember=()=>{const value=email.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)){setError("请输入有效的成员邮箱地址。");return}if(state.members.some(m=>m.email.toLowerCase()===value)){setError("该邮箱已经属于当前企业。");return}if(!name.trim()){setError("请输入成员姓名。");return}
+  const member:Member={id:crypto.randomUUID(),name:name.trim(),email:value,role,status:"正常",joined:Date.now()};
+  change(addAudit({...state,members:[...state.members,member]},"成员与权限","邀请并模拟审核通过："+member.name+"（"+role+"）"),"成员已加入企业（模拟审核通过）。")
+ };
+ const updateMember=()=>{if(!currentMember||currentMember.id==="admin")return;change(addAudit({...state,members:state.members.map(m=>m.id===currentMember.id?{...m,role}:m)},"成员与权限","调整成员 "+currentMember.name+" 角色为 "+role),"成员角色已更新。")};
+ const toggleMember=(m:Member)=>{if(m.id==="admin")return;const target=m.status==="正常"?"已停用":"正常";change(addAudit({...state,members:state.members.map(x=>x.id===m.id?{...x,status:target}:x)},"成员与权限",m.name+" 已"+target),"成员状态已更新。")};
+ const addRole=()=>{const value=name.trim();if(!value||state.roles.includes(value)){setError("请输入未使用的角色名称。");return}change(addAudit({...state,roles:[...state.roles,value]},"角色权限","新建角色："+value),"新角色已加入企业角色列表。")};
+ const referralLink=()=>typeof location==="undefined"?"":location.origin+"/shuomi/#/invite?ref="+encodeURIComponent(state.referralCode);
+ const copyReferral=()=>{navigator.clipboard?.writeText(referralLink()).then(()=>setNotice("推广链接已复制。")).catch(()=>setNotice("复制失败，可直接选中链接复制。"))};
+ const addEarning=()=>{const value=Number(amount);if(!Number.isFinite(value)||value<=0||value>100000){setError("请输入大于0且不超过100000的模拟佣金。");return}if(!email.trim()){setError("请填写模拟客户标识。");return}
+  change(addAudit({...state,referrals:[{id:crypto.randomUUID(),at:Date.now(),referred:email.trim(),amount:Math.round(value*100)/100,status:"已结算"},...state.referrals]},"推广与收益","模拟推广收益已审核并结算："+money(value)),"一笔模拟推广佣金已结算，余额已同步。")
+ };
+ const savePayout=()=>{if(account.trim().length<4){setError("请输入至少4位的演示收款标识。");return}change(addAudit({...state,payoutAccount:account.trim()},"提现管理","更新模拟收款方式"),"模拟收款方式已保存。")};
+ const withdraw=()=>{const n=Number(amount);if(!state.payoutAccount){setError("请先设置收款方式。");return}if(!Number.isFinite(n)||n<=0||n>balance){setError("提现金额必须大于0且不超过可提现余额。");return}
+  let remaining=n;const after=state.referrals.map(item=>{if(item.status!=="已结算"||remaining<=0)return item;if(item.amount<=remaining+0.000001){remaining-=item.amount;return {...item,status:"已提现" as const}}return item});
+  // A partial withdrawal requires splitting the earning so the remaining balance stays available.
+  if(remaining>0){setError("提现金额需要使用完整的收益记录金额，请调整金额。");return}
+  const item={id:crypto.randomUUID(),at:Date.now(),amount:n,account:state.payoutAccount,status:"模拟审核通过" as const};
+  change(addAudit({...state,referrals:after,withdrawals:[item,...state.withdrawals]},"提现管理","模拟提现并审核通过："+money(n)),"模拟提现申请已审核通过；未发起实际转账。")
+ };
+ const viewMember=state.members.filter(m=>(m.name+" "+m.email+" "+m.role+" "+m.status).includes(applied));
+ const viewAudit=state.audit.filter(a=>(a.actor+" "+a.message+" "+a.category).includes(applied));
+ const nav=(path:string)=>{close();setNotice("");setQuery("");setApplied("");router.push(goPath(path))};
+ const tiles=(items:[string,string,string][]) => <div className={s.metrics}>{items.map(([label,value,hint],i)=><article key={label} data-tone={i}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}</div>;
+ return <main className={s.page} data-account-suite={suffix}>
+  <header className={s.hero}><div><small>我的账户 / {enterprise?"企业空间":"推广与收益"}{overview||suffix==="/referrals"?"":" / "+title}</small><h1>{title}</h1><p>{desc}</p></div><div className={s.heroActions}><button onClick={()=>nav("")}>我的账户</button>{suffix==="/organization/members"&&<button className={s.primary} onClick={()=>open("invite")}>邀请成员</button>}{suffix==="/organization/roles"&&<button className={s.primary} onClick={()=>open("role")}>新建角色</button>}{suffix==="/referrals/withdrawals"&&<button className={s.primary} disabled={!balance||!state.payoutAccount} onClick={()=>open("withdraw")}>申请模拟提现</button>}</div></header>
+  {notice&&<div className={s.notice} role="status">{notice}<button onClick={()=>setNotice("")} aria-label="关闭消息">×</button></div>}
+  <section className={s.identity}><div className={s.avatar}>硕</div><div className={s.identityInfo}><h2>{tenant.name}</h2><p><span className={s.approved}>已认证（模拟）</span> 企业编号：{tenant.id} · 管理员：{tenant.admin}</p></div><span className={s.mode}>演示企业空间 · 不影响真实账户</span></section>
+  {overview&&<>{tiles([["企业成员",String(activeMembers.length),"当前启用成员"],["已绑定店铺","0","尚未开始经营"],["AI 积分","0","尚未充值"],["可提现",money(balance),"推广收益可用余额"]])}
+    <section className={s.panel}><header><h2>企业管理</h2><p>成员、角色、资源和操作记录采用同一份企业数据。</p></header><div className={s.navigation}>{menu.slice(1,5).map(([label,path],i)=><article key={path} data-tone={i}><span>0{i+1}</span><h3>{label}</h3><p>{["添加成员、模拟审批并调整所属角色","维护业务角色与成员访问范围","查看企业资源余额与可分配额度","核对成员变更与资源操作留痕"][i]}</p><button onClick={()=>nav(path)}>进入管理</button></article>)}</div></section>
+    <section className={s.panel}><header><h2>账户与经营准备</h2><p>企业已完成资料入驻，尚未配置店铺和资源。</p></header><div className={s.quicklinks}><button onClick={()=>router.push(goPath("/profile"))}>查看账户资料</button><button onClick={()=>nav("/organization/resources")}>查看资源与额度</button><button onClick={()=>nav("/referrals")}>推广与收益</button></div></section>
+  </>}
+  {suffix==="/organization/members"&&<>{tiles([["启用成员",String(activeMembers.length),"包含管理员"],["管理员","1","拥有全部权限"],["已停用成员",String(state.members.length-activeMembers.length),"可按需重新启用"],["模拟审核","自动通过","添加后立即生效"]])}
+   <section className={s.panel}><header><h2>成员列表</h2><p>邀请成员后即按模拟后台审核通过加入。</p></header><div className={s.toolbar}><input aria-label="搜索成员" placeholder="搜索成员、邮箱或角色" value={query} onChange={e=>setQuery(e.target.value)}/><button onClick={()=>{setQuery("");setApplied("")}}>重置</button><button className={s.primary} onClick={()=>setApplied(query.trim())}>确定</button></div><div className={s.tableWrap}><table><thead><tr>{["成员","登录邮箱","角色","状态","加入时间","操作"].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{viewMember.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.email}</td><td>{m.role}</td><td><span className={s.approved}>{m.status}</span></td><td>{timestamp(m.joined)}</td><td><div className={s.rowActions}><button onClick={()=>open("member",m.id)}>查看{m.id==="admin"?"":" / 调整"}</button>{m.id!=="admin"&&<button onClick={()=>toggleMember(m)}>{m.status==="正常"?"停用":"启用"}</button>}</div></td></tr>)}</tbody></table></div></section>
+  </>}
+  {suffix==="/organization/roles"&&<>{tiles([["系统角色","1","管理员不可删除"],["业务角色",String(state.roles.length-1),"可继续新建"],["企业成员",String(activeMembers.length),"角色生效人数"],["待审核事项","0","模拟审核全部通过"]])}
+   <section className={s.panel}><header><h2>角色权限</h2><p>新增角色可以在邀请成员及调整成员时直接使用。</p></header><div className={s.tableWrap}><table><thead><tr><th>角色名称</th><th>权限范围</th><th>关联成员</th><th>性质</th></tr></thead><tbody>{state.roles.map(r=><tr key={r}><td><strong>{r}</strong></td><td>{r==="管理员"?"全部权限":"按业务角色分配（模拟）"}</td><td>{state.members.filter(m=>m.role===r&&m.status==="正常").length} 人</td><td>{r==="管理员"?"系统角色":"业务角色"}</td></tr>)}</tbody></table></div><div className={s.quicklinks}><button onClick={()=>nav("/organization/members")}>管理成员角色</button></div></section>
+  </>}
+  {suffix==="/organization/resources"&&<>{tiles([["已绑定店铺",String(tenant.stores),"可分配店铺"],["AI 积分",String(tenant.points),"尚未充值"],["数据额度",String(tenant.data),"尚未充值"],["共享存储",tenant.storageGiB+" GiB","已用 0 GiB"]])}
+   <section className={s.panel}><header><h2>成员资源分配</h2><p>资源真实演示余额为零；不能凭空分配未拥有的店铺、积分和数据额度。</p></header><div className={s.tableWrap}><table><thead><tr><th>成员</th><th>角色</th><th>店铺</th><th>AI 积分</th><th>数据条数</th><th>存储使用</th></tr></thead><tbody>{activeMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.role}</td><td>0</td><td>0</td><td>0</td><td>0 GiB</td></tr>)}</tbody></table></div><div className={s.quicklinks}><button onClick={()=>router.push("/workbench/plans/top-up?preview=1")}>前往充值中心</button><button onClick={()=>router.push("/workbench/store-center?preview=1")}>前往店铺中心</button></div></section>
+  </>}
+  {suffix==="/organization/audit"&&<>{tiles([["操作记录",String(state.audit.length),"本企业模拟事件"],["成员变更",String(state.audit.filter(x=>x.category==="成员与权限").length),"成员邀请、状态、角色"],["角色配置",String(state.audit.filter(x=>x.category==="角色权限").length),"企业角色调整"],["推广与收益",String(state.audit.filter(x=>x.category.includes("推广")||x.category.includes("提现")).length),"模拟收益与提现"]])}
+   <section className={s.panel}><header><h2>操作记录</h2><p>所有在本次模拟中确认的变更都在这里留痕。</p></header><div className={s.toolbar}><input value={query} aria-label="搜索操作记录" onChange={e=>setQuery(e.target.value)} placeholder="搜索操作人、类型、内容"/><button onClick={()=>{setQuery("");setApplied("")}}>重置</button><button className={s.primary} onClick={()=>setApplied(query.trim())}>确定</button></div><div className={s.tableWrap}><table><thead><tr><th>操作时间</th><th>操作人</th><th>所属模块</th><th>操作内容</th><th>结果</th></tr></thead><tbody>{viewAudit.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{x.actor}</td><td>{x.category}</td><td>{x.message}</td><td>模拟完成</td></tr>)}</tbody></table>{!viewAudit.length&&<div className={s.empty}>暂无相关操作记录。</div>}</div></section>
+  </>}
+  {referral&&<>{tiles([["累计推广收益",money(totalEarnings(state)),"本企业模拟收益"],["可提现余额",money(balance),"模拟已结算金额"],["已提现",money(state.withdrawals.reduce((sum,x)=>sum+x.amount,0)),"只记模拟记录"],["有效推广记录",String(state.referrals.length),"由用户操作产生"]])}
+   {suffix==="/referrals"&&<section className={s.panel}><header><h2>推广业务管理</h2><p>从生成推广入口到模拟收益结算与提现，记录相互关联。</p></header><div className={s.navigation}>{menu.slice(6).map(([label,path],i)=><article key={path} data-tone={i}><span>0{i+1}</span><h3>{label}</h3><p>{["生成推广链接与查看推广记录","按来源查看佣金和状态","维护模拟收款方式与提现历史","查看推广归因与结算规则"][i]}</p><button onClick={()=>nav(path)}>进入管理</button></article>)}</div></section>}
+   {(suffix==="/referrals/center"||suffix==="/referrals")&&<section className={s.panel}><header><h2>专属推广入口</h2><p>当前演示企业可生成示例链接，但不会自动产生真实客户或收益。</p></header><div className={s.linkRow}><div><span>推广代码</span><strong>{state.referralCode}</strong><small>{referralLink()}</small></div><button className={s.primary} onClick={copyReferral}>复制推广链接</button></div><div className={s.quicklinks}><button onClick={()=>open("earning")}>模拟一笔推广成交并结算</button></div></section>}
+   {(suffix==="/referrals/earnings"||suffix==="/referrals")&&<section className={s.panel}><header><h2>收益明细</h2><p>只有手动模拟并确认的推广记录才计入余额。</p></header><div className={s.tableWrap}><table><thead><tr><th>时间</th><th>模拟客户</th><th>收益金额</th><th>结算状态</th></tr></thead><tbody>{state.referrals.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{x.referred}</td><td>{money(x.amount)}</td><td>{x.status}（模拟）</td></tr>)}</tbody></table>{!state.referrals.length&&<div className={s.empty}>暂无推广收益。</div>}</div></section>}
+   {suffix==="/referrals/withdrawals"&&<><section className={s.panel}><header><h2>模拟收款方式</h2><p>不输入真实银行卡号；只保存演示标识。</p></header><div className={s.linkRow}><div><span>当前收款方式</span><strong>{state.payoutAccount||"尚未设置"}</strong></div><button onClick={()=>{open("payout");setAccount(state.payoutAccount)}}>设置收款方式</button></div></section><section className={s.panel}><header><h2>提现记录</h2><p>审核环节全部模拟通过，不发起真实打款。</p></header><div className={s.tableWrap}><table><thead><tr><th>申请时间</th><th>金额</th><th>收款标识</th><th>状态</th></tr></thead><tbody>{state.withdrawals.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{money(x.amount)}</td><td>{x.account}</td><td>{x.status}</td></tr>)}</tbody></table>{!state.withdrawals.length&&<div className={s.empty}>暂无提现记录。</div>}</div></section></>}
+   {suffix==="/referrals/rules"&&<section className={s.panel}><header><h2>推广结算与审核说明</h2><p>当前仅用于闭环验收，不代表正式佣金标准或真实支付义务。</p></header><div className={s.rules}><article><b>01</b><h3>推广归因</h3><p>推广码归属当前模拟企业。正式系统需要真实访问和订单归因数据。</p></article><article><b>02</b><h3>收益结算</h3><p>在演示中手工录入一笔模拟收益，后台审核按通过处理并记入可提现余额。</p></article><article><b>03</b><h3>提现处理</h3><p>演示收款账户完成设置后，可模拟完整记录提现，系统记录审核通过，不会转账。</p></article><article><b>04</b><h3>数据边界</h3><p>所有收益、客户标识和提现均为模拟，不能视为真实经营数据。</p></article></div></section>}
+  </>}
+  {modal&&<div className={s.overlay} onMouseDown={e=>e.target===e.currentTarget&&close()}><section className={s.dialog} role="dialog" aria-modal="true" aria-label={{invite:"邀请成员",member:"管理成员",role:"新建角色",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}><header><h2>{{invite:"邀请成员",member:"管理成员",role:"新建角色",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}</h2><button aria-label="关闭弹窗" onClick={close}>×</button></header><p className={s.dialogHint}>模拟企业后台审核自动通过，确认后会在当前浏览器档案和操作记录中留存。</p>
+    {modal==="invite"&&<><label>成员姓名<input aria-label="成员姓名" value={name} onChange={e=>setName(e.target.value)} placeholder="输入成员姓名"/></label><label>成员邮箱<input aria-label="成员邮箱" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="输入测试邮箱"/></label></>}
+    {modal==="member"&&<p>成员：{currentMember?.name||"未找到成员"} · {currentMember?.email}</p>}
+    {(modal==="invite"||modal==="member")&&<label>业务角色<select aria-label="业务角色" disabled={modal==="member"&&selected==="admin"} value={role} onChange={e=>setRole(e.target.value)}>{state.roles.map(x=><option key={x}>{x}</option>)}</select></label>}
+    {modal==="role"&&<label>角色名称<input aria-label="角色名称" value={name} onChange={e=>setName(e.target.value)} placeholder="例如：运营专员"/></label>}
+    {modal==="earning"&&<><label>模拟客户标识<input aria-label="模拟客户标识" value={email} onChange={e=>setEmail(e.target.value)} placeholder="例如：TEST-CUSTOMER-001"/></label><label>模拟佣金金额（元）<input type="number" min="0.01" step="0.01" aria-label="模拟佣金金额" value={amount} onChange={e=>setAmount(e.target.value)}/></label></>}
+    {modal==="payout"&&<label>演示收款标识<input aria-label="演示收款标识" value={account} onChange={e=>setAccount(e.target.value)} placeholder="不要输入真实银行账号"/></label>}
+    {modal==="withdraw"&&<><p>当前可提现金额：{money(balance)}。为了保证记录一致，请选择一笔完整已结算的收益金额。</p><label>模拟提现金额<input type="number" step="0.01" aria-label="模拟提现金额" value={amount} onChange={e=>setAmount(e.target.value)}/></label></>}
+    {error&&<p role="alert" className={s.error}>{error}</p>}<footer><button onClick={close}>取消</button><button className={s.primary} onClick={()=>({invite:addMember,member:updateMember,role:addRole,earning:addEarning,payout:savePayout,withdraw}[modal])()} disabled={modal==="member"&&selected==="admin"}>确认并模拟通过</button></footer>
+   </section></div>}
+  <p className={s.disclaimer}>所有账户、权限、收益和审核操作均为当前演示企业的本地模拟记录，非真实身份认证、平台授权、支付或转账。</p>
+ </main>;
+}
