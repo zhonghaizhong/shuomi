@@ -76,14 +76,59 @@ test("registered test tenant has prefilled synthetic certification and no real v
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("暂时没有店铺");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("admin@example.com");
 });
-test("contact change uses truthful security modal and closes on outside click",async({page})=>{
+test("phone change performs simulated validation, persists after reload, and updates account overview",async({page})=>{
+ await page.goto(base+"/settings");
+ await page.getByRole("button",{name:"更换手机号"}).click();
+ const dialog=page.getByRole("dialog",{name:"更换手机号"});
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole("textbox",{name:"新手机号"}).fill("123");
+ await dialog.getByRole("button",{name:"模拟验证通过"}).click();
+ await expect(dialog.getByRole("alert")).toContainText("有效的手机号");
+ await dialog.getByRole("textbox",{name:"新手机号"}).fill("13800138000");
+ await dialog.getByRole("button",{name:"模拟验证通过"}).click();
+ await expect(dialog).toContainText("模拟安全审核已通过");
+ await dialog.getByRole("button",{name:"确认更换"}).click();
+ await expect(dialog).toHaveCount(0);
+ await expect(page.locator('[data-account-profile-page="settings"]')).toContainText("13800138000");
+ await page.reload();
+ await expect(page.locator('[data-account-profile-page="settings"]')).toContainText("13800138000");
+ await page.getByRole("button",{name:"返回账户资料"}).click();
+ await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("13800138000");
+});
+test("email change validates and persists, and security modal cancels safely",async({page})=>{
  await page.goto(base+"/settings");
  await page.getByRole("button",{name:"更换邮箱"}).click();
- const dialog=page.getByRole("dialog",{name:"更换邮箱"});
- await expect(dialog).toContainText("不发送验证码");
- await dialog.getByRole("button",{name:"知道了"}).click();
- await expect(dialog).toHaveCount(0);
+ let dialog=page.getByRole("dialog",{name:"更换邮箱"});
+ await dialog.getByRole("textbox",{name:"新邮箱地址"}).fill("new@example.com");
+ await dialog.getByRole("button",{name:"模拟验证通过"}).click();
+ await dialog.getByRole("button",{name:"确认更换"}).click();
+ await expect(page.locator('[data-account-profile-page="settings"]')).toContainText("new@example.com");
+ await page.getByRole("button",{name:"更换邮箱"}).click();
+ dialog=page.getByRole("dialog",{name:"更换邮箱"});
+ await dialog.getByRole("textbox",{name:"新邮箱地址"}).fill("cancel@example.com");
+ await dialog.getByRole("button",{name:"取消"}).click();
+ await expect(page.locator('[data-account-profile-page="settings"]')).not.toContainText("cancel@example.com");
+ await page.reload();
+ await expect(page.locator('[data-account-profile-page="settings"]')).toContainText("new@example.com");
 });
+test("simulated password change validates confirmation without persisting a password",async({page})=>{
+ await page.goto(base+"/settings");
+ await page.getByRole("button",{name:"修改密码"}).click();
+ const dialog=page.getByRole("dialog",{name:"修改密码"});
+ await dialog.getByRole("textbox",{name:"新密码"}).fill("abcd1234");
+ await dialog.getByRole("textbox",{name:"确认新密码"}).fill("different");
+ await dialog.getByRole("button",{name:"模拟验证通过"}).click();
+ await expect(dialog.getByRole("alert")).toContainText("不一致");
+ await dialog.getByRole("textbox",{name:"确认新密码"}).fill("abcd1234");
+ await dialog.getByRole("button",{name:"模拟验证通过"}).click();
+ await dialog.getByRole("button",{name:"确认修改"}).click();
+ await expect(page.getByRole("status")).toContainText("模拟密码修改成功");
+ await page.reload();
+ await expect(page.locator('[data-account-profile-page="settings"]')).toContainText("上次修改");
+ const saved=await page.evaluate(()=>localStorage.getItem("shuomi-demo-security-SM-ENT-000001"));
+ expect(saved).not.toContain("abcd1234");
+});
+
 
 test("My Account overview matches approved Vuexy theme in dark/light with aligned cards and working navigation",async({page})=>{
  test.setTimeout(120000);
