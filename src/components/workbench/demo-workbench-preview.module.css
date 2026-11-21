@@ -3357,3 +3357,21 @@
  }
  .page[data-commerce-unified="account"] .accountModules>div>article{min-height:170px;}
 }
+
+/* Figma account summary height fix: one compact label/value/detail stack per column. */
+@media(min-width:761px){
+ .page[data-commerce-unified="account"] .accountOverview{min-height:116px;padding:9px 20px;gap:5px;}
+ .page[data-commerce-unified="account"] .accountOverview>header{min-height:24px;}
+ .page[data-commerce-unified="account"] .accountOverview>div>article{min-height:60px;padding-top:2px;padding-bottom:2px;gap:1px;align-content:start;}
+ .page[data-commerce-unified="account"] .accountOverview article>span{font-size:12px;line-height:17px;}
+ .page[data-commerce-unified="account"] .accountOverview article>div{
+   flex-direction:column;align-items:flex-start;justify-content:center;
+   flex-wrap:nowrap;gap:1px;min-width:0;
+ }
+ .page[data-commerce-unified="account"] .accountOverview article strong{
+   font-size:16px;line-height:21px;white-space:normal;
+ }
+ .page[data-commerce-unified="account"] .accountOverview article small{
+   font-size:12px;line-height:17px;
+ }
+}
