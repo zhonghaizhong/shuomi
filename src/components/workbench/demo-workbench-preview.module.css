@@ -3248,3 +3248,112 @@
 }
 :global(.light) .page[data-commerce-unified="account"] :is(.accountOverview article strong,.accountModules h3,.accountBottom strong,.accountModules footer b){color:#444050;}
 :global(.light) .page[data-commerce-unified="account"] :is(.accountOverview article>span,.accountOverview article small,.accountModules article p,.accountModules footer small,.accountBottom span,.accountBottom small){color:#6f6b7d;}
+
+
+/* Account overview: Figma 404:2203 geometry, approved Vuexy visual tokens. */
+.page[data-commerce-unified="account"]{gap:12px;}
+.page[data-commerce-unified="account"] .accountOverview{
+  min-height:116px;padding:10px 20px;gap:8px;align-content:start;
+}
+.page[data-commerce-unified="account"] .accountOverview>header{
+  min-height:27px;gap:14px;flex-wrap:nowrap;
+}
+.page[data-commerce-unified="account"] .accountOverview>div{
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:0;
+}
+.page[data-commerce-unified="account"] .accountOverview>div>article{
+  min-height:60px;padding:4px 16px 2px;
+  border:0;border-radius:0;background:transparent;gap:3px;
+}
+.page[data-commerce-unified="account"] .accountOverview>div>article:first-child{padding-left:0;}
+.page[data-commerce-unified="account"] .accountOverview>div>article+article{
+  border-left:1px solid var(--acc-stroke);
+}
+.page[data-commerce-unified="account"] .accountOverview article>div{
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
+}
+.page[data-commerce-unified="account"] .accountOverview article strong{
+  font-size:17px;line-height:1.3;white-space:nowrap;
+}
+.page[data-commerce-unified="account"] .accountOverview article small{
+  font-size:12px;line-height:1.4;
+}
+.page[data-commerce-unified="account"] .accountModules{
+  border:0;background:transparent;box-shadow:none;padding:0;gap:16px;
+}
+.page[data-commerce-unified="account"] .accountModules>header{
+  min-height:29px;padding:0;gap:14px;
+}
+.page[data-commerce-unified="account"] .accountModules>div{gap:16px;}
+.page[data-commerce-unified="account"] .accountModules>div>article{
+  min-height:185px;padding:14px 19px 9px;gap:5px;
+  background:var(--acc-surface);box-shadow:none;
+  border-radius:8px;position:relative;
+}
+.page[data-commerce-unified="account"] .accountModules>div>article::before{
+  content:"";position:absolute;left:-1px;top:20px;width:3px;height:32px;
+  background:var(--acc-tone);border-radius:0 3px 3px 0;
+}
+.page[data-commerce-unified="account"] .accountModules article h3{
+  font-size:20px;line-height:28px;margin:0;
+}
+.page[data-commerce-unified="account"] .accountModules article>span{
+  padding:3px 9px;font-size:12px;line-height:19px;
+}
+.page[data-commerce-unified="account"] .accountModules article p{
+  font-size:14px;line-height:1.45;margin:5px 0 6px;
+}
+.page[data-commerce-unified="account"] .accountModules article footer{
+  min-height:39px;padding:4px 9px;margin-top:auto;
+  background:var(--acc-inset);border:0;border-top:1px solid var(--acc-stroke);
+  border-radius:5px;gap:8px;
+}
+.page[data-commerce-unified="account"] .accountModules article button{
+  min-height:33px;padding:5px 13px;font-size:13px;
+}
+.page[data-commerce-unified="account"] .accountBottom{
+  grid-template-columns:minmax(0,1.96fr) minmax(270px,1fr);gap:16px;
+}
+.page[data-commerce-unified="account"] .accountBottom>article,
+.page[data-commerce-unified="account"] .accountBottom>aside{
+  min-height:224px;padding:15px 18px;gap:7px;
+}
+.page[data-commerce-unified="account"] .accountBottom>article>header,
+.page[data-commerce-unified="account"] .accountBottom>aside>header{
+  display:block;margin-bottom:4px;
+}
+.page[data-commerce-unified="account"] .accountBottom>article>header span,
+.page[data-commerce-unified="account"] .accountBottom>aside>header span{
+  display:block;margin-top:3px;
+}
+.page[data-commerce-unified="account"] .accountBottom>article>div{
+  min-height:48px;padding:6px 0;
+}
+:global(.light) .page[data-commerce-unified="account"] .accountModules{
+  background:transparent;border:0;
+}
+:global(.light) .page[data-commerce-unified="account"] .accountOverview>div>article{
+  background:transparent;border-color:#e3dfed;
+}
+:global(.light) .page[data-commerce-unified="account"] .accountModules>div>article{
+  background:#fff;
+}
+:global(.light) .page[data-commerce-unified="account"] .accountModules article footer{
+  background:#f8f7fa;
+}
+@media(max-width:1020px){
+ .page[data-commerce-unified="account"] .accountModules>div{gap:10px;}
+ .page[data-commerce-unified="account"] .accountModules>div>article{padding:15px;min-height:205px;}
+ .page[data-commerce-unified="account"] .accountBottom{grid-template-columns:1fr;}
+}
+@media(max-width:760px){
+ .page[data-commerce-unified="account"] .accountOverview>header{flex-wrap:wrap;}
+ .page[data-commerce-unified="account"] .accountOverview>div,
+ .page[data-commerce-unified="account"] .accountModules>div{grid-template-columns:1fr;}
+ .page[data-commerce-unified="account"] .accountOverview>div>article,
+ .page[data-commerce-unified="account"] .accountOverview>div>article:first-child{padding:10px 0;}
+ .page[data-commerce-unified="account"] .accountOverview>div>article+article{
+   border-left:0;border-top:1px solid var(--acc-stroke);
+ }
+ .page[data-commerce-unified="account"] .accountModules>div>article{min-height:170px;}
+}
