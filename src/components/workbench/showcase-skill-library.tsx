@@ -1,7 +1,7 @@
 "use client";
 import {useState} from "react";
 import {RefreshCw,Plus,Info} from "lucide-react";
-import {useRouter} from "next/navigation";
+import {useRouter,useSearchParams} from "next/navigation";
 import styles from "./showcase-skill-library.module.css";
 
 type Category="official"|"mine"|"team";
@@ -11,8 +11,10 @@ const purpose="保存可复用的方法；执行使用现有智能体的权限�
 export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
  const router=useRouter();
  const category:Category=pathname.endsWith("/mine")?"mine":pathname.endsWith("/team")?"team":"official";
- const [configurable,setConfigurable]=useState(true);
+ const searchParams=useSearchParams();
+ const configurable=searchParams.get("permission")!=="readonly";
  const [admission,setAdmission]=useState(true);
+ const isAdmitted=configurable&&admission;
  const [notice,setNotice]=useState("");
  const [detail,setDetail]=useState(false);
  const [requests,setRequests]=useState(false);
@@ -36,8 +38,7 @@ export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
     </div>}
    </div>
    {category==="team"&&<>
-    <div className={styles.policy}><div><strong>个人技能准入：{admission?"允许本人启用的版本":"未准入"} · 策略版本 {admission?"1":"0"}</strong><p>审批和准入设置由企业配置权限控制，此处仅演示两种权限下的界面。</p></div>{configurable&&<button type="button" className={styles.secondary} onClick={()=>setAdmission(x=>!x)}>{admission?"关闭个人技能准入":"开启个人技能准入"}</button>}</div>
-    <div className={styles.previewPermission}><span>展示状态（非真实企业权限）</span><button type="button" aria-pressed={configurable} className={styles.secondary} onClick={()=>{setConfigurable(x=>!x);setRequests(false)}}>{configurable?"切换为无配置权限":"切换为可配置权限"}</button></div>
+    <div className={styles.policy}><div><strong>个人技能准入：{isAdmitted?"允许本人启用的版本":"未准入"} · 策略版本 {isAdmitted?"1":"0"}</strong><p>{configurable?"当前是 Figma 可配置权限界面的静态展示。":"当前是 Figma 无配置权限界面的静态展示，审批不可执行。"}</p></div>{configurable&&<button type="button" className={styles.secondary} onClick={()=>setAdmission(x=>!x)}>{admission?"关闭个人技能准入":"开启个人技能准入"}</button>}</div>
    </>}
    {category==="official"&&<p className={styles.emptyText}>当前范围没有可读取的技能。官方模板由获授权维护者导入、发布并启用后提供。</p>}
    {category==="mine"&&<div className={styles.skillRecord}>
