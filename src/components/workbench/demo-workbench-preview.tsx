@@ -17,6 +17,7 @@ import { ShowcaseToolMarket } from "./showcase-tool-market";
 import { ShowcaseToolCustomization } from "./showcase-tool-customization";
 import { ShowcaseToolHome } from "./showcase-tool-home";
 import { ShowcaseEcologyServices } from "./showcase-ecology-services";
+import { ShowcaseSkillLibrary } from "./showcase-skill-library";
 
 type Row = { title: string; detail: string; value?: string; state?: string };
 type PageSpec = { section: string; title: string; description: string; metrics?: [string, string, string][]; cards?: [string, string, string][]; rows?: Row[]; filters?: string[]; layout?: "supply" | "data" | "ai" | "agents" | "agentMarket" | "agentMine" | "tools" | "services" | "serviceJoin" | "storeCenter" | "plans" | "account" | "accountProfile" | "accountSettings" | "goals" | "storeMatrix" | "alerts" | "advice" | "tasks" | "libraryHub" | "unavailable" };
@@ -176,6 +177,7 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
       return <ShowcaseEnterprise key={stage} screen={stage === "organization" ? "overview" : stage} />;
     }
   }
+  if (pathname === "/workbench/agents/skills" || ["/workbench/agents/skills/official", "/workbench/agents/skills/mine", "/workbench/agents/skills/team"].includes(pathname)) return <ShowcaseSkillLibrary pathname={pathname} />;
   if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div> : null}
