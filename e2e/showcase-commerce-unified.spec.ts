@@ -266,3 +266,39 @@ test("plans shared demo balances match across overview, entitlements, usage and 
  await page.goto(root+"/plans/top-up");
  await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("¥5,000.00（演示）");
 });
+
+
+test("plans visual polish keeps five accessible entries and a grounded storage utilization bar",async({page})=>{
+ await page.goto(root+"/plans");
+ const plans=page.locator('[data-commerce-unified="plans"]');
+ const cards=plans.locator('[class*="planEntryCard"]');
+ await expect(cards).toHaveCount(5);
+ for(const name of ["套餐方案","我的权益","用量明细","充值中心","账单与订单"])
+  await expect(cards.getByRole("button",{name:"进入"+name})).toBeVisible();
+ await expect(plans.getByRole("progressbar",{name:"企业存储使用率"})).toHaveAttribute("aria-valuenow","40");
+ await expect(plans.locator('[class*="usageBar"] i')).toHaveCount(1);
+ await cards.getByRole("button",{name:"进入我的权益"}).click();
+ await expect(page.locator('[data-commerce-unified="plans"] [class*="planEntitlementCards"] article')).toHaveCount(4);
+});
+test("plans premium cards and detail dialogs remain usable in both Vuexy themes",async({page})=>{
+ for(const mode of ["light","dark"] as const){
+  await page.goto(root+"/plans/entitlements");
+  const switcher=page.getByRole("button",{name:mode==="light"?"切换到浅色主题":"切换到深色主题"});
+  if(await switcher.count())await switcher.click();
+  const entitlement=page.locator('[data-commerce-unified="plans"] [class*="planEntitlementCards"] article');
+  await expect(entitlement).toHaveCount(4);
+  for(let i=0;i<4;i++)await expect(entitlement.nth(i).locator('[class*="planEntitlementValue"]')).toBeVisible();
+  await page.goto(root+"/plans/top-up");
+  const purchase=page.locator('[data-commerce-unified="plans"] [class*="planPurchaseCards"] article');
+  await expect(purchase).toHaveCount(4);
+  for(let i=0;i<4;i++){
+   await expect(purchase.nth(i).locator('[class*="planPurchaseAction"]')).toBeVisible();
+   await expect(purchase.nth(i).getByRole("spinbutton")).toBeVisible();
+  }
+  await page.goto(root+"/plans/usage");
+  await page.locator('[data-commerce-unified="plans"]').getByRole("button",{name:"详情"}).first().click();
+  const detail=page.getByRole("dialog",{name:"流水详情"});
+  await expect(detail.locator('[class*="planDetailHighlight"]')).toContainText("-¥12.80 / 128");
+  await detail.getByRole("button",{name:"关闭",exact:true}).click();
+ }
+});
