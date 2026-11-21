@@ -1,6 +1,6 @@
 "use client";
 import {useState} from "react";
-import {RefreshCw,Plus,Info,Search,FileText,ShieldCheck} from "lucide-react";
+import {RefreshCw,Plus,Info,Search,ShieldCheck} from "lucide-react";
 import {useRouter,useSearchParams} from "next/navigation";
 import styles from "./showcase-skill-library.module.css";
 
@@ -50,7 +50,7 @@ export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
    </div>
    {category==="team"&&<div className={styles.policy}><div><strong>个人技能准入：{configurable&&admission?"允许本人启用的版本":"未准入"} · 策略版本 {configurable&&admission?"1":"0"}</strong><p>{configurable?"当前为 Figma 可配置权限的演示状态，不写入企业策略。":"当前为 Figma 无配置权限的演示状态，审批与设置不可执行。"}</p></div>{configurable&&<button type="button" className={styles.secondary} onClick={()=>{setAdmission(v=>!v);setNotice("已在当前页面切换演示状态，未更改企业的真实准入策略。")}}>{admission?"关闭个人技能准入":"开启个人技能准入"}</button>}</div>}
    {category==="official"&&<p className={styles.emptyText}>当前范围没有可读取的技能。官方模板由获授权维护者导入、发布并启用后提供。</p>}
-   {category==="team"&&<p className={styles.emptyText}>当前范围没有可读取的技能。可以自建或复制允许复制的官方模板。</p>}
+   {category==="team"&&(draft?<article className={styles.skillRecord}><div className={styles.skillRecordButton}><span><strong>{draft.name}</strong><small>{draft.description}</small></span><span className={styles.version}>v{draft.version} · 演示草稿</span></div></article>:<p className={styles.emptyText}>当前范围没有可读取的技能。可以自建或复制允许复制的官方模板。</p>)}
    {category==="mine"&&<>
     <div className={styles.searchFilters}><label className={styles.searchLabel}><Search size={16} aria-hidden="true"/><span className={styles.visuallyHidden}>搜索技能名称</span><input aria-label="搜索技能名称" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="搜索技能名称"/></label><button type="button" className={styles.secondary} onClick={()=>setFilter("")}>重置</button></div>
     <div className={styles.skillList} aria-label="我的技能列表">
