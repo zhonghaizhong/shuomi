@@ -24,7 +24,7 @@ test("light theme uses readable pale surfaces on every library subpage",async({p
    const isSkills=route.startsWith("/agents/skills/");
    const canvas=isSkills?page.locator('[data-skill-showcase="true"]'):page.locator('[class*="libraryDetailPreview"]');
    await expect(canvas).toBeVisible();
-   const surfaces=isSkills?canvas.locator(':scope > header, :scope > nav, :scope > section[class*="toolbar"], :scope > section[class*="empty"], :scope > aside'):canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
+   const surfaces=isSkills?canvas.locator(':scope > section[class*="toolbar"], :scope > section[class*="empty"], :scope > aside'):canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
    const count=Math.min(await surfaces.count(),5);
    for(let i=0;i<count;i++){
      if(!(await surfaces.nth(i).isVisible()))continue;
@@ -59,7 +59,7 @@ test("redesigned skills categories stay readable in light and dark themes",async
   const title={official:"官方模板",mine:"我的技能",team:"团队技能"}[category]!;
   await expect(root.getByRole("heading",{name:title,exact:true})).toBeVisible();
   await expect(root.getByRole("navigation",{name:"技能库分类"})).toBeVisible();
-  const surfaces=root.locator(':scope > header, :scope > section[class*="toolbar"], :scope > section[class*="empty"]');
+  const surfaces=root.locator(':scope > section[class*="toolbar"], :scope > section[class*="empty"]');
   for(let i=0;i<await surfaces.count();i++){
    const element=surfaces.nth(i);
    const bg=await element.evaluate(el=>getComputedStyle(el).backgroundColor);
@@ -130,4 +130,26 @@ test("skill showcase creates a local draft, verifies a version, and gates sharin
  await expect(sharing.getByText("状态：演示申请已提交")).toBeVisible();
  await sharing.getByRole("button",{name:"撤回演示申请"}).click();
  await expect(sharing.getByText("状态：演示申请已撤回")).toBeVisible();
+});
+
+test("Figma skills right column uses one management panel beneath unboxed breadcrumb, heading and tabs",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ for(const category of ["official","mine","team"]){
+  await page.goto("/shuomi/#/workbench/agents/skills/"+category);
+  const root=page.locator('[data-skill-showcase="true"]');
+  const breadcrumb=root.locator('[class*="breadcrumb"]').first();
+  const hero=root.locator(':scope > header');
+  const nav=root.getByRole("navigation",{name:"技能库分类"});
+  const management=root.locator('[data-skill-management]');
+  for(const element of [breadcrumb,hero,nav,management])await expect(element).toBeVisible();
+  const rectangles=await Promise.all([breadcrumb,hero,nav,management].map(el=>el.boundingBox()));
+  expect(rectangles.every(Boolean)).toBeTruthy();
+  for(let i=0;i<rectangles.length-1;i++)expect(rectangles[i+1]!.y).toBeGreaterThan(rectangles[i]!.y);
+  expect(Math.abs(rectangles[3]!.x-rectangles[0]!.x)).toBeLessThanOrEqual(2);
+  expect(rectangles[3]!.width).toBeGreaterThan(800);
+  await expect(management.getByRole("button",{name:"刷新列表"})).toBeVisible();
+  await expect(root.locator('[class*="searchFilters"]')).toHaveCount(0);
+  const bg=await hero.evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(bg==="rgba(0, 0, 0, 0)"||bg==="transparent"||bg.includes(" / 0)")).toBeTruthy();
+ }
 });
