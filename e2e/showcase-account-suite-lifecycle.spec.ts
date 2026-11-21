@@ -118,13 +118,20 @@ test("enterprise and referral subpages preserve approved dark/light surfaces and
 
 test("account submenus navigate without dead ends and preserve navigation state",async({page})=>{
  await page.goto(base+"/organization");
- const suite=page.locator("[data-account-suite]");
- const nav=suite.getByRole("navigation",{name:"我的账户业务导航"});
- for(const [name,suffix] of [["成员与权限","organization/members"],["角色权限","organization/roles"],["资源与额度","organization/resources"],["操作记录","organization/audit"],["推广与收益","referrals"],["推广中心","referrals/center"],["收益明细","referrals/earnings"],["提现管理","referrals/withdrawals"],["推广规则","referrals/rules"]] as const){
+ for(const [name,suffix] of [["成员管理","organization/members"],["角色权限","organization/roles"],["资源与额度","organization/resources"],["操作记录","organization/audit"]] as const){
+  const nav=page.getByRole("navigation",{name:"企业空间业务导航"});
   await nav.getByRole("button",{name,exact:true}).click();
   await expect(page).toHaveURL(new RegExp("/account/"+suffix.replaceAll("/","\\/")));
   await expect(page.locator("[data-account-suite]")).toContainText("武汉硕米电子商务有限公司");
-  await expect(page.locator("[data-account-suite]").getByRole("navigation",{name:"我的账户业务导航"}).getByRole("button",{name,exact:true})).toHaveAttribute("aria-current","page");
+  await expect(page.getByRole("navigation",{name:"企业空间业务导航"}).getByRole("button",{name,exact:true})).toHaveAttribute("aria-current","page");
+ }
+ await page.goto(base+"/referrals");
+ for(const [name,suffix] of [["推广中心","referrals/center"],["收益明细","referrals/earnings"],["提现管理","referrals/withdrawals"],["推广规则","referrals/rules"]] as const){
+  const nav=page.getByRole("navigation",{name:"推广与收益业务导航"});
+  await nav.getByRole("button",{name,exact:true}).click();
+  await expect(page).toHaveURL(new RegExp("/account/"+suffix.replaceAll("/","\\/")));
+  await expect(page.locator("[data-account-suite]")).toContainText("武汉硕米电子商务有限公司");
+  await expect(page.getByRole("navigation",{name:"推广与收益业务导航"}).getByRole("button",{name,exact:true})).toHaveAttribute("aria-current","page");
  }
  await page.goto(base+"/profile");
  const profileNav=page.getByRole("navigation",{name:"账户资料二级导航"});
