@@ -30,7 +30,7 @@ afterEach(() => {cleanup(); vi.clearAllMocks()});
 
 it("omits the official template subtitle", () => {
   render(<SkillLibraryPage expectedUserId="alice" category="official"/>);
-  expect(screen.getByRole("heading", {name: "官方模板", level: 1})).toBeVisible();
+  expect(screen.getByRole("heading", {name: "技能库", level: 1})).toBeVisible();
   expect(screen.queryByText("查找平台提供的技能模板。")).not.toBeInTheDocument();
 });
 it("shows official maintenance under system settings only to an authorized identity", async () => {
@@ -45,7 +45,7 @@ it("shows official maintenance under system settings only to an authorized ident
 it("manages personal skills without an organization or a modal", async () => {
   render(<SkillLibraryPage expectedUserId="alice" category="mine"/>);
   expect(await screen.findByRole("button", {name: "新建技能"})).toBeEnabled();
-  expect(screen.getByRole("heading", {level: 1, name: "我的技能"})).toBeInTheDocument();
+  expect(screen.getByRole("heading", {level: 1, name: "技能库"})).toBeInTheDocument();
   expect(screen.getByRole("link", {name: "我的技能"})).toHaveAttribute("aria-current", "page");
   expect(within(screen.getByRole("navigation", {name: "面包屑"})).getByText("AI工作台")).toBeInTheDocument();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -66,7 +66,7 @@ it("keeps the team category closed without a current organization", () => {
   expect(skillRequest).not.toHaveBeenCalled();
 });
 
-it.each([['official', '官方模板', '模板目录'], ['mine', '我的技能', '个人技能列表'], ['team', '团队技能', '团队技能列表']] as const)("identifies %s and keeps its toolbar subject to service permissions", async (category, title, directory) => {
+it.each([['official', '官方模板', '官方模板'], ['mine', '我的技能', '我的技能'], ['team', '团队技能', '团队技能']] as const)("identifies %s and keeps its toolbar subject to service permissions", async (category, title, directory) => {
   Object.assign(context, {effectiveOrganization: {id: 'org-a', name: '企业 A'}, selectionRequired: false});
   vi.mocked(skillRequest).mockImplementation(async (_scope, path) => path.endsWith('/info')
     ? {available: true, canInstallOfficial: false, canCreate: false, reason: ''}
@@ -74,7 +74,7 @@ it.each([['official', '官方模板', '模板目录'], ['mine', '我的技能', 
     : {items: [], nextCursor: ''});
   render(<SkillLibraryPage expectedUserId="alice" category={category}/>);
   await waitFor(() => expect(screen.getByRole('button', {name: '刷新列表'})).toBeEnabled());
-  expect(screen.getByRole('heading', {level: 1, name: title})).toBeInTheDocument();
+  expect(screen.getByRole('heading', {level: 1, name: '技能库'})).toBeInTheDocument();
   expect(screen.getByRole('heading', {level: 2, name: directory})).toBeInTheDocument();
   expect(screen.getByRole('link', {name: title})).toHaveAttribute('aria-current', 'page');
   expect(screen.queryByRole('button', {name: '新建技能'})).not.toBeInTheDocument();
