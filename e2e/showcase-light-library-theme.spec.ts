@@ -49,107 +49,51 @@ test("recent projects filter/table/buttons stay on the same light theme",async({
  await expect(root.getByRole("heading",{name:"最近访问"}).first()).toBeVisible();
 });
 
-test("redesigned skills categories stay readable in light and dark themes",async({page})=>{
+
+test("actual Figma skills pages retain readable Vuexy light and dark surfaces",async({page})=>{
  for(const category of ["official","mine","team"]){
   await page.goto("/shuomi/#/workbench/agents/skills/"+category);
-  const lightToggle=page.getByRole("button",{name:"切换浅色主题"});
-  if(await lightToggle.isVisible())await lightToggle.click();
+  const light=page.getByRole("button",{name:"切换浅色主题"});if(await light.isVisible())await light.click();
   const root=page.locator('[data-skill-showcase="true"]');
-  await expect(root).toBeVisible();
   const title={official:"官方模板",mine:"我的技能",team:"团队技能"}[category]!;
-  await expect(root.getByRole("heading",{name:title,exact:true})).toBeVisible();
-  await expect(root.getByRole("navigation",{name:"技能库分类"})).toBeVisible();
-  const surfaces=root.locator(':scope > section[class*="toolbar"], :scope > section[class*="empty"]');
-  for(let i=0;i<await surfaces.count();i++){
-   const element=surfaces.nth(i);
-   const bg=await element.evaluate(el=>getComputedStyle(el).backgroundColor);
-   expect(isLight(bg),category+" light surface "+i+" should be pale, got "+bg).toBeTruthy();
-  }
-  const heading=root.getByRole("heading",{name:title,exact:true});
-  const headingColor=await heading.evaluate(el=>getComputedStyle(el).color);
-  expect(rgb(headingColor).every(x=>x<170),category+" title must be readable in light theme").toBeTruthy();
-  const darkToggle=page.getByRole("button",{name:"切换深色主题"});
-  await darkToggle.click();
-  const dark=await surfaces.first().evaluate(el=>getComputedStyle(el).backgroundColor);
-  expect(isLight(dark),category+" dark surface must not stay pale").toBeFalsy();
+  await expect(root.getByRole("heading",{name:title,level:1})).toBeVisible();
+  const surface=root.locator("[data-skill-management]");
+  expect(isLight(await surface.evaluate(el=>getComputedStyle(el).backgroundColor))).toBeTruthy();
+  await page.getByRole("button",{name:"切换深色主题"}).click();
+  expect(isLight(await surface.evaluate(el=>getComputedStyle(el).backgroundColor))).toBeFalsy();
  }
 });
-
-test("Figma skills hierarchy, actions, and permission variants match the showcase",async({page})=>{
- await page.goto("/shuomi/#/workbench/agents/skills/official");
+test("linked Figma home, official catalog, enabled skills and closed team",async({page})=>{
+ await page.goto("/shuomi/#/workbench/agents/skills");
  const root=page.locator('[data-skill-showcase="true"]');
- await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
- await expect(root.getByText("AI工作台 / 技能库 / 官方模板")).toBeVisible();
- await expect(root.getByRole("navigation",{name:"技能库分类"}).getByRole("button")).toHaveCount(3);
- await expect(root.getByRole("button",{name:"刷新列表"})).toBeVisible();
- await expect(root.getByText("当前范围没有可读取的技能。官方模板由获授权维护者导入、发布并启用后提供。")).toBeVisible();
- await root.getByRole("button",{name:"我的技能"}).click();
- await expect(root.getByRole("button",{name:"新建技能"})).toBeVisible();
- await expect(root.getByRole("button",{name:"我的共享申请"})).toBeVisible();
- await expect(root.getByText("local-trial-title-normalization-20261015")).toBeVisible();
- await expect(root.getByText("v1 · 已启用 · 私有")).toBeVisible();
- await root.getByRole("button",{name:"团队技能"}).click();
- await expect(root.getByRole("button",{name:"待审批的个人提交"})).toBeEnabled();
- await expect(root.getByRole("button",{name:"关闭个人技能准入"})).toBeVisible();
- await page.goto("/shuomi/#/workbench/agents/skills/team?permission=readonly");
- const readonlyRoot=page.locator('[data-skill-showcase="true"]');
- await expect(readonlyRoot.getByRole("button",{name:"待审批的个人提交"})).toBeDisabled();
- await expect(readonlyRoot.getByText("个人技能准入：未准入 · 策略版本 0")).toBeVisible();
- await expect(readonlyRoot.getByRole("button",{name:/个人技能准入/})).toHaveCount(0);
-});
-
-
-test("skill showcase creates a local draft, verifies a version, and gates sharing on consent",async({page})=>{
+ await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
+ await root.getByRole("button",{name:"浏览官方模板"}).click();
+ await expect(root.locator("[data-skill-name]")).toHaveCount(6);
+ await root.getByRole("button",{name:"图片制作",exact:true}).click();
+ await expect(root.locator("[data-skill-name]")).toHaveCount(3);
+ await root.getByRole("button",{name:"重置"}).click();
+ await root.getByRole("textbox",{name:"技能名称或关键词"}).fill("商品标题整理");
+ await root.getByRole("button",{name:"搜索",exact:true}).click();
+ await expect(root.locator("[data-skill-name]")).toHaveCount(1);
+ const card=root.locator('[data-skill-name="商品标题整理"]');
+ await card.getByRole("button",{name:"介绍"}).click();
+ await expect(root.getByRole("dialog",{name:"官方技能介绍"})).toBeVisible();
+ await root.getByRole("button",{name:"关闭",exact:true}).click();
+ await card.getByRole("button",{name:"启用",exact:true}).click();
+ await expect(card.getByText("已启用",{exact:true})).toBeVisible();
  await page.goto("/shuomi/#/workbench/agents/skills/mine");
- const root=page.locator('[data-skill-showcase="true"]');
- await root.getByRole("button",{name:"新建技能"}).click();
- const form=root.getByRole("form",{name:"新建技能"});
- await expect(form).toBeVisible();
- await form.getByRole("textbox",{name:"技能名称"}).fill("demo-catalog-audit");
- await form.getByRole("textbox",{name:"技能简介"}).fill("用于整理商品资料的本地演示技能");
- await form.getByRole("textbox",{name:"方法内容"}).fill("先核对输入字段，再整理商品资料；不要补造数据。");
- await form.getByRole("button",{name:"检查格式"}).click();
- await expect(form.getByText(/格式预检查通过/)).toBeVisible();
- await form.getByRole("button",{name:"保存演示草稿"}).click();
- await expect(root.getByText("demo-catalog-audit")).toBeVisible();
- await expect(root.getByText("v1 · 演示草稿 · 私有")).toBeVisible();
- await root.getByRole("button",{name:/demo-catalog-audit/}).click();
- await expect(root.getByRole("region",{name:"技能详情"})).toBeVisible();
- await root.getByRole("button",{name:"保存为新版本"}).click();
- const versionForm=root.getByRole("form",{name:"保存为新版本"});
- await versionForm.getByRole("textbox",{name:"方法内容"}).fill("核对商品标题、图片和数据，再保存本地版本。");
- await versionForm.getByRole("button",{name:"保存演示草稿"}).click();
- await expect(root.getByText("v2 · 演示草稿 · 私有")).toBeVisible();
- await root.getByRole("button",{name:"我的共享申请"}).click();
- const sharing=root.getByRole("region",{name:"我的共享申请"});
- const submit=sharing.getByRole("button",{name:"提交演示共享申请"});
- await expect(submit).toBeDisabled();
- await sharing.getByRole("checkbox").check();
- await expect(submit).toBeEnabled();
- await submit.click();
- await expect(sharing.getByText("状态：演示申请已提交")).toBeVisible();
- await sharing.getByRole("button",{name:"撤回演示申请"}).click();
- await expect(sharing.getByText("状态：演示申请已撤回")).toBeVisible();
-});
-
-test("Figma skills right column uses one management panel beneath unboxed breadcrumb, heading and tabs",async({page})=>{
- await page.setViewportSize({width:1440,height:900});
- for(const category of ["official","mine","team"]){
-  await page.goto("/shuomi/#/workbench/agents/skills/"+category);
-  const root=page.locator('[data-skill-showcase="true"]');
-  const breadcrumb=root.locator('[class*="breadcrumb"]').first();
-  const hero=root.locator(':scope > header');
-  const nav=root.getByRole("navigation",{name:"技能库分类"});
-  const management=root.locator('[data-skill-management]');
-  for(const element of [breadcrumb,hero,nav,management])await expect(element).toBeVisible();
-  const rectangles=await Promise.all([breadcrumb,hero,nav,management].map(el=>el.boundingBox()));
-  expect(rectangles.every(Boolean)).toBeTruthy();
-  for(let i=0;i<rectangles.length-1;i++)expect(rectangles[i+1]!.y).toBeGreaterThan(rectangles[i]!.y);
-  expect(Math.abs(rectangles[3]!.x-rectangles[0]!.x)).toBeLessThanOrEqual(2);
-  expect(rectangles[3]!.width).toBeGreaterThan(800);
-  await expect(management.getByRole("button",{name:"刷新列表"})).toBeVisible();
-  await expect(root.locator('[class*="searchFilters"]')).toHaveCount(0);
-  const bg=await hero.evaluate(el=>getComputedStyle(el).backgroundColor);
-  expect(bg==="rgba(0, 0, 0, 0)"||bg==="transparent"||bg.includes(" / 0)")).toBeTruthy();
- }
+ await expect(root.locator('[data-skill-name="商品标题整理"]')).toBeVisible();
+ await root.locator('[data-skill-name="商品标题整理"]').getByRole("button",{name:"去会话引用"}).click();
+ await expect(page).toHaveURL(/chat\/new\?preview=1&skillMode=reference/);
+ await page.goto("/shuomi/#/workbench/agents/skills/mine");
+ await root.locator('[data-skill-name="商品标题整理"]').getByRole("button",{name:"停用"}).click();
+ await expect(root.locator('[data-skill-name="商品标题整理"]')).toHaveCount(0);
+ await root.getByRole("button",{name:"创建我的技能"}).click();
+ await expect(page).toHaveURL(/chat\/new\?preview=1&skillMode=create/);
+ await page.goto("/shuomi/#/workbench/agents/skills/team");
+ await expect(root.getByRole("heading",{name:"暂未开放"})).toBeVisible();
+ await expect(root.getByRole("button",{name:"新建技能"})).toHaveCount(0);
+ await expect(root.getByRole("button",{name:"待审批的个人提交"})).toHaveCount(0);
+ await root.getByRole("button",{name:"返回技能库"}).click();
+ await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
 });
