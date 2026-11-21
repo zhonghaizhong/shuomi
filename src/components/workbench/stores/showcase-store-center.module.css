@@ -124,3 +124,8 @@
 .page .storeList .storeBottom>span{font-size:12px}
 @media(max-width:1180px){.page .storeList article.storeCard{grid-template-columns:1fr}.page .storeList .storeFacts,.page .storeList .storeBottom{grid-column:1;grid-row:auto}.page .storeList .storeBottom{justify-items:start}}
 @media(max-width:680px){.page .metrics:has(.metricCard){grid-template-columns:1fr}.page .storeList .storeFacts>div:nth-child(3){padding-left:0}}
+
+/* Match confirmed Vuexy title-band dimensions across Store Center subpages. */
+.page.page > .header{min-height:130px;padding:20px 24px;border:1px solid var(--st-line);border-radius:6px}
+.page.page > .header h1{font-size:26px;line-height:34px;border-left-width:3px;margin:6px 0 5px}
+.page.page > .header p{font-size:14px;line-height:22px}
