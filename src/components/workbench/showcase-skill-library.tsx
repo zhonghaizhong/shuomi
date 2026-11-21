@@ -1,6 +1,6 @@
 "use client";
 import {useState} from "react";
-import {BookOpen,Layers3,Users,LibraryBig,Search,ShieldCheck,RefreshCw,Plus,Info,FileText,Sparkles} from "lucide-react";
+import {BookOpen,Layers3,Users,LibraryBig,ShieldCheck,RefreshCw,Plus,Info,FileText,Sparkles} from "lucide-react";
 import {useRouter} from "next/navigation";
 import styles from "./showcase-skill-library.module.css";
 type Category="overview"|"official"|"mine"|"team";
