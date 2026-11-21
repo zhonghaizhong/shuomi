@@ -1,7 +1,7 @@
 "use client";
 import {useState} from "react";
 import {RefreshCw,Plus,Info,Search,ShieldCheck} from "lucide-react";
-import {useRouter,useSearchParams} from "next/navigation";
+import {useRouter} from "next/navigation";
 import styles from "./showcase-skill-library.module.css";
 
 type Category="official"|"mine"|"team";
@@ -12,9 +12,9 @@ const purpose="保存可复用的方法；执行使用现有智能体的权限�
 const sample={name:"local-trial-title-normalization-20261015",description:"本地试用 2026-10-15：核对个人技能格式、版本保存和刷新读回；仅使用已有商品事实，本轮不调用模型。",version:1};
 export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
  const router=useRouter();
- const searchParams=useSearchParams();
  const category:Category=pathname.endsWith("/mine")?"mine":pathname.endsWith("/team")?"team":"official";
- const configurable=searchParams.get("permission")!=="readonly";
+ const hashQuery=typeof window==="undefined"?"":window.location.hash.split("?")[1]??"";
+ const configurable=new URLSearchParams(hashQuery).get("permission")!=="readonly";
  const [admission,setAdmission]=useState(true);
  const [notice,setNotice]=useState("");
  const [selected,setSelected]=useState<"sample"|"draft"|null>(null);
