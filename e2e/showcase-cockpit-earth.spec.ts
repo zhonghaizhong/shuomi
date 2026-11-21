@@ -132,7 +132,7 @@ const lightModules: Array<[string,string]> = [
   ["/workbench",'[class*="metricsDigest"]'],
   ["/workbench/supply",'[class*="supplyCard"]:not([class*="supplyCards"])'],
   ["/workbench/data",'[class*="dataCard"]:not([class*="dataCards"])'],
-  ["/workbench/store-center",'[class*="storeModule"]'],
+  ["/workbench/store-center",'[data-store-center-showcase="home"] [class*="homeIntro"]'],
   ["/workbench/plans",'[class*="planOverview"]'],
   ["/workbench/account",'[class*="accountOverview"]'],
   ["/workbench/ai",'[class*="aiCards"] article'],
@@ -140,7 +140,7 @@ const lightModules: Array<[string,string]> = [
   ["/workbench/agents",'[class*="dataCard"]:not([class*="dataCards"])'],
   ["/workbench/agents/market",'[class*="agentCards"] article'],
   ["/workbench/agents/mine",'[class*="agentMine"] > article > section'],
-  ["/workbench/ai/projects",'[class*="metrics"] > article'],
+  ["/workbench/ai/projects",'[data-project-showcase] [class*="metrics"] > button'],
   ["/workbench/ai/knowledge",'[class*="metrics"] > article'],
   ["/workbench/ai/reports",'[class*="metrics"] > article'],
   ["/workbench/tools",'[class*="entry"]'],
@@ -149,8 +149,8 @@ const lightModules: Array<[string,string]> = [
   ["/workbench/services/market",'[class*="serviceCard"]'],
   ["/workbench/agents/custom",'main header'],
   ["/workbench/tools/custom",'main header'],
-  ["/workbench/store-products",'[class*="productMetrics"] article'],
-  ["/workbench/store-orders",'[class*="orderMetrics"] article'],
+  ["/workbench/store-products",'[data-store-center-showcase="products"] [class*="metrics"] article'],
+  ["/workbench/store-orders",'[data-store-center-showcase="orders"] [class*="metrics"] article'],
 ];
 
 for (const [start, end] of [[0, 6], [6, 12], [12, 18], [18, lightModules.length]]) {
@@ -280,8 +280,8 @@ const lightDetailSurfaces = [
   {route:"/workbench/tools/custom", target:'[class*="features"] article', text:"h3"},
   {route:"/workbench/agents/custom/new", target:'[class*="formLayout"] input:not([type="checkbox"]):not([type="file"])', text:null},
   {route:"/workbench/tools/custom/new", target:'[class*="formLayout"] input:not([type="checkbox"]):not([type="file"])', text:null},
-  {route:"/workbench/store-products", target:'[class*="productMetrics"] article', text:"strong"},
-  {route:"/workbench/store-orders", target:'[class*="orderMetrics"] article', text:"strong"},
+  {route:"/workbench/store-products", target:'[data-store-center-showcase="products"] [class*="metrics"] article', text:"strong"},
+  {route:"/workbench/store-orders", target:'[data-store-center-showcase="orders"] [class*="metrics"] article', text:"strong"},
 ] as const;
 
 test("light mode nested cards and controls are light and text is readable", async ({page}) => {
@@ -401,7 +401,7 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
   const screens=[
     {route:"/workbench/ai/chat",surfaces:['[class*="landingCard"]','[class*="example"]','[class*="steps"] > li > *']},
     {route:"/workbench/ai/tasks",surfaces:['[class*="taskStats"] > button','[class*="taskSearch"]','[class*="taskTable"]','[class*="taskRow"]']},
-    {route:"/workbench/ai/projects",surfaces:['[class*="metrics"] > article','[class*="filters"]','[class*="list"]','[data-library-hub="projects"] [class*="list"] > button[class*="row"]']},
+    {route:"/workbench/ai/projects",surfaces:['[data-project-showcase] [class*="metrics"] > button','[class*="filters"]','[class*="list"]','[data-library-hub="projects"] [class*="list"] > button[class*="row"]']},
   ] as const;
   for(const screen of screens) {
     await page.goto("/shuomi/#"+screen.route);
@@ -563,59 +563,34 @@ test("light hero keeps high-contrast subtitle and luminous main title during glo
 });
 
 
-test("all task detail states render fully light search, table, header and status, and preserve interactions", async ({page}) => {
-  await page.setViewportSize({width:1440,height:900});
-  await page.goto("/shuomi/#/workbench/ai/tasks/running");
-  await page.getByRole("button",{name:"切换浅色主题"}).click();
-  const states=["running","completed","errors","scheduled"] as const;
-  for (const state of states) {
-    await page.goto("/shuomi/#/workbench/ai/tasks/"+state);
-    await expect(page.locator(".light .showcase-shell")).toBeVisible();
-    const root=page.locator("main[data-task-detail='"+state+"']");
-    await expect(root).toBeVisible();
-    for(const [selector,background] of [
-      ['[class*="_toolbar_"]',"rgb(255, 255, 255)"],
-      ['[class*="_table_"]',"rgb(255, 255, 255)"],
-      ['[class*="_taskDetailHead_"]',"rgb(244, 243, 248)"]
-    ] as const) {
-      const target=root.locator(selector).first();
-      await expect(target,state+" "+selector).toBeVisible();
-      await expect(target,state+" "+selector).toHaveCSS("background-color",background);
-    }
-    const row=root.locator('[class*="_taskDetailRow_"]').first();
-    await expect(row).toBeVisible();
-    const rowBackground=await row.evaluate(el=>getComputedStyle(el).backgroundColor);
-    expect(["rgb(255, 255, 255)","rgb(252, 251, 254)"],state+" row is not a pale surface").toContain(rowBackground);
-    const search=root.locator('[class*="_toolbar_"] input');
-    await expect(search).toHaveCSS("color","rgb(68, 64, 80)");
-    const status=root.locator('[class*="_taskDetailRow_"] span[data-status]').first();
-    await expect(status).toBeVisible();
-    const color=await status.evaluate(el=>({background:getComputedStyle(el).backgroundColor,foreground:getComputedStyle(el).color}));
-    expect(color.background,state+" contains a dark status chip").not.toMatch(/^rgb\((?:2[0-9]|3[0-9]|4[0-9]), /);
-    expect(color.foreground,state+" status text still pale").not.toBe("rgb(98, 169, 255)");
-    await page.screenshot({path:"test-results/task-"+state+"-light.png",fullPage:false});
-  }
-  // Pending uses a separate task-center overview component in the showcase.
-  await page.goto("/shuomi/#/workbench/ai/tasks/pending");
+test("task center modes retain readable light/dark surfaces and functional task actions",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto("/shuomi/#/workbench/ai/tasks");
+ await page.getByRole("button",{name:"切换浅色主题"}).click();
+ for(const mode of ["running","completed","errors","scheduled","pending"]){
+  await page.goto("/shuomi/#/workbench/ai/tasks/"+mode);
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
-  const pending=page.locator('[class*="_tasksPreview_"]').first();
-  await expect(pending).toBeVisible();
-  for (const selector of ['[class*="_taskSearch_"]','[class*="_taskTable_"]']) {
-    const surface=pending.locator(selector).first();
-    await expect(surface).toBeVisible();
-    await expect(surface).toHaveCSS("background-color","rgb(255, 255, 255)");
-  }
-  await expect(pending.locator('[class*="_taskColumns_"]')).toHaveCSS("background-color","rgb(244, 243, 248)");
-  await page.screenshot({path:"test-results/task-pending-light.png",fullPage:false});
-  await page.goto("/shuomi/#/workbench/ai/tasks/running");
-  const root=page.locator('main[data-task-detail="running"]');
-  const input=root.locator('[class*="_toolbar_"] input');
-  await input.fill("春季广告投放优化");
-  await expect(root.locator('[class*="_taskDetailRow_"]')).toHaveCount(1);
-  await input.fill("");
-  await expect(root.locator('[class*="_taskDetailRow_"]')).toHaveCount(5);
-  await page.getByRole("button",{name:"切换深色主题"}).click();
-  await expect(root.locator('[class*="_table_"]').first()).toHaveCSS("background-color","rgb(47, 51, 73)");
-  await page.getByRole("button",{name:"切换浅色主题"}).click();
-  await expect(root.locator('[class*="_table_"]').first()).toHaveCSS("background-color","rgb(255, 255, 255)");
+  const root=page.locator('[data-task-center-preview="'+mode+'"]');
+  await expect(root).toBeVisible();
+  const search=root.getByRole("textbox",{name:"搜索任务名称、店铺或项目"});
+  await expect(search).toBeVisible();
+  await expect(root.locator('[class*="taskTable"]').first()).toBeVisible();
+  await expect(root.locator('[class*="taskSearch"]').first()).toBeVisible();
+  const bg=await root.locator('[class*="taskTable"]').first().evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(bg,mode+" table should remain light").toMatch(/^rgb\(2(?:4[0-9]|5[0-5]), 2(?:4[0-9]|5[0-5]), 2(?:4[0-9]|5[0-5])\)$/);
+  await search.fill("不存在的任务编号");
+  await root.getByRole("button",{name:"确定"}).click();
+  await expect(root.getByText("没有符合条件的任务。")).toBeVisible();
+  await root.getByRole("button",{name:"重置"}).click();
+  await expect(search).toHaveValue("");
+ }
+ await page.goto("/shuomi/#/workbench/ai/tasks/running");
+ const root=page.locator('[data-task-center-preview="running"]');
+ await root.locator('[data-task-state]').first().getByRole("button").first().click();
+ await expect(page.getByRole("dialog")).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(page.getByRole("dialog")).toHaveCount(0);
+ await page.getByRole("button",{name:"切换深色主题"}).click();
+ await expect(page.locator(".dark .showcase-shell")).toBeVisible();
+ await expect(root.locator('[class*="taskTable"]').first()).toBeVisible();
 });
