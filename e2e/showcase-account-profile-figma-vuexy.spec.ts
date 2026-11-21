@@ -204,6 +204,11 @@ test("My Account overview matches approved Vuexy theme in dark/light with aligne
    await expect(item).toBeVisible();
    expect(await item.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedSurface);
   }
+  // The activity + attention cards must not sit inside a dark framed wrapper.
+  const bottomStyle=await recent.evaluate(e=>({background:getComputedStyle(e).backgroundColor,border:getComputedStyle(e).borderTopWidth,padding:getComputedStyle(e).paddingTop}));
+  expect(bottomStyle.background,"Activity/attention row has no outer dark backdrop").toBe("rgba(0, 0, 0, 0)");
+  expect(bottomStyle.border,"Activity/attention row has no outer border").toBe("0px");
+  expect(bottomStyle.padding,"Activity/attention row has no outer padding").toBe("0px");
   for(const card of await overview.locator("article").all()){
    const actual=await card.evaluate(e=>getComputedStyle(e).backgroundColor);
    const expected=rgb(expectedInset),received=rgb(actual);
