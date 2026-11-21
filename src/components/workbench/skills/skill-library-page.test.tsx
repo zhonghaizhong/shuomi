@@ -47,7 +47,7 @@ it("manages personal skills without an organization or a modal", async () => {
   expect(await screen.findByRole("button", {name: "新建技能"})).toBeEnabled();
   expect(screen.getByRole("heading", {level: 1, name: "我的技能"})).toBeInTheDocument();
   expect(screen.getByRole("link", {name: "我的技能"})).toHaveAttribute("aria-current", "page");
-  expect(within(screen.getByRole("navigation", {name: "面包屑"})).getByRole("link", {name: "AI工作台"})).toHaveAttribute("href", "/workbench/ai");
+  expect(within(screen.getByRole("navigation", {name: "面包屑"})).getByText("智能市场")).toBeInTheDocument();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(vi.mocked(skillRequest).mock.calls.every(([scope, path]) => scope.userId === "alice" && !scope.organizationId && path.startsWith("personal"))).toBe(true);
 });
