@@ -3386,3 +3386,59 @@
 }
 @media(max-width:950px){.page[data-commerce-unified="plans"] .planStats .planStatValue{min-width:94px;font-size:20px}}
 @media(max-width:650px){.page[data-commerce-unified="plans"] .planStats>div.planStat{flex-wrap:wrap}.page[data-commerce-unified="plans"] .planStats .planStatValue{min-width:98px}}
+
+
+/* Plans entry cards: precise hierarchy and restrained Vuexy affordances. */
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard{
+ display:flex;flex-direction:column;gap:14px;
+ min-height:165px;padding:19px 20px;
+ background:var(--plans-bg);
+ border:1px solid var(--plans-line);border-radius:8px;
+ box-shadow:none;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryTop{
+ display:flex;align-items:center;gap:11px;min-width:0;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryIndex{
+ display:grid;place-items:center;flex:0 0 36px;
+ width:36px;height:36px;border-radius:7px;
+ background:color-mix(in srgb,var(--plans-primary) 12%,var(--plans-bg));
+ border:1px solid color-mix(in srgb,var(--plans-primary) 27%,var(--plans-line));
+ color:var(--plans-primary);font-size:14px;font-weight:700;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryTop h3{
+ margin:0;color:var(--plans-text);font-size:17px;line-height:1.35;
+ white-space:nowrap;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard p{
+ flex:1;min-height:0;margin:0;color:var(--plans-muted);
+ font-size:14px;line-height:1.55;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard button{
+ margin-top:auto;align-self:flex-start;min-height:34px;
+ padding:5px 0;border:0;background:transparent;
+ color:var(--plans-primary);font-size:14px;font-weight:600;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard button:hover{
+ background:transparent;text-decoration:underline;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard:focus-within{
+ border-color:var(--plans-primary);
+}
+.page[data-commerce-unified="plans"] .usageBar:not(:has(i)){
+ min-height:56px;padding:10px 0;
+}
+.page[data-commerce-unified="plans"] .usageBar:not(:has(i))>div{
+ display:grid;grid-template-columns:minmax(110px,1fr) minmax(130px,1fr) minmax(145px,1fr);
+ align-items:center;gap:12px;
+}
+.page[data-commerce-unified="plans"] .planBottom>aside>div button{
+ min-height:34px;padding:5px 10px;background:var(--plans-bg);
+ border-color:var(--plans-line);color:var(--plans-primary);
+}
+@media(max-width:950px){
+ .page[data-commerce-unified="plans"] .usageBar:not(:has(i))>div{
+ grid-template-columns:1fr 1fr;gap:5px 12px;
+ }
+ .page[data-commerce-unified="plans"] .usageBar:not(:has(i))>div small{grid-column:2}
+}
