@@ -261,3 +261,38 @@ test("enterprise overview matches Figma business sections without changing custo
  await page.getByRole("navigation",{name:"企业空间业务导航"}).getByRole("button",{name:"角色权限",exact:true}).click();
  await expect(page).toHaveURL(/account\/organization\/roles/);
 });
+
+test("enterprise Vuexy landing layout respects stats, spacing and preserved tabs in both themes",async({page})=>{
+ test.setTimeout(120000);
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(base+"/organization");
+ const root=page.locator('[data-account-suite="/organization"]');
+ const tabs=root.getByRole("navigation",{name:"企业空间业务导航"});
+ const labels=["企业空间","成员管理","角色权限","资源与额度","操作记录"];
+ for(const [i,label] of labels.entries())
+  await expect(tabs.getByRole("button").nth(i)).toHaveText(label);
+ for(const mode of ["dark","light"] as const){
+  const themeButton=page.getByRole("button",{name:mode==="light"?"切换浅色主题":"切换深色主题"});
+  if(await themeButton.count())await themeButton.click();
+  await expect(page.locator("html")).toHaveClass(new RegExp(mode));
+  const panels=root.locator("section[aria-label='企业管理'],section[aria-label='企业资源'],section[aria-label='成员资源分配']");
+  await expect(panels).toHaveCount(3);
+  const surface=mode==="light"?"rgb(255, 255, 255)":"rgb(47, 51, 73)";
+  for(const p of await panels.all())expect(await p.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(surface);
+  const stats=root.getByLabel("企业空间概览").locator("article");
+  await expect(stats).toHaveCount(3);
+  for(const stat of await stats.all()){
+   const n=stat.locator('[class*="enterpriseMetricNumber"]');
+   await expect(n).toBeVisible();
+   const box=await n.boundingBox();
+   expect(box?.width).toBeGreaterThanOrEqual(56);
+  }
+  const cards=root.locator('section[aria-label="企业管理"] [class*="navigation"] article');
+  await expect(cards).toHaveCount(4);
+  const heights=await cards.evaluateAll(nodes=>nodes.map(e=>Math.round(e.getBoundingClientRect().height)));
+  expect(Math.max(...heights)-Math.min(...heights),"Enterprise management cards align").toBeLessThanOrEqual(2);
+  const gap=await root.evaluate(e=>getComputedStyle(e).rowGap);
+  expect(Number.parseFloat(gap),"Vuexy desktop vertical rhythm").toBeGreaterThanOrEqual(20);
+  await expect(tabs.getByRole("button")).toHaveCount(5);
+ }
+});
