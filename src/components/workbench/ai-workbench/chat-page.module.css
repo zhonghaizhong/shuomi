@@ -260,10 +260,11 @@
 .conversationItem {position:relative;display:flex;align-items:stretch;min-width:0;border-bottom:1px solid var(--border);background:var(--card);}
 .conversationItem:last-child{border-bottom:0;}
 .conversationItem:nth-child(even){background:var(--secondary);}
-.conversationItem:focus-within{z-index:61;}
+.conversationItem{z-index:0;}
+.conversationItem[data-menu-open="true"]{z-index:61;}
 .conversationItem .conversationLink{flex:1;min-width:0;border:0;background:transparent;}
 .conversationItem .conversationLink:hover{background:color-mix(in srgb,var(--primary) 6%,transparent);}
-.rowActions{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 60px;padding-right:14px;z-index:62;}
+.rowActions{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 60px;padding-right:14px;}
 .rowMore{display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:var(--control-radius);background:var(--card);color:var(--muted-foreground);font-size:22px;line-height:1;letter-spacing:2px;cursor:pointer;}
 .rowMore:hover,.rowMore[aria-expanded="true"]{color:var(--primary);border-color:var(--primary);background:var(--secondary);}
 .rowMore:focus-visible,.rowMenu button:focus-visible{outline:2px solid var(--ring);outline-offset:2px;}
