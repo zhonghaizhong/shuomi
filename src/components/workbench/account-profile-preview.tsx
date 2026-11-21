@@ -4,6 +4,7 @@ import {useEffect,useState,type FormEvent} from "react";
 import {useRouter} from "next/navigation";
 import styles from "./account-profile-preview.module.css";
 import {showcaseTenant as tenant} from "./account/showcase-tenant";
+import {resetLegacyAccountDemoOnce} from "./account/showcase-data-reset";
 import {VerificationDocumentCard} from "./account/verification-document-card";
 
 const base="/workbench/account/profile";
@@ -50,7 +51,7 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
  const [verificationFiles,setVerificationFiles]=useState<Record<string,string>>({});
  const [personal,setPersonal]=useState({name:tenant.admin as string,id:tenant.identity as string});
  const [enterprise,setEnterprise]=useState({name:tenant.name as string,credit:tenant.credit as string,representative:tenant.admin as string});
- useEffect(()=>{const a=read(keys.account,defaultAccount),b=read(keys.business,defaultBusiness);setAccount(a);setSavedAccount(a);setBusiness(b);setSavedBusiness(b);setSecurity(readSecurity());},[]);
+ useEffect(()=>{resetLegacyAccountDemoOnce();const a=read(keys.account,defaultAccount),b=read(keys.business,defaultBusiness);setAccount(a);setSavedAccount(a);setBusiness(b);setSavedBusiness(b);setSecurity(readSecurity());},[]);
  useEffect(()=>{setNotice("");setChangeContact(null);setEditingBusiness(false)},[pathname]);
  useEffect(()=>{if(!changeContact)return;const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape")setChangeContact(null)};document.addEventListener("keydown",onKey);return()=>document.removeEventListener("keydown",onKey)},[changeContact]);
  const saveAccount=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const v={...account,name:account.name.trim()};if(!v.name){setNotice("用户名不能为空");return;}write(keys.account,v);setSavedAccount(v);setNotice("账户展示资料已保存到本次演示浏览器，不会修改真实账户。");};
