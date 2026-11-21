@@ -61,7 +61,8 @@ test("store management supports filtering, renaming, removing, and Escape to clo
  await expect(root.getByText("待管理店铺",{exact:true})).toHaveCount(0);
  await root.getByRole("button",{name:"重置"}).click();
  await expect(root.getByText("待管理店铺",{exact:true})).toBeVisible();
- await root.getByRole("button",{name:"管理名称"}).click();
+ await root.getByRole("button",{name:"管理"}).click();
+ await page.getByRole("dialog",{name:"店铺详情"}).getByRole("button",{name:"修改名称"}).click();
  const edit=page.getByRole("dialog",{name:"管理店铺名称"});
  await expect(edit).toBeVisible();
  await page.keyboard.press("Escape");
@@ -85,7 +86,7 @@ test("store details, authorization guidance and cross-page buttons preserve real
  const form=page.getByRole("dialog",{name:"绑定新店铺"});
  await form.getByRole("textbox",{name:"店铺名称"}).fill("待授权测试");
  await form.getByRole("button",{name:"创建演示店铺"}).click();
- await root.getByRole("button",{name:"查看详情"}).click();
+ await root.getByRole("button",{name:"管理"}).click();
  const details=page.getByRole("dialog",{name:"店铺详情"});
  await expect(details.getByText("待授权测试")).toBeVisible();
  await expect(details.getByText("待授权",{exact:true})).toBeVisible();
@@ -94,11 +95,30 @@ test("store details, authorization guidance and cross-page buttons preserve real
  await expect(help.getByText(/不会模拟已授权/)).toBeVisible();
  await help.getByRole("button",{name:"我知道了"}).click();
  await expect(help).toHaveCount(0);
- await root.getByRole("button",{name:"授权说明"}).click();
+ await root.getByRole("button",{name:"立即同步"}).click();
+ await expect(page.getByRole("dialog",{name:"立即同步"})).toBeVisible();
+ await page.getByRole("dialog",{name:"立即同步"}).getByRole("button",{name:"查看授权要求"}).click();
  await expect(page.getByRole("dialog",{name:"店铺授权说明"})).toBeVisible();
  await page.keyboard.press("Escape");
  await expect(page.getByRole("dialog",{name:"店铺授权说明"})).toHaveCount(0);
  await page.goto(prefix+"/store-products");
  await root.getByRole("button",{name:"前往我的店铺"}).click();
  await expect(root).toHaveAttribute("data-store-center-showcase","stores");
+});
+
+test("Figma asset-list structure exposes its required filters, cards and actions",async({page})=>{
+ await page.goto(prefix+"/stores");
+ const root=page.locator("[data-store-center-showcase]");
+ for(const label of ["店铺总数","正常店铺","需要处理","数据同步正常"])await expect(root.getByText(label,{exact:true})).toBeVisible();
+ for(const name of ["平台筛选","站点筛选","店铺类型筛选","店铺状态筛选","店铺分组筛选"])await expect(root.getByLabel(name)).toBeVisible();
+ await root.getByRole("button",{name:"管理分组"}).click();
+ await expect(page.getByRole("dialog",{name:"管理分组"})).toBeVisible();
+ await page.getByRole("dialog",{name:"管理分组"}).getByRole("button",{name:"关闭"}).click();
+ await root.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
+ await dialog.getByRole("textbox",{name:"店铺名称"}).fill("待授权资产");
+ await dialog.getByRole("button",{name:"创建演示店铺"}).click();
+ for(const label of ["管理","立即同步","进入店铺"])await expect(root.getByRole("button",{name:label,exact:true})).toBeVisible();
+ await root.getByRole("button",{name:"立即同步"}).click();
+ await expect(page.getByRole("dialog",{name:"立即同步"}).getByText(/不能同步商品或订单/)).toBeVisible();
 });
