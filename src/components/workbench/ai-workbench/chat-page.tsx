@@ -258,7 +258,7 @@ function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningRead
 }
 
 function ConversationLink({item,canEdit,busy,menuOpen,onToggleMenu,onRename,onFavorite,onDelete}:{item:AIConversation;canEdit:boolean;busy:boolean;menuOpen:boolean;onToggleMenu:()=>void;onRename:()=>void;onFavorite:()=>void;onDelete:()=>void}){
-  return <div className={styles.conversationItem}>
+  return <div className={styles.conversationItem} data-menu-open={menuOpen?"true":undefined}>
     <Link className={styles.conversationLink} href={`/workbench/ai/chat/${item.ID}`} prefetch={false}>
       <span className={styles.conversationText}><strong>{item.Title||"未命名会话"}</strong><small>{item.Archived?"已归档":"继续查看会话"}{item.Favorite?" · 已收藏":""}</small></span>
       <time dateTime={item.UpdatedAt}>{new Date(item.UpdatedAt).toLocaleString("zh-CN")}</time>
