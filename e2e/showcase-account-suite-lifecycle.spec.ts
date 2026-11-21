@@ -1,3 +1,5 @@
+import {expect,test} from "@playwright/test";
+const base="/shuomi/#/workbench/account";
 test("legacy account demo records are cleared once while preserving the new company fixture",async({page})=>{
  await page.goto(base);
  await page.evaluate(()=>{
@@ -32,8 +34,6 @@ test("legacy account demo records are cleared once while preserving the new comp
  expect(marker).toBe("done");
 });
 
-import {expect,test} from "@playwright/test";
-const base="/shuomi/#/workbench/account";
 test("synthetic enterprise uses one tenant across account home, members, roles and audit",async({page})=>{
  await page.goto(base);
  const root=page.locator('[data-commerce-unified="account"]');
