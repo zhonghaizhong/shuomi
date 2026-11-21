@@ -1968,3 +1968,22 @@
 .page[data-commerce-unified="plans"] .table > .planTableScroll > .planWalletColumns{
  position:relative;float:none;clear:both;width:100%;
 }
+
+/* Plans ledger/usage KPI layout follows the same left-value / right-description rhythm. */
+.page[data-commerce-unified="plans"] .metrics>article.planMetricCard{
+ display:flex;align-items:center;gap:13px;min-height:103px;padding:17px 18px;
+}
+.page[data-commerce-unified="plans"] .metrics .planMetricValue{
+ display:grid;place-items:center;flex:0 0 auto;min-width:106px;min-height:58px;
+ padding:8px 11px;border-radius:7px;text-align:center;white-space:nowrap;
+ border:1px solid color-mix(in srgb,var(--plans-primary) 30%,var(--plans-border));
+ background:color-mix(in srgb,var(--plans-primary) 12%,var(--plans-bg));
+ color:var(--plans-text);font-size:24px;font-weight:700;line-height:1.25;
+}
+.page[data-commerce-unified="plans"] .metrics .planMetricCopy{display:grid;min-width:0;gap:4px}
+.page[data-commerce-unified="plans"] .metrics .planMetricCopy span{color:var(--plans-text);font-size:14px;font-weight:600}
+.page[data-commerce-unified="plans"] .metrics .planMetricCopy small{color:var(--plans-muted);font-size:12px;line-height:1.4}
+@media(max-width:650px){
+ .page[data-commerce-unified="plans"] .metrics>article.planMetricCard{gap:12px}
+ .page[data-commerce-unified="plans"] .metrics .planMetricValue{font-size:21px;min-width:96px}
+}
