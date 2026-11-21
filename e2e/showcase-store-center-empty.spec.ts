@@ -23,6 +23,18 @@ test("Figma store center preserves new listing submenu and clean independent dat
   await expect(page.locator("[data-store-center-showcase]").getByText("共 0 条")).toBeVisible();
  }
 });
+test("Manage Groups is visible in the My Stores top actions even when there are no stores",async({page})=>{
+ await page.goto(root+"/stores");
+ const area=page.locator('[data-store-center-showcase="stores"]');
+ const topActions=area.locator("header").first().locator('[class*="headerActions"]');
+ await expect(topActions.getByRole("button",{name:"管理分组"})).toBeVisible();
+ await expect(topActions.getByRole("button",{name:"绑定新店铺"})).toBeVisible();
+ await expect(area.getByRole("button",{name:"管理分组"})).toHaveCount(1);
+ await topActions.getByRole("button",{name:"管理分组"}).click();
+ await expect(page.getByRole("dialog",{name:"管理分组"})).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(page.getByRole("dialog",{name:"管理分组"})).toHaveCount(0);
+});
 test("Figma binding modal has account, OTP, groups, fixed IP and honest authorization state",async({page})=>{
  await page.goto(root+"/stores");
  await page.getByRole("button",{name:"绑定新店铺"}).first().click();
