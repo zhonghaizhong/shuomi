@@ -56,3 +56,16 @@
 @container (max-width:760px){.root .stats{grid-template-columns:repeat(3,minmax(0,1fr))}.root .columns{display:none}.root .taskRow{grid-template-columns:minmax(0,1fr) auto!important;gap:8px}.root .taskRow>span:nth-child(2),.root .taskRow>span:nth-child(4){display:block;text-align:left;font-size:13px}.root .taskRow>span:first-child{grid-column:1/-1}.root .stateCell{justify-items:end}.root .actions{justify-content:flex-end}.root .searchInput{flex-wrap:wrap}.root .searchInput input{flex-basis:100%}}
 @container (max-width:470px){.root .stats,.root .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.root .search{grid-template-columns:1fr 1fr}.root .searchInput{grid-column:1/-1}.root .taskRow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}}
 @media(max-width:480px){.modal dl>div{grid-template-columns:1fr;gap:4px}}
+
+/* The pending-task review uses the existing Chat conversation tokens and layout. */
+.modal.reviewModal{width:min(1120px,100%);padding:20px;gap:16px;overflow:auto}
+.reviewModal .reviewWorkspace{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(230px,290px)!important;height:auto!important;min-height:0!important;gap:14px;align-items:stretch}
+.reviewModal .reviewWorkspace .reviewComposer{height:auto!important;min-height:0!important;grid-template-rows:auto minmax(160px,1fr) auto auto!important;padding:16px!important}
+.reviewModal .reviewWorkspace [role="log"]{max-height:300px;min-height:160px;padding:14px 8px}
+.reviewModal .reviewWorkspace textarea{box-sizing:border-box;min-height:100px;max-height:150px}
+.reviewModal .reviewWorkspace h2{max-width:100%;font-size:20px;overflow-wrap:anywhere;white-space:normal}
+.reviewModal .reviewWorkspace aside{height:auto!important;max-height:none!important;padding:14px!important}
+.reviewFooter{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--cn-border)}
+.reviewFooter>div{display:flex;gap:8px;flex-wrap:wrap}
+.reviewFooter button{min-height:40px}
+@media(max-width:800px){.modal.reviewModal{padding:14px}.reviewModal .reviewWorkspace{grid-template-columns:minmax(0,1fr)!important}.reviewModal .reviewWorkspace aside{max-height:210px!important;overflow:auto}.reviewModal .reviewWorkspace [role="log"]{max-height:220px;min-height:140px}.reviewFooter>div{justify-content:flex-end}}
