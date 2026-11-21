@@ -123,3 +123,18 @@ test("Figma asset-list structure exposes its required filters, cards and actions
  await root.getByRole("button",{name:"立即同步"}).click();
  await expect(page.getByRole("dialog",{name:"立即同步"}).getByText(/不能同步商品或订单/)).toBeVisible();
 });
+
+test("enter-store opens its own workspace and routes to store products",async({page})=>{
+ await page.goto(prefix+"/stores");
+ const root=page.locator("[data-store-center-showcase]");
+ await root.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
+ await dialog.getByRole("textbox",{name:"店铺名称"}).fill("待授权进入测试");
+ await dialog.getByRole("button",{name:"创建演示店铺"}).click();
+ await root.getByRole("button",{name:"进入店铺"}).click();
+ const workspace=page.getByRole("dialog",{name:"店铺工作台"});
+ await expect(workspace).toBeVisible();
+ await expect(workspace.getByText(/授权尚未完成/)).toBeVisible();
+ await workspace.getByRole("button",{name:"进入店铺商品"}).click();
+ await expect(root).toHaveAttribute("data-store-center-showcase","products");
+});
