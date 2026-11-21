@@ -40,7 +40,7 @@ test("store center light and dark theme use consistent card surfaces",async({pag
   if(await toggle.isVisible())await toggle.click();
   const root=page.locator("[data-store-center-showcase]");
   await expect(root).toBeVisible();
-  for(const selector of ["header","[class*='entries']>article","[class*='panel']"]){
+  for(const selector of ["header","[class*='entries']>article","[class*='noteCard']"]){
    const el=root.locator(selector).first();
    const rgb=await el.evaluate(n=>getComputedStyle(n).backgroundColor.match(/\d+/g)?.slice(0,3).map(Number)||[]);
    expect(rgb.length).toBe(3);
