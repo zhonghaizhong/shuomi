@@ -20,3 +20,18 @@
 @media(min-width:2400px){.hero{min-height:152px;padding:26px 30px}.hero h1{font-size:30px;line-height:40px}}
 @media(max-width:1100px){.navigation,.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.page{width:calc(100% - 24px);padding:14px 0 28px}.hero{align-items:flex-start;flex-direction:column;min-height:112px;padding:16px}.hero h1{font-size:23px;line-height:30px}.identity{align-items:flex-start;flex-wrap:wrap}.mode{width:100%}.navigation,.metrics,.rules{grid-template-columns:minmax(0,1fr)}.panel{padding:14px}.toolbar input{width:100%}.linkRow{flex-direction:column;align-items:stretch}.dialog{padding:16px}}
+
+/* Account section navigation, aligned compact controls, and editable permission grid */
+.subNavigation{display:flex;align-items:center;gap:7px;padding:11px 14px;background:var(--surface);border:1px solid var(--line);border-radius:6px;flex-wrap:wrap}
+.subNavigation button{min-height:34px;padding:7px 11px;border:1px solid transparent;border-radius:5px;background:transparent;font-size:13px;color:var(--muted)}
+.subNavigation button:hover{background:var(--inset);border-color:var(--line);color:var(--ink)}
+.subNavigation button[aria-current="page"]{background:color-mix(in srgb,var(--primary) 13%,var(--inset));border-color:color-mix(in srgb,var(--primary) 40%,var(--line));color:var(--ink);font-weight:700}
+.permissionList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:13px;border:1px solid var(--line);border-radius:6px;background:var(--inset);min-width:0}
+.permissionList legend{padding:0 7px;color:var(--ink);font-size:14px;font-weight:650}
+.permissionList label{display:flex;align-items:center;gap:9px;min-height:40px;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:5px;cursor:pointer}
+.permissionList input{width:17px;height:17px;min-height:0;accent-color:var(--primary);flex:none}
+.permissionList p{grid-column:1/-1;font-size:12px;line-height:20px}
+.page select{appearance:none;background-image:none;padding-right:12px}
+.page button{transition:border-color .12s ease,background-color .12s ease,opacity .12s ease}
+.page .rowActions button{min-height:34px;padding:6px 10px}
+@media(max-width:700px){.subNavigation{padding:9px;gap:5px}.subNavigation button{font-size:12px;padding:6px 9px}.permissionList{grid-template-columns:1fr}}
