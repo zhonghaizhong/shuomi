@@ -306,3 +306,32 @@ test("enterprise Vuexy landing layout respects stats, spacing and preserved tabs
   await expect(tabs.getByRole("button")).toHaveCount(5);
  }
 });
+
+test("account second-level pages use Vuexy rhythm without duplicate referral entry buttons",async({page})=>{
+ test.setTimeout(90000);
+ await page.setViewportSize({width:1440,height:900});
+ for(const route of ["/organization","/organization/members","/organization/roles","/organization/resources","/organization/audit","/referrals","/referrals/center","/referrals/earnings","/referrals/withdrawals","/referrals/rules"]){
+  await page.goto(base+route);
+  const suite=page.locator("[data-account-suite]");
+  await expect(suite).toBeVisible();
+  await expect(suite.getByRole("button",{name:"我的账户",exact:true})).toHaveCount(0);
+  const gap=await suite.evaluate(e=>Number.parseFloat(getComputedStyle(e).rowGap));
+  expect(gap,route+" Vuexy vertical spacing").toBeGreaterThanOrEqual(20);
+  const header=suite.locator(":scope > header").first();
+  const font=await header.locator("h1").evaluate(e=>Number.parseFloat(getComputedStyle(e).fontSize));
+  expect(font,route+" title scale").toBeGreaterThanOrEqual(28);
+ }
+ await page.goto(base+"/referrals");
+ const suite=page.locator('[data-account-suite="/referrals"]');
+ await expect(suite.getByRole("heading",{name:"推广业务管理"})).toHaveCount(0);
+ await expect(suite.getByRole("button",{name:"进入管理"})).toHaveCount(0);
+ const tabs=suite.getByRole("navigation",{name:"推广与收益业务导航"});
+ for(const label of ["推广与收益","推广中心","收益明细","提现管理","推广规则"])
+  await expect(tabs.getByRole("button",{name:label,exact:true})).toBeVisible();
+ await tabs.getByRole("button",{name:"收益明细",exact:true}).click();
+ await expect(page).toHaveURL(/account\/referrals\/earnings/);
+ await page.goto(base+"/organization");
+ const enterpriseTabs=page.getByRole("navigation",{name:"企业空间业务导航"});
+ for(const label of ["企业空间","成员管理","角色权限","资源与额度","操作记录"])
+  await expect(enterpriseTabs.getByRole("button",{name:label,exact:true})).toBeVisible();
+});
