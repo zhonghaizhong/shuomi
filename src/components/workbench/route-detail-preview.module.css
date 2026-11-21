@@ -1955,3 +1955,16 @@
  .page[data-commerce-unified="plans"] .planDetailDialog{padding:17px}
  .page[data-commerce-unified="plans"] .planDetailDialog dl div{grid-template-columns:112px minmax(0,1fr);gap:9px}
 }
+
+/* Regression: the generic .table > div rule made the new scroll wrapper a
+   flex row, so later ledger lines sat on top of the first row's detail action.
+   Keep the wrapper block-level; only ledger records are grids. */
+.page[data-commerce-unified="plans"] .table > .planTableScroll{
+ display:block!important;padding:0!important;margin-top:10px;
+ border:0!important;min-height:0!important;overflow-x:auto;
+}
+.page[data-commerce-unified="plans"] .table > .planTableScroll > .planUsageColumns,
+.page[data-commerce-unified="plans"] .table > .planTableScroll > .planOrderColumns,
+.page[data-commerce-unified="plans"] .table > .planTableScroll > .planWalletColumns{
+ position:relative;float:none;clear:both;width:100%;
+}
