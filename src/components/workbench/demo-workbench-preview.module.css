@@ -3331,3 +3331,34 @@
 .page[data-commerce-unified="plans"] .usageBar i{background:var(--plans-inset);border-radius:99px}
 @media(max-width:1000px){.page[data-commerce-unified="plans"] .planBottom{grid-template-columns:1fr}}
 @media(max-width:700px){.page[data-commerce-unified="plans"]{gap:16px}.page[data-commerce-unified="plans"] :is(.planOverview,.planEntrances,.planBottom>article,.planBottom>aside){padding:17px}}
+
+/* Plans polish: understated navigation and clear non-actionable reminder states. */
+.page[data-commerce-unified="plans"] .planEntrances article{
+ box-shadow:none;min-height:178px;display:flex;flex-direction:column;gap:8px;
+}
+.page[data-commerce-unified="plans"] .planEntrances article>b{
+ display:inline-block;align-self:flex-start;background:transparent;border:0;
+ padding:0;color:var(--plans-muted);font-size:13px;font-weight:500;
+}
+.page[data-commerce-unified="plans"] .planEntrances article p{margin:0 0 12px;flex:1}
+.page[data-commerce-unified="plans"] .planEntrances article button{
+ margin-top:auto;align-self:flex-start;
+}
+.page[data-commerce-unified="plans"] .planBottom>aside>div{
+ position:relative;display:flex;align-items:center;gap:12px;min-height:58px;
+ border:1px solid var(--plans-line);background:var(--plans-inset);border-radius:7px;
+ padding:12px 14px;
+}
+.page[data-commerce-unified="plans"] .planBottom>aside>div strong{
+ color:var(--plans-text);font-weight:600;font-size:14px;
+}
+.page[data-commerce-unified="plans"] .planBottom>aside>div span{
+ flex:1;min-width:0;color:var(--plans-muted);font-size:13px;
+}
+.page[data-commerce-unified="plans"] .planBottom>aside footer{
+ border-color:var(--plans-line);color:var(--plans-muted);
+}
+.page[data-commerce-unified="plans"] .planBottom>aside footer button{
+ min-height:34px;font-size:13px;
+}
+@media(max-width:700px){.page[data-commerce-unified="plans"] .planBottom>aside>div{flex-wrap:wrap}}
