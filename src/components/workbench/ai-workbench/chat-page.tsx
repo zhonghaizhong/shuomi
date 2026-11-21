@@ -210,7 +210,7 @@ function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningRead
     {isCollection ? conversations.isPending ? <ConsoleState kind="loading" title="正在读取会话" /> : conversations.isError && !conversations.data ? <ConsoleState kind="error" title="会话读取失败">{errorText(conversations.error)} <Button variant="outline" onClick={() => void conversations.refetch()}>重试</Button></ConsoleState> :
       <section className={styles.list} aria-label="会话列表">
         {conversations.isError ? <ConsoleState kind="error" title="部分会话读取失败">{errorText(conversations.error)} <Button variant="outline" onClick={() => void (conversations.isFetchNextPageError ? conversations.fetchNextPage() : conversations.refetch())}>重试</Button></ConsoleState> : null}
-        {visible.length ? matching.length ? <Card className={styles.conversationRows}>{matching.map(item => <ConversationLink key={item.ID} item={item} />)}</Card> : <ConsoleState kind="empty" title="已加载的会话中没有匹配标题">清空筛选或加载更早会话继续查找。</ConsoleState> : <ConsoleState kind="empty" title={mode === "saved" ? "暂无收藏会话" : mode === "archived" ? "暂无归档会话" : "暂无会话"}>{mode === "archived" ? "已归档会话会出现在这里，可打开详情恢复。" : "新建会话后，会保存到当前账号。"}</ConsoleState>}
+        {visible.length ? matching.length ? <Card className={styles.conversationRows}>{matching.map(item => <ConversationLink key={item.ID} item={item} />)}</Card> : <ConsoleState kind="empty" title="已加载的会话中没有匹配标题">清空筛选或加载更早会话继续查找。</ConsoleState> : <ConsoleState kind="empty" title={mode === "saved" ? "暂无收藏会话" : mode === "archived" ? "暂无归档会话" : "暂无会话"}>{mode === "archived" ? "已归档会话会出现在这里，可打开详情恢复。" : mode === "saved" ? "在会话详情中点击「收藏」，重要会话就会出现在这里。" : "开始一段新会话后，可以在这里重新打开并继续交流。"}</ConsoleState>}
         {conversations.hasNextPage ? <Button variant="outline" disabled={conversations.isFetchingNextPage} onClick={() => void conversations.fetchNextPage()}>加载更早会话</Button> : null}
         {mode === "saved" ? <p className={styles.filterNote}>取消收藏仅移出本列表，原始会话仍保留；归档会话可在归档列表查看。</p> : null}</section> : null}
   </>;
@@ -218,7 +218,7 @@ function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningRead
 
 function ConversationLink({ item }: { item: AIConversation }) {
   return <Link className={styles.conversationLink} href={`/workbench/ai/chat/${item.ID}`} prefetch={false}>
-    <span className={styles.conversationText}><strong>{item.Title || "未命名会话"}</strong><small>{item.Archived ? "已归档" : "继续查看会话"}{item.Favorite ? " · 收藏" : ""}</small></span><time dateTime={item.UpdatedAt}>{new Date(item.UpdatedAt).toLocaleString("zh-CN")}</time><span className={styles.openConversation}>打开 →</span>
+    <span className={styles.conversationText}><strong>{item.Title || "未命名会话"}</strong><small>{item.Archived ? "已归档" : "继续查看会话"}{item.Favorite ? " · 收藏" : ""}</small></span><time dateTime={item.UpdatedAt}>{new Date(item.UpdatedAt).toLocaleString("zh-CN")}</time><span className={styles.openConversation}>查看会话</span>
   </Link>;
 }
 
