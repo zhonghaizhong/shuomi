@@ -97,3 +97,37 @@ test("Figma skills hierarchy, actions, and permission variants match the showcas
  await expect(readonlyRoot.getByText("个人技能准入：未准入 · 策略版本 0")).toBeVisible();
  await expect(readonlyRoot.getByRole("button",{name:/个人技能准入/})).toHaveCount(0);
 });
+
+
+test("skill showcase creates a local draft, verifies a version, and gates sharing on consent",async({page})=>{
+ await page.goto("/shuomi/#/workbench/agents/skills/mine");
+ const root=page.locator('[data-skill-showcase="true"]');
+ await root.getByRole("button",{name:"新建技能"}).click();
+ const form=root.getByRole("form",{name:"新建技能"});
+ await expect(form).toBeVisible();
+ await form.getByRole("textbox",{name:"技能名称"}).fill("demo-catalog-audit");
+ await form.getByRole("textbox",{name:"技能简介"}).fill("用于整理商品资料的本地演示技能");
+ await form.getByRole("textbox",{name:"方法内容"}).fill("先核对输入字段，再整理商品资料；不要补造数据。");
+ await form.getByRole("button",{name:"检查格式"}).click();
+ await expect(form.getByText(/格式预检查通过/)).toBeVisible();
+ await form.getByRole("button",{name:"保存演示草稿"}).click();
+ await expect(root.getByText("demo-catalog-audit")).toBeVisible();
+ await expect(root.getByText("v1 · 演示草稿 · 私有")).toBeVisible();
+ await root.getByRole("button",{name:/demo-catalog-audit/}).click();
+ await expect(root.getByRole("region",{name:"技能详情"})).toBeVisible();
+ await root.getByRole("button",{name:"保存为新版本"}).click();
+ const versionForm=root.getByRole("form",{name:"保存为新版本"});
+ await versionForm.getByRole("textbox",{name:"方法内容"}).fill("核对商品标题、图片和数据，再保存本地版本。");
+ await versionForm.getByRole("button",{name:"保存演示草稿"}).click();
+ await expect(root.getByText("v2 · 演示草稿 · 私有")).toBeVisible();
+ await root.getByRole("button",{name:"我的共享申请"}).click();
+ const sharing=root.getByRole("region",{name:"我的共享申请"});
+ const submit=sharing.getByRole("button",{name:"提交演示共享申请"});
+ await expect(submit).toBeDisabled();
+ await sharing.getByRole("checkbox").check();
+ await expect(submit).toBeEnabled();
+ await submit.click();
+ await expect(sharing.getByText("状态：演示申请已提交")).toBeVisible();
+ await sharing.getByRole("button",{name:"撤回演示申请"}).click();
+ await expect(sharing.getByText("状态：演示申请已撤回")).toBeVisible();
+});
