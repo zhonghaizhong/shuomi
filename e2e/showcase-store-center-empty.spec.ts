@@ -151,3 +151,39 @@ test("store-center Figma introduction includes new listing-management submenu an
  await root.getByRole("button",{name:"进入刊登管理"}).click();
  await expect(page).toHaveURL(/\/workbench\/listing/);
 });
+
+
+test("Figma My Stores detail tabs and local grouping have working interactions",async({page})=>{
+ await page.goto(prefix+"/stores");
+ const root=page.locator("[data-store-center-showcase]");
+ await root.getByRole("button",{name:"管理分组"}).click();
+ const groups=page.getByRole("dialog",{name:"管理分组"});
+ await groups.getByRole("textbox",{name:"分组名称"}).fill("核心店铺");
+ await groups.getByRole("button",{name:"创建分组"}).click();
+ await expect(groups.getByText("核心店铺")).toBeVisible();
+ await groups.getByRole("button",{name:"完成"}).click();
+ await root.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const create=page.getByRole("dialog",{name:"绑定新店铺"});
+ await create.getByRole("textbox",{name:"店铺名称"}).fill("原型交互验证");
+ await create.getByRole("button",{name:"创建演示店铺"}).click();
+ await root.getByRole("button",{name:"管理",exact:true}).click();
+ const details=page.getByRole("dialog",{name:"店铺详情"});
+ for(const tab of ["店铺概览","授权信息","数据同步","网络环境","店铺设置"]){
+  await details.getByRole("button",{name:tab,exact:true}).click();
+  await expect(details.getByRole("button",{name:tab,exact:true})).toHaveAttribute("aria-current","page");
+ }
+ await details.getByLabel("店铺所属分组").selectOption("核心店铺");
+ await details.getByLabel("店铺负责人").fill("演示负责人");
+ await details.getByRole("button",{name:"保存设置"}).click();
+ await expect(root.getByText("核心店铺",{exact:true}).first()).toBeVisible();
+ await root.getByLabel("店铺分组筛选").selectOption("核心店铺");
+ await expect(root.getByText("原型交互验证",{exact:true})).toBeVisible();
+ await root.getByRole("button",{name:"管理",exact:true}).click();
+ await details.getByRole("button",{name:"授权信息"}).click();
+ await details.getByRole("button",{name:"查看授权方式"}).click();
+ const help=page.getByRole("dialog",{name:"店铺授权说明"});
+ await help.getByLabel("授权方式").selectOption("子账户手机验证码");
+ await expect(help.getByText(/手机号接收验证码/)).toBeVisible();
+ await help.getByLabel("授权方式").selectOption("API 授权（暂未开放）");
+ await expect(help.getByText(/API 授权暂未开放/)).toBeVisible();
+});
