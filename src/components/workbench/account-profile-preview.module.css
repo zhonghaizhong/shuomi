@@ -24,3 +24,10 @@
 :global(.light) .securityForm .securityError{color:#b32f39}
 .securityForm footer{display:flex;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid var(--profile-border);margin-top:4px}
 @media(max-width:600px){.dialog{padding:18px}.securityCurrent{align-items:flex-start;flex-direction:column}.securityCurrent strong{text-align:left}.securityForm footer button{flex:1}}
+
+/* Match the compact submenu rail used by the rest of My Account. */
+.profileSubnav{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:11px 14px;border:1px solid var(--profile-border);border-radius:7px;background:var(--profile-card)}
+.profileSubnav button{min-height:34px;padding:7px 12px;border-color:transparent;background:transparent;font-size:13px;color:var(--profile-muted)}
+.profileSubnav button:hover{border-color:var(--profile-border);background:var(--profile-raised)}
+.profileSubnav button[aria-current="page"]{background:color-mix(in srgb,var(--profile-primary) 12%,var(--profile-raised));border-color:color-mix(in srgb,var(--profile-primary) 38%,var(--profile-border));color:var(--profile-text);font-weight:700}
+@media(max-width:750px){.profileSubnav{padding:9px;gap:5px}.profileSubnav button{padding:6px 9px;font-size:12px}}
