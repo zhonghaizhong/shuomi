@@ -10,7 +10,11 @@ type Business={roles:string[];shops:string;platforms:string[];sites:string[];typ
 type Account={name:string;country:string;province:string;city:string};
 const defaultAccount:Account={name:tenant.username,country:"中国大陆",province:"湖北省",city:"武汉市"};
 const defaultBusiness:Business={roles:["跨境电商创业者"],shops:"暂时没有店铺",platforms:[],sites:[],types:[],supply:["暂时没有工厂或供应链资源"],services:[],other:"企业已入驻，尚未开始经营"};
-const keys={account:"shuomi-demo-account-settings-SM-ENT-000001",business:"shuomi-demo-business-profile-SM-ENT-000001"};
+const keys={account:"shuomi-demo-account-settings-SM-ENT-000001",business:"shuomi-demo-business-profile-SM-ENT-000001",security:"shuomi-demo-security-SM-ENT-000001"};
+type Security={phone:string;email:string;passwordUpdated:string};
+const defaultSecurity:Security={phone:"测试手机号",email:tenant.email,passwordUpdated:"2026年11月21日（模拟）"};
+const readSecurity=():Security=>{try{const raw=localStorage.getItem(keys.security);return raw?{...defaultSecurity,...JSON.parse(raw)}:defaultSecurity}catch{return defaultSecurity}};
+const saveSecurity=(data:Security)=>{try{localStorage.setItem(keys.security,JSON.stringify(data));return true}catch{return false}};
 const read=<T,>(key:string,fallback:T):T=>{try{const v=sessionStorage.getItem(key);return v?{...fallback,...JSON.parse(v)}:fallback}catch{return fallback}};
 const write=(key:string,v:unknown)=>{try{sessionStorage.setItem(key,JSON.stringify(v))}catch{}};
 const toggled=(list:string[],entry:string,checked:boolean)=>checked?[...new Set([...list,entry])]:list.filter(x=>x!==entry);
@@ -36,11 +40,16 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
  const [editingBusiness,setEditingBusiness]=useState(false);
  const [identityType,setIdentityType]=useState<"个人认证"|"企业认证">("企业认证");
  const [notice,setNotice]=useState("");
- const [changeContact,setChangeContact]=useState<string|null>(null);
+ const [changeContact,setChangeContact]=useState<"更换手机号"|"更换邮箱"|"修改密码"|null>(null);
+ const [security,setSecurity]=useState<Security>(defaultSecurity);
+ const [securityDraft,setSecurityDraft]=useState("");
+ const [securityConfirm,setSecurityConfirm]=useState("");
+ const [securityChecked,setSecurityChecked]=useState(false);
+ const [securityError,setSecurityError]=useState("");
  const [verificationFiles,setVerificationFiles]=useState<Record<string,string>>({});
  const [personal,setPersonal]=useState({name:tenant.admin as string,id:tenant.identity as string});
  const [enterprise,setEnterprise]=useState({name:tenant.name as string,credit:tenant.credit as string,representative:tenant.admin as string});
- useEffect(()=>{const a=read(keys.account,defaultAccount),b=read(keys.business,defaultBusiness);setAccount(a);setSavedAccount(a);setBusiness(b);setSavedBusiness(b);},[]);
+ useEffect(()=>{const a=read(keys.account,defaultAccount),b=read(keys.business,defaultBusiness);setAccount(a);setSavedAccount(a);setBusiness(b);setSavedBusiness(b);setSecurity(readSecurity());},[]);
  useEffect(()=>{setNotice("");setChangeContact(null);setEditingBusiness(false)},[pathname]);
  useEffect(()=>{if(!changeContact)return;const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape")setChangeContact(null)};document.addEventListener("keydown",onKey);return()=>document.removeEventListener("keydown",onKey)},[changeContact]);
  const saveAccount=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const v={...account,name:account.name.trim()};if(!v.name){setNotice("用户名不能为空");return;}write(keys.account,v);setSavedAccount(v);setNotice("账户展示资料已保存到本次演示浏览器，不会修改真实账户。");};
@@ -53,13 +62,38 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
    setVerificationFiles(v=>({...v,[label]:f.name}));
  };
  const verify=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();if(!Object.keys(verificationFiles).length){setNotice("已核对当前模拟认证档案；未发起真实认证。");return;}const required=identityType==="个人认证"?["身份证人像面","身份证国徽面"]:["营业执照"];if(required.some(x=>!verificationFiles[x])){setNotice("请补齐对应证件文件后再确认。");return;}setNotice("已完成表单校验。当前演示站没有身份认证后端，未上传证件、未产生认证申请。");};
- const closeContact=()=>setChangeContact(null);
+ const closeContact=()=>{setChangeContact(null);setSecurityDraft("");setSecurityConfirm("");setSecurityChecked(false);setSecurityError("")};
+ const openSecurity=(action:"更换手机号"|"更换邮箱"|"修改密码")=>{setSecurityDraft("");setSecurityConfirm("");setSecurityChecked(false);setSecurityError("");setChangeContact(action)};
+ const validSecurity=()=>{
+   if(changeContact==="更换手机号"){
+     if(!/^\\+?[0-9][0-9\\s-]{6,19}$/.test(securityDraft.trim()))return "请输入有效的手机号（至少 7 位数字）。";
+     if(securityDraft.trim()===security.phone)return "新手机号不能与当前号码相同。";
+   }else if(changeContact==="更换邮箱"){
+     if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(securityDraft.trim()))return "请输入有效的电子邮箱地址。";
+     if(securityDraft.trim().toLowerCase()===security.email.toLowerCase())return "新邮箱不能与当前邮箱相同。";
+   }else if(changeContact==="修改密码"){
+     if(securityDraft.length<8)return "新密码不得少于 8 个字符。";
+     if(securityDraft!==securityConfirm)return "两次输入的密码不一致。";
+   }
+   return "";
+ };
+ const simulateSecurityCheck=()=>{const error=validSecurity();setSecurityError(error);setSecurityChecked(!error)};
+ const commitSecurity=(event:FormEvent<HTMLFormElement>)=>{
+   event.preventDefault();
+   const error=validSecurity();if(error){setSecurityError(error);setSecurityChecked(false);return}
+   if(!securityChecked){setSecurityError("请先完成模拟验证。");return}
+   const next:Security=changeContact==="更换手机号"?{...security,phone:securityDraft.trim()}:changeContact==="更换邮箱"?{...security,email:securityDraft.trim()}:{...security,passwordUpdated:new Date().toLocaleString("zh-CN")};
+   if(!saveSecurity(next)){setSecurityError("本地浏览器存储不可用，本次修改未保存。");return}
+   setSecurity(next);
+   setNotice(changeContact==="修改密码"?"模拟密码修改成功；未保存真实密码，也不会影响登录。":changeContact+"已模拟完成，账户资料已同步更新；不会修改真实账号。");
+   closeContact();
+ };
  return <div className={styles.page} data-account-profile-page={mode}>
    <Header mode={mode} onBack={()=>go("")}/>
    {mode==="overview"&&<>
      <section className={styles.profileTop}><div><div className={styles.avatar} aria-hidden="true">S</div><div><h2>{tenant.admin}</h2><p>用户名：{savedAccount.name} · 手机号已验证</p><span className={styles.success}>已实名认证 · 示例状态</span></div></div><dl><div><dt>用户编号</dt><dd>{tenant.userId}</dd></div><div><dt>注册时间</dt><dd>2026年11月21日</dd></div><div><dt>最近登录</dt><dd>演示时间 14:32</dd></div></dl></section>
-     <div className={styles.overviewGrid}><section className={styles.panel}><header className={styles.panelHeader}><div><h2>账户设置</h2><p>用于账户识别与联系方式管理</p></div><button className={styles.primary} onClick={()=>go("/settings")}>编辑资料</button></header><dl className={styles.facts}>{[["用户名",savedAccount.name],["手机号码","测试手机号 · 已验证"],["邮箱地址","admin@example.com · 已验证"],["所在地区",[savedAccount.country,savedAccount.province,savedAccount.city].filter(Boolean).join(" · ")],["注册时间","2026年11月21日"]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
-      <h3>账号状态</h3><div className={styles.stateGrid}>{[["手机验证","已完成","用于验证码登录与安全验证"],["邮箱地址","已验证","用于接收账户与安全通知"],["登录密码","已设置","上次修改：演示信息"]].map(([name,state,hint])=><article key={name}><strong>{name}</strong><b className={styles.success}>{state}</b><small>{hint}</small></article>)}</div></section>
+     <div className={styles.overviewGrid}><section className={styles.panel}><header className={styles.panelHeader}><div><h2>账户设置</h2><p>用于账户识别与联系方式管理</p></div><button className={styles.primary} onClick={()=>go("/settings")}>编辑资料</button></header><dl className={styles.facts}>{[["用户名",savedAccount.name],["手机号码",security.phone+" · 已验证（模拟）"],["邮箱地址",security.email+" · 已验证（模拟）"],["所在地区",[savedAccount.country,savedAccount.province,savedAccount.city].filter(Boolean).join(" · ")],["注册时间","2026年11月21日"]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+      <h3>账号状态</h3><div className={styles.stateGrid}>{[["手机验证","已完成","用于验证码登录与安全验证"],["邮箱地址","已验证","用于接收账户与安全通知"],["登录密码","已设置","上次修改："+security.passwordUpdated]].map(([name,state,hint])=><article key={name}><strong>{name}</strong><b className={styles.success}>{state}</b><small>{hint}</small></article>)}</div></section>
       <section className={styles.panel}><header className={styles.panelHeader}><div><h2>经营画像</h2><p>帮助系统理解你的业务背景</p></div><button onClick={()=>go("/business")}>编辑画像</button></header><dl className={styles.pairs}>{[["用户角色",savedBusiness.roles.join("、")],["店铺情况",savedBusiness.shops],["工厂情况",savedBusiness.supply.join("、")],["经营平台",savedBusiness.platforms.join("、")],["经营站点",savedBusiness.sites.join("、")],["店铺类型",savedBusiness.types.join("、")],["所需服务",savedBusiness.services.join("、")]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value||"未设置"}</dd></div>)}</dl></section></div>
      <section className={styles.linkPanel}><h2>认证信息</h2><p>按个人或企业主体分别核对认证资料与状态。</p><button onClick={()=>go("/verification")}>查看认证信息</button></section>
    </>}
@@ -70,9 +104,9 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
        <label>省 / 州<input aria-label="省 / 州" value={account.province} onChange={e=>setAccount(v=>({...v,province:e.target.value}))}/></label>
        <label>城市<input aria-label="城市" value={account.city} onChange={e=>setAccount(v=>({...v,city:e.target.value}))}/></label>
       </div></section>
-      <section className={styles.panel}><header className={styles.panelHeader}><h2>联系方式</h2><p>更换手机号或邮箱时，需要单独完成身份验证</p></header><div className={styles.contacts}>{[["手机号","测试手机号","用于验证码登录与安全验证","更换手机号"],["邮箱","admin@example.com","用于接收账户与安全通知","更换邮箱"]].map(([name,value,description,action])=><article key={name}><div className={styles.identityIcon} aria-hidden="true">{name==="手机号"?"M":"@"}</div><div><strong>{name} <span className={styles.success}>已验证</span></strong><p>{value}</p><small>{description}</small></div><button type="button" onClick={()=>setChangeContact(action)}>{action}</button></article>)}</div></section>
-      <section className={styles.panel}><header className={styles.panelHeader}><h2>登录与安全</h2><p>通过手机验证码修改登录密码</p></header><div className={styles.contacts}><article><div className={styles.identityIcon} aria-hidden="true">••</div><div><strong>登录密码 <span className={styles.success}>已设置</span></strong><small>上次修改：2026-11-21（模拟）</small></div><button type="button" onClick={()=>setChangeContact("修改密码")}>修改密码</button></article></div></section>
-      <div className={styles.actions}><span>密码请前往安全设置修改。仅修改当前演示资料。</span><button type="reset">取消</button><button className={styles.primary} type="submit">保存更改</button></div>
+      <section className={styles.panel}><header className={styles.panelHeader}><h2>联系方式</h2><p>更换手机号或邮箱时，需要单独完成身份验证</p></header><div className={styles.contacts}>{[["手机号",security.phone,"用于验证码登录与安全验证","更换手机号"],["邮箱",security.email,"用于接收账户与安全通知","更换邮箱"]].map(([name,value,description,action])=><article key={name}><div className={styles.identityIcon} aria-hidden="true">{name==="手机号"?"M":"@"}</div><div><strong>{name} <span className={styles.success}>已验证</span></strong><p>{value}</p><small>{description}</small></div><button type="button" onClick={()=>openSecurity(action as "更换手机号"|"更换邮箱")}>{action}</button></article>)}</div></section>
+      <section className={styles.panel}><header className={styles.panelHeader}><h2>登录与安全</h2><p>通过手机验证码修改登录密码</p></header><div className={styles.contacts}><article><div className={styles.identityIcon} aria-hidden="true">••</div><div><strong>登录密码 <span className={styles.success}>已设置</span></strong><small>上次修改：{security.passwordUpdated}</small></div><button type="button" onClick={()=>openSecurity("修改密码")}>修改密码</button></article></div></section>
+      <div className={styles.actions}><span>联系方式及密码操作均为模拟，验证自动通过后保存到当前浏览器，不影响真实登录。</span><button type="reset">取消</button><button className={styles.primary} type="submit">保存更改</button></div>
    </form>}
    {mode==="business"&&<>
       <section className={styles.intro}><h2>完善经营画像，让系统知道如何为你工作</h2><p>画像不会改变首页，也不会自动替你做决定；它用于业务分类、统计分析和服务沟通，让智能体与服务更贴近你的真实经营情况。</p></section>
@@ -95,6 +129,18 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
       </section>
    </>}
    {notice&&<div role="status" className={styles.feedback}>{notice}<button onClick={()=>setNotice("")}>关闭</button></div>}
-   {changeContact&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)closeContact()}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label={changeContact}><header><h2>{changeContact}</h2><button onClick={closeContact} aria-label="关闭操作">×</button></header><p>该操作需要正式工作台的短信/邮箱验证码和身份验证服务。当前展示站不发送验证码，不会修改真实联系方式或密码。</p><footer><button className={styles.primary} onClick={closeContact}>知道了</button></footer></section></div>}
+   {changeContact&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)closeContact()}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label={changeContact}><header><h2>{changeContact}</h2><button type="button" onClick={closeContact} aria-label="关闭操作">×</button></header>
+    <form className={styles.securityForm} onSubmit={commitSecurity}>
+      <p>填写信息后点击模拟验证；系统将假设安全审核通过，不会发送真实验证码或修改真实账户。</p>
+      {changeContact!=="修改密码"&&<div className={styles.securityCurrent}><span>当前{changeContact==="更换手机号"?"手机号":"邮箱地址"}</span><strong>{changeContact==="更换手机号"?security.phone:security.email}</strong></div>}
+      <label>{changeContact==="更换手机号"?"新手机号":changeContact==="更换邮箱"?"新邮箱地址":"新密码"}
+        <input aria-label={changeContact==="更换手机号"?"新手机号":changeContact==="更换邮箱"?"新邮箱地址":"新密码"} autoComplete="off" type={changeContact==="修改密码"?"password":changeContact==="更换邮箱"?"email":"tel"} value={securityDraft} onChange={e=>{setSecurityDraft(e.target.value);setSecurityChecked(false);setSecurityError("")}} required placeholder={changeContact==="修改密码"?"至少 8 位，不保存真实密码":"请输入需要绑定的新资料"}/>
+      </label>
+      {changeContact==="修改密码"&&<label>确认新密码<input type="password" autoComplete="off" aria-label="确认新密码" value={securityConfirm} onChange={e=>{setSecurityConfirm(e.target.value);setSecurityChecked(false);setSecurityError("")}} required/></label>}
+      <div className={styles.securityCheck}><button type="button" onClick={simulateSecurityCheck}>{securityChecked?"重新模拟验证":"模拟验证通过"}</button><span className={securityChecked?styles.success:""}>{securityChecked?"✓ 模拟安全审核已通过":"验证状态：待验证"}</span></div>
+      {securityError&&<p className={styles.securityError} role="alert">{securityError}</p>}
+      <footer><button type="button" onClick={closeContact}>取消</button><button className={styles.primary} type="submit" disabled={!securityChecked}>确认{changeContact==="修改密码"?"修改":"更换"}</button></footer>
+    </form>
+  </section></div>}
   </div>;
 }
