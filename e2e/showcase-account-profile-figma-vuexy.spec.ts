@@ -37,7 +37,7 @@ test("account profile links to settings and saves local-only preview account nam
  await section.getByRole("textbox",{name:"用户名"}).fill("test_profile_preview");
  await section.getByRole("button",{name:"保存更改"}).click();
  await expect(section.getByRole("status")).toContainText("演示");
- await page.getByRole("button",{name:"返回账户资料"}).click();
+ await page.getByRole("navigation",{name:"账户资料二级导航"}).getByRole("button",{name:"账户概览"}).click();
  const overview=page.locator('[data-account-profile-page="overview"]');
  await expect(overview).toContainText("test_profile_preview");
  await overview.getByRole("button",{name:"编辑画像"}).click();
@@ -147,7 +147,7 @@ test("phone change performs simulated validation, persists after reload, and upd
  await expect(page.locator('[data-account-profile-page="settings"]')).toContainText("13800138000");
  await page.reload();
  await expect(page.locator('[data-account-profile-page="settings"]')).toContainText("13800138000");
- await page.getByRole("button",{name:"返回账户资料"}).click();
+ await page.getByRole("navigation",{name:"账户资料二级导航"}).getByRole("button",{name:"账户概览"}).click();
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("13800138000");
 });
 test("email change validates and persists, and security modal cancels safely",async({page})=>{
