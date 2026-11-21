@@ -25,7 +25,7 @@ test("store showcase keeps temporary onboarding drafts separate from authenticat
  await dialog.getByRole("textbox",{name:"店铺名称"}).fill("演示新店铺");
  await dialog.getByRole("button",{name:"创建演示店铺"}).click();
  await expect(root.getByText("演示新店铺",{exact:true})).toBeVisible();
- await expect(root.getByText("待授权",{exact:true})).toBeVisible();
+ await expect(root.locator('[class*="pending"]').getByText("待授权",{exact:true})).toBeVisible();
  await page.goto(prefix+"/store-products");
  await expect(root.getByRole("heading",{name:"暂无已同步商品"})).toBeVisible();
  await page.goto(prefix+"/store-orders");
