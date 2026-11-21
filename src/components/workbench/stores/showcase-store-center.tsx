@@ -1,14 +1,34 @@
 "use client";
 import {useEffect,useState,type FormEvent} from "react";
-import {Building2,Package,Truck,Plus,Search,ShieldCheck} from "lucide-react";
+import {Building2,Package,Truck,Plus,Search,ShieldCheck,ClipboardList} from "lucide-react";
 import css from "./showcase-store-center.module.css";
 
 type Store={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string};
 const key="shuomi-store-center-empty-v3";
 // Never migrate old showcase fixtures or session drafts into the newly cleared store center.
 const obsoleteKeys=["shuomi-store-center-empty-v2","shuomi-store-center-empty-v1"];
-const steps=[["01","绑定并授权店铺","创建店铺资料，完成平台授权后才可同步商品"],["02","同步店铺商品","授权成功后获取平台商品，并核对同步结果"],["03","接收并处理订单","有订单后进行来源确认、采购和履约处理"],["04","完成发货履约","记录装箱、发货、物流交接与最终结果"]] as const;
-const areas=[{name:"我的店铺",path:"/workbench/stores",icon:Building2,description:"管理店铺资料、平台授权与连接状态"},{name:"店铺商品",path:"/workbench/store-products",icon:Package,description:"查看授权后同步的店铺商品及状态"},{name:"订单履约",path:"/workbench/store-orders",icon:Truck,description:"接收订单并追踪采购、发货和物流"}];
+// The first three entry descriptions follow Figma's Store Center introduction (1220:359).
+// Listing Management is the newer real second-level navigation item and is inserted
+// without reworking the approved Vuexy visual tokens or other page layouts.
+const areas=[
+ {name:"我的店铺",path:"/workbench/stores",icon:Building2,description:"管理店铺授权、平台站点与经营类型，统一查看连接状态及近期商品同步情况。",labels:["授权与管理","授权状态","连接同步"],action:"管理我的店铺"},
+ {name:"刊登管理",path:"/workbench/listing",icon:ClipboardList,description:"管理商品刊登资料与流程，依次处理待上传、待补全、待审核和已上传商品。",labels:["刊登准备","资料补全","上传管理"],action:"进入刊登管理"},
+ {name:"店铺商品",path:"/workbench/store-products",icon:Package,description:"统一查看店铺已上架商品，核对刊登状态、库存变化及各店商品同步记录。",labels:["商品资产","刊登状态","库存同步"],action:"查看店铺商品"},
+ {name:"订单管理",path:"/workbench/store-orders",icon:Truck,description:"集中处理订单待办、采购与收货、装箱发货、物流交接及平台订单记录。",labels:["订单处理","发货进度","物流跟踪"],action:"进入订单管理"},
+] as const;
+const steps=[
+ ["01","绑定并授权店铺","选择平台、站点和店铺类型，完成连接与授权状态确认。"],
+ ["02","准备并刊登商品","通过刊登管理完成商品资料上传、补全、审核与发布。"],
+ ["03","同步店铺商品","拉取店铺商品及状态，核对刊登信息与库存。"],
+ ["04","接收并处理订单","查看订单待办和异常，确认采购、发货及处理要求。"],
+ ["05","完成发货履约","同步物流与发货状态，跟踪交付进度及异常。"],
+] as const;
+const collaboration=[
+ {title:"我的店铺",detail:"授权与连接状态管理"},
+ {title:"刊登管理",detail:"商品资料准备、审核及上传"},
+ {title:"店铺商品",detail:"刊登状态、库存及数据同步"},
+ {title:"订单管理",detail:"待办、采购、发货及物流跟踪"},
+] as const;
 function read():Store[]{try{for(const old of obsoleteKeys)sessionStorage.removeItem(old);const v=JSON.parse(sessionStorage.getItem(key)||"[]");return Array.isArray(v)?v.filter((x:Store)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"):[]}catch{return []}}
 export function ShowcaseStoreCenter({pathname,navigate}:{pathname:string;navigate:(path:string)=>void}){
  const [stores,setStores]=useState<Store[]>([]);
@@ -24,7 +44,7 @@ export function ShowcaseStoreCenter({pathname,navigate}:{pathname:string;navigat
  useEffect(()=>{if(!dialog&&!editing&&!confirmDelete&&!inspecting&&!authorizationHelp&&!syncing&&!entered&&!groupsOpen)return;const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape"){setDialog(false);setEditing(null);setConfirmDelete(null);setInspecting(null);setAuthorizationHelp(false);setSyncing(null);setEntered(null);setGroupsOpen(false)}};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey)},[dialog,editing,confirmDelete,inspecting,authorizationHelp,syncing,entered,groupsOpen]);
  const route=pathname==="/workbench/store-center"?"home":pathname==="/workbench/stores"?"stores":pathname==="/workbench/store-products"?"products":"orders";
  const heading=route==="home"?"店铺中心":route==="stores"?"我的店铺":route==="products"?"店铺商品":"订单履约";
- const intro=route==="home"?"统一管理店铺、商品和订单，从绑定授权到发货履约形成完整经营流程。":route==="stores"?"绑定并授权店铺后，再同步商品与接收订单。":route==="products"?"商品必须来自实际已授权店铺的同步结果，不展示虚构商品。":"订单必须来自平台真实同步记录，不展示虚构交易或履约结果。";
+ const intro=route==="home"?"围绕店铺授权、商品刊登、商品同步和订单交付形成业务闭环；经营分析与 AI 执行由对应模块负责。":route==="stores"?"绑定并授权店铺后，再同步商品与接收订单。":route==="products"?"商品必须来自实际已授权店铺的同步结果，不展示虚构商品。":"订单必须来自平台真实同步记录，不展示虚构交易或履约结果。";
  const link=(path:string)=>navigate(path+"?preview=1");
  const detailStore=stores.find(s=>s.id===inspecting);
  const enteredStore=stores.find(s=>s.id===entered);
@@ -37,9 +57,42 @@ export function ShowcaseStoreCenter({pathname,navigate}:{pathname:string;navigat
   <header className={css.header}><div><span className={css.breadcrumb}>店铺中心{route==="home"?"":" / "+heading}</span><h1>{heading}</h1><p>{intro}</p></div>{route==="stores"?<button className={css.primary} onClick={()=>{setName("");setRegion("美国站");setType("半托管");setDialog(true)}}><Plus size={16}/>绑定新店铺</button>:route!=="home"?<button onClick={()=>link("/workbench/stores")}>管理我的店铺</button>:null}</header>
   {notice?<div className={css.notice} role="status">{notice}<button onClick={()=>setNotice("")} aria-label="关闭提示">×</button></div>:null}
   {route==="home"?<>
-   <section className={css.entries}>{areas.map(a=><article key={a.path}><span className={css.icon}><a.icon size={22}/></span><h2>{a.name}</h2><p>{a.description}</p><button onClick={()=>link(a.path)}>进入{a.name}</button></article>)}</section>
-   <section className={css.panel}><header><h2>店铺经营流程</h2><p>先完成店铺绑定与平台授权，再逐步产生商品、订单及履约记录。</p></header><div className={css.steps}>{steps.map(([n,title,desc])=><article key={n}><b>{n}</b><h3>{title}</h3><p>{desc}</p></article>)}</div></section>
-   <section className={css.panel}><header><h2>当前经营状态</h2><span>当前店铺概况</span></header><div className={css.metrics}>{[["已绑定店铺",stores.length],["已授权店铺",0],["已同步商品",0],["订单记录",0]].map(([title,val])=><div key={title}><span>{title}</span><strong>{val}</strong></div>)}</div><p className={css.hint}>该页为演示展示，任何新建店铺仍需完成正式平台授权，才可获得真实业务数据。</p></section>
+   <section className={css.homeIntro} aria-label="店铺中心介绍">
+    <p className={css.eyebrow}>店铺中心</p>
+    <h2>统一管理店铺、刊登、商品与订单，让经营链路更清晰</h2>
+    <p>围绕店铺授权、商品资料刊登、商品同步和订单交付形成业务闭环，经营分析及 AI 执行由对应模块负责。</p>
+   </section>
+   <section className={css.homeSection} aria-label="核心业务入口">
+    <header><h2>核心业务入口</h2><p>四个二级菜单各自承担明确职责，点击进入对应的业务页面。</p></header>
+    <div className={css.entries}>{areas.map(a=><article key={a.path}>
+     <span className={css.icon}><a.icon size={22}/></span>
+     <h3>{a.name}</h3><p>{a.description}</p>
+     <div className={css.entryLabels}>{a.labels.map(label=><span key={label}>{label}</span>)}</div>
+     <button className={css.entryButton} onClick={()=>link(a.path)}>{a.action}</button>
+    </article>)}</div>
+   </section>
+   <section className={css.homeSection} aria-label="店铺业务流程">
+    <header><h2>店铺业务如何流转</h2><p>参考 Figma 原型四步业务链路，并补充新增的「刊登管理」操作环节。</p></header>
+    <div className={css.steps}>{steps.map(([n,title,desc])=><article key={n}><b>{n}</b><h3>{title}</h3><p>{desc}</p></article>)}</div>
+   </section>
+   <div className={css.homeNotes}>
+    <section className={css.noteCard}>
+     <span className={css.noteLabel}>业务协同</span>
+     <h2>四个业务模块如何协同</h2>
+     <p>店铺授权 · 商品刊登 · 商品同步 · 订单履约</p>
+     <div className={css.noteItems}>{collaboration.map(a=><div key={a.title}><strong>{a.title}</strong><span>{a.detail}</span></div>)}</div>
+    </section>
+    <section className={css.noteCard}>
+     <span className={css.noteLabel}>使用边界</span>
+     <h2>经营分析与 AI 执行明确分工</h2>
+     <p>业务管理与智能运营分工明确，各自提供独立入口。</p>
+     <div className={css.noteItems}>
+      <div><strong>店铺中心</strong><span>店铺、刊登、商品与订单</span></div>
+      <div><strong>运营驾驶舱</strong><span>销售趋势及经营预警</span></div>
+      <div><strong>AI 工作台</strong><span>商品优化与运营任务</span></div>
+     </div>
+    </section>
+   </div>
   </>:route==="stores"?<>
    <section className={css.metrics} aria-label="店铺经营概览">{[["店铺总数",stores.length,"当前店铺资产"],["正常店铺",0,"已授权且同步正常"],["需要处理",stores.length,"等待平台授权"],["数据同步正常",0,"商品和订单同步状态"]].map(([title,val,subtitle])=><article key={title} className={css.metricCard}><strong>{val}</strong><div><span>{title}</span><small>{subtitle}</small></div></article>)}</section>
    {stores.length>0?<section className={css.attention}><span>有 {stores.length} 家店铺需要处理：尚未完成 SHEIN 官方授权。</span><button onClick={()=>{resetFilters();setStatusFilter("需要处理")}}>立即处理</button></section>:null}
