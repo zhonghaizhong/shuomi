@@ -12,3 +12,15 @@
 
 /* Vuexy is the primary UI reference: purple for actions, semantic accents only for states. */
 .page{--st-accent:#7367f0;--st-radius:8px}.page :is(.header,.panel,.entries article,.metrics>div,.metrics>article,.filters,.storeList article){border-radius:var(--st-radius)}.page button.primary{background:#7367f0;border-color:#7367f0;color:#fff}.page button.primary:hover{background:#685dd8;border-color:#685dd8}.page .entries .icon{color:#a8a0ff}.page .entries button{color:var(--st-accent)}:global(.light) .page .entries .icon{color:#7367f0}
+
+/* Store filters and contextual management actions follow the approved Vuexy control rhythm. */
+.page .filters{grid-template-columns:minmax(190px,1.5fr) repeat(3,minmax(115px,1fr)) auto auto}
+.page .filters>select{height:42px;min-width:0;padding:0 10px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-control);color:var(--st-text)}
+.page .storeList .actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+.page .storeList .actions button{min-height:34px;padding:6px 10px;white-space:nowrap}
+.page .storeList .actions .danger{color:#f2a7aa;border-color:color-mix(in srgb,#eb5757 40%,var(--st-line))}
+:global(.light) .page .storeList .actions .danger{color:#b42d38}
+.page .dialogActions{display:flex;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid var(--st-line)}
+@media(max-width:1050px){.page .filters{grid-template-columns:repeat(3,minmax(0,1fr))}.page .filters label{grid-column:1/-1}}
+@media(max-width:680px){.page .filters{grid-template-columns:repeat(2,minmax(0,1fr))}.page .filters label{grid-column:1/-1}}
+@media(max-width:440px){.page .filters{grid-template-columns:1fr}.page .filters label{grid-column:auto}.page .storeList .actions{width:100%;justify-content:flex-start}}
