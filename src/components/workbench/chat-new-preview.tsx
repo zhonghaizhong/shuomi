@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import styles from "./chat-new-preview.module.css";
+import {readEnabledPreviewSkills,readPersonalPreviewSkills,savePersonalPreviewSkill} from "./showcase-skill-library";
 
 const modes = [
   { title: "创建会话", detail: "描述目标，硕米协助整理", action: "发送消息", placeholder: "向硕米提问，或描述你想完成的任务…", examples: [["每周汇总商品适配与上传进展", "进度、阻塞问题、关键变更与待决策事项"], ["找出可以退订的邮件", "识别订阅邮件及重复通知（需邮箱授权）"], ["准备下一场会议", "梳理议题、讨论重点与待确认事项"], ["分析最近店铺经营情况", "诊断利润、广告和订单异常并提出建议"]] },
@@ -33,8 +34,9 @@ type ApprovalKind = "knowledge" | "skill" | "report";
 type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; approval?: ApprovalKind };
 
 export function ChatNewPreview({ onAction }: Props) {
-  const [modeIndex, setModeIndex] = useState(0);
-  const [draft, setDraft] = useState("");
+  const [skillEntry] = useState(()=>{const query=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const mode=query.get("skillMode");const name=query.get("skill")||"";return {mode,name}});
+  const [modeIndex, setModeIndex] = useState(skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
+  const [draft, setDraft] = useState(skillEntry.mode==="edit"&&readPersonalPreviewSkills().some(s=>s.name===skillEntry.name)?"编辑技能："+skillEntry.name:"");
   const [drawer, setDrawer] = useState<"resources" | "stores" | null>(null);
   const [resourceTab, setResourceTab] = useState("我的知识库");
   const [resourceSearch, setResourceSearch] = useState("");
@@ -46,7 +48,7 @@ export function ChatNewPreview({ onAction }: Props) {
   const [scheduleTime, setScheduleTime] = useState("09:00");
   const [scheduleWeekday, setScheduleWeekday] = useState("1");
   const [scheduleMonthday, setScheduleMonthday] = useState("1");
-  const [selectedResources, setSelectedResources] = useState<string[]>([]);
+  const [selectedResources, setSelectedResources] = useState<string[]>(()=>skillEntry.mode==="reference"&&[...readEnabledPreviewSkills(),...readPersonalPreviewSkills().map(s=>s.name)].includes(skillEntry.name)?[skillEntry.name]:[]);
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [pendingResources, setPendingResources] = useState<string[]>([]);
   const [pendingStores, setPendingStores] = useState<string[]>([]);
@@ -110,7 +112,7 @@ export function ChatNewPreview({ onAction }: Props) {
     }
     setConfirmation(true);
   };
-  const visibleResources = (resourceGroups[resourceTab] ?? []).filter(item => item.toLowerCase().includes(resourceSearch.toLowerCase()));
+  const visibleResources = (resourceTab==="我的技能"?[...readEnabledPreviewSkills(),...readPersonalPreviewSkills().map(s=>s.name)]:resourceGroups[resourceTab] ?? []).filter(item => item.toLowerCase().includes(resourceSearch.toLowerCase()));
   const visibleStores = stores.filter(row =>
     row.join(" ").toLowerCase().includes(storeSearch.toLowerCase()) &&
     (!storePlatform || row[1] === storePlatform) &&
@@ -146,6 +148,7 @@ export function ChatNewPreview({ onAction }: Props) {
     if (!message.approval) return;
     const labels: Record<ApprovalKind, string> = { knowledge: "知识库", skill: "技能", report: "报告" };
     const label = labels[message.approval];
+    if(confirm&&message.approval==="skill"){const goal=message.text.split("\n").find(line=>line.startsWith("技能目标："))?.slice(5).trim();if(goal)savePersonalPreviewSkill({name:skillEntry.mode==="edit"&&skillEntry.name?skillEntry.name:goal,description:goal});}
     setMessages(current => current.map(item => item.id === message.id ? { ...item, approval: undefined } : item).concat({
       id: Date.now(),
       role: "assistant",
