@@ -74,3 +74,26 @@ test("redesigned skills categories stay readable in light and dark themes",async
   expect(isLight(dark),category+" dark surface must not stay pale").toBeFalsy();
  }
 });
+
+test("Figma skills hierarchy, actions, and permission variants match the showcase",async({page})=>{
+ await page.goto("/shuomi/#/workbench/agents/skills/official");
+ const root=page.locator('[data-skill-showcase="true"]');
+ await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
+ await expect(root.getByText("智能市场 / 技能库 / 官方模板")).toBeVisible();
+ await expect(root.getByRole("navigation",{name:"技能库分类"}).getByRole("button")).toHaveCount(3);
+ await expect(root.getByRole("button",{name:"刷新列表"})).toBeVisible();
+ await expect(root.getByText("当前范围没有可读取的技能。官方模板由获授权维护者导入、发布并启用后提供。")).toBeVisible();
+ await root.getByRole("button",{name:"我的技能"}).click();
+ await expect(root.getByRole("button",{name:"新建技能"})).toBeVisible();
+ await expect(root.getByRole("button",{name:"我的共享申请"})).toBeVisible();
+ await expect(root.getByText("local-trial-title-normalization-20261015")).toBeVisible();
+ await expect(root.getByText("v1 · 已启用 · 私有")).toBeVisible();
+ await root.getByRole("button",{name:"团队技能"}).click();
+ await expect(root.getByRole("button",{name:"待审批的个人提交"})).toBeEnabled();
+ await expect(root.getByRole("button",{name:"关闭个人技能准入"})).toBeVisible();
+ await page.goto("/shuomi/#/workbench/agents/skills/team?permission=readonly");
+ const readonlyRoot=page.locator('[data-skill-showcase="true"]');
+ await expect(readonlyRoot.getByRole("button",{name:"待审批的个人提交"})).toBeDisabled();
+ await expect(readonlyRoot.getByText("个人技能准入：未准入 · 策略版本 0")).toBeVisible();
+ await expect(readonlyRoot.getByRole("button",{name:/个人技能准入/})).toHaveCount(0);
+});
