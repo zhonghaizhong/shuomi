@@ -46,7 +46,7 @@ export function ShowcaseChatCollections({mode}:{mode:"recent"|"saved"}){
          <span className={styles.titleArea}><strong>{item.title}</strong><small>{item.description}</small></span>
          <time>{item.time}</time>
        </button>
-       <div className={styles.menuHost}><button type="button" className={styles.dots} aria-label={`更多操作：${item.title}`} aria-expanded={menu===item.id} aria-haspopup="menu" onClick={()=>setMenu(current=>current===item.id?null:item.id)}>···</button>
+       <div className={styles.menuHost}><button type="button" className={styles.dots} aria-label={`更多操作：${item.title}`} aria-expanded={menu===item.id} aria-haspopup="menu" onClick={()=>setMenu(current=>current===item.id?null:item.id)}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" style={{display:"block",flexShrink:0}}><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
          {menu===item.id?<div role="menu" className={styles.menu} aria-label={`会话操作：${item.title}`}>
            <button type="button" role="menuitem" onClick={()=>openRename(item)}>重命名</button>
            <button type="button" role="menuitem" onClick={()=>favorite(item)}>{item.favorite?"取消收藏":"加入收藏会话"}</button>
