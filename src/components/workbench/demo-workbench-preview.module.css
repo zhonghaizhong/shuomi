@@ -3243,7 +3243,7 @@
 :global(.light) .page[data-commerce-unified="account"] .accountOverview article>div{
  background:#fff;color:#444050;
 }
-:global(.light) .page[data-commerce-unified="account"] :is(.accountOverview,.accountModules,.accountBottom>article,.accountBottom>aside,>.header){
+:global(.light) .page[data-commerce-unified="account"] :is(.accountOverview,.accountModules,.accountBottom>article,.accountBottom>aside,.header){
  background:#fff;border-color:#e3dfed;color:#444050;
 }
 :global(.light) .page[data-commerce-unified="account"] :is(.accountOverview article strong,.accountModules h3,.accountBottom strong,.accountModules footer b){color:#444050;}
