@@ -108,7 +108,8 @@ test("API actions and My Stores binding open functional dialogs and Escape close
  await page.goto(base+"/stores");
  await page.getByRole("button",{name:"绑定新店铺"}).first().click();
  const store=page.getByRole("dialog",{name:"绑定新店铺"});
- await expect(store.getByLabel("绑定授权方式")).toBeVisible();
+ await expect(store.getByRole("button",{name:"子账户授权"})).toBeVisible();
+ await expect(store.getByRole("button",{name:"API 授权"})).toBeVisible();
  await store.getByRole("button",{name:"API 授权"}).click();
  await expect(store).toContainText("暂未开放");
  await page.keyboard.press("Escape");
