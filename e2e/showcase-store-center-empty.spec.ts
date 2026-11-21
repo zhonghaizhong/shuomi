@@ -77,3 +77,28 @@ test("store management supports filtering, renaming, removing, and Escape to clo
  await expect(root.getByText("更新店铺",{exact:true})).toHaveCount(0);
  await expect(root.getByRole("heading",{name:"尚未绑定店铺"})).toBeVisible();
 });
+
+test("store details, authorization guidance and cross-page buttons preserve real authorization boundary",async({page})=>{
+ await page.goto(prefix+"/stores");
+ const root=page.locator("[data-store-center-showcase]");
+ await root.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const form=page.getByRole("dialog",{name:"绑定新店铺"});
+ await form.getByRole("textbox",{name:"店铺名称"}).fill("待授权测试");
+ await form.getByRole("button",{name:"创建演示店铺"}).click();
+ await root.getByRole("button",{name:"查看详情"}).click();
+ const details=page.getByRole("dialog",{name:"店铺详情"});
+ await expect(details.getByText("待授权测试")).toBeVisible();
+ await expect(details.getByText("待授权",{exact:true})).toBeVisible();
+ await details.getByRole("button",{name:"如何授权"}).click();
+ const help=page.getByRole("dialog",{name:"店铺授权说明"});
+ await expect(help.getByText(/不会模拟已授权/)).toBeVisible();
+ await help.getByRole("button",{name:"我知道了"}).click();
+ await expect(help).toHaveCount(0);
+ await root.getByRole("button",{name:"授权说明"}).click();
+ await expect(page.getByRole("dialog",{name:"店铺授权说明"})).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(page.getByRole("dialog",{name:"店铺授权说明"})).toHaveCount(0);
+ await page.goto(prefix+"/store-products");
+ await root.getByRole("button",{name:"前往我的店铺"}).click();
+ await expect(root).toHaveAttribute("data-store-center-showcase","stores");
+});
