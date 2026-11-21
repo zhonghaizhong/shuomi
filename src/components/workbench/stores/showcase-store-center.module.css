@@ -112,3 +112,15 @@
 .page .authorizationChoices select{height:42px;padding:0 12px;border:1px solid var(--st-line);border-radius:7px;background:var(--st-control);color:var(--st-text)}
 .page .authorizationChoices p{margin:0;font-size:13px;color:var(--st-muted);line-height:1.6}
 @media(max-width:680px){.page .groupList>div{flex-wrap:wrap}.page .groupList span{margin-left:0}}
+
+/* Figma 1560:359: three overview stats and compact two-tier store asset cards. */
+.page .metrics:has(.metricCard){grid-template-columns:repeat(3,minmax(0,1fr))}
+.page .storeList article.storeCard{grid-template-columns:minmax(0,1fr) auto;column-gap:20px;row-gap:13px;align-items:center}
+.page .storeList .storeTop{grid-column:1/-1;padding-bottom:12px;border-bottom:1px solid var(--st-line)}
+.page .storeList .storeFacts{grid-column:1;grid-row:2;padding:0;border:0}
+.page .storeList .storeBottom{grid-column:2;grid-row:2;display:grid;gap:8px;justify-items:end}
+.page .storeList .storeFacts>div{padding-inline:12px}
+.page .storeList .storeFacts>div:first-child{padding-left:0}
+.page .storeList .storeBottom>span{font-size:12px}
+@media(max-width:1180px){.page .storeList article.storeCard{grid-template-columns:1fr}.page .storeList .storeFacts,.page .storeList .storeBottom{grid-column:1;grid-row:auto}.page .storeList .storeBottom{justify-items:start}}
+@media(max-width:680px){.page .metrics:has(.metricCard){grid-template-columns:1fr}.page .storeList .storeFacts>div:nth-child(3){padding-left:0}}
