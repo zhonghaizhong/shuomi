@@ -1,95 +1,62 @@
 "use client";
-import {useEffect,useState} from "react";
-import {RefreshCw,Plus,Info,ShieldCheck} from "lucide-react";
+import {useState,useEffect,useRef} from "react";
 import {useRouter} from "next/navigation";
 import styles from "./showcase-skill-library.module.css";
-
-type Category="official"|"mine"|"team";
-type DraftSkill={name:string;description:string;body:string;version:number};
 const root="/workbench/agents/skills";
-const tabs:[Category,string][]=[["official","官方模板"],["mine","我的技能"],["team","团队技能"]];
-const purpose="保存可复用的方法；执行使用现有智能体的权限、预算与审核。";
-const sample={name:"local-trial-title-normalization-20261015",description:"本地试用 2026-10-15：核对个人技能格式、版本保存和刷新读回；仅使用已有商品事实，本轮不调用模型。",version:1};
+export const officialSkills=[
+ ["商品标题整理","规范商品标题的结构与关键词层次，突出核心卖点和重要信息，帮助消费者快速理解商品特点。","商品标题 · 文案优化","标题优化","核对关键词与平台规则"],
+ ["标题本地化","结合目标市场的语言习惯与搜索表达，调整商品标题的措辞与排列顺序，提升本地阅读体验。","商品标题 · 多语言","标题优化","检查语言和规格准确性"],
+ ["冗长标题精简","清理标题里的重复内容与冗余词语，保留重要卖点和关键词，让商品标题清晰易读。","商品标题 · 文案精简","标题优化","保留关键属性及商品参数"],
+ ["标准商品套图","统一商品图片的构图、比例与展示方式，保持主图和套图风格一致，方便后续快速刊登。","商品图片 · 主图制作","图片制作","确保商品外观真实"],
+ ["场景化商品展示","结合真实使用情境展现商品特点，突出场景价值与核心卖点，帮助消费者理解应用方式。","商品图片 · 场景展示","图片制作","避免误导商品实际用途"],
+ ["卖点详情图编排","梳理商品核心卖点与图片展示顺序，合理组织详情图内容，让信息表达更加清楚。","商品图片 · 详情展示","图片制作","检查卖点与参数真实"]
+] as const;
+const enabledKey="shuomi-preview-enabled-skills";
+const personalKey="shuomi-preview-personal-skills";
+export type PersonalPreviewSkill={name:string;description:string};
+export function readEnabledPreviewSkills():string[]{try{const raw=JSON.parse(sessionStorage.getItem(enabledKey)||"[]");return Array.isArray(raw)?raw.filter(x=>typeof x==="string"&&officialSkills.some(s=>s[0]===x)):[]}catch{return []}}
+export function readPersonalPreviewSkills():PersonalPreviewSkill[]{try{const raw=sessionStorage.getItem(personalKey);if(raw){const a=JSON.parse(raw);if(Array.isArray(a))return a.filter(x=>typeof x?.name==="string"&&typeof x?.description==="string")}}catch{}return [{name:"商品标题规范化（示例）",description:"个人整理的商品标题优化方法示例"}]}
+export function savePersonalPreviewSkill(skill:PersonalPreviewSkill){try{sessionStorage.setItem(personalKey,JSON.stringify([...readPersonalPreviewSkills().filter(x=>x.name!==skill.name),skill]))}catch{}}
 export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
  const router=useRouter();
- const category:Category=pathname.endsWith("/mine")?"mine":pathname.endsWith("/team")?"team":"official";
- const readPermission=()=>typeof window==="undefined"||new URLSearchParams(window.location.hash.split("?").slice(1).join("?")).get("permission")!=="readonly";
- const [configurable,setConfigurable]=useState(readPermission);
- useEffect(()=>{
-  const onHashChange=()=>setConfigurable(readPermission());
-  window.addEventListener("hashchange",onHashChange);
-  onHashChange();
-  return ()=>window.removeEventListener("hashchange",onHashChange);
- },[]);
- const [admission,setAdmission]=useState(true);
- const [notice,setNotice]=useState("");
- const [selected,setSelected]=useState<"sample"|"draft"|null>(null);
- const [panel,setPanel]=useState<"none"|"edit"|"requests"|"version">("none");
- const [name,setName]=useState("");
- const [description,setDescription]=useState("");
- const [body,setBody]=useState("");
- const [draft,setDraft]=useState<DraftSkill|null>(null);
- const [consent,setConsent]=useState(false);
- const [shareState,setShareState]=useState<"none"|"submitted"|"withdrawn">("none");
- const [validation,setValidation]=useState("");
- const label=tabs.find(([id])=>id===category)![1];
- const resetPanels=()=>{setSelected(null);setPanel("none");setValidation("");setNotice("")};
- const go=(id:Category)=>{resetPanels();router.push(`${root}/${id}?preview=1`)};
- const refresh=()=>{setNotice("已刷新当前演示视图。公开展示站不连接技能服务；真实列表需要登录正式控制台。")};
- const openEditor=(version=false)=>{setPanel(version?"version":"edit");setSelected(null);setValidation("");if(version&&draft){setName(draft.name);setDescription(draft.description);setBody(draft.body)}else{setName("");setDescription("");setBody("")}};
- const check=()=>{const msg=!name.trim()?"请输入技能名称。":!description.trim()?"请输入技能简介。":!body.trim()?"请输入技能方法内容。":"";setValidation(msg||"格式预检查通过（本地演示），正式保存还需服务端验证。");return !msg};
- const save=()=>{if(!check())return;setDraft({name:name.trim(),description:description.trim(),body:body.trim(),version:panel==="version"&&draft?draft.version+1:1});setPanel("none");setNotice("已在本页面生成演示草稿；没有写入服务器，刷新后不会保留。")};
- return <main className={styles.shell} data-skill-showcase="true">
-  <div className={styles.breadcrumb}>AI工作台 / 技能库 / {label}</div>
-  <header className={styles.hero}><div><h1>技能库</h1><p>{category==="team"?"管理可复用的业务方法 · 当前企业：演示企业（非真实企业数据）":"查看官方模板，管理个人和团队技能，在业务操作中选择使用。"}</p></div></header>
-  <nav className={styles.tabs} aria-label="技能库分类">{tabs.map(([id,title])=><button type="button" key={id} className={`${styles.tab} ${category===id?styles.active:""}`} aria-current={category===id?"page":undefined} onClick={()=>go(id)}>{title}</button>)}</nav>
-  <section className={styles.toolbar} data-skill-management={category} data-readonly={category==="team"&&!configurable?"true":undefined}>
-   <div className={styles.managementTop}><h2 className={styles.sectionTitle}>{label}</h2><p className={styles.sectionSub}>{purpose}</p></div>
-   <div className={styles.managementActions}>
-    <button type="button" className={styles.secondary} onClick={refresh}><RefreshCw size={15} aria-hidden="true"/>刷新列表</button>
-    {category!=="official"&&<div className={styles.actionBar}>
-     <button type="button" className={styles.primary} onClick={()=>openEditor()}><Plus size={15} aria-hidden="true"/>新建技能</button>
-     <button type="button" className={styles.secondary} disabled={category==="team"&&!configurable} onClick={()=>{setPanel("requests");setSelected(null);setNotice("")}}>{category==="mine"?"我的共享申请":"待审批的个人提交"}</button>
-    </div>}
-   </div>
-   {category==="team"&&<div className={styles.policy}><div><strong>个人技能准入：{configurable&&admission?"允许本人启用的版本":"未准入"} · 策略版本 {configurable&&admission?"1":"0"}</strong></div>{configurable&&<button type="button" className={styles.secondary} onClick={()=>{setAdmission(v=>!v);setNotice("已在当前页面切换演示状态，未更改企业的真实准入策略。")}}>{admission?"关闭个人技能准入":"开启个人技能准入"}</button>}</div>}
-   {category==="official"&&<p className={styles.emptyText}>当前范围没有可读取的技能。官方模板由获授权维护者导入、发布并启用后提供。</p>}
-   {category==="team"&&(draft?<article className={styles.skillRecord}><div className={styles.skillRecordButton}><span><strong>{draft.name}</strong><small>{draft.description}</small></span><span className={styles.version}>v{draft.version} · 演示草稿</span></div></article>:<p className={styles.emptyText}>当前范围没有可读取的技能。可以自建或复制允许复制的官方模板。</p>)}
-   {category==="mine"&&<>
-    <div className={styles.skillList} aria-label="我的技能列表">
-     <article className={styles.skillRecord}><button type="button" className={styles.skillRecordButton} onClick={()=>{setSelected("sample");setPanel("none")}}><strong>{sample.name}</strong><span className={styles.version}>v1 · 已启用 · 私有</span><small>{sample.description}</small></button></article>
-     {draft&&<article className={styles.skillRecord}><button type="button" className={styles.skillRecordButton} onClick={()=>{setSelected("draft");setPanel("none")}}><strong>{draft.name}</strong><span className={styles.version}>v{draft.version} · 演示草稿 · 私有</span><small>{draft.description}</small></button></article>}
-    </div>
-   </>}
-   {selected&&category==="mine"&&<section className={styles.detail} role="region" aria-label="技能详情">
-    <div className={styles.panelHeader}><h3>技能详情 · {selected==="sample"?sample.name:draft?.name}</h3><button className={styles.secondary} onClick={()=>setSelected(null)}>关闭</button></div>
-    <p>版本：v{selected==="sample"?1:draft?.version} · {selected==="sample"?"Figma 示例记录":"当前页面演示草稿"} · 私有</p>
-    <p>{selected==="sample"?sample.description:draft?.description}</p>
-    {selected==="sample"?<p>这是原型中的参考技能，公开展示站不提供真实修改权限。</p>:<>
-     <details><summary>技能内容</summary><pre className={styles.bodyPreview}>{draft?.body}</pre></details>
-     <div className={styles.actionBar}><button className={styles.primary} onClick={()=>openEditor(true)}>保存为新版本</button><button className={styles.secondary} onClick={()=>setPanel("requests")}>管理共享申请</button><button className={styles.secondary} onClick={()=>{setNotice("此演示草稿未获服务端授权，不能作为真实版本导出。")}}>导出准确版本</button></div>
-    </>}
-   </section>}
-   {panel==="edit"||panel==="version"?<form className={styles.editor} onSubmit={e=>{e.preventDefault();save()}} aria-label={panel==="version"?"保存为新版本":"新建技能"}>
-    <div className={styles.panelHeader}><h3>{panel==="version"?"保存为新版本":"新建技能"}</h3><button type="button" className={styles.secondary} onClick={()=>setPanel("none")}>取消编辑</button></div>
-    <p>这里是可交互的前端演示。提交仅更新当前浏览器中的预览状态，不会写入账户或企业。</p>
-    <label>技能名称<input value={name} onChange={e=>setName(e.target.value)} maxLength={64} placeholder="输入技能名称" required/></label>
-    <label>技能简介<textarea value={description} onChange={e=>setDescription(e.target.value)} rows={2} maxLength={2048} placeholder="说明这个技能解决什么问题" required/></label>
-    <label>方法内容<textarea value={body} onChange={e=>setBody(e.target.value)} rows={6} placeholder="输入可复用的方法与规则" required/></label>
-    {validation&&<p role="status">{validation}</p>}
-    <div className={styles.actionBar}><button type="button" className={styles.secondary} onClick={check}>检查格式</button><button type="submit" className={styles.primary}>保存演示草稿</button></div>
-   </form>:null}
-   {panel==="requests"&&<section className={styles.detail} role="region" aria-label={category==="mine"?"我的共享申请":"待审批的个人提交"}>
-    <div className={styles.panelHeader}><h3>{category==="mine"?"我的共享申请":"待审批的个人提交"}</h3><button type="button" className={styles.secondary} onClick={()=>setPanel("none")}>关闭</button></div>
-    {category==="mine"?<>
-     <p>仅可提交本人授权的准确版本。经企业审批后产生独立副本；展示站不发送真实申请。</p>
-     {draft?<><p>可选择版本：{draft.name} · v{draft.version}（演示草稿）</p>
-      <label className={styles.consent}><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>我明确同意向当前企业提交此准确版本供审核，并同意获批后生成独立副本。</label>
-      <div className={styles.actionBar}><button type="button" className={styles.primary} disabled={!consent||shareState==="submitted"} onClick={()=>{setShareState("submitted");setNotice("已创建本地演示申请，没有向企业或服务器发送数据。")}}>提交演示共享申请</button>{shareState==="submitted"&&<button type="button" className={styles.secondary} onClick={()=>{setShareState("withdrawn");setConsent(false)}}>撤回演示申请</button>}</div>
-      <p>状态：{shareState==="submitted"?"演示申请已提交":shareState==="withdrawn"?"演示申请已撤回":"尚未提交"}</p></>:<p>当前只有 Figma 参考记录。请先新建演示技能，或登录正式控制台提交自己的实际版本。</p>}
-    </>:<><p>当前没有可读取的待审批申请。真实审核必须读取用户已授权提交的准确版本，并由有权限的成员决定批准或拒绝。</p><div className={styles.permissionNotice}><ShieldCheck size={18} aria-hidden="true"/>审批通过后生成企业独立副本，不应直接修改个人技能。</div></>}
-   </section>}
-  </section>
-  {notice&&<aside className={styles.note} role="status"><Info size={18} aria-hidden="true"/><span>{notice}</span><button type="button" className={styles.secondary} onClick={()=>setNotice("")}>关闭提示</button></aside>}
- </main>;
+ const category=pathname.endsWith("/official")?"official":pathname.endsWith("/mine")?"mine":pathname.endsWith("/team")?"team":"home";
+ const [enabled,setEnabled]=useState(readEnabledPreviewSkills);
+ const [personal,setPersonal]=useState(readPersonalPreviewSkills);
+ const [filter,setFilter]=useState("全部"),[query,setQuery]=useState(""),[search,setSearch]=useState("");
+ const [intro,setIntro]=useState<string|null>(null);
+ const dialog=useRef<HTMLDialogElement>(null);
+ useEffect(()=>{setFilter("全部");setQuery("");setSearch("");setIntro(null);setEnabled(readEnabledPreviewSkills());setPersonal(readPersonalPreviewSkills())},[pathname]);
+ useEffect(()=>{if(intro&&!dialog.current?.open)dialog.current?.showModal();else if(!intro&&dialog.current?.open)dialog.current.close()},[intro]);
+ const go=(p:string)=>router.push(root+(p?"/"+p:"")+"?preview=1");
+ const chat=(mode:string,name="")=>router.push("/workbench/ai/chat/new?preview=1&skillMode="+mode+"&skill="+encodeURIComponent(name));
+ const toggle=(name:string)=>{const next=enabled.includes(name)?enabled.filter(x=>x!==name):[...enabled,name];setEnabled(next);try{sessionStorage.setItem(enabledKey,JSON.stringify(next))}catch{}};
+ const title=category==="home"?"让技能成为可重复使用的工作能力":category==="official"?"官方模板":category==="mine"?"我的技能":"团队技能";
+ const desc=category==="home"?"浏览官方模板、管理已启用技能，并在会话中按需调用；重复工作不必反复配置。":category==="official"?"按需查找和启用标准技能，启用后会出现在「我的技能」，使用时再关联到会话或任务。":category==="mine"?"管理已启用的官方技能和自己保存的技能，需要时直接带入会话。":"团队技能暂未开放。你可以先使用官方模板或我的技能。";
+ const selected=officialSkills.find(s=>s[0]===intro);
+ const match=(s:string)=>s.toLowerCase().includes(search.toLowerCase());
+ const cards=officialSkills.filter(s=>(category==="official"?(filter==="全部"||s[3]===filter):enabled.includes(s[0])&&filter!=="我的创建")&&match(s.join(" ")));
+ const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
+ return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
+ <div className={styles.breadcrumb}>AI工作台 / <button onClick={()=>go("")}>技能库</button>{category!=="home"?" / "+title:""}</div>
+ <header className={styles.hero}><div><h1>{title}</h1><p>{desc}</p></div></header>
+ {category==="home"?<>
+ <div className={styles.grid}>{[
+ ["官方模板","按业务需求选择标准技能，启用后统一管理并供会话引用。","按需启用","当前引用"+enabled.length+"个","浏览官方模板","official"],
+ ["我的技能","统一管理已启用及保存的技能，需要时选择并带入会话。","集中管理","不会自动生成","查看我的技能","mine"],
+ ["团队技能","团队技能暂未开放，目前不支持创建、管理或引用。","暂未开放","默认不自动引用","查看团队技能","team"]
+ ].map(([t,d,a,b,action,p],i)=><article key={p} className={styles.feature}><h3>{t}</h3><p>{d}</p><div className={styles.chips}><span>{a}</span><span>{b}</span></div><button onClick={()=>go(p)}>{action}</button><small>0{i+1}</small></article>)}</div>
+ <section className={styles.toolbar}><h2 className={styles.sectionTitle}>技能库可以帮你做什么</h2><p className={styles.sectionSub}>选择现成方法或沉淀个人经验，按任务需要调用</p><div className={styles.fourGrid}>{[["按来源分类","官方与自建技能分类管理，方便查找与使用。"],["启用后统一管理","启用的技能自动进入「我的技能」列表。"],["快速带入会话","点击技能，可自动带入对应会话。"],["持续沉淀方法","把常用工作方法保存为可复用的技能。"]].map(([t,d])=><article key={t}><h3>{t}</h3><p>{d}</p></article>)}</div></section>
+ <section className={styles.toolbar}><h2 className={styles.sectionTitle}>如何开始使用</h2><p className={styles.sectionSub}>从找到技能到加入会话，四步完成</p><div className={styles.fourGrid}>{[["选择技能","按业务需要选择适合的官方技能"],["启用或保存","启用模板，或通过会话保存技能"],["去会话引用","点击具体技能，一键带入会话"],["按需管理","按需停用、重新启用或更新技能"]].map(([t,d],i)=><article key={t}><small>0{i+1}</small><h3>{t}</h3><p>{d}</p></article>)}</div></section>
+ <section className={styles.toolbar}><h2 className={styles.sectionTitle}>使用前需要了解</h2><div className={styles.grid}>{[["不会自动执行","启用只代表加入我的技能，不会自动执行。"],["只关联所选技能","去会话时自动携带当前所选技能。"],["团队暂未开放","团队技能暂不支持创建、配置或调用。"]].map(([t,d])=><article key={t}><h3>{t}</h3><p>{d}</p></article>)}</div></section>
+ </>:category==="team"?<section className={styles.empty} data-skill-management="team"><h2>暂未开放</h2><p>团队技能正在筹备中，暂不支持创建、管理、共享或调用。</p><button className={styles.primary} onClick={()=>go("")}>返回技能库</button><p>功能开放后，可在这里管理团队共享技能。</p></section>:<>
+ {category==="mine"&&<div className={styles.actionBar}><button className={styles.secondary} onClick={()=>go("official")}>前往官方模板</button><button className={styles.primary} onClick={()=>chat("create")}>创建我的技能</button></div>}
+ <section className={styles.toolbar} data-skill-management={category}>
+ <h2 className={styles.sectionTitle}>{category==="official"?"官方技能列表":"已启用技能"}</h2>{category==="official"&&<p className={styles.sectionSub}>按分类浏览技能，查看介绍后启用需要的能力</p>}
+ <div className={styles.filterRow}><nav className={styles.filterTabs} aria-label="技能筛选">{(category==="official"?["全部","标题优化","图片制作"]:["全部","官方技能","我的创建"]).map(x=><button key={x} className={filter===x?styles.active:styles.tab} aria-pressed={filter===x} onClick={()=>setFilter(x)}>{x}</button>)}</nav><form className={styles.searchForm} onSubmit={e=>{e.preventDefault();setSearch(query.trim())}}><input className={styles.search} aria-label="技能名称或关键词" placeholder="输入技能名称或关键词…" value={query} onChange={e=>setQuery(e.target.value)}/><button type="button" className={styles.secondary} onClick={()=>{setFilter("全部");setQuery("");setSearch("")}}>重置</button><button className={styles.primary}>搜索</button></form></div>
+ <div className={styles.grid}>{cards.map(s=><article key={s[0]} className={styles.feature} data-skill-name={s[0]}><h3>{s[0]}</h3>{category==="mine"&&<small>来源：官方模板 · {s[4]}</small>}<p>{s[1]}</p><div className={styles.chips}><span>{s[2]}</span></div><div className={styles.cardActions}><span className={enabled.includes(s[0])?styles.enabled:styles.status}>{enabled.includes(s[0])?"已启用":"未启用"}</span><button className={styles.primary} onClick={()=>toggle(s[0])}>{enabled.includes(s[0])?"停用":"启用"}</button><button className={styles.secondary} onClick={()=>category==="official"?setIntro(s[0]):chat("reference",s[0])}>{category==="official"?"介绍":"去会话引用"}</button></div></article>)}
+ {mine.map(s=><article key={s.name} className={styles.feature} data-skill-name={s.name}><h3>{s.name}</h3><small>来源：我的技能 · 示例技能可继续编辑</small><p>{s.description}</p><div className={styles.chips}><span>我的技能</span></div><div className={styles.cardActions}><span className={styles.enabled}>已启用</span><button onClick={()=>chat("edit",s.name)}>编辑技能</button><button onClick={()=>chat("reference",s.name)}>去会话引用</button></div></article>)}</div>
+ {!cards.length&&!mine.length&&<p className={styles.emptyText}>{search?"未找到匹配技能":filter==="我的创建"?"还没有自建技能":"暂无已启用的技能"}</p>}
+ </section></>}
+ <dialog ref={dialog} className={styles.introDialog} onClose={()=>setIntro(null)} aria-label="官方技能介绍">{selected&&<><header><h2>官方技能介绍</h2><button onClick={()=>setIntro(null)} aria-label="关闭">×</button></header><h3>{selected[0]}</h3><p>{selected[1]}</p><dl><dt>技能来源</dt><dd>硕米官方</dd><dt>适用范围</dt><dd>{selected[2]}</dd><dt>使用提醒</dt><dd>{selected[4]}</dd></dl></>}</dialog>
+ </main>
 }
