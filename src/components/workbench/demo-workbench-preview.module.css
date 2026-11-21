@@ -3237,6 +3237,19 @@
 .page[data-commerce-unified="account"] button:focus-visible{
  outline:2px solid var(--acc-primary);outline-offset:2px;
 }
+/* Light-mode overrides beat legacy account selectors without touching shared components. */
+:global(.light) .page[data-commerce-unified="account"] .accountModules{
+ background:transparent;border:0;box-shadow:none;
+}
+:global(.light) .page[data-commerce-unified="account"] .accountModules>div>article{
+ background:#fff;border-color:#e3dfed;color:#444050;
+}
+:global(.light) .page[data-commerce-unified="account"] .accountModules article footer{
+ background:transparent;border-color:#e3dfed;
+}
+:global(.light) .page[data-commerce-unified="account"] .accountOverview article>div{
+ background:transparent;
+}
 @media(max-width:1100px){
  .page[data-commerce-unified="account"] .accountModules>div{gap:14px;}
  .page[data-commerce-unified="account"] .accountModules>div>article{padding:18px;}
