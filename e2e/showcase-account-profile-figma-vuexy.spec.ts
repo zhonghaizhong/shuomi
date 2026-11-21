@@ -204,13 +204,19 @@ test("My Account overview matches approved Vuexy theme in dark/light with aligne
    await expect(item).toBeVisible();
    expect(await item.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedSurface);
   }
+  // Figma 404:2203: the three account facts are compact columns on one surface,
+  // not three inset cards. The Vuexy surface comes from their parent.
   for(const card of await overview.locator("article").all()){
-   expect(await card.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedInset);
+   expect(await card.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
   }
+  const overviewHeight=await overview.evaluate(e=>Math.round(e.getBoundingClientRect().height));
+  expect(overviewHeight,"Figma compact account overview").toBeLessThanOrEqual(145);
   const moduleCards=modules.locator("article");
   const heights=await moduleCards.evaluateAll(nodes=>nodes.map(n=>Math.round(n.getBoundingClientRect().height)));
   expect(Math.max(...heights)-Math.min(...heights),"Three account modules must align").toBeLessThanOrEqual(2);
-  for(const card of await moduleCards.all())expect(await card.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedInset);
+  expect(Math.max(...heights),"Figma entry-card proportions").toBeLessThanOrEqual(215);
+  for(const card of await moduleCards.all())expect(await card.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedSurface);
+  for(const footer of await modules.locator("article footer").all())expect(await footer.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedInset);
   for(const button of await modules.getByRole("button").all()){
    expect(await button.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe("rgb(115, 103, 240)");
   }
