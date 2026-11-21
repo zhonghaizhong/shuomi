@@ -56,17 +56,25 @@ test("business portrait maintenance saves a demo update and cancellation reverts
  await root.locator("footer").getByRole("button",{name:"取消"}).click();
  await expect(root).toContainText("电商服务商");
 });
-test("personal and enterprise authentication never report a real successful verification",async({page})=>{
+test("registered test tenant has prefilled synthetic certification and no real verification",async({page})=>{
  await page.goto(base+"/verification");
  const root=page.locator('[data-account-profile-page="verification"]');
- await expect(root.getByRole("tab",{name:"个人认证"})).toHaveAttribute("aria-selected","true");
- await root.getByRole("tab",{name:"企业认证"}).click();
- await expect(root.getByRole("textbox",{name:"企业名称"})).toBeVisible();
- await expect(root.getByRole("textbox",{name:"统一社会信用代码"})).toBeVisible();
+ await expect(root.getByRole("tab",{name:"企业认证"})).toHaveAttribute("aria-selected","true");
+ await expect(root.getByRole("textbox",{name:"企业名称"})).toHaveValue("武汉硕米电子商务有限公司");
+ await expect(root.getByRole("textbox",{name:"统一社会信用代码"})).toHaveValue("TEST-SM-000001");
+ await expect(root.getByRole("textbox",{name:"法定代表人"})).toHaveValue("林晨");
+ await expect(root).toContainText("当前状态：已认证（模拟）");
+ await expect(root).toContainText("营业执照已归档（模拟）");
+ await root.getByRole("button",{name:"核对认证资料"}).click();
+ await expect(root.getByRole("status")).toContainText("未发起真实认证");
  await root.getByRole("tab",{name:"个人认证"}).click();
- await expect(root.getByRole("textbox",{name:"真实姓名"})).toBeVisible();
- await expect(root.getByRole("textbox",{name:"身份证号码"})).toBeVisible();
+ await expect(root.getByRole("textbox",{name:"真实姓名"})).toHaveValue("林晨");
+ await expect(root.getByRole("textbox",{name:"身份证号码"})).toHaveValue("TEST-ID-000001");
  await expect(root).toContainText("演示环境不上传或保存证件");
+ await page.goto(base);
+ await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("林晨");
+ await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("暂时没有店铺");
+ await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("admin@example.com");
 });
 test("contact change uses truthful security modal and closes on outside click",async({page})=>{
  await page.goto(base+"/settings");
