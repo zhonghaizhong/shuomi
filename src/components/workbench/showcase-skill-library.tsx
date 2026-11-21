@@ -37,8 +37,7 @@ export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
  const cards=officialSkills.filter(s=>(category==="official"?(filter==="全部"||s[3]===filter):enabled.includes(s[0])&&filter!=="我的创建")&&match(s.join(" ")));
  const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
  return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
- <div className={styles.breadcrumb}>AI工作台 / <button onClick={()=>go("")}>技能库</button>{category!=="home"?" / "+title:""}</div>
- <header className={styles.hero}><div><h1>{title}</h1><p>{desc}</p></div></header>
+ <header className={styles.hero}><div className={styles.breadcrumb}>AI工作台 / <button onClick={()=>go("")}>技能库</button>{category!=="home"?" / "+title:""}</div><h1>{title}</h1><p>{desc}</p></header>
  {category==="home"?<>
  <div className={styles.grid}>{[
  ["官方模板","按业务需求选择标准技能，启用后统一管理并供会话引用。","按需启用","当前引用"+enabled.length+"个","浏览官方模板","official"],
