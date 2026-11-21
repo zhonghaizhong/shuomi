@@ -129,7 +129,8 @@ test("personal and enterprise certification tabs save simulated changes",async({
 test("enterprise operations and referral transactions have working entry points",async({page})=>{
  await page.goto(root+"/account/organization");
  const suite=page.locator("[data-account-suite]");
- await expect(suite.getByRole("heading",{name:"企业管理"})).toBeVisible();
+ await expect(suite.getByRole("heading",{name:"企业资源",exact:true})).toBeVisible();
+ await expect(suite.getByRole("heading",{name:"成员资源分配",exact:true})).toBeVisible();
  await suite.getByRole("navigation",{name:"企业空间业务导航"}).getByRole("button",{name:"资源与额度",exact:true}).click();
  await expect(page).toHaveURL(/account\/organization\/resources/);
  await expect(page.locator("[data-account-suite]").getByRole("heading",{name:"成员资源分配"})).toBeVisible();
