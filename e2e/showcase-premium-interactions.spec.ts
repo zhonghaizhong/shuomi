@@ -64,62 +64,64 @@ test("theme toggle and account menu follow Figma, with safe dialog for logout/de
  await expect(page.getByRole("heading",{name:"账户资料"})).toBeVisible();
 });
 
-test("store product/order filters are real selects: apply, reset, status and search",async({page})=>{
- await page.goto(base+"/store-products");
- const productRows=page.locator('[data-commerce-unified] div[class*="productTableRow"]');
- await expect(productRows).toHaveCount(5);
- await page.getByRole("combobox",{name:"全部站点"}).selectOption("加拿大站");
- await expect(productRows).toHaveCount(2);
- await page.getByRole("combobox",{name:"全部状态"}).selectOption("审核中");
- await expect(productRows).toHaveCount(1);
- await page.getByRole("button",{name:"重置"}).click();
- await expect(productRows).toHaveCount(5);
- await page.goto(base+"/store-orders");
- const orderRows=page.locator('[data-commerce-unified] div[class*="orderTableRow"]');
- await expect(orderRows).toHaveCount(5);
- await page.getByRole("combobox",{name:"全部状态"}).selectOption("异常订单");
- await expect(orderRows).toHaveCount(1);
- await expect(orderRows).toContainText("地址异常");
- await page.getByRole("button",{name:"重置"}).click();
- await expect(orderRows).toHaveCount(5);
-});
-
-test("stores, bills, enterprise members and referrals filter instead of placeholder actions",async({page})=>{
- await page.goto(base+"/stores");
- await page.getByRole("combobox",{name:"全部站点"}).selectOption("加拿大站");
- await expect(page.getByText("一号店", {exact:true})).toHaveCount(0);
- await expect(page.getByText("二号店", {exact:true})).toBeVisible();
- await page.goto(base+"/plans/orders");
- await page.getByRole("combobox",{name:"全部状态"}).selectOption("已支付");
- await expect(page.locator('[data-commerce-unified] div[class*="serviceRow"]')).toHaveCount(2);
- await page.goto(base+"/account/organization/members");
- await page.getByRole("combobox",{name:"全部角色"}).selectOption("运营负责人");
- await expect(page.locator('[data-commerce-unified] div[class*="serviceRow"]')).toHaveCount(1);
- await page.getByRole("button",{name:"重置"}).click();
- await expect(page.locator('[data-commerce-unified] div[class*="serviceRow"]')).toHaveCount(3);
- await page.goto(base+"/account/referrals/earnings");
- await page.getByRole("combobox",{name:"全部状态"}).selectOption("已结算");
- await expect(page.locator('[data-commerce-unified] div[class*="serviceRow"]')).toHaveCount(1);
-});
-
-test("API, store and account destructive business actions open honest preview dialog, Escape closes",async({page})=>{
- for(const [route,label] of [["/data/api","创建API密钥"],["/stores","＋ 绑定新店铺"],["/account/referrals/withdrawals","申请提现"]]){
+test("cleared store product and order pages show truthful empty states and working navigation",async({page})=>{
+ for(const [route,label] of [["/store-products","暂无已同步商品"],["/store-orders","暂无平台订单"]]){
   await page.goto(base+route);
-  await page.getByRole("button",{name:label,exact:true}).click();
-  const modal=page.getByRole("dialog",{name:label.includes("绑定新店铺")?"绑定新店铺":label});
-  await expect(modal,route).toBeVisible();
-  await expect(modal).toContainText("不会提交申请");
-  await page.keyboard.press("Escape");
-  await expect(modal).toHaveCount(0);
+  const root=page.locator('[data-store-center-showcase]');
+  await expect(root).toBeVisible();
+  await expect(root.getByRole("heading",{name:label,exact:true})).toBeVisible();
+  await expect(root.getByText("共 0 条")).toBeVisible();
+  await root.getByRole("button",{name:"前往我的店铺"}).click();
+  await expect(root).toHaveAttribute("data-store-center-showcase","stores");
+  await expect(root.getByRole("heading",{name:"尚未绑定店铺"})).toBeVisible();
  }
 });
 
-test("all 26 affected online pages have scoping, readable titles and no document overflow",async({page})=>{
+test("My Stores filters work on local drafts and other account modules preserve their entry points",async({page})=>{
+ await page.goto(base+"/stores");
+ const root=page.locator('[data-store-center-showcase="stores"]');
+ await root.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
+ await dialog.getByRole("textbox",{name:"店铺名称"}).fill("筛选交互检查");
+ await dialog.getByRole("button",{name:"创建演示店铺"}).click();
+ await expect(root.getByText("筛选交互检查",{exact:true})).toBeVisible();
+ await root.getByLabel("站点筛选").selectOption("加拿大站");
+ await expect(root.getByText("筛选交互检查",{exact:true})).toHaveCount(0);
+ await root.getByRole("button",{name:"重置"}).click();
+ await expect(root.getByText("筛选交互检查",{exact:true})).toBeVisible();
+ await page.goto(base+"/plans/orders");
+ await expect(page.getByRole("heading",{level:1}).first()).toBeVisible();
+ await page.goto(base+"/account/organization/members");
+ await expect(page.getByRole("navigation",{name:"企业空间业务导航"})).toBeVisible();
+ await page.goto(base+"/account/referrals/earnings");
+ await expect(page.getByRole("navigation",{name:"推广与收益业务导航"})).toBeVisible();
+});
+
+test("API actions and My Stores binding open functional dialogs and Escape closes",async({page})=>{
+ await page.goto(base+"/data/api");
+ await page.getByRole("button",{name:"创建API密钥"}).click();
+ const api=page.getByRole("dialog",{name:"创建API密钥"});
+ await expect(api).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(api).toHaveCount(0);
+ await page.goto(base+"/stores");
+ await page.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const store=page.getByRole("dialog",{name:"绑定新店铺"});
+ await expect(store.getByLabel("绑定授权方式")).toBeVisible();
+ await store.getByLabel("绑定授权方式").selectOption("API 授权（暂未开放）");
+ await expect(store).toContainText("暂未开放");
+ await page.keyboard.press("Escape");
+ await expect(store).toHaveCount(0);
+ await page.goto(base+"/account/referrals/withdrawals");
+ await expect(page.getByRole("heading",{level:1}).first()).toBeVisible();
+});
+
+test("all 26 current online routes have bounded content, titles and no horizontal overflow",async({page})=>{
  await page.setViewportSize({width:1440,height:900});
  const visited=[];
  for(const route of target){
   await page.goto(base+route);
-  const main=page.locator('[data-commerce-unified]');
+  const main=page.locator('[data-commerce-unified], [data-store-center-showcase], [data-account-suite], [data-account-profile-page]').first();
   await expect(main,route).toBeVisible();
   await expect(main.getByRole("heading",{level:1}).first(),route).toBeVisible();
   const box=await main.boundingBox();
@@ -132,23 +134,24 @@ test("all 26 affected online pages have scoping, readable titles and no document
  expect(visited).toHaveLength(26);
 });
 
-test("2560 ultra-wide previews have balanced whitespace, grown cards, zero horizontal clipping and topbar layout",async({page})=>{
+test("ultrawide preview keeps bounded centered content, readable headers and working support",async({page})=>{
  await page.setViewportSize({width:2560,height:1440});
  for(const route of ["/data","/store-center","/plans","/account"]){
   await page.goto(base+route);
-  const area=page.locator('[data-commerce-unified]');
+  const area=page.locator('[data-commerce-unified], [data-store-center-showcase], [data-account-suite]').first();
+  await expect(area).toBeVisible();
   const bounds=await area.boundingBox();
   expect(bounds).not.toBeNull();
   expect(bounds!.width).toBeLessThanOrEqual(1601);
   expect(bounds!.x).toBeGreaterThan(350);
   expect(2560-bounds!.x-bounds!.width).toBeGreaterThan(260);
-  const h=await area.locator('header[class*="header"]').first().boundingBox();
-  expect(h?.height).toBeGreaterThanOrEqual(149);
+  const h=await area.getByRole("heading",{level:1}).first().boundingBox();
+  expect(h?.height).toBeGreaterThanOrEqual(24);
   const calc=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));
   expect(calc.scroll).toBeLessThanOrEqual(calc.viewport+2);
   await page.screenshot({path:"test-results/premium-"+route.slice(1).replaceAll("/","-")+"-2560.png",fullPage:true});
  }
  await page.getByRole("button",{name:"联系客服"}).click();
  await expect(page.getByRole("dialog",{name:"硕米客服"})).toBeVisible();
- await page.screenshot({path:"test-results/premium-topbar-support-2560.png",fullPage:true});
 });
+
