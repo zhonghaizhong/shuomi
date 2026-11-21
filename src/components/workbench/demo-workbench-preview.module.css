@@ -3362,3 +3362,27 @@
  min-height:34px;font-size:13px;
 }
 @media(max-width:700px){.page[data-commerce-unified="plans"] .planBottom>aside>div{flex-wrap:wrap}}
+
+/* Plans overview: one coherent statistic hierarchy, neutral secondary navigation. */
+.page[data-commerce-unified="plans"] .planStats>div.planStat{
+ display:flex;align-items:center;gap:14px;min-height:94px;padding:15px;
+}
+.page[data-commerce-unified="plans"] .planStats .planStatValue{
+ display:flex;align-items:center;justify-content:center;
+ min-width:106px;min-height:57px;padding:8px 12px;flex-shrink:0;
+ border-radius:7px;border:1px solid color-mix(in srgb,var(--plans-primary) 30%,var(--plans-line));
+ background:color-mix(in srgb,var(--plans-primary) 12%,var(--plans-bg));
+ color:var(--plans-text);font-size:23px;line-height:1.3;font-weight:700;white-space:nowrap;
+}
+.page[data-commerce-unified="plans"] .planStats .planStatCopy{display:grid;gap:4px;min-width:0}
+.page[data-commerce-unified="plans"] .planStats .planStatCopy span{font-size:14px;color:var(--plans-text);font-weight:600}
+.page[data-commerce-unified="plans"] .planStats .planStatCopy small{font-size:12px;color:var(--plans-muted)}
+.page[data-commerce-unified="plans"] .planActions button{
+ min-height:36px;padding:5px 10px;border-color:var(--plans-line);
+ background:var(--plans-inset);color:var(--plans-text);
+}
+.page[data-commerce-unified="plans"] .planEntrances article button{
+ background:var(--plans-inset);color:var(--plans-primary);border-color:var(--plans-line);
+}
+@media(max-width:950px){.page[data-commerce-unified="plans"] .planStats .planStatValue{min-width:94px;font-size:20px}}
+@media(max-width:650px){.page[data-commerce-unified="plans"] .planStats>div.planStat{flex-wrap:wrap}.page[data-commerce-unified="plans"] .planStats .planStatValue{min-width:98px}}
