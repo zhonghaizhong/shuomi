@@ -58,7 +58,7 @@ export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
    {category==="mine"&&<>
     <div className={styles.skillList} aria-label="我的技能列表">
      <article className={styles.skillRecord}><button type="button" className={styles.skillRecordButton} onClick={()=>{setSelected("sample");setPanel("none")}}><strong>{sample.name}</strong><span className={styles.version}>v1 · 已启用 · 私有</span><small>{sample.description}</small></button></article>
-     {draft&&<article className={styles.skillRecord}><button type="button" className={styles.skillRecordButton} onClick={()=>{setSelected("draft");setPanel("none")}}><strong>{draft.name}</strong><span className={styles.version}>v{draft.version} · 演示草稿 · 私有</span><small>{draft.description}</small></button></article>
+     {draft&&<article className={styles.skillRecord}><button type="button" className={styles.skillRecordButton} onClick={()=>{setSelected("draft");setPanel("none")}}><strong>{draft.name}</strong><span className={styles.version}>v{draft.version} · 演示草稿 · 私有</span><small>{draft.description}</small></button></article>}
     </div>
    </>}
    {selected&&category==="mine"&&<section className={styles.detail} role="region" aria-label="技能详情">
