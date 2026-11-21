@@ -111,7 +111,10 @@ export function SeamlessEarthGlobe(){
    gl.uniform1i(cloudSampler,1);gl.uniform1f(cloudOpacity,cloudLoaded?0.55:0);
    // Constant angular velocity, and exactly identical at 0 and 2π.
    const phase=reduced.matches?0:((now-started)%TURN_DURATION_MS)/TURN_DURATION_MS;
-   gl.uniform1f(rotation,1.21+phase*2*Math.PI);
+   const angle=1.21+phase*2*Math.PI;
+   canvas.dataset.globeAngle=angle.toFixed(6);
+   canvas.dataset.globeMotion=reduced.matches?"reduced":"rotating";
+   gl.uniform1f(rotation,angle);
    gl.drawArrays(gl.TRIANGLES,0,6);
   }
   function tick(now:number){draw(now);if(!disposed&&visible&&!document.hidden&&!reduced.matches)frame=requestAnimationFrame(tick);}
