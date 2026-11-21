@@ -183,3 +183,41 @@
 :global(.light) .shell .skillRecordButton .version{color:#444050}
 @media(min-width:2400px){.hero{min-height:67px;padding:0}.hero h1{font-size:30px;line-height:39px}.hero p{font-size:14px;line-height:20px}}
 @media(max-width:700px){.shell{width:calc(100% - 24px);padding:14px 0 28px}.hero{padding:0;min-height:67px}.hero h1{font-size:26px;line-height:35px}.tabs{overflow-x:auto;min-height:53px}.tab{flex:none;min-width:84px}.toolbar{padding:24px 18px;min-height:0!important}.skillRecordButton{min-height:94px}.policy{min-height:0}}
+
+/* Active prototype 6734:1427 / 6676:3254 / 3273 / 3295; Vuexy surfaces. */
+.shell{gap:16px;width:calc(100% - 48px)}
+.hero{margin:0;min-height:65px}
+.hero h1{border-left:3px solid var(--s-accent);padding-left:12px;font-size:26px}
+.breadcrumb{height:auto;line-height:22px}
+.breadcrumb button{color:inherit;background:none;border:0;padding:0;cursor:pointer;font:inherit}
+.toolbar,.toolbar[data-skill-management]{margin:0;padding:20px;min-height:0;gap:12px}
+.sectionTitle{border-left:3px solid var(--s-accent);padding-left:12px}
+.sectionSub{margin:0}
+.grid{width:100%;align-items:stretch}
+.feature{min-height:190px;gap:10px}
+.feature small{color:var(--s-muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips span,.status,.enabled{background:var(--s-panel);border-radius:6px;padding:4px 8px;font-size:13px;color:var(--s-muted)}
+.enabled{background:#28c76f22;color:#38cc87}
+:global(.light) .enabled{color:#087f46}
+.cardActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:stretch;margin-top:auto}
+.cardActions button,.cardActions span{min-width:0;margin:0;min-height:36px;display:grid;place-items:center;text-align:center;padding:6px;font-size:13px;align-self:stretch}
+.feature .primary{color:white;background:#7367f0;border-color:#7367f0}
+.filterRow,.filterTabs,.searchForm{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filterRow{justify-content:space-between}
+.filterTabs button{min-width:64px;padding:8px 12px;border:1px solid var(--s-line);border-radius:6px;height:36px;cursor:pointer}
+.searchForm input{width:230px}
+.fourGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.fourGrid article,.toolbar>.grid:not(:has(.feature)) article{background:var(--s-panel);border:1px solid var(--s-line);border-radius:6px;padding:14px}
+.fourGrid h3,.toolbar>.grid:not(:has(.feature)) h3{font-size:15px;margin:0 0 6px;color:var(--s-txt)}
+.fourGrid p,.toolbar>.grid:not(:has(.feature)) p{color:var(--s-muted);margin:0;font-size:14px;line-height:22px}
+.empty{min-height:260px}
+.empty h2{font-size:22px;color:var(--s-txt)}
+.introDialog{margin:auto;width:min(580px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;background:var(--s-bg);color:var(--s-txt);border:1px solid var(--s-line);border-radius:8px;padding:24px}
+.introDialog::backdrop{background:#0008}
+.introDialog header{display:flex;align-items:center;justify-content:space-between}
+.introDialog header button{border:0;background:none;color:inherit;font-size:24px;cursor:pointer}
+.introDialog h2{font-size:20px}.introDialog h3{font-size:17px;margin-top:16px}.introDialog p,.introDialog dd{color:var(--s-muted);line-height:24px}
+.introDialog dl{display:grid;grid-template-columns:90px 1fr;gap:12px;margin-top:20px}.introDialog dd{margin:0}
+@media(max-width:1100px){.fourGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.fourGrid{grid-template-columns:1fr}.searchForm{width:100%}.searchForm input{flex:1;min-width:0;width:auto}.toolbar,.toolbar[data-skill-management]{padding:16px}.hero h1{white-space:normal}}
