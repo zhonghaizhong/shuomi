@@ -183,6 +183,8 @@ test("plans usage flow filters and top-up estimates work without issuing real ch
  await expect(rootEl.getByRole("combobox",{name:"关联店铺"})).toBeVisible();
  await rootEl.getByRole("combobox",{name:"变动类型"}).selectOption("扣减");
  await rootEl.getByRole("textbox",{name:"搜索流水"}).fill("商品优化");
+ await expect(rootEl.locator('[class*="serviceRow"]')).toHaveCount(4);
+ await rootEl.getByRole("button",{name:"确定",exact:true}).click();
  await expect(rootEl.locator('[class*="serviceRow"]')).toHaveCount(1);
  await rootEl.getByRole("button",{name:"重置"}).click();
  await expect(rootEl.getByRole("combobox",{name:"变动类型"})).toHaveValue("全部变动");
@@ -230,7 +232,37 @@ test("plans details show selected transaction with aligned columns and close saf
 test("plans overview omits unnecessary actions for normal account states",async({page})=>{
  await page.goto(root+"/plans");
  const overview=page.locator('[data-commerce-unified="plans"]');
- await expect(overview).toContainText("暂无待处理");
+ await expect(overview).toContainText("未来 7 天内到期：1 家");
+ await expect(overview.getByRole("button",{name:"处理"})).toBeVisible();
  await expect(overview).toContainText("无需充值");
  await expect(overview.getByRole("button",{name:"查看账单"})).toBeVisible();
+});
+
+
+test("billing filters wait until confirmation, then reset and export reflect applied selection",async({page})=>{
+ await page.goto(root+"/plans/orders");
+ const plans=page.locator('[data-commerce-unified="plans"]');
+ const rows=plans.locator('[class*="planTableScroll"] [class*="planOrderColumns"][class*="serviceRow"]');
+ await expect(rows).toHaveCount(5);
+ await plans.getByRole("combobox",{name:"全部状态"}).selectOption("已支付");
+ await plans.getByRole("textbox",{name:"搜索账单"}).fill("一号店");
+ await expect(rows).toHaveCount(5);
+ await plans.getByRole("button",{name:"确定",exact:true}).click();
+ await expect(rows).toHaveCount(1);
+ await expect(rows.first()).toContainText("一号店续费");
+ await plans.getByRole("button",{name:"重置",exact:true}).click();
+ await expect(rows).toHaveCount(5);
+ await expect(plans.getByRole("combobox",{name:"全部状态"})).toHaveValue("全部状态");
+});
+test("plans shared demo balances match across overview, entitlements, usage and wallet",async({page})=>{
+ await page.goto(root+"/plans");
+ let plans=page.locator('[data-commerce-unified="plans"]');
+ await expect(plans).toContainText("8,650");
+ await expect(plans).toContainText("300,000 条");
+ await expect(plans).toContainText("2.75 GiB");
+ await page.goto(root+"/plans/entitlements");
+ plans=page.locator('[data-commerce-unified="plans"]');
+ for(const value of ["8,650","300,000 条","2.75 GiB"])await expect(plans).toContainText(value);
+ await page.goto(root+"/plans/top-up");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("¥5,000.00（演示）");
 });
