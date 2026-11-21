@@ -3281,3 +3281,14 @@
 :global(.light) .agentsPreview .agentCards h3{
  color:#444050;
 }
+
+/* Specificity-safe corrections for the exact Figma agent-market card and title nodes. */
+.page.page.agentsPreview.agentMarketReference > .header{
+ min-height:130px;
+}
+.page.page.agentsPreview.agentMarketReference > .header h1{
+ font-size:26px;line-height:34px;border-left-width:3px;
+}
+:global(.light) .agentsPreview.agentMarketReference .agentCards article h3{
+ color:#444050;
+}
