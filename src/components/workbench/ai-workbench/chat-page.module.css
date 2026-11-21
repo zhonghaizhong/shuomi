@@ -256,6 +256,7 @@
 
 
 /* Figma conversation row actions, styled with the approved console palette. */
+.conversationRows{overflow:visible;}
 .conversationItem {position:relative;display:flex;align-items:stretch;min-width:0;border-bottom:1px solid var(--border);background:var(--card);}
 .conversationItem:last-child{border-bottom:0;}
 .conversationItem:nth-child(even){background:var(--secondary);}
