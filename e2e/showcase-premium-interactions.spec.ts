@@ -83,7 +83,7 @@ test("My Stores filters work on local drafts and other account modules preserve 
  await root.getByRole("button",{name:"绑定新店铺"}).first().click();
  const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
  await dialog.getByRole("textbox",{name:"自定义名称"}).fill("筛选交互检查");
- await dialog.getByRole("button",{name:"保存待授权店铺"}).click();
+ await dialog.getByRole("button",{name:"提交授权"}).click();
  await expect(root.getByText("筛选交互检查",{exact:true})).toBeVisible();
  await root.getByLabel("站点筛选").selectOption("加拿大站");
  await root.getByRole("button",{name:"确认",exact:true}).click();
