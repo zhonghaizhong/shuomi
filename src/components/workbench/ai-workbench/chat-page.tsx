@@ -265,7 +265,7 @@ function ConversationLink({item,canEdit,busy,menuOpen,onToggleMenu,onRename,onFa
       <span className={styles.openConversation}>查看会话</span>
     </Link>
     {canEdit?<div className={styles.rowActions}>
-      <button type="button" className={styles.rowMore} aria-label={`会话操作：${item.Title||"未命名会话"}`} aria-expanded={menuOpen} aria-haspopup="menu" disabled={busy} onClick={onToggleMenu}>···</button>
+      <button type="button" className={styles.rowMore} aria-label={`会话操作：${item.Title||"未命名会话"}`} aria-expanded={menuOpen} aria-haspopup="menu" disabled={busy} onClick={onToggleMenu}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" style={{display:"block",flexShrink:0}}><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
       {menuOpen?<div className={styles.rowMenu} role="menu" aria-label={`管理会话：${item.Title||"未命名会话"}`}>
         <button type="button" role="menuitem" onClick={onRename}>重命名</button>
         <button type="button" role="menuitem" onClick={onFavorite}>{item.Favorite?"取消收藏":"加入收藏会话"}</button>
