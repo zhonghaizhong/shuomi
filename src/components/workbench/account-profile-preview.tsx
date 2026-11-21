@@ -67,10 +67,10 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
  const openSecurity=(action:"更换手机号"|"更换邮箱"|"修改密码")=>{setSecurityDraft("");setSecurityConfirm("");setSecurityChecked(false);setSecurityError("");setChangeContact(action)};
  const validSecurity=()=>{
    if(changeContact==="更换手机号"){
-     if(!/^\\+?[0-9][0-9\\s-]{6,19}$/.test(securityDraft.trim()))return "请输入有效的手机号（至少 7 位数字）。";
+     if(!/^\+?[0-9][0-9\s-]{6,19}$/.test(securityDraft.trim()))return "请输入有效的手机号（至少 7 位数字）。";
      if(securityDraft.trim()===security.phone)return "新手机号不能与当前号码相同。";
    }else if(changeContact==="更换邮箱"){
-     if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(securityDraft.trim()))return "请输入有效的电子邮箱地址。";
+     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(securityDraft.trim()))return "请输入有效的电子邮箱地址。";
      if(securityDraft.trim().toLowerCase()===security.email.toLowerCase())return "新邮箱不能与当前邮箱相同。";
    }else if(changeContact==="修改密码"){
      if(securityDraft.length<8)return "新密码不得少于 8 个字符。";
