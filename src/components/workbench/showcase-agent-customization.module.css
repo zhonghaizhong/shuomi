@@ -388,3 +388,15 @@
 }
 .page.page .progressSteps>div:nth-child(2) b{color:#c7beff;border-color:#7367f0;}
 :global(.light) .page.page .progressSteps>div:nth-child(2) b{color:#6254c8;}
+
+/* Approved Vuexy page-title band, isolated from Figma body and forms. */
+.page.page > .header{
+ min-height:130px;padding:20px 24px;border-radius:6px;
+}
+.page.page > .header h1{
+ margin:0 0 5px;padding-left:12px;border-left-width:3px;
+ font-size:26px;line-height:34px;
+}
+.page.page > .header p{
+ margin:0;font-size:14px;line-height:22px;
+}
