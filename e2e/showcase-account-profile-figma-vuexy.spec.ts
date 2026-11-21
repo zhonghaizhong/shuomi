@@ -64,7 +64,7 @@ test("registered test tenant has prefilled synthetic certification and no real v
  await expect(root.getByRole("textbox",{name:"统一社会信用代码"})).toHaveValue("TEST-SM-000001");
  await expect(root.getByRole("textbox",{name:"法定代表人"})).toHaveValue("林晨");
  await expect(root).toContainText("当前状态：已认证（模拟）");
- await expect(root).toContainText("营业执照已归档（模拟）");
+ await expect(root.locator('[data-document-kind="business"]')).toContainText("已归档（模拟）");
  await root.getByRole("button",{name:"核对认证资料"}).click();
  await expect(root.getByRole("status")).toContainText("未发起真实认证");
  await root.getByRole("tab",{name:"个人认证"}).click();
@@ -75,6 +75,61 @@ test("registered test tenant has prefilled synthetic certification and no real v
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("林晨");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("暂时没有店铺");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("admin@example.com");
+});
+test("business license archive shows real actions and simulated replacement is saved",async({page})=>{
+ await page.goto(base+"/verification");
+ const root=page.locator('[data-document-kind="business"]');
+ await expect(root).toBeVisible();
+ await expect(root).toContainText("武汉硕米电子商务有限公司");
+ await root.getByRole("button",{name:"查看证照"}).click();
+ const view=root.getByRole("dialog",{name:"查看营业执照"});
+ await expect(view).toContainText("无可显示的真实影像");
+ await view.getByRole("button",{name:"关闭",exact:true}).click();
+ await root.getByRole("button",{name:"更换文件"}).click();
+ const replace=root.getByRole("dialog",{name:"更换营业执照"});
+ await replace.getByLabel("选择营业执照文件").setInputFiles({name:"license-demo.pdf",mimeType:"application/pdf",buffer:Buffer.from("%PDF-1.4\n")});
+ await replace.getByRole("button",{name:"上传并更新（模拟）"}).click();
+ await expect(root).toContainText("license-demo.pdf");
+ await root.getByRole("button",{name:"重新识别"}).click();
+ await expect(root.getByRole("status")).toContainText("模拟识别");
+ await page.reload();
+ await expect(page.locator('[data-document-kind="business"]')).toContainText("license-demo.pdf");
+});
+test("personal ID front and back archive use consistent cards and cancel replacement safely",async({page})=>{
+ await page.goto(base+"/verification");
+ await page.getByRole("tab",{name:"个人认证"}).click();
+ const root=page.locator('[data-document-kind="identity"]');
+ await expect(root).toContainText("身份证人像面");
+ await expect(root).toContainText("身份证国徽面");
+ await root.getByRole("button",{name:"查看证件"}).click();
+ await expect(root.getByRole("dialog",{name:"查看个人身份证"})).toBeVisible();
+ await root.getByRole("dialog",{name:"查看个人身份证"}).getByRole("button",{name:"更换文件"}).click();
+ const replace=root.getByRole("dialog",{name:"更换个人身份证"});
+ await replace.getByLabel("选择身份证人像面文件").setInputFiles({name:"front-demo.png",mimeType:"image/png",buffer:Buffer.from("89504e470d0a1a0a","hex")});
+ await replace.getByLabel("选择身份证国徽面文件").setInputFiles({name:"back-demo.png",mimeType:"image/png",buffer:Buffer.from("89504e470d0a1a0a","hex")});
+ await replace.getByRole("button",{name:"取消"}).click();
+ await expect(root).not.toContainText("front-demo.png");
+ await root.getByRole("button",{name:"更换文件"}).click();
+ const replacement=root.getByRole("dialog",{name:"更换个人身份证"});
+ await replacement.getByLabel("选择身份证人像面文件").setInputFiles({name:"front-demo.png",mimeType:"image/png",buffer:Buffer.from("89504e470d0a1a0a","hex")});
+ await replacement.getByLabel("选择身份证国徽面文件").setInputFiles({name:"back-demo.png",mimeType:"image/png",buffer:Buffer.from("89504e470d0a1a0a","hex")});
+ await replacement.getByRole("button",{name:"上传并更新（模拟）"}).click();
+ await expect(root).toContainText("front-demo.png");
+ await expect(root).toContainText("back-demo.png");
+});
+test("both certification document cards honor Vuexy light and dark surfaces",async({page})=>{
+ await page.goto(base+"/verification");
+ for(const mode of ["dark","light"] as const){
+  await theme(page,mode);
+  const card=page.locator('[data-document-kind="business"]');
+  await expect(card).toBeVisible();
+  expect(await card.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(mode==="light"?"rgb(255, 255, 255)":"rgb(47, 51, 73)");
+  await page.getByRole("tab",{name:"个人认证"}).click();
+  const identity=page.locator('[data-document-kind="identity"]');
+  await expect(identity).toBeVisible();
+  expect(await identity.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(mode==="light"?"rgb(255, 255, 255)":"rgb(47, 51, 73)");
+  await page.getByRole("tab",{name:"企业认证"}).click();
+ }
 });
 test("phone change performs simulated validation, persists after reload, and updates account overview",async({page})=>{
  await page.goto(base+"/settings");
