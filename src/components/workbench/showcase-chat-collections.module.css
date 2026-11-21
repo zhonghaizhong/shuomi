@@ -1,6 +1,6 @@
 .root{display:grid;gap:14px;min-width:0;color:var(--foreground,#e2e2f0);}
 .filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding:16px 20px;border:1px solid var(--border,#44485e);border-radius:9px;background:var(--card,#2f3349);}
-.filters label{display:grid;gap:7px;min-width:min(100%,320px);flex:1;color:var(--muted-foreground,#acabc1);font-size:14px;}
+.filters label{display:grid;gap:7px;min-width:min(100%,320px);flex:1;padding:2px;border-radius:7px;background:var(--card,#2f3349);color:var(--muted-foreground,#acabc1);font-size:14px;}
 .filters input,.modal input{width:100%;min-height:39px;padding:9px 12px;border:1px solid var(--border,#44485e);border-radius:7px;background:var(--background,#25293c);color:var(--foreground,#e2e2f0);font:inherit;font-size:14px;}
 .root button{min-height:36px;padding:7px 14px;border:1px solid var(--border,#44485e);border-radius:7px;background:var(--secondary,#393d55);color:var(--foreground,#e2e2f0);font:inherit;font-size:14px;cursor:pointer;}
 .root button:hover{border-color:var(--primary,#7367f0);}
