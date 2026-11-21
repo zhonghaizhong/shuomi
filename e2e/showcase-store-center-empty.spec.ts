@@ -90,8 +90,8 @@ test("store details, authorization guidance and cross-page buttons preserve real
  await root.getByRole("button",{name:"管理",exact:true}).click();
  const details=page.getByRole("dialog",{name:"店铺详情"});
  await expect(details.getByText("待授权测试",{exact:true})).toBeVisible();
- await expect(details.getByText("待授权",{exact:true})).toBeVisible();
  await details.getByRole("button",{name:"授权信息",exact:true}).click();
+ await expect(details.getByText("待授权",{exact:true})).toBeVisible();
  await details.getByRole("button",{name:"查看授权方式"}).click();
  const help=page.getByRole("dialog",{name:"店铺授权说明"});
  await expect(help.getByText(/不会模拟已授权/)).toBeVisible();
