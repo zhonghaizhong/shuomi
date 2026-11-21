@@ -7,7 +7,7 @@ async function createDemo(page:any,name="Figma店铺"){
  const modal=page.getByRole("dialog",{name:"绑定新店铺"});
  await expect(modal).toBeVisible();
  await modal.getByRole("textbox",{name:"自定义名称"}).fill(name);
- await modal.getByRole("button",{name:"保存待授权店铺"}).click();
+ await modal.getByRole("button",{name:"提交授权"}).click();
  await expect(modal).toHaveCount(0);
  await expect(area.getByText(name,{exact:true})).toBeVisible();
  return area;
@@ -42,9 +42,9 @@ test("Figma binding modal has account, OTP, groups, fixed IP and honest authoriz
  await dlg.getByLabel("启用固定IP").check();
  await expect(dlg.getByText("已启用（仅演示）")).toBeVisible();
  await dlg.getByRole("button",{name:"API 授权"}).click();
- await expect(dlg.getByRole("button",{name:"保存待授权店铺"})).toBeDisabled();
+ await expect(dlg.getByRole("button",{name:"提交授权"})).toBeDisabled();
  await dlg.getByRole("button",{name:"子账户授权"}).click();
- await dlg.getByRole("button",{name:"保存待授权店铺"}).click();
+ await dlg.getByRole("button",{name:"提交授权"}).click();
  await expect(dlg).toHaveCount(0);
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByText("测试绑定流程",{exact:true})).toBeVisible();
@@ -104,7 +104,7 @@ test("Figma binding group and owner affordances preserve draft and follow compan
  await expect(owner).toContainText("成员与权限");
  await owner.getByRole("button",{name:"暂不添加"}).click();
  await expect(form).toBeVisible();
- await form.getByRole("button",{name:"保存待授权店铺"}).click();
+ await form.getByRole("button",{name:"提交授权"}).click();
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByText("店铺运营组",{exact:true})).toBeVisible();
 });
