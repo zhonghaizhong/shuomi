@@ -115,11 +115,11 @@ test("simulated password change validates confirmation without persisting a pass
  await page.goto(base+"/settings");
  await page.getByRole("button",{name:"修改密码"}).click();
  const dialog=page.getByRole("dialog",{name:"修改密码"});
- await dialog.getByRole("textbox",{name:"新密码"}).fill("abcd1234");
- await dialog.getByRole("textbox",{name:"确认新密码"}).fill("different");
+ await dialog.getByLabel("新密码",{exact:true}).fill("abcd1234");
+ await dialog.getByLabel("确认新密码",{exact:true}).fill("different");
  await dialog.getByRole("button",{name:"模拟验证通过"}).click();
  await expect(dialog.getByRole("alert")).toContainText("不一致");
- await dialog.getByRole("textbox",{name:"确认新密码"}).fill("abcd1234");
+ await dialog.getByLabel("确认新密码",{exact:true}).fill("abcd1234");
  await dialog.getByRole("button",{name:"模拟验证通过"}).click();
  await dialog.getByRole("button",{name:"确认修改"}).click();
  await expect(page.getByRole("status")).toContainText("模拟密码修改成功");
