@@ -12,7 +12,7 @@ const routes=[
  "/agents/skills/team",
  "/ai/reports/recent",
 ] as const;
-const rgb=(value:string)=>value.match(/\d+(?:\.\d+)?/g)?.slice(0,3).map(Number)??[];
+const rgb=(value:string)=>{const values=value.match(/-?\d+(?:\.\d+)?/g)?.slice(0,3).map(Number)??[];return value.startsWith("color(srgb ") ? values.map(x=>x*255) : values;};
 const isLight=(value:string)=>{const [r,g,b]=rgb(value);return [r,g,b].every(x=>Number.isFinite(x)&&x>=225);};
 test("light theme uses readable pale surfaces on every library subpage",async({page})=>{
  test.setTimeout(120000);
