@@ -89,9 +89,10 @@ test("store details, authorization guidance and cross-page buttons preserve real
  await form.getByRole("button",{name:"创建演示店铺"}).click();
  await root.getByRole("button",{name:"管理",exact:true}).click();
  const details=page.getByRole("dialog",{name:"店铺详情"});
- await expect(details.getByText("待授权测试")).toBeVisible();
+ await expect(details.getByText("待授权测试",{exact:true})).toBeVisible();
  await expect(details.getByText("待授权",{exact:true})).toBeVisible();
- await details.getByRole("button",{name:"如何授权"}).click();
+ await details.getByRole("button",{name:"授权信息",exact:true}).click();
+ await details.getByRole("button",{name:"查看授权方式"}).click();
  const help=page.getByRole("dialog",{name:"店铺授权说明"});
  await expect(help.getByText(/不会模拟已授权/)).toBeVisible();
  await help.getByRole("button",{name:"我知道了"}).click();
@@ -114,7 +115,7 @@ test("Figma asset-list structure exposes its required filters, cards and actions
  for(const name of ["平台筛选","站点筛选","店铺类型筛选","店铺状态筛选","店铺分组筛选"])await expect(root.getByLabel(name)).toBeVisible();
  await root.getByRole("button",{name:"管理分组"}).click();
  await expect(page.getByRole("dialog",{name:"管理分组"})).toBeVisible();
- await page.getByRole("dialog",{name:"管理分组"}).getByRole("button",{name:"关闭",exact:true}).first().click();
+ await page.getByRole("dialog",{name:"管理分组"}).getByRole("button",{name:"完成",exact:true}).click();
  await root.getByRole("button",{name:"绑定新店铺"}).first().click();
  const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
  await dialog.getByRole("textbox",{name:"店铺名称"}).fill("待授权资产");
@@ -175,7 +176,7 @@ test("Figma My Stores detail tabs and local grouping have working interactions",
  await details.getByLabel("店铺所属分组").selectOption("核心店铺");
  await details.getByLabel("店铺负责人").fill("演示负责人");
  await details.getByRole("button",{name:"保存设置"}).click();
- await expect(root.getByText("核心店铺",{exact:true}).first()).toBeVisible();
+ await expect(root.locator("[class*=storeTags]").getByText("核心店铺",{exact:true})).toBeVisible();
  await root.getByLabel("店铺分组筛选").selectOption("核心店铺");
  await expect(root.getByText("原型交互验证",{exact:true})).toBeVisible();
  await root.getByRole("button",{name:"管理",exact:true}).click();
