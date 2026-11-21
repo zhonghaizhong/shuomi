@@ -110,7 +110,7 @@ test("store details, authorization guidance and cross-page buttons preserve real
 test("Figma asset-list structure exposes its required filters, cards and actions",async({page})=>{
  await page.goto(prefix+"/stores");
  const root=page.locator("[data-store-center-showcase]");
- for(const label of ["店铺总数","正常店铺","需要处理","同步正常"])await expect(root.locator("[class*=metric]").getByText(label,{exact:true})).toBeVisible();
+ for(const label of ["店铺总数","正常店铺","需要处理","数据同步正常"])await expect(root.locator("[class*=metric]").getByText(label,{exact:true})).toBeVisible();
  for(const name of ["平台筛选","站点筛选","店铺类型筛选","店铺状态筛选","店铺分组筛选"])await expect(root.getByLabel(name)).toBeVisible();
  await root.getByRole("button",{name:"管理分组"}).click();
  await expect(page.getByRole("dialog",{name:"管理分组"})).toBeVisible();
