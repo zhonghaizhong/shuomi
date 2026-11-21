@@ -40,7 +40,7 @@ export function ShowcaseChatCollections({mode}:{mode:"recent"|"saved"}){
    <div className={styles.filters}><label>搜索会话标题或内容<input value={query} onChange={e=>setQuery(e.target.value)} placeholder={mode==="saved"?"搜索收藏会话标题或内容":"搜索最近会话标题或内容"}/></label><button type="button" onClick={()=>setQuery("")}>重置</button><button type="button" className={styles.primary} onClick={()=>{setMenu(null);setNotice("已按当前关键词筛选演示会话。")}}>确定</button></div>
    {notice?<div className={styles.notice} role="status">{notice}<button type="button" aria-label="关闭提示" onClick={()=>setNotice("")}>×</button></div>:null}
    <div className={styles.list} aria-label={mode==="saved"?"收藏会话列表":"最近会话列表"}>
-     {rows.length?rows.map(item=><article className={styles.row} key={item.id}>
+     {rows.length?rows.map(item=><article className={styles.row} data-menu-open={menu===item.id?"true":undefined} key={item.id}>
        <button type="button" className={styles.mainAction} onClick={()=>{setMenu(null);setDialog({kind:"detail",id:item.id})}} aria-label={`查看会话：${item.title}`}>
          <span className={styles.clock} aria-hidden="true">{item.favorite?"★":"◷"}</span>
          <span className={styles.titleArea}><strong>{item.title}</strong><small>{item.description}</small></span>
