@@ -234,3 +234,30 @@ test("account suite keeps Figma submenu groups separate and Escape closes dialog
  await expect(referrals.getByRole("button",{name:"提现管理"})).toBeVisible();
  await expect(referrals.getByRole("button",{name:"成员管理"})).toHaveCount(0);
 });
+
+test("enterprise overview matches Figma business sections without changing customized tertiary tabs",async({page})=>{
+ await page.goto(base+"/organization");
+ const root=page.locator('[data-account-suite="/organization"]');
+ await expect(root).toBeVisible();
+ for(const heading of ["企业空间","企业管理","企业资源","成员资源分配"])
+  await expect(root.getByRole("heading",{name:heading,exact:true})).toBeVisible();
+ const summary=root.getByRole("region",{name:"企业空间概览"});
+ await expect(summary.getByText("企业成员")).toBeVisible();
+ await expect(summary.getByText("已绑定店铺")).toBeVisible();
+ await expect(summary.getByText("待处理邀请")).toBeVisible();
+ const tabs=root.getByRole("navigation",{name:"企业空间业务导航"});
+ const labels=["企业空间","成员管理","角色权限","资源与额度","操作记录"];
+ await expect(tabs.getByRole("button")).toHaveCount(labels.length);
+ for(const [index,label] of labels.entries())
+  await expect(tabs.getByRole("button").nth(index)).toHaveText(label);
+ const resource=root.getByRole("region",{name:"企业资源"});
+ for(const label of ["店铺","AI 积分","数据额度","企业存储"])
+  await expect(resource.getByText(label,{exact:true})).toBeVisible();
+ const allocation=root.getByRole("region",{name:"成员资源分配"});
+ await expect(allocation.getByRole("columnheader",{name:"成员 / 角色"})).toBeVisible();
+ await expect(allocation.getByRole("columnheader",{name:"存储上限（GiB）"})).toBeVisible();
+ await tabs.getByRole("button",{name:"成员管理",exact:true}).click();
+ await expect(page).toHaveURL(/account\/organization\/members/);
+ await page.getByRole("navigation",{name:"企业空间业务导航"}).getByRole("button",{name:"角色权限",exact:true}).click();
+ await expect(page).toHaveURL(/account\/organization\/roles/);
+});
