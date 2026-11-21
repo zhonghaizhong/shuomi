@@ -279,7 +279,7 @@ test("enterprise Vuexy landing layout respects stats, spacing and preserved tabs
   await expect(panels).toHaveCount(3);
   const surface=mode==="light"?"rgb(255, 255, 255)":"rgb(47, 51, 73)";
   for(const p of await panels.all())expect(await p.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(surface);
-  const stats=root.getByLabel("企业空间概览").locator("article");
+  const stats=root.locator('[aria-label="企业空间概览"] article');
   await expect(stats).toHaveCount(3);
   for(const stat of await stats.all()){
    const n=stat.locator('[class*="enterpriseMetricNumber"]');
