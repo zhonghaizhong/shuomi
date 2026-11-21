@@ -114,6 +114,31 @@ function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningRead
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [titleFilter, setTitleFilter] = useState("");
+  const queryClient = useQueryClient();
+  const [openRowMenu,setOpenRowMenu]=useState<string|null>(null);
+  const [rowEditor,setRowEditor]=useState<AIConversation|null>(null);
+  const [rowTitle,setRowTitle]=useState("");
+  const [rowDelete,setRowDelete]=useState<AIConversation|null>(null);
+  const [rowBusy,setRowBusy]=useState<string|null>(null);
+  const [rowFeedback,setRowFeedback]=useState("");
+  useEffect(()=>{
+    if(!openRowMenu && !rowEditor && !rowDelete)return;
+    const close=(event:KeyboardEvent)=>{if(event.key==="Escape"){setOpenRowMenu(null);setRowEditor(null);setRowDelete(null);}};
+    document.addEventListener("keydown",close);
+    return()=>document.removeEventListener("keydown",close);
+  },[openRowMenu,rowEditor,rowDelete]);
+  async function updateConversation(item:AIConversation,body:{title?:string;favorite?:boolean}){
+    if(rowBusy)return;
+    setRowBusy(item.ID);setRowFeedback("");setOpenRowMenu(null);
+    try{
+      await requestAIWorkbench({route:"conversation-metadata",method:"PATCH",path:`chat/conversations/${item.ID}`,scope,revision:item.MetadataRevision,body});
+      await queryClient.invalidateQueries({queryKey:["ai-chat",scope.userId,scope.organizationId]});
+      setRowEditor(null);
+      setRowFeedback(body.title!==undefined?"会话已重命名。":body.favorite?"已加入收藏会话。":"已取消收藏，原会话仍保留。");
+    }catch(cause){setRowFeedback(errorText(cause));}
+    finally{setRowBusy(null);}
+  }
+
   const isCollection = mode === "recent" || mode === "saved" || mode === "archived";
   const abort = useRef<AbortController | null>(null);
   const createStorageKey = directCompose ? pendingComposeStorageKey(scope) : pendingCreateStorageKey(scope);
@@ -206,20 +231,48 @@ function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningRead
       {mode === "archived" ? <Button asChild variant="outline"><Link href="/workbench/ai/chat/recent" prefetch={false}>返回最近会话</Link></Button> :
         mode === "recent" ? <Button asChild variant="outline"><Link href="/workbench/ai/chat/archived" prefetch={false}>查看归档会话</Link></Button> : null}
       <Button variant="outline" onClick={() => void conversations.refetch()}>刷新</Button></div></div><p id="chat-filter-scope" className={styles.filterNote}>仅筛选已加载的标题；可加载更早会话继续查找。</p></ConsoleToolbar>}
+    {rowFeedback?<p className={styles.rowFeedback} role="status">{rowFeedback}</p>:null}
+    {openRowMenu?<button type="button" className={styles.menuDismiss} aria-label="关闭会话操作菜单" onClick={()=>setOpenRowMenu(null)}/>:null}
+    {rowEditor?<div className={styles.rowOverlay} onMouseDown={event=>{if(event.target===event.currentTarget)setRowEditor(null)}}>
+      <form className={styles.rowDialog} role="dialog" aria-modal="true" aria-label="重命名会话" onSubmit={event=>{event.preventDefault();if(rowTitle.trim()&&new TextEncoder().encode(rowTitle.trim()).length<=256)void updateConversation(rowEditor,{title:rowTitle.trim()});}}>
+        <h2>重命名会话</h2><label>会话标题<Input autoFocus value={rowTitle} disabled={!!rowBusy} onChange={event=>setRowTitle(event.target.value)} maxLength={256}/></label>
+        {new TextEncoder().encode(rowTitle.trim()).length>256?<p>标题不能超过 256 字节。</p>:null}
+        <div className={styles.rowDialogActions}><Button type="button" variant="outline" disabled={!!rowBusy} onClick={()=>setRowEditor(null)}>取消</Button><Button type="submit" disabled={!!rowBusy||!rowTitle.trim()||new TextEncoder().encode(rowTitle.trim()).length>256}>保存</Button></div>
+      </form>
+    </div>:null}
+    {rowDelete?<div className={styles.rowOverlay} onMouseDown={event=>{if(event.target===event.currentTarget)setRowDelete(null)}}>
+      <section className={styles.rowDialog} role="alertdialog" aria-modal="true" aria-label="删除会话确认">
+        <h2>删除会话</h2><p>确定要删除「{rowDelete.Title||"未命名会话"}」吗？删除与取消收藏不同，可能无法恢复。</p>
+        <p>当前系统尚未提供会话删除接口，暂时无法执行删除。你可以返回会话详情使用“归档”，但归档不会删除数据。</p>
+        <div className={styles.rowDialogActions}><Button type="button" variant="outline" onClick={()=>setRowDelete(null)}>关闭</Button><Button type="button" disabled>删除暂不可用</Button></div>
+      </section>
+    </div>:null}
     {error ? <ConsoleState kind="error" title="操作未完成">{error}</ConsoleState> : null}
     {isCollection ? conversations.isPending ? <ConsoleState kind="loading" title="正在读取会话" /> : conversations.isError && !conversations.data ? <ConsoleState kind="error" title="会话读取失败">{errorText(conversations.error)} <Button variant="outline" onClick={() => void conversations.refetch()}>重试</Button></ConsoleState> :
       <section className={styles.list} aria-label="会话列表">
         {conversations.isError ? <ConsoleState kind="error" title="部分会话读取失败">{errorText(conversations.error)} <Button variant="outline" onClick={() => void (conversations.isFetchNextPageError ? conversations.fetchNextPage() : conversations.refetch())}>重试</Button></ConsoleState> : null}
-        {visible.length ? matching.length ? <Card className={styles.conversationRows}>{matching.map(item => <ConversationLink key={item.ID} item={item} />)}</Card> : <ConsoleState kind="empty" title="已加载的会话中没有匹配标题">清空筛选或加载更早会话继续查找。</ConsoleState> : <ConsoleState kind="empty" title={mode === "saved" ? "暂无收藏会话" : mode === "archived" ? "暂无归档会话" : "暂无会话"}>{mode === "archived" ? "已归档会话会出现在这里，可打开详情恢复。" : mode === "saved" ? "在会话详情中点击「收藏」，重要会话就会出现在这里。" : "开始一段新会话后，可以在这里重新打开并继续交流。"}</ConsoleState>}
+        {visible.length ? matching.length ? <Card className={styles.conversationRows}>{matching.map(item => <ConversationLink key={item.ID} item={item} canEdit={canUse} busy={rowBusy===item.ID} menuOpen={openRowMenu===item.ID} onToggleMenu={()=>setOpenRowMenu(current=>current===item.ID?null:item.ID)} onRename={()=>{setOpenRowMenu(null);setRowEditor(item);setRowTitle(item.Title||"");}} onFavorite={()=>void updateConversation(item,{favorite:!item.Favorite})} onDelete={()=>{setOpenRowMenu(null);setRowDelete(item);}} />)}</Card> : <ConsoleState kind="empty" title="已加载的会话中没有匹配标题">清空筛选或加载更早会话继续查找。</ConsoleState> : <ConsoleState kind="empty" title={mode === "saved" ? "暂无收藏会话" : mode === "archived" ? "暂无归档会话" : "暂无会话"}>{mode === "archived" ? "已归档会话会出现在这里，可打开详情恢复。" : mode === "saved" ? "在会话详情中点击「收藏」，重要会话就会出现在这里。" : "开始一段新会话后，可以在这里重新打开并继续交流。"}</ConsoleState>}
         {conversations.hasNextPage ? <Button variant="outline" disabled={conversations.isFetchingNextPage} onClick={() => void conversations.fetchNextPage()}>加载更早会话</Button> : null}
         {mode === "saved" ? <p className={styles.filterNote}>取消收藏仅移出本列表，原始会话仍保留；归档会话可在归档列表查看。</p> : null}</section> : null}
   </>;
 }
 
-function ConversationLink({ item }: { item: AIConversation }) {
-  return <Link className={styles.conversationLink} href={`/workbench/ai/chat/${item.ID}`} prefetch={false}>
-    <span className={styles.conversationText}><strong>{item.Title || "未命名会话"}</strong><small>{item.Archived ? "已归档" : "继续查看会话"}{item.Favorite ? " · 收藏" : ""}</small></span><time dateTime={item.UpdatedAt}>{new Date(item.UpdatedAt).toLocaleString("zh-CN")}</time><span className={styles.openConversation}>查看会话</span>
-  </Link>;
+function ConversationLink({item,canEdit,busy,menuOpen,onToggleMenu,onRename,onFavorite,onDelete}:{item:AIConversation;canEdit:boolean;busy:boolean;menuOpen:boolean;onToggleMenu:()=>void;onRename:()=>void;onFavorite:()=>void;onDelete:()=>void}){
+  return <div className={styles.conversationItem}>
+    <Link className={styles.conversationLink} href={`/workbench/ai/chat/${item.ID}`} prefetch={false}>
+      <span className={styles.conversationText}><strong>{item.Title||"未命名会话"}</strong><small>{item.Archived?"已归档":"继续查看会话"}{item.Favorite?" · 已收藏":""}</small></span>
+      <time dateTime={item.UpdatedAt}>{new Date(item.UpdatedAt).toLocaleString("zh-CN")}</time>
+      <span className={styles.openConversation}>查看会话</span>
+    </Link>
+    {canEdit?<div className={styles.rowActions}>
+      <button type="button" className={styles.rowMore} aria-label={`会话操作：${item.Title||"未命名会话"}`} aria-expanded={menuOpen} aria-haspopup="menu" disabled={busy} onClick={onToggleMenu}>···</button>
+      {menuOpen?<div className={styles.rowMenu} role="menu" aria-label={`管理会话：${item.Title||"未命名会话"}`}>
+        <button type="button" role="menuitem" onClick={onRename}>重命名</button>
+        <button type="button" role="menuitem" onClick={onFavorite}>{item.Favorite?"取消收藏":"加入收藏会话"}</button>
+        <button type="button" role="menuitem" className={styles.dangerAction} onClick={onDelete}>删除会话</button>
+      </div>:null}
+    </div>:null}
+  </div>;
 }
 
 function ConversationDetail({ scope, authorizationKey, canUse, canPlan, planningReadiness, titleReadiness, id }: { scope: AIScope; authorizationKey: string; canUse: boolean; canPlan: boolean; planningReadiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE"; titleReadiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE"; id: string }) {
