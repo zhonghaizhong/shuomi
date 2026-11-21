@@ -3,7 +3,7 @@ import {fulfillmentID} from "@/lib/api/fulfillment";
 import {canDiscoverNativeRuns} from "../ai-workbench/native-run-records";
 
 import Link from "next/link";
-import { Gauge, PanelsTopLeft, Package, Bot, Wrench, Network, Database, Store, Ticket, UserRound, Circle, ChevronDown, Plus, Target, LayoutGrid, BellRing, Lightbulb, MessageSquare, ListChecks, FolderKanban, BookOpen, Sparkles, FileChartColumn, ScanLine, Building2, Star, Boxes, GitBranch, ClipboardList, ClipboardCheck, BotMessageSquare, Settings2, BriefcaseBusiness, Handshake, UserPlus, Braces, FolderArchive, Truck, Layers, BadgeCheck, ChartNoAxesCombined, Wallet, ReceiptText, IdCard, Megaphone, type LucideIcon } from "lucide-react";
+import { Gauge, PanelsTopLeft, Package, Bot, Wrench, Network, Database, Store, Ticket, UserRound, Circle, ChevronDown, Target, LayoutGrid, BellRing, Lightbulb, MessageSquare, ListChecks, FolderKanban, BookOpen, Sparkles, FileChartColumn, ScanLine, Building2, Star, Boxes, GitBranch, ClipboardList, ClipboardCheck, BotMessageSquare, Settings2, BriefcaseBusiness, Handshake, UserPlus, Braces, FolderArchive, Truck, Layers, BadgeCheck, ChartNoAxesCombined, Wallet, ReceiptText, IdCard, Megaphone, type LucideIcon } from "lucide-react";
 
 const navigationIcons: Record<string, LucideIcon> = {
   "/workbench": Gauge, "/workbench/ai": PanelsTopLeft, "/workbench/supply": Package,
