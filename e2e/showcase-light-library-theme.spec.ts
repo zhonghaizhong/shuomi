@@ -97,3 +97,19 @@ test("linked Figma home, official catalog, enabled skills and closed team",async
  await root.getByRole("button",{name:"返回技能库"}).click();
  await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
 });
+
+test("clicking the AI workbench skill menu opens the independent introduction and exposes children",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai");
+ const nav=page.getByRole("navigation",{name:"工作台导航"});
+ await nav.getByRole("link",{name:"技能库",exact:true}).click();
+ await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
+ const root=page.locator('[data-skill-showcase="true"]');
+ await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
+ await expect(nav.getByRole("link",{name:"官方模板",exact:true})).toBeVisible();
+ await expect(nav.getByRole("link",{name:"我的技能",exact:true})).toBeVisible();
+ await expect(nav.getByRole("link",{name:"团队技能",exact:true})).toBeVisible();
+ await nav.getByRole("link",{name:"官方模板",exact:true}).click();
+ await expect(root.getByRole("heading",{name:"官方模板",level:1})).toBeVisible();
+ await nav.getByRole("link",{name:"技能库",exact:true}).click();
+ await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
+});
