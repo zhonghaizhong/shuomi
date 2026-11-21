@@ -71,3 +71,61 @@
 @media(max-width:800px){.modal.reviewModal{padding:14px}.reviewModal .reviewWorkspace{grid-template-columns:minmax(0,1fr)!important}.reviewModal .reviewWorkspace aside{max-height:210px!important;overflow:auto}.reviewModal .reviewWorkspace [role="log"]{max-height:220px;min-height:140px}.reviewFooter>div{justify-content:flex-end}}
 
 .resolveCheck{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--cn-muted);min-height:40px}.modal .resolveCheck input{width:16px;height:16px;min-height:16px;accent-color:#7367f0;margin:0;padding:0;flex-shrink:0}
+
+/* Shared task-center refinement: retain Vuexy surfaces and restrict semantic colors to status. */
+.root{--task-surface:#2f3349;--task-raised:#393d55;--task-line:#44485e;--task-text:#e2e2f0;--task-muted:#acabc1;--task-link:#aba4f6;--task-row-alt:#34384f;--task-accent:#7367f0}
+:global(.light) .root{--task-surface:#fff;--task-raised:#f4f3f8;--task-line:#e3dfed;--task-text:#444050;--task-muted:#625d70;--task-link:#6254c8;--task-row-alt:#f8f7fa}
+.root .pageHeader{box-sizing:border-box;min-height:116px;gap:20px;align-items:center;border-radius:6px}
+.root .pageHeader h1{border-left-color:currentColor;line-height:1.3;font-size:clamp(24px,1.7vw,30px);white-space:nowrap}
+.root .pageHeader p{font-size:14px;line-height:1.6}
+.root .pageHeader>button{flex-shrink:0;min-height:42px;white-space:nowrap}
+.root .stats>button{position:relative;min-height:142px;gap:10px;padding:18px 20px;border-color:var(--task-line);background:var(--task-surface);box-shadow:0 3px 10px #17182a0a;transition:border-color .15s,background .15s}
+.root .stats>button>header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap}
+.root .stats>button>header strong{color:var(--task-text);font-size:15px;font-weight:650}
+.root .stats>button:hover,.root .metrics>div:hover{border-color:var(--task-accent);transform:none}
+.root .stats>button .statDot{display:block;flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.root .stats>button>b,.root .metrics strong{display:flex;align-items:baseline;gap:6px;color:var(--task-text);font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.root .unit{font-size:13px;font-weight:500;color:var(--task-muted)}
+.root .stats>button>small{color:var(--task-muted);font-size:13px;line-height:1.6}
+.root .metrics>div{min-width:0;min-height:102px;align-content:center;padding:18px 20px;border:1px solid var(--task-line);background:var(--task-surface)}
+.root .metrics>div>span{font-size:14px;color:var(--task-muted)}
+.root .table{box-sizing:border-box;padding:20px;gap:8px;border-radius:6px}
+.root .table>header{min-height:38px;padding:0 2px 10px;align-items:center;gap:12px}
+.root .table>header>strong{font-size:18px;font-weight:650;white-space:nowrap}
+.root .listMeta{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap;line-height:1.5;font-size:13px;color:var(--task-muted)}
+.root .listMeta>b{font-variant-numeric:tabular-nums;color:var(--task-text);font-weight:650}
+.root .listMeta>small{font-size:12px;padding:2px 7px;border:1px solid var(--task-line);border-radius:4px;white-space:nowrap;color:var(--task-muted)}
+.root .columns{min-height:46px;border-radius:6px;font-size:14px;font-weight:600}
+.root .taskRow{box-sizing:border-box;min-height:78px;border-radius:6px;transition:border-color .15s;line-height:1.5}
+.root .taskRow>span:first-child{gap:5px}
+.root .taskRow>span:first-child>strong{font-size:16px;line-height:1.5;font-weight:650}
+.root .taskRow>span:first-child>small{font-size:13px;line-height:1.6}
+.root .taskRow>span:nth-child(4){font-size:13px;font-variant-numeric:tabular-nums}
+.root .stateCell>b{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;font-size:13px;line-height:1.4;font-weight:550;box-sizing:border-box}
+.root .stateCell>b::before{content:"";flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:currentColor}
+.root .actions{gap:6px;align-items:center}
+.root .actions>button{min-height:34px;min-width:56px;padding:5px 10px;border:1px solid transparent;font-size:13px;font-weight:550}
+.root .actions>button.taskAction{border-color:var(--task-line);background:var(--task-surface);color:var(--task-link)}
+.root .actions>button.taskAction:hover{border-color:var(--task-accent)}
+.root .pageNote{font-size:13px;line-height:1.7;padding-inline:2px;color:var(--task-muted)}
+.root .search,.root .table{border-radius:6px}
+.root .searchInput select{appearance:none;text-align:center;padding-inline:12px}
+.modal .summary{min-width:0;overflow-wrap:anywhere;line-height:1.65}
+.modal .summary>strong{font-size:16px;font-weight:650}
+.modal>h3{font-size:16px;font-weight:650}
+.modal .summary>p,.modal .summary>span{font-size:14px}
+.modal .summary>button{text-align:left;white-space:normal}
+.modal.reviewModal{width:min(1200px,100%);padding:20px;gap:16px}
+.reviewModal .reviewWorkspace{grid-template-columns:minmax(0,1fr) minmax(250px,310px)!important;gap:16px}
+.reviewModal .reviewWorkspace .reviewComposer{padding:18px!important}
+.reviewModal .reviewWorkspace [role="log"]{padding:14px 4px;max-height:340px}
+.reviewModal .reviewWorkspace [role="log"]>article{padding:12px 16px;max-width:94%}
+.reviewModal .reviewWorkspace [role="log"]>article>p{font-size:14px;line-height:1.8}
+.reviewModal .reviewWorkspace aside section{min-width:0;overflow-wrap:anywhere}
+.reviewModal .reviewWorkspace textarea{font-size:15px;line-height:1.6}
+.reviewFooter{gap:10px}
+.reviewFooter>button,.reviewFooter>div>button{min-height:42px;padding:8px 14px;white-space:nowrap;font-size:14px}
+@container (max-width:1050px){.root .stats>button{padding:16px 12px;min-height:126px}.root .stats>button>b{font-size:26px}.root .stats>button>header strong{font-size:14px}.root .table{padding:16px}.root .taskRow>span:first-child>strong{font-size:15px}}
+@container (max-width:760px){.root .table{padding:12px}.root .pageHeader{padding:16px;gap:10px}.root .stats>button{min-height:112px}.root .taskRow>span:first-child>strong{white-space:normal}.root .stateCell>b{white-space:normal}.root .listMeta{justify-content:flex-start}.root .table>header{flex-wrap:wrap}}
+@media(max-width:800px){.modal.reviewModal{padding:14px}.reviewModal .reviewWorkspace{grid-template-columns:minmax(0,1fr)!important}.reviewModal .reviewWorkspace [role="log"]{max-height:220px}.reviewModal .reviewWorkspace .reviewComposer{padding:14px!important}.reviewFooter>div{justify-content:flex-start}}
+@media(prefers-reduced-motion:reduce){.root .taskRow,.root .stats>button{transition:none}}
