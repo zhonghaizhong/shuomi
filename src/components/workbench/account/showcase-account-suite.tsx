@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
+import {Store, Sparkles, Database, HardDrive} from "lucide-react";
 import {showcaseTenant as tenant} from "./showcase-tenant";
 import {useShowcaseSuite,addAudit,totalEarnings,availableEarnings,permissionOptions,type Member,type SuiteState} from "./showcase-account-state";
 import s from "./showcase-account-suite.module.css";
@@ -67,9 +68,13 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
   <section className={s.identity}><div className={s.avatar}>硕</div><div className={s.identityInfo}><h2>{tenant.name}</h2><p><span className={s.approved}>已认证（模拟）</span> 企业编号：{tenant.id} · 管理员：{tenant.admin}</p></div><span className={s.mode}>演示企业空间 · 不影响真实账户</span></section>
   {overview&&<>
     <div className={s.enterpriseStats} role="region" aria-label="企业空间概览"><div className={s.metrics}>{([["企业成员",String(activeMembers.length),"当前启用的企业成员"],["已绑定店铺",String(tenant.stores),"当前企业已授权店铺"],["待处理邀请","0","模拟入驻审核均已完成"]] as const).map(([label,value,hint],i)=><article key={label} data-tone={i}><span className={s.enterpriseMetricNumber}>{value}</span><div className={s.enterpriseMetricText}><strong>{label}</strong><small>{hint}</small></div></article>)}</div></div>
-    <section className={s.panel} aria-label="企业管理"><header><h2>企业管理</h2><p>统一进入成员、角色、资源分配和操作记录管理。</p></header><div className={s.navigation}>{menu.slice(1,5).map(([label,path],i)=><article key={path} data-tone={i}><span>0{i+1}</span><h3>{label}</h3><p>{["邀请和管理企业成员，查看账户状态及成员归属。","配置业务角色和访问权限，控制页面与数据访问范围。","分配企业已拥有的资源，并设置成员的存储使用上限。","查询成员操作，追溯权限及资源变更记录。"][i]}</p><button onClick={()=>nav(path)}>{["管理成员","管理权限","管理资源","查看记录"][i]}</button></article>)}</div></section>
-    <section className={s.panel} aria-label="企业资源"><header><h2>企业资源</h2><p>展示当前演示企业的实际资源余额；积分与数据额度不会因换月自动清零。</p></header><div className={s.resourceSummary}>
-      {([["店铺",String(tenant.stores)+" 家","当前已绑定店铺"],["AI 积分",tenant.points.toLocaleString("zh-CN"),"可用积分余额"],["数据额度",tenant.data.toLocaleString("zh-CN")+" 条","剩余可用数据条数"],["企业存储",tenant.storageGiB+" GiB","共享容量 · 已分配 "+usedStorage.toFixed(1)+" GiB"]] as const).map(([label,value,hint])=><article key={label}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}
+    <section className={s.panel} aria-label="企业资源"><header><h2>企业资源</h2><p>展示当前企业可用资源与共享容量情况</p></header><div className={s.resourceSummary}>
+      {([
+       {label:"店铺",value:String(tenant.stores)+" 家",hint:tenant.stores?"当前已绑定店铺":"未绑定店铺",Icon:Store,tone:"store"},
+       {label:"AI 积分",value:tenant.points.toLocaleString("zh-CN"),hint:tenant.points?"可用积分余额":"当前无可用积分",Icon:Sparkles,tone:"points"},
+       {label:"数据额度",value:tenant.data.toLocaleString("zh-CN")+" 条",hint:tenant.data?"剩余可用数据条数":"暂无剩余额度",Icon:Database,tone:"data"},
+       {label:"企业存储",value:tenant.storageGiB+" GiB",hint:"共享容量 · 已分配 "+usedStorage.toFixed(1)+" GiB",Icon:HardDrive,tone:"storage"}
+      ] as const).map(({label,value,hint,Icon,tone})=><article key={label} data-tone={tone}><div className={s.resourceIcon}><Icon size={21} strokeWidth={1.9} aria-hidden="true"/></div><span className={s.resourceLabel}>{label}</span><strong>{value}</strong><small>{hint}</small>{tone==="storage"&&<div className={s.storageTrack} role="progressbar" aria-label="已分配企业存储" aria-valuemin={0} aria-valuemax={tenant.storageGiB} aria-valuenow={Math.min(tenant.storageGiB,usedStorage)}><div style={{width:Math.max(0,Math.min(100,tenant.storageGiB?usedStorage/tenant.storageGiB*100:0))+"%"}}/></div>}</article>)}
     </div></section>
     <section className={s.panel} aria-label="成员资源分配"><header><h2>成员资源分配</h2><p>企业存储为共享容量，可按成员设置上限；未授权的店铺及未充值的额度不预置分配。</p></header><div className={s.tableWrap}><table><thead><tr><th>成员 / 角色</th><th>已绑定店铺</th><th>AI 积分余额</th><th>数据额度（条）</th><th>存储上限（GiB）</th><th>操作</th></tr></thead><tbody>{activeMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong><small className={s.memberRole}>{m.role}</small></td><td>0</td><td>0</td><td>0</td><td>{(state.allocations[m.id]||0).toFixed(1)}</td><td><button type="button" onClick={()=>nav("/organization/resources")}>查看分配</button></td></tr>)}</tbody></table>{!activeMembers.length&&<div className={s.empty}>暂无企业成员，邀请后可分配资源。</div>}</div></section>
   </>}
