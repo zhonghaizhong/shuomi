@@ -242,7 +242,7 @@ test("enterprise overview matches Figma business sections without changing custo
  for(const heading of ["企业空间","企业管理","企业资源","成员资源分配"])
   await expect(root.getByRole("heading",{name:heading,exact:true})).toBeVisible();
  const summary=root.getByRole("region",{name:"企业空间概览"});
- await expect(summary.getByText("企业成员")).toBeVisible();
+ await expect(summary.getByText("企业成员",{exact:true})).toBeVisible();
  await expect(summary.getByText("已绑定店铺")).toBeVisible();
  await expect(summary.getByText("待处理邀请")).toBeVisible();
  const tabs=root.getByRole("navigation",{name:"企业空间业务导航"});
