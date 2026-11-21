@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AlertTriangle, ArrowUpRight, Check, Plus, RefreshCw, Search } from "lucide-react";
+import { ArrowUpRight, Check, Plus, RefreshCw, Search } from "lucide-react";
 import { ConsolePage } from "@/components/workbench/console/console-page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
