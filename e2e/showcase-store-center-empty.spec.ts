@@ -178,6 +178,23 @@ test("Figma group creation, rename and deletion preserve store rather than unlin
  await expect(details.getByLabel("店铺所属分组")).toHaveValue("未分组");
  await expect(page.getByText("分组店铺",{exact:true}).first()).toBeVisible();
 });
+test("Escape closes the topmost Figma overlay without dropping the store-detail page",async({page})=>{
+ const area=await createDemo(page,"保持上下文店铺");
+ await area.getByRole("button",{name:"进入店铺",exact:true}).click();
+ const details=page.getByRole("region",{name:"店铺详情页面"});
+ await details.getByRole("button",{name:"店铺设置",exact:true}).click();
+ await details.getByRole("button",{name:"管理分组"}).click();
+ await expect(page.getByRole("dialog",{name:"管理分组"})).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(page.getByRole("dialog",{name:"管理分组"})).toHaveCount(0);
+ await expect(details).toBeVisible();
+ await expect(details.getByRole("button",{name:"店铺设置",exact:true})).toHaveAttribute("aria-current","page");
+ await page.getByRole("button",{name:"返回我的店铺"}).click();
+ await area.getByRole("button",{name:"更多操作 · 保持上下文店铺"}).click();
+ await expect(area.getByRole("menu",{name:"店铺操作"})).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(area.getByRole("menu",{name:"店铺操作"})).toHaveCount(0);
+});
 test("store-center UI keeps approved dark/light Vuexy surface colors",async({page})=>{
  for(const theme of ["dark","light"]){
   await page.goto(root+"/stores");
