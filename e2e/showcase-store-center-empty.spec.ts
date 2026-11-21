@@ -4,9 +4,9 @@ test("store center starts clean and reflects Figma entry-to-fulfillment flow",as
  await page.goto(prefix+"/store-center");
  const root=page.locator("[data-store-center-showcase]");
  await expect(root.getByRole("heading",{name:"店铺中心",exact:true})).toBeVisible();
- for(const label of ["我的店铺","店铺商品","订单履约"])await expect(root.getByRole("heading",{name:label,exact:true})).toBeVisible();
- for(const label of ["绑定并授权店铺","同步店铺商品","接收并处理订单","完成发货履约"])await expect(root.getByRole("heading",{name:label,exact:true})).toBeVisible();
- await root.getByRole("button",{name:"进入我的店铺"}).click();
+ for(const label of ["我的店铺","刊登管理","店铺商品","订单管理"])await expect(root.getByRole("heading",{name:label,exact:true})).toBeVisible();
+ for(const label of ["绑定并授权店铺","准备并刊登商品","同步店铺商品","接收并处理订单","完成发货履约"])await expect(root.getByRole("heading",{name:label,exact:true})).toBeVisible();
+ await root.getByRole("button",{name:"管理我的店铺"}).click();
  await expect(root).toHaveAttribute("data-store-center-showcase","stores");
  await expect(root.getByRole("heading",{name:"尚未绑定店铺"})).toBeVisible();
  for(const route of ["/store-products","/store-orders"]){
@@ -137,4 +137,17 @@ test("enter-store opens its own workspace and routes to store products",async({p
  await expect(workspace.getByText(/授权尚未完成/)).toBeVisible();
  await workspace.getByRole("button",{name:"进入店铺商品"}).click();
  await expect(root).toHaveAttribute("data-store-center-showcase","products");
+});
+
+test("store-center Figma introduction includes new listing-management submenu and boundaries",async({page})=>{
+ await page.goto(prefix+"/store-center");
+ const root=page.locator('[data-store-center-showcase="home"]');
+ await expect(root.getByRole("heading",{name:/统一管理店铺、刊登、商品与订单/})).toBeVisible();
+ for(const name of ["我的店铺","刊登管理","店铺商品","订单管理"]){
+  await expect(root.getByRole("heading",{name,exact:true})).toBeVisible();
+ }
+ await expect(root.getByRole("heading",{name:"四个业务模块如何协同"})).toBeVisible();
+ await expect(root.getByRole("heading",{name:"经营分析与 AI 执行明确分工"})).toBeVisible();
+ await root.getByRole("button",{name:"进入刊登管理"}).click();
+ await expect(page).toHaveURL(/\/workbench\/listing/);
 });
