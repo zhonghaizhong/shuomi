@@ -239,7 +239,7 @@ test("enterprise overview matches Figma business sections without changing custo
  await page.goto(base+"/organization");
  const root=page.locator('[data-account-suite="/organization"]');
  await expect(root).toBeVisible();
- for(const heading of ["企业空间","企业管理","企业资源","成员资源分配"])
+ for(const heading of ["企业空间","企业资源","成员资源分配"])
   await expect(root.getByRole("heading",{name:heading,exact:true})).toBeVisible();
  const summary=root.getByRole("region",{name:"企业空间概览"});
  await expect(summary.getByText("企业成员",{exact:true})).toBeVisible();
@@ -251,8 +251,11 @@ test("enterprise overview matches Figma business sections without changing custo
  for(const [index,label] of labels.entries())
   await expect(tabs.getByRole("button").nth(index)).toHaveText(label);
  const resource=root.getByRole("region",{name:"企业资源"});
+ await expect(root.getByRole("region",{name:"企业管理"})).toHaveCount(0);
  for(const label of ["店铺","AI 积分","数据额度","企业存储"])
   await expect(resource.getByText(label,{exact:true})).toBeVisible();
+ await expect(resource.locator('[class*="resourceSummary"] article')).toHaveCount(4);
+ await expect(resource.getByRole("progressbar",{name:"已分配企业存储"})).toBeVisible();
  const allocation=root.getByRole("region",{name:"成员资源分配"});
  await expect(allocation.getByRole("columnheader",{name:"成员 / 角色"})).toBeVisible();
  await expect(allocation.getByRole("columnheader",{name:"存储上限（GiB）"})).toBeVisible();
@@ -275,8 +278,9 @@ test("enterprise Vuexy landing layout respects stats, spacing and preserved tabs
   const themeButton=page.getByRole("button",{name:mode==="light"?"切换浅色主题":"切换深色主题"});
   if(await themeButton.count())await themeButton.click();
   await expect(page.locator("html")).toHaveClass(new RegExp(mode));
-  const panels=root.locator("section[aria-label='企业管理'],section[aria-label='企业资源'],section[aria-label='成员资源分配']");
-  await expect(panels).toHaveCount(3);
+  const panels=root.locator("section[aria-label='企业资源'],section[aria-label='成员资源分配']");
+  await expect(panels).toHaveCount(2);
+  await expect(root.locator('section[aria-label="企业管理"]')).toHaveCount(0);
   const surface=mode==="light"?"rgb(255, 255, 255)":"rgb(47, 51, 73)";
   for(const p of await panels.all())expect(await p.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(surface);
   const stats=root.locator('[aria-label="企业空间概览"] article');
@@ -287,10 +291,16 @@ test("enterprise Vuexy landing layout respects stats, spacing and preserved tabs
    const box=await n.boundingBox();
    expect(box?.width).toBeGreaterThanOrEqual(56);
   }
-  const cards=root.locator('section[aria-label="企业管理"] [class*="navigation"] article');
+  const cards=root.locator('section[aria-label="企业资源"] [class*="resourceSummary"] article');
   await expect(cards).toHaveCount(4);
+  for(const card of await cards.all()){
+   await expect(card.locator('[class*="resourceIcon"] svg')).toBeVisible();
+   const font=await card.locator("strong").evaluate(e=>Number.parseFloat(getComputedStyle(e).fontSize));
+   expect(font,"Resource figures use consistent Vuexy emphasis").toBeGreaterThanOrEqual(30);
+  }
   const heights=await cards.evaluateAll(nodes=>nodes.map(e=>Math.round(e.getBoundingClientRect().height)));
-  expect(Math.max(...heights)-Math.min(...heights),"Enterprise management cards align").toBeLessThanOrEqual(2);
+  expect(Math.max(...heights)-Math.min(...heights),"Enterprise resource cards align").toBeLessThanOrEqual(2);
+  await expect(root.getByRole("progressbar",{name:"已分配企业存储"})).toBeVisible();
   const gap=await root.evaluate(e=>getComputedStyle(e).rowGap);
   expect(Number.parseFloat(gap),"Vuexy desktop vertical rhythm").toBeGreaterThanOrEqual(20);
   await expect(tabs.getByRole("button")).toHaveCount(5);
