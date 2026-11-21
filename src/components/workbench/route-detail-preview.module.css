@@ -1987,3 +1987,100 @@
  .page[data-commerce-unified="plans"] .metrics>article.planMetricCard{gap:12px}
  .page[data-commerce-unified="plans"] .metrics .planMetricValue{font-size:21px;min-width:96px}
 }
+
+
+/* Plans design quality pass: focus on hierarchy instead of layered decorative borders. */
+.page[data-commerce-unified="plans"] .planEntitlementCards .card{
+ min-height:212px;gap:12px;justify-content:flex-start;
+ padding:23px 22px;border-radius:8px;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .cardTitle{
+ width:100%;display:flex;align-items:center;justify-content:space-between;
+ flex-wrap:wrap;gap:8px;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .cardTitle h3{
+ white-space:nowrap;font-size:17px;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card .planEntitlementValue{
+ display:flex;align-items:center;justify-content:flex-start;
+ width:100%;min-height:63px;padding:12px 15px;
+ background:color-mix(in srgb,var(--plans-accent) 12%,var(--plans-bg));
+ border-left:3px solid var(--plans-accent);
+ border-radius:6px;color:var(--plans-text);
+ font-size:clamp(23px,1.6vw,30px);line-height:1.25;font-weight:700;
+ font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card p{
+ color:var(--plans-muted);font-size:14px;line-height:1.6;
+ flex:none;margin:0;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .card{
+ min-height:350px;gap:0;padding:22px;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .cardTitle{
+ min-height:40px;margin-bottom:13px;align-items:center;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .cardTitle h3{font-size:17px}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseIntro{
+ flex:1;min-height:68px;margin:0 0 16px;
+ color:var(--plans-muted);font-size:14px;line-height:1.65;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction{
+ display:flex;flex-direction:column;gap:11px;
+ width:100%;padding:16px;margin-top:auto;
+ background:var(--plans-inset);border:1px solid var(--plans-border);
+ border-radius:7px;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction label{
+ margin:0;width:100%;display:grid;gap:7px;color:var(--plans-text);
+ font-size:14px;font-weight:600;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction input{
+ width:100%;min-width:0;min-height:42px;background:var(--plans-bg);
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction small[role="status"]{
+ display:block;min-height:40px;line-height:1.45;
+ color:var(--plans-muted);font-size:13px;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction button{
+ width:100%;min-height:42px;margin:0;align-self:stretch;
+}
+.page[data-commerce-unified="plans"] .planDetailDialog .planDetailHighlight{
+ display:grid;gap:5px;margin:18px 0 6px;padding:18px 20px;
+ background:color-mix(in srgb,var(--plans-primary) 10%,var(--plans-bg));
+ border:1px solid color-mix(in srgb,var(--plans-primary) 30%,var(--plans-border));
+ border-radius:8px;
+}
+.page[data-commerce-unified="plans"] .planDetailDialog .planDetailHighlight span{
+ font-size:13px;color:var(--plans-muted);
+}
+.page[data-commerce-unified="plans"] .planDetailDialog .planDetailHighlight strong{
+ font-size:30px;line-height:1.25;font-variant-numeric:tabular-nums;
+ color:var(--plans-text);
+}
+.page[data-commerce-unified="plans"] .planDetailDialog .planDetailHighlight small{
+ font-size:13px;color:var(--plans-muted);
+}
+.page[data-commerce-unified="plans"] .planTableScroll .serviceRow button{
+ min-height:34px;justify-self:start;white-space:nowrap;
+ border-color:var(--plans-border);background:var(--plans-inset);
+ color:var(--plans-primary);
+}
+.page[data-commerce-unified="plans"] .toolbar{
+ display:flex;align-items:center;flex-wrap:wrap;
+ gap:10px;min-height:68px;
+}
+.page[data-commerce-unified="plans"] .toolbar :is(input,select,button){
+ min-height:40px;
+}
+.page[data-commerce-unified="plans"] .toolbar input{flex:1 1 185px;min-width:140px}
+.page[data-commerce-unified="plans"] .toolbar select{flex:0 1 150px;min-width:120px}
+@media(max-width:1100px){
+ .page[data-commerce-unified="plans"] .planEntitlementCards .card{min-height:195px}
+ .page[data-commerce-unified="plans"] .planPurchaseCards .card{min-height:330px}
+}
+@media(max-width:700px){
+ .page[data-commerce-unified="plans"] .planPurchaseCards .card{min-height:0}
+ .page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseIntro{min-height:0}
+ .page[data-commerce-unified="plans"] .planDetailDialog .planDetailHighlight strong{font-size:25px}
+}
