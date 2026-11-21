@@ -285,3 +285,29 @@ test("listing four subpages share aligned Vuexy typography, cards and controls",
   const spill=await root.evaluate(el=>el.scrollWidth>el.clientWidth+2);
   expect(spill,"horizontal overflow stays within the internal table").toBe(false);
 });
+
+test("account left sidebar only shows three second-level entries while right-side tabs navigate",async({page})=>{
+ await page.goto(entry+"/account/profile/settings");
+ const sidebar=page.getByRole("navigation",{name:"工作台导航"});
+ for(const label of ["账户资料","企业空间","推广与收益"]){
+  await expect(sidebar.getByRole("link",{name:label,exact:true})).toBeVisible();
+  await expect(sidebar.getByRole("button",{name:"展开"+label})).toHaveCount(0);
+ }
+ for(const label of ["账户设置","经营画像","认证信息","成员管理","角色权限","资源与额度","操作记录","推广中心","收益明细","提现管理","推广规则"]){
+  await expect(sidebar.getByRole("link",{name:label,exact:true})).toHaveCount(0);
+ }
+ const profileTabs=page.getByRole("navigation",{name:"账户资料二级导航"});
+ await profileTabs.getByRole("button",{name:"经营画像"}).click();
+ await expect(page).toHaveURL(/account\/profile\/business/);
+ await expect(sidebar.getByRole("link",{name:"账户资料",exact:true})).toHaveAttribute("aria-current","page");
+ await page.goto(entry+"/account/organization/members");
+ const enterpriseTabs=page.getByRole("navigation",{name:"企业空间业务导航"});
+ await enterpriseTabs.getByRole("button",{name:"角色权限",exact:true}).click();
+ await expect(page).toHaveURL(/account\/organization\/roles/);
+ await expect(sidebar.getByRole("link",{name:"企业空间",exact:true})).toHaveAttribute("aria-current","page");
+ await page.goto(entry+"/account/referrals/center");
+ const referralTabs=page.getByRole("navigation",{name:"推广与收益业务导航"});
+ await referralTabs.getByRole("button",{name:"收益明细",exact:true}).click();
+ await expect(page).toHaveURL(/account\/referrals\/earnings/);
+ await expect(sidebar.getByRole("link",{name:"推广与收益",exact:true})).toHaveAttribute("aria-current","page");
+});
