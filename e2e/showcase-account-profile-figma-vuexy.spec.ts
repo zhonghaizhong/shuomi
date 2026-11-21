@@ -76,3 +76,45 @@ test("contact change uses truthful security modal and closes on outside click",a
  await dialog.getByRole("button",{name:"知道了"}).click();
  await expect(dialog).toHaveCount(0);
 });
+
+test("My Account overview matches approved Vuexy theme in dark/light with aligned cards and working navigation",async({page})=>{
+ test.setTimeout(120000);
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto("/shuomi/#/workbench/account");
+ const root=page.locator('[data-commerce-unified="account"]');
+ const overview=root.locator('[class*="accountOverview"]');
+ const modules=root.locator('[class*="accountModules"]');
+ const recent=root.locator('[class*="accountBottom"]');
+ await expect(root.getByRole("heading",{name:"我的账户",exact:true})).toBeVisible();
+ await expect(overview.locator("article")).toHaveCount(3);
+ await expect(modules.locator("article")).toHaveCount(3);
+ for(const mode of ["dark","light"] as const){
+  await theme(page,mode);
+  const expectedSurface=mode==="dark"?"rgb(47, 51, 73)":"rgb(255, 255, 255)";
+  const expectedInset=mode==="dark"?"rgb(57, 61, 85)":"rgb(248, 247, 250)";
+  for(const item of [root.locator('[class*="header"]').first(),overview,modules,recent.locator(":scope>article"),recent.locator(":scope>aside")]){
+   await expect(item).toBeVisible();
+   expect(await item.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedSurface);
+  }
+  for(const card of await overview.locator("article").all()){
+   expect(await card.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedInset);
+  }
+  const moduleCards=modules.locator("article");
+  const heights=await moduleCards.evaluateAll(nodes=>nodes.map(n=>Math.round(n.getBoundingClientRect().height)));
+  expect(Math.max(...heights)-Math.min(...heights),"Three account modules must align").toBeLessThanOrEqual(2);
+  for(const card of await moduleCards.all())expect(await card.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedInset);
+  for(const button of await modules.getByRole("button").all()){
+   expect(await button.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe("rgb(115, 103, 240)");
+  }
+  const mainTitle=root.getByRole("heading",{name:"我的账户",exact:true});
+  expect(await mainTitle.evaluate(e=>Number.parseFloat(getComputedStyle(e).fontSize))).toBeGreaterThanOrEqual(28);
+ }
+ await modules.getByRole("button",{name:"管理资料"}).click();
+ await expect(page).toHaveURL(/\/account\/profile/);
+ await page.goto("/shuomi/#/workbench/account");
+ await page.locator('[data-commerce-unified="account"]').getByRole("button",{name:"进入空间"}).click();
+ await expect(page).toHaveURL(/\/account\/organization/);
+ await page.goto("/shuomi/#/workbench/account");
+ await page.locator('[data-commerce-unified="account"]').getByRole("button",{name:"查看收益"}).click();
+ await expect(page).toHaveURL(/\/account\/referrals/);
+});
