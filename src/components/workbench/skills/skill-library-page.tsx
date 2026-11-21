@@ -44,7 +44,7 @@ export function SkillLibraryPage({expectedUserId, category, maintenance=false}: 
   }
   if (maintenance) return <ConsolePage title="系统设置" breadcrumbs={[{label: "系统设置"}]}>{content}</ConsolePage>;
   return <ConsolePage className={`${introStyles.page} ${homeStyles.page} ${styles.libraryPage} ${workbenchViewPage}`} title={current.label} description={category === "official" ? undefined : <>{current.description}{category === "team" && organization && <span className={styles.organization}>当前企业：{organization.name}</span>}</>}
-    breadcrumbs={[{label: "AI工作台", href: "/workbench/ai"}, {label: "技能库", href: `${root}/official`}, {label: current.label}]}>
+    breadcrumbs={[{label: "智能市场"}, {label: "技能库", href: `${root}/official`}, {label: current.label}]}>
     <WorkbenchViewNav label="技能库分类">{categories.map(item => <Link key={item.id} href={item.path} prefetch={false} aria-label={item.label} aria-current={item.id === category ? "page" : undefined}>{item.label}</Link>)}</WorkbenchViewNav>
     {content}
   </ConsolePage>;
