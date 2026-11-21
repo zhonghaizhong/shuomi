@@ -25,7 +25,7 @@ export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
  const action=(label:string)=>setNotice(`${label}是需要登录、身份及技能服务权限的真实操作；此展示站仅展示入口，不执行服务端变更。`);
  return <main className={styles.shell} data-skill-showcase="true">
   <header className={styles.hero}>
-   <div><span className={styles.eyebrow}>智能市场 / 技能库 / {name}</span><h1>技能库</h1><p>{category==="team"?"管理可复用的业务方法 · 当前企业：演示企业（非真实企业数据）":"查看官方模板，管理个人和团队技能，在业务操作中选择使用。"}</p></div>
+   <div><span className={styles.eyebrow}>AI工作台 / 技能库 / {name}</span><h1>技能库</h1><p>{category==="team"?"管理可复用的业务方法 · 当前企业：演示企业（非真实企业数据）":"查看官方模板，管理个人和团队技能，在业务操作中选择使用。"}</p></div>
   </header>
   <nav className={styles.tabs} aria-label="技能库分类">{tabs.map(([id,label])=><button type="button" key={id} className={`${styles.tab} ${id===category?styles.active:""}`} aria-current={id===category?"page":undefined} onClick={()=>go(id)}>{label}</button>)}</nav>
   <section className={styles.toolbar} data-skill-management={category}>
