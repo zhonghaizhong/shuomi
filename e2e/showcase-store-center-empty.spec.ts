@@ -114,7 +114,7 @@ test("Figma asset-list structure exposes its required filters, cards and actions
  for(const name of ["平台筛选","站点筛选","店铺类型筛选","店铺状态筛选","店铺分组筛选"])await expect(root.getByLabel(name)).toBeVisible();
  await root.getByRole("button",{name:"管理分组"}).click();
  await expect(page.getByRole("dialog",{name:"管理分组"})).toBeVisible();
- await page.getByRole("dialog",{name:"管理分组"}).getByRole("button",{name:"关闭"}).click();
+ await page.getByRole("dialog",{name:"管理分组"}).getByRole("button",{name:"关闭",exact:true}).first().click();
  await root.getByRole("button",{name:"绑定新店铺"}).first().click();
  const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
  await dialog.getByRole("textbox",{name:"店铺名称"}).fill("待授权资产");
