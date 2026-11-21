@@ -65,3 +65,31 @@
 @media(max-width:1080px) { .entriesFive { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media(max-width:800px) { .columns { grid-template-columns:minmax(0,1fr); } .entriesThree { grid-template-columns:minmax(0,1fr); } .metricsFour { grid-template-columns:repeat(2,minmax(0,1fr)); } .metricsFour>div:nth-child(odd) { border-left:0; padding-left:0; } .heroHeader { flex-wrap:wrap; } }
 @media(max-width:550px) { .page { padding:20px 16px 28px; } .metrics { grid-template-columns:minmax(0,1fr); } .metrics>div+div { border-left:0; border-top:1px solid var(--overview-border); padding-left:0; padding-top:12px; } .entriesFive { grid-template-columns:minmax(0,1fr); } }
+
+
+/* Plans & entitlements: shared Vuexy-style visual rhythm, without changing navigation. */
+.plans { gap:20px; }
+.plans .panel { padding:22px 24px; }
+.plans .plan { border-left:1px solid var(--overview-border); min-height:0; }
+.plans .plan .heroHeader { align-items:center; }
+.plans .plan .heroHeader h2 { font-weight:750; letter-spacing:-.02em; }
+.plans .plan .metrics { margin-top:20px; padding-top:18px; border-top:1px solid var(--overview-border); gap:16px; }
+.plans .plan .metrics>div { display:grid; align-content:center; gap:7px; padding:0 12px; }
+.plans .plan .metrics>div:first-child { padding-left:0; }
+.plans .plan .metrics>div+div { padding-left:20px; }
+.plans .plan .metrics small { margin:0; max-width:none; line-height:1.5; }
+.plans .entriesFive { gap:14px; }
+.plans .entriesFive .entry { min-height:170px; padding:19px 18px; gap:9px; align-items:stretch; border-color:var(--overview-border); transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease; }
+.plans .entriesFive .entry::before { top:20px; left:0; height:34px; width:3px; }
+.plans .entriesFive .entry h3 { padding-left:8px; white-space:nowrap; }
+.plans .entriesFive .entry .description { line-height:1.55; flex:1; }
+.plans .entriesFive .entry a { align-self:stretch; justify-content:center; min-height:36px; margin-top:6px; }
+.plans .entriesFive .entry:hover { border-color:color-mix(in srgb,var(--primary) 43%,var(--overview-border)); box-shadow:0 8px 22px color-mix(in srgb,var(--foreground) 7%,transparent); transform:translateY(-1px); }
+.plans .entriesFive .entry:focus-within { outline:2px solid var(--primary); outline-offset:2px; }
+.plans .columns>.panel { min-height:0; }
+.plans .notices>div { align-items:center; background:var(--overview-card); }
+.plans .notices a { font-weight:650; }
+@media(max-width:1180px) { .plans .entriesFive { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:800px) { .plans .entriesFive { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:550px) { .plans .panel { padding:16px; } .plans .entriesFive { grid-template-columns:1fr; } .plans .plan .metrics>div { padding:0; } .plans .plan .metrics>div+div { padding:12px 0 0; } }
+@media(prefers-reduced-motion:reduce) { .plans .entriesFive .entry { transition:none; } .plans .entriesFive .entry:hover { transform:none; } }
