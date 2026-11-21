@@ -160,3 +160,96 @@
 :global(.light) .conversationLink + .conversationLink {border-top-color:#ece9f3;}
 :global(.light) .conversationLink:hover {background:#f3f1ff;}
 :global(.light) .openConversation {color:#6254c8;}
+
+/* Unified recent/saved conversation collection: inherit the active console palette. */
+.collectionToolbar {
+  align-items:end;
+  column-gap:12px;
+  row-gap:10px;
+}
+.collectionToolbar .searchField {
+  min-width:min(100%,240px);
+  font-size:var(--body-text-size);
+}
+.collectionToolbar .searchField input {
+  min-height:40px;
+  color:var(--foreground);
+  background:var(--card);
+  border-color:var(--border);
+}
+.conversationRows {
+  overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:var(--card);
+  box-shadow:none;
+}
+.conversationLink {
+  min-height:76px;
+  padding:15px 20px;
+  gap:18px;
+  color:var(--foreground);
+  text-decoration:none;
+  transition:background-color .15s ease;
+}
+.conversationLink:hover {
+  background:var(--secondary);
+}
+.conversationText strong {
+  font-size:var(--body-text-size);
+  font-weight:650;
+  line-height:1.5;
+  color:var(--foreground);
+}
+.conversationText small,
+.conversationLink time {
+  font-size:var(--label-text-size);
+  line-height:1.5;
+  color:var(--muted-foreground);
+}
+.conversationLink time {
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.openConversation {
+  flex:none;
+  padding:7px 12px;
+  border:1px solid var(--border);
+  border-radius:var(--control-radius);
+  background:var(--card);
+  color:var(--primary);
+  font-size:var(--body-text-size);
+  font-weight:600;
+}
+.conversationLink:hover .openConversation {
+  border-color:var(--primary);
+}
+:global(.light) .conversationRows {
+  background:var(--card);
+  border-color:var(--border);
+}
+:global(.light) .conversationLink,
+:global(.light) .conversationText strong {
+  color:var(--foreground);
+}
+:global(.light) .conversationText small,
+:global(.light) .conversationLink time {
+  color:var(--muted-foreground);
+}
+:global(.light) .conversationLink:hover {
+  background:var(--secondary);
+}
+:global(.light) .openConversation {
+  background:var(--card);
+  border-color:var(--border);
+  color:var(--primary);
+}
+@media(max-width:640px) {
+  .conversationLink {
+    flex-wrap:wrap;
+    gap:8px;
+    padding:14px;
+  }
+  .conversationText {flex-basis:100%;}
+  .conversationLink time {flex:1 1 auto;white-space:normal;}
+}
