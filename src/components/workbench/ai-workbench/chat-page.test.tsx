@@ -1083,3 +1083,45 @@ it("confirms a content proposal without exposing internal execution units",async
  fixture.context.aiWorkbenchExecutionReadiness="NEEDS_CONFIGURATION";
  cleanup();render(tree());expect(await screen.findByRole("button",{name:"确认并创建任务"})).toBeDisabled();
 });
+
+
+it.each(["recent","saved"] as const)("supports Figma row menu rename and favorite in %s",async mode=>{
+ let item={...conversation,Title:"营销分析",Favorite:mode==="saved",MetadataRevision:5};
+ fixture.request.mockImplementation(async({route,body,revision})=>{
+   if(route==="conversation-list")return {conversations:[item],next:""};
+   if(route==="conversation-metadata"){
+     expect(revision).toBe(item.MetadataRevision);
+     item={...item,...(body.title!==undefined?{Title:body.title}:{}),...(body.favorite!==undefined?{Favorite:body.favorite}:{}),MetadataRevision:item.MetadataRevision+1};
+     return {conversation:item};
+   }
+   throw new Error("unexpected");
+ });
+ render(<QueryClientProvider client={client}><ChatPage mode={mode}/></QueryClientProvider>);
+ await screen.findByRole("link",{name:/营销分析/});
+ fireEvent.click(screen.getByRole("button",{name:"会话操作：营销分析"}));
+ const menu=screen.getByRole("menu",{name:"管理会话：营销分析"});
+ fireEvent.click(within(menu).getByRole("menuitem",{name:"重命名"}));
+ expect(screen.getByRole("dialog",{name:"重命名会话"})).toBeVisible();
+ fireEvent.change(screen.getByRole("textbox",{name:"会话标题"}),{target:{value:"本月经营分析"}});
+ fireEvent.click(screen.getByRole("button",{name:"保存"}));
+ expect(await screen.findByRole("link",{name:/本月经营分析/})).toBeVisible();
+ fireEvent.click(screen.getByRole("button",{name:"会话操作：本月经营分析"}));
+ fireEvent.click(screen.getByRole("menuitem",{name:mode==="saved"?"取消收藏":"加入收藏会话"}));
+ await waitFor(()=>expect(fixture.request.mock.calls.filter(([input])=>input.route==="conversation-metadata")).toHaveLength(2));
+ const changes=fixture.request.mock.calls.filter(([input])=>input.route==="conversation-metadata");
+ expect(changes[0][0].body).toEqual({title:"本月经营分析"});
+ expect(changes[1][0].body).toEqual({favorite:mode!=="saved"});
+});
+
+it("never treats an unsupported delete action as a successful mutation",async()=>{
+ fixture.request.mockImplementation(async({route})=>route==="conversation-list"?{conversations:[{...conversation,Title:"待删除的会话"}],next:""}:Promise.reject(new Error("unexpected request")));
+ render(<QueryClientProvider client={client}><ChatPage mode="recent"/></QueryClientProvider>);
+ await screen.findByRole("link",{name:/待删除的会话/});
+ fireEvent.click(screen.getByRole("button",{name:"会话操作：待删除的会话"}));
+ fireEvent.click(screen.getByRole("menuitem",{name:"删除会话"}));
+ expect(screen.getByRole("alertdialog",{name:"删除会话确认"})).toBeVisible();
+ expect(screen.getByRole("button",{name:"删除暂不可用"})).toBeDisabled();
+ expect(fixture.request.mock.calls.every(([input])=>input.route==="conversation-list")).toBe(true);
+ fireEvent.click(screen.getByRole("button",{name:"关闭"}));
+ expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+});
