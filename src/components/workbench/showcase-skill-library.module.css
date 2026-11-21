@@ -106,3 +106,36 @@
 :global(.light) .version{color:#087f6c}
 :global(.light) .skillRecordButton{color:#444050}
 @media(max-width:700px){.toolbar{padding:16px 18px}.policy,.skillRecordButton{align-items:flex-start;flex-direction:column}.previewPermission{flex-direction:column;align-items:flex-start}.actionBar{width:100%}}
+
+
+/* Figma: compact management list and actionable forms, using existing Vuexy tokens. */
+.searchFilters{display:flex;align-items:center;gap:10px;margin-top:15px}
+.searchLabel{display:flex;align-items:center;gap:8px;min-height:39px;padding:0 12px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-panel);color:var(--s-muted);width:min(100%,360px)}
+.searchLabel input{border:0;background:transparent;color:var(--s-txt);font:inherit;font-size:14px;width:100%;min-width:0;outline:0}
+.searchLabel:focus-within{outline:2px solid var(--s-accent);outline-offset:2px}
+.searchLabel input::placeholder{color:var(--s-muted)}
+.visuallyHidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.skillList{display:grid;gap:9px;width:100%;margin-top:12px}
+.skillList .skillRecord{margin:0}
+.panelHeader{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.panelHeader h3{margin:0;color:var(--s-txt);font-weight:650;font-size:17px}
+.editor{display:grid;gap:13px;margin-top:14px;padding:17px 18px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-panel)}
+.editor>p{margin:0;color:var(--s-muted);font-size:13px;line-height:20px}
+.editor>label{display:grid;gap:7px;font-weight:550;font-size:14px}
+.editor :is(input,textarea){padding:10px 12px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-bg);color:var(--s-txt);font:inherit;min-width:0;width:100%;box-sizing:border-box;resize:vertical}
+.editor :is(input,textarea):focus-visible{outline:2px solid var(--s-accent);outline-offset:2px}
+.detail .panelHeader{margin-bottom:12px}
+.detail .actionBar{margin-top:14px}
+.detail details{margin-top:12px;color:var(--s-txt)}
+.detail summary{cursor:pointer}
+.bodyPreview{white-space:pre-wrap;word-break:break-word;max-height:240px;overflow:auto;padding:10px;border:1px solid var(--s-line);border-radius:6px;font-size:13px;background:var(--s-bg)}
+.consent{display:flex;align-items:flex-start;gap:10px;margin:12px 0;color:var(--s-txt);font-size:14px;line-height:22px}
+.consent input{width:18px;height:18px;flex:none;accent-color:#7367f0}
+.permissionNotice{display:flex;gap:9px;align-items:center;color:var(--s-muted);font-size:13px}
+.actionBar button:disabled,.primary:disabled{opacity:.5;cursor:not-allowed}
+:global(.light) .editor{border-color:#e6e6f1;background:#f8f7fa}
+:global(.light) .editor :is(input,textarea){background:#fff;color:#444050;border-color:#dcd9e5}
+:global(.light) .searchLabel{background:#fff;color:#6f6b7d;border-color:#dcd9e5}
+:global(.light) .searchLabel input{color:#444050}
+:global(.light) .bodyPreview{background:#fff;border-color:#e6e6f1}
+@media(max-width:700px){.panelHeader{align-items:flex-start;flex-wrap:wrap}.searchFilters{flex-wrap:wrap}.searchLabel{flex:1;width:auto}.editor{padding:14px}.detail .actionBar{align-items:stretch}.skillRecordButton{align-items:flex-start}}
