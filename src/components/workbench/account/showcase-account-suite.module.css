@@ -250,3 +250,51 @@
  .page[data-account-suite="/organization"] .resourceSummary{grid-template-columns:1fr}
  .page[data-account-suite="/organization"] .panel>header{flex-wrap:wrap}
 }
+
+/* Enterprise resource dashboard — concise Vuexy cards, no extra outer panel. */
+.page[data-account-suite="/organization"] .resourceSummary{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;
+}
+.page[data-account-suite="/organization"] .resourceSummary article{
+ position:relative;display:flex;flex-direction:column;align-items:flex-start;
+ gap:0;min-height:205px;padding:21px 23px 20px;
+ border:1px solid var(--line);border-radius:8px;
+ background:var(--inset);box-shadow:none;
+ transition:border-color .15s ease,transform .15s ease,box-shadow .15s ease;
+}
+.page[data-account-suite="/organization"] .resourceSummary article:hover{
+ border-color:color-mix(in srgb,var(--resource-color) 40%,var(--line));
+ box-shadow:0 6px 18px rgb(0 0 0 / 5%);transform:translateY(-1px);
+}
+.resourceSummary article[data-tone="store"]{--resource-color:#7367f0;--resource-soft:color-mix(in srgb,#7367f0 12%,var(--surface))}
+.resourceSummary article[data-tone="points"]{--resource-color:#00a8bd;--resource-soft:color-mix(in srgb,#00cfe8 12%,var(--surface))}
+.resourceSummary article[data-tone="data"]{--resource-color:#dc8b23;--resource-soft:color-mix(in srgb,#ff9f43 12%,var(--surface))}
+.resourceSummary article[data-tone="storage"]{--resource-color:#28a66a;--resource-soft:color-mix(in srgb,#28c76f 12%,var(--surface))}
+.page[data-account-suite="/organization"] .resourceIcon{
+ display:grid;place-items:center;width:40px;height:40px;
+ flex:none;border:1px solid color-mix(in srgb,var(--resource-color) 24%,transparent);
+ border-radius:9px;background:var(--resource-soft);color:var(--resource-color);
+ margin-bottom:12px;
+}
+.page[data-account-suite="/organization"] .resourceSummary article .resourceLabel{
+ font-size:14px;line-height:1.45;color:var(--muted);font-weight:550;margin-bottom:5px;
+}
+.page[data-account-suite="/organization"] .resourceSummary article strong{
+ font-size:32px;line-height:1.28;letter-spacing:-.45px;
+ font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;margin-bottom:8px;
+}
+.page[data-account-suite="/organization"] .resourceSummary article small{
+ font-size:13px;line-height:1.55;color:var(--muted);
+}
+.storageTrack{
+ width:100%;height:5px;border-radius:99px;overflow:hidden;
+ background:color-mix(in srgb,var(--resource-color) 16%,var(--line));margin-top:auto;
+}
+.storageTrack>div{
+ height:100%;border-radius:inherit;background:var(--resource-color);
+ transition:width .2s ease;
+}
+.page[data-account-suite="/organization"] .resourceSummary article[data-tone="storage"] small{margin-bottom:12px}
+@media(max-width:1100px){.page[data-account-suite="/organization"] .resourceSummary{gap:12px}}
+@media(max-width:850px){.page[data-account-suite="/organization"] .resourceSummary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.page[data-account-suite="/organization"] .resourceSummary{grid-template-columns:1fr}.page[data-account-suite="/organization"] .resourceSummary article{min-height:190px}}
