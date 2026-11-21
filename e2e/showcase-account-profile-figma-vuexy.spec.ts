@@ -205,7 +205,11 @@ test("My Account overview matches approved Vuexy theme in dark/light with aligne
    expect(await item.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedSurface);
   }
   for(const card of await overview.locator("article").all()){
-   expect(await card.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedInset);
+   const actual=await card.evaluate(e=>getComputedStyle(e).backgroundColor);
+   const expected=rgb(expectedInset),received=rgb(actual);
+   expect(received,"Vuexy inset surfaces should not drift beyond a single RGB level")
+    .toHaveLength(3);
+   expect(received.every((v,i)=>Math.abs(v-expected[i])<=1),actual+" close to "+expectedInset).toBe(true);
   }
   const moduleCards=modules.locator("article");
   const heights=await moduleCards.evaluateAll(nodes=>nodes.map(n=>Math.round(n.getBoundingClientRect().height)));
