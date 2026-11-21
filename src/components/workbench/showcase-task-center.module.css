@@ -151,3 +151,12 @@
 @container(max-width:1050px){.root .stats>button[data-task-metric]{padding:12px;gap:8px}.root .stats>button[data-task-metric] .statIcon{flex-basis:32px;width:32px;height:32px}.root .stats>button[data-task-metric]>header{gap:7px}.root .stats>button[data-task-metric]>header>strong{font-size:14px}.root .stats>button[data-task-metric]>b.statValue,:global(.light) .root .stats>button[data-task-metric]>b.statValue{font-size:30px}.root .stats>button[data-task-metric]>.statFoot{font-size:12px}}
 @container(max-width:760px){.root .stats>button[data-task-metric]{min-height:118px;grid-template-rows:32px auto auto}}
 @container(max-width:380px){.root .stats>button[data-task-metric]>.statFoot{white-space:normal}}
+
+/* Compact overview: two aligned text rows with one trailing icon, no third description row. */
+.root .stats>button[data-task-metric]{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:1fr;align-items:center;align-content:center;gap:16px;min-height:112px;padding:16px 20px}
+.root .stats>button[data-task-metric]>.statInfo{min-width:0;display:grid;align-content:center;justify-items:start;gap:10px}
+.root .stats>button[data-task-metric]>.statInfo>strong{font-size:15px;line-height:1.4;font-weight:650;color:var(--task-text);white-space:nowrap}
+.root .stats>button[data-task-metric]>.statInfo>.statValue,:global(.light) .root .stats>button[data-task-metric]>.statInfo>.statValue{display:flex;align-items:baseline;gap:7px;font-size:36px;line-height:1.05;font-weight:700;letter-spacing:-.6px;color:var(--task-text);font-variant-numeric:tabular-nums}
+.root .stats>button[data-task-metric]>.statIcon{width:52px;height:52px;border-radius:9px}
+@container(max-width:1050px){.root .stats>button[data-task-metric]{padding:14px 12px;gap:8px;min-height:100px}.root .stats>button[data-task-metric]>.statInfo{gap:8px}.root .stats>button[data-task-metric]>.statInfo>strong{font-size:14px}.root .stats>button[data-task-metric]>.statInfo>.statValue,:global(.light) .root .stats>button[data-task-metric]>.statInfo>.statValue{font-size:30px}.root .stats>button[data-task-metric]>.statIcon{width:40px;height:40px}.root .stats>button[data-task-metric]>.statIcon svg{width:22px;height:22px}}
+@container(max-width:380px){.root .stats>button[data-task-metric]{padding:10px;gap:5px}.root .stats>button[data-task-metric]>.statIcon{width:32px;height:32px}.root .stats>button[data-task-metric]>.statIcon svg{width:18px;height:18px}}
