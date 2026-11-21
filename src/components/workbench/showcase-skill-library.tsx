@@ -1,6 +1,6 @@
 "use client";
 import {useState} from "react";
-import {BookOpen,Layers3,Users,RefreshCw,Plus,ShieldCheck,Info,FileText} from "lucide-react";
+import {RefreshCw,Plus,Info} from "lucide-react";
 import {useRouter} from "next/navigation";
 import styles from "./showcase-skill-library.module.css";
 
