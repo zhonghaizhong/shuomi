@@ -164,6 +164,10 @@ function NavBranch({ node, pathname, trail, depth, onNavigate, listingQuery = ""
     : node.href===listingHome&&listingQuery ? node.href+listingQuery : node.href;
   const baseHref = researchNavigationHref(originalHref, research);
   const href = query?.get("preview") === "1" ? `${baseHref}${baseHref.includes("?") ? "&" : "?"}preview=1` : baseHref;
+  // Account leaf pages have their own in-content tab navigation. Keep route data for breadcrumbs,
+  // but do not duplicate third-level links in the sidebar.
+  const hideAccountLeaves = depth === 2 && ["/workbench/account/profile", "/workbench/account/organization", "/workbench/account/referrals"].includes(node.href);
+  const visibleChildren = hideAccountLeaves ? undefined : node.children;
   const active = trail.includes(node.href) || pathname === node.href;
   // The route-keyed subtree resets disclosure even when navigating back to an earlier route.
   const [expanded, setExpanded] = useState(active);
@@ -171,12 +175,12 @@ function NavBranch({ node, pathname, trail, depth, onNavigate, listingQuery = ""
   const Icon = navigationIcons[node.href] ?? Circle;
   return <li className={`console-nav-level-${depth}`}>
     <div className="console-nav-row" data-active={active || undefined}>
-      {node.disclosureOnly ? <button className="console-nav-group" type="button" aria-label={`${expanded ? "收起" : "展开"}${node.label}`} aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(value => !value)}><Icon className="console-nav-icon" size={16} aria-hidden="true" /><span className="console-nav-label">{node.label}</span><ChevronDown className="console-nav-chevron" size={16} aria-hidden="true" /></button> : <Link href={href} prefetch={false} aria-current={pathname === node.href || (!node.children && active) ? "page" : undefined} onClick={onNavigate} title={node.availability === "unavailable" ? `${node.label}：业务暂未启用` : node.label}>
+      {node.disclosureOnly ? <button className="console-nav-group" type="button" aria-label={`${expanded ? "收起" : "展开"}${node.label}`} aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(value => !value)}><Icon className="console-nav-icon" size={16} aria-hidden="true" /><span className="console-nav-label">{node.label}</span><ChevronDown className="console-nav-chevron" size={16} aria-hidden="true" /></button> : <Link href={href} prefetch={false} aria-current={pathname === node.href || (!visibleChildren && active) ? "page" : undefined} onClick={onNavigate} title={node.availability === "unavailable" ? `${node.label}：业务暂未启用` : node.label}>
         {depth <= 2 ? <Icon className="console-nav-icon" size={depth === 1 ? 20 : 16} aria-hidden="true" /> : null}<span className="console-nav-label">{node.label}</span>
       </Link>}
-      {node.children && !node.disclosureOnly ? <button type="button" aria-label={`${expanded ? "收起" : "展开"}${node.label}`} aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(value => !value)}><ChevronDown className="console-nav-chevron" size={16} aria-hidden="true" /></button> : null}
+      {visibleChildren && !node.disclosureOnly ? <button type="button" aria-label={`${expanded ? "收起" : "展开"}${node.label}`} aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(value => !value)}><ChevronDown className="console-nav-chevron" size={16} aria-hidden="true" /></button> : null}
     </div>
-    <AnimatePresence initial={false}>{node.children && expanded ? <NavigationChildren key={id} id={id}>{node.children.map((child) => <NavBranch key={child.href} node={child} pathname={pathname} trail={trail} depth={depth + 1} onNavigate={onNavigate} listingQuery={listingQuery} orderQuery={orderQuery} research={research} />)}</NavigationChildren> : null}</AnimatePresence>
+    <AnimatePresence initial={false}>{visibleChildren && expanded ? <NavigationChildren key={id} id={id}>{visibleChildren.map((child) => <NavBranch key={child.href} node={child} pathname={pathname} trail={trail} depth={depth + 1} onNavigate={onNavigate} listingQuery={listingQuery} orderQuery={orderQuery} research={research} />)}</NavigationChildren> : null}</AnimatePresence>
   </li>;
 }
 
