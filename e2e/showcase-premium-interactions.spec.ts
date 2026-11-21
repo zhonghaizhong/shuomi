@@ -82,10 +82,11 @@ test("My Stores filters work on local drafts and other account modules preserve 
  const root=page.locator('[data-store-center-showcase="stores"]');
  await root.getByRole("button",{name:"绑定新店铺"}).first().click();
  const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
- await dialog.getByRole("textbox",{name:"店铺名称"}).fill("筛选交互检查");
- await dialog.getByRole("button",{name:"创建演示店铺"}).click();
+ await dialog.getByRole("textbox",{name:"自定义名称"}).fill("筛选交互检查");
+ await dialog.getByRole("button",{name:"提交授权"}).click();
  await expect(root.getByText("筛选交互检查",{exact:true})).toBeVisible();
  await root.getByLabel("站点筛选").selectOption("加拿大站");
+ await root.getByRole("button",{name:"确认",exact:true}).click();
  await expect(root.getByText("筛选交互检查",{exact:true})).toHaveCount(0);
  await root.getByRole("button",{name:"重置"}).click();
  await expect(root.getByText("筛选交互检查",{exact:true})).toBeVisible();
@@ -108,7 +109,7 @@ test("API actions and My Stores binding open functional dialogs and Escape close
  await page.getByRole("button",{name:"绑定新店铺"}).first().click();
  const store=page.getByRole("dialog",{name:"绑定新店铺"});
  await expect(store.getByLabel("绑定授权方式")).toBeVisible();
- await store.getByLabel("绑定授权方式").selectOption("API 授权（暂未开放）");
+ await store.getByRole("button",{name:"API 授权"}).click();
  await expect(store).toContainText("暂未开放");
  await page.keyboard.press("Escape");
  await expect(store).toHaveCount(0);
