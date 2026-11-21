@@ -197,3 +197,8 @@
 .detailSettings footer{grid-column:1/-1;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px}
 @media(max-width:800px){.detailPage .detailList,.detailPage .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.detailPage .detailList,.detailPage .metrics,.detailSettings{grid-template-columns:minmax(0,1fr)}.detailSettings footer{grid-column:1}}
+
+/* Keep group management discoverable next to Bind Store in both themes. */
+.page .headerActions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;flex-shrink:0}
+.page .headerActions button{white-space:nowrap}
+@media(max-width:680px){.page .headerActions{justify-content:flex-start;width:100%}}
