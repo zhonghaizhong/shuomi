@@ -1,8 +1,8 @@
 import {expect,test} from "@playwright/test";
 const root="/shuomi/#/workbench";
 const hubs=[
- {route:"/data",heading:"数据服务",selector:'[data-commerce-unified="data"]'},
- {route:"/store-center",heading:"店铺中心",selector:"main.showcase-content"},
+ {route:"/data",heading:"让数据成为可调用、可管理、可复用的业务资产",selector:'[data-commerce-unified="data"]'},
+ {route:"/store-center",heading:"统一管理店铺、商品与订单，让经营链路更清晰",selector:"main.showcase-content"},
  {route:"/plans",heading:"套餐与权益",selector:'[data-commerce-unified="plans"]'},
  {route:"/account",heading:"我的账户",selector:'[data-commerce-unified="account"]'},
 ];
