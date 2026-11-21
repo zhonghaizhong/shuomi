@@ -87,3 +87,26 @@ test("schedule creates a separate execution record and exposes it in plan histor
  await dialog.getByRole("button",{name:/每日店铺经营简报 · 本次执行 · 已完成/}).click();
  await expect(dialog.getByText("执行结果",{exact:true})).toBeVisible();
 });
+
+test("task center premium layout keeps overview cards equal and task content within its canvas",async({page})=>{
+ test.setTimeout(120000);
+ const base="/shuomi/#/workbench/ai/tasks";
+ for(const theme of ["dark","light"]){
+  for(const [width,height] of [[1366,768],[1440,900],[1536,864],[1920,1080],[2560,1440]]){
+   await page.setViewportSize({width,height});
+   await page.goto(base);
+   const toggle=page.getByRole("button",{name:theme==="light"?"切换浅色主题":"切换深色主题"});
+   if(await toggle.isVisible())await toggle.click();
+   const root=page.locator("[data-task-center-preview]");
+   await expect(root).toBeVisible();
+   const cards=root.locator('[class*="taskStats"]>button');
+   await expect(cards).toHaveCount(5);
+   const sizes=await cards.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height}}));
+   expect(Math.max(...sizes.map(x=>x.w))-Math.min(...sizes.map(x=>x.w))).toBeLessThanOrEqual(2);
+   expect(Math.max(...sizes.map(x=>x.h))-Math.min(...sizes.map(x=>x.h))).toBeLessThanOrEqual(2);
+   const title=root.locator("h1");
+   expect(await title.evaluate(el=>getComputedStyle(el).whiteSpace)).toBe("nowrap");
+   expect(await root.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(3);
+  }
+ }
+});
