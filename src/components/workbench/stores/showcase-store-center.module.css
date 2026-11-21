@@ -172,3 +172,28 @@
 .groupBackdrop{z-index:10030}
 @media(max-width:730px){.authDialog{padding:18px;max-height:calc(100dvh - 20px)}.bindingGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bindingGrid>label,.bindingGrid>label:nth-child(n+4){grid-column:span 1}.authOptions{grid-template-columns:1fr}.verification{align-items:flex-start;flex-direction:column}.fixedIp{align-items:flex-start}}
 @media(max-width:480px){.bindingGrid{grid-template-columns:minmax(0,1fr)}.fixedIp{flex-direction:column}}
+
+
+/* My Stores: the three-dot menu is attached to its card, not a page-blocking dialog. */
+.storeCard{position:relative}
+.morePopover{position:absolute;z-index:22;right:15px;bottom:56px;display:grid;gap:3px;width:min(256px,calc(100vw - 64px));padding:8px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-bg);box-shadow:0 14px 36px rgb(0 0 0 / 22%)}
+.page .morePopover button{min-height:36px;width:100%;padding:7px 12px;text-align:left;border:0;border-radius:6px;background:transparent;font-size:13px}
+.page .morePopover button:hover{background:var(--st-surface)}
+.page .morePopover button.danger{color:#e47878}
+.detailPage{display:grid;gap:18px;min-width:0}
+.detailPage>.panel{min-width:0}
+.detailPage .detailTabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-bg)}
+.detailPage .detailTabs button{border:0;background:transparent;color:var(--st-muted);font-weight:600}
+.detailPage .detailTabs button[aria-current="page"]{color:var(--st-accent);background:color-mix(in srgb,var(--st-accent) 10%,var(--st-bg))}
+.detailPage .metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.detailPage .detailList{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 16px}
+.detailPage .detailList>div{display:grid;gap:8px;padding:14px 16px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-surface)}
+.detailPage .detailList dt{font-size:12px;color:var(--st-muted)}
+.detailPage .detailList dd{margin:0;font-size:14px;font-weight:600}
+.detailPage>.panel>button{justify-self:start;margin-right:10px}
+.detailSettings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.detailSettings label{display:grid;gap:8px}
+.detailSettings :is(input,select){width:100%;height:42px;padding:0 12px;border:1px solid var(--st-line);border-radius:6px;background:var(--st-control);color:var(--st-text)}
+.detailSettings footer{grid-column:1/-1;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px}
+@media(max-width:800px){.detailPage .detailList,.detailPage .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.detailPage .detailList,.detailPage .metrics,.detailSettings{grid-template-columns:minmax(0,1fr)}.detailSettings footer{grid-column:1}}
