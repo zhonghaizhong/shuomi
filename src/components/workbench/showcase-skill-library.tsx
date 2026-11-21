@@ -1,5 +1,5 @@
 "use client";
-import {useState} from "react";
+import {useEffect,useState} from "react";
 import {RefreshCw,Plus,Info,Search,ShieldCheck} from "lucide-react";
 import {useRouter} from "next/navigation";
 import styles from "./showcase-skill-library.module.css";
@@ -13,8 +13,14 @@ const sample={name:"local-trial-title-normalization-20261015",description:"æœ¬åœ
 export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
  const router=useRouter();
  const category:Category=pathname.endsWith("/mine")?"mine":pathname.endsWith("/team")?"team":"official";
- const hashQuery=typeof window==="undefined"?"":window.location.hash.split("?")[1]??"";
- const configurable=new URLSearchParams(hashQuery).get("permission")!=="readonly";
+ const readPermission=()=>typeof window==="undefined"||new URLSearchParams(window.location.hash.split("?").slice(1).join("?")).get("permission")!=="readonly";
+ const [configurable,setConfigurable]=useState(readPermission);
+ useEffect(()=>{
+  const onHashChange=()=>setConfigurable(readPermission());
+  window.addEventListener("hashchange",onHashChange);
+  onHashChange();
+  return ()=>window.removeEventListener("hashchange",onHashChange);
+ },[]);
  const [admission,setAdmission]=useState(true);
  const [notice,setNotice]=useState("");
  const [selected,setSelected]=useState<"sample"|"draft"|null>(null);
