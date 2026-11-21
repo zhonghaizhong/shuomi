@@ -70,7 +70,7 @@ test("registered test tenant has prefilled synthetic certification and no real v
  await root.getByRole("tab",{name:"个人认证"}).click();
  await expect(root.getByRole("textbox",{name:"真实姓名"})).toHaveValue("林晨");
  await expect(root.getByRole("textbox",{name:"身份证号码"})).toHaveValue("TEST-ID-000001");
- await expect(root).toContainText("演示环境不上传或保存证件");
+ await expect(root).toContainText("不会发起真实后台审核");
  await page.goto(base);
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("林晨");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("暂时没有店铺");
