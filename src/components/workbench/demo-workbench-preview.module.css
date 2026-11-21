@@ -3442,3 +3442,29 @@
  }
  .page[data-commerce-unified="plans"] .usageBar:not(:has(i))>div small{grid-column:2}
 }
+
+
+/* Final responsive guard: protect large numerical tiles from cramped desktop widths. */
+@media(max-width:1180px){
+ .page[data-commerce-unified="plans"] .planStats{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+ }
+ .page[data-commerce-unified="plans"] .planStats>div.planStat{min-width:0}
+ .page[data-commerce-unified="plans"] .planStats .planStatValue{
+  max-width:58%;min-width:106px;white-space:normal;overflow-wrap:anywhere;
+ }
+}
+@media(max-width:630px){
+ .page[data-commerce-unified="plans"] .planStats{
+  grid-template-columns:1fr;gap:12px;
+ }
+ .page[data-commerce-unified="plans"] .planStats>div.planStat{
+  flex-wrap:nowrap;min-height:82px;
+ }
+ .page[data-commerce-unified="plans"] .planStats .planStatValue{
+  min-width:112px;max-width:55%;font-size:20px;
+ }
+ .page[data-commerce-unified="plans"] .planEntrances .planEntryCard{
+  min-height:135px;
+ }
+}
