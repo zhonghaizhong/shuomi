@@ -1745,3 +1745,138 @@
 .page[data-commerce-unified="account"] :is(.accountMembersGrid,.accountResourcesGrid,.accountAuditGrid) button {
   justify-self:start;
 }
+
+/* 套餐与权益：Figma defines content/workflows; the approved Vuexy palette defines visuals.
+   Scope all rules to plans leaves so other previously approved workbench pages stay unchanged. */
+.page[data-commerce-unified="plans"]{
+ --plans-bg:#2f3349;--plans-inset:#393d55;--plans-border:#44485e;
+ --plans-text:#e2e2f0;--plans-muted:#acabc1;--plans-primary:#7367f0;
+ width:100%;max-width:1600px;margin:0 auto;gap:24px;padding:18px 0 36px;
+ color:var(--plans-text);font-size:15px;line-height:1.6;
+}
+:global(.light) .page[data-commerce-unified="plans"]{
+ --plans-bg:#fff;--plans-inset:#f8f7fa;--plans-border:#e6e6f0;
+ --plans-text:#444050;--plans-muted:#6f6b7d;--plans-primary:#7367f0;
+}
+.page[data-commerce-unified="plans"] :is(.header,.noticeBar,.card,.metrics>article,.tabs,.toolbar,.table,.split>article){
+ background:var(--plans-bg);border:1px solid var(--plans-border);border-radius:8px;
+ color:var(--plans-text);box-shadow:none;
+}
+.page[data-commerce-unified="plans"] .header{min-height:116px;padding:20px 24px}
+.page[data-commerce-unified="plans"] .header h1{
+ margin:5px 0;padding-left:12px;border-left:3px solid var(--plans-primary);
+ font-size:29px;line-height:1.3;font-weight:700;color:var(--plans-text);
+}
+.page[data-commerce-unified="plans"] .header p{color:var(--plans-muted);font-size:14px;line-height:1.55}
+.page[data-commerce-unified="plans"] .header>div:first-child>div{color:var(--plans-muted)}
+.page[data-commerce-unified="plans"] :is(h2,h3,strong,b){color:var(--plans-text)}
+.page[data-commerce-unified="plans"] .noticeBar{
+ display:flex;gap:17px;min-height:100px;padding:20px 24px;align-items:center;
+}
+.page[data-commerce-unified="plans"] .noticeBar>b{color:var(--plans-primary);font-size:16px}
+.page[data-commerce-unified="plans"] .noticeBar span{color:var(--plans-muted);font-size:14px;line-height:1.55}
+.page[data-commerce-unified="plans"] .noticeBar strong{font-size:19px;color:var(--plans-text)}
+.page[data-commerce-unified="plans"] .cards,
+.page[data-commerce-unified="plans"] .metrics{gap:20px}
+.page[data-commerce-unified="plans"] .fourCards{grid-template-columns:repeat(4,minmax(0,1fr))}
+.page[data-commerce-unified="plans"] .card{
+ min-width:0;min-height:196px;padding:23px;gap:8px;
+ display:flex;flex-direction:column;align-items:flex-start;
+}
+.page[data-commerce-unified="plans"] .card[data-tone="0"]{--plans-accent:#7367f0}
+.page[data-commerce-unified="plans"] .card[data-tone="1"]{--plans-accent:#00a8bd}
+.page[data-commerce-unified="plans"] .card[data-tone="2"]{--plans-accent:#db8c25}
+.page[data-commerce-unified="plans"] .card[data-tone="3"]{--plans-accent:#28a66a}
+.page[data-commerce-unified="plans"] .card h3{
+ margin:0;color:var(--plans-text);font-size:18px;line-height:1.4;
+ white-space:nowrap;
+}
+.page[data-commerce-unified="plans"] .card h2{
+ color:var(--plans-text);font-size:26px;line-height:1.3;margin:8px 0 4px;
+}
+.page[data-commerce-unified="plans"] .card p{
+ min-height:0;color:var(--plans-muted);font-size:14px;line-height:1.6;
+ margin:0 0 8px;flex:1;
+}
+.page[data-commerce-unified="plans"] .card small{color:var(--plans-muted);font-size:13px}
+.page[data-commerce-unified="plans"] .cardTitle{gap:8px;align-items:center}
+.page[data-commerce-unified="plans"] .cardTitle span{
+ border:1px solid color-mix(in srgb,var(--plans-accent) 30%,var(--plans-border));
+ border-radius:6px;padding:5px 9px;
+ background:color-mix(in srgb,var(--plans-accent) 10%,var(--plans-bg));
+ color:var(--plans-accent);font-size:12px;
+}
+.page[data-commerce-unified="plans"] .split{
+ grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:24px;
+}
+.page[data-commerce-unified="plans"] .split>article{
+ min-width:0;padding:24px;display:flex;flex-direction:column;gap:10px;
+}
+.page[data-commerce-unified="plans"] .split h2,
+.page[data-commerce-unified="plans"] .table h2,
+.page[data-commerce-unified="plans"] .planSectionHeading h2{
+ color:var(--plans-text);font-size:20px;line-height:1.35;margin:0 0 8px;
+}
+.page[data-commerce-unified="plans"] .split p{
+ color:var(--plans-muted);font-size:14px;line-height:1.6;margin:0;
+}
+.page[data-commerce-unified="plans"] .metrics>article{
+ display:grid;grid-template-columns:1fr;gap:8px;padding:20px;min-height:110px;
+}
+.page[data-commerce-unified="plans"] .metrics span{color:var(--plans-muted);font-size:14px}
+.page[data-commerce-unified="plans"] .metrics strong{color:var(--plans-text);font-size:28px;line-height:1.3}
+.page[data-commerce-unified="plans"] .metrics small{
+ text-align:left;color:var(--plans-muted);font-size:13px;
+}
+.page[data-commerce-unified="plans"] :is(.tabs,.toolbar){gap:10px;padding:12px 16px}
+.page[data-commerce-unified="plans"] .tabs{overflow-x:auto;white-space:nowrap}
+.page[data-commerce-unified="plans"] :is(button,input,select){
+ font:inherit;font-size:14px;border-radius:6px;
+}
+.page[data-commerce-unified="plans"] :is(.toolbar button,.tabs button,.table button,.split button,.noticeBar button,.card button){
+ min-height:39px;padding:8px 13px;border:1px solid var(--plans-border);
+ background:var(--plans-inset);color:var(--plans-text);cursor:pointer;
+}
+.page[data-commerce-unified="plans"] :is(button.primary,button.selected){
+ border-color:var(--plans-primary)!important;background:var(--plans-primary)!important;color:#fff!important;
+}
+.page[data-commerce-unified="plans"] button:disabled{opacity:.45;cursor:not-allowed}
+.page[data-commerce-unified="plans"] :is(button,input,select):focus-visible{outline:2px solid var(--plans-primary);outline-offset:2px}
+.page[data-commerce-unified="plans"] :is(.toolbar input,.toolbar select,.card input){
+ min-height:40px;border:1px solid var(--plans-border);border-radius:6px;
+ background:var(--plans-inset);color:var(--plans-text);padding:8px 12px;
+}
+.page[data-commerce-unified="plans"] input::placeholder{color:var(--plans-muted);opacity:1}
+.page[data-commerce-unified="plans"] .table{padding:22px;min-width:0;overflow-x:auto}
+.page[data-commerce-unified="plans"] .tableHead{
+ min-height:48px;background:var(--plans-inset);border-radius:6px;
+ border:1px solid var(--plans-border);color:var(--plans-text);
+ font-size:14px;padding:13px 16px;
+}
+.page[data-commerce-unified="plans"] .serviceRow{
+ min-height:65px;border-color:var(--plans-border);color:var(--plans-text);
+ font-size:14px;align-items:center;
+}
+.page[data-commerce-unified="plans"] .serviceRow span{color:var(--plans-text)}
+.page[data-commerce-unified="plans"] .sourceTiles span{
+ background:var(--plans-inset);color:var(--plans-text);
+ border:1px solid var(--plans-border);border-radius:6px;
+}
+.page[data-commerce-unified="plans"] .planSectionHeading h2{margin:0}
+.page[data-commerce-unified="plans"] .planSectionHeading p{margin:3px 0 0;color:var(--plans-muted);font-size:14px}
+.page[data-commerce-unified="plans"] .planPurchaseCards .card{
+ min-height:300px;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .card label{margin-top:auto;color:var(--plans-text);font-size:14px}
+.page[data-commerce-unified="plans"] .planPurchaseCards .card small[role="status"]{min-height:37px}
+.page[data-commerce-unified="plans"] .planPurchaseCards .card button{align-self:stretch;margin-top:4px}
+@media(max-width:1100px){
+ .page[data-commerce-unified="plans"] .fourCards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .page[data-commerce-unified="plans"] .split{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+ .page[data-commerce-unified="plans"]{gap:16px;padding:14px 0 28px}
+ .page[data-commerce-unified="plans"] .fourCards,.page[data-commerce-unified="plans"] .metrics{grid-template-columns:1fr}
+ .page[data-commerce-unified="plans"] :is(.card,.split>article,.table){padding:17px}
+ .page[data-commerce-unified="plans"] .noticeBar{flex-direction:column;align-items:flex-start}
+}
