@@ -199,7 +199,7 @@ const standardPageHeaders = [
   ["/workbench/overview/goals",'[class*="page"] > header[class*="header"]'],
   ["/workbench/agents/market",'[class*="page"] > header[class*="header"]'],
   ["/workbench/ai/tasks",'[class*="page"] > header[class*="header"]'],
-  ["/workbench/ai/projects",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai/projects",'[data-project-showcase] > header[class*="hero"]'],
   ["/workbench/ai/reports",'[class*="page"] > header[class*="header"]'],
   ["/workbench/store-products",'[class*="page"] > header[class*="header"]'],
   ["/workbench/data/api",'[class*="page"] > header[class*="header"]'],
