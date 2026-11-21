@@ -170,14 +170,12 @@ function NavBranch({ node, pathname, trail, depth, onNavigate, listingQuery = ""
   const [expanded, setExpanded] = useState(active);
   const id = useId();
   const Icon = navigationIcons[node.href] ?? Circle;
-  const figmaAccountBranch=node.href==="/workbench/account"||node.href.startsWith("/workbench/account/");
-  return <li className={`console-nav-level-${depth}${figmaAccountBranch?" console-nav-figma-account":""}`}>
+  return <li className={`console-nav-level-${depth}`}>
     <div className="console-nav-row" data-active={active || undefined}>
-      {figmaAccountBranch&&node.children&&!node.disclosureOnly?<button className="console-nav-figma-expand" type="button" aria-label={`${expanded ? "收起" : "展开"}${node.label}`} aria-expanded={expanded} aria-controls={id} onClick={()=>setExpanded(value=>!value)}><Plus className="console-nav-plus" size={13} aria-hidden="true"/></button>:null}
       {node.disclosureOnly ? <button className="console-nav-group" type="button" aria-label={`${expanded ? "收起" : "展开"}${node.label}`} aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(value => !value)}><Icon className="console-nav-icon" size={16} aria-hidden="true" /><span className="console-nav-label">{node.label}</span><ChevronDown className="console-nav-chevron" size={16} aria-hidden="true" /></button> : <Link href={href} prefetch={false} aria-current={pathname === node.href || (!node.children && active) ? "page" : undefined} onClick={onNavigate} title={node.availability === "unavailable" ? `${node.label}：业务暂未启用` : node.label}>
-        {depth === 1 || (depth === 2 && !figmaAccountBranch) ? <Icon className="console-nav-icon" size={depth === 1 ? 20 : 16} aria-hidden="true" /> : null}<span className="console-nav-label">{node.label}</span>
+        {depth <= 2 ? <Icon className="console-nav-icon" size={depth === 1 ? 20 : 16} aria-hidden="true" /> : null}<span className="console-nav-label">{node.label}</span>
       </Link>}
-      {node.children && !node.disclosureOnly && !figmaAccountBranch ? <button type="button" aria-label={`${expanded ? "收起" : "展开"}${node.label}`} aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(value => !value)}><ChevronDown className="console-nav-chevron" size={16} aria-hidden="true" /></button> : null}
+      {node.children && !node.disclosureOnly ? <button type="button" aria-label={`${expanded ? "收起" : "展开"}${node.label}`} aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(value => !value)}><ChevronDown className="console-nav-chevron" size={16} aria-hidden="true" /></button> : null}
     </div>
     <AnimatePresence initial={false}>{node.children && expanded ? <NavigationChildren key={id} id={id}>{node.children.map((child) => <NavBranch key={child.href} node={child} pathname={pathname} trail={trail} depth={depth + 1} onNavigate={onNavigate} listingQuery={listingQuery} orderQuery={orderQuery} research={research} />)}</NavigationChildren> : null}</AnimatePresence>
   </li>;
