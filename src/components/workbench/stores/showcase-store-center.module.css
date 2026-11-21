@@ -24,3 +24,13 @@
 @media(max-width:1050px){.page .filters{grid-template-columns:repeat(3,minmax(0,1fr))}.page .filters label{grid-column:1/-1}}
 @media(max-width:680px){.page .filters{grid-template-columns:repeat(2,minmax(0,1fr))}.page .filters label{grid-column:1/-1}}
 @media(max-width:440px){.page .filters{grid-template-columns:1fr}.page .filters label{grid-column:auto}.page .storeList .actions{width:100%;justify-content:flex-start}}
+
+/* Contextual details and platform authorization explanation. */
+.page .detailList{display:grid;gap:0;margin:0;border:1px solid var(--st-line);border-radius:8px;overflow:hidden}
+.page .detailList>div{display:grid;grid-template-columns:minmax(100px,35%) minmax(0,1fr);gap:14px;padding:11px 14px;border-bottom:1px solid var(--st-line)}
+.page .detailList>div:last-child{border-bottom:0}
+.page .detailList dt{color:var(--st-muted);font-size:13px}
+.page .detailList dd{min-width:0;margin:0;overflow-wrap:anywhere;font-weight:600;font-size:14px}
+.page .helpSteps{display:grid;gap:12px;margin:0;padding:0 0 0 24px;font-size:14px;line-height:1.6;color:var(--st-text)}
+.page .helpSteps li::marker{color:var(--st-accent);font-weight:700}
+.page .dialog>.hint{padding:12px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-surface)}
