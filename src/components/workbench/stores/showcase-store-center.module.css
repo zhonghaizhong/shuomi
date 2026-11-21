@@ -61,3 +61,5 @@
 .page .storeButtons button{min-height:36px;padding:7px 12px}
 @media(max-width:1250px){.page .filters{grid-template-columns:repeat(3,minmax(0,1fr))}.page .filters label{grid-column:span 2}.page .storeTop{flex-wrap:wrap}.page .storeStatus{flex-basis:100%}}
 @media(max-width:680px){.page .filters{grid-template-columns:repeat(2,minmax(0,1fr))}.page .filters label{grid-column:1/-1}.page .storeFacts{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:15px}.page .storeFacts>div:nth-child(3){padding-left:0;border-left:0}.page .storeBottom{align-items:flex-start;flex-direction:column}.page .storeButtons{justify-content:flex-start}}
+
+.page .workbenchActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.page .workbenchActions>button{min-height:48px;text-align:left;background:var(--st-surface)}@media(max-width:440px){.page .workbenchActions{grid-template-columns:1fr}}
