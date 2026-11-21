@@ -22,7 +22,7 @@ function SkillList({values,catalog,presentation,disabled,showPurpose,onSelect}:{
  return <ul className={`${styles.list}${catalog?` ${styles.catalog}`:""}`}>{values.map(item=>{
   const version=item.version;
   const meta=presentation==="page" ? [showPurpose&&(version.package.target==="product-image"?"商品图片":"商品标题"),version.state!=="ENABLED"&&states[version.state],!item.canCopy&&"不可复制"].filter(Boolean).join(" · ") : `v${version.version} · ${states[version.state]} · ${catalog?(item.canCopy?"可复制":"仅查看"):version.visibility==="SHARED"?"已共享":"私有"}`;
-  return <li key={version.skill.id}><button aria-haspopup="dialog" disabled={disabled} onClick={e=>onSelect(item,e.currentTarget)}><strong>{skillName(version)}</strong>{presentation==="page"&&<span className={styles.versionAction} aria-hidden="true">→</span>}<small>{version.package.description}</small>{meta&&<span className={styles.versionMeta}>{meta}</span>}</button></li>;
+  return <li key={version.skill.id}><button aria-haspopup="dialog" disabled={disabled} onClick={e=>onSelect(item,e.currentTarget)}><strong>{skillName(version)}</strong>{presentation==="page"&&}<small>{version.package.description}</small>{meta&&<span className={styles.versionMeta}>{meta}</span>}</button></li>;
  })}</ul>;
 }
 export function SkillManagerTrigger({scope,space,canConfigure=false}:{scope:SkillScope;space:"personal"|"organization";canConfigure?:boolean}){
