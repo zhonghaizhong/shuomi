@@ -48,7 +48,9 @@ test("Figma binding modal has account, OTP, groups, fixed IP and honest authoriz
  await expect(dlg).toHaveCount(0);
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByText("测试绑定流程",{exact:true})).toBeVisible();
- await expect(area.getByText("待授权",{exact:true}).first()).toBeVisible();
+ await area.getByRole("button",{name:"进入店铺",exact:true}).click();
+  await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"授权信息",exact:true}).click();
+  await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("待授权");
  await page.goto(root+"/store-products");
  await expect(page.getByRole("heading",{name:"暂无已同步商品"})).toBeVisible();
 });
@@ -74,7 +76,9 @@ test("Figma manage overlay edits local store fields and never grants fake SHEIN 
  await dlg.getByRole("button",{name:"手机验证码"}).click();
  await dlg.getByRole("button",{name:"保存修改"}).click();
  await expect(area.getByText("已管理店铺",{exact:true})).toBeVisible();
- await expect(area.getByText("待授权",{exact:true}).first()).toBeVisible();
+ await area.getByRole("button",{name:"进入店铺",exact:true}).click();
+  await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"授权信息",exact:true}).click();
+  await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("待授权");
 });
 test("Figma more-operation menu wires rename, reauthorization and safe unlink",async({page})=>{
  const area=await createDemo(page,"待操作店铺");
