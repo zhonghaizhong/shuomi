@@ -22,6 +22,7 @@ import { ShowcaseEcologyServices } from "./showcase-ecology-services";
 import { ShowcaseSkillLibrary } from "./showcase-skill-library";
 import { ShowcaseTaskCenter } from "./showcase-task-center";
 import { ShowcaseProjectCenter } from "./showcase-project-center";
+import { ShowcaseStoreCenter } from "./stores/showcase-store-center";
 
 type Row = { title: string; detail: string; value?: string; state?: string };
 type PageSpec = { section: string; title: string; description: string; metrics?: [string, string, string][]; cards?: [string, string, string][]; rows?: Row[]; filters?: string[]; layout?: "supply" | "data" | "ai" | "agents" | "agentMarket" | "agentMine" | "tools" | "services" | "serviceJoin" | "storeCenter" | "plans" | "account" | "accountProfile" | "accountSettings" | "goals" | "storeMatrix" | "alerts" | "advice" | "tasks" | "libraryHub" | "unavailable" };
@@ -181,6 +182,7 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   if (pathname.startsWith("/workbench/account/organization") || pathname.startsWith("/workbench/account/referrals")) return <ShowcaseAccountSuite key={pathname} pathname={pathname} />;
   if (pathname === "/workbench/agents/skills" || ["/workbench/agents/skills/official", "/workbench/agents/skills/mine", "/workbench/agents/skills/team"].includes(pathname)) return <ShowcaseSkillLibrary pathname={pathname} />;
   if (["/workbench/ai/tasks","/workbench/ai/tasks/pending","/workbench/ai/tasks/running","/workbench/ai/tasks/completed","/workbench/ai/tasks/errors","/workbench/ai/tasks/scheduled"].includes(pathname)) return <ShowcaseTaskCenter pathname={pathname} navigate={router.push} />;
+  if (["/workbench/store-center","/workbench/stores","/workbench/store-products","/workbench/store-orders"].includes(pathname) || pathname.startsWith("/workbench/store-orders/")) return <ShowcaseStoreCenter pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/ai/projects" || ["/active","/recent","/templates","/archived","/mine"].some(suffix=>pathname === "/workbench/ai/projects"+suffix)) return <ShowcaseProjectCenter key={pathname} pathname={pathname} />;
   if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
