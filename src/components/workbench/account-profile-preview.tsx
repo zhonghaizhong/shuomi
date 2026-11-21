@@ -12,7 +12,7 @@ type Business={roles:string[];shops:string;platforms:string[];sites:string[];typ
 type Account={name:string;country:string;province:string;city:string};
 const defaultAccount:Account={name:tenant.username,country:"中国大陆",province:"湖北省",city:"武汉市"};
 const defaultBusiness:Business={roles:["跨境电商创业者"],shops:"暂时没有店铺",platforms:[],sites:[],types:[],supply:["暂时没有工厂或供应链资源"],services:[],other:"企业已入驻，尚未开始经营"};
-const keys={account:"shuomi-demo-account-settings-SM-ENT-000001",business:"shuomi-demo-business-profile-SM-ENT-000001",security:"shuomi-demo-security-SM-ENT-000001"};
+const keys={account:"shuomi-demo-account-settings-SM-ENT-000001",business:"shuomi-demo-business-profile-SM-ENT-000001",security:"shuomi-demo-security-SM-ENT-000001",verification:"shuomi-demo-verification-SM-ENT-000001-v1"};
 type Security={phone:string;email:string;passwordUpdated:string};
 const defaultSecurity:Security={phone:"测试手机号",email:tenant.email,passwordUpdated:"2026年11月21日（模拟）"};
 const readSecurity=():Security=>{try{const raw=localStorage.getItem(keys.security);return raw?{...defaultSecurity,...JSON.parse(raw)}:defaultSecurity}catch{return defaultSecurity}};
@@ -51,7 +51,7 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
  const [verificationFiles,setVerificationFiles]=useState<Record<string,string>>({});
  const [personal,setPersonal]=useState({name:tenant.admin as string,id:tenant.identity as string});
  const [enterprise,setEnterprise]=useState({name:tenant.name as string,credit:tenant.credit as string,representative:tenant.admin as string});
- useEffect(()=>{resetLegacyAccountDemoOnce();const a=read(keys.account,defaultAccount),b=read(keys.business,defaultBusiness);setAccount(a);setSavedAccount(a);setBusiness(b);setSavedBusiness(b);setSecurity(readSecurity());},[]);
+ useEffect(()=>{resetLegacyAccountDemoOnce();const a=read(keys.account,defaultAccount),b=read(keys.business,defaultBusiness);setAccount(a);setSavedAccount(a);setBusiness(b);setSavedBusiness(b);setSecurity(readSecurity());try{const record=JSON.parse(localStorage.getItem(keys.verification)||"null");if(record?.personal?.name&&record?.personal?.id)setPersonal(record.personal);if(record?.enterprise?.name&&record?.enterprise?.credit&&record?.enterprise?.representative)setEnterprise(record.enterprise)}catch{}},[]);
  useEffect(()=>{setNotice("");setChangeContact(null);setEditingBusiness(false)},[pathname]);
  useEffect(()=>{if(!changeContact)return;const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape")setChangeContact(null)};document.addEventListener("keydown",onKey);return()=>document.removeEventListener("keydown",onKey)},[changeContact]);
  const saveAccount=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const v={...account,name:account.name.trim()};if(!v.name){setNotice("用户名不能为空");return;}write(keys.account,v);setSavedAccount(v);setNotice("账户展示资料已保存到本次演示浏览器，不会修改真实账户。");};
@@ -63,7 +63,12 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
    if(!["image/jpeg","image/png","application/pdf"].includes(f.type)){setNotice("请上传 JPG、PNG 或 PDF。");return;}
    setVerificationFiles(v=>({...v,[label]:f.name}));
  };
- const verify=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();if(!Object.keys(verificationFiles).length){setNotice("已核对当前模拟认证档案；未发起真实认证。");return;}const required=identityType==="个人认证"?["身份证人像面","身份证国徽面"]:["营业执照"];if(required.some(x=>!verificationFiles[x])){setNotice("请补齐对应证件文件后再确认。");return;}setNotice("已完成表单校验。当前演示站没有身份认证后端，未上传证件、未产生认证申请。");};
+ const verify=(event:FormEvent<HTMLFormElement>)=>{
+   event.preventDefault();
+   if(!personal.name.trim()||!personal.id.trim()||!enterprise.name.trim()||!enterprise.credit.trim()||!enterprise.representative.trim()){setNotice("请填写完整的身份和企业资料。");return}
+   try{localStorage.setItem(keys.verification,JSON.stringify({personal,enterprise}))}catch{setNotice("浏览器本地保存失败，本次资料未归档。");return}
+   setNotice("模拟认证资料已核对并保存；个人与企业审核视为通过，未发起真实认证。");
+ };
  const closeContact=()=>{setChangeContact(null);setSecurityDraft("");setSecurityConfirm("");setSecurityChecked(false);setSecurityError("")};
  const openSecurity=(action:"更换手机号"|"更换邮箱"|"修改密码")=>{setSecurityDraft("");setSecurityConfirm("");setSecurityChecked(false);setSecurityError("");setChangeContact(action)};
  const validSecurity=()=>{
@@ -92,6 +97,7 @@ export function AccountProfilePreview({pathname}:{pathname:string}){
  };
  return <div className={styles.page} data-account-profile-page={mode}>
    <Header mode={mode} onBack={()=>go("")}/>
+   <nav className={styles.profileSubnav} aria-label="账户资料二级导航">{([["账户概览",""],["账户设置","/settings"],["经营画像","/business"],["认证信息","/verification"]] as const).map(([title,route])=><button key={title} type="button" aria-current={pathname===base+route?"page":undefined} onClick={()=>go(route)}>{title}</button>)}</nav>
    {mode==="overview"&&<>
      <section className={styles.profileTop}><div><div className={styles.avatar} aria-hidden="true">S</div><div><h2>{tenant.admin}</h2><p>用户名：{savedAccount.name} · 手机号已验证</p><span className={styles.success}>已实名认证 · 示例状态</span></div></div><dl><div><dt>用户编号</dt><dd>{tenant.userId}</dd></div><div><dt>注册时间</dt><dd>2026年11月21日</dd></div><div><dt>最近登录</dt><dd>演示时间 14:32</dd></div></dl></section>
      <div className={styles.overviewGrid}><section className={styles.panel}><header className={styles.panelHeader}><div><h2>账户设置</h2><p>用于账户识别与联系方式管理</p></div><button className={styles.primary} onClick={()=>go("/settings")}>编辑资料</button></header><dl className={styles.facts}>{[["用户名",savedAccount.name],["手机号码",security.phone+" · 已验证（模拟）"],["邮箱地址",security.email+" · 已验证（模拟）"],["所在地区",[savedAccount.country,savedAccount.province,savedAccount.city].filter(Boolean).join(" · ")],["注册时间","2026年11月21日"]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
