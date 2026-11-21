@@ -9,7 +9,9 @@ import { ShowcaseActionDialog, type DemoGoal, type DemoDraft, type DemoDetail } 
 import { ShowcaseUploadedPreview } from "./showcase-uploaded-preview";
 import { AccountProfilePreview } from "./account-profile-preview";
 import { ShowcaseListingStage } from "./listing/showcase-listing-stages";
-import { ShowcaseEnterprise } from "./account/showcase-enterprise";
+import { ShowcaseAccountSuite } from "./account/showcase-account-suite";
+import {useShowcaseSuite,totalEarnings,availableEarnings} from "./account/showcase-account-state";
+import {showcaseTenant as accountTenant} from "./account/showcase-tenant";
 import { ListingOverview } from "./listing/listing-overview";
 import { ShowcaseAgentDialog, type AgentPreviewDialog } from "./showcase-agent-dialog";
 import { ShowcaseAgentCustomization } from "./showcase-agent-customization";
@@ -101,6 +103,9 @@ function titleFromPath(pathname: string) {
 
 export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   const router = useRouter();
+  const {state:accountSuite}=useShowcaseSuite();
+  const referralBalance=availableEarnings(accountSuite);
+  const earnedTotal=totalEarnings(accountSuite);
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
   const [activeAction, setActiveAction] = useState<string | null>(null);
@@ -173,12 +178,7 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
   if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" />;
   if (pathname === "/workbench/account/profile" || pathname === "/workbench/account/profile/settings") return <AccountProfilePreview key={pathname} pathname={pathname} />;
   if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview />;
-  if (pathname === "/workbench/account/organization" || pathname.startsWith("/workbench/account/organization/")) {
-    const stage = pathname.split("/").pop();
-    if (stage === "organization" || stage === "members" || stage === "roles" || stage === "resources" || stage === "audit") {
-      return <ShowcaseEnterprise key={stage} screen={stage === "organization" ? "overview" : stage} />;
-    }
-  }
+  if (pathname.startsWith("/workbench/account/organization") || pathname.startsWith("/workbench/account/referrals")) return <ShowcaseAccountSuite key={pathname} pathname={pathname} />;
   if (pathname === "/workbench/agents/skills" || ["/workbench/agents/skills/official", "/workbench/agents/skills/mine", "/workbench/agents/skills/team"].includes(pathname)) return <ShowcaseSkillLibrary pathname={pathname} />;
   if (["/workbench/ai/tasks","/workbench/ai/tasks/pending","/workbench/ai/tasks/running","/workbench/ai/tasks/completed","/workbench/ai/tasks/errors","/workbench/ai/tasks/scheduled"].includes(pathname)) return <ShowcaseTaskCenter pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/ai/projects" || ["/active","/recent","/templates","/archived","/mine"].some(suffix=>pathname === "/workbench/ai/projects"+suffix)) return <ShowcaseProjectCenter key={pathname} pathname={pathname} />;
@@ -231,9 +231,9 @@ export function DemoWorkbenchPreview({ pathname }: { pathname: string }) {
       <section className={styles.profileGrid}><article><header><h2>账户设置</h2><span>用于账户识别与联系方式管理</span><button onClick={() => router.push("/workbench/account/profile/settings?preview=1")}>编辑资料</button></header><div className={styles.profileFacts}>{[["用户名", "sumi_demo"], ["手机号码", "+86 138 **** 8899　已验证"], ["邮箱地址", "user@sumi.ai　已验证"], ["所在地区", "中国 · 浙江省 · 杭州市"], ["注册时间", "2026年8月10日"]].map(([label, value]) => <div key={label}><b>{label}</b><span>{value}</span></div>)}</div><section className={styles.profileStatus}><h3>账号状态</h3><div>{[["手机验证", "已完成", "用于验证码登录与安全验证"], ["邮箱地址", "已验证", "用于接收账户与安全通知"], ["登录密码", "已设置", "上次修改于 2026年8月10日"]].map(([title, state, hint]) => <article key={title}><strong>{title}<em>{state}</em></strong><span>{hint}</span></article>)}</div></section></article><aside><header><h2>经营画像</h2><button onClick={() => router.push("/workbench/account/profile/business?preview=1")}>编辑画像</button></header><p>帮助系统理解你的业务背景</p>{[["用户角色", "跨境电商卖家"], ["店铺情况", "已有店铺"], ["工厂情况", "自有工厂"], ["经营平台", "Amazon、TikTok Shop"], ["经营站点", "美国站"], ["店铺类型", "自营店"], ["所需服务", "AI运营 · 智能选品 · 商品优化"]].map(([label, value]) => <div className={styles.profilePair} key={label}><b>{label}</b><span>{value}</span></div>)}</aside></section>
     </> : page.layout === "account" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>我的账户</div><h1>我的账户</h1><p>统一管理账户资料、企业协作与推广收益。</p></div></header>
-      <section className={styles.accountOverview}><header><h2>账户概览</h2><span>查看当前账户、企业与收益状态</span></header><div>{[["账号状态", "已实名认证", "手机 / 邮箱已验证"], ["企业状态", "企业已认证", "管理员"], ["推广收益", "可提现 ¥3,260", "待结算 ¥1,580"]].map(([label, value, detail]) => <article key={label}><span>{label}</span><div><strong>{value}</strong><small>{detail}</small></div></article>)}</div></section>
-      <section className={styles.accountModules}><header><h2>账户管理</h2><span>只保留当前真正需要的三个账户模块。</span></header><div>{[["账户资料", "资料已完善", "维护用户名、手机、邮箱、经营画像与认证信息。", "实名认证", "已完成", "管理资料", "/workbench/account/profile"], ["企业空间", "企业已认证", "管理成员与权限、资源与额度以及操作记录。", "当前身份", "管理员", "进入空间", "/workbench/account/organization"], ["推广与收益", "累计收益 ¥12,860", "管理推广入口、收益明细、提现与推广规则。", "可提现", "¥3,260", "查看收益", "/workbench/account/referrals"]].map(([title, badge, desc, label, value, action, href], i) => <article key={title} data-step={i}><h3>{title}</h3><span>{badge}</span><p>{desc}</p><footer><small>{label}　<b>{value}</b></small><button onClick={() => router.push(`${href}?preview=1`)}>{action}</button></footer></article>)}</div></section>
-      <section className={styles.accountBottom}><article><header><h2>最近动态</h2><span>账户相关的重要变化</span></header>{[["今天 10:32", "角色权限已更新", "运营负责人权限配置已调整", "#62a9ff"], ["今天 09:18", "资源额度已分配", "已为张琳分配续费期数与资源额度", "#4fd1bd"], ["08-30 18:20", "推广收益待结算", "新增推广收益 ¥50.00", "#f4bf64"]].map(([time, title, body, color]) => <div key={time}><i style={{ background: color }} /><span>{time}</span><strong>{title}</strong><small>{body}</small></div>)}</article><aside><header><h2>待关注</h2><span>需要留意的账户事项</span></header><div><strong>店铺服务</strong><span>0 家店铺即将到期</span><button onClick={() => router.push("/workbench/plans/entitlements?preview=1")}>查看</button></div><div><strong>推广收益</strong><span>¥1,580 待结算</span><button onClick={() => router.push("/workbench/account/referrals/earnings?preview=1")}>查看</button></div></aside></section>
+      <section className={styles.accountOverview}><header><h2>账户概览</h2><span>查看当前账户、企业与收益状态</span></header><div>{[["账号状态", "已实名认证（模拟）", "手机 / 邮箱已验证（模拟）"], ["企业状态", "企业已认证（模拟）", "管理员 · "+accountTenant.name], ["推广收益", "可提现 "+("¥"+referralBalance.toFixed(2)), "企业已入驻 · 暂无其他结算记录"]].map(([label, value, detail]) => <article key={label}><span>{label}</span><div><strong>{value}</strong><small>{detail}</small></div></article>)}</div></section>
+      <section className={styles.accountModules}><header><h2>账户管理</h2><span>只保留当前真正需要的三个账户模块。</span></header><div>{[["账户资料", "资料已完善", "维护用户名、手机、邮箱、经营画像与认证信息。", "实名认证", "已完成", "管理资料", "/workbench/account/profile"], ["企业空间", "企业已认证", "管理成员与权限、资源与额度以及操作记录。", "当前身份", "管理员", "进入空间", "/workbench/account/organization"], ["推广与收益", "累计收益 "+("¥"+earnedTotal.toFixed(2)), "管理推广入口、收益明细、提现与推广规则。", "可提现", "¥"+referralBalance.toFixed(2), "查看收益", "/workbench/account/referrals"]].map(([title, badge, desc, label, value, action, href], i) => <article key={title} data-step={i}><h3>{title}</h3><span>{badge}</span><p>{desc}</p><footer><small>{label}　<b>{value}</b></small><button onClick={() => router.push(`${href}?preview=1`)}>{action}</button></footer></article>)}</div></section>
+      <section className={styles.accountBottom}><article><header><h2>最近动态</h2><span>账户相关的重要变化</span></header>{[["2026-11-21", "企业入驻（模拟）", accountTenant.name+" 认证资料已归档", "#62a9ff"], ["2026-11-21", "管理员已开通", "林晨 · 当前仅有一位管理员", "#4fd1bd"], ["2026-11-21", "开始创业流程", "暂无店铺和经营数据", "#f4bf64"]].map(([time, title, body, color]) => <div key={time}><i style={{ background: color }} /><span>{time}</span><strong>{title}</strong><small>{body}</small></div>)}</article><aside><header><h2>待关注</h2><span>需要留意的账户事项</span></header><div><strong>店铺服务</strong><span>暂无已绑定店铺</span><button onClick={() => router.push("/workbench/plans/entitlements?preview=1")}>查看</button></div><div><strong>推广收益</strong><span>暂无待结算推广收益</span><button onClick={() => router.push("/workbench/account/referrals/earnings?preview=1")}>查看</button></div></aside></section>
     </> : page.layout === "plans" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>套餐与权益</div><h1>套餐与权益</h1><p>统一查看店铺服务、AI 积分、数据额度及企业共享存储。</p></div></header>
       <section className={styles.planOverview}><div><span>当前计费方式</span><h2>基础方案 · 按需使用</h2><p>店铺按期购买、AI 积分和数据按需充值，企业存储按扩容包独立计费。</p></div><div className={styles.planStats}>{[["店铺服务", "5 家使用中", "1 家将到期"], ["AI 积分余额", "8,650", "使用时扣减"], ["数据余额", "300,000 条", "按调用扣减"], ["企业存储", "2.75 GiB", "已用 2.00 GiB"]].map(([label, value, hint]) => <div key={label}><span>{label}</span><strong>{value}</strong><small>{hint}</small></div>)}</div><div className={styles.planActions}><button onClick={() => router.push("/workbench/plans/entitlements?preview=1")}>查看我的权益</button><button onClick={() => router.push("/workbench/plans/top-up?preview=1")}>进入钱包</button></div></section>
