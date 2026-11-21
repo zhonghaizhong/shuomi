@@ -115,3 +115,98 @@ test("enterprise and referral subpages preserve approved dark/light surfaces and
   await expect(suite).toContainText("武汉硕米电子商务有限公司");
  }
 });
+
+test("account submenus navigate without dead ends and preserve navigation state",async({page})=>{
+ await page.goto(base+"/organization");
+ const suite=page.locator("[data-account-suite]");
+ const nav=suite.getByRole("navigation",{name:"我的账户业务导航"});
+ for(const [name,suffix] of [["成员与权限","organization/members"],["角色权限","organization/roles"],["资源与额度","organization/resources"],["操作记录","organization/audit"],["推广与收益","referrals"],["推广中心","referrals/center"],["收益明细","referrals/earnings"],["提现管理","referrals/withdrawals"],["推广规则","referrals/rules"]] as const){
+  await nav.getByRole("button",{name,exact:true}).click();
+  await expect(page).toHaveURL(new RegExp("/account/"+suffix.replaceAll("/","\\/")));
+  await expect(page.locator("[data-account-suite]")).toContainText("武汉硕米电子商务有限公司");
+  await expect(page.locator("[data-account-suite]").getByRole("navigation",{name:"我的账户业务导航"}).getByRole("button",{name,exact:true})).toHaveAttribute("aria-current","page");
+ }
+ await page.goto(base+"/profile");
+ const profileNav=page.getByRole("navigation",{name:"账户资料二级导航"});
+ for(const [name,suffix] of [["账户设置","/settings"],["经营画像","/business"],["认证信息","/verification"],["账户概览",""]] as const){
+  await profileNav.getByRole("button",{name}).click();
+  await expect(page.locator("[data-account-profile-page]")).toBeVisible();
+  await expect(page.locator("[data-account-profile-page]").getByRole("navigation",{name:"账户资料二级导航"}).getByRole("button",{name})).toHaveAttribute("aria-current","page");
+ }
+});
+test("role permission editing persists and affects linked role rows",async({page})=>{
+ await page.goto(base+"/organization/roles");
+ const suite=page.locator("[data-account-suite]");
+ const role=suite.getByRole("row").filter({hasText:"商品运营"});
+ await role.getByRole("button",{name:"配置权限"}).click();
+ const dialog=suite.getByRole("dialog",{name:"配置角色权限"});
+ await dialog.getByRole("checkbox",{name:"数据服务"}).check();
+ await dialog.getByRole("checkbox",{name:"供应市场"}).uncheck();
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await expect(role).toContainText("数据服务");
+ await expect(role).not.toContainText("供应市场");
+ await page.reload();
+ await expect(suite.getByRole("row").filter({hasText:"商品运营"})).toContainText("数据服务");
+ await page.goto(base+"/organization/audit");
+ await expect(suite).toContainText("更新角色 商品运营 权限");
+});
+test("per member storage allocation is bounded by enterprise capacity and logged",async({page})=>{
+ await page.goto(base+"/organization/members");
+ const suite=page.locator("[data-account-suite]");
+ await suite.getByRole("button",{name:"邀请成员"}).click();
+ let dialog=suite.getByRole("dialog",{name:"邀请成员"});
+ await dialog.getByRole("textbox",{name:"成员姓名"}).fill("模拟资源运营");
+ await dialog.getByRole("textbox",{name:"成员邮箱"}).fill("resource@example.com");
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await page.goto(base+"/organization/resources");
+ await suite.getByRole("row").filter({hasText:"模拟资源运营"}).getByRole("button",{name:"分配存储"}).click();
+ dialog=suite.getByRole("dialog",{name:"分配成员存储"});
+ await dialog.getByRole("spinbutton",{name:"成员存储上限"}).fill("6");
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await expect(dialog.getByRole("alert")).toContainText("超出企业可分配");
+ await dialog.getByRole("spinbutton",{name:"成员存储上限"}).fill("2.5");
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await expect(suite.getByRole("row").filter({hasText:"模拟资源运营"})).toContainText("2.5 GiB");
+ await page.reload();
+ await expect(suite).toContainText("剩余 2.5 GiB");
+ await page.goto(base+"/organization/audit");
+ await expect(suite).toContainText("存储上限：2.5 GiB");
+});
+test("partial withdrawals retain remaining earnings and save independent withdrawal records",async({page})=>{
+ await page.goto(base+"/referrals/center");
+ const suite=page.locator("[data-account-suite]");
+ await suite.getByRole("button",{name:"模拟一笔推广成交并结算"}).click();
+ let dialog=suite.getByRole("dialog",{name:"模拟推广收益"});
+ await dialog.getByRole("textbox",{name:"模拟客户标识"}).fill("TEST-PARTIAL");
+ await dialog.getByRole("spinbutton",{name:"模拟佣金金额"}).fill("120");
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await page.goto(base+"/referrals/withdrawals");
+ await suite.getByRole("button",{name:"设置收款方式"}).click();
+ dialog=suite.getByRole("dialog",{name:"设置收款方式"});
+ await dialog.getByRole("textbox",{name:"演示收款标识"}).fill("TEST-ACCOUNT");
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await suite.getByRole("button",{name:"申请模拟提现"}).click();
+ dialog=suite.getByRole("dialog",{name:"模拟提现"});
+ await dialog.getByRole("spinbutton",{name:"模拟提现金额"}).fill("45.50");
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await expect(suite).toContainText("¥74.50");
+ await expect(suite).toContainText("¥45.50");
+ await page.goto(base+"/referrals/earnings");
+ await expect(suite).toContainText("¥74.50");
+ await expect(suite).toContainText("¥45.50");
+});
+test("simulated certification changes are locally saved and reflected in preview after reload",async({page})=>{
+ await page.goto(base+"/profile/verification");
+ const root=page.locator('[data-account-profile-page="verification"]');
+ await root.getByRole("textbox",{name:"法定代表人"}).fill("模拟测试法人");
+ await root.getByRole("button",{name:"核对认证资料"}).click();
+ await expect(root.getByRole("status")).toContainText("未发起真实认证");
+ await page.reload();
+ await expect(root.getByRole("textbox",{name:"法定代表人"})).toHaveValue("模拟测试法人");
+ await root.getByRole("tab",{name:"个人认证"}).click();
+ await root.getByRole("textbox",{name:"真实姓名"}).fill("演示身份");
+ await root.getByRole("button",{name:"核对认证资料"}).click();
+ await page.reload();
+ await root.getByRole("tab",{name:"个人认证"}).click();
+ await expect(root.getByRole("textbox",{name:"真实姓名"})).toHaveValue("演示身份");
+});
