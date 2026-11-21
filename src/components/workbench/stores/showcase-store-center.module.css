@@ -63,3 +63,37 @@
 @media(max-width:680px){.page .filters{grid-template-columns:repeat(2,minmax(0,1fr))}.page .filters label{grid-column:1/-1}.page .storeFacts{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:15px}.page .storeFacts>div:nth-child(3){padding-left:0;border-left:0}.page .storeBottom{align-items:flex-start;flex-direction:column}.page .storeButtons{justify-content:flex-start}}
 
 .page .workbenchActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.page .workbenchActions>button{min-height:48px;text-align:left;background:var(--st-surface)}@media(max-width:440px){.page .workbenchActions{grid-template-columns:1fr}}
+
+/* Store Center home: Figma 1220:359 information architecture with approved Vuexy colors. */
+.page .homeIntro{padding:20px 24px;display:grid;gap:7px;border:1px solid var(--st-line);border-radius:10px;background:var(--st-bg)}
+.page .homeIntro .eyebrow{font-size:13px;color:var(--st-muted);margin:0}
+.page .homeIntro h2{font-size:clamp(20px,1.65vw,25px);font-weight:700;line-height:1.35;margin:0;padding-left:12px;border-left:3px solid var(--st-accent)}
+.page .homeIntro>p:last-child{font-size:14px;color:var(--st-muted);margin:0;line-height:1.6}
+.page .homeSection{display:grid;gap:13px;min-width:0}
+.page .homeSection>header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.page .homeSection>header h2,.page .noteCard h2{font-size:18px;font-weight:700;line-height:1.35;margin:0}
+.page .homeSection>header h2{padding-left:11px;border-left:3px solid var(--st-accent)}
+.page .homeSection>header p{font-size:13px;color:var(--st-muted);margin:0}
+.page .homeSection .entries{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.page .homeSection .entries article{min-height:226px;display:flex;flex-direction:column;align-items:flex-start;gap:11px;padding:18px;background:var(--st-bg);border-radius:10px}
+.page .homeSection .entries h3{font-size:17px;font-weight:700;margin:0}
+.page .homeSection .entries p{font-size:13px;line-height:1.65;flex:1;min-height:0;margin:0}
+.page .entryLabels{display:flex;flex-wrap:wrap;gap:5px}
+.page .entryLabels span{font-size:11px;line-height:1.4;padding:4px 7px;border-radius:5px;color:var(--st-muted);border:1px solid var(--st-line);background:var(--st-surface)}
+.page .homeSection .entries button.entryButton{display:flex;align-items:center;justify-content:center;width:100%;min-height:38px;margin-top:0;border-color:var(--st-accent);color:#fff;background:var(--st-accent);border-radius:7px}
+.page .homeSection .entries button.entryButton:hover{background:#685dd8;border-color:#685dd8}
+.page .homeSection .steps{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.page .homeSection .steps article{min-height:148px;background:var(--st-bg);border-radius:10px}
+.page .homeSection .steps h3{margin:9px 0 5px}
+.page .homeSection .steps p{font-size:12px}
+.page .homeNotes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.page .noteCard{display:grid;align-content:start;gap:10px;padding:20px 22px;background:var(--st-bg);border:1px solid var(--st-line);border-radius:10px;min-width:0}
+.page .noteLabel{font-size:13px;color:var(--st-accent);font-weight:650}
+.page .noteCard>p{font-size:13px;color:var(--st-muted);margin:0;line-height:1.6}
+.page .noteItems{display:grid;gap:0;margin-top:6px}
+.page .noteItems>div{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:10px 0;border-top:1px solid var(--st-line)}
+.page .noteItems strong{font-size:14px;white-space:nowrap}
+.page .noteItems span{font-size:13px;color:var(--st-muted);text-align:right}
+@media(max-width:1200px){.page .homeSection .entries{grid-template-columns:repeat(2,minmax(0,1fr))}.page .homeSection .steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.page .homeNotes{grid-template-columns:1fr}.page .homeSection .steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.page .homeSection .entries,.page .homeSection .steps{grid-template-columns:1fr}.page .homeIntro{padding:18px}.page .noteItems>div{align-items:flex-start;flex-direction:column;gap:4px}.page .noteItems span{text-align:left}}
