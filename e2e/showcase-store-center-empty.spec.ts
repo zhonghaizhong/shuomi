@@ -107,7 +107,7 @@ test("Figma binding group and owner affordances preserve draft and follow compan
  await form.getByLabel("负责人").selectOption("林晨");
  await form.getByRole("button",{name:"提交授权"}).click();
  const area=page.locator('[data-store-center-showcase="stores"]');
- await expect(area.getByText("店铺运营组",{exact:true})).toBeVisible();
+ await expect(area.locator("article").filter({hasText:"分组绑定草稿"}).getByText("店铺运营组",{exact:true})).toBeVisible();
  await expect(area.getByText("林晨",{exact:true})).toBeVisible();
 });
 test("Figma more-operation menu wires rename, reauthorization and safe unlink",async({page})=>{
