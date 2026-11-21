@@ -2084,3 +2084,96 @@
  .page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseIntro{min-height:0}
  .page[data-commerce-unified="plans"] .planDetailDialog .planDetailHighlight strong{font-size:25px}
 }
+
+
+/* Plans subpage final density and control alignment: scoped Vuexy refinement. */
+.page[data-commerce-unified="plans"] :is(.noticeBar,.split>article,.table) {
+ min-width:0; box-shadow:none;
+}
+.page[data-commerce-unified="plans"] .noticeBar {
+ min-height:0; gap:16px; padding:18px 22px; flex-wrap:wrap;
+}
+.page[data-commerce-unified="plans"] .noticeBar>b { flex:0 0 auto; white-space:nowrap; }
+.page[data-commerce-unified="plans"] .noticeBar>span { flex:1 1 360px; min-width:0; }
+.page[data-commerce-unified="plans"] .noticeBar>button {
+ margin-left:auto; flex:0 0 auto; min-height:40px;
+}
+.page[data-commerce-unified="plans"] .fourCards { gap:16px; }
+.page[data-commerce-unified="plans"] .fourCards>.card {
+ padding:20px; min-height:200px; gap:10px;
+}
+.page[data-commerce-unified="plans"] .fourCards>.card h2 {
+ font-size:clamp(20px,1.55vw,26px); overflow-wrap:normal; word-break:keep-all;
+}
+.page[data-commerce-unified="plans"] .fourCards>.card p {
+ font-size:14px; line-height:1.65; min-height:0; margin:0;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card {
+ min-height:200px; justify-content:flex-start;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .cardTitle {
+ display:flex; flex-wrap:wrap; width:100%; gap:8px;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementValue {
+ display:block; font-size:clamp(23px,2vw,31px);
+ line-height:1.35; font-variant-numeric:tabular-nums;
+ overflow-wrap:normal; word-break:keep-all;
+}
+.page[data-commerce-unified="plans"] .planMetricCard {
+ min-width:0; min-height:106px; gap:12px; padding:16px;
+}
+.page[data-commerce-unified="plans"] .planMetricCard .planMetricValue {
+ flex-shrink:0; min-width:0; font-variant-numeric:tabular-nums;
+}
+.page[data-commerce-unified="plans"] .planMetricCard .planMetricCopy {
+ min-width:0;
+}
+.page[data-commerce-unified="plans"] .planMetricCard .planMetricCopy :is(span,small) {
+ word-break:keep-all; overflow-wrap:normal;
+}
+.page[data-commerce-unified="plans"] .toolbar {
+ gap:10px; min-width:0; align-items:center;
+}
+.page[data-commerce-unified="plans"] .toolbar :is(input,select,button) {
+ min-height:40px; font-size:14px;
+}
+.page[data-commerce-unified="plans"] .table {
+ padding:20px 22px; min-width:0; overflow-x:hidden;
+}
+.page[data-commerce-unified="plans"] .planTableScroll {
+ width:100%; overflow-x:auto; border-radius:7px;
+ border:1px solid var(--plans-border);
+}
+.page[data-commerce-unified="plans"] .planTableScroll .tableHead {
+ border:0; border-bottom:1px solid var(--plans-border); border-radius:0;
+}
+.page[data-commerce-unified="plans"] .planTableScroll .serviceRow {
+ border-bottom:1px solid var(--plans-border); font-size:14px;
+}
+.page[data-commerce-unified="plans"] .planTableScroll .serviceRow:last-child { border-bottom:0; }
+.page[data-commerce-unified="plans"] .planTableScroll .serviceRow button {
+ min-height:34px; white-space:nowrap;
+}
+.page[data-commerce-unified="plans"] :is(.noticeBar,.toolbar,.split,.fourCards,.planTableScroll) button:focus-visible {
+ outline:2px solid var(--plans-primary); outline-offset:2px;
+}
+@media(max-width:1250px) {
+ .page[data-commerce-unified="plans"] .fourCards {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+ }
+}
+@media(max-width:700px) {
+ .page[data-commerce-unified="plans"] .fourCards {
+  grid-template-columns:minmax(0,1fr);
+ }
+ .page[data-commerce-unified="plans"] .noticeBar {
+  flex-direction:column;align-items:stretch;padding:16px;
+ }
+ .page[data-commerce-unified="plans"] .noticeBar>span {
+  flex:0 1 auto;
+ }
+ .page[data-commerce-unified="plans"] .noticeBar>button {
+  margin-left:0;align-self:flex-start;
+ }
+ .page[data-commerce-unified="plans"] .table {padding:16px}
+}
