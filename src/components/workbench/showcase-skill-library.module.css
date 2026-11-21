@@ -1,223 +1,83 @@
-
-/* Skills showcase intentionally inherits the approved Vuexy console styling.
-   Figma owns information architecture only; visual tokens match Tool Market. */
+/* Approved Vuexy showcase styling, matched to showcase-tool-home.module.css.
+   Only presentation: actual linked Figma destinations and skill actions remain unchanged. */
 .shell{
- --s-bg:#2f3349;--s-panel:#393d55;--s-txt:#e5e4f4;--s-muted:#c7c4df;
- --s-line:#44485e;--s-accent:#00cfe8;
- box-sizing:border-box;display:grid;gap:12px;width:calc(100% - 48px);
- max-width:1600px;margin-inline:auto;padding:20px 0 36px;
- color:var(--s-txt);font-size:14px;min-width:0
+ --s-bg:#2f3349;--s-panel:#393d55;--s-txt:#e5e4f4;--s-muted:#c7c4df;--s-line:#44485e;
+ --s-accent:#00cfe8;--s-title:#f2f0fb;--s-card-title:#8ebbff;--s-action:#7367f0;
+ --s-border-control:#555a73;--s-control-text:#d6d3ee;--s-control-bg:#393d55;
+ --s-selected:#a8efff;--s-selected-bg:#393d55;--s-selected-border:#4f7390;
+ --s-success:#74ddcb;--s-success-bg:#28c76f22;
+ --s-shadow:0 1px 3px #0a0d1c1f;
+ box-sizing:border-box;display:grid;gap:12px;width:calc(100% - 48px);max-width:1600px;
+ margin-inline:auto;padding:20px 0 36px;color:var(--s-txt);font-size:14px;min-width:0
 }
-.hero,.tabs,.feature,.toolbar,.empty,.note,.step{
- box-sizing:border-box;min-width:0;border:1px solid var(--s-line);
- border-radius:6px;background:var(--s-bg);box-shadow:0 1px 3px #0a0d1c1f
-}
-.hero{min-height:130px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px}
-.eyebrow{display:block;margin-bottom:6px;color:#b7b1d6;font-size:14px;font-weight:400;line-height:20px;letter-spacing:0}
-.hero h1{margin:0 0 5px;padding-left:12px;border-left:3px solid var(--s-accent);color:#f2f0fb;font-size:26px;line-height:34px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
-.hero p{margin:0;max-width:900px;color:var(--s-muted);font-size:14px;line-height:22px}
-.heroIcon{width:50px;height:50px;display:grid;place-items:center;flex:none;border:1px solid #555a73;background:var(--s-panel);border-radius:6px;color:var(--s-accent)}
-.tabs{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:9px 12px}
-.tab{padding:8px 17px;min-width:112px;min-height:36px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--s-muted);font-size:14px;font-weight:550;cursor:pointer;text-align:center}
-.tab:hover{color:#fff;background:var(--s-panel)}
-.active{color:#a8efff;border-color:#4f7390;background:#393d55}
-.sectionTitle{margin:2px 0 0;padding-left:12px;border-left:3px solid var(--s-accent);color:var(--s-txt);font-size:18px;line-height:26px;font-weight:650;white-space:nowrap}
-.sectionSub{margin:5px 0 0;color:var(--s-muted);font-size:14px;line-height:22px}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.feature{position:relative;display:flex;flex-direction:column;gap:11px;min-height:174px;padding:16px 18px 14px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
-.feature:before{position:absolute;content:"";top:19px;left:0;width:3px;height:32px;background:var(--s-accent)}
-.feature:hover{border-color:#7367f0;box-shadow:inset 0 0 0 1px #7367f055}
-.featureTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.featureGlyph{height:38px;width:38px;border:1px solid #555a73;border-radius:6px;background:#393d55;display:grid;place-items:center;color:#8ebbff}
-.tag{padding:4px 9px;border:1px solid #555a73;border-radius:6px;color:var(--s-muted);font-size:12px}
-.feature h3{margin:0;color:#8ebbff;font-size:18px;line-height:24px;font-weight:650}
-.feature p{margin:0;color:var(--s-muted);font-size:14px;line-height:21px;flex:1}
-.feature button,.primary,.secondary{min-height:35px;padding:7px 14px;border:1px solid #555a73;border-radius:6px;background:var(--s-panel);color:#d6d3ee;font-size:14px;font-weight:550;cursor:pointer}
-.feature button{align-self:flex-end;min-width:140px;text-align:center}
-.feature button:hover,.secondary:hover{border-color:#7367f0;color:#bfb8ff}
-.primary{border-color:#7367f0;background:#7367f0;color:#fff}
-.primary:hover{background:#6658ce}
-.toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 20px}
-.toolbarRight{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.search{min-height:35px;width:245px;padding:7px 12px;border:1px solid #555a73;border-radius:6px;background:#393d55;color:#f2f0fb;font:inherit;font-size:14px}
-.search::placeholder{color:#b7b1d6}
-.search:focus-visible,.tab:focus-visible,.feature button:focus-visible,.primary:focus-visible,.secondary:focus-visible{outline:2px solid #a199ff;outline-offset:2px}
-.empty{display:flex;min-height:220px;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:26px;text-align:center}
-.emptyIcon{width:50px;height:50px;display:grid;place-items:center;border:1px solid #555a73;border-radius:6px;background:#393d55;color:#8ebbff}
-.empty h3{margin:0;color:var(--s-txt);font-size:17px;line-height:24px;font-weight:650}
-.empty p{margin:0;max-width:540px;color:var(--s-muted);font-size:14px;line-height:22px}
-.note{display:flex;align-items:flex-start;gap:12px;padding:15px 18px;color:var(--s-muted);font-size:14px;line-height:22px}
-.note strong{color:var(--s-txt)}
-.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.step{position:relative;padding:16px 18px;overflow:hidden}
-.step:before{content:"";position:absolute;top:18px;left:0;width:3px;height:30px;background:#74ddcb}
-.step b{color:#74ddcb;font-size:14px;font-weight:650;letter-spacing:0}
-.step h3{margin:9px 0 6px;color:var(--s-txt);font-size:16px;line-height:22px;font-weight:650}
-.step p{margin:0;color:var(--s-muted);font-size:14px;line-height:21px}
-/* Vuexy light — separate surface/foreground palette, not opacity over dark cards. */
-:global(.light) .shell{--s-bg:#fff;--s-panel:#f8f7fa;--s-txt:#444050;--s-muted:#6f6b7d;--s-line:#e6e6f1;--s-accent:#00a8bd;color:#444050}
-:global(.light) .shell :is(.hero,.tabs,.feature,.toolbar,.empty,.note,.step){background:#fff;border-color:#e6e6f1;box-shadow:0 3px 13px #45405f0b}
-:global(.light) .hero h1{color:#444050}
-:global(.light) .eyebrow,:global(.light) .hero p{color:#6f6b7d}
-:global(.light) .heroIcon,:global(.light) .featureGlyph,:global(.light) .emptyIcon{color:#6658ce;background:#f8f7fa;border-color:#e6e6f1}
-:global(.light) .tab{color:#6f6b7d}
-:global(.light) .tab:hover{background:#f8f7fa;color:#444050}
-:global(.light) .active{color:#6658ce;border-color:#dcd6f2;background:#f3f1ff}
-:global(.light) .tag{color:#6f6b7d;border-color:#e6e6f1}
-:global(.light) .feature h3{color:#444050}
-:global(.light) .feature:hover{border-color:#7367f0;box-shadow:inset 0 0 0 1px #7367f033}
-:global(.light) .feature button,:global(.light) .secondary{color:#6658ce;background:#f3f1ff;border-color:#dcd6f2}
-:global(.light) .feature button:hover,:global(.light) .secondary:hover{background:#eae6ff;border-color:#7367f0}
-:global(.light) .primary{color:#fff;background:#7367f0;border-color:#7367f0}
-:global(.light) .search{background:#fff;border-color:#dcd9e5;color:#444050}
-:global(.light) .search::placeholder{color:#6f6b7d}
-:global(.light) .step b{color:#087f6c}
-:global(.light) .step:before{background:#087f6c}
-@media(min-width:2400px){.hero{min-height:152px;padding:26px 30px}.hero h1{font-size:30px;line-height:40px}.hero p{font-size:15px;line-height:24px}}
-@media(max-width:1050px){.grid,.steps{grid-template-columns:repeat(2,minmax(0,1fr))}.hero h1{white-space:normal}}
-@media(max-width:700px){.shell{width:calc(100% - 24px);padding:14px 0 28px}.hero{min-height:112px;padding:16px 18px}.hero h1{font-size:23px;line-height:30px}.heroIcon{display:none}.grid,.steps{grid-template-columns:minmax(0,1fr)}.toolbar{align-items:stretch}.toolbarRight{width:100%}.search{width:100%;flex:1 1 100%}.tab{flex:1 1 42%}}
-
-
-/* Figma content hierarchy: one shared management surface with grouped operations. */
-.toolbar{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:23px 25px 25px}
-.managementTop{display:block;width:100%}
-.managementActions{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin-top:18px}
-.managementActions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px}
-.actionBar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.actionBar button{min-height:40px}
-.actionBar button:disabled{opacity:.45;cursor:not-allowed}
-.emptyText{margin:18px 0 0;color:var(--s-muted);font-size:14px;line-height:22px}
-.policy{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 17px;margin-top:14px;border:1px solid #555a73;border-radius:6px;background:var(--s-panel)}
-.policy strong{font-size:14px;color:var(--s-txt);font-weight:650}
-.policy p{margin:5px 0 0;color:var(--s-muted);font-size:13px;line-height:20px}
-.policy button{min-height:40px;white-space:nowrap}
-.previewPermission{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;color:var(--s-muted);font-size:13px}
-.previewPermission button{min-height:34px}
-.skillRecord{margin-top:12px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-panel)}
-.skillRecordButton{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 17px;background:transparent;border:0;color:var(--s-txt);text-align:left;cursor:pointer}
-.skillRecordButton>span:first-child{min-width:0;display:grid;gap:7px}
-.skillRecordButton strong{font-size:15px;font-weight:650;overflow-wrap:anywhere}
-.skillRecordButton small{font-size:13px;line-height:20px;color:var(--s-muted)}
-.version{flex:none;font-size:13px;color:#74ddcb}
-.detail{margin-top:12px;padding:15px 17px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-panel);color:var(--s-txt)}
-.detail strong{font-size:14px;font-weight:650}
-.detail p{margin:8px 0 12px;font-size:13px;color:var(--s-muted);line-height:21px}
-:global(.light) .policy,:global(.light) .skillRecord,:global(.light) .detail{background:#f8f7fa;border-color:#e6e6f1}
-:global(.light) .version{color:#087f6c}
-:global(.light) .skillRecordButton{color:#444050}
-@media(max-width:700px){.toolbar{padding:16px 18px}.policy,.skillRecordButton{align-items:flex-start;flex-direction:column}.previewPermission{flex-direction:column;align-items:flex-start}.actionBar{width:100%}}
-
-
-/* Figma: compact management list and actionable forms, using existing Vuexy tokens. */
-.searchFilters{display:flex;align-items:center;gap:10px;margin-top:15px}
-.searchLabel{display:flex;align-items:center;gap:8px;min-height:39px;padding:0 12px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-panel);color:var(--s-muted);width:min(100%,360px)}
-.searchLabel input{border:0;background:transparent;color:var(--s-txt);font:inherit;font-size:14px;width:100%;min-width:0;outline:0}
-.searchLabel:focus-within{outline:2px solid var(--s-accent);outline-offset:2px}
-.searchLabel input::placeholder{color:var(--s-muted)}
-.visuallyHidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
-.skillList{display:grid;gap:9px;width:100%;margin-top:12px}
-.skillList .skillRecord{margin:0}
-.panelHeader{display:flex;align-items:center;justify-content:space-between;gap:14px}
-.panelHeader h3{margin:0;color:var(--s-txt);font-weight:650;font-size:17px}
-.editor{display:grid;gap:13px;margin-top:14px;padding:17px 18px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-panel)}
-.editor>p{margin:0;color:var(--s-muted);font-size:13px;line-height:20px}
-.editor>label{display:grid;gap:7px;font-weight:550;font-size:14px}
-.editor :is(input,textarea){padding:10px 12px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-bg);color:var(--s-txt);font:inherit;min-width:0;width:100%;box-sizing:border-box;resize:vertical}
-.editor :is(input,textarea):focus-visible{outline:2px solid var(--s-accent);outline-offset:2px}
-.detail .panelHeader{margin-bottom:12px}
-.detail .actionBar{margin-top:14px}
-.detail details{margin-top:12px;color:var(--s-txt)}
-.detail summary{cursor:pointer}
-.bodyPreview{white-space:pre-wrap;word-break:break-word;max-height:240px;overflow:auto;padding:10px;border:1px solid var(--s-line);border-radius:6px;font-size:13px;background:var(--s-bg)}
-.consent{display:flex;align-items:flex-start;gap:10px;margin:12px 0;color:var(--s-txt);font-size:14px;line-height:22px}
-.consent input{width:18px;height:18px;flex:none;accent-color:#7367f0}
-.permissionNotice{display:flex;gap:9px;align-items:center;color:var(--s-muted);font-size:13px}
-.actionBar button:disabled,.primary:disabled{opacity:.5;cursor:not-allowed}
-:global(.light) .editor{border-color:#e6e6f1;background:#f8f7fa}
-:global(.light) .editor :is(input,textarea){background:#fff;color:#444050;border-color:#dcd9e5}
-:global(.light) .searchLabel{background:#fff;color:#6f6b7d;border-color:#dcd9e5}
-:global(.light) .searchLabel input{color:#444050}
-:global(.light) .bodyPreview{background:#fff;border-color:#e6e6f1}
-@media(max-width:700px){.panelHeader{align-items:flex-start;flex-wrap:wrap}.searchFilters{flex-wrap:wrap}.searchLabel{flex:1;width:auto}.editor{padding:14px}.detail .actionBar{align-items:stretch}.skillRecordButton{align-items:flex-start}}
-
-
-/* Figma 6662:612/747/890/1034: right-hand INFORMATION ARCHITECTURE.
-   Vuexy palette, typography and controls remain the approved visual source. */
-.shell{display:flex;flex-direction:column;gap:0;width:calc(100% - 64px);max-width:1600px;padding:20px 0 36px}
-.breadcrumb{height:17px;line-height:17px;flex:none;color:var(--s-muted);font-size:13px}
-.hero{margin:12px 0 0;min-height:67px;padding:0;display:block;border:0;border-radius:0;background:transparent;box-shadow:none}
-.hero h1{font-size:30px;line-height:39px;border-left:0;padding-left:0;margin:0;font-weight:700}
-.hero p{max-width:none;margin:5px 0 0;line-height:20px}
-.tabs{margin:12px 0 0;min-height:53px;padding:0;display:flex;align-items:flex-start;gap:8px;flex-wrap:nowrap;border:0;border-bottom:1px solid var(--s-line);border-radius:0;background:transparent;box-shadow:none}
-.tab{min-width:84px;height:40px;min-height:40px;padding:0 12px;border-radius:6px}
-.toolbar{margin:12px 0 0;padding:39px 25px 25px;display:flex;flex-direction:column;gap:0;align-items:stretch;flex-wrap:nowrap;justify-content:flex-start;min-height:228px}
-.toolbar[data-skill-management="mine"]{min-height:354px}
-.toolbar[data-skill-management="team"]{min-height:398px}
-.toolbar[data-readonly="true"]{min-height:346px}
-.managementTop{width:100%;display:block}
-.sectionTitle{margin:0;padding-left:0;border-left:0;font-size:18px;line-height:26px;font-weight:650}
-.sectionSub{margin:6px 0 0;line-height:20px}
-.managementActions{margin-top:20px;gap:12px;display:flex;flex-direction:column;align-items:flex-start}
-.managementActions>button{min-height:40px}
-.actionBar{gap:0}
-.managementActions .actionBar{margin-top:0}
-.managementActions .actionBar button{min-height:40px;padding-inline:16px}
-.skillList{display:grid;gap:10px;margin-top:12px}
-.skillList .skillRecord{margin:0}
-.skillRecord{border-radius:6px;min-height:94px}
-.skillRecordButton{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px;padding:12px;width:100%;min-height:94px}
-.skillRecordButton strong{font-size:14px;line-height:20px;font-weight:650}
-.skillRecordButton .version{color:var(--s-txt);font-size:13px;line-height:20px}
-.skillRecordButton small{font-size:12px;line-height:17px;color:var(--s-muted)}
-.emptyText{margin:12px 0 0;line-height:20px}
-.policy{min-height:106px;margin:12px 0 0;padding:16px 17px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:12px}
-.policy strong{line-height:20px}
-.policy button{min-height:40px}
-.toolbar[data-readonly="true"] .policy{min-height:54px}
-.toolbar[data-readonly="true"] .policy button{display:none}
-.policy+.emptyText{margin-top:12px}
-:global(.light) .shell .hero,:global(.light) .shell .tabs{background:transparent;border:0;box-shadow:none}
-:global(.light) .shell .tabs{border-bottom:1px solid #e6e6f1}
-:global(.light) .shell .hero h1{color:var(--s-txt)}
-:global(.light) .shell .toolbar{background:#fff;border-color:#e6e6f1}
-:global(.light) .shell .skillRecordButton .version{color:#444050}
-@media(min-width:2400px){.hero{min-height:67px;padding:0}.hero h1{font-size:30px;line-height:39px}.hero p{font-size:14px;line-height:20px}}
-@media(max-width:700px){.shell{width:calc(100% - 24px);padding:14px 0 28px}.hero{padding:0;min-height:67px}.hero h1{font-size:26px;line-height:35px}.tabs{overflow-x:auto;min-height:53px}.tab{flex:none;min-width:84px}.toolbar{padding:24px 18px;min-height:0!important}.skillRecordButton{min-height:94px}.policy{min-height:0}}
-
-/* Active prototype 6734:1427 / 6676:3254 / 3273 / 3295; Vuexy surfaces. */
-.shell{gap:16px;width:calc(100% - 48px)}
-.hero{margin:0;min-height:65px}
-.hero h1{border-left:3px solid var(--s-accent);padding-left:12px;font-size:26px}
-.breadcrumb{height:auto;line-height:22px}
+.shell *{box-sizing:border-box}
+.hero,.feature,.toolbar,.empty{min-width:0;border:1px solid var(--s-line);border-radius:6px;background:var(--s-bg);box-shadow:var(--s-shadow)}
+.hero{min-height:130px;padding:20px 24px;display:flex;flex-direction:column;justify-content:center;gap:0;box-shadow:none}
+.breadcrumb{display:block;margin:0 0 6px;color:#b7b1d6;font-size:14px;line-height:20px}
 .breadcrumb button{color:inherit;background:none;border:0;padding:0;cursor:pointer;font:inherit}
-.toolbar,.toolbar[data-skill-management]{margin:0;padding:20px;min-height:0;gap:12px}
-.sectionTitle{border-left:3px solid var(--s-accent);padding-left:12px}
-.sectionSub{margin:0}
-.grid{width:100%;align-items:stretch}
-.feature{min-height:190px;gap:10px}
-.feature small{color:var(--s-muted)}
-.chips{display:flex;gap:8px;flex-wrap:wrap}
-.chips span,.status,.enabled{background:var(--s-panel);border-radius:6px;padding:4px 8px;font-size:13px;color:var(--s-muted)}
-.enabled{background:#28c76f22;color:#38cc87}
-:global(.light) .enabled{color:#087f46}
-.cardActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:stretch;margin-top:auto}
-.cardActions button,.cardActions span{min-width:0;margin:0;min-height:36px;display:grid;place-items:center;text-align:center;padding:6px;font-size:13px;align-self:stretch}
-.feature .primary{color:white;background:#7367f0;border-color:#7367f0}
-.filterRow,.filterTabs,.searchForm{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.filterRow{justify-content:space-between}
-.filterTabs button{min-width:64px;padding:8px 12px;border:1px solid var(--s-line);border-radius:6px;height:36px;cursor:pointer}
-.searchForm input{width:230px}
+.breadcrumb button:hover{color:var(--s-accent)}
+.hero h1{margin:0 0 5px;padding-left:12px;border-left:3px solid var(--s-accent);color:var(--s-title);font-size:26px;line-height:34px;font-weight:700;letter-spacing:-.02em}
+.hero p{margin:0;color:var(--s-muted);font-size:14px;line-height:22px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch;width:100%}
+.feature{position:relative;display:flex;flex-direction:column;min-height:190px;gap:10px;padding:16px 18px 14px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.feature:before{content:"";position:absolute;top:18px;left:0;width:3px;height:32px;border-radius:2px;background:var(--s-card-title)}
+.feature h3{margin:0;color:var(--s-card-title);font-size:18px;line-height:24px;font-weight:650;overflow-wrap:anywhere}
+.feature p{margin:0;flex:1;min-width:0;color:var(--s-muted);font-size:14px;line-height:21px}
+.feature small{font-size:13px;line-height:19px;color:var(--s-muted)}
+.feature:hover{border-color:var(--s-action)}
+.shell[data-skill-flow="home"]>.grid>.feature{min-height:174px;padding-bottom:16px}
+.shell[data-skill-flow="home"]>.grid>.feature>button{align-self:flex-end;min-width:142px;margin-top:2px}
+.shell[data-skill-flow="home"]>.grid>.feature>small{position:absolute;bottom:20px;left:18px;font-weight:650;color:var(--s-card-title);font-size:16px}
+.toolbar{display:grid;gap:12px;padding:16px 20px;align-content:start}
+.sectionTitle{margin:0;padding-left:10px;border-left:3px solid var(--s-accent);color:var(--s-txt);font-size:18px;line-height:26px;font-weight:650}
+.sectionSub{margin:0;color:var(--s-muted);font-size:14px;line-height:22px}
 .fourGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.fourGrid article,.toolbar>.grid:not(:has(.feature)) article{background:var(--s-panel);border:1px solid var(--s-line);border-radius:6px;padding:14px}
-.fourGrid h3,.toolbar>.grid:not(:has(.feature)) h3{font-size:15px;margin:0 0 6px;color:var(--s-txt)}
-.fourGrid p,.toolbar>.grid:not(:has(.feature)) p{color:var(--s-muted);margin:0;font-size:14px;line-height:22px}
-.empty{min-height:260px}
-.empty h2{font-size:22px;color:var(--s-txt)}
-.introDialog{margin:auto;width:min(580px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;background:var(--s-bg);color:var(--s-txt);border:1px solid var(--s-line);border-radius:8px;padding:24px}
+.fourGrid article,.toolbar>.grid:not(:has(.feature)) article{min-width:0;min-height:118px;padding:16px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-panel)}
+.fourGrid h3,.toolbar>.grid:not(:has(.feature)) h3{font-size:16px;line-height:23px;font-weight:650;margin:0 0 8px;color:var(--s-txt)}
+.fourGrid p,.toolbar>.grid:not(:has(.feature)) p{color:var(--s-muted);margin:0;font-size:14px;line-height:21px}
+.fourGrid small{display:grid;place-items:center;width:38px;height:38px;margin-bottom:10px;border:1px solid var(--s-action);border-radius:6px;color:var(--s-card-title);font-weight:650;font-size:16px}
+.actionBar,.filterRow,.filterTabs,.searchForm,.chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.actionBar{justify-content:flex-end}
+.filterRow{justify-content:space-between;gap:12px;padding:0 0 4px}
+.primary,.secondary,.feature button,.tab,.active{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 14px;border:1px solid var(--s-border-control);border-radius:6px;background:var(--s-control-bg);color:var(--s-control-text);font:inherit;font-weight:550;cursor:pointer;white-space:nowrap}
+.primary,.feature button.primary{color:#fff;background:var(--s-action);border-color:var(--s-action)}
+.primary:hover,.feature button.primary:hover{background:#6658ce}
+.secondary:hover,.feature button:not(.primary):hover{border-color:var(--s-action)}
+.tab{background:transparent;color:var(--s-muted);border-color:transparent}
+.active{background:var(--s-selected-bg);color:var(--s-selected);border-color:var(--s-selected-border)}
+.filterTabs button{min-width:64px}
+.search{width:230px;min-height:36px;padding:7px 12px;border:1px solid var(--s-border-control);border-radius:6px;background:var(--s-control-bg);color:var(--s-txt);font:inherit}
+.search::placeholder{color:var(--s-muted)}
+.chips span,.status,.enabled{background:var(--s-panel);border-radius:6px;padding:4px 8px;font-size:13px;line-height:20px;color:var(--s-muted)}
+.enabled{background:var(--s-success-bg);color:var(--s-success)}
+.cardActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:auto;align-items:stretch}
+.cardActions button,.cardActions span{min-width:0;min-height:36px;display:grid;place-items:center;text-align:center;padding:6px;font-size:13px;white-space:normal}
+.empty{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;min-height:260px;padding:26px}
+.empty h2{margin:0;font-size:20px;font-weight:650;color:var(--s-txt)}
+.empty p,.emptyText{margin:0;color:var(--s-muted);font-size:14px;line-height:22px}
+.emptyText{padding:18px 0}
+.introDialog{margin:auto;width:min(580px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;background:var(--s-bg);color:var(--s-txt);border:1px solid var(--s-line);border-radius:8px;padding:24px;box-shadow:0 12px 36px #0004}
 .introDialog::backdrop{background:#0008}
-.introDialog header{display:flex;align-items:center;justify-content:space-between}
-.introDialog header button{border:0;background:none;color:inherit;font-size:24px;cursor:pointer}
-.introDialog h2{font-size:20px}.introDialog h3{font-size:17px;margin-top:16px}.introDialog p,.introDialog dd{color:var(--s-muted);line-height:24px}
-.introDialog dl{display:grid;grid-template-columns:90px 1fr;gap:12px;margin-top:20px}.introDialog dd{margin:0}
-@media(max-width:1100px){.fourGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){.fourGrid{grid-template-columns:1fr}.searchForm{width:100%}.searchForm input{flex:1;min-width:0;width:auto}.toolbar,.toolbar[data-skill-management]{padding:16px}.hero h1{white-space:normal}}
+.introDialog header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--s-line)}
+.introDialog header button{border:0;background:none;color:var(--s-txt);font-size:24px;cursor:pointer}
+.introDialog h2{margin:0;font-size:20px;border-left:3px solid var(--s-accent);padding-left:10px}
+.introDialog h3{font-size:17px;margin:16px 0 8px;color:var(--s-card-title)}
+.introDialog p,.introDialog dd{color:var(--s-muted);line-height:24px}
+.introDialog dl{display:grid;grid-template-columns:90px 1fr;gap:12px;margin-top:20px;padding:14px;background:var(--s-panel);border:1px solid var(--s-line);border-radius:6px}
+.introDialog dd{margin:0}
+.shell :is(button,input):focus-visible{outline:2px solid var(--s-action);outline-offset:2px}
+:global(.light) .shell{
+ --s-bg:#fff;--s-panel:#f8f7fa;--s-txt:#444050;--s-muted:#6f6b7d;--s-line:#e6e6f1;
+ --s-accent:#00a8bd;--s-title:#444050;--s-card-title:#444050;--s-border-control:#dcd6f2;
+ --s-control-text:#6658ce;--s-control-bg:#f3f1ff;
+ --s-selected:#6658ce;--s-selected-bg:#f3f1ff;--s-selected-border:#dcd6f2;
+ --s-success:#087f6c;--s-success-bg:#e3f5ed;--s-shadow:0 3px 13px #45405f0b
+}
+:global(.light) .shell .hero{border-color:#ddd9e9}
+:global(.light) .shell .breadcrumb{color:#6f6b7d}
+:global(.light) .shell .search{background:#fff;border-color:#dcd9e5;color:#444050}
+:global(.light) .shell .feature:before{background:var(--s-action)}
+:global(.light) .shell .feature>small{color:#6f6b7d}
+@media(min-width:2400px){.hero{min-height:152px;padding:26px 30px}.hero h1{font-size:30px;line-height:40px}.hero p{font-size:15px;line-height:24px}}
+@media(max-width:1050px){.grid,.fourGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.shell{width:calc(100% - 24px);padding:14px 0 28px}.hero{min-height:112px;padding:16px 18px}.hero h1{font-size:23px;line-height:30px}.hero p,.breadcrumb{font-size:13px;line-height:20px}.grid,.fourGrid{grid-template-columns:1fr}.toolbar{padding:16px 18px}.searchForm{width:100%}.searchForm input{flex:1;min-width:0;width:auto}.feature{min-height:174px}}
