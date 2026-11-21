@@ -139,3 +139,47 @@
 :global(.light) .searchLabel input{color:#444050}
 :global(.light) .bodyPreview{background:#fff;border-color:#e6e6f1}
 @media(max-width:700px){.panelHeader{align-items:flex-start;flex-wrap:wrap}.searchFilters{flex-wrap:wrap}.searchLabel{flex:1;width:auto}.editor{padding:14px}.detail .actionBar{align-items:stretch}.skillRecordButton{align-items:flex-start}}
+
+
+/* Figma 6662:612/747/890/1034: right-hand INFORMATION ARCHITECTURE.
+   Vuexy palette, typography and controls remain the approved visual source. */
+.shell{display:flex;flex-direction:column;gap:0;width:calc(100% - 64px);max-width:1600px;padding:20px 0 36px}
+.breadcrumb{height:17px;line-height:17px;flex:none;color:var(--s-muted);font-size:13px}
+.hero{margin:12px 0 0;min-height:67px;padding:0;display:block;border:0;border-radius:0;background:transparent;box-shadow:none}
+.hero h1{font-size:30px;line-height:39px;border-left:0;padding-left:0;margin:0;font-weight:700}
+.hero p{max-width:none;margin:5px 0 0;line-height:20px}
+.tabs{margin:12px 0 0;min-height:53px;padding:0;display:flex;align-items:flex-start;gap:8px;flex-wrap:nowrap;border:0;border-bottom:1px solid var(--s-line);border-radius:0;background:transparent;box-shadow:none}
+.tab{min-width:84px;height:40px;min-height:40px;padding:0 12px;border-radius:6px}
+.toolbar{margin:12px 0 0;padding:39px 25px 25px;display:flex;flex-direction:column;gap:0;align-items:stretch;flex-wrap:nowrap;justify-content:flex-start;min-height:228px}
+.toolbar[data-skill-management="mine"]{min-height:354px}
+.toolbar[data-skill-management="team"]{min-height:398px}
+.toolbar[data-readonly="true"]{min-height:346px}
+.managementTop{width:100%;display:block}
+.sectionTitle{margin:0;padding-left:0;border-left:0;font-size:18px;line-height:26px;font-weight:650}
+.sectionSub{margin:6px 0 0;line-height:20px}
+.managementActions{margin-top:20px;gap:12px;display:flex;flex-direction:column;align-items:flex-start}
+.managementActions>button{min-height:40px}
+.actionBar{gap:0}
+.managementActions .actionBar{margin-top:0}
+.managementActions .actionBar button{min-height:40px;padding-inline:16px}
+.skillList{display:grid;gap:10px;margin-top:12px}
+.skillList .skillRecord{margin:0}
+.skillRecord{border-radius:6px;min-height:94px}
+.skillRecordButton{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px;padding:12px;width:100%;min-height:94px}
+.skillRecordButton strong{font-size:14px;line-height:20px;font-weight:650}
+.skillRecordButton .version{color:var(--s-txt);font-size:13px;line-height:20px}
+.skillRecordButton small{font-size:12px;line-height:17px;color:var(--s-muted)}
+.emptyText{margin:12px 0 0;line-height:20px}
+.policy{min-height:106px;margin:12px 0 0;padding:16px 17px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:12px}
+.policy strong{line-height:20px}
+.policy button{min-height:40px}
+.toolbar[data-readonly="true"] .policy{min-height:54px}
+.toolbar[data-readonly="true"] .policy button{display:none}
+.policy+.emptyText{margin-top:12px}
+:global(.light) .shell .hero,:global(.light) .shell .tabs{background:transparent;border:0;box-shadow:none}
+:global(.light) .shell .tabs{border-bottom:1px solid #e6e6f1}
+:global(.light) .shell .hero h1{color:var(--s-txt)}
+:global(.light) .shell .toolbar{background:#fff;border-color:#e6e6f1}
+:global(.light) .shell .skillRecordButton .version{color:#444050}
+@media(min-width:2400px){.hero{min-height:67px;padding:0}.hero h1{font-size:30px;line-height:39px}.hero p{font-size:14px;line-height:20px}}
+@media(max-width:700px){.shell{width:calc(100% - 24px);padding:14px 0 28px}.hero{padding:0;min-height:67px}.hero h1{font-size:26px;line-height:35px}.tabs{overflow-x:auto;min-height:53px}.tab{flex:none;min-width:84px}.toolbar{padding:24px 18px;min-height:0!important}.skillRecordButton{min-height:94px}.policy{min-height:0}}
