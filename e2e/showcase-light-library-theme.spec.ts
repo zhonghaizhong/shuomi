@@ -22,9 +22,10 @@ test("light theme uses readable pale surfaces on every library subpage",async({p
    const enableLight=page.getByRole("button",{name:"切换浅色主题"});
    if(await enableLight.isVisible())await enableLight.click();
    const isSkills=route.startsWith("/agents/skills/");
-   const canvas=isSkills?page.locator('[data-skill-showcase="true"]'):page.locator('[class*="libraryDetailPreview"]');
+   const isProjects=route.startsWith("/ai/projects/");
+   const canvas=isSkills?page.locator('[data-skill-showcase="true"]'):isProjects?page.locator('[data-project-showcase="true"]'):page.locator('[class*="libraryDetailPreview"]');
    await expect(canvas).toBeVisible();
-   const surfaces=isSkills?canvas.locator(':scope > section[class*="toolbar"], :scope > section[class*="empty"], :scope > aside'):canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
+   const surfaces=isSkills?canvas.locator(':scope > section[class*="toolbar"], :scope > section[class*="empty"], :scope > aside'):isProjects?canvas.locator(':scope > header, :scope > section[class*="panel"]'):canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
    const count=Math.min(await surfaces.count(),5);
    for(let i=0;i<count;i++){
      if(!(await surfaces.nth(i).isVisible()))continue;
@@ -33,20 +34,26 @@ test("light theme uses readable pale surfaces on every library subpage",async({p
    }
  }
 });
-test("recent projects filter/table/buttons stay on the same light theme",async({page})=>{
- await page.goto("/shuomi/#/workbench/ai/projects/recent");
- const enableLight=page.getByRole("button",{name:"切换浅色主题"});
-   if(await enableLight.isVisible())await enableLight.click();
- const root=page.locator('[class*="libraryDetailPreview"]');
- const surfaces=["header","table","projectTableHead","searchRow","projectRow"];
- for(const name of surfaces){
-   const nodes=root.locator(`[class*="${name}"]`);
-   if(await nodes.count()){
-     const background=await nodes.first().evaluate(el=>getComputedStyle(el).backgroundColor);
-     if(background!=="rgba(0, 0, 0, 0)")expect(isLight(background),`${name}: ${background}`).toBeTruthy();
-   }
+test("project center filters, template cards and dialogs stay readable in both themes",async({page})=>{
+ for(const theme of ["light","dark"]){
+  await page.goto("/shuomi/#/workbench/ai/projects/templates");
+  const toggle=page.getByRole("button",{name:theme==="light"?"切换浅色主题":"切换深色主题"});if(await toggle.isVisible())await toggle.click();
+  const root=page.locator('[data-project-showcase="true"]');
+  await expect(root.getByRole("heading",{name:"项目模板",level:1})).toBeVisible();
+  const cards=root.locator('article');
+  await expect(cards).toHaveCount(4);
+  await root.getByRole("button",{name:"商品开发",exact:true}).click();
+  await expect(cards).toHaveCount(1);
+  await cards.first().getByRole("button",{name:"介绍"}).click();
+  const dialog=root.getByRole("dialog",{name:"模板介绍"});
+  await expect(dialog).toBeVisible();
+  expect(isLight(await dialog.evaluate(el=>getComputedStyle(el).backgroundColor))).toBe(theme==="light");
+  await dialog.getByRole("button",{name:"关闭",exact:true}).click();
+  await page.goto("/shuomi/#/workbench/ai/projects/recent");
+  await expect(root.getByRole("heading",{name:"最近访问",level:1})).toBeVisible();
+  const heading=root.locator(":scope > header");
+  expect(isLight(await heading.evaluate(el=>getComputedStyle(el).backgroundColor))).toBe(theme==="light");
  }
- await expect(root.getByRole("heading",{name:"最近访问"}).first()).toBeVisible();
 });
 
 
