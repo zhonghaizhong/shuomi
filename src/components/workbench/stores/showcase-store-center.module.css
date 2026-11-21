@@ -97,3 +97,18 @@
 @media(max-width:1200px){.page .homeSection .entries{grid-template-columns:repeat(2,minmax(0,1fr))}.page .homeSection .steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.page .homeNotes{grid-template-columns:1fr}.page .homeSection .steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.page .homeSection .entries,.page .homeSection .steps{grid-template-columns:1fr}.page .homeIntro{padding:18px}.page .noteItems>div{align-items:flex-start;flex-direction:column;gap:4px}.page .noteItems span{text-align:left}}
+
+/* Figma My Stores: five contextual detail sections and working local group management. */
+.page .wideDialog{width:min(760px,100%)}
+.page .detailTabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:9px;border-bottom:1px solid var(--st-line)}
+.page .detailTabs button{white-space:nowrap;min-height:38px;padding:8px 13px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--st-muted)}
+.page .detailTabs button.activeTab{border-color:color-mix(in srgb,var(--st-accent) 35%,var(--st-line));background:color-mix(in srgb,var(--st-accent) 12%,var(--st-bg));color:var(--st-accent);font-weight:700}
+.page .groupList{display:grid;gap:8px}
+.page .groupList>div{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-surface)}
+.page .groupList span{margin-left:auto;color:var(--st-muted);font-size:13px}
+.page .groupList button:disabled{opacity:.45;cursor:not-allowed}
+.page .authorizationChoices{display:grid;gap:10px;padding:14px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-surface)}
+.page .authorizationChoices label{display:grid;gap:8px;font-size:14px}
+.page .authorizationChoices select{height:42px;padding:0 12px;border:1px solid var(--st-line);border-radius:7px;background:var(--st-control);color:var(--st-text)}
+.page .authorizationChoices p{margin:0;font-size:13px;color:var(--st-muted);line-height:1.6}
+@media(max-width:680px){.page .groupList>div{flex-wrap:wrap}.page .groupList span{margin-left:0}}
