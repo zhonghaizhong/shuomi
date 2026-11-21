@@ -3510,11 +3510,11 @@
  order:initial; flex:1 1 0; min-width:0; width:auto; gap:5px;
 }
 .page[data-commerce-unified="plans"] .planStats .planStatCopy span {
- display:block; color:var(--plans-text); font-size:14px; line-height:1.4;
+ display:block; color:var(--plans-text); font-size:15px; line-height:1.45;
  font-weight:650; white-space:nowrap; word-break:keep-all; overflow-wrap:normal;
 }
 .page[data-commerce-unified="plans"] .planStats .planStatCopy small {
- display:block; color:var(--plans-muted); font-size:12px; line-height:1.5;
+ display:block; color:var(--plans-muted); font-size:13px; line-height:1.5;
  word-break:normal; overflow-wrap:normal; white-space:normal;
 }
 .page[data-commerce-unified="plans"] .planActions {
@@ -3530,7 +3530,15 @@
 .page[data-commerce-unified="plans"] .planActions button:last-child {
  color:#fff; border-color:var(--plans-primary); background:var(--plans-primary);
 }
-.page[data-commerce-unified="plans"] .planEntrances>div { gap:14px; }
+.page[data-commerce-unified="plans"] .planEntrances>div {
+ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px;
+}
+.page[data-commerce-unified="plans"] .planEntrances>header {
+ display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+}
+.page[data-commerce-unified="plans"] .planEntrances>header span {
+ min-width:0; font-size:14px; line-height:1.5;
+}
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard {
  min-height:176px; padding:19px 18px; gap:12px;
  background:var(--plans-bg); border-radius:8px;
@@ -3553,16 +3561,27 @@
 .page[data-commerce-unified="plans"] :is(.planActions button,.planEntryCard button):focus-visible {
  outline:2px solid var(--plans-primary); outline-offset:3px;
 }
-@media(max-width:1400px) {
+@media(max-width:1120px) {
  .page[data-commerce-unified="plans"] .planStats {grid-template-columns:repeat(2,minmax(0,1fr))}
  .page[data-commerce-unified="plans"] .planStats .planStatValue {font-size:23px;max-width:none}
 }
+@media(max-width:1350px) {
+ .page[data-commerce-unified="plans"] .planEntrances>div {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+ }
+}
 @media(max-width:850px) {
+ .page[data-commerce-unified="plans"] .planEntrances>div {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+ }
  .page[data-commerce-unified="plans"] .planOverview {grid-template-columns:minmax(0,1fr)}
  .page[data-commerce-unified="plans"] .planActions {grid-column:1;grid-row:2;justify-content:flex-start}
  .page[data-commerce-unified="plans"] .planStats {grid-column:1;grid-row:3}
 }
 @media(max-width:620px) {
+ .page[data-commerce-unified="plans"] .planEntrances>div {
+  grid-template-columns:minmax(0,1fr);
+ }
  .page[data-commerce-unified="plans"] .planOverview {padding:17px}
  .page[data-commerce-unified="plans"] .planStats {grid-template-columns:minmax(0,1fr);gap:10px}
  .page[data-commerce-unified="plans"] .planStats>div.planStat {min-height:88px;padding:12px}
