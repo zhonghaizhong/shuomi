@@ -253,3 +253,30 @@
   .conversationText {flex-basis:100%;}
   .conversationLink time {flex:1 1 auto;white-space:normal;}
 }
+
+
+/* Figma conversation row actions, styled with the approved console palette. */
+.conversationItem {position:relative;display:flex;align-items:stretch;min-width:0;border-bottom:1px solid var(--border);background:var(--card);}
+.conversationItem:last-child{border-bottom:0;}
+.conversationItem:nth-child(even){background:var(--secondary);}
+.conversationItem:focus-within{z-index:61;}
+.conversationItem .conversationLink{flex:1;min-width:0;border:0;background:transparent;}
+.conversationItem .conversationLink:hover{background:color-mix(in srgb,var(--primary) 6%,transparent);}
+.rowActions{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 60px;padding-right:14px;z-index:62;}
+.rowMore{display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:var(--control-radius);background:var(--card);color:var(--muted-foreground);font-size:22px;line-height:1;letter-spacing:2px;cursor:pointer;}
+.rowMore:hover,.rowMore[aria-expanded="true"]{color:var(--primary);border-color:var(--primary);background:var(--secondary);}
+.rowMore:focus-visible,.rowMenu button:focus-visible{outline:2px solid var(--ring);outline-offset:2px;}
+.rowMenu{position:absolute;right:15px;top:calc(50% + 22px);width:180px;display:grid;gap:3px;padding:7px;z-index:64;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);box-shadow:0 12px 28px #0003;}
+.rowMenu button{width:100%;min-height:37px;padding:8px 11px;border:0;border-radius:var(--control-radius);background:transparent;color:var(--foreground);font:inherit;font-size:var(--body-text-size);text-align:left;cursor:pointer;}
+.rowMenu button:hover{background:var(--secondary);color:var(--primary);}
+.rowMenu .dangerAction{color:var(--destructive);}
+.rowMenu .dangerAction:hover{background:color-mix(in srgb,var(--destructive) 10%,var(--card));color:var(--destructive);}
+.menuDismiss{position:fixed;inset:0;z-index:58;border:0;background:transparent;cursor:default;}
+.rowOverlay{position:fixed;inset:0;z-index:1500;display:grid;place-items:center;padding:16px;background:#0009;}
+.rowDialog{display:grid;gap:16px;width:min(500px,100%);max-height:90vh;overflow:auto;padding:24px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--foreground);box-shadow:0 22px 55px #0004;}
+.rowDialog h2{margin:0;font-size:var(--section-title-size);font-weight:700;}
+.rowDialog label{display:grid;gap:8px;color:var(--foreground);font-size:var(--body-text-size);}
+.rowDialog p{margin:0;color:var(--muted-foreground);font-size:var(--body-text-size);line-height:1.65;}
+.rowDialogActions{display:flex;justify-content:flex-end;gap:10px;}
+.rowFeedback{margin:10px 0;padding:10px 14px;border:1px solid var(--border);border-radius:var(--control-radius);background:var(--secondary);color:var(--foreground);font-size:var(--body-text-size);}
+@media(max-width:640px){.conversationItem{align-items:center;}.rowActions{flex-basis:54px;padding-right:10px;}.rowMenu{right:9px;top:calc(50% + 22px);}.conversationItem .conversationLink{padding:14px 9px 14px 14px;}}
