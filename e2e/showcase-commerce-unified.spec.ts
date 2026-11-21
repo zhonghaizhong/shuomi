@@ -152,8 +152,8 @@ test("plans five Figma secondary routes use Vuexy cards and preserve pricing nav
  await page.setViewportSize({width:1440,height:900});
  await page.goto(root+"/plans");
  const overview=page.locator('[data-commerce-unified="plans"]');
+ for(const [,label] of leaves)await expect(overview.getByRole("heading",{name:label,exact:true})).toBeVisible();
  for(const [slug,label] of leaves){
-  await expect(overview.getByRole("heading",{name:label,exact:true})).toBeVisible();
   await page.goto(root+"/plans/"+slug);
   const detail=page.locator('[data-commerce-unified="plans"]');
   await expect(detail).toBeVisible();
