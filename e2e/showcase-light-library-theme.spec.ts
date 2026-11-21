@@ -79,7 +79,7 @@ test("Figma skills hierarchy, actions, and permission variants match the showcas
  await page.goto("/shuomi/#/workbench/agents/skills/official");
  const root=page.locator('[data-skill-showcase="true"]');
  await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
- await expect(root.getByText("智能市场 / 技能库 / 官方模板")).toBeVisible();
+ await expect(root.getByText("AI工作台 / 技能库 / 官方模板")).toBeVisible();
  await expect(root.getByRole("navigation",{name:"技能库分类"}).getByRole("button")).toHaveCount(3);
  await expect(root.getByRole("button",{name:"刷新列表"})).toBeVisible();
  await expect(root.getByText("当前范围没有可读取的技能。官方模板由获授权维护者导入、发布并启用后提供。")).toBeVisible();
