@@ -210,3 +210,20 @@ test("simulated certification changes are locally saved and reflected in preview
  await root.getByRole("tab",{name:"个人认证"}).click();
  await expect(root.getByRole("textbox",{name:"真实姓名"})).toHaveValue("演示身份");
 });
+
+test("account suite keeps Figma submenu groups separate and Escape closes dialogs",async({page})=>{
+ await page.goto(base+"/organization/members");
+ const enterprise=page.getByRole("navigation",{name:"企业空间业务导航"});
+ await expect(enterprise.getByRole("button",{name:"成员管理"})).toHaveAttribute("aria-current","page");
+ await expect(enterprise.getByRole("button",{name:"角色权限"})).toBeVisible();
+ await expect(enterprise.getByRole("button",{name:"推广中心"})).toHaveCount(0);
+ await page.getByRole("button",{name:"邀请成员"}).click();
+ await expect(page.getByRole("dialog",{name:"邀请成员"})).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(page.getByRole("dialog",{name:"邀请成员"})).toHaveCount(0);
+ await page.goto(base+"/referrals/earnings");
+ const referrals=page.getByRole("navigation",{name:"推广与收益业务导航"});
+ await expect(referrals.getByRole("button",{name:"收益明细"})).toHaveAttribute("aria-current","page");
+ await expect(referrals.getByRole("button",{name:"提现管理"})).toBeVisible();
+ await expect(referrals.getByRole("button",{name:"成员管理"})).toHaveCount(0);
+});
