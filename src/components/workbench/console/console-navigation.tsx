@@ -117,7 +117,7 @@ export function ConsoleNavigation({ pathname, ariaLabel, onNavigate, showcaseMod
     if (node.href !== "/workbench/ai") return node;
     const children = (node.children ?? [])
       .filter(child => aiWorkbenchAvailable || child.href !== "/workbench/ai/chat" && (child.href !== "/workbench/ai/tasks" || independentTaskAvailable))
-      .map(child => child.href === "/workbench/ai/reports" ? {...child, availability:reportCenterAvailable ? "connected" as const:"unavailable" as const, children:undefined} : child.href === "/workbench/ai/projects" ? {...child,availability:projectCenterAvailable?"connected" as const:"unavailable" as const,children:undefined} : child.href === "/workbench/ai/tasks" || child.href === "/workbench/ai/chat" || child.href === "/workbench/agents/skills" ? { ...child, children: undefined } : child.href === "/workbench/ai/knowledge" ? { ...child, availability: "connected" as const, children: undefined } : child);
+      .map(child => child.href === "/workbench/ai/reports" ? {...child, availability:reportCenterAvailable ? "connected" as const:"unavailable" as const, children:undefined} : child.href === "/workbench/ai/projects" ? {...child,availability:projectCenterAvailable?"connected" as const:"unavailable" as const,children:undefined} : child.href === "/workbench/ai/tasks" || child.href === "/workbench/ai/chat" ? { ...child, children: undefined } : child.href === "/workbench/ai/knowledge" ? { ...child, availability: "connected" as const, children: undefined } : child);
     return { ...node, availability: connected ? "connected" as const : "unavailable" as const, children };
   });
   return <nav aria-label={ariaLabel} className="console-nav"><ul>{nodes.map(node => !demoPreview && supplyMarketAvailable && userId && node.href==="/workbench/supply" ? <MarketBranch key={`${pathname}:${node.href}`} node={node} pathname={pathname} trail={trail} onNavigate={onNavigate} userId={userId}/> : !demoPreview && ecoservicesAvailable && userId && node.href === "/workbench/services" ? <EcoservicesBranch key={`${pathname}:${node.href}`} node={node} pathname={pathname} trail={trail} onNavigate={onNavigate} userId={userId} /> : <NavBranch key={`${node.href==="/workbench/store-orders"?orderPath:researchPath}:${node.href}`} node={node} pathname={node.href==="/workbench/store-orders"?orderPath:researchPath} research={research} trail={trail} depth={1} onNavigate={onNavigate} listingQuery={listingQuery} orderQuery={node.href==="/workbench/store-orders"?orderSelection.toString():""} />)}</ul></nav>;
@@ -159,8 +159,7 @@ function NavBranch({ node, pathname, trail, depth, onNavigate, listingQuery = ""
   const query = useSearchParams();
   const orderParameters=new URLSearchParams(node.href.split("?")[1]);
   if(node.href.startsWith("/workbench/store-orders/fulfill?"))for(const [key,value] of new URLSearchParams(orderQuery))orderParameters.set(key,value);
-  const originalHref = node.href === "/workbench/agents/skills" ? "/workbench/agents/skills/official"
-    : node.href.startsWith("/workbench/store-orders/fulfill?")
+  const originalHref = node.href.startsWith("/workbench/store-orders/fulfill?")
     ? `/workbench/store-orders/fulfill?${orderParameters}`
     : node.href===listingHome&&listingQuery ? node.href+listingQuery : node.href;
   const baseHref = researchNavigationHref(originalHref, research);
