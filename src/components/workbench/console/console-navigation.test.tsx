@@ -84,12 +84,15 @@ it("places My Listing beside My Stores and preserves listing context",()=>{
  expect(active).toHaveAttribute("aria-current","page");
  query.value="";
 });
-it.each(["official", "mine", "team"]) ("keeps skill category %s under one second-level entry", category => {
+it.each(["official", "mine", "team"])("keeps skill category %s under the independent Figma introduction", category => {
   render(<ConsoleNavigation pathname={`/workbench/agents/skills/${category}`} ariaLabel="主导航" />);
-  expect(screen.getByRole("link", {name:"技能库"})).toHaveAttribute("aria-current", "page");
-  expect(screen.getByRole("link", {name:"技能库"})).toHaveAttribute("href", "/workbench/agents/skills/official");
-  expect(screen.queryByRole("button", {name:/展开技能库|收起技能库/})).not.toBeInTheDocument();
-  for (const name of ["官方模板", "我的技能", "团队技能"]) expect(screen.queryByRole("link", {name})).not.toBeInTheDocument();
+  expect(screen.getByRole("link", {name:"技能库"})).toHaveAttribute("href", "/workbench/agents/skills");
+  expect(screen.getByRole("button", {name:"收起技能库"})).toHaveAttribute("aria-expanded","true");
+  for (const [name,key] of [["官方模板","official"],["我的技能","mine"],["团队技能","team"]]) {
+    const link=screen.getByRole("link",{name});
+    expect(link).toHaveAttribute("href",`/workbench/agents/skills/${key}`);
+    if(key===category)expect(link).toHaveAttribute("aria-current","page");
+  }
   expect(findConsoleRoute(`/workbench/agents/skills/${category}`)).toBeDefined();
 });
 
