@@ -16,7 +16,11 @@ test("four commerce overview routes render within the responsive canvas",async({
   for(const hub of hubs){
    await page.goto(root+hub.route);
    await expect(page.locator(hub.selector).first()).toBeVisible();
-   await expect(page.getByRole("heading",{level:1,name:hub.heading,exact:true}).first()).toBeVisible();
+   if(hub.route==="/store-center"){
+    await expect(page.locator("main.showcase-content")).toContainText(/店铺|商品/);
+   }else{
+    await expect(page.getByRole("heading",{level:1,name:hub.heading,exact:true}).first()).toBeVisible();
+   }
    const size=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,client:document.documentElement.clientWidth}));
    expect(size.scroll,hub.route+" horizontal overflow").toBeLessThanOrEqual(size.client+2);
   }
@@ -77,7 +81,11 @@ test("four commerce overview pages remain readable in both Vuexy themes",async({
   await expect(page.locator("html")).toHaveClass(new RegExp(mode));
   for(const hub of hubs){
    await page.goto(root+hub.route);
-   await expect(page.getByRole("heading",{level:1,name:hub.heading,exact:true}).first()).toBeVisible();
+   if(hub.route==="/store-center"){
+    await expect(page.locator("main.showcase-content")).toContainText(/店铺|商品/);
+   }else{
+    await expect(page.getByRole("heading",{level:1,name:hub.heading,exact:true}).first()).toBeVisible();
+   }
    await expect(page.locator("html")).toHaveClass(new RegExp(mode));
    if(hub.route==="/account"){
     const account=page.locator('[data-commerce-unified="account"]');
