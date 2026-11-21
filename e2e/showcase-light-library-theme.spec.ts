@@ -113,3 +113,35 @@ test("clicking the AI workbench skill menu opens the independent introduction an
  await nav.getByRole("link",{name:"技能库",exact:true}).click();
  await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
 });
+
+test("skill pages share the approved tools header and readable dual-theme controls",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto("/shuomi/#/workbench/tools");
+ const toolHeader=page.locator('main.showcase-content header[class*="hero"]').first();
+ await expect(toolHeader).toBeVisible();
+ const css=(el:Element)=>{const s=getComputedStyle(el);return {background:s.backgroundColor,border:s.borderTopColor,radius:s.borderRadius,padding:s.paddingLeft,font:s.fontSize}};
+ for(const theme of ["dark","light"]){
+  await page.goto("/shuomi/#/workbench/tools");
+  const toggle=page.getByRole("button",{name:theme==="dark"?"切换深色主题":"切换浅色主题"});if(await toggle.isVisible())await toggle.click();
+  const reference=await toolHeader.evaluate(css);
+  const refTitle=await toolHeader.getByRole("heading",{level:1}).evaluate(el=>({font:getComputedStyle(el).fontSize,rail:getComputedStyle(el).borderLeftWidth,weight:getComputedStyle(el).fontWeight}));
+  for(const suffix of ["","/official","/mine","/team"]){
+   await page.goto("/shuomi/#/workbench/agents/skills"+suffix);
+   const root=page.locator('[data-skill-showcase="true"]');
+   const header=root.locator(":scope > header");
+   await expect(header).toBeVisible();
+   expect(await header.evaluate(css)).toEqual(reference);
+   expect(await header.getByRole("heading",{level:1}).evaluate(el=>({font:getComputedStyle(el).fontSize,rail:getComputedStyle(el).borderLeftWidth,weight:getComputedStyle(el).fontWeight}))).toEqual(refTitle);
+   if(suffix==="/official"){
+    const card=root.locator("[data-skill-name]").first();
+    await expect(card).toBeVisible();
+    const cardBg=await card.evaluate(el=>getComputedStyle(el).backgroundColor);
+    expect(isLight(cardBg)).toBe(theme==="light");
+    await card.getByRole("button",{name:"介绍"}).click();
+    const dialog=root.getByRole("dialog",{name:"官方技能介绍"});await expect(dialog).toBeVisible();
+    expect(isLight(await dialog.evaluate(el=>getComputedStyle(el).backgroundColor))).toBe(theme==="light");
+    await dialog.getByRole("button",{name:"关闭",exact:true}).click();
+   }
+  }
+ }
+});
