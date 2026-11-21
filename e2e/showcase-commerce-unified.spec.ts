@@ -144,3 +144,63 @@ test("enterprise operations and referral transactions have working entry points"
  await expect(page.locator("[data-account-suite]")).toContainText("COMMERCE-ACCEPTANCE");
  await expect(page.locator("[data-account-suite]")).toContainText("¥12.50");
 });
+
+
+test("plans five Figma secondary routes use Vuexy cards and preserve pricing navigation",async({page})=>{
+ test.setTimeout(120000);
+ const leaves=[["options","套餐方案"],["entitlements","我的权益"],["usage","用量明细"],["top-up","充值中心"],["orders","账单与订单"]] as const;
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(root+"/plans");
+ const overview=page.locator('[data-commerce-unified="plans"]');
+ for(const [slug,label] of leaves){
+  await expect(overview.getByRole("heading",{name:label,exact:true})).toBeVisible();
+  await page.goto(root+"/plans/"+slug);
+  const detail=page.locator('[data-commerce-unified="plans"]');
+  await expect(detail).toBeVisible();
+  await expect(detail.getByRole("heading",{level:1,name:label,exact:true})).toBeVisible();
+ }
+ for(const mode of ["light","dark"] as const){
+  await page.goto(root+"/plans/options");
+  const toggle=page.getByRole("button",{name:mode==="light"?"切换浅色主题":"切换深色主题"});
+  if(await toggle.count())await toggle.click();
+  await expect(page.locator("html")).toHaveClass(new RegExp(mode));
+  const cards=page.locator('[data-commerce-unified="plans"] [class*="fourCards"] article');
+  await expect(cards).toHaveCount(4);
+  for(const card of await cards.all()){
+   const bg=await card.evaluate(e=>getComputedStyle(e).backgroundColor);
+   expect(bg,mode+" Vuexy card surface").toBe(mode==="light"?"rgb(255, 255, 255)":"rgb(47, 51, 73)");
+  }
+  await page.goto(root+"/plans/entitlements");
+  await expect(page.locator('[data-commerce-unified="plans"] [class*="fourCards"] article')).toHaveCount(4);
+ }
+});
+test("plans usage flow filters and top-up estimates work without issuing real charges",async({page})=>{
+ await page.goto(root+"/plans/usage");
+ const rootEl=page.locator('[data-commerce-unified="plans"]');
+ await expect(rootEl.getByRole("button",{name:"全部流水"})).toBeVisible();
+ await expect(rootEl.getByRole("button",{name:"店铺费用"})).toBeVisible();
+ await expect(rootEl.getByRole("combobox",{name:"变动类型"})).toBeVisible();
+ await expect(rootEl.getByRole("combobox",{name:"关联店铺"})).toBeVisible();
+ await rootEl.getByRole("combobox",{name:"变动类型"}).selectOption("扣减");
+ await rootEl.getByRole("textbox",{name:"搜索流水"}).fill("商品优化");
+ await expect(rootEl.locator('[class*="serviceRow"]')).toHaveCount(1);
+ await rootEl.getByRole("button",{name:"重置"}).click();
+ await expect(rootEl.getByRole("combobox",{name:"变动类型"})).toHaveValue("全部变动");
+ await expect(rootEl.getByRole("textbox",{name:"搜索流水"})).toHaveValue("");
+ await page.goto(root+"/plans/top-up");
+ const cards=page.locator('[data-commerce-unified="plans"] [class*="planPurchaseCards"] article');
+ await expect(cards).toHaveCount(4);
+ for(const [i,title] of ["店铺服务","token 积分","数据资源","企业存储"].entries())
+  await expect(cards.nth(i).getByRole("heading",{name:title})).toBeVisible();
+ const store=cards.first();
+ await expect(store.getByRole("button",{name:"购买续费期数"})).toBeDisabled();
+ await store.getByRole("spinbutton",{name:/购买期数/}).fill("2");
+ await expect(store).toContainText("¥336.00");
+ await expect(store.getByRole("button",{name:"购买续费期数"})).toBeEnabled();
+ const storage=cards.last();
+ await storage.getByRole("spinbutton",{name:/扩容容量/}).fill("3");
+ await expect(storage).toContainText("¥3.00");
+ await expect(storage.getByRole("button",{name:"购买扩容"})).toBeEnabled();
+ await page.goto(root+"/plans/orders");
+ await expect(page.locator('[data-commerce-unified="plans"] [class*="metrics"] article')).toHaveCount(4);
+});
