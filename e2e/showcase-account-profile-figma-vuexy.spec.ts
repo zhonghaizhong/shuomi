@@ -200,7 +200,7 @@ test("My Account overview matches approved Vuexy theme in dark/light with aligne
   await theme(page,mode);
   const expectedSurface=mode==="dark"?"rgb(47, 51, 73)":"rgb(255, 255, 255)";
   const expectedInset=mode==="dark"?"rgb(57, 61, 85)":"rgb(248, 247, 250)";
-  for(const item of [root.locator('[class*="header"]').first(),overview,modules,recent.locator(":scope>article"),recent.locator(":scope>aside")]){
+  for(const item of [root.locator('[class*="header"]').first(),overview,recent.locator(":scope>article"),recent.locator(":scope>aside")]){
    await expect(item).toBeVisible();
    expect(await item.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedSurface);
   }
@@ -210,7 +210,9 @@ test("My Account overview matches approved Vuexy theme in dark/light with aligne
   const moduleCards=modules.locator("article");
   const heights=await moduleCards.evaluateAll(nodes=>nodes.map(n=>Math.round(n.getBoundingClientRect().height)));
   expect(Math.max(...heights)-Math.min(...heights),"Three account modules must align").toBeLessThanOrEqual(2);
-  for(const card of await moduleCards.all())expect(await card.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedInset);
+  expect(await modules.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  for(const card of await moduleCards.all())expect(await card.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(expectedSurface);
+  for(const card of await moduleCards.all())await expect(card.locator("header h3")).toBeVisible();
   for(const button of await modules.getByRole("button").all()){
    expect(await button.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe("rgb(115, 103, 240)");
   }
