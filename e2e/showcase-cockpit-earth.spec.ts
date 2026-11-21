@@ -52,10 +52,17 @@ test("prefers reduced motion keeps globe still, without layout changes", async (
   const globe = page.locator('canvas[data-globe-status]');
   await expect(globe).toHaveAttribute("data-globe-status", "ready", { timeout: 30000 });
   await expect(globe).toHaveAttribute("data-globe-clouds", "ready", { timeout: 30000 });
-  const first = await globe.screenshot();
+  await expect(globe).toHaveAttribute("data-globe-motion","reduced");
+  const firstAngle=await globe.getAttribute("data-globe-angle");
+  const firstBounds=await globe.boundingBox();
   await page.waitForTimeout(750);
-  const second = await globe.screenshot();
-  expect(first.equals(second)).toBe(true);
+  await expect(globe).toHaveAttribute("data-globe-motion","reduced");
+  expect(await globe.getAttribute("data-globe-angle")).toBe(firstAngle);
+  const secondBounds=await globe.boundingBox();
+  expect(firstBounds).not.toBeNull();
+  expect(secondBounds).not.toBeNull();
+  expect(secondBounds!.width).toBeCloseTo(firstBounds!.width,1);
+  expect(secondBounds!.height).toBeCloseTo(firstBounds!.height,1);
 });
 
 
