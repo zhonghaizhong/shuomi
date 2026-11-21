@@ -24,7 +24,7 @@ test("light theme uses readable pale surfaces on every library subpage",async({p
    const isSkills=route.startsWith("/agents/skills/");
    const canvas=isSkills?page.locator('[data-skill-showcase="true"]'):page.locator('[class*="libraryDetailPreview"]');
    await expect(canvas).toBeVisible();
-   const surfaces=isSkills?canvas.locator('[class*="hero"],[class*="tabs"],[class*="toolbar"],[class*="empty"],[class*="note"]'):canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
+   const surfaces=isSkills?canvas.locator(':scope > header, :scope > nav, :scope > section[class*="toolbar"], :scope > section[class*="empty"], :scope > aside'):canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
    const count=Math.min(await surfaces.count(),5);
    for(let i=0;i<count;i++){
      if(!(await surfaces.nth(i).isVisible()))continue;
@@ -59,7 +59,7 @@ test("redesigned skills categories stay readable in light and dark themes",async
   const title={official:"官方模板",mine:"我的技能",team:"团队技能"}[category]!;
   await expect(root.getByRole("heading",{name:title,exact:true})).toBeVisible();
   await expect(root.getByRole("navigation",{name:"技能库分类"})).toBeVisible();
-  const surfaces=root.locator('[class*="hero"],[class*="toolbar"],[class*="empty"]');
+  const surfaces=root.locator(':scope > header, :scope > section[class*="toolbar"], :scope > section[class*="empty"]');
   for(let i=0;i<await surfaces.count();i++){
    const element=surfaces.nth(i);
    const bg=await element.evaluate(el=>getComputedStyle(el).backgroundColor);
