@@ -199,7 +199,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       <label>自定义名称<input aria-label="自定义名称" required maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="请输入店铺自定义名称"/><small>仅在系统内显示，不影响平台店铺原名。</small></label>
       <label>负责人<select aria-label="负责人" value={newOwner} onChange={e=>setNewOwner(e.target.value)}><option value="">管理员（默认）</option>{owners.map(owner=><option key={owner} value={owner}>{owner}</option>)}</select><small>用于任务分配和日常协作。<button type="button" className={css.inlineLink} onClick={()=>setAddingOwner(true)}>＋ 添加负责人</button></small></label>
       <label>店铺分组<select aria-label="绑定店铺分组" value={newGroup} onChange={e=>setNewGroup(e.target.value)}><option>未分组</option>{groups.map(g=><option key={g}>{g}</option>)}</select><small>便于分类筛选。<button type="button" className={css.inlineLink} onClick={()=>{setCreatingGroup(true);setGroupName("");setGroupError("")}}>＋ 新建分组</button></small></label>
-
+    </div>
 
 
 
