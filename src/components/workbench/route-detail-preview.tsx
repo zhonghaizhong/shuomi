@@ -168,6 +168,15 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const {state:enterpriseSuite}=useShowcaseSuite();
   const assignedStorePeriods=Object.values(enterpriseSuite.storeAllocations).reduce((sum,value)=>sum+(Number(value)||0),0);
   const availableStorePeriods=Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods);
+  // Consumption is intentionally zero until the corresponding business modules are connected.
+  const allocated=(items:Record<string,number>)=>Object.values(items).reduce((sum,value)=>sum+(Number(value)||0),0);
+  const assignedAi=allocated(enterpriseSuite.pointAllocations);
+  const assignedData=allocated(enterpriseSuite.dataAllocations);
+  const assignedStorage=allocated(enterpriseSuite.allocations);
+  const availableAi=Math.max(0,demoTotals.aiPoints-assignedAi);
+  const availableData=Math.max(0,demoTotals.dataRows-assignedData);
+  const availableStorage=Math.max(0,demoTotals.storageGiB-assignedStorage);
+  const physicalStorageRemaining=Math.max(0,demoTotals.storageGiB-plansDemoFacts.storageUsedGiB);
   const purchaseSubmitting=useRef(false);
   const [requestReview,setRequestReview]=useState<{type:string;quantity:number;quote:string}|null>(null);
   const [walletAmount,setWalletAmount]=useState("");
@@ -252,36 +261,38 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   if (pathname.endsWith("options")) return <><section className={styles.noticeBar}><b>基础方案 · 按需使用</b><span>店铺服务按期购买，AI 积分、数据与企业存储扩容按需计费。</span></section><section className={`${styles.cards} ${styles.fourCards}`}>{[["店铺服务", "¥168 / 店 / 期", "每期为 30 天；各店铺独立计时，到期未续费停止使用。", "多店优惠按当前配置计算"], ["AI 积分", "¥1 = 10,000 积分", "充值后按模型与任务类型扣减，余额长期保留。", "按实际使用量扣除"], ["数据服务", "¥0.01 / 条", "按当前单价换算，按成功调用的数据条数扣减。", "余额长期保留"], ["企业存储", "¥1 / GiB / 30天", "默认共享 5 GiB；扩容按 GiB 计价，激活后独立计算 30 天。", "到期不自动续费"]].map(([title,price,description,note],i)=><article className={styles.card} data-tone={i} key={title}><h3>{title}</h3><h2>{price}</h2><p>{description}</p><small>{note}</small></article>)}</section></>;
   if (pathname.endsWith("entitlements")) return <>
   <section className={`${styles.cards} ${styles.fourCards} ${styles.planEntitlementCards}`}>
-   <article className={styles.card} data-tone={0}>
-    <div className={styles.cardTitle}><h3>店铺服务</h3><span>可分配续费期数</span></div>
-    <div className={styles.planEntitlementStoreSplit}>
-     <div><small>已绑定店铺</small><strong>{plansDemoFacts.activeStores}<em>家</em></strong></div>
-     <div><small>待分配期数</small><strong>{availableStorePeriods}<em>期</em></strong></div>
-    </div>
-    <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
-   </article>
-   <article className={styles.card} data-tone={1}>
-    <div className={styles.cardTitle}><h3>token 积分</h3><span>模拟已到账</span></div>
-    <strong className={styles.planEntitlementValue}>{(demoTotals.aiPoints).toLocaleString("zh-CN")}</strong>
-    <div className={styles.planEntitlementNotes}><span>兑换标准：¥1 = 10,000 积分</span><span>已模拟到账：{(demoTotals.aiPoints).toLocaleString("zh-CN")} 积分</span></div>
-   </article>
-   <article className={styles.card} data-tone={2}>
-    <div className={styles.cardTitle}><h3>数据服务</h3><span>模拟已到账</span></div>
-    <strong className={styles.planEntitlementValue}>{(demoTotals.dataRows).toLocaleString("zh-CN")} 条</strong>
-    <div className={styles.planEntitlementNotes}><span>兑换标准：¥0.01 / 条</span><span>已模拟到账：{(demoTotals.dataRows).toLocaleString("zh-CN")} 条</span></div>
-   </article>
-   <article className={styles.card} data-tone={3}>
-    <div className={styles.cardTitle}><h3>企业存储</h3><span>企业共享</span></div>
-    <strong className={styles.planEntitlementValue}>{(demoTotals.storageGiB).toFixed(2)} GiB</strong>
-    <div className={styles.planEntitlementStorageDetails}>
-     <div><span>免费容量</span><strong>5.00 GiB</strong></div>
-     <div><span>扩容容量</span><strong>{(3+extraFor("企业存储")).toFixed(2)} GiB</strong></div>
-     <div><span>已用容量</span><strong>{plansDemoDisplay.storageUsed}</strong></div>
-    </div>
-   </article>
+    <article className={styles.card} data-tone={0}>
+      <div className={styles.cardTitle}><h3>店铺服务</h3><span>剩余可分配</span></div>
+      <div className={styles.planEntitlementStoreSplit}>
+        <div><small>已绑定店铺</small><strong>{plansDemoFacts.activeStores}<em>家</em></strong></div>
+        <div><small>剩余可分配期数</small><strong>{availableStorePeriods}<em>期</em></strong></div>
+      </div>
+      <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>已使用：0 期 · 剩余：{availableStorePeriods} 期</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
+    </article>
+    <article className={styles.card} data-tone={1}>
+      <div className={styles.cardTitle}><h3>token 积分</h3><span>剩余可分配</span></div>
+      <strong className={styles.planEntitlementValue}>{availableAi.toLocaleString("zh-CN")}</strong>
+      <div className={styles.planEntitlementNotes}><span>兑换标准：¥1 = 10,000 积分</span><span>企业总额：{demoTotals.aiPoints.toLocaleString("zh-CN")} · 已分配：{assignedAi.toLocaleString("zh-CN")}</span><span>已使用：0 · 剩余：{availableAi.toLocaleString("zh-CN")}</span></div>
+    </article>
+    <article className={styles.card} data-tone={2}>
+      <div className={styles.cardTitle}><h3>数据服务</h3><span>剩余可分配</span></div>
+      <strong className={styles.planEntitlementValue}>{availableData.toLocaleString("zh-CN")} 条</strong>
+      <div className={styles.planEntitlementNotes}><span>兑换标准：¥0.01 / 条</span><span>企业总额：{demoTotals.dataRows.toLocaleString("zh-CN")} 条 · 已分配：{assignedData.toLocaleString("zh-CN")} 条</span><span>已使用：0 条 · 剩余：{availableData.toLocaleString("zh-CN")} 条</span></div>
+    </article>
+    <article className={styles.card} data-tone={3}>
+      <div className={styles.cardTitle}><h3>企业存储</h3><span>剩余可分配</span></div>
+      <strong className={styles.planEntitlementValue}>{availableStorage.toFixed(2)} GiB</strong>
+      <div className={styles.planEntitlementStorageDetails}>
+        <div><span>免费容量</span><strong>5.00 GiB</strong></div>
+        <div><span>扩容容量</span><strong>{(3+extraFor("企业存储")).toFixed(2)} GiB</strong></div>
+        <div><span>已分配上限</span><strong>{assignedStorage.toFixed(2)} GiB</strong></div>
+        <div><span>实际已用</span><strong>{plansDemoFacts.storageUsedGiB.toFixed(2)} GiB</strong></div>
+        <div><span>实际剩余空间</span><strong>{physicalStorageRemaining.toFixed(2)} GiB</strong></div>
+      </div>
+    </article>
   </section>
   <section className={styles.planResourceLink}><div><h2>企业资源管理</h2><p>成员资源分配、共享存储及扩容状态可在企业空间查看。</p></div><button onClick={()=>router.push("/workbench/account/organization/resources?preview=1")}>前往资源与额度</button></section>
- </>;
+  </>;
     if (pathname.endsWith("usage")) return <><section className={styles.metrics}>{[["店铺费用", "¥0.00", "本月没有店铺费用"], ["AI 积分消耗", "0", "本月消耗 0 积分"], ["数据消耗", "0 条", "本月使用 0 条数据"], ["企业存储占用", plansDemoDisplay.storageUsed, `总容量 ${plansDemoDisplay.storageCapacity}`]].map(([a,b,c])=><article key={a} className={styles.planMetricCard}><strong className={styles.planMetricValue}>{b}</strong><div className={styles.planMetricCopy}><span>{a}</span><small>{c}</small></div></article>)}</section><section className={styles.tabs}>{["全部流水", "店铺费用", "token 积分", "数据额度", "企业存储"].map(x=><button key={x} className={active===x?styles.selected:""} onClick={()=>{setActive(x);setAppliedUsage(v=>({...v,tab:x}));setUsagePage(v=>({...v,page:1}))}}>{x}</button>)}</section><section className={styles.toolbar} aria-label="用量流水筛选"><select aria-label="变动类型" value={usageMovement} onChange={e=>setUsageMovement(e.target.value)}>{["全部变动","扣减","充值","赠送"].map(x=><option key={x}>{x}</option>)}</select><select aria-label="关联店铺" value={usageStore} onChange={e=>setUsageStore(e.target.value)}>{["全部店铺", ...Array.from(new Set(rows.map(row=>row[2]).filter(value=>value && /店铺|店$/.test(value))))].map(name=><option key={name} value={name}>{name}</option>)}</select><input aria-label="搜索流水" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索流水单号或说明"/><button onClick={()=>{setQuery("");setUsageMovement("全部变动");setUsageStore("全部店铺");setActive("全部流水");setAppliedUsage({query:"",movement:"全部变动",store:"全部店铺",tab:"全部流水"});setUsagePage(v=>({...v,page:1}))}}>重置</button><button className={styles.primary} onClick={()=>{setAppliedUsage({query,movement:usageMovement,store:usageStore,tab:active==="全部"?"全部流水":active});setUsagePage(v=>({...v,page:1}))}}>确定</button><button disabled={!rows.some(usageRowMatches)} onClick={()=>downloadDemoCsv("用量明细-演示.csv",rows.filter(usageRowMatches))}>导出明细</button></section><section className={styles.table}><header><h2>流水明细</h2></header><div className={styles.planTableScroll}><div className={`${styles.tableHead} ${styles.planUsageColumns}`}>{["时间","类型","业务对象","变动说明","变动","变动后余额","操作"].map(label=><span key={label}>{label}</span>)}</div>{pageSlice(filteredUsageRows,usagePage).map((r,i)=><div className={`${styles.serviceRow} ${styles.planUsageColumns}`} key={i}>{r.map((x,j)=><span key={j}>{x}</span>)}<button onClick={()=>setPlanDetail({kind:"usage",row:r})}>详情</button></div>)}</div>{!filteredUsageRows.length&&<p className={styles.planEmpty}>暂无用量流水。充值或使用资源后将在此显示记录。</p>}<LedgerPagination name="流水明细" total={filteredUsageRows.length} page={usagePage.page} size={usagePage.size} onPage={updatePage(setUsagePage)} onSize={updateSize(setUsagePage)}/></section>{planDetail?.kind==="usage"&&<div className={styles.planDetailBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setPlanDetail(null)}}><section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="流水详情"><header><div><h2>流水详情</h2><p>演示流水，不涉及真实扣费或账务。</p></div><button type="button" aria-label="关闭流水详情" onClick={()=>setPlanDetail(null)}>×</button></header><div className={styles.planDetailHighlight}><span>变动金额或额度</span><strong>{planDetail.row[4]}</strong><small>{planDetail.row[1]} · {planDetail.row[2]}</small></div><dl>{[["时间",planDetail.row[0]],["资源类型",planDetail.row[1]],["业务对象",planDetail.row[2]],["变动说明",planDetail.row[3]],["变动金额或额度",planDetail.row[4]],["变动后余额",planDetail.row[5]]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><footer><button type="button" onClick={()=>setPlanDetail(null)}>关闭</button></footer></section></div>}</>;
   if (pathname.endsWith("top-up")) return <><section className={styles.noticeBar}><b>账户可用余额</b><span><strong>¥{currentWallet.toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})}</strong>　累计模拟充值 ¥{(plansDemoFacts.walletTopUpsCny+additionalTopups).toLocaleString("zh-CN")} · 累计模拟支出 ¥{(plansDemoFacts.walletSpentCny+additionalSpent).toLocaleString("zh-CN")}。余额用于续费、积分与数据兑换，存储扩容独立购买。</span><label>充值金额（元）<input type="number" aria-label="充值金额（元）" min="0.01" step="0.01" value={walletAmount} onChange={e=>setWalletAmount(e.target.value)} placeholder="输入充值金额"/></label><button className={styles.primary} disabled={!Number.isFinite(Number(walletAmount))||Number(walletAmount)<=0} onClick={()=>openReview("账户充值",Number(walletAmount),"仅模拟钱包到账，不发起真实支付")}>账户充值</button></section><section className={styles.planSectionHeading}><h2>使用充值余额</h2><p>选择资源类型并填写金额或期数。确认后直接扣除演示钱包余额并增加模拟权益；不涉及真实支付或实际开通。</p></section><section className={`${styles.cards} ${styles.fourCards} ${styles.planPurchaseCards}`}>{([
  {name:"店铺服务",type:"续费",rate:"¥168 / 期",description:"每期 30 天 · 购买后进入企业期数池",unit:"购买期数",placeholder:"请填写续费期数",action:"购买续费期数"},
