@@ -2,13 +2,29 @@ import {expect,test} from "@playwright/test";
 const root="/shuomi/#/workbench";
 // The legacy workflow tests intentionally begin with an empty tenant.
 test.beforeEach(async({page},info)=>{
- if(info.title.startsWith("organization-scoped")||info.title.startsWith("My Stores Figma optimized asset layout")||info.title.startsWith("expired 30-day store service")||info.title.startsWith("four colleague stores are bound")||info.title.startsWith("historically paid colleague demo stores survive"))return;
+ if(info.title.startsWith("organization-scoped")||info.title.startsWith("My Stores Figma optimized asset layout")||info.title.startsWith("expired 30-day store service")||info.title.startsWith("four colleague stores are bound")||info.title.startsWith("historically paid colleague demo stores survive")||info.title.startsWith("administrator fixture status and bounded pagination"))return;
  await page.goto(root+"/stores");
  await page.evaluate(()=>{
   sessionStorage.setItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001","[]");
   sessionStorage.setItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001-groups","[]");
  });
  await page.reload();
+});
+test("administrator fixture status and bounded pagination separate two connection faults from three normal stores",async({page})=>{
+ await page.goto(root+"/stores");
+ const area=page.locator('[data-store-center-showcase="stores"]');
+ const metrics=area.getByRole("region",{name:"店铺运营概览"});
+ await expect(metrics.getByRole("button",{name:/正常店铺/})).toContainText("3 家");
+ await expect(metrics.getByRole("button",{name:/待处理/})).toContainText("2 家");
+ await expect(area.getByRole("navigation",{name:"店铺列表分页"})).toContainText("第 1 / 2 页");
+ await expect(area.locator('article[class*="storeCard"]')).toHaveCount(10);
+ await metrics.getByRole("button",{name:/待处理/}).click();
+ await expect(area.locator('article[class*="storeCard"]')).toHaveCount(2);
+ await expect(area).toContainText("管理员演示店铺04");
+ await expect(area).toContainText("管理员演示店铺05");
+ await metrics.getByRole("button",{name:/正常店铺/}).click();
+ await expect(area.locator('article[class*="storeCard"]')).toHaveCount(3);
+ await expect(area).not.toContainText("管理员演示店铺04");
 });
 test("organization-scoped simulated bindings show eleven to enterprise admin, five to colleague, and isolate other organizations",async({page})=>{
  await page.goto(root+"/stores");
@@ -441,6 +457,10 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  const detail=page.getByRole("region",{name:"店铺详情页面"});
  await detail.getByRole("button",{name:"服务信息",exact:true}).click();
  await detail.getByRole("button",{name:"续费30天",exact:true}).click();
+ const renew=page.getByRole("dialog",{name:"店铺续费"});
+ await expect(renew.getByLabel("续费周期")).toHaveValue("1");
+ await renew.getByRole("button",{name:"确认续费"}).click();
+ await expect(renew).toHaveCount(0);
  await page.getByRole("button",{name:"返回我的店铺"}).click();
  const renewed=await page.evaluate(()=>{
   const raw=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
@@ -527,7 +547,10 @@ test("expired 30-day store service prevents synchronization until renewed",async
  await expect(page.getByRole("region",{name:"店铺详情页面"})).toContainText("已到期");
  // This scenario has no unassigned service periods, so renewal must not succeed without a purchase.
  await page.getByRole("region",{name:"店铺详情页面"}).getByRole("button",{name:"续费30天"}).click();
- await expect(page.locator('[data-store-center-showcase="stores"]')).toContainText("当前可用店铺服务期数不足");
+ const renew=page.getByRole("dialog",{name:"店铺续费"});
+ await expect(renew).toContainText("服务期数不足");
+ await expect(renew.getByRole("button",{name:"确认续费"})).toBeDisabled();
+ await renew.getByRole("button",{name:"取消"}).click();
  await expect(page.getByRole("region",{name:"店铺详情页面"})).toContainText("已到期");
 });
 
