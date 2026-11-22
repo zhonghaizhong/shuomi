@@ -423,3 +423,27 @@ test("other organization purchase ledger stays isolated from the primary organiz
  await page.goto(root+"/plans/entitlements");
  await expect(entitlements.locator('[class*="planEntitlementStoreSplit"]')).toContainText("1");
 });
+
+test("expired 30-day store service shows expired status and blocks synchronization until renewed",async({page})=>{
+ await page.goto(root+"/stores");
+ await page.evaluate(()=>{
+  const key="shuomi-store-center-demo-ten-v2-SM-ENT-000001";
+  const stores=JSON.parse(sessionStorage.getItem(key)||"[]");
+  const item=stores.find((s:{id:string})=>s.id==="SIM-ADMIN-01");
+  if(!item)throw new Error("Expected seeded administrator store");
+  item.serviceStartedAt="2026-09-01T00:00:00.000Z";
+  item.serviceExpiresAt="2026-10-01T00:00:00.000Z";
+  item.servicePeriods=1;
+  sessionStorage.setItem(key,JSON.stringify(stores));
+ });
+ await page.reload();
+ const card=page.locator('[data-store-center-showcase="stores"] article[class*="storeCard"]').filter({hasText:"管理员演示店铺01"});
+ await expect(card).toContainText("服务已到期");
+ await card.getByRole("button",{name:"立即同步"}).click();
+ await expect(page.getByRole("dialog",{name:"立即同步"})).toContainText("请先购买并激活 30 天服务期");
+ await page.getByRole("dialog",{name:"立即同步"}).getByRole("button",{name:"取消"}).click();
+ await card.getByRole("button",{name:"开通30天"}).click();
+ await expect(card).toContainText("服务中");
+ await page.goto(root+"/plans/entitlements");
+ await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：2 期");
+});
