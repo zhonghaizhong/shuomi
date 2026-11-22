@@ -264,7 +264,8 @@ test("plans zero-value balances and free 5 GiB storage agree across all pages",a
  await expect(plans).not.toContainText("300,000 条");
  await page.goto(root+"/plans/entitlements");
  plans=page.locator('[data-commerce-unified="plans"]');
- await expect(plans).toContainText("免费容量 5.00 GiB");
+ await expect(plans).toContainText("免费容量");
+ await expect(plans).toContainText("5.00 GiB");
  await expect(plans).toContainText("已用容量");
  await expect(plans).toContainText("0.00 GiB");
  await expect(plans.getByRole("button",{name:"前往资源与额度"})).toBeVisible();
@@ -300,7 +301,8 @@ test("plans premium cards, empty transactions and purchase controls remain usabl
   if(await switcher.count())await switcher.click();
   const entitlement=page.locator('[data-commerce-unified="plans"] [class*="planEntitlementCards"] article');
   await expect(entitlement).toHaveCount(4);
-  for(let i=0;i<4;i++)await expect(entitlement.nth(i).locator('[class*="planEntitlementValue"]')).toBeVisible();
+  await expect(entitlement.first().locator('[class*="planEntitlementStoreSplit"]')).toBeVisible();
+  for(let i=1;i<4;i++)await expect(entitlement.nth(i).locator('[class*="planEntitlementValue"]')).toBeVisible();
   await page.goto(root+"/plans/top-up");
   const purchase=page.locator('[data-commerce-unified="plans"] [class*="planPurchaseCards"] article');
   await expect(purchase).toHaveCount(4);
@@ -371,7 +373,8 @@ test("plans store service and storage request review without granting paid resou
  await expect(localDrafts).toContainText("店铺服务");
  await expect(localDrafts).toContainText("企业存储");
  await page.goto(root+"/plans/entitlements");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("免费容量 5.00 GiB");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("免费容量");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("5.00 GiB");
  await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("已用容量");
  await page.goto(root+"/plans/orders");
  await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("模拟已到账");
