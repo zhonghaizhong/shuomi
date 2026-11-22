@@ -535,3 +535,11 @@
 .referralManualActions{display:flex;justify-content:flex-end}
 @media(max-width:1100px){.referralDesignGrid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:640px){.referralShareLayout{grid-template-columns:minmax(0,1fr)}.referralQrArea{border-left:0;border-top:1px solid var(--line);padding:14px 0 0}.referralCopyField>span{font-size:12px}.referralFunnelStep{grid-template-columns:64px 1fr}}
+
+/* Referral rules follow the Figma 2 x 3 information architecture while retaining Vuexy theme tokens. */
+.referralRuleGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;min-width:0}
+.referralRuleCard{min-width:0;min-height:125px;display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px 20px}
+.referralRuleCard h3{font-size:16px;line-height:1.5;font-weight:650;color:var(--ink);margin:0}
+.referralRuleCard p{font-size:14px;line-height:1.7;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.ruleDemoNotice{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin:0}
+@media(max-width:760px){.referralRuleGrid{grid-template-columns:minmax(0,1fr)}.referralRuleCard{min-height:0}}
