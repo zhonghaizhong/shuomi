@@ -637,3 +637,28 @@
 @media(max-width:600px){.payoutActions{width:100%;justify-content:flex-start}.payoutActions button{flex:1}}
 
 .payoutDialog{width:min(680px,100%)}
+
+/* Figma resource quota: scoped member store view and one-store renewal dialogs. */
+.page .storeViewButton{display:block;min-height:26px;margin:5px 0;padding:3px 9px;border:1px solid var(--primary);background:transparent;color:var(--primary);font-size:12px;font-weight:650}
+.storeListDialog,.storeRenewDialog{box-sizing:border-box;width:min(880px,100%);max-height:calc(100dvh - 36px);overflow:auto;display:grid;gap:14px;padding:22px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 22px 68px #0006}
+.storeRenewDialog{width:min(550px,100%)}
+.storeListDialog>header,.storeRenewDialog>header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.storeListDialog header h2,.storeRenewDialog header h2{border-left:3px solid var(--accent);padding-left:10px;margin:0 0 6px}
+.storeListDialog header p,.storeRenewDialog header p,.storeListDialog .dialogHint,.storeRenewDialog .dialogHint{font-size:13px;color:var(--muted);margin:0}
+.storeListDialog button,.storeRenewDialog button{min-height:34px;border-radius:6px;border:1px solid var(--line);background:var(--inset);color:var(--ink);padding:6px 12px;cursor:pointer}
+.storeListDialog button:focus-visible,.storeRenewDialog button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.storeListDialog input,.storeRenewDialog input{min-height:39px;border:1px solid var(--line);border-radius:6px;padding:8px 12px;background:var(--inset);color:var(--ink);font:inherit}
+.storeListDialog>input{width:100%}
+.storeListDialog footer,.storeRenewDialog footer{display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--line);padding-top:12px}
+.storeRenewDialog button.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.storeListScroll{max-height:380px;overflow:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:7px}
+.storeListScroll table{width:100%;min-width:620px;border-collapse:collapse;font-size:13px}
+.storeListScroll th{position:sticky;top:0;z-index:2;background:var(--inset);color:var(--ink);padding:12px;text-align:left;white-space:nowrap}
+.storeListScroll td{padding:12px;border-top:1px solid var(--line);white-space:nowrap}
+.storeListScroll tbody tr:nth-child(even){background:var(--inset)}
+.storeExpired{color:#ea5455;font-weight:700}.storeSoon{color:#ff9f43;font-weight:700}.storeActive{color:var(--success);font-weight:700}
+.storeRenewOverlay{position:fixed;inset:0;z-index:260;display:grid;place-items:center;padding:18px;background:#101525c9}
+.storeRenewField{display:grid;gap:8px;font-weight:650;font-size:14px}.storeRenewField small{font-weight:400;color:var(--muted)}
+.storeRenewSummary{display:grid;gap:8px;padding:13px;border:1px solid var(--line);background:var(--inset);border-radius:7px;font-size:13px}
+.storeRenewDialog .error{padding:10px 12px;background:#ea545515;border:1px solid #ea545555;color:#e45454;border-radius:6px}
+@media(max-width:650px){.storeListDialog,.storeRenewDialog{padding:14px}.storeListScroll{max-height:45dvh}}
