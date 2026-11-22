@@ -562,7 +562,7 @@ test("account second-level pages use Vuexy rhythm without duplicate referral ent
 });
 
 
-test("ten purchased store-renewal periods become allocatable to colleague01 and persist",async({page})=>{
+test("purchased store-renewal periods only allow remaining allocation after bound-store usage",async({page})=>{
  await page.goto("/shuomi/#/workbench/plans/top-up");
  await page.getByRole("spinbutton",{name:"购买期数 · 店铺服务"}).fill("10");
  await page.getByRole("button",{name:"购买续费期数"}).click();
@@ -577,13 +577,13 @@ test("ten purchased store-renewal periods become allocatable to colleague01 and 
  await expect(suite).toContainText("总计 12 期 · 已分配 0 期");
  await suite.getByRole("row").filter({hasText:"模拟同事01"}).getByRole("button",{name:"分配资源"}).click();
  const dialog=suite.getByRole("dialog",{name:"分配成员资源"});
- await dialog.getByRole("spinbutton",{name:"分配店铺续费期数"}).fill("10");
+ await dialog.getByRole("spinbutton",{name:"分配店铺续费期数"}).fill("6");
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
- await expect(suite).toContainText("总计 12 期 · 已分配 10 期");
- await expect(suite.getByRole("row").filter({hasText:"模拟同事01"})).toContainText("10");
+ await expect(suite).toContainText("总计 12 期 · 已分配 6 期");
+ await expect(suite.getByRole("row").filter({hasText:"模拟同事01"})).toContainText("6");
  await page.reload();
- await expect(page.locator("[data-account-suite]")).toContainText("总计 12 期 · 已分配 10 期");
+ await expect(page.locator("[data-account-suite]")).toContainText("总计 12 期 · 已分配 6 期");
  await page.goto("/shuomi/#/workbench/plans/entitlements");
  await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("2");
- await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("企业总期数：12 期 · 已分配：10 期");
+ await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("企业总期数：12 期 · 已分配：6 期");
 });
