@@ -61,7 +61,8 @@ export function PayoutConfigurator({organizationId,memberId,current,onSave}:{org
   if(!verification){setError("请选择手机验证或邮箱验证。");return}
   const item:SavedAccount={kind,masked:mask(identifier),id:editingId||("demo-"+Date.now()),...(kind==="银行卡"?{bank:bank.trim()}: {})};
   const next=editingId?accounts.map(a=>a.id===editingId?item:a):[...accounts,item];
-  const chosen=defaultChoice||!current?label(item):current;
+  const wasDefault=editingId!==null&&accounts.some(a=>a.id===editingId&&label(a)===current);
+  const chosen=defaultChoice||wasDefault||!current?label(item):current;
   if(!onSave(chosen)){setError("演示账户保存失败，请重试。");return}
   try{localStorage.setItem(key,JSON.stringify(next));setAccounts(next);setStage("choose");setError("")}
   catch{setError("当前浏览器无法保存账户列表，请检查存储空间。")}
