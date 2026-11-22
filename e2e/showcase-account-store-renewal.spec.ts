@@ -31,7 +31,7 @@ test("resource quota store dialogs show owner-scoped stores and renew expired ad
  await expect(expired).toContainText("已到期");
  await expired.getByRole("button",{name:"续费"}).click();
  const renewal=page.getByRole("dialog",{name:"店铺续费"});
- await expect(renewal).toContainText("可用续费期数：1 期");
+ await expect(renewal).toContainText("企业资源池可用续费期数：1 期");
  await renewal.getByRole("spinbutton",{name:"续费周期"}).fill("1");
  await expect(renewal).toContainText("续费后到期");
  await renewal.getByRole("button",{name:"确认续费"}).click();
