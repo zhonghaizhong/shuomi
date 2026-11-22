@@ -79,20 +79,20 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const visibleEarnings=state.referrals.slice((visibleEarningsPage-1)*referralPageSize,visibleEarningsPage*referralPageSize);
  const recent30Day=Date.now()-30*24*60*60*1000;
  const recentReferralCustomers=state.referredCustomers.filter(x=>x.registeredAt>=recent30Day);
- const recentRegistrations=recentReferralCustomers.length+state.trackedInvitations.filter(x=>!!x.registeredAt&&x.registeredAt>=recent30Day).length;
+ const recentRegistrations=recentReferralCustomers.length+state.trackedVisits.filter(x=>!!x.registeredAt&&x.registeredAt>=recent30Day).length;
  const recentPaidCustomers=recentReferralCustomers.filter(x=>x.storeFeeCny>0).length;
  const recentEarned=state.referrals.filter(x=>x.at>=recent30Day).reduce((sum,x)=>sum+x.amount,0);
  const promotionRows=[
-  ...state.referredCustomers.map(x=>({id:x.id,name:x.name,invitedAt:x.registeredAt-5*60*1000,registeredAt:x.registeredAt,verifiedAt:x.registeredAt+60*1000,source:"推广链接",status:"paid",spent:x.storeFeeCny,commission:state.referrals.filter(item=>item.referred===x.name).reduce((sum,item)=>sum+item.amount,0),orderId:x.storeOrderId,storeId:x.storeId})),
-  ...state.trackedInvitations.map(x=>({id:x.id,name:x.name,invitedAt:x.invitedAt,registeredAt:x.registeredAt,verifiedAt:x.verifiedAt,source:x.source,status:x.registeredAt?(x.verifiedAt?"verified":"registered"):"pending",spent:0,commission:0,orderId:"",storeId:""}))
- ].sort((a,b)=>b.invitedAt-a.invitedAt);
+  ...state.referredCustomers.map(x=>({id:x.id,name:x.name,visitedAt:x.registeredAt-5*60*1000,registeredAt:x.registeredAt,verifiedAt:x.registeredAt+60*1000,source:"推广链接",status:"paid",spent:x.storeFeeCny,commission:state.referrals.filter(item=>item.referred===x.name).reduce((sum,item)=>sum+item.amount,0),orderId:x.storeOrderId,storeId:x.storeId})),
+  ...state.trackedVisits.map(x=>({id:x.id,name:x.registeredAt?(x.registeredName||"模拟注册用户"):"匿名访客",visitedAt:x.visitedAt,registeredAt:x.registeredAt,verifiedAt:x.verifiedAt,source:x.source,status:x.registeredAt?(x.verifiedAt?"verified":"registered"):"pending",spent:0,commission:0,orderId:"",storeId:""}))
+ ].sort((a,b)=>b.visitedAt-a.visitedAt);
  const filteredPromotions=promotionRows.filter(x=>(promotionStatus==="all"||promotionStatus==="registered"&&!!x.registeredAt||promotionStatus==="verified"&&!!x.verifiedAt||promotionStatus==="unpaid"&&!!x.registeredAt&&x.status!=="paid"||promotionStatus===x.status&&promotionStatus!=="registered"&&promotionStatus!=="verified")&&([x.id,x.name,x.source,x.orderId].join(" ").toLowerCase().includes(promotionSearch.trim().toLowerCase())));
  const promotionsPerPage=10;
  const promotionPages=Math.max(1,Math.ceil(filteredPromotions.length/promotionsPerPage));
  const selectedPromotionPage=Math.min(promotionPage,promotionPages);
  const pagedPromotions=filteredPromotions.slice((selectedPromotionPage-1)*promotionsPerPage,selectedPromotionPage*promotionsPerPage);
  const selectedPromotion=promotionRows.find(x=>x.id===promotionDetail);
- const promotionStateText=(status:string)=>({pending:"未注册",registered:"已注册",verified:"已验证",paid:"已消费"})[status as "pending"|"registered"|"verified"|"paid"]||status;
+ const promotionStateText=(status:string)=>({pending:"访问未注册",registered:"已注册",verified:"已验证",paid:"已消费"})[status as "pending"|"registered"|"verified"|"paid"]||status;
  const knownRegistered=promotionRows.filter(x=>!!x.registeredAt).length;
  const knownPaid=promotionRows.filter(x=>x.status==="paid").length;
 
@@ -132,11 +132,11 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
   {suffix==="/organization/audit"&&<>{tiles([["操作记录",String(state.audit.length),"本企业模拟事件"],["成员变更",String(state.audit.filter(x=>x.category==="成员与权限").length),"成员邀请、状态、角色"],["角色配置",String(state.audit.filter(x=>x.category==="角色权限").length),"企业角色调整"],["推广与收益",String(state.audit.filter(x=>x.category.includes("推广")||x.category.includes("提现")).length),"模拟收益与提现"]])}
    <section className={s.panel}><header><h2>操作记录</h2><p>所有在本次模拟中确认的变更都在这里留痕。</p></header><div className={s.toolbar}><input value={query} aria-label="搜索操作记录" onChange={e=>setQuery(e.target.value)} placeholder="搜索操作人、类型、内容"/><button onClick={()=>{setQuery("");setApplied("")}}>重置</button><button className={s.primary} onClick={()=>setApplied(query.trim())}>确定</button></div><div className={s.tableWrap}><table><thead><tr><th>操作时间</th><th>操作人</th><th>所属模块</th><th>操作内容</th><th>结果</th></tr></thead><tbody>{viewAudit.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{x.actor}</td><td>{x.category}</td><td>{x.message}</td><td>模拟完成</td></tr>)}</tbody></table>{!viewAudit.length&&<div className={s.empty}>暂无相关操作记录。</div>}</div></section>
   </>}
-  {referral&&<>{suffix!=="/referrals/center"&&tiles([["累计推广收益",money(totalEarnings(state)),"本企业模拟收益"],["可提现余额",money(balance),"模拟已结算金额"],["已提现",money(state.withdrawals.reduce((sum,x)=>sum+x.amount,0)),"只记模拟记录"],["模拟邀请用户",String(state.referredCustomers.length+state.trackedInvitations.length),"包含未注册、已注册和已消费邀请记录"]])}
+  {referral&&<>{suffix!=="/referrals/center"&&tiles([["累计推广收益",money(totalEarnings(state)),"本企业模拟收益"],["可提现余额",money(balance),"模拟已结算金额"],["已提现",money(state.withdrawals.reduce((sum,x)=>sum+x.amount,0)),"只记模拟记录"],["模拟推广访客",String(state.referredCustomers.length+state.trackedVisits.length),"包含访问未注册、注册及消费记录"]])}
 
    {suffix==="/referrals/center"&&<>
     <div className={s.metrics} role="region" aria-label="推广中心核心指标">{([
-     ["累计推广人数",String(promotionRows.length),"已记录的定向邀请及关联用户"],
+     ["推广访问用户",String(promotionRows.length),"模拟归因访客，非真实流量统计"],
      ["有效注册",String(knownRegistered),"模拟注册且已完成验证"],
      ["付费用户",String(knownPaid),"已产生基础店铺服务消费"],
      ["累计收益",money(totalEarnings(state)),"按已消费订单计算的模拟佣金"]
@@ -153,26 +153,26 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
       </div>
      </section>
      <section className={s.panel} aria-label="近30天推广转化">
-      <header><h2>近30天推广转化</h2><p>按当前演示记录汇总；访问量尚未接入统计。</p></header>
+      <header><h2>近30天推广转化</h2><p>30 个模拟访客的转化示意；真实访问埋点尚未接入。</p></header>
       <div className={s.referralFunnel}>
-       {([["访问","—","尚未接入访问埋点"],["注册",String(recentRegistrations),"已记录模拟注册"],["付费",String(recentPaidCustomers),"已产生店铺服务扣款"],["收益",money(recentEarned),"模拟佣金收益"]] as const).map(([label,value,hint])=><div className={s.referralFunnelStep} key={label}><span>{label}</span><strong>{value}</strong><small>{hint}</small></div>)}
+       {([["访问",String(promotionRows.filter(x=>x.visitedAt>=recent30Day).length),"模拟归因访客；真实访问埋点未接入"],["注册",String(recentRegistrations),"已记录模拟注册"],["付费",String(recentPaidCustomers),"已产生店铺服务扣款"],["收益",money(recentEarned),"模拟佣金收益"]] as const).map(([label,value,hint])=><div className={s.referralFunnelStep} key={label}><span>{label}</span><strong>{value}</strong><small>{hint}</small></div>)}
       </div>
      </section>
     </div>
     <section className={s.panel} aria-label="推广明细">
-     <header><h2>推广明细</h2><p>按已记录的定向邀请与模拟注册用户查看转化情况；「已注册」「已验证」为累计筛选，「未消费」仅统计已注册但未消费。公开链接匿名访问不计入邀请人数，以下均为演示记录。</p></header>
+     <header><h2>推广明细</h2><p>按模拟推广访问记录查看注册与消费转化；未注册只显示匿名访客编号。已注册与已验证为累计筛选；未消费只统计已注册未消费。尚未接入真实访客追踪。</p></header>
      <div className={s.promotionMetrics} aria-label="推广转化概览">
-      {([["累计邀请",promotionRows.length],["已注册",knownRegistered],["已消费",knownPaid],["未消费",knownRegistered-knownPaid]] as const).map(([label,value])=><div key={label}><span>{label}</span><strong>{value}</strong></div>)}
+      {([["推广访问用户",promotionRows.length],["已注册",knownRegistered],["已消费",knownPaid],["未消费",knownRegistered-knownPaid]] as const).map(([label,value])=><div key={label}><span>{label}</span><strong>{value}</strong></div>)}
      </div>
      <div className={s.promotionFilters}>
-      <div className={s.promotionTabs} role="group" aria-label="邀请状态筛选">
-       {([["all","全部"],["pending","未注册"],["registered","已注册"],["verified","已验证"],["unpaid","未消费"],["paid","已消费"]] as const).map(([id,label])=><button key={id} type="button" aria-pressed={promotionStatus===id} onClick={()=>{setPromotionStatus(id);setPromotionPage(1)}}>{label}</button>)}
+      <div className={s.promotionTabs} role="group" aria-label="推广访客状态筛选">
+       {([["all","全部"],["pending","访问未注册"],["registered","已注册"],["verified","已验证"],["unpaid","未消费"],["paid","已消费"]] as const).map(([id,label])=><button key={id} type="button" aria-pressed={promotionStatus===id} onClick={()=>{setPromotionStatus(id);setPromotionPage(1)}}>{label}</button>)}
       </div>
-      <input aria-label="搜索推广邀请" value={promotionSearch} onChange={e=>{setPromotionSearch(e.target.value);setPromotionPage(1)}} placeholder="搜索邀请编号、用户或订单" />
+      <input aria-label="搜索推广访客" value={promotionSearch} onChange={e=>{setPromotionSearch(e.target.value);setPromotionPage(1)}} placeholder="搜索访客编号、注册用户或订单" />
      </div>
-     <div className={s.tableWrap}><table><thead><tr><th>邀请用户</th><th>邀请时间</th><th>推广来源</th><th>转化状态</th><th>消费金额</th><th>累计佣金</th><th>操作</th></tr></thead>
+     <div className={s.tableWrap}><table><thead><tr><th>访客 / 注册用户</th><th>访问时间</th><th>推广来源</th><th>转化状态</th><th>消费金额</th><th>累计佣金</th><th>操作</th></tr></thead>
       <tbody>{pagedPromotions.map(x=><tr key={x.id}>
-       <td><strong>{x.name}</strong><small>{x.id}</small></td><td>{timestamp(x.invitedAt)}</td><td>{x.source}</td>
+       <td><strong>{x.name}</strong><small>{x.id}</small></td><td>{timestamp(x.visitedAt)}</td><td>{x.source}</td>
        <td><span className={s.promotionStatus} data-status={x.status}>{promotionStateText(x.status)}</span></td>
        <td>{x.spent?money(x.spent):"—"}</td><td>{x.commission?money(x.commission):"—"}</td>
        <td><button type="button" onClick={()=>setPromotionDetail(x.id)}>查看详情</button></td>
@@ -183,7 +183,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
      </div>
     </section>
    </>}
-   {suffix==="/referrals"&&<section className={s.panel}><header><h2>推广入口与业务概览</h2><p>推广链接、推广码、30 天转化漏斗及邀请用户推广明细统一在推广中心管理。</p></header><div className={s.recordMore}><button type="button" className={s.primary} onClick={()=>nav("/referrals/center")}>进入推广中心</button></div></section>}
+   {suffix==="/referrals"&&<section className={s.panel}><header><h2>推广入口与业务概览</h2><p>推广链接、推广码、推广二维码、30 天转化漏斗及推广访客明细统一在推广中心管理。</p></header><div className={s.recordMore}><button type="button" className={s.primary} onClick={()=>nav("/referrals/center")}>进入推广中心</button></div></section>}
    {suffix==="/referrals/earnings"&&<div className={s.referralManualActions}><button type="button" onClick={()=>open("earning")}>模拟一笔推广成交并结算</button></div>}
    {(suffix==="/referrals/earnings"||suffix==="/referrals")&&<section className={s.panel}><header><h2>收益明细</h2><p>本次模拟按已支付的基础店铺服务费 × 10% 产生佣金；用户钱包充值和未消费余额不产生佣金。所有数据仅用于演示。</p></header><div className={s.tableWrap}><table><thead><tr><th>时间</th><th>模拟客户</th><th>消费订单</th><th>已消费金额</th><th>佣金比例</th><th>收益金额</th><th>结算状态</th></tr></thead><tbody>{visibleEarnings.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{x.referred}</td><td>{x.orderId||"手动模拟"}</td><td>{x.paidCny===undefined?"—":money(x.paidCny)}</td><td>{x.rate===undefined?"手动模拟":(x.rate*100).toFixed(0)+"%"}</td><td>{money(x.amount)}</td><td>{x.status}（模拟）</td></tr>)}</tbody></table>{!state.referrals.length&&<div className={s.empty}>暂无推广收益。</div>}</div>{pagination("推广收益明细",state.referrals.length,visibleEarningsPage,earningsPageCount,setEarningsPage)}{suffix==="/referrals"&&<div className={s.recordMore}><button type="button" onClick={()=>nav("/referrals/earnings")}>查看全部收益记录</button></div>}</section>}
       {suffix==="/referrals/withdrawals"&&<><section className={s.panel}><header><h2>模拟收款方式</h2><p>不输入真实银行卡号；只保存演示标识。</p></header><div className={s.linkRow}><div><span>当前收款方式</span><strong>{state.payoutAccount||"尚未设置"}</strong></div><button onClick={()=>{open("payout");setAccount(state.payoutAccount)}}>设置收款方式</button></div></section><section className={s.panel}><header><h2>提现记录</h2><p>审核环节全部模拟通过，不发起真实打款。</p></header><div className={s.tableWrap}><table><thead><tr><th>申请时间</th><th>金额</th><th>收款标识</th><th>状态</th></tr></thead><tbody>{state.withdrawals.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{money(x.amount)}</td><td>{x.account}</td><td>{x.status}</td></tr>)}</tbody></table>{!state.withdrawals.length&&<div className={s.empty}>暂无提现记录。</div>}</div></section></>}
@@ -207,7 +207,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
   {selectedPromotion&&<div className={s.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setPromotionDetail(null)}}>
    <section className={s.dialog} role="dialog" aria-modal="true" aria-label="推广用户详情">
     <header><h2>推广用户详情</h2><button type="button" aria-label="关闭推广用户详情" onClick={()=>setPromotionDetail(null)}>×</button></header>
-    <p className={s.dialogHint}>演示邀请记录 · {selectedPromotion.name} · {selectedPromotion.id}</p>
+    <p className={s.dialogHint}>模拟推广访客记录 · {selectedPromotion.name} · {selectedPromotion.id}</p>
     <div className={s.promotionDetailSummary}>
      <div><span>转化状态</span><strong>{promotionStateText(selectedPromotion.status)}</strong></div>
      <div><span>推广来源</span><strong>{selectedPromotion.source}</strong></div>
@@ -216,7 +216,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
     </div>
     <h3>转化进度</h3>
     <ol className={s.promotionTimeline}>
-     <li><strong>邀请记录创建</strong><small>{timestamp(selectedPromotion.invitedAt)}</small></li>
+     <li><strong>首次记录推广访问</strong><small>{timestamp(selectedPromotion.visitedAt)}</small></li>
      <li><strong>注册成功</strong><small>{selectedPromotion.registeredAt?timestamp(selectedPromotion.registeredAt):"尚未注册"}</small></li>
      <li><strong>账号验证</strong><small>{selectedPromotion.verifiedAt?timestamp(selectedPromotion.verifiedAt):"尚未验证"}</small></li>
      <li><strong>首次消费</strong><small>{selectedPromotion.spent?money(selectedPromotion.spent)+" · "+selectedPromotion.orderId:"尚无有效消费记录"}</small></li>
