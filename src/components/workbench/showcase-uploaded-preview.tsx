@@ -4,14 +4,7 @@ import { useRouter } from "next/navigation";
 import styles from "./showcase-uploaded-preview.module.css";
 
 type Item={sku:string;name:string;batch:string;site:string;platform:string;method:string;time:string;productId:string};
-const records:Item[]=[
- {sku:"SM-240819-006",name:"示例商品 A",batch:"240819",site:"美国站",platform:"SHEIN",method:"直接上架",time:"2026-08-19",productId:"示例记录 006"},
- {sku:"SM-240819-017",name:"示例商品 B",batch:"240819",site:"加拿大站",platform:"SHEIN",method:"发布到草稿箱",time:"2026-08-19",productId:"示例记录 017"},
- {sku:"SM-240818-045",name:"示例商品 C",batch:"240818",site:"美国站",platform:"SHEIN",method:"直接上架",time:"2026-08-18",productId:"示例记录 045"},
- {sku:"SM-240818-062",name:"示例商品 D",batch:"240818",site:"加拿大站",platform:"SHEIN",method:"发布到草稿箱",time:"2026-08-18",productId:"示例记录 062"},
- {sku:"SM-240817-033",name:"示例商品 E",batch:"240817",site:"美国站",platform:"SHEIN",method:"直接上架",time:"2026-08-17",productId:"示例记录 033"},
- {sku:"SM-240817-079",name:"示例商品 F",batch:"240817",site:"加拿大站",platform:"SHEIN",method:"发布到草稿箱",time:"2026-08-17",productId:"示例记录 079"}
-];
+const records:Item[]=[];
 const stages=[["waiting","待上传"],["missing","待补全"],["review","待审核"],["uploaded","已上传"]] as const;
 export function ShowcaseUploadedPreview(){
  const router=useRouter();
@@ -40,7 +33,7 @@ export function ShowcaseUploadedPreview(){
  return <div className={styles.page} data-showcase-uploaded>
   <header className={styles.heading}><div><small>店铺中心 / 刊登管理 / 已上传</small><h1>已上传</h1><p>查看原提交版本、目标店铺和真实平台状态；受理、审核、平台草稿及上架分别显示。</p></div></header>
   <section className={styles.metrics}>
-   {[[String(records.length),"已上传商品","当前演示记录"],[String(records.filter(x=>x.method==="直接上架").length),"直接上架","提交方式记录，非平台已上架证明"],[String(records.filter(x=>x.method==="发布到草稿箱").length),"平台草稿","平台草稿不等于已上架"]].map(([value,title,sub],i)=><article key={title} data-tone={i}><strong>{value}</strong><span><b>{title}</b><small>{sub}</small></span></article>)}
+   {[[String(records.length),"已上传商品","已同步的真实记录"],[String(records.filter(x=>x.method==="直接上架").length),"直接上架","提交方式记录，非平台已上架证明"],[String(records.filter(x=>x.method==="发布到草稿箱").length),"平台草稿","平台草稿不等于已上架"]].map(([value,title,sub],i)=><article key={title} data-tone={i}><strong>{value}</strong><span><b>{title}</b><small>{sub}</small></span></article>)}
   </section>
   <nav className={styles.stages} aria-label="刊登管理阶段">{stages.map(([id,label])=><button key={id} type="button" aria-current={id==="uploaded"?"page":undefined} onClick={()=>id==="uploaded"?undefined:router.push("/workbench/listing/"+id+"?preview=1")}>{label}</button>)}</nav>
   <section className={styles.panel}>
@@ -52,17 +45,17 @@ export function ShowcaseUploadedPreview(){
     </div>
     <div className={styles.search}><input aria-label="搜索已上传商品" placeholder="搜索商品名称、SKU、批次" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")apply();}}/><button onClick={reset} type="button">重置</button><button className={styles.primary} onClick={apply} type="button">确认</button></div>
    </div>
-   <div className={styles.listTitle}><h2>已上传商品</h2><span>共 {filtered.length} 条演示记录</span></div>
+   <div className={styles.listTitle}><h2>已上传商品</h2><span>共 {filtered.length} 条记录</span></div>
    <div className={styles.tableScroll}><div className={styles.table}>
     <div className={styles.columns}><span>商品名称 / SKU</span><span>批次</span><span>目标平台 / 站点</span><span>平台商品ID / 草稿</span><span>上传时间</span><span>提交方式 / 状态</span><span>操作</span></div>
     {visible.map(item=><div className={styles.item} key={item.sku}>
       <span><b>{item.name}</b><small>{item.sku}</small></span><span>{item.batch}</span><span>{item.platform}<small>{item.site}</small></span><span>{item.productId}</span><span>{item.time}</span><span className={styles.method} data-draft={item.method==="发布到草稿箱"}>{item.method}<small>{item.method==="发布到草稿箱"?"平台草稿 · 未上架":"提交平台 · 审核中（演示）"}</small></span><button type="button" onClick={()=>setSelected(item)}>查看商品</button>
     </div>)}
    </div></div>
-   {!filtered.length?<div className={styles.empty}>没有符合筛选条件的商品。可重置筛选后重新查看。</div>:null}
+   {!filtered.length?<div className={styles.empty}>暂无已上传商品记录。完成实际商品上传后，才会在这里显示记录。</div>:null}
    <footer className={styles.pagination}><span>第 {page} / {pages} 页 · 每页最多 4 条</span><div><button type="button" disabled={page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={page>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}>下一页</button></div></footer>
   </section>
-  <p className={styles.disclaimer}>此页面仅展示原型演示记录。平台受理、审核中、平台草稿、已上架应分别核实；已上传记录只读，后续上架管理请进入「店铺商品」。</p>
+  <p className={styles.disclaimer}>当前暂无已上传商品。平台受理、审核中、平台草稿、已上架必须分别核实；未产生真实记录时保持空白。</p>
   {selected&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null);}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看商品详情"><header><div><small>已上传 / 查看商品</small><h2>{selected.name}</h2></div><button type="button" ref={closeDetail} aria-label="关闭商品详情" onClick={()=>setSelected(null)}>×</button></header><dl>{[["SKU",selected.sku],["批次",selected.batch],["平台与站点",selected.platform+" · "+selected.site],["平台商品ID",selected.productId],["上传时间",selected.time],["发布方式",selected.method],["平台状态",selected.method==="发布到草稿箱"?"平台草稿 · 未上架":"提交平台 · 审核中（演示）"]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><p>原提交版本与上传记录只读。演示数据未核验真实平台受理、审核或上架状态；后续上架请进入店铺商品。</p><footer><button type="button" onClick={()=>setSelected(null)}>返回商品列表</button></footer></section></div>}
  </div>;
 }
