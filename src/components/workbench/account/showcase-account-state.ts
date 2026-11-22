@@ -155,6 +155,68 @@ export const demoReferralSummary={
  totalCommissionCny:demoReferralEarnings.reduce((sum,item)=>sum+item.amount,0)
 };
 export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rolePermissions:Record<string,string[]>;allocations:Record<string,number>;referredCustomers:ReferredCustomer[];trackedVisits:TrackedVisit[];referrals:ReferralItem[];withdrawals:Withdrawal[];payoutAccount:string;referralCode:string};
+
+// Referral records belong to an individual demo member, never to the organization-wide account suite.
+// The administrator's existing fixture stays in SuiteState for backwards compatibility.
+export type ReferralPortfolio=Pick<SuiteState,"referredCustomers"|"trackedVisits"|"referrals"|"withdrawals"|"payoutAccount"|"referralCode">;
+export const colleague01Id="SIM-COLLEAGUE-01";
+export function initialMemberReferralPortfolio(memberId:string):ReferralPortfolio{
+ const code="SM-"+memberId.replace(/[^A-Z0-9]/gi,"").toUpperCase();
+ if(memberId!==colleague01Id)return {referredCustomers:[],trackedVisits:[],referrals:[],withdrawals:[],payoutAccount:"",referralCode:code};
+ const customers:ReferredCustomer[]=Array.from({length:6},(_,index)=>{
+  const n=String(index+1).padStart(2,"0");
+  return {id:"SIM-C01-CUSTOMER-"+n,name:"同事01模拟客户"+n,
+   registeredAt:Date.UTC(2026,10,22,3,10+index),walletTopUpCny:200,
+   storeId:"SIM-C01-STORE-"+n,storeOrderId:"SIM-C01-ORDER-"+n,
+   storeFeeCny:demoStoreFeeCny,walletBalanceCny:200-demoStoreFeeCny,
+   commissionCny:Math.round(demoStoreFeeCny*demoReferralRate*100)/100,status:"模拟绑定已消费"};
+ });
+ const visitors:TrackedVisit[]=Array.from({length:4},(_,index)=>{
+  const n=String(index+7).padStart(2,"0");
+  return {id:"SIM-C01-VISITOR-"+n,visitedAt:Date.UTC(2026,10,22,3,20+index),
+   source:index%2===0?"推广链接":"推广码",
+   ...(index<2?{registeredAt:Date.UTC(2026,10,22,3,40+index),verifiedAt:Date.UTC(2026,10,22,3,50+index),registeredName:"同事01模拟注册用户"+n}:{})};
+ });
+ const referrals:ReferralItem[]=customers.map(x=>({id:"SIM-C01-COMMISSION-"+x.id,at:x.registeredAt+180000,
+  referred:x.name,amount:x.commissionCny,status:"已结算",orderId:x.storeOrderId,
+  paidCny:x.storeFeeCny,rate:demoReferralRate}));
+ return {referredCustomers:customers,trackedVisits:visitors,referrals,withdrawals:[],
+  payoutAccount:"",referralCode:code};
+}
+const REFERRAL_PREFIX="shuomi-demo-member-referrals-v1-";
+function validReferralPortfolio(v:unknown):v is ReferralPortfolio{
+ return !!v&&typeof v==="object"&&Array.isArray((v as ReferralPortfolio).referredCustomers)
+ &&Array.isArray((v as ReferralPortfolio).trackedVisits)&&Array.isArray((v as ReferralPortfolio).referrals)
+ &&Array.isArray((v as ReferralPortfolio).withdrawals)&&typeof (v as ReferralPortfolio).payoutAccount==="string"
+ &&typeof (v as ReferralPortfolio).referralCode==="string";
+}
+export function readMemberReferralPortfolio(memberId:string):ReferralPortfolio{
+ const initial=initialMemberReferralPortfolio(memberId);
+ try{
+  const raw=localStorage.getItem(REFERRAL_PREFIX+memberId);
+  const saved=raw?JSON.parse(raw):null;
+  return validReferralPortfolio(saved)?saved:initial;
+ }catch{return initial}
+}
+export function writeMemberReferralPortfolio(memberId:string,portfolio:ReferralPortfolio):boolean{
+ if(memberId==="admin"||!validReferralPortfolio(portfolio))return false;
+ try{localStorage.setItem(REFERRAL_PREFIX+memberId,JSON.stringify(portfolio));
+  window.dispatchEvent(new Event("shuomi-member-referrals-updated"));return true;
+ }catch{return false}
+}
+export function useMemberReferralPortfolio(memberId:string){
+ const [portfolio,setPortfolio]=useState<ReferralPortfolio>(()=>initialMemberReferralPortfolio(memberId));
+ useEffect(()=>{
+  const sync=()=>setPortfolio(readMemberReferralPortfolio(memberId));sync();
+  window.addEventListener("shuomi-member-referrals-updated",sync);
+  return()=>window.removeEventListener("shuomi-member-referrals-updated",sync);
+ },[memberId]);
+ const commitPortfolio=(next:ReferralPortfolio)=>{
+  if(!writeMemberReferralPortfolio(memberId,next))return false;
+  setPortfolio(next);return true;
+ };
+ return {portfolio,commitPortfolio};
+}
 const KEY="shuomi-demo-account-suite-SM-ENT-000001-v1";
 export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)},...demoColleagues],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},referredCustomers:demoReferredCustomers,trackedVisits:demoTrackedVisits,referrals:demoReferralEarnings,withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
 const valid=(value:unknown):value is SuiteState=>!!value&&typeof value==="object"&&Array.isArray((value as SuiteState).members)&&Array.isArray((value as SuiteState).audit)&&Array.isArray((value as SuiteState).roles)&&Array.isArray((value as SuiteState).referrals)&&Array.isArray((value as SuiteState).withdrawals);
