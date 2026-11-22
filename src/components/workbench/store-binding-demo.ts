@@ -15,7 +15,7 @@ export function demoStoreServiceActive(store:DemoStoreBinding,now=Date.now()):bo
  return typeof store.serviceExpiresAt==="string"&&Number.isFinite(Date.parse(store.serviceExpiresAt))&&Date.parse(store.serviceExpiresAt)>now;
 }
 export function countConsumedStorePeriods(stores:readonly DemoStoreBinding[]):number{
- return stores.reduce((total,s)=>total+(Number.isSafeInteger(s.servicePeriods)&&s.servicePeriods!>0?s.servicePeriods!:0),0);
+ return stores.reduce((total,s)=>total+(Number.isSafeInteger(s.servicePeriods)&&Number(s.servicePeriods)>0?Number(s.servicePeriods):0),0);
 }
 export function startDemoStoreService(store:DemoStoreBinding,now=Date.now()):DemoStoreBinding{
  const end=demoStoreServiceActive(store,now)?Date.parse(store.serviceExpiresAt!):now;
