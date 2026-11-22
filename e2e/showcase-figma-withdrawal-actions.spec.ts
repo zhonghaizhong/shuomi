@@ -3,7 +3,7 @@ const route="/shuomi/#/workbench/account/referrals/withdrawals";
 test("Figma payout actions show configuration and withdrawal, with saved account and isolated records",async({page})=>{
  await page.goto(route);
  const suite=page.locator("[data-account-suite]");
- const payoutSection=suite.getByRole("heading",{name:"收款账户"}).locator("..");
+ const payoutSection=suite.locator("section").filter({has:suite.getByRole("heading",{name:"收款账户",exact:true})}).first();
  await expect(payoutSection.getByRole("button",{name:"配置账户"})).toBeVisible();
  await expect(payoutSection.getByRole("button",{name:"申请提现"})).toBeVisible();
  await expect(suite.getByRole("button",{name:"设置收款方式"})).toHaveCount(0);
