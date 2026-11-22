@@ -494,3 +494,17 @@ test("new binding is blocked without an available 30-day service period",async({
  await expect(area).not.toContainText("不得绑定的店铺");
  await expect(area).toContainText("共 2 家店铺");
 });
+
+test("colleague's five seeded platform IDs include four simulated activations and one retryable failure",async({page})=>{
+ await page.goto(root+"/account/organization/resources");
+ const suite=page.locator("[data-account-suite]");
+ await suite.getByRole("row").filter({hasText:"模拟同事01"}).getByRole("button",{name:"查看店铺"}).click();
+ const dialog=page.getByRole("dialog",{name:"店铺详情"});
+ for(let i=1;i<=4;i++)await expect(dialog.getByRole("row").filter({hasText:"同事01演示店铺"+String(i).padStart(2,"0")})).toContainText("已激活");
+ const failed=dialog.getByRole("row").filter({hasText:"同事01演示店铺05"});
+ await expect(failed).toContainText("未激活");
+ await expect(dialog.getByRole("button",{name:"重试获取"})).toHaveCount(1);
+ await failed.getByRole("button",{name:"重试获取"}).click();
+ await expect(failed).toContainText("已激活");
+ await expect(dialog.getByRole("button",{name:"重试获取"})).toHaveCount(0);
+});
