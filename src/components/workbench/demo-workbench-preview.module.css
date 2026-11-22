@@ -3845,3 +3845,25 @@
   grid-column:1;grid-row:auto;
  }
 }
+
+
+/* Account landing: profile card must retain its accent after Vuexy card resets. */
+.page[data-commerce-unified="account"] .accountModules>div>article[data-step="0"]{
+ --acc-tone:#28c76f;
+ border-left:3px solid var(--acc-tone);
+}
+.page[data-commerce-unified="account"] .accountModules>div>article[data-step="0"]>header>span{
+ color:var(--acc-tone);
+ border-color:color-mix(in srgb,var(--acc-tone) 30%,var(--acc-stroke));
+ background:color-mix(in srgb,var(--acc-tone) 9%,var(--acc-surface));
+}
+.page[data-commerce-unified="account"] .accountModules>div>article[data-step="0"] footer b{
+ color:var(--acc-tone);
+}
+:global(.light) .page[data-commerce-unified="account"] .accountModules>div>article[data-step="0"]{
+ border-left-color:#20a45b;
+}
+:global(.light) .page[data-commerce-unified="account"] .accountModules>div>article[data-step="0"]>header>span,
+:global(.light) .page[data-commerce-unified="account"] .accountModules>div>article[data-step="0"] footer b{
+ color:#168548;
+}
