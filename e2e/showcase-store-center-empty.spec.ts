@@ -399,7 +399,7 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await expect(stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"})).toContainText("服务中");
 
  await page.goto(root+"/account/organization");
- await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("13 家");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("13已绑定店铺");
 });
 
 
