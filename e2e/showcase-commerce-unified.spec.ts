@@ -259,7 +259,11 @@ test("plans zero-value balances and free 5 GiB storage agree across all pages",a
  let plans=page.locator('[data-commerce-unified="plans"]');
  await expect(plans).toContainText("0 家");
  await expect(plans).toContainText("8.00 GiB");
- await expect(plans).toContainText("已用 0.00 GiB");
+ const overviewCards=plans.locator('[class*="planStats"] [class*="planStat"]');
+ await expect(overviewCards).toHaveCount(4);
+ for (const card of await overviewCards.all()) await expect(card).toContainText("剩余可分配");
+ await expect(plans).toContainText("已分配 0");
+ await expect(plans).toContainText("实际已用 0.00 GiB");
  await expect(plans).not.toContainText("8,650");
  await expect(plans).not.toContainText("300,000 条");
  await page.goto(root+"/plans/entitlements");
