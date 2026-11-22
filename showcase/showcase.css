@@ -626,3 +626,13 @@ html.light body {background:#f8f7fa;color:#444050;}
 .light .showcase-identity-search input::placeholder{color:#777182}
 .light .showcase-identity-search button{color:#6f6b7d}
 .light .showcase-identity-search button:hover{background:#f1efff;color:#6556cc}
+
+
+/* Keep account search visible above the scrolling choice list. */
+.showcase-identity-search-row{display:grid;gap:7px;flex:none;padding:15px 26px 8px}
+.showcase-identity-search-row>label{font-size:13px;font-weight:600;color:#e2deef}
+.showcase-identity-search-row .showcase-identity-search{min-height:45px}
+.showcase-identity-search-row .showcase-identity-search input{height:43px;font-size:14px}
+.showcase-identity-body{padding-top:12px}
+.light .showcase-identity-search-row>label{color:#444050}
+@media(max-width:550px){.showcase-identity-search-row{padding:12px 17px 7px}}
