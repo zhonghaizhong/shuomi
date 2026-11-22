@@ -169,7 +169,7 @@ test("Figma Manage opens store settings; Reauthorize opens binding, without fake
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await details.getByRole("button",{name:"保存设置"}).click();
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await expect(area.getByText("林晨",{exact:true})).toBeVisible();
+ await expect(area).toContainText("负责人：林晨");
  await area.getByRole("button",{name:"管理",exact:true}).click();
  await details.getByRole("button",{name:"编辑店铺资料"}).click();
  const authorization=page.getByRole("dialog",{name:"管理店铺"});
@@ -200,8 +200,8 @@ test("Figma binding group and owner affordances preserve draft and follow compan
  await form.getByLabel("负责人").selectOption("林晨");
  await form.getByRole("button",{name:"确认绑定"}).click();
  const area=page.locator('[data-store-center-showcase="stores"]');
- await expect(area.locator("article").filter({hasText:"分组绑定草稿"}).getByText("店铺运营组",{exact:true}).first()).toBeVisible();
- await expect(area.getByText("林晨",{exact:true})).toBeVisible();
+ await expect(area.locator("article").filter({hasText:"分组绑定草稿"})).toContainText("店铺运营组");
+ await expect(area).toContainText("负责人：林晨");
 });
 test("store detail retains rename, edit and unlink without card menu",async({page})=>{
  const area=await createDemo(page,"待操作店铺");
@@ -216,7 +216,6 @@ test("store detail retains rename, edit and unlink without card menu",async({pag
  const confirm=page.getByRole("alertdialog",{name:"确认移除演示店铺"});
  await expect(confirm).toBeVisible();
  await confirm.getByRole("button",{name:"确认移除"}).click();
- await page.getByRole("button",{name:"返回我的店铺"}).click();
  await expect(area.getByRole("heading",{name:"尚未绑定店铺"})).toBeVisible();
 });
 test("enter-store is a full five-tab Figma detail view rather than a generic workspace modal",async({page})=>{
@@ -232,7 +231,7 @@ test("enter-store is a full five-tab Figma detail view rather than a generic wor
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await details.getByRole("button",{name:"保存设置"}).click();
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await expect(area.getByText("林晨",{exact:true})).toBeVisible();
+ await expect(area).toContainText("负责人：林晨");
 });
 test("store settings are staged until Save, and returning discards uncommitted edits",async({page})=>{
  const area=await createDemo(page,"待保存设置");
@@ -240,13 +239,13 @@ test("store settings are staged until Save, and returning discards uncommitted e
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await expect(area.getByText("林晨",{exact:true})).toHaveCount(0);
+ await expect(area).not.toContainText("负责人：林晨");
  await area.getByRole("button",{name:"管理",exact:true}).click();
  await expect(details.getByLabel("店铺负责人")).toHaveValue("");
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await details.getByRole("button",{name:"保存设置"}).click();
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await expect(area.getByText("林晨",{exact:true})).toBeVisible();
+ await expect(area).toContainText("负责人：林晨");
 });
 test("Figma group creation, rename and deletion preserve store rather than unlink it",async({page})=>{
  const area=await createDemo(page,"分组店铺");
@@ -374,7 +373,7 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：3 期");
  await page.goto(root+"/stores");
  const activeCard=stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"});
- await expect(activeCard).toContainText("服务中");
+ await expect(activeCard).toContainText("服务有效");
  await activeCard.getByRole("button",{name:"查看店铺",exact:true}).click();
  const detail=page.getByRole("region",{name:"店铺详情页面"});
  await detail.getByRole("button",{name:"服务信息",exact:true}).click();
@@ -386,11 +385,11 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
   return store&&{periods:store.servicePeriods,duration:Date.parse(store.serviceExpiresAt)-Date.parse(store.serviceStartedAt)};
  });
  expect(renewed).toEqual({periods:2,duration:60*24*60*60*1000});
- await expect(activeCard).toContainText("服务中");
+ await expect(activeCard).toContainText("服务有效");
  await page.goto(root+"/plans/entitlements");
  await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：4 期");
  await page.goto(root+"/stores");
- await expect(stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"})).toContainText("服务中");
+ await expect(stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"})).toContainText("服务有效");
 
  await page.goto(root+"/account/organization");
  await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("12已绑定店铺");
@@ -432,7 +431,7 @@ test("other organization purchase ledger stays isolated from the primary organiz
  const binding=page.getByRole("dialog",{name:"绑定新店铺"});
  await binding.getByRole("textbox",{name:"自定义名称"}).fill("企业A模拟付费店铺");
  await binding.getByRole("button",{name:"确认绑定"}).click();
- await expect(stores).toContainText("服务中");
+ await expect(stores).toContainText("服务有效");
  await page.goto(root+"/plans/entitlements");
  await expect(entitlements.locator('[class*="planEntitlementStoreSplit"]')).toContainText("1");
 });
