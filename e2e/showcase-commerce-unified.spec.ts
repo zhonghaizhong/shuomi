@@ -435,7 +435,7 @@ test("plans entitlement cards show balanced two-value store renewal and three-ro
  await expect(cards.nth(1)).toContainText("10,000,000");
  await expect(cards.nth(2)).toContainText("50,000");
  await expect(cards.nth(3)).toContainText("8.00 GiB");
- for(const label of ["免费容量","扩容容量","已用容量"])await expect(cards.nth(3).getByText(label)).toBeVisible();
+ for(const label of ["免费容量","扩容容量","实际已用"])await expect(cards.nth(3).getByText(label)).toBeVisible();
  await expect(cards.nth(3)).toContainText("5.00 GiB");
  await expect(cards.nth(3)).toContainText("3.00 GiB");
  await expect(cards.nth(3)).toContainText("0.00 GiB");
