@@ -141,7 +141,7 @@ test("Figma promotion center preserves sharing and funnel while promoting invita
  await expect(share).toContainText("推广码");
  await expect(share).toContainText("推广二维码");
  await expect(share.getByRole("button",{name:"复制"})).toHaveCount(2);
- await expect(suite.getByRole("region",{name:"近30天推广转化"})).toContainText("真实访问埋点尚未接入");
+ await expect(suite.getByRole("region",{name:"近30天推广转化"})).toContainText("未接入真实流量追踪");
  const ledger=suite.getByRole("region",{name:"推广明细"});
  await expect(ledger.getByRole("row")).toHaveCount(11);
  await expect(ledger).not.toContainText("定向邀请");
@@ -154,7 +154,6 @@ test("Figma promotion center preserves sharing and funnel while promoting invita
  await expect(suite.getByRole("region",{name:"近30天推广转化"})).toContainText("20");
  await expect(ledger).toContainText("共 30 条");
  await expect(ledger).toContainText("未消费");
- await expect(ledger).toContainText("推广访问用户");
  await expect(ledger).toContainText("未消费");
  await ledger.getByRole("group",{name:"推广访客状态筛选"}).getByRole("button",{name:"访问未注册"}).click();
  await expect(ledger).toContainText("共 5 条");
@@ -193,7 +192,7 @@ test("promotion invitation status and search filters stay independent of live ea
  await expect(ledger.getByRole("row")).toHaveCount(2);
  await ledger.getByRole("textbox",{name:"搜索推广访客"}).fill("NO-SUCH-INVITE");
  await expect(ledger).toContainText("共 0 条");
- await expect(ledger).toContainText("当前条件下没有邀请记录");
+ await expect(ledger).toContainText("当前筛选下暂无记录");
  await page.reload();
  await expect(suite.getByRole("region",{name:"推广明细"})).toContainText("共 30 条");
  await page.goto(base+"/referrals/earnings");
@@ -206,11 +205,12 @@ test("30 attributed visitors 25 registered 20 paid stay consistent across referr
  await expect(suite).toContainText("¥336.00");
  await page.goto(base+"/referrals/center");
  const ledger=suite.getByRole("region",{name:"推广明细"});
- const statistics=ledger.locator('[class*="promotionMetrics"]');
+ const statistics=suite.getByRole("region",{name:"推广中心核心指标"});
  await expect(statistics).toContainText("30");
  await expect(statistics).toContainText("25");
  await expect(statistics).toContainText("20");
- await expect(statistics).toContainText("5");
+ await expect(statistics).toContainText("¥336.00");
+ await expect(ledger.locator('[class*="promotionMetrics"]')).toHaveCount(0);
  await ledger.getByRole("group",{name:"推广访客状态筛选"}).getByRole("button",{name:"未消费"}).click();
  await expect(ledger).toContainText("共 5 条");
  await ledger.getByRole("button",{name:"查看详情"}).first().click();
