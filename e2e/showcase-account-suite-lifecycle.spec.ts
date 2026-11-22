@@ -450,7 +450,7 @@ test("enterprise overview matches Figma business sections without changing custo
  await page.goto(base+"/organization");
  const root=page.locator('[data-account-suite="/organization"]');
  await expect(root).toBeVisible();
- for(const heading of ["企业空间","企业资源","成员资源分配"])
+ for(const heading of ["企业空间","企业资源"])
   await expect(root.getByRole("heading",{name:heading,exact:true})).toBeVisible();
  const summary=root.getByRole("region",{name:"企业空间概览"});
  await expect(summary.getByText("企业成员",{exact:true})).toBeVisible();
@@ -467,11 +467,12 @@ test("enterprise overview matches Figma business sections without changing custo
   await expect(resource.getByText(label,{exact:true})).toBeVisible();
  await expect(resource.locator('[class*="resourceSummary"] article')).toHaveCount(4);
  await expect(resource.getByRole("progressbar",{name:"已分配企业存储"})).toBeVisible();
- const allocation=root.getByRole("region",{name:"成员资源分配"});
- await expect(allocation.getByRole("columnheader",{name:"成员 / 角色"})).toBeVisible();
- await expect(allocation.getByRole("columnheader",{name:"存储上限（GiB）"})).toBeVisible();
+ await expect(root.getByRole("region",{name:"成员资源分配"})).toHaveCount(0);
  await tabs.getByRole("button",{name:"成员管理",exact:true}).click();
  await expect(page).toHaveURL(/account\/organization\/members/);
+ const memberList=page.getByRole("region",{name:"成员列表"});
+ await expect(memberList.getByRole("searchbox",{name:"搜索成员"})).toBeVisible();
+ await expect(memberList.getByRole("combobox",{name:"筛选成员状态"})).toBeVisible();
  await page.getByRole("navigation",{name:"企业空间业务导航"}).getByRole("button",{name:"角色权限",exact:true}).click();
  await expect(page).toHaveURL(/account\/organization\/roles/);
 });
@@ -489,8 +490,9 @@ test("enterprise Vuexy landing layout respects stats, spacing and preserved tabs
   const themeButton=page.getByRole("button",{name:mode==="light"?"切换浅色主题":"切换深色主题"});
   if(await themeButton.count())await themeButton.click();
   await expect(page.locator("html")).toHaveClass(new RegExp(mode));
-  const panels=root.locator("section[aria-label='企业资源'],section[aria-label='成员资源分配']");
-  await expect(panels).toHaveCount(2);
+  const panels=root.locator("section[aria-label='企业资源']");
+  await expect(panels).toHaveCount(1);
+  await expect(root.getByRole("region",{name:"成员资源分配"})).toHaveCount(0);
   await expect(root.locator('section[aria-label="企业管理"]')).toHaveCount(0);
   const surface=mode==="light"?"rgb(255, 255, 255)":"rgb(47, 51, 73)";
   for(const p of await panels.all())expect(await p.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(surface);
