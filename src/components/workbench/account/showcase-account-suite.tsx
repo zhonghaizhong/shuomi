@@ -98,7 +98,8 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
    if(![stores,points,data].every(n=>Number.isSafeInteger(n)&&n>=0)||!Number.isFinite(storage)||storage<0||Math.round(storage*10)!==storage*10){
     setError("店铺、AI 积分、数据条数请输入非负整数，存储上限精确到 0.1 GiB。");return;
    }
-   if(stores===0&&points===0&&data===0&&storage===0){setError("请填写至少一项本次新增的资源数量。");return}\n   if(stores>storeRemaining){setError("续费期数超出企业可分配额度。");return}
+   if(stores===0&&points===0&&data===0&&storage===0){setError("请填写至少一项本次新增的资源数量。");return}
+   if(stores>storeRemaining){setError("续费期数超出企业可分配额度。");return}
    if(points>pointRemaining){setError("AI 积分超出企业可分配额度。");return}
    if(data>dataRemaining){setError("数据条数超出企业可分配额度。");return}
    if(storage>storageRemaining+0.00001){setError("存储上限超出企业可分配容量。");return}
