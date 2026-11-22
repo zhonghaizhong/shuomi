@@ -8,6 +8,7 @@ export type Member={id:string;name:string;email:string;role:string;status:"正�
 export type AccountEvent={id:string;at:number;actor:string;category:string;message:string};
 export type ReferralItem={id:string;at:number;referred:string;amount:number;status:"已结算"|"已提现";orderId?:string;paidCny?:number;rate?:number};
 export type ReferredCustomer={id:string;name:string;registeredAt:number;walletTopUpCny:number;storeId:string;storeOrderId:string;storeFeeCny:number;walletBalanceCny:number;commissionCny:number;status:"模拟绑定已消费"};
+export type TrackedInvitation={id:string;name:string;invitedAt:number;source:"推广链接"|"推广码"|"定向邀请";registeredAt?:number;verifiedAt?:number};
 export type Withdrawal={id:string;at:number;amount:number;account:string;status:"模拟审核通过"};
 // Role permissions in Showcase mirror the actual sidebar. They are local demo
 // settings, not authoritative server authorization grants.
@@ -122,6 +123,16 @@ export const demoReferredCustomers:ReferredCustomer[]=Array.from({length:20},(_,
   status:"模拟绑定已消费"
  };
 });
+// Separate synthetic invitations demonstrate follow-up stages. They are NOT measured visits,
+// and no unknown public-link visitor is counted as an invited person.
+export const demoTrackedInvitations:TrackedInvitation[]=Array.from({length:8},(_,index)=>({
+ id:"SIM-INV-PENDING-"+String(index+1).padStart(2,"0"),
+ name:"模拟受邀用户"+String(index+1).padStart(2,"0"),
+ invitedAt:Date.UTC(2026,10,21,8,index*4),
+ source:"定向邀请",
+ ...(index>=5?{registeredAt:Date.UTC(2026,10,21,9,index*4)}:{}),
+ ...(index===7?{verifiedAt:Date.UTC(2026,10,21,10,35)}:{})
+}));
 export const demoReferralEarnings:ReferralItem[]=demoReferredCustomers.map(customer=>({
  id:"SIM-COMMISSION-"+customer.id,
  at:customer.registeredAt+180000,
@@ -139,9 +150,9 @@ export const demoReferralSummary={
  totalWalletBalanceCny:demoReferredCustomers.reduce((sum,item)=>sum+item.walletBalanceCny,0),
  totalCommissionCny:demoReferralEarnings.reduce((sum,item)=>sum+item.amount,0)
 };
-export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rolePermissions:Record<string,string[]>;allocations:Record<string,number>;referredCustomers:ReferredCustomer[];referrals:ReferralItem[];withdrawals:Withdrawal[];payoutAccount:string;referralCode:string};
+export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rolePermissions:Record<string,string[]>;allocations:Record<string,number>;referredCustomers:ReferredCustomer[];trackedInvitations:TrackedInvitation[];referrals:ReferralItem[];withdrawals:Withdrawal[];payoutAccount:string;referralCode:string};
 const KEY="shuomi-demo-account-suite-SM-ENT-000001-v1";
-export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)},...demoColleagues],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},referredCustomers:demoReferredCustomers,referrals:demoReferralEarnings,withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
+export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)},...demoColleagues],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},referredCustomers:demoReferredCustomers,trackedInvitations:demoTrackedInvitations,referrals:demoReferralEarnings,withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
 const valid=(value:unknown):value is SuiteState=>!!value&&typeof value==="object"&&Array.isArray((value as SuiteState).members)&&Array.isArray((value as SuiteState).audit)&&Array.isArray((value as SuiteState).roles)&&Array.isArray((value as SuiteState).referrals)&&Array.isArray((value as SuiteState).withdrawals);
 export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(valid(v)){
   const obsolete=new Set<string>(retiredSampleRoles);
@@ -156,10 +167,13 @@ export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=
   const originalCustomers=Array.isArray(v.referredCustomers)?v.referredCustomers as ReferredCustomer[]:[];
   const customerIds=new Set(originalCustomers.map(customer=>customer.id));
   const referredCustomers=[...originalCustomers,...demoReferredCustomers.filter(customer=>!customerIds.has(customer.id))];
+  const existingInvitations=Array.isArray(v.trackedInvitations)?v.trackedInvitations as TrackedInvitation[]:[];
+  const trackedIds=new Set(existingInvitations.map(item=>item.id));
+  const trackedInvitations=[...existingInvitations,...demoTrackedInvitations.filter(item=>!trackedIds.has(item.id))];
   const originalReferrals=Array.isArray(v.referrals)?v.referrals as ReferralItem[]:[];
   const referralIds=new Set(originalReferrals.map(item=>item.id));
   const referrals=[...originalReferrals,...demoReferralEarnings.filter(item=>!referralIds.has(item.id))];
-  return {...structuredClone(initialSuite),...v,roles,rolePermissions,members,referredCustomers,referrals,allocations:{...(v.allocations||{})}};
+  return {...structuredClone(initialSuite),...v,roles,rolePermissions,members,referredCustomers,trackedInvitations,referrals,allocations:{...(v.allocations||{})}};
  }}catch{}return structuredClone(initialSuite)}
 export function writeSuite(v:SuiteState):boolean{resetLegacyAccountDemoOnce();try{localStorage.setItem(KEY,JSON.stringify(v));window.dispatchEvent(new Event("shuomi-suite-updated"));return true}catch{return false}}
 export function addAudit(state:SuiteState,category:string,message:string):SuiteState{return {...state,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:tenant.admin,category,message},...state.audit]}}
