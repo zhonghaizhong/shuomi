@@ -18,8 +18,9 @@ export function countConsumedStorePeriods(stores:readonly DemoStoreBinding[]):nu
  return stores.reduce((total,s)=>total+(Number.isSafeInteger(s.servicePeriods)&&Number(s.servicePeriods)>0?Number(s.servicePeriods):0),0);
 }
 export function startDemoStoreService(store:DemoStoreBinding,now=Date.now()):DemoStoreBinding{
- const end=demoStoreServiceActive(store,now)?Date.parse(store.serviceExpiresAt!):now;
- return {...store,serviceStartedAt:store.serviceStartedAt||new Date(now).toISOString(),serviceExpiresAt:new Date(end+periodMs).toISOString(),servicePeriods:(store.servicePeriods||0)+1};
+ const wasActive=demoStoreServiceActive(store,now);
+ const end=wasActive?Date.parse(store.serviceExpiresAt!):now;
+ return {...store,serviceStartedAt:wasActive?(store.serviceStartedAt||new Date(now).toISOString()):new Date(now).toISOString(),serviceExpiresAt:new Date(end+periodMs).toISOString(),servicePeriods:(store.servicePeriods||0)+1};
 }
 
 function seeds(organizationId:string):DemoStoreBinding[]{
