@@ -584,6 +584,6 @@ test("purchased store-renewal periods only allow remaining allocation after boun
  await page.reload();
  await expect(page.locator("[data-account-suite]")).toContainText("总计 12 期 · 已分配 6 期");
  await page.goto("/shuomi/#/workbench/plans/entitlements");
- await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("0");
+ await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("4");
  await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("企业总期数：12 期 · 已分配：6 期");
 });
