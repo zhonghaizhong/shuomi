@@ -6,7 +6,7 @@ import styles from "./route-detail-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit, plansDemoPurchases, plansDemoRates } from "./plans-demo-facts";
 import {readDemoPurchases,writeDemoPurchases,useDemoPurchases,type DemoPurchase} from "./showcase-purchases";
 import {useShowcaseSuite} from "./account/showcase-account-state";
-import {useDemoStoreBindings} from "./store-binding-demo";
+import {useDemoStoreBindings,countConsumedStorePeriods,demoStoreServiceActive} from "./store-binding-demo";
 import { ChatNewPreview } from "./chat-new-preview";
 import { ShowcaseChatCollections } from "./showcase-chat-collections";
 import { PreferredApplicationPreview } from "./preferred-application-preview";
@@ -170,7 +170,9 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const bindingSummary=useDemoStoreBindings(organizationId,memberId,memberId==="admin");
   const memberVisibleStores=memberId==="admin"?bindingSummary.organizationCount:bindingSummary.visibleCount;
   const assignedStorePeriods=Object.values(enterpriseSuite.storeAllocations).reduce((sum,value)=>sum+(Number(value)||0),0);
-  const availableStorePeriods=Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods);
+  const consumedStorePeriods=countConsumedStorePeriods(bindingSummary.all);
+  const activeServiceCount=bindingSummary.visible.filter(store=>demoStoreServiceActive(store)).length;
+  const availableStorePeriods=Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods-consumedStorePeriods);
   // Consumption is intentionally zero until the corresponding business modules are connected.
   const allocated=(items:Record<string,number>)=>Object.values(items).reduce((sum,value)=>sum+(Number(value)||0),0);
   const assignedAi=allocated(enterpriseSuite.pointAllocations);
@@ -308,7 +310,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
         <div><small>已绑定店铺</small><strong>{memberVisibleStores}<em>家</em></strong></div>
         <div><small>剩余可分配期数</small><strong>{availableStorePeriods}<em>期</em></strong></div>
       </div>
-      <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>已授权：0 家 · 待授权：{memberVisibleStores} 家 · 已使用：0 期</span><span>剩余可分配：{availableStorePeriods} 期 · 绑定店铺不自动消耗续费期数</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
+      <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>已授权：0 家 · 待授权：{memberVisibleStores} 家 · 服务中：{activeServiceCount} 家 · 已使用：{consumedStorePeriods} 期</span><span>剩余可分配：{availableStorePeriods} 期 · 每店 30 天/期，开通或续费消耗 1 期</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
     </article>
     <article className={styles.card} data-tone={1}>
       <div className={styles.cardTitle}><h3>token 积分</h3><span>剩余可分配</span></div>
