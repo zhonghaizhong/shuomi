@@ -2,15 +2,15 @@
 import {useEffect,useState} from "react";
 
 // Shared showcase-only store register. Binding is not platform authorization or a paid subscription.
-export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;archived?:boolean};
+export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;archived?:boolean};
 const prefix="shuomi-store-center-demo-ten-v2";
 const eventName="shuomi-demo-store-bindings-changed";
 const mainTenant="SM-ENT-000001";
 const colleague="SIM-COLLEAGUE-01";
 const sites=["美国站","加拿大站","英国站","德国站","法国站"];
 const expiredDemoStores:DemoStoreBinding[]=[
- {id:"SIM-ADMIN-EXPIRED-01",name:"管理员已到期测试店铺",platform:"SHEIN",region:"美国站",type:"全托管",status:"待授权",createdAt:"2026-10-01 10:00",group:"未分组",owner:"管理员",ownerMemberId:"admin",serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1},
- {id:"SIM-C01-EXPIRED-01",name:"同事01已到期测试店铺",platform:"SHEIN",region:"英国站",type:"半托管",status:"待授权",createdAt:"2026-10-01 10:00",group:"未分组",owner:"模拟同事01",ownerMemberId:colleague,serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1}
+ {id:"SIM-ADMIN-EXPIRED-01",name:"管理员已到期测试店铺",platform:"SHEIN",region:"美国站",type:"全托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"管理员",ownerMemberId:"admin",serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1},
+ {id:"SIM-C01-EXPIRED-01",name:"同事01已到期测试店铺",platform:"SHEIN",region:"英国站",type:"半托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"模拟同事01",ownerMemberId:colleague,serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1}
 ];
 export const demoStoreKey=(organizationId:string)=>prefix+"-"+organizationId;
 export const DEMO_STORE_PERIOD_DAYS=30;
@@ -33,7 +33,7 @@ function seeds(organizationId:string):DemoStoreBinding[]{
   id:(memberId==="admin"?"SIM-ADMIN-":"SIM-C01-")+String(index+1).padStart(2,"0"),
   name:(memberId==="admin"?"管理员演示店铺":"同事01演示店铺")+String(index+1).padStart(2,"0"),
   platform:"SHEIN" as const,region,type:["全托管","半托管","自营","全托管","半托管"][index],
-  status:"待授权" as const,createdAt:"2026-11-22 15:19",group:"未分组",
+  status:"已绑定" as const,createdAt:"2026-11-22 15:19",group:"未分组",
   owner:memberId==="admin"?"管理员":"模拟同事01",ownerMemberId:memberId
  }))),...expiredDemoStores];
 }
@@ -43,7 +43,7 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
   if(raw===null)return seeds(organizationId);
   const parsed:unknown=JSON.parse(raw);
   if(!Array.isArray(parsed))return [];
-  const valid=(parsed as DemoStoreBinding[]).filter((x:DemoStoreBinding)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"&&typeof x.ownerMemberId==="string");
+  const valid=(parsed as DemoStoreBinding[]).filter((x:DemoStoreBinding)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&(x.status==="已绑定"||x.status==="待授权")&&typeof x.ownerMemberId==="string");
   // One-time additive migration for existing browser sessions; never recreate stores after a user removes them.
   const migrationKey=demoStoreKey(organizationId)+"-expired-fixture-v1";
   if(organizationId===mainTenant&&!sessionStorage.getItem(migrationKey)){
@@ -51,9 +51,9 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
    const updated=[...valid,...expiredDemoStores.filter(x=>!ids.has(x.id))];
    sessionStorage.setItem(demoStoreKey(organizationId),JSON.stringify(updated));
    sessionStorage.setItem(migrationKey,"1");
-   return updated;
+   return updated.map(x=>({...x,status:"已绑定"}));
   }
-  return valid;
+  return valid.map(x=>({...x,status:"已绑定"}));
  }catch{return seeds(organizationId);}
 }
 export function saveDemoStoreBindings(organizationId:string,items:DemoStoreBinding[]):boolean{
@@ -76,5 +76,5 @@ export function useDemoStoreBindings(organizationId:string,memberId="admin",isAd
  },[organizationId]);
  const current=all.filter(item=>!item.archived);
  const visible=isAdministrator?current:current.filter(item=>item.ownerMemberId===memberId);
- return {all,visible,organizationCount:current.length,memberCount:current.filter(item=>item.ownerMemberId===memberId).length,visibleCount:visible.length,authorizedCount:0,pendingCount:current.length};
+ return {all,visible,organizationCount:current.length,memberCount:current.filter(item=>item.ownerMemberId===memberId).length,visibleCount:visible.length,authorizedCount:current.length,pendingCount:0};
 }
