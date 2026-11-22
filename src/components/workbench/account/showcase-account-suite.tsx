@@ -31,11 +31,11 @@ function PermissionBranch({node,depth,grants,onChange}:{node:ConsoleNavNode;dept
   <label><input type="checkbox" aria-label={node.label+" 操作"} checked={grants.includes(permissionKey(node.href,"operate"))} onChange={e=>onChange(node,"operate",e.target.checked)}/><span>操作</span></label>
  </div>{node.children?.map(child=><PermissionBranch key={child.href} node={child} depth={depth+1} grants={grants} onChange={onChange}/>)}</>;
 }
-export function ShowcaseAccountSuite({pathname,memberId="admin"}:{pathname:string;memberId?:string}){
+export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=tenant.id,organizationName=tenant.name}:{pathname:string;memberId?:string;organizationId?:string;organizationName?:string}){
  const router=useRouter();
  const primary=useShowcaseSuite();
- const scoped=useMemberReferralPortfolio(memberId);
- const colleagueReferral=pathname.includes("/referrals")&&memberId!=="admin";
+ const scoped=useMemberReferralPortfolio(memberId,organizationId);
+ const colleagueReferral=pathname.includes("/referrals")&&(memberId!=="admin"||organizationId!==tenant.id);
  const state:SuiteState=colleagueReferral?{...primary.state,...scoped.portfolio}:primary.state;
  const commit=(next:SuiteState):boolean=>colleagueReferral?scoped.commitPortfolio({
   audit:next.audit,referredCustomers:next.referredCustomers,trackedVisits:next.trackedVisits,referrals:next.referrals,
@@ -63,7 +63,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin"}:{pathname:strin
  const balance=availableEarnings(state);
  const usedStorage=Object.values(state.allocations).reduce((sum,n)=>sum+(Number(n)||0),0);
  const storageRemaining=Math.max(0,tenant.storageGiB-usedStorage);
- const referralAudit=(next:SuiteState,category:string,message:string):SuiteState=>colleagueReferral?{...next,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:primary.state.members.find(m=>m.id===memberId)?.name||memberId,category,message},...next.audit]}:addAudit(next,category,message);
+ const referralAudit=(next:SuiteState,category:string,message:string):SuiteState=>colleagueReferral?{...next,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:(primary.state.members.find(m=>m.id===memberId)?.name||memberId)+" · "+organizationName,category,message},...next.audit]}:addAudit(next,category,message);
  const change=(next:SuiteState,message:string)=>{if(commit(next)){setNotice(message);setError("");setModal(null);return true}setError("当前浏览器存储不可用，操作未保存。");return false};
  const close=()=>{setModal(null);setError("");setSelected("");setName("");setEmail("");setRole("子账号");setAmount("100");setAccount("");setPermissions([])};
  const open=(target:Modal,id="")=>{close();setModal(target);setSelected(id);if(target==="member"){const m=state.members.find(x=>x.id===id);if(m)setRole(m.role)}if(target==="permissions")setPermissions(normalizeRolePermissions(state.rolePermissions[id]||[]));if(target==="storage")setAmount(String(state.allocations[id]||0))};
@@ -126,7 +126,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin"}:{pathname:strin
  return <main className={s.page} data-account-suite={suffix}>
   <header className={s.hero}><div><small>我的账户 / {enterprise?"企业空间":"推广与收益"}{overview||suffix==="/referrals"?"":" / "+title}</small><h1>{title}</h1><p>{desc}</p></div>{(suffix==="/organization/members"||suffix==="/organization/roles"||suffix==="/referrals/withdrawals")&&<div className={s.heroActions}>{suffix==="/organization/members"&&<button className={s.primary} onClick={()=>open("invite")}>邀请成员</button>}{suffix==="/organization/roles"&&<button className={s.primary} onClick={()=>open("role")}>新建角色</button>}{suffix==="/referrals/withdrawals"&&<button className={s.primary} disabled={!balance||!state.payoutAccount} onClick={()=>open("withdraw")}>申请模拟提现</button>}</div>}</header>
   <nav className={s.subNavigation} aria-label={enterprise?"企业空间业务导航":"推广与收益业务导航"}>{sectionMenu.map(([label,path])=><button key={path} type="button" aria-current={suffix===path?"page":undefined} onClick={()=>nav(path)}>{label}</button>)}</nav>
-  {colleagueReferral&&<p className={s.disclaimer} role="note">当前推广主体：{primary.state.members.find(m=>m.id===memberId)?.name||"模拟成员"} · {primary.state.members.find(m=>m.id===memberId)?.email||memberId}。推广记录、收益、收款方式和提现记录均为该成员独立演示数据。</p>}
+  {colleagueReferral&&<p className={s.disclaimer} role="note">当前推广空间：{organizationName} · {primary.state.members.find(m=>m.id===memberId)?.name||"模拟成员"}（{primary.state.members.find(m=>m.id===memberId)?.email||memberId}）。当前组织的推广记录、收益、收款账户与提现记录独立保存，不与其他组织合并。</p>}
   {notice&&<div className={s.notice} role="status">{notice}<button onClick={()=>setNotice("")} aria-label="关闭消息">×</button></div>}
   <section className={s.identity}><div className={s.avatar}>硕</div><div className={s.identityInfo}><h2>{tenant.name}</h2><p><span className={s.approved}>已认证（模拟）</span> 企业编号：{tenant.id} · 管理员：{tenant.admin}</p></div><span className={s.mode}>演示企业空间 · 不影响真实账户</span></section>
   {overview&&<>
