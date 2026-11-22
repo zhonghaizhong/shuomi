@@ -540,6 +540,8 @@ test("binding starts 30-day service only after a provider ID is returned; failur
 
 test("historically paid colleague demo stores survive reload without debiting new allocations",async({page})=>{
  await page.goto(root+"/account/organization/resources");
+ await expect(page.locator("[data-account-suite]")).toBeVisible();
+ await page.waitForFunction(()=>localStorage.getItem("shuomi-account-fixture-reset-20261121-v2")==="done");
  await page.evaluate(()=>{
   const key="shuomi-demo-account-suite-SM-ENT-000001-v1";
   const suite=JSON.parse(localStorage.getItem(key)||"{}");
