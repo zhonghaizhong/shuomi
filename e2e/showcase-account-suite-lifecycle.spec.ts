@@ -178,8 +178,10 @@ test("promotion invitation status and search filters stay independent of live ea
  const suite=page.locator("[data-account-suite]");
  const ledger=suite.getByRole("region",{name:"推广明细"});
  await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"已注册",exact:true}).click();
- await expect(ledger).toContainText("共 0 条");
+ await expect(ledger).toContainText("共 25 条");
  await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"已验证"}).click();
+ await expect(ledger).toContainText("共 25 条");
+ await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"未消费"}).click();
  await expect(ledger).toContainText("共 5 条");
  await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"全部"}).click();
  await ledger.getByRole("textbox",{name:"搜索推广邀请"}).fill("SIM-REF-USER-20");
@@ -205,7 +207,7 @@ test("30-25-20 referral workflow stays consistent across center, earnings, withd
  await expect(statistics).toContainText("25");
  await expect(statistics).toContainText("20");
  await expect(statistics).toContainText("5");
- await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"已验证"}).click();
+ await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"未消费"}).click();
  await expect(ledger).toContainText("共 5 条");
  await ledger.getByRole("button",{name:"查看详情"}).first().click();
  const details=suite.getByRole("dialog",{name:"推广用户详情"});
