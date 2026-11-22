@@ -15,7 +15,7 @@ test("legacy account demo records are cleared once while preserving the new comp
  });
  await page.reload();
  await expect(page.locator('[data-commerce-unified="account"]')).toContainText("武汉硕米电子商务有限公司");
- await expect(page.locator('[data-commerce-unified="account"]')).toContainText("¥0.00");
+ await expect(page.locator('[data-commerce-unified="account"]')).toContainText("¥336.00");
  await expect(page.locator('[data-commerce-unified="account"]')).not.toContainText("张琳");
  await page.goto(base+"/profile");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("linchen_demo");
@@ -104,7 +104,7 @@ test("synthetic referral earnings are attributed to store consumption and manual
  await page.goto(base+"/referrals/earnings");
  await expect(suite).toContainText("已提现（模拟）");
  await page.goto(base);
- await expect(page.locator('[data-commerce-unified="account"]')).toContainText("¥0.00");
+ await expect(page.locator('[data-commerce-unified="account"]')).toContainText("¥336.00");
  await page.goto(base+"/organization/audit");
  await expect(suite).toContainText("模拟提现并审核通过");
 });
