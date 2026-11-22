@@ -35,8 +35,17 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build interactive static showcase
         run: pnpm run build:pages
-      - name: Install Chromium for sidebar regression checks
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Cache Playwright Chromium browser
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Chromium system dependencies
+        run: pnpm exec playwright install-deps chromium
+      - name: Install Chromium browser if cache is missing
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium
       - name: Verify sidebar on desktop and small screens
         run: pnpm exec playwright test --config playwright.sidebar.config.ts
       - name: Verify showcase action dialogs and cross-module flows
