@@ -4,22 +4,24 @@ import {Building2,Package,Truck,Plus,Search,ShieldCheck,ClipboardList} from "luc
 import css from "./showcase-store-center.module.css";
 import {useShowcaseSuite} from "../account/showcase-account-state";
 
-type Store={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string};
-const keyPrefix="shuomi-store-center-demo-ten-v1";
+type Store={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string;ownerMemberId:string};
+const keyPrefix="shuomi-store-center-demo-ten-v2";
 const demoSites=["美国站","加拿大站","英国站","德国站","法国站"] as const;
 const demoTenant="SM-ENT-000001";
 const demoColleague="SIM-COLLEAGUE-01";
-function storeKey(organizationId:string,memberId:string){return keyPrefix+"-"+organizationId+"-"+memberId;}
-function seededStores(organizationId:string,memberId:string):Store[]{
- if(organizationId!==demoTenant||!["admin",demoColleague].includes(memberId))return [];
- const isAdmin=memberId==="admin";
- return demoSites.map((region,index)=>({
-  id:(isAdmin?"SIM-ADMIN-":"SIM-C01-")+String(index+1).padStart(2,"0"),
-  name:(isAdmin?"管理员演示店铺":"同事01演示店铺")+String(index+1).padStart(2,"0"),
-  platform:"SHEIN",region,type:["全托管","半托管","自营","全托管","半托管"][index],
-  status:"待授权",createdAt:"2026-11-22 15:19",
-  group:"未分组",owner:isAdmin?"管理员":"模拟同事01"
- }));
+function storeKey(organizationId:string){return keyPrefix+"-"+organizationId;}
+function seededStores(organizationId:string):Store[]{
+ if(organizationId!==demoTenant)return [];
+ return (["admin",demoColleague] as const).flatMap(memberId=>{
+  const isAdmin=memberId==="admin";
+  return demoSites.map((region,index)=>({
+   id:(isAdmin?"SIM-ADMIN-":"SIM-C01-")+String(index+1).padStart(2,"0"),
+   name:(isAdmin?"管理员演示店铺":"同事01演示店铺")+String(index+1).padStart(2,"0"),
+   platform:"SHEIN" as const,region,type:["全托管","半托管","自营","全托管","半托管"][index],
+   status:"待授权" as const,createdAt:"2026-11-22 15:19",
+   group:"未分组",owner:isAdmin?"管理员":"模拟同事01",ownerMemberId:memberId
+  }));
+ });
 }
 // Reset previous demo stores and groups once after deployment. Leave newly created v4 records intact.
 const obsoleteKeys=["shuomi-store-center-empty-v3","shuomi-store-center-empty-v2","shuomi-store-center-empty-v1"];
@@ -45,21 +47,31 @@ const collaboration=[
  {title:"店铺商品",detail:"刊登状态、库存及数据同步"},
  {title:"订单管理",detail:"待办、采购、发货及物流跟踪"},
 ] as const;
-function read(organizationId:string,memberId:string):Store[]{
- const key=storeKey(organizationId,memberId);
+function read(organizationId:string):Store[]{
+ const key=storeKey(organizationId);
  try{
   for(const old of obsoleteKeys){sessionStorage.removeItem(old);sessionStorage.removeItem(old+"-groups");}
   const raw=sessionStorage.getItem(key);
-  if(raw===null)return seededStores(organizationId,memberId);
+  if(raw===null)return seededStores(organizationId);
   const values=JSON.parse(raw);
-  return Array.isArray(values)?values.filter((x:Store)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"):[];
- }catch{return seededStores(organizationId,memberId);}
+  return Array.isArray(values)?values.filter((x:Store)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"&&typeof x.ownerMemberId==="string"):[];
+ }catch{return seededStores(organizationId);}
 }
 export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organizationId=demoTenant}:{pathname:string;navigate:(path:string)=>void;memberId?:string;organizationId?:string}){
- const key=storeKey(organizationId,memberId);
+ const key=storeKey(organizationId);
+ const administrator=memberId==="admin";
  const {state:enterpriseState}=useShowcaseSuite();
  const owners=[...new Set(enterpriseState.members.filter(member=>member.status==="正常").map(member=>member.name))];
- const [stores,setStores]=useState<Store[]>(()=>read(organizationId,memberId));
+ const [allStores,setAllStores]=useState<Store[]>(()=>read(organizationId));
+ const stores=administrator?allStores:allStores.filter(s=>s.ownerMemberId===memberId);
+ function setStores(next:Store[]|((current:Store[])=>Store[])){
+  setAllStores(previous=>{
+   const visible=administrator?previous:previous.filter(s=>s.ownerMemberId===memberId);
+   const changed=typeof next==="function"?next(visible):next;
+   if(administrator)return changed;
+   return [...previous.filter(s=>s.ownerMemberId!==memberId),...changed.map(s=>({...s,ownerMemberId:memberId}))];
+  });
+ }
  const [dialog,setDialog]=useState(false),[name,setName]=useState(""),[region,setRegion]=useState("美国站"),[type,setType]=useState("半托管"),[newGroup,setNewGroup]=useState("未分组"),[newOwner,setNewOwner]=useState("");
  const [authAccount,setAuthAccount]=useState(""),[authPassword,setAuthPassword]=useState(""),[authCode,setAuthCode]=useState(""),[showPassword,setShowPassword]=useState(false),[fixedIp,setFixedIp]=useState(false),[codeNotice,setCodeNotice]=useState(""),[manageId,setManageId]=useState<string|null>(null),[moreId,setMoreId]=useState<string|null>(null),[groupRename,setGroupRename]=useState<string|null>(null),[groupRenameValue,setGroupRenameValue]=useState("");
  const [query,setQuery]=useState(""),[search,setSearch]=useState(""),[notice,setNotice]=useState("");
@@ -71,7 +83,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [settingsDraft,setSettingsDraft]=useState({group:"未分组",owner:""});
  const [platformFilter,setPlatformFilter]=useState("全部平台"),[regionFilter,setRegionFilter]=useState("全部站点"),[typeFilter,setTypeFilter]=useState("全部类型");
  const [appliedFilters,setAppliedFilters]=useState({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"});
- useEffect(()=>{try{sessionStorage.setItem(key,JSON.stringify(stores))}catch{}},[stores]);
+ useEffect(()=>{try{sessionStorage.setItem(key,JSON.stringify(allStores))}catch{}},[allStores,key]);
  useEffect(()=>{try{sessionStorage.setItem(key+"-groups",JSON.stringify(groups))}catch{}},[groups]);
  useEffect(()=>{setQuery("");setSearch("");setNotice("");setDialog(false);setEditing(null);setConfirmDelete(null);setInspecting(null);setAuthorizationHelp(false);setSyncing(null);setEntered(null);setGroupsOpen(false);setManageId(null);setMoreId(null);setCreatingGroup(false);setAddingOwner(false);setGroupError("");setDetailTab("店铺概览")},[pathname]);
  useEffect(()=>{if(!dialog&&!editing&&!confirmDelete&&!inspecting&&!authorizationHelp&&!syncing&&!groupsOpen&&!manageId&&!moreId&&!creatingGroup&&!addingOwner&&!groupRename)return;const onKey=(e:KeyboardEvent)=>{if(e.key!=="Escape")return;if(creatingGroup){setCreatingGroup(false);return;}if(addingOwner){setAddingOwner(false);return;}if(groupRename){setGroupRename(null);return;}if(groupsOpen){setGroupsOpen(false);return;}if(confirmDelete){setConfirmDelete(null);return;}if(editing){setEditing(null);return;}if(inspecting){setInspecting(null);return;}if(syncing){setSyncing(null);return;}if(authorizationHelp){setAuthorizationHelp(false);return;}if(dialog||manageId){setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("");return;}if(moreId)setMoreId(null)};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey)},[dialog,editing,confirmDelete,inspecting,authorizationHelp,syncing,groupsOpen,manageId,moreId,creatingGroup,addingOwner,groupRename]);
@@ -92,7 +104,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  function resetFilters(){setQuery("");setSearch("");setPlatformFilter("全部平台");setRegionFilter("全部站点");setTypeFilter("全部类型");setGroupFilter("全部分组");setStatusFilter("全部状态");setAppliedFilters({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"})}
  function saveRename(e:FormEvent){e.preventDefault();if(!editing||!name.trim())return;if(stores.some(s=>s.id!==editing&&s.name.trim().toLowerCase()===name.trim().toLowerCase())){setNotice("名称与现有演示店铺重复，请修改后再保存。");return;}setStores(old=>old.map(s=>s.id===editing?{...s,name:name.trim()}:s));setEditing(null);setName("");setNotice("店铺名称已保存在当前浏览器演示会话中。")}
  function deleteDemo(){if(!confirmDelete)return;setStores(old=>old.filter(s=>s.id!==confirmDelete));setConfirmDelete(null);setNotice("本地演示店铺已移除，未操作正式业务数据。")}
- function add(e:FormEvent){e.preventDefault();if(!name.trim())return;if(stores.some(s=>s.name.trim().toLowerCase()===name.trim().toLowerCase())){setNotice("已存在同名演示店铺，请修改名称后重试。");return;}const n:Store={id:"DEMO-"+crypto.randomUUID().slice(0,8).toUpperCase(),name:name.trim(),platform:"SHEIN",region,type,group:newGroup,owner:newOwner.trim(),status:"待授权",createdAt:new Date().toLocaleString("zh-CN")};setStores(old=>[...old,n]);setName("");setDialog(false);setAuthPassword("");setAuthCode("");setNotice("已保存待授权店铺资料。当前仅为交互演示，未发送验证码、未连接 SHEIN，授权状态仍是待授权。")}
+ function add(e:FormEvent){e.preventDefault();if(!name.trim())return;if(stores.some(s=>s.name.trim().toLowerCase()===name.trim().toLowerCase())){setNotice("已存在同名演示店铺，请修改名称后重试。");return;}const n:Store={id:"DEMO-"+crypto.randomUUID().slice(0,8).toUpperCase(),name:name.trim(),platform:"SHEIN",region,type,group:newGroup,owner:newOwner.trim(),status:"待授权",ownerMemberId:memberId,createdAt:new Date().toLocaleString("zh-CN")};setStores(old=>[...old,n]);setName("");setDialog(false);setAuthPassword("");setAuthCode("");setNotice("已保存待授权店铺资料。当前仅为交互演示，未发送验证码、未连接 SHEIN，授权状态仍是待授权。")}
  return <main className={css.page} data-store-center-showcase={route}>
   <header className={css.header}><div><span className={css.breadcrumb}>店铺中心{route==="home"?"":" / "+heading}{enteredStore?" / "+enteredStore.name:""}</span><h1>{enteredStore?enteredStore.name:heading}</h1><p>{enteredStore?`SHEIN · ${enteredStore.region} · ${enteredStore.type} · 待授权`:intro}</p></div>{route==="stores"?(enteredStore?<button onClick={()=>setEntered(null)}>返回我的店铺</button>:<div className={css.headerActions}><button type="button" onClick={()=>setGroupsOpen(true)}>管理分组</button><button className={css.primary} onClick={()=>openBinding()}><Plus size={16}/>绑定新店铺</button></div>):route!=="home"?<button onClick={()=>link("/workbench/stores")}>管理我的店铺</button>:null}</header>
   {notice?<div className={css.notice} role="status">{notice}<button onClick={()=>setNotice("")} aria-label="关闭提示">×</button></div>:null}
