@@ -1,4 +1,12 @@
 import {expect,test} from "@playwright/test";
+async function configureDemoPayout(dialog:import("@playwright/test").Locator,identifier:string){
+ await dialog.getByRole("button",{name:"设置微信账户"}).click();
+ await dialog.getByRole("textbox",{name:"收款人姓名"}).fill("模拟收款人");
+ await dialog.getByRole("textbox",{name:"微信号"}).fill(identifier);
+ await dialog.getByRole("button",{name:"保存并验证"}).click();
+ await dialog.getByRole("button",{name:"去验证"}).first().click();
+ await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
+}
 const base="/shuomi/#/workbench/account";
 test("legacy account demo records are cleared once while preserving the new company fixture",async({page})=>{
  await page.goto(base);
@@ -97,8 +105,7 @@ test("synthetic referral earnings are attributed to store consumption and manual
  await page.goto(base+"/referrals/withdrawals");
  await suite.getByRole("button",{name:"配置账户"}).click();
  const account=suite.getByRole("dialog",{name:"配置账户"});
- await account.getByRole("textbox",{name:"演示收款标识"}).fill("TEST-PAYOUT-001");
- await account.getByRole("button",{name:"保存账户"}).click();
+ await configureDemoPayout(account,"TEST-PAYOUT-001");
  await suite.getByRole("button",{name:"申请提现"}).click();
  const withdrawal=suite.getByRole("dialog",{name:"申请提现"});
  await withdrawal.getByRole("spinbutton",{name:"模拟提现金额"}).fill("120");
@@ -232,8 +239,7 @@ test("30 attributed visitors 25 registered 20 paid stay consistent across referr
  await expect(suite.getByRole("button",{name:"申请提现"})).toBeEnabled();
  await suite.getByRole("button",{name:"配置账户"}).click();
  const payout=suite.getByRole("dialog",{name:"配置账户"});
- await payout.getByRole("textbox",{name:"演示收款标识"}).fill("TEST-30-25-20");
- await payout.getByRole("button",{name:"保存账户"}).click();
+ await configureDemoPayout(payout,"TEST-30-25-20");
  await suite.getByRole("button",{name:"申请提现"}).click();
  const withdrawal=suite.getByRole("dialog",{name:"申请提现"});
  await withdrawal.getByRole("spinbutton",{name:"模拟提现金额"}).fill("9999");
@@ -408,8 +414,7 @@ test("partial withdrawals retain remaining earnings and save independent withdra
  await page.goto(base+"/referrals/withdrawals");
  await suite.getByRole("button",{name:"配置账户"}).click();
  dialog=suite.getByRole("dialog",{name:"配置账户"});
- await dialog.getByRole("textbox",{name:"演示收款标识"}).fill("TEST-ACCOUNT");
- await dialog.getByRole("button",{name:"保存账户"}).click();
+ await configureDemoPayout(dialog,"TEST-ACCOUNT");
  await suite.getByRole("button",{name:"申请提现"}).click();
  dialog=suite.getByRole("dialog",{name:"申请提现"});
  await dialog.getByRole("spinbutton",{name:"模拟提现金额"}).fill("45.50");
