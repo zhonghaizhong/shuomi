@@ -86,7 +86,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
   ...state.referredCustomers.map(x=>({id:x.id,name:x.name,invitedAt:x.registeredAt-5*60*1000,registeredAt:x.registeredAt,verifiedAt:x.registeredAt+60*1000,source:"推广链接",status:"paid",spent:x.storeFeeCny,commission:state.referrals.filter(item=>item.referred===x.name).reduce((sum,item)=>sum+item.amount,0),orderId:x.storeOrderId,storeId:x.storeId})),
   ...state.trackedInvitations.map(x=>({id:x.id,name:x.name,invitedAt:x.invitedAt,registeredAt:x.registeredAt,verifiedAt:x.verifiedAt,source:x.source,status:x.registeredAt?(x.verifiedAt?"verified":"registered"):"pending",spent:0,commission:0,orderId:"",storeId:""}))
  ].sort((a,b)=>b.invitedAt-a.invitedAt);
- const filteredPromotions=promotionRows.filter(x=>(promotionStatus==="all"||promotionStatus===x.status)&&([x.id,x.name,x.source,x.orderId].join(" ").toLowerCase().includes(promotionSearch.trim().toLowerCase())));
+ const filteredPromotions=promotionRows.filter(x=>(promotionStatus==="all"||promotionStatus==="registered"&&!!x.registeredAt||promotionStatus==="verified"&&!!x.verifiedAt||promotionStatus==="unpaid"&&!!x.registeredAt&&x.status!=="paid"||promotionStatus===x.status&&promotionStatus!=="registered"&&promotionStatus!=="verified")&&([x.id,x.name,x.source,x.orderId].join(" ").toLowerCase().includes(promotionSearch.trim().toLowerCase())));
  const promotionsPerPage=10;
  const promotionPages=Math.max(1,Math.ceil(filteredPromotions.length/promotionsPerPage));
  const selectedPromotionPage=Math.min(promotionPage,promotionPages);
@@ -160,13 +160,13 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
      </section>
     </div>
     <section className={s.panel} aria-label="推广明细">
-     <header><h2>推广明细</h2><p>按已记录的定向邀请与模拟注册用户查看转化情况。公开链接的匿名访问不计入邀请人数；以下均为演示记录。</p></header>
+     <header><h2>推广明细</h2><p>按已记录的定向邀请与模拟注册用户查看转化情况；「已注册」「已验证」为累计筛选，「未消费」仅统计已注册但未消费。公开链接匿名访问不计入邀请人数，以下均为演示记录。</p></header>
      <div className={s.promotionMetrics} aria-label="推广转化概览">
       {([["累计邀请",promotionRows.length],["已注册",knownRegistered],["已消费",knownPaid],["未消费",knownRegistered-knownPaid]] as const).map(([label,value])=><div key={label}><span>{label}</span><strong>{value}</strong></div>)}
      </div>
      <div className={s.promotionFilters}>
       <div className={s.promotionTabs} role="group" aria-label="邀请状态筛选">
-       {([["all","全部"],["pending","未注册"],["registered","已注册"],["verified","已验证"],["paid","已消费"]] as const).map(([id,label])=><button key={id} type="button" aria-pressed={promotionStatus===id} onClick={()=>{setPromotionStatus(id);setPromotionPage(1)}}>{label}</button>)}
+       {([["all","全部"],["pending","未注册"],["registered","已注册"],["verified","已验证"],["unpaid","未消费"],["paid","已消费"]] as const).map(([id,label])=><button key={id} type="button" aria-pressed={promotionStatus===id} onClick={()=>{setPromotionStatus(id);setPromotionPage(1)}}>{label}</button>)}
       </div>
       <input aria-label="搜索推广邀请" value={promotionSearch} onChange={e=>{setPromotionSearch(e.target.value);setPromotionPage(1)}} placeholder="搜索邀请编号、用户或订单" />
      </div>
