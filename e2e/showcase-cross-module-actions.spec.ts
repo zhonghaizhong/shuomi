@@ -70,25 +70,33 @@ test("agent activation status is shared with my agents",async({page})=>{
 });
 
 
-test("billing filters remain compact, expand on demand and preserve actions",async({page})=>{
+test("billing filters support scalable search, multiple types and custom dates",async({page})=>{
  await page.goto(base+"/plans/orders");
  const filter=page.getByRole("region",{name:"账单筛选"});
  await expect(filter.getByRole("textbox",{name:"搜索账单"})).toBeVisible();
  const toggle=filter.getByRole("button",{name:"筛选条件"});
  await expect(toggle).toHaveAttribute("aria-expanded","false");
- await expect(filter.getByRole("combobox",{name:"全部时间"})).toHaveCount(0);
- await expect(filter.getByRole("combobox",{name:"全部类型"})).toHaveCount(0);
- await expect(filter.getByRole("combobox",{name:"全部状态"})).toHaveCount(0);
+ await expect(filter.getByRole("checkbox")).toHaveCount(0);
  await toggle.click();
  await expect(toggle).toHaveAttribute("aria-expanded","true");
- await filter.getByRole("combobox",{name:"全部类型"}).selectOption({label:"店铺服务"});
- await expect(toggle).toContainText("1");
+ await expect(filter.getByRole("group",{name:"快捷时间"}).getByRole("button",{name:"自定义"})).toBeVisible();
+ await filter.getByRole("group",{name:"快捷时间"}).getByRole("button",{name:"自定义"}).click();
+ await filter.getByRole("button",{name:"确定",exact:true}).click();
+ await expect(filter.getByRole("alert")).toContainText("完整且有效");
+ await filter.getByLabel("账单开始日期").fill("2026-08-01");
+ await filter.getByLabel("账单结束日期").fill("2026-11-30");
+ await filter.getByLabel("搜索费用类型").fill("店铺");
+ await filter.getByRole("group",{name:"费用类型选项"}).getByRole("checkbox",{name:"店铺服务"}).check();
+ await filter.getByLabel("搜索费用类型").fill("");
+ await filter.getByRole("group",{name:"费用类型选项"}).getByRole("checkbox",{name:"token 积分"}).check();
+ await expect(toggle).toContainText("2");
  await filter.getByRole("button",{name:"确定",exact:true}).click();
  await expect(toggle).toHaveAttribute("aria-expanded","false");
- await expect(filter).toContainText("已筛选 1 项");
+ await expect(filter).toContainText("已筛选 2 类条件");
  await expect(filter.getByRole("button",{name:"店铺服务 ×"})).toBeVisible();
+ await expect(filter.getByRole("button",{name:"token 积分 ×"})).toBeVisible();
  await filter.getByRole("button",{name:"重置"}).click();
- await expect(filter).not.toContainText("已筛选 1 项");
+ await expect(filter).not.toContainText("已筛选 2 类条件");
  await expect(toggle).toHaveText("筛选条件");
  await expect(filter.getByRole("button",{name:"导出账单"})).toBeVisible();
 });
