@@ -31,7 +31,7 @@ export function countConsumedStorePeriods(stores:readonly DemoStoreBinding[]):nu
 export function countPoolConsumedStorePeriods(stores:readonly DemoStoreBinding[]):number{
  return stores.reduce((total,store)=>{
   const periods=Number.isSafeInteger(store.servicePeriods)&&Number(store.servicePeriods)>0?Number(store.servicePeriods):0;
-  const previouslyPaid=/^SIM-C01-0[1-4]$/.test(store.id)&&store.ownerMemberId==="SIM-COLLEAGUE-01"&&Boolean(store.platformStoreId);
+  const previouslyPaid=Boolean(store.platformStoreId)&&((/^SIM-C01-0[1-4]$/.test(store.id)&&store.ownerMemberId==="SIM-COLLEAGUE-01")||(/^SIM-ADMIN-0[1-5]$/.test(store.id)&&store.ownerMemberId==="admin"));
   return total+Math.max(0,periods-(previouslyPaid?1:0));
  },0);
 }
@@ -49,7 +49,7 @@ function seeds(organizationId:string):DemoStoreBinding[]{
   platform:"SHEIN" as const,region,type:["全托管","半托管","自营","全托管","半托管"][index],
   status:"已绑定" as const,createdAt:"2026-11-22 15:19",group:"未分组",
   owner:memberId==="admin"?"管理员":"模拟同事01",ownerMemberId:memberId,
-  ...(memberId===colleague?index===4?{platformIdStatus:"获取失败" as const,archived:true}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index+1).padStart(2,"0"),serviceStartedAt:historicalStart,serviceExpiresAt:historicalExpiry,servicePeriods:1}:{})
+  ...(memberId===colleague?index===4?{platformIdStatus:"获取失败" as const,archived:true}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index+1).padStart(2,"0"),serviceStartedAt:historicalStart,serviceExpiresAt:historicalExpiry,servicePeriods:1}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-ADMIN-"+String(index+1).padStart(2,"0"),serviceStartedAt:historicalStart,serviceExpiresAt:historicalExpiry,servicePeriods:1,...(index===3?{connectionIssue:"平台接口异常" as const}:index===4?{connectionIssue:"授权失效" as const}:{})})
  }))),...expiredDemoStores];
 }
 export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
@@ -74,6 +74,21 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
    const index=Number(match[1]);
    return index===5?{...store,platformIdStatus:"获取失败" as const,archived:true}:{...store,platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index).padStart(2,"0"),serviceStartedAt:historicalStart,serviceExpiresAt:historicalExpiry,servicePeriods:1};
   }):valid;
+  // One-time update for the five administrator demo fixtures, never user-created stores.
+  // Keep older sessions consistent with the agreed three normal / two connection-fault examples.
+  const adminKey=demoStoreKey(organizationId)+"-admin-status-v1";
+  if(organizationId===mainTenant&&!sessionStorage.getItem(adminKey)){
+   const revised=migrated.map(s=>{
+    const m=/^SIM-ADMIN-0([1-5])$/.exec(s.id);
+    if(!m||s.ownerMemberId!=="admin")return s;
+    const index=Number(m[1]);
+    return {...s,platformIdStatus:"已激活" as const,platformStoreId:s.platformStoreId||"SIM-SHEIN-ADMIN-"+m[1].padStart(2,"0"),serviceStartedAt:s.serviceStartedAt||historicalStart,serviceExpiresAt:s.serviceExpiresAt&&Date.parse(s.serviceExpiresAt)>Date.parse(historicalStart)?s.serviceExpiresAt:historicalExpiry,servicePeriods:Math.max(1,s.servicePeriods||0),connectionIssue:index===4?"平台接口异常" as const:index===5?"授权失效" as const:undefined};
+   });
+   sessionStorage.setItem(adminKey,"1");
+   sessionStorage.setItem(demoStoreKey(organizationId),JSON.stringify(revised));
+   // Existing expired fixture migration below remains additive.
+   migrated.splice(0,migrated.length,...revised);
+  }
   // One-time additive migration for existing browser sessions; never recreate stores after a user removes them.
   const migrationKey=demoStoreKey(organizationId)+"-expired-fixture-v1";
   if(organizationId===mainTenant&&!sessionStorage.getItem(migrationKey)){
