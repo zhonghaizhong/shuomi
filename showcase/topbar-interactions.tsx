@@ -14,18 +14,16 @@ export const demoNotices:Notice[] = [
  {id:6,title:"企业资源用量提醒",body:"可前往套餐与权益查看资源使用情况和可用额度。",time:"昨天 16:20",type:"用量提醒",category:"business"}
 ];
 
-export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read, identity, organizations, members, onSwitchIdentity, onAddOrganization }: {
+export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read, identity, organizations, members, onSwitchIdentity }: {
  navigate:(path:string)=>void; pathname:string; light:boolean; onTheme:()=>void; read:number[];
  identity:DemoIdentity; organizations:DemoOrganization[]; members:Member[];
- onSwitchIdentity:(next:DemoIdentity)=>void; onAddOrganization:(name:string)=>boolean
+ onSwitchIdentity:(next:DemoIdentity)=>void
 }) {
  const [panel,setPanel]=useState<"support"|"account"|null>(null);
  const [accountView,setAccountView]=useState<"menu"|"switch">("menu");
  const [switchTab,setSwitchTab]=useState<"members"|"organizations">("members");
  const [pendingIdentity,setPendingIdentity]=useState<DemoIdentity>(identity);
  const [switchQuery,setSwitchQuery]=useState("");
- const [organizationName,setOrganizationName]=useState("");
- const [organizationError,setOrganizationError]=useState("");
  const [profileName,setProfileName]=useState(tenant.username);
  const [profileEmail,setProfileEmail]=useState(tenant.email);
  const [step,setStep]=useState<"options"|"online"|"message">("options");
@@ -51,11 +49,10 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
  const displayEmail=identity.organizationId===tenant.id?(identity.memberId==="admin"?profileEmail:selectedMember?.email||tenant.email):"独立演示空间";
  const canSwitch=identity.memberId==="admin";
  const selectIdentity=()=>{if(!canSwitch)return;onSwitchIdentity(pendingIdentity);setPanel(null);setAccountView("menu")};
- const openSwitcher=()=>{setPanel(null);setPendingIdentity(identity);setSwitchTab("members");setSwitchQuery("");setOrganizationError("");setAccountView("switch")};
+ const openSwitcher=()=>{setPanel(null);setPendingIdentity(identity);setSwitchTab("members");setSwitchQuery("");setAccountView("switch")};
  const normalizedQuery=switchQuery.trim().toLocaleLowerCase();
  const matchedMembers=members.filter(m=>m.status==="正常"&&[m.id==="admin"?profileName:m.name,m.email,m.role].some(value=>value.toLocaleLowerCase().includes(normalizedQuery)));
  const matchedOrganizations=organizations.filter(org=>org.name.toLocaleLowerCase().includes(normalizedQuery));
- const createOrganization=()=>{if(onAddOrganization(organizationName)){setOrganizationName("");setOrganizationError("");return}setOrganizationError("组织名称为空、重复或已达到演示上限。")};
  const mailHref="mailto:support@shuomiai.com?subject="+encodeURIComponent("硕米智能引擎 · 客服留言")+"&body="+encodeURIComponent(message);
  return <>
   <div ref={wrapper} className="showcase-top-actions" aria-label="全局操作">
@@ -100,8 +97,11 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
      <button type="button" role="tab" aria-selected={switchTab==="members"} onClick={()=>{setSwitchTab("members");setSwitchQuery("")}}><UsersRound size={16}/>切换成员</button>
      <button type="button" role="tab" aria-selected={switchTab==="organizations"} onClick={()=>{setSwitchTab("organizations");setSwitchQuery("")}}><Building2 size={16}/>切换企业</button>
     </div>
+    <div className="showcase-identity-search-row">
+      <label htmlFor="showcase-identity-search-input">{switchTab==="members"?"搜索企业成员":"搜索关联企业"}</label>
+     <div className="showcase-identity-search"><Search size={17} aria-hidden="true"/><input id="showcase-identity-search-input" type="search" aria-label={switchTab==="members"?"搜索成员":"搜索企业"} value={switchQuery} onChange={e=>setSwitchQuery(e.target.value)} placeholder={switchTab==="members"?"搜索姓名、邮箱或角色":"搜索企业名称"}/>{switchQuery&&<button type="button" aria-label="清空搜索" onClick={()=>setSwitchQuery("")}><X size={16}/></button>}</div>
+    </div>
     <div className="showcase-identity-body">
-     <div className="showcase-identity-search"><Search size={17} aria-hidden="true"/><input type="search" aria-label={switchTab==="members"?"搜索成员":"搜索企业"} value={switchQuery} onChange={e=>setSwitchQuery(e.target.value)} placeholder={switchTab==="members"?"搜索姓名、邮箱或角色":"搜索企业名称"}/>{switchQuery&&<button type="button" aria-label="清空搜索" onClick={()=>setSwitchQuery("")}><X size={16}/></button>}</div>
      {switchTab==="members"?<>
       <div className="showcase-identity-section-head"><h3>选择企业成员</h3><small>{pendingIdentity.organizationId===tenant.id?"已启用的企业成员":"该组织暂无成员数据"}</small></div>
       {pendingIdentity.organizationId===tenant.id?<div className="showcase-identity-list">
@@ -111,17 +111,13 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
        {matchedMembers.length===0&&<div className="showcase-identity-empty">未找到匹配的成员</div>}
       </div>:<div className="showcase-identity-empty">其他演示企业尚未创建成员。请先切换回主企业，或直接以该企业管理员进入独立空白空间。</div>}
      </>:<>
-      <div className="showcase-identity-section-head"><h3>选择企业组织</h3><small>每家企业独立展示演示数据</small></div>
+      <div className="showcase-identity-section-head"><h3>选择企业组织</h3><small>仅显示已关联企业</small></div>
       <div className="showcase-identity-list">
        {matchedOrganizations.map(org=><button type="button" key={org.id} className="showcase-identity-option" aria-pressed={pendingIdentity.organizationId===org.id} disabled={!canSwitch} onClick={()=>setPendingIdentity({organizationId:org.id,memberId:"admin"})}>
         <span className="showcase-identity-member-icon"><Building2 size={17}/></span><span className="showcase-identity-option-copy"><strong>{org.name}</strong><small>{org.id===tenant.id?"已配置的主企业":"独立演示企业 · 未配置业务数据"}</small></span><span className="showcase-identity-radio">{pendingIdentity.organizationId===org.id&&<span/>}</span>
        </button>)}
        {matchedOrganizations.length===0&&<div className="showcase-identity-empty">未找到匹配的企业</div>}
       </div>
-      {canSwitch&&<form className="showcase-identity-create" onSubmit={e=>{e.preventDefault();createOrganization()}}>
-       <label htmlFor="showcase-new-org">新增模拟企业</label><div><input id="showcase-new-org" value={organizationName} onChange={e=>{setOrganizationName(e.target.value);setOrganizationError("")}} placeholder="输入企业组织名称" maxLength={60}/><button type="submit">添加企业</button></div>
-       {organizationError&&<small role="alert">{organizationError}</small>}
-      </form>}
      </>}
     </div>
     <footer className="showcase-identity-footer">
