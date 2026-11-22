@@ -207,7 +207,7 @@ export function readMemberReferralPortfolio(memberId:string,organizationId:strin
  }catch{return initial}
 }
 export function writeMemberReferralPortfolio(memberId:string,portfolio:ReferralPortfolio,organizationId:string=tenant.id):boolean{
- if(memberId==="admin"||!validReferralPortfolio(portfolio))return false;
+ if(!validReferralPortfolio(portfolio))return false;
  try{localStorage.setItem(referralStorageKey(organizationId,memberId),JSON.stringify(portfolio));
   window.dispatchEvent(new Event("shuomi-member-referrals-updated"));return true;
  }catch{return false}
@@ -226,7 +226,39 @@ export function useMemberReferralPortfolio(memberId:string,organizationId:string
  return {portfolio,commitPortfolio};
 }
 const KEY="shuomi-demo-account-suite-SM-ENT-000001-v1";
-export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)},...demoColleagues],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},storeAllocations:{},pointAllocations:{},dataAllocations:{},referredCustomers:demoReferredCustomers,trackedVisits:demoTrackedVisits,referrals:demoReferralEarnings,withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
+const initialSuiteBase:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)},...demoColleagues],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},storeAllocations:{},pointAllocations:{},dataAllocations:{},referredCustomers:demoReferredCustomers,trackedVisits:demoTrackedVisits,referrals:demoReferralEarnings,withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
+
+// Seed exactly two synthetic ¥50 withdrawal records for the primary organization administrator.
+// The already-settled commissions fund both withdrawals: there is no real payment.
+const ADMIN_DEMO_WITHDRAWALS=[
+ {id:"SIM-ADMIN-WITHDRAW-50-01",at:Date.UTC(2026,10,22,4,30),amount:50,account:"ADMIN-DEMO-PAYOUT",status:"模拟审核通过" as const},
+ {id:"SIM-ADMIN-WITHDRAW-50-02",at:Date.UTC(2026,10,22,4,45),amount:50,account:"ADMIN-DEMO-PAYOUT",status:"模拟审核通过" as const}
+];
+function seedAdminWithdrawals(state:SuiteState):SuiteState{
+ const missing=ADMIN_DEMO_WITHDRAWALS.filter(x=>!state.withdrawals.some(w=>w.id===x.id));
+ if(!missing.length)return state;
+ const needed=missing.reduce((n,x)=>n+x.amount,0);
+ const available=state.referrals.filter(x=>x.status==="已结算").reduce((n,x)=>n+x.amount,0);
+ if(Math.round(available*100)<Math.round(needed*100))return state;
+ let refs=state.referrals;
+ for(const withdrawal of missing){
+  let cents=Math.round(withdrawal.amount*100);
+  refs=refs.flatMap(item=>{
+   if(item.status!=="已结算"||cents<=0)return [item];
+   const size=Math.round(item.amount*100);
+   const taken=Math.min(cents,size);cents-=taken;
+   if(taken===size)return [{...item,status:"已提现" as const}];
+   return [
+    {...item,id:item.id+"-"+withdrawal.id,amount:taken/100,status:"已提现" as const},
+    {...item,amount:(size-taken)/100,status:"已结算" as const}
+   ];
+  });
+ }
+ return {...state,referrals:refs,payoutAccount:state.payoutAccount||"ADMIN-DEMO-PAYOUT",
+  withdrawals:[...missing,...state.withdrawals],
+  audit:[...missing.map(x=>({id:"AUDIT-"+x.id,at:x.at,actor:tenant.admin,category:"提现管理",message:"管理员模拟提现并审核通过："+x.amount+" 元（仅主企业）"})),...state.audit]};
+}
+export const initialSuite:SuiteState=seedAdminWithdrawals(initialSuiteBase);
 const valid=(value:unknown):value is SuiteState=>!!value&&typeof value==="object"&&Array.isArray((value as SuiteState).members)&&Array.isArray((value as SuiteState).audit)&&Array.isArray((value as SuiteState).roles)&&Array.isArray((value as SuiteState).referrals)&&Array.isArray((value as SuiteState).withdrawals);
 export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(valid(v)){
   const obsolete=new Set<string>(retiredSampleRoles);
@@ -247,7 +279,7 @@ export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=
   const originalReferrals=Array.isArray(v.referrals)?v.referrals as ReferralItem[]:[];
   const referralIds=new Set(originalReferrals.map(item=>item.id));
   const referrals=[...originalReferrals,...demoReferralEarnings.filter(item=>!referralIds.has(item.id))];
-  return {...structuredClone(initialSuite),...v,roles,rolePermissions,members,referredCustomers,trackedVisits,referrals,allocations:{...(v.allocations||{})},storeAllocations:{...(v.storeAllocations||{})},pointAllocations:{...(v.pointAllocations||{})},dataAllocations:{...(v.dataAllocations||{})}};
+  return seedAdminWithdrawals({...structuredClone(initialSuiteBase),...v,roles,rolePermissions,members,referredCustomers,trackedVisits,referrals,allocations:{...(v.allocations||{})},storeAllocations:{...(v.storeAllocations||{})},pointAllocations:{...(v.pointAllocations||{})},dataAllocations:{...(v.dataAllocations||{})}});
  }}catch{}return structuredClone(initialSuite)}
 export function writeSuite(v:SuiteState):boolean{resetLegacyAccountDemoOnce();try{localStorage.setItem(KEY,JSON.stringify(v));window.dispatchEvent(new Event("shuomi-suite-updated"));return true}catch{return false}}
 export function addAudit(state:SuiteState,category:string,message:string):SuiteState{return {...state,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:tenant.admin,category,message},...state.audit]}}
