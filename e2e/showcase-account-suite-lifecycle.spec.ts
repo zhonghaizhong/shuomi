@@ -574,15 +574,15 @@ test("ten purchased store-renewal periods become allocatable to colleague01 and 
  await page.goto(base+"/organization/resources");
  const suite=page.locator("[data-account-suite]");
  await expect(suite).toContainText("剩余可分配续费期数");
- await expect(suite).toContainText("总计 12 · 已分配 0");
+ await expect(suite).toContainText("总计 12 期 · 已分配 0 期");
  await suite.getByRole("row").filter({hasText:"模拟同事01"}).getByRole("button",{name:"分配资源"}).click();
  const dialog=suite.getByRole("dialog",{name:"分配成员资源"});
  await dialog.getByRole("spinbutton",{name:"分配店铺续费期数"}).fill("10");
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
- await expect(suite).toContainText("总计 12 · 已分配 10");
+ await expect(suite).toContainText("总计 12 期 · 已分配 10 期");
  await expect(suite.getByRole("row").filter({hasText:"模拟同事01"})).toContainText("10");
  await page.reload();
- await expect(page.locator("[data-account-suite]")).toContainText("总计 12 · 已分配 10");
+ await expect(page.locator("[data-account-suite]")).toContainText("总计 12 期 · 已分配 10 期");
  await page.goto("/shuomi/#/workbench/plans/entitlements");
  await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("2");
  await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("企业总期数：12 期 · 已分配：10 期");
