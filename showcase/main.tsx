@@ -34,7 +34,7 @@ function Showcase() {
   const restricted=selectedRole!=="管理员";
   const permissions=accountState.rolePermissions[selectedRole]||[];
   const ownReferralPreview=restricted&&(router.pathname==="/workbench/account/referrals"||router.pathname.startsWith("/workbench/account/referrals/"));
-  const externalStorePreview=identity.organizationId!==tenant.id&&externalMembership&&["/workbench/store-center","/workbench/stores","/workbench/store-products","/workbench/store-orders"].includes(router.pathname);
+  const externalStorePreview=identity.organizationId!==tenant.id&&externalMembership&&(["/workbench/store-center","/workbench/stores","/workbench/store-products","/workbench/store-orders","/workbench/plans"].includes(router.pathname)||router.pathname.startsWith("/workbench/plans/"));
   const canView= !restricted||router.pathname==="/workbench/notifications"||ownReferralPreview||permissions.includes(permissionKey(router.pathname,"view"));
   const changeIdentity=(next:typeof identity)=>{switchIdentity(next);router.push("/workbench");};
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
