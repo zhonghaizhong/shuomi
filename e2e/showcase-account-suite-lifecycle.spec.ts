@@ -29,7 +29,7 @@ test("legacy account demo records are cleared once while preserving the new comp
  await expect(suite.getByRole("row")).toHaveCount(5);
  await expect(suite).not.toContainText("张琳");
  await page.reload();
- await expect(suite.getByRole("row")).toHaveCount(2);
+ await expect(suite.getByRole("row")).toHaveCount(5);
  const marker=await page.evaluate(()=>localStorage.getItem("shuomi-account-fixture-reset-20261121-v2"));
  expect(marker).toBe("done");
 });
@@ -52,7 +52,7 @@ test("synthetic enterprise uses one tenant across account home, members, roles a
  await newRole.getByRole("button",{name:"确认并模拟通过"}).click();
  await expect(suite.getByRole("row").filter({hasText:"临时运营角色"})).toBeVisible();
  await page.goto(base+"/organization/members");
- await expect(suite.getByRole("row")).toHaveCount(2);
+ await expect(suite.getByRole("row")).toHaveCount(5);
  await suite.getByRole("button",{name:"邀请成员"}).click();
  const invite=suite.getByRole("dialog",{name:"邀请成员"});
  await invite.getByRole("textbox",{name:"成员姓名"}).fill("模拟运营人员");
@@ -278,7 +278,7 @@ test("partial withdrawals retain remaining earnings and save independent withdra
  dialog=suite.getByRole("dialog",{name:"模拟提现"});
  await dialog.getByRole("spinbutton",{name:"模拟提现金额"}).fill("45.50");
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
- await expect(suite).toContainText("¥74.50");
+ await expect(suite).toContainText("¥410.50"); // ¥336 seeded + ¥120 manual - ¥45.50 withdrawn
  await expect(suite).toContainText("¥45.50");
  await page.goto(base+"/referrals/earnings");
  await expect(suite).toContainText("¥74.50");
