@@ -171,7 +171,8 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   const providerId=authAccount.trim().toUpperCase()==="MOCK-FAIL"?"":"SIM-SHEIN-"+crypto.randomUUID().slice(0,12).toUpperCase();
   if(!providerId){setCodeNotice("模拟获取平台店铺 ID 失败，绑定未完成，未扣期数；请检查账号并重试。");return;}
   if(allStores.some(s=>s.platform==="SHEIN"&&s.platformStoreId===providerId)){setCodeNotice("此平台店铺 ID 已存在绑定记录，不允许重复绑定；请管理原店铺。");return;}
-  const n:Store={id:"DEMO-"+crypto.randomUUID().slice(0,8).toUpperCase(),name:name.trim(),platform:"SHEIN",region,type,group:newGroup,owner:newOwner.trim(),status:"已绑定",ownerMemberId:memberId,createdAt:new Date().toLocaleString("zh-CN"),platformStoreId:providerId,bindingAccount:authAccount.trim(),authorizationMethod,fixedIpPreference:fixedIp,proxyIpAddress:fixedIp?ipAddress:undefined,proxyIpPort:fixedIp?ipPort:undefined,proxyIpUser:fixedIp?ipUser:undefined};
+  const bindingOwner=newOwner.trim()?ownerMembers.find(m=>m.name===newOwner.trim()):ownerMembers.find(m=>m.id===memberId);if(!bindingOwner||(!administrator&&bindingOwner.id!==memberId)){setCodeNotice("请选择本组织内有权限的负责人。");return;}
+  const n:Store={id:"DEMO-"+crypto.randomUUID().slice(0,8).toUpperCase(),name:name.trim(),platform:"SHEIN",region,type,group:newGroup,owner:bindingOwner.name,status:"已绑定",ownerMemberId:bindingOwner.id,createdAt:new Date().toLocaleString("zh-CN"),platformStoreId:providerId,bindingAccount:authAccount.trim(),authorizationMethod,fixedIpPreference:fixedIp,proxyIpAddress:fixedIp?ipAddress:undefined,proxyIpPort:fixedIp?ipPort:undefined,proxyIpUser:fixedIp?ipUser:undefined};
   const next=[...allStores,startDemoStoreService(n)];
   if(!saveDemoStoreBindings(organizationId,next)){setCodeNotice("保存绑定记录失败，未扣期数。");return;}
   if(!consumePeriod()){saveDemoStoreBindings(organizationId,allStores);setCodeNotice("扣减期数失败，店铺绑定已回滚。");return;}
