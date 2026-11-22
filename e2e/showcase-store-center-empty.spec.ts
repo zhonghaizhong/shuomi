@@ -307,6 +307,11 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  await page.goto(root+"/stores");
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByRole("heading",{name:"我的店铺"})).toBeVisible();
+ const overview=area.getByRole("region",{name:"店铺运营概览"});
+ for(const metric of ["店铺总数","正常店铺","需要处理","同步正常"])await expect(overview.getByText(metric,{exact:true})).toBeVisible();
+ await expect(overview.locator("article")).toHaveCount(4);
+ await expect(area.getByText("统一管理店铺连接、授权、网络环境和数据状态。")).toBeVisible();
+
  for(const caption of ["搜索","平台","站点","店铺类型","店铺状态","店铺分组"]){
   await expect(area.locator("form").filter({has:page.getByLabel("搜索店铺")}).first().getByText(caption,{exact:true})).toBeVisible();
  }
@@ -317,6 +322,7 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  await expect(cards.first()).toContainText("待授权");
  await expect(cards.first()).toContainText("待检测");
  await expect(cards.first()).toContainText("未开始");
+ await expect(cards.first()).toContainText("店铺分组");
  await expect(cards.first().getByRole("button",{name:"管理",exact:true})).toBeVisible();
  await expect(cards.first().getByRole("button",{name:"立即同步"})).toBeVisible();
  await expect(cards.first().getByRole("button",{name:"进入店铺"})).toBeVisible();
