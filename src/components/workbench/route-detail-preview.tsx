@@ -148,33 +148,25 @@ function OrderFulfillmentPage({ active, setActive, query, setQuery, submit, filt
   return <><section className={styles.orderMetrics}>{[["今日订单", "86", "较昨日 +12"], ["待处理", "—", "持续统计"], ["待发货", "12", "需处理"], ["运输中", "43", "物流正常"], ["已完成", "—", "持续统计"], ["售后中", "—", "持续统计"], ["异常订单", "2", "优先处理"]].map(([a,b,c],i)=><article data-step={i} key={a}><div><span>{a}</span><small>{c}</small></div><strong>{b}</strong></article>)}</section><section className={styles.orderTabs}>{["全部订单", "待处理", "待发货", "运输中", "已完成", "售后中", "异常订单"].map(x=><button key={x} className={active===x?styles.selected:""} onClick={()=>setActive(x)}>{x}</button>)}<small>当前开放平台： SHEIN</small></section><section className={styles.productFilters}><div className={styles.commerceFilterSelects}>{["全部平台","全部站点","全部店铺","全部状态","全部时间"].map(x=><FilterSelect key={x} label={x} filters={filters} setFilter={setFilter}/>)}</div><div className={styles.commerceFilterActions}><input aria-label="搜索订单号或商品" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索订单号或商品名称"/><button onClick={()=>{setQuery("");resetFilters()}}>重置</button><button className={styles.primary} onClick={()=>submit("确认筛选")}>确认</button><button onClick={()=>submit("批量发货")}>批量发货</button></div></section><section className={styles.orderTable}><header><h2>订单与履约列表 <small>共86笔今日订单</small></h2><small>每页100条</small></header><div className={styles.orderTableHead}><span>□</span><b>订单 / 商品</b><b>平台 / 站点</b><b>店铺</b><b>金额</b><b>下单时间</b><b>履约状态</b><b>物流状态</b><b>发货时限</b><b>操作</b></div>{items.filter(r=>(active==="全部订单"||active==="全部"||r[6]===active)&&r.join(" ").includes(query)&&containsFilter(r,filters,"全部站点")&&containsFilter(r,filters,"全部店铺")&&containsFilter(r,filters,"全部状态")&&containsFilter(r,filters,"全部时间")).map((r,i)=><div className={styles.orderTableRow} key={r[0]}><input type="checkbox" aria-label={`选择订单${r[0]}`}/><span><b>{r[0]}</b><small>{r[1]}</small></span><span><b className={styles.platformTag}>SHEIN</b>　{r[2]}</span><span>{r[3]}</span><strong>{r[4]}</strong><span>{r[5]}</span><b className={styles.statusTag} data-state={r[6]}>{r[6]}</b><b className={styles.statusTag} data-state={r[7]}>{r[7]}</b><small>{i<2?i===0?"06:18:42":"12:40:10":"—"}</small><button onClick={()=>submit(r[6]==="待发货"?"开始发货":"查看订单")}>{r[6]==="待发货"?"去发货":"查看"}</button></div>)}</section></>;
 }
 
-type PlansDraft={
- id:string;type:string;quantity:number;quote:string;createdAt:string;status:"待提交"|"已取消"
-};
-const PLANS_DRAFT_KEY="shuomi-showcase-plans-requests-v1";
-function readPlanDrafts():PlansDraft[]{
- if(typeof window==="undefined")return [];
+type DemoPurchase={id:string;at:string;type:string;quantity:number;amountCny:number;detail:string;balanceAfter:number;status:"模拟购买成功"|"模拟充值成功"};
+const PLANS_PURCHASES_KEY="shuomi-showcase-plans-direct-purchases-v1";
+function readDemoPurchases():DemoPurchase[]{
  try{
-  const raw=JSON.parse(window.localStorage.getItem(PLANS_DRAFT_KEY)||"[]");
-  if(!Array.isArray(raw))return [];
-  return raw.filter((item):item is PlansDraft=>Boolean(item)&&typeof item.id==="string"&&typeof item.type==="string"&&typeof item.quantity==="number"&&Number.isFinite(item.quantity)&&typeof item.createdAt==="string"&&(item.status==="待提交"||item.status==="已取消")&&typeof item.quote==="string").slice(0,100);
+  const raw=JSON.parse(localStorage.getItem(PLANS_PURCHASES_KEY)||"[]");
+  return Array.isArray(raw)?raw.filter(x=>x&&typeof x.id==="string"&&typeof x.type==="string"&&Number.isFinite(x.amountCny)&&Number.isFinite(x.quantity)&&Number.isFinite(x.balanceAfter)).slice(0,200):[];
  }catch{return []}
 }
-function savePlanDrafts(rows:PlansDraft[]):boolean{
- try{window.localStorage.setItem(PLANS_DRAFT_KEY,JSON.stringify(rows.slice(0,100)));return true}catch{return false}
+function priceOf(type:string,quantity:number):number{
+ return Math.round((type==="店铺服务"?quantity*168:type==="企业存储"?quantity:quantity)*100)/100;
 }
-
 function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filters, setFilter, resetFilters, router }: DetailState & { pathname: string; router: ReturnType<typeof useRouter> }) {
   const [purchaseAmounts,setPurchaseAmounts]=useState<Record<string,string>>({});
-  const [requestDrafts,setRequestDrafts]=useState<PlansDraft[]>([]);
-  const [draftReady,setDraftReady]=useState(false);
+  const [demoPurchases,setDemoPurchases]=useState<DemoPurchase[]>([]);
   const [requestReview,setRequestReview]=useState<{type:string;quantity:number;quote:string}|null>(null);
   const [walletAmount,setWalletAmount]=useState("");
-  const [selectedRequest,setSelectedRequest]=useState<string|null>(null);
   const [invoiceOpen,setInvoiceOpen]=useState(false);
   const [requestNotice,setRequestNotice]=useState("");
-  const [requestStatusFilter,setRequestStatusFilter]=useState("全部状态");
-  useEffect(()=>{setRequestDrafts(readPlanDrafts());setDraftReady(true)},[]);
+  useEffect(()=>{setDemoPurchases(readDemoPurchases())},[]);
   useEffect(()=>{
    if(!invoiceOpen)return;
    const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")setInvoiceOpen(false)};
@@ -185,32 +177,32 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
    const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();setRequestReview(null)}};
    window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
   },[requestReview]);
+  const currentWallet=demoPurchases.length?demoPurchases[0].balanceAfter:plansDemoFacts.walletBalanceCny;
+  const extraFor=(type:string)=>demoPurchases.filter(p=>p.type===type).reduce((sum,p)=>sum+p.quantity,0);
+  const additionalSpent=demoPurchases.filter(p=>p.type!=="账户充值").reduce((sum,p)=>sum+p.amountCny,0);
+  const additionalTopups=demoPurchases.filter(p=>p.type==="账户充值").reduce((sum,p)=>sum+p.amountCny,0);
   const openReview=(type:string,quantity:number,quote:string)=>{
    setRequestNotice("");
    if(!Number.isFinite(quantity)||quantity<=0){setRequestNotice("请输入大于 0 的有效数量或金额。");return}
+   if(!Number.isSafeInteger(Math.round(quantity*100))||Math.round(quantity*100)!==quantity*100){setRequestNotice("金额最多保留两位小数。");return}
    if((type==="店铺服务"||type==="企业存储")&&!Number.isInteger(quantity)){setRequestNotice("店铺续费期数和扩容 GiB 必须为整数。");return}
+   if(type!=="账户充值"&&priceOf(type,quantity)>currentWallet){setRequestNotice("演示钱包余额不足，请调整购买数量。");return}
    setRequestReview({type,quantity,quote});
   };
-  const confirmDraft=()=>{
+  const confirmPurchase=()=>{
    if(!requestReview)return;
-   const draft:PlansDraft={id:typeof crypto!=="undefined"&&"randomUUID"in crypto?crypto.randomUUID():String(Date.now()),...requestReview,createdAt:new Date().toISOString(),status:"待提交"};
-   const next=[draft,...requestDrafts].slice(0,100);
-   if(!savePlanDrafts(next)){setRequestNotice("浏览器无法保存申请草稿，请检查本地存储权限。");return}
-   setRequestDrafts(next);setRequestReview(null);setRequestNotice("已保存本地申请草稿。未扣款、未充值、未开通权益；可在本页查看或取消。");
+   const {type,quantity}=requestReview;
+   const amount=priceOf(type,quantity);
+   const fresh=readDemoPurchases();
+   const freshBalance=fresh.length?fresh[0].balanceAfter:plansDemoFacts.walletBalanceCny;
+   if(type!=="账户充值"&&amount>freshBalance){setRequestNotice("钱包余额不足，未执行购买。");setRequestReview(null);return}
+   const detail=type==="店铺服务"?quantity+" 期（每期 30 天）":type==="token 积分"?Math.round(quantity*plansDemoRates.aiPointsPerCny).toLocaleString("zh-CN")+" 积分":type==="数据资源"?Math.round(quantity/plansDemoRates.dataCnyPerRow).toLocaleString("zh-CN")+" 条":type==="企业存储"?quantity+" GiB / 30 天":"模拟钱包充值";
+   const entry:DemoPurchase={id:crypto.randomUUID(),at:new Date().toLocaleString("zh-CN",{hour12:false}),type,quantity,amountCny:amount,detail,balanceAfter:Math.round((freshBalance+(type==="账户充值"?amount:-amount))*100)/100,status:type==="账户充值"?"模拟充值成功":"模拟购买成功"};
+   const next=[entry,...fresh].slice(0,200);
+   try{localStorage.setItem(PLANS_PURCHASES_KEY,JSON.stringify(next))}catch{setRequestNotice("当前浏览器无法保存交易，未扣款。");return}
+   setDemoPurchases(next);setRequestReview(null);setRequestNotice(type==="账户充值"?"模拟充值已到账（非真实付款）。":"模拟购买成功，权益已更新（非真实付款）。");
+   setPurchaseAmounts(v=>({...v,[type]:""}));if(type==="账户充值")setWalletAmount("");
   };
-  const cancelDraft=(id:string)=>{
-   const next=requestDrafts.map(item=>item.id===id?{...item,status:"已取消" as const}:item);
-   if(!savePlanDrafts(next)){setRequestNotice("无法保存取消结果，请重试。");return}
-   setRequestDrafts(next);setRequestNotice("申请草稿已取消，没有产生支付或资源变动。");setSelectedRequest(null);
-  };
-  const removeDraft=(id:string)=>{
-   const next=requestDrafts.filter(item=>item.id!==id);
-   if(!savePlanDrafts(next)){setRequestNotice("无法删除本地草稿，请重试。");return}
-   setRequestDrafts(next);setSelectedRequest(null);setRequestNotice("已移除本地申请草稿。");
-  };
-  const draftMatch=(r:PlansDraft)=>r.status===requestStatusFilter||requestStatusFilter==="全部状态";
-  const currentRequest=requestDrafts.find(r=>r.id===selectedRequest);
-
   const [planDetail,setPlanDetail]=useState<{kind:"usage"|"order";row:string[]}|null>(null);
   const [usageMovement,setUsageMovement]=useState("全部变动");
   const [usageStore,setUsageStore]=useState("全部店铺");
@@ -226,12 +218,12 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const positivePurchase=(label:string)=>Number.isFinite(purchaseValue(label))&&purchaseValue(label)>0;
   const purchaseEstimate=(label:string)=>!positivePurchase(label)?"请先输入数量或金额":label==="店铺服务"?"预计扣款：¥"+(purchaseValue(label)*168).toFixed(2)+" · 计入企业续费期数余额":label==="企业存储"?"预计费用：¥"+purchaseValue(label).toFixed(2)+" · 有效期 30 天":label==="token 积分"?"可兑换 "+Math.round(purchaseValue(label)*plansDemoRates.aiPointsPerCny).toLocaleString("en-US")+" 积分":label==="数据资源"?"可兑换 "+Math.round(purchaseValue(label)/plansDemoRates.dataCnyPerRow).toLocaleString("en-US")+" 条数据":"按资源规则计算";
   const usageRowMatches=(r:string[])=>r.join(" ").includes(appliedUsage.query)&&(appliedUsage.tab==="全部"||appliedUsage.tab==="全部流水"||r[1].includes(appliedUsage.tab))&&(appliedUsage.movement==="全部变动"||(appliedUsage.movement==="扣减"?r[4].startsWith("-"):appliedUsage.movement==="充值"?r[4].startsWith("+"):r[3].includes("赠送")))&&(appliedUsage.store==="全部店铺"||r.join(" ").includes(appliedUsage.store));
-  const rows: string[][] = pathname.endsWith("usage") ? [] : [[plansDemoWalletCredit.occurredAt,"钱包充值",plansDemoWalletCredit.description,`¥${plansDemoWalletCredit.amountCny.toLocaleString("zh-CN")}.00`,plansDemoWalletCredit.status],...plansDemoPurchases.map(p=>[p.at,p.type,p.detail,`¥${p.amountCny.toLocaleString("zh-CN")}.00`,p.status])];
+  const rows: string[][] = pathname.endsWith("usage") ? [] : [[plansDemoWalletCredit.occurredAt,"钱包充值",plansDemoWalletCredit.description,`¥${plansDemoWalletCredit.amountCny.toLocaleString("zh-CN")}.00`,plansDemoWalletCredit.status],...plansDemoPurchases.map(p=>[p.at,p.type,p.detail,`¥${p.amountCny.toLocaleString("zh-CN")}.00`,p.status]),...demoPurchases.map(p=>[p.at,p.type,p.detail,"¥"+p.amountCny.toFixed(2),p.status])];
   const reviewDialog=requestReview?<div className={styles.planDetailBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setRequestReview(null)}}>
-   <section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="确认申请草稿">
-    <header><div><h2>确认申请草稿</h2><p>仅保存到当前浏览器；不会发起支付、扣除钱包余额或增加资源权益。</p></div><button type="button" aria-label="关闭申请弹窗" onClick={()=>setRequestReview(null)}>×</button></header>
-    <dl><div><dt>申请类型</dt><dd>{requestReview.type}</dd></div><div><dt>数量或金额</dt><dd>{requestReview.quantity}{requestReview.type==="账户充值"||requestReview.type==="AI 积分"||requestReview.type==="token 积分"||requestReview.type==="数据资源"?" 元":requestReview.type==="企业存储"?" GiB":" 期"}</dd></div><div><dt>费用说明</dt><dd>{requestReview.quote}</dd></div><div><dt>处理状态</dt><dd>待提交 · 尚未付款</dd></div></dl>
-    <footer><button type="button" onClick={()=>setRequestReview(null)}>返回修改</button><button type="button" className={styles.primary} onClick={confirmDraft}>保存申请草稿</button></footer>
+   <section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="确认模拟购买">
+    <header><div><h2>确认{requestReview.type==="账户充值"?"模拟充值":"模拟购买"}</h2><p>仅使用演示钱包和本地模拟权益，不会扣除真实资金，也不会创建真实支付订单。</p></div><button type="button" aria-label="关闭申请弹窗" onClick={()=>setRequestReview(null)}>×</button></header>
+    <dl><div><dt>资源类型</dt><dd>{requestReview.type}</dd></div><div><dt>数量或金额</dt><dd>{requestReview.quantity}{requestReview.type==="店铺服务"?" 期":requestReview.type==="企业存储"?" GiB":" 元"}</dd></div><div><dt>本次金额</dt><dd>¥{priceOf(requestReview.type,requestReview.quantity).toFixed(2)}</dd></div><div><dt>当前演示钱包余额</dt><dd>¥{currentWallet.toFixed(2)}</dd></div><div><dt>购买说明</dt><dd>{requestReview.quote}</dd></div></dl>
+    <footer><button type="button" onClick={()=>setRequestReview(null)}>返回修改</button><button type="button" className={styles.primary} onClick={confirmPurchase}>确认{requestReview.type==="账户充值"?"模拟充值":"购买并扣除演示余额"}</button></footer>
    </section>
   </div>:null;
   const draftAlert=requestNotice?<p className={styles.planEmpty} role="status">{requestNotice}</p>:null;
