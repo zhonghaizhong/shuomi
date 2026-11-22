@@ -57,6 +57,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const saveStorage=()=>{const n=Number(amount);if(!Number.isFinite(n)||n<0||Math.round(n*10)!==n*10){setError("请输入0至5 GiB之间、精确到0.1 GiB的容量。");return}const previous=state.allocations[selected]||0;if(n>storageRemaining+previous+0.00001){setError("本次设置超出企业可分配存储容量。");return}change(addAudit({...state,allocations:{...state.allocations,[selected]:n}},"资源与额度","设置成员 "+(state.members.find(m=>m.id===selected)?.name||selected)+" 存储上限："+n+" GiB"),"成员存储上限已更新，剩余额度同步调整。")};
  const referralLink=()=>typeof location==="undefined"?"":location.origin+"/shuomi/#/workbench/account/referrals/center?preview=1&ref="+encodeURIComponent(state.referralCode);
  const copyReferral=()=>{navigator.clipboard?.writeText(referralLink()).then(()=>setNotice("推广链接已复制。")).catch(()=>setNotice("复制失败，可直接选中链接复制。"))};
+ const copyReferralCode=()=>{navigator.clipboard?.writeText(state.referralCode).then(()=>setNotice("推广码已复制。")).catch(()=>setNotice("复制失败，请手动复制推广码。"))};
  const addEarning=()=>{const value=Number(amount);if(!Number.isFinite(value)||value<=0||value>100000){setError("请输入大于0且不超过100000的模拟佣金。");return}if(!email.trim()){setError("请填写模拟客户标识。");return}
   change(addAudit({...state,referrals:[{id:crypto.randomUUID(),at:Date.now(),referred:email.trim(),amount:Math.round(value*100)/100,status:"已结算"},...state.referrals]},"推广与收益","模拟推广收益已审核并结算："+money(value)),"一笔模拟推广佣金已结算，余额已同步。")
  };
@@ -75,6 +76,13 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const visibleEarningsPage=Math.min(earningsPage,earningsPageCount);
  const visibleCustomers=state.referredCustomers.slice((visibleCustomerPage-1)*referralPageSize,visibleCustomerPage*referralPageSize);
  const visibleEarnings=state.referrals.slice((visibleEarningsPage-1)*referralPageSize,visibleEarningsPage*referralPageSize);
+ const recent30Day=Date.now()-30*24*60*60*1000;
+ const recentReferralCustomers=state.referredCustomers.filter(x=>x.registeredAt>=recent30Day);
+ const recentRegistrations=recentReferralCustomers.length;
+ const recentPaidCustomers=recentReferralCustomers.filter(x=>x.storeFeeCny>0).length;
+ const recentEarned=state.referrals.filter(x=>x.at>=recent30Day).reduce((sum,x)=>sum+x.amount,0);
+ const recentEarnings=state.referrals.filter(x=>x.at>=recent30Day).slice(0,5);
+
  const pagination=(label:string,total:number,page:number,pages:number,onPage:(value:number)=>void)=><div className={s.recordPager} role="navigation" aria-label={label+"分页"}>
   <span>共 {total} 条 · 每页 {referralPageSize} 条 · 第 {page} / {pages} 页</span>
   <div><button type="button" disabled={page<=1} onClick={()=>onPage(Math.max(1,page-1))}>上一页</button>
@@ -111,13 +119,41 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
    <section className={s.panel}><header><h2>操作记录</h2><p>所有在本次模拟中确认的变更都在这里留痕。</p></header><div className={s.toolbar}><input value={query} aria-label="搜索操作记录" onChange={e=>setQuery(e.target.value)} placeholder="搜索操作人、类型、内容"/><button onClick={()=>{setQuery("");setApplied("")}}>重置</button><button className={s.primary} onClick={()=>setApplied(query.trim())}>确定</button></div><div className={s.tableWrap}><table><thead><tr><th>操作时间</th><th>操作人</th><th>所属模块</th><th>操作内容</th><th>结果</th></tr></thead><tbody>{viewAudit.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{x.actor}</td><td>{x.category}</td><td>{x.message}</td><td>模拟完成</td></tr>)}</tbody></table>{!viewAudit.length&&<div className={s.empty}>暂无相关操作记录。</div>}</div></section>
   </>}
   {referral&&<>{tiles([["累计推广收益",money(totalEarnings(state)),"本企业模拟收益"],["可提现余额",money(balance),"模拟已结算金额"],["已提现",money(state.withdrawals.reduce((sum,x)=>sum+x.amount,0)),"只记模拟记录"],["模拟邀请用户",String(state.referredCustomers.length),"用户充值后产生独立店铺服务订单"]])}
-   {(suffix==="/referrals/center"||suffix==="/referrals")&&<section className={s.panel}><header><h2>专属推广入口</h2><p>已生成独立的 20 位新用户演示数据及充值、店铺扣费、10% 收益记录；不会创建真实客户或资金流水。</p></header><div className={s.linkRow}><div><span>推广代码</span><strong>{state.referralCode}</strong><small>{referralLink()}</small></div><button className={s.primary} onClick={copyReferral}>复制推广链接</button></div><div className={s.quicklinks}><button onClick={()=>open("earning")}>模拟一笔推广成交并结算</button></div></section>}
-   {(suffix==="/referrals/center"||suffix==="/referrals")&&<section className={s.panel} aria-label="邀请新用户消费记录">
-    <header><h2>新用户邀请与消费记录（模拟）</h2><p>每位用户演示充值 ¥200，绑定 1 家 SHEIN 模拟店铺并实际扣减演示钱包 ¥168 / 30 天；按已消费金额的 10% 结算演示收益，不按充值金额计佣。</p></header>
-    {tiles([["邀请注册",String(state.referredCustomers.length)+" 位","演示注册成功"],["模拟用户充值",money(state.referredCustomers.reduce((sum,x)=>sum+x.walletTopUpCny,0)),"各用户独立钱包"],["模拟店铺消费",money(state.referredCustomers.reduce((sum,x)=>sum+x.storeFeeCny,0)),"已扣减店铺基础服务费"],["剩余用户余额",money(state.referredCustomers.reduce((sum,x)=>sum+x.walletBalanceCny,0)),"未消费部分不计佣"]])}
-    <div className={s.tableWrap}><table><thead><tr><th>邀请用户</th><th>充值到账</th><th>绑定店铺</th><th>订单及服务</th><th>钱包扣费</th><th>剩余余额</th><th>10% 佣金</th><th>状态</th></tr></thead>
-     <tbody>{visibleCustomers.map(customer=><tr key={customer.id}><td><strong>{customer.name}</strong><small>{customer.id}</small></td><td>{money(customer.walletTopUpCny)}<small>模拟到账</small></td><td>{customer.storeId}<small>SHEIN · 模拟绑定</small></td><td>{customer.storeOrderId}<small>基础店铺服务 · 30 天</small></td><td>{money(customer.storeFeeCny)}</td><td>{money(customer.walletBalanceCny)}</td><td>{money(customer.commissionCny)}</td><td><span className={s.approved}>{customer.status}</span></td></tr>)}</tbody>
-    </table></div>{pagination("邀请新用户消费记录",state.referredCustomers.length,visibleCustomerPage,customerPageCount,setCustomerPage)}{suffix==="/referrals"&&<div className={s.recordMore}><button type="button" onClick={()=>nav("/referrals/center")}>查看全部邀请与消费记录</button></div>}</section>}
+
+   {suffix==="/referrals/center"&&<>
+    <div className={s.metrics} aria-label="推广中心核心指标">{([
+     ["累计推广人数",String(state.referredCustomers.length),"已关联的模拟邀请用户"],
+     ["有效注册",String(state.referredCustomers.length),"模拟完成注册"],
+     ["付费用户",String(state.referredCustomers.filter(x=>x.storeFeeCny>0).length),"已产生基础店铺服务消费"],
+     ["累计收益",money(totalEarnings(state)),"按已消费订单计算的模拟佣金"]
+    ] as [string,string,string][]).map(([label,value,hint],i)=><article key={label} data-tone={i}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}</div>
+    <div className={s.referralDesignGrid}>
+     <section className={s.panel} aria-label="我的推广">
+      <header><h2>我的推广</h2><p>好友通过推广链接或推广码完成注册及有效付费后，可获得相应推广收益。</p></header>
+      <div className={s.referralShareLayout}>
+       <div className={s.referralShareFields}>
+        <div><span>推广链接</span><div className={s.referralCopyField}><span title={referralLink()}>{referralLink()}</span><button type="button" onClick={copyReferral}>复制</button></div></div>
+        <div><span>推广码</span><div className={s.referralCopyField}><strong>{state.referralCode}</strong><button type="button" onClick={copyReferralCode}>复制</button></div></div>
+       </div>
+       <div className={s.referralQrArea} aria-label="推广二维码"><div className={s.referralQrPlaceholder}>二维码<br/>待接入</div><span>推广二维码</span><small>请先使用推广链接或推广码</small></div>
+      </div>
+     </section>
+     <section className={s.panel} aria-label="近30天推广转化">
+      <header><h2>近30天推广转化</h2><p>按当前演示记录汇总；访问量尚未接入统计。</p></header>
+      <div className={s.referralFunnel}>
+       {([["访问","—","尚未接入访问埋点"],["注册",String(recentRegistrations),"已记录模拟注册"],["付费",String(recentPaidCustomers),"已产生店铺服务扣款"],["收益",money(recentEarned),"模拟佣金收益"]] as const).map(([label,value,hint])=><div className={s.referralFunnelStep} key={label}><span>{label}</span><strong>{value}</strong><small>{hint}</small></div>)}
+      </div>
+     </section>
+    </div>
+    <section className={s.panel} aria-label="最近收益">
+     <header><h2>最近收益</h2><p>最近 30 天的收益记录，最多展示 5 条。</p></header>
+     <div className={s.tableWrap}><table><thead><tr><th>时间</th><th>来源用户</th><th>收益来源</th><th>订单金额</th><th>收益金额</th><th>状态</th></tr></thead>
+      <tbody>{recentEarnings.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{x.referred}</td><td>{x.orderId?"基础店铺服务":"手动模拟"}</td><td>{x.paidCny===undefined?"—":money(x.paidCny)}</td><td>{money(x.amount)}</td><td>{x.status}（模拟）</td></tr>)}</tbody></table>{!recentEarnings.length&&<div className={s.empty}>近 30 天暂无推广收益。</div>}</div>
+     <div className={s.recordMore}><button type="button" onClick={()=>nav("/referrals/earnings")}>查看全部收益</button></div>
+    </section>
+   </>}
+   {suffix==="/referrals"&&<section className={s.panel}><header><h2>推广入口与业务概览</h2><p>推广链接、推广码、30 天转化漏斗及最近收益统一在推广中心管理。</p></header><div className={s.recordMore}><button type="button" className={s.primary} onClick={()=>nav("/referrals/center")}>进入推广中心</button></div></section>}
+   {suffix==="/referrals/earnings"&&<div className={s.referralManualActions}><button type="button" onClick={()=>open("earning")}>模拟一笔推广成交并结算</button></div>}
    {(suffix==="/referrals/earnings"||suffix==="/referrals")&&<section className={s.panel}><header><h2>收益明细</h2><p>本次模拟按已支付的基础店铺服务费 × 10% 产生佣金；用户钱包充值和未消费余额不产生佣金。所有数据仅用于演示。</p></header><div className={s.tableWrap}><table><thead><tr><th>时间</th><th>模拟客户</th><th>消费订单</th><th>已消费金额</th><th>佣金比例</th><th>收益金额</th><th>结算状态</th></tr></thead><tbody>{visibleEarnings.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{x.referred}</td><td>{x.orderId||"手动模拟"}</td><td>{x.paidCny===undefined?"—":money(x.paidCny)}</td><td>{x.rate===undefined?"手动模拟":(x.rate*100).toFixed(0)+"%"}</td><td>{money(x.amount)}</td><td>{x.status}（模拟）</td></tr>)}</tbody></table>{!state.referrals.length&&<div className={s.empty}>暂无推广收益。</div>}</div>{pagination("推广收益明细",state.referrals.length,visibleEarningsPage,earningsPageCount,setEarningsPage)}{suffix==="/referrals"&&<div className={s.recordMore}><button type="button" onClick={()=>nav("/referrals/earnings")}>查看全部收益记录</button></div>}</section>}
       {suffix==="/referrals/withdrawals"&&<><section className={s.panel}><header><h2>模拟收款方式</h2><p>不输入真实银行卡号；只保存演示标识。</p></header><div className={s.linkRow}><div><span>当前收款方式</span><strong>{state.payoutAccount||"尚未设置"}</strong></div><button onClick={()=>{open("payout");setAccount(state.payoutAccount)}}>设置收款方式</button></div></section><section className={s.panel}><header><h2>提现记录</h2><p>审核环节全部模拟通过，不发起真实打款。</p></header><div className={s.tableWrap}><table><thead><tr><th>申请时间</th><th>金额</th><th>收款标识</th><th>状态</th></tr></thead><tbody>{state.withdrawals.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{money(x.amount)}</td><td>{x.account}</td><td>{x.status}</td></tr>)}</tbody></table>{!state.withdrawals.length&&<div className={s.empty}>暂无提现记录。</div>}</div></section></>}
    {suffix==="/referrals/rules"&&<section className={s.panel}><header><h2>推广结算与审核说明</h2><p>当前仅用于闭环验收，不代表正式佣金标准或真实支付义务。</p></header><div className={s.rules}><article><b>01</b><h3>推广归因</h3><p>推广码归属当前模拟企业。正式系统需要真实访问和订单归因数据。</p></article><article><b>02</b><h3>收益结算</h3><p>本次演示邀请 20 位新用户，按已扣费的基础店铺服务费 × 10% 自动产生模拟佣金；充值与未消费余额不计佣。也可手工模拟额外收益。</p></article><article><b>03</b><h3>提现处理</h3><p>演示收款账户完成设置后，可模拟完整记录提现，系统记录审核通过，不会转账。</p></article><article><b>04</b><h3>数据边界</h3><p>所有收益、客户标识和提现均为模拟，不能视为真实经营数据。</p></article></div></section>}
