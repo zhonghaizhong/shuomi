@@ -175,7 +175,7 @@ test("Figma Manage opens store settings; Reauthorize opens binding, without fake
  const authorization=page.getByRole("dialog",{name:"管理店铺"});
  await expect(authorization.getByLabel("子账户账号")).toBeVisible();
  await authorization.getByRole("button",{name:"保存修改"}).click();
- await area.getByRole("button",{name:"查看店铺",exact:true}).click();
+ await details.getByRole("button",{name:"店铺概览",exact:true}).click();
  await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"服务信息",exact:true}).click();
  await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("已绑定");
 });
@@ -285,9 +285,7 @@ test("Escape closes the topmost Figma overlay without dropping the store-detail 
  await expect(details.getByRole("button",{name:"店铺设置",exact:true})).toHaveAttribute("aria-current","page");
  await page.getByRole("button",{name:"返回我的店铺"}).click();
  await area.getByRole("button",{name:"管理",exact:true}).click();
- await expect(area.getByRole("menu",{name:"店铺操作"})).toBeVisible();
- await page.keyboard.press("Escape");
- await expect(area.getByRole("menu",{name:"店铺操作"})).toHaveCount(0);
+ await expect(details.getByRole("button",{name:"解绑店铺"})).toBeVisible();
 });
 test("store-center UI keeps approved dark/light Vuexy surface colors",async({page})=>{
  for(const theme of ["dark","light"]){
