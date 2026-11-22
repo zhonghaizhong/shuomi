@@ -230,3 +230,31 @@
 @media(max-width:1100px){.page .storeList article.storeCard{grid-template-columns:1fr}.page .storeList .storeFacts,.page .storeList .storeBottom{grid-column:1;grid-row:auto}.page .storeList .storeBottom{justify-items:start;border-top:0;padding:4px 0 0}.page .storeList .storeButtons{justify-content:flex-start}}
 @media(max-width:700px){.page .filters{grid-template-columns:repeat(2,minmax(0,1fr))}.page .filters .storeSearchField{grid-column:1/-1}.page .storeList .storeTop{flex-wrap:wrap}.page .storeList .storeStatus{margin-left:0}.page .storeList .storeHealth{grid-template-columns:1fr}.page .storeList .storeHealth>div{padding:9px 12px}.page .storeList .storeFacts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:440px){.page .filters{grid-template-columns:minmax(0,1fr)}.page .filters .storeSearchField,.page .filters .storeFilterField{grid-column:1}.page .storeList .storeButtons{width:100%}}
+
+
+/* Compact two-layer cards: identity/status above, metrics/actions below. */
+.page .storeList article.storeCard{display:grid;gap:0;padding:0;overflow:hidden;background:var(--st-bg);border-radius:10px}
+.page .storeList .storeCard .storeTop{display:flex;align-items:center;flex-wrap:nowrap;gap:16px;padding:16px 18px;border-bottom:1px solid var(--st-line)}
+.page .storeList .storeCard .storeIdentity{flex:1;min-width:0}
+.page .storeList .storeCard .storeIdentity strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.page .storeList .storeCard .storeIdentity small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page .storeList .storeCard .storeStatus{display:inline-flex;flex:none;align-items:center;justify-content:center;padding:6px 10px;border:1px solid var(--st-line);border-radius:7px;background:var(--st-surface);color:var(--st-muted);font-size:13px;font-weight:650;white-space:nowrap}
+.page .storeList .storeCard .storeStatus[data-state="active"]{color:var(--success-foreground,#21a179);border-color:color-mix(in srgb,#21a179 30%,var(--st-line))}
+.page .storeList .storeCard .storeStatus[data-state="expired"]{color:var(--warning-foreground,#dba24b);border-color:color-mix(in srgb,#dba24b 35%,var(--st-line))}
+.page .storeList .storeCard .storeSummary{display:grid;gap:14px;padding:14px 18px 16px;background:var(--st-surface)}
+.page .storeList .storeCard .storeFacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0;border:0}
+.page .storeList .storeCard .storeFacts>div{padding:0 12px;border:0;border-left:1px solid var(--st-line);gap:5px}
+.page .storeList .storeCard .storeFacts>div:first-child{padding-left:0;border-left:0}
+.page .storeList .storeCard .storeFacts strong{font-size:18px;font-variant-numeric:tabular-nums}
+.page .storeList .storeCard .storeBottom{display:flex;gap:10px;align-items:center;padding-top:12px;border-top:1px solid var(--st-line)}
+.page .storeList .storeCard .storeBottom>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.page .storeList .storeCard .storeButtons{display:flex;gap:8px;flex:none;flex-wrap:nowrap}
+.page .storeList .storeCard .storeButtons button{min-height:36px}
+@media(max-width:680px){
+ .page .storeList .storeCard .storeTop{flex-wrap:wrap}
+ .page .storeList .storeCard .storeStatus{margin-left:52px}
+ .page .storeList .storeCard .storeFacts{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .page .storeList .storeCard .storeFacts>div{padding:0 6px}
+ .page .storeList .storeCard .storeBottom{flex-wrap:wrap}
+ .page .storeList .storeCard .storeButtons{width:100%;justify-content:flex-end}
+}
