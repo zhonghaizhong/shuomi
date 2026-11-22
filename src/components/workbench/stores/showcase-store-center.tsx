@@ -52,9 +52,21 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const allocatedPeriods=Object.values(enterpriseState.storeAllocations).reduce((total,v)=>total+(Number(v)||0),0);
  const ownAssignedPeriods=enterpriseState.storeAllocations[memberId]||0;
  const availablePeriods=administrator?(isMainTenant?Math.max(0,resourceTotals.renewalPeriods-consumedPeriods-allocatedPeriods):Math.max(0,resourceTotals.renewalPeriods-consumedPeriods)):(isMainTenant?Math.max(0,ownAssignedPeriods):0);
- const activeServiceStores=stores.filter(s=>demoStoreServiceActive(s)).length;
- const expiredServiceStores=stores.filter(s=>!demoStoreServiceActive(s)&&Number(s.servicePeriods)>0).length;
- const inactiveServiceStores=stores.filter(s=>!demoStoreServiceActive(s)&&!Number(s.servicePeriods)).length;
+ const validBinding=(s:Store)=>Boolean(s.platformStoreId&&Number(s.servicePeriods)>0);
+ const isExpired=(s:Store)=>validBinding(s)&&!demoStoreServiceActive(s);
+ const isNormal=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s);
+ const isExpiring=(s:Store)=>isNormal(s)&&Date.parse(s.serviceExpiresAt!)-Date.now()<=7*86400000;
+ const needsAttention=(s:Store)=>!validBinding(s)||isExpired(s);
+ const activeServiceStores=stores.filter(isNormal).length;
+ const expiredServiceStores=stores.filter(isExpired).length;
+ const inactiveServiceStores=stores.filter(s=>!validBinding(s)).length;
+ const expiringServiceStores=stores.filter(isExpiring).length;
+ const [metricFilter,setMetricFilter]=useState<"all"|"normal"|"expiring"|"expired"|"attention">("all");
+ const [selectedStores,setSelectedStores]=useState<string[]>([]);
+ const [groupAssignOpen,setGroupAssignOpen]=useState(false);
+ const [bulkGroup,setBulkGroup]=useState("未分组");
+ const [pageNumber,setPageNumber]=useState(1);
+ const pageSize=20;
  function consumePeriod():boolean{
   if(availablePeriods<1)return false;
   if(!administrator&&isMainTenant){
@@ -92,7 +104,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [appliedFilters,setAppliedFilters]=useState({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"});
  useEffect(()=>{saveDemoStoreBindings(organizationId,allStores)},[allStores,organizationId]);
  useEffect(()=>{try{sessionStorage.setItem(key+"-groups",JSON.stringify(groups))}catch{}},[groups]);
- useEffect(()=>{setQuery("");setSearch("");setNotice("");setDialog(false);setEditing(null);setConfirmDelete(null);setInspecting(null);setSyncing(null);setEntered(null);setGroupsOpen(false);setManageId(null);setMoreId(null);setCreatingGroup(false);setAddingOwner(false);setGroupError("");setDetailTab("店铺概览")},[pathname]);
+ useEffect(()=>{setQuery("");setSearch("");setNotice("");setDialog(false);setEditing(null);setConfirmDelete(null);setInspecting(null);setSyncing(null);setEntered(null);setGroupsOpen(false);setManageId(null);setMoreId(null);setCreatingGroup(false);setAddingOwner(false);setGroupError("");setDetailTab("店铺概览");setSelectedStores([]);setMetricFilter("all");setPageNumber(1);setGroupAssignOpen(false)},[pathname]);
  useEffect(()=>{if(!dialog&&!editing&&!confirmDelete&&!inspecting&&!syncing&&!groupsOpen&&!manageId&&!moreId&&!creatingGroup&&!addingOwner&&!groupRename)return;const onKey=(e:KeyboardEvent)=>{if(e.key!=="Escape")return;if(creatingGroup){setCreatingGroup(false);return;}if(addingOwner){setAddingOwner(false);return;}if(groupRename){setGroupRename(null);return;}if(groupsOpen){setGroupsOpen(false);return;}if(confirmDelete){setConfirmDelete(null);return;}if(editing){setEditing(null);return;}if(inspecting){setInspecting(null);return;}if(syncing){setSyncing(null);return;}if(dialog||manageId){setDialog(false);setManageId(null);return;}if(moreId)setMoreId(null)};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey)},[dialog,editing,confirmDelete,inspecting,syncing,groupsOpen,manageId,moreId,creatingGroup,addingOwner,groupRename]);
  useEffect(()=>{if(!moreId)return;const dismiss=(event:PointerEvent)=>{const target=event.target;if(!(target instanceof Element))return;if(target.closest('[role="menu"][aria-label="店铺操作"],button[aria-label^="更多操作 · "]'))return;setMoreId(null)};document.addEventListener("pointerdown",dismiss);return()=>document.removeEventListener("pointerdown",dismiss)},[moreId]);
  const route=pathname==="/workbench/store-center"?"home":pathname==="/workbench/stores"?"stores":pathname==="/workbench/store-products"?"products":"orders";
@@ -100,15 +112,24 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   const intro=route==="home"?"围绕店铺绑定、商品刊登、数据同步和订单交付形成业务闭环；经营分析与 AI 执行由对应模块负责。":route==="stores"?"统一管理店铺连接、授权、网络环境和数据状态。":route==="products"?"商品来自实际同步结果，不展示虚构商品。":"订单来自实际同步记录，不展示虚构交易或履约结果。";
  const link=(path:string)=>navigate(path+"?preview=1");
  function submitBinding(e:FormEvent){e.preventDefault();if(authorizationMethod==="API 授权（暂未开放）"){setCodeNotice("API 授权暂未开放，请选择子账户授权方式。");return;}if(!name.trim()){setCodeNotice("请先填写自定义名称。");return;}if(manageId){setStores(old=>old.map(x=>x.id===manageId?{...x,name:name.trim(),region,type,group:newGroup,owner:newOwner.trim()}:x));setManageId(null);setAuthPassword("");setAuthCode("");setNotice("店铺资料已保存。");}else add(e);}
- function commitFilters(){setSearch(query.trim());setAppliedFilters({platform:platformFilter,region:regionFilter,type:typeFilter,group:groupFilter,status:statusFilter})}
+ function commitFilters(){setPageNumber(1);setSelectedStores([]);setSearch(query.trim());setAppliedFilters({platform:platformFilter,region:regionFilter,type:typeFilter,group:groupFilter,status:statusFilter})}
  const detailStore=stores.find(s=>s.id===inspecting);
  const enteredStore=stores.find(s=>s.id===entered);
  const managedStore=stores.find(s=>s.id===manageId);
  function enterStore(id:string,tab="店铺概览"){const store=stores.find(x=>x.id===id);if(!store)return;setSettingsDraft({group:store.group||"未分组",owner:store.owner||""});setMoreId(null);setInspecting(null);setDetailTab(tab);setEntered(id)}
  function createBindingGroup(e:FormEvent){e.preventDefault();const v=groupName.trim();if(!v){setGroupError("请输入分组名称。");return;}if(v==="未分组"||groups.includes(v)){setGroupError("分组名称已存在，请更换名称。");return;}setGroups(old=>[...old,v]);setNewGroup(v);setGroupName("");setGroupError("");setCreatingGroup(false);setNotice("已新建分组，并自动选中该分组；绑定店铺信息仍保留。")}
  function openBinding(id:string|null=null){const item=stores.find(s=>s.id===id);setManageId(id);setDialog(!id);setName(item?.name||"");setRegion(item?.region||"美国站");setType(item?.type||"半托管");setNewGroup(item?.group||"未分组");setNewOwner(item?.owner||"");setAuthorizationMethod("子账户邮箱验证码");setAuthAccount("");setAuthPassword("");setAuthCode("");setShowPassword(false);setFixedIp(false);setCodeNotice("");}
-  const list=stores.filter(x=>[x.name,x.id,x.region,x.type].join(" ").toLowerCase().includes(search.toLowerCase())&&(appliedFilters.platform==="全部平台"||x.platform===appliedFilters.platform)&&(appliedFilters.region==="全部站点"||x.region===appliedFilters.region)&&(appliedFilters.type==="全部类型"||x.type===appliedFilters.type)&&(appliedFilters.group==="全部分组"||(x.group||"未分组")===appliedFilters.group)&&(appliedFilters.status==="全部状态"||(appliedFilters.status==="正常"&&demoStoreServiceActive(x))||(appliedFilters.status==="需要处理"&&!demoStoreServiceActive(x))));
- function resetFilters(){setQuery("");setSearch("");setPlatformFilter("全部平台");setRegionFilter("全部站点");setTypeFilter("全部类型");setGroupFilter("全部分组");setStatusFilter("全部状态");setAppliedFilters({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"})}
+  const list=stores.filter(x=>[x.name,x.id,x.region,x.type].join(" ").toLowerCase().includes(search.toLowerCase())&&(appliedFilters.platform==="全部平台"||x.platform===appliedFilters.platform)&&(appliedFilters.region==="全部站点"||x.region===appliedFilters.region)&&(appliedFilters.type==="全部类型"||x.type===appliedFilters.type)&&(appliedFilters.group==="全部分组"||(x.group||"未分组")===appliedFilters.group)&&(appliedFilters.status==="全部状态"||(appliedFilters.status==="正常"&&isNormal(x))||(appliedFilters.status==="需要处理"&&needsAttention(x)))&&(metricFilter==="all"||metricFilter==="normal"&&isNormal(x)||metricFilter==="expiring"&&isExpiring(x)||metricFilter==="expired"&&isExpired(x)||metricFilter==="attention"&&needsAttention(x)));
+ const pageCount=Math.max(1,Math.ceil(list.length/pageSize));
+ const currentPage=Math.min(pageNumber,pageCount);
+ const visibleStores=list.slice((currentPage-1)*pageSize,currentPage*pageSize);
+ const checkedStores=visibleStores.filter(x=>selectedStores.includes(x.id));
+ const allChecked=visibleStores.length>0&&visibleStores.every(x=>selectedStores.includes(x.id));
+ function chooseMetric(value:typeof metricFilter){setMetricFilter(value);setSelectedStores([]);setPageNumber(1)}
+ function applyGroupToSelection(){if(!checkedStores.length)return;setStores(old=>old.map(s=>selectedStores.includes(s.id)?{...s,group:bulkGroup}:s));setGroupAssignOpen(false);setSelectedStores([]);setNotice("已将选中店铺加入「"+bulkGroup+"」，店铺绑定和服务期保持不变。");}
+ function bulkSync(){const eligible=checkedStores.filter(s=>validBinding(s)&&demoStoreServiceActive(s));const invalid=checkedStores.length-eligible.length;setNotice("已检查 "+checkedStores.length+" 家店铺，"+eligible.length+" 家符合服务期条件，"+invalid+" 家暂不能同步；演示站未接入真实同步接口，未执行或伪造任何同步。请在店铺详情逐店查看接入条件。");}
+
+ function resetFilters(){setMetricFilter("all");setPageNumber(1);setSelectedStores([]);setQuery("");setSearch("");setPlatformFilter("全部平台");setRegionFilter("全部站点");setTypeFilter("全部类型");setGroupFilter("全部分组");setStatusFilter("全部状态");setAppliedFilters({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"})}
  function saveRename(e:FormEvent){e.preventDefault();if(!editing||!name.trim())return;if(stores.some(s=>s.id!==editing&&s.name.trim().toLowerCase()===name.trim().toLowerCase())){setNotice("名称与现有演示店铺重复，请修改后再保存。");return;}setStores(old=>old.map(s=>s.id===editing?{...s,name:name.trim()}:s));setEditing(null);setName("");setNotice("店铺名称已保存在当前浏览器演示会话中。")}
  function deleteDemo(){if(!confirmDelete)return;setStores(old=>old.map(s=>s.id===confirmDelete&&Number(s.servicePeriods)>0?{...s,archived:true}:s).filter(s=>s.id!==confirmDelete||s.archived));setConfirmDelete(null);setNotice("演示店铺已解绑。已消耗的店铺服务期数不会因解绑而退还。")}
  function add(e:FormEvent){
@@ -175,8 +196,14 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
     </section>
    </div>
   </>:route==="stores"?<>
-    <section className={css.metrics} aria-label="店铺运营概览">{[["店铺总数",stores.length,"已接入店铺"],["正常店铺","—","连接及同步状态待确认"],["需要处理",expiredServiceStores+inactiveServiceStores,"服务到期或历史记录待核实"],["同步正常","—","尚未接入实际同步数据"]].map(([title,val,subtitle])=><article key={title} className={css.metricCard}><strong>{val}</strong><div><span>{title}</span><small>{subtitle}</small></div></article>)}</section>
-    {expiredServiceStores+inactiveServiceStores>0?<section className={css.attention}><span>有 {expiredServiceStores+inactiveServiceStores} 个店铺需要处理：已到期 {expiredServiceStores} 家，历史待核实 {inactiveServiceStores} 家。绑定无需额外审批。</span><button onClick={()=>{const target="需要处理";resetFilters();setStatusFilter(target);setAppliedFilters(f=>({...f,status:target}));}}>立即处理</button></section>:null}
+    <section className={css.storeMetrics} aria-label="店铺运营概览">{([
+      ["all","已绑定店铺",stores.filter(validBinding).length,"当前账户"],
+      ["normal","正常店铺",activeServiceStores,"服务有效"],
+      ["expiring","即将到期",expiringServiceStores,"未来 7 天"],
+      ["expired","已到期",expiredServiceStores,"服务期已过"],
+      ["attention","待处理",expiredServiceStores+inactiveServiceStores,"需关注事项"]
+    ] as const).map(([key,title,value,subtitle])=><button type="button" key={key} className={css.storeMetric} data-tone={key} aria-pressed={metricFilter===key} onClick={()=>chooseMetric(key)}><span>{title}</span><small>{subtitle}</small><strong>{value} <em>家</em></strong></button>)}</section>
+    {expiredServiceStores+inactiveServiceStores>0?<section className={css.attention}><span>有 {expiredServiceStores+inactiveServiceStores} 家店铺需要处理 · 已到期 {expiredServiceStores} 家 · 待核实 {inactiveServiceStores} 家</span><button onClick={()=>chooseMetric("attention")}>查看待处理</button></section>:null}
    <form className={css.filters} aria-label="店铺筛选" onSubmit={e=>{e.preventDefault();commitFilters()}}>
     <div className={css.filterCriteria} aria-label="条件筛选">
       <select aria-label="平台筛选" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option>全部平台</option><option>SHEIN</option></select>
@@ -191,14 +218,19 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       <button className={css.primary} type="submit">确认</button>
     </div>
    </form>
-   <section className={css.panel}><header><h2>店铺列表</h2><span>共 {list.length} 家店铺 · 当前开放平台：SHEIN</span></header>{list.length?<div className={css.storeList}>{list.map(s=><article className={css.storeCard} key={s.id}><div className={css.storeTop}>
- <div className={css.storeIdentity}><span className={css.storeAvatar}>S</span><div><strong>{s.name}</strong><small>SHEIN · {s.region} · {s.type} · {s.id}</small></div></div>
- <span className={css.storeStatus} data-state={demoStoreServiceActive(s)?"active":Number(s.servicePeriods)>0?"expired":"unknown"}>{demoStoreServiceActive(s)?"服务有效":Number(s.servicePeriods)>0?"服务已到期":"服务待核实"}</span>
-</div>
-<div className={css.storeSummary}>
- <div className={css.storeFacts}><div><small>在线商品</small><strong>—</strong></div><div><small>待处理订单</small><strong>—</strong></div><div><small>服务到期日</small><strong>{s.serviceExpiresAt?new Date(s.serviceExpiresAt).toLocaleDateString("zh-CN"):"—"}</strong></div></div>
- <footer className={css.storeBottom}><span>负责人：{s.owner||"管理员"} · {s.group||"未分组"}</span><div className={css.storeButtons}><button onClick={()=>enterStore(s.id,"店铺设置")}>管理</button><button className={css.primary} onClick={()=>enterStore(s.id)}>查看店铺</button></div></footer>
-</div></article>)}</div>:<div className={css.empty}><Building2 size={34}/><h3>{stores.length?"没有符合条件的店铺":"尚未绑定店铺"}</h3><p>{stores.length?"请调整筛选条件。":"当前没有店铺。绑定后即可管理店铺。商品与订单仅在实际同步后显示。"}</p><button className={css.primary} onClick={()=>stores.length?resetFilters():openBinding()}>{stores.length?"清空筛选":"绑定新店铺"}</button></div>}</section>
+   <section className={css.panel}>
+    <header className={css.storeListHeader}><div className={css.storeListTitle}><label className={css.checkAll}><input type="checkbox" aria-label="全选本页店铺" checked={allChecked} disabled={!visibleStores.length} onChange={e=>setSelectedStores(e.target.checked?visibleStores.map(s=>s.id):[])}/>全选</label><h2>店铺列表</h2><span>共 {list.length} 家店铺</span></div><button type="button" onClick={()=>setGroupsOpen(true)}>管理分组</button></header>
+    {selectedStores.length>0?<div className={css.storeBulk} role="region" aria-label="批量操作"><span>已选择 {checkedStores.length} 家店铺</span><div><button type="button" onClick={()=>setGroupAssignOpen(!groupAssignOpen)}>加入分组</button><button type="button" disabled={!checkedStores.length} onClick={bulkSync}>批量同步</button><button type="button" onClick={()=>{setSelectedStores([]);setGroupAssignOpen(false)}}>取消选择</button></div>{groupAssignOpen?<div className={css.bulkGroupPicker}><select aria-label="选择批量分组" value={bulkGroup} onChange={e=>setBulkGroup(e.target.value)}><option>未分组</option>{groups.map(g=><option key={g}>{g}</option>)}</select><button type="button" className={css.primary} onClick={applyGroupToSelection}>确认加入</button></div>:null}</div>:null}
+    {list.length?<div className={css.storeList}>{visibleStores.map(s=><article className={css.storeCard} key={s.id}>
+     <div className={css.storeRow}>
+      <div className={css.storeIdentity}><input type="checkbox" aria-label={"选择"+s.name} checked={selectedStores.includes(s.id)} onChange={e=>setSelectedStores(current=>e.target.checked?[...current.filter(id=>id!==s.id),s.id]:current.filter(id=>id!==s.id))}/><div><strong>{s.name}</strong><small>店铺 ID：{s.platformStoreId||s.id}</small><small>{s.owner||"管理员"} · {s.group||"未分组"}</small></div></div>
+      <div className={css.storeRowTags}><span>SHEIN</span><span>{s.region}</span><span>{s.type}</span></div>
+      <div className={css.storeRowState}><strong data-state={isNormal(s)?"active":isExpired(s)?"expired":"unknown"}>{isExpired(s)?"服务已到期":isNormal(s)?"服务有效":"资料待核实"}</strong><small>{s.platformStoreId?"平台 ID 已获取":"平台 ID 待核实"} · 同步未接入</small><small>服务期限：{s.serviceExpiresAt?new Date(s.serviceExpiresAt).toLocaleDateString("zh-CN"):"待核实"}</small></div>
+      <div className={css.storeRowButtons}>{isExpired(s)?<button type="button" className={css.primary} onClick={()=>enterStore(s.id,"服务信息")}>续费</button>:null}<button type="button" onClick={()=>enterStore(s.id,"店铺设置")}>管理店铺</button></div>
+     </div>
+    </article>)}</div>:<div className={css.empty}><Building2 size={34}/><h3>{stores.length?"没有符合条件的店铺":"尚未绑定店铺"}</h3><p>{stores.length?"请调整筛选条件。":"当前没有店铺。绑定后即可管理店铺。商品与订单仅在实际同步后显示。"}</p><button className={css.primary} onClick={()=>stores.length?resetFilters():openBinding()}>{stores.length?"清空筛选":"绑定新店铺"}</button></div>}
+    {list.length>pageSize?<nav aria-label="店铺列表分页" className={css.storePages}><span>第 {currentPage} / {pageCount} 页</span><button type="button" disabled={currentPage<=1} onClick={()=>{setPageNumber(currentPage-1);setSelectedStores([])}}>上一页</button><button type="button" disabled={currentPage>=pageCount} onClick={()=>{setPageNumber(currentPage+1);setSelectedStores([])}}>下一页</button></nav>:null}
+   </section>
   </>:<>
    <section className={css.metrics}>{(route==="products"?[["已同步商品",0],["待处理",0],["同步异常",0],["已关联店铺",0]]:[["订单总数",0],["待处理订单",0],["发货中",0],["履约异常",0]]).map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
    <section className={css.panel}><header><h2>{route==="products"?"店铺商品列表":"平台订单记录"}</h2><span>共 0 条</span></header><div className={css.empty}>{route==="products"?<Package size={34}/>:<Truck size={34}/>}<h3>{route==="products"?"暂无已同步商品":"暂无平台订单"}</h3><p>{route==="products"?"店铺绑定后可开始使用，尚无实际同步商品。":"绑定店铺并同步业务数据后，订单才会出现在这里。没有订单时不显示虚构履约进度。"}</p><button className={css.primary} onClick={()=>link("/workbench/stores")}>前往我的店铺</button></div></section>
