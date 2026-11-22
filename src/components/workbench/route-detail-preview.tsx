@@ -153,6 +153,15 @@ function OrderFulfillmentPage({ active, setActive, query, setQuery, submit, filt
 function priceOf(type:string,quantity:number):number{
  return Math.round((type==="店铺服务"?quantity*168:type==="企业存储"?quantity:quantity)*100)/100;
 }
+type TablePageState={page:number;size:number};
+function LedgerPagination({name,total,page,size,onPage,onSize}:{name:string;total:number;page:number;size:number;onPage:(page:number)=>void;onSize:(size:number)=>void}){
+ const count=Math.max(1,Math.ceil(total/size));
+ const current=Math.min(Math.max(1,page),count);
+ return <div className={styles.ledgerPagination} role="navigation" aria-label={name+"分页"}>
+  <div className={styles.ledgerPageSize}><label htmlFor={"ledger-size-"+name}>每页显示</label><select id={"ledger-size-"+name} aria-label={name+"每页显示"} value={size} onChange={e=>onSize(Number(e.target.value))}>{[10,20,50].map(n=><option key={n} value={n}>{n} 条</option>)}</select><span>共 {total} 条记录</span></div>
+  <div className={styles.ledgerPageActions}><span aria-live="polite">第 {current} / {count} 页</span><button type="button" aria-label={name+"上一页"} disabled={current<=1} onClick={()=>onPage(current-1)}>上一页</button><button type="button" aria-label={name+"下一页"} disabled={current>=count} onClick={()=>onPage(current+1)}>下一页</button></div>
+ </div>;
+}
 function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filters, setFilter, resetFilters, router }: DetailState & { pathname: string; router: ReturnType<typeof useRouter> }) {
   const [purchaseAmounts,setPurchaseAmounts]=useState<Record<string,string>>({});
   const {purchases:demoPurchases,setPurchases:setDemoPurchases,totals:demoTotals}=useDemoPurchases();
@@ -202,6 +211,10 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
    setPurchaseAmounts(v=>({...v,[type]:""}));if(type==="账户充值")setWalletAmount("");
   };
   const [planDetail,setPlanDetail]=useState<{kind:"usage"|"order";row:string[]}|null>(null);
+  const [walletPage,setWalletPage]=useState<TablePageState>({page:1,size:10});
+  const [ordersPage,setOrdersPage]=useState<TablePageState>({page:1,size:10});
+  const [usagePage,setUsagePage]=useState<TablePageState>({page:1,size:10});
+
   const [usageMovement,setUsageMovement]=useState("全部变动");
   const [usageStore,setUsageStore]=useState("全部店铺");
   const [appliedUsage,setAppliedUsage]=useState({query:"",movement:"全部变动",store:"全部店铺",tab:"全部流水"});
@@ -217,6 +230,16 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const purchaseEstimate=(label:string)=>!positivePurchase(label)?"请先输入数量或金额":label==="店铺服务"?"预计扣款：¥"+(purchaseValue(label)*168).toFixed(2)+" · 计入企业续费期数余额":label==="企业存储"?"预计费用：¥"+purchaseValue(label).toFixed(2)+" · 有效期 30 天":label==="token 积分"?"可兑换 "+Math.round(purchaseValue(label)*plansDemoRates.aiPointsPerCny).toLocaleString("en-US")+" 积分":label==="数据资源"?"可兑换 "+Math.round(purchaseValue(label)/plansDemoRates.dataCnyPerRow).toLocaleString("en-US")+" 条数据":"按资源规则计算";
   const usageRowMatches=(r:string[])=>r.join(" ").includes(appliedUsage.query)&&(appliedUsage.tab==="全部"||appliedUsage.tab==="全部流水"||r[1].includes(appliedUsage.tab))&&(appliedUsage.movement==="全部变动"||(appliedUsage.movement==="扣减"?r[4].startsWith("-"):appliedUsage.movement==="充值"?r[4].startsWith("+"):r[3].includes("赠送")))&&(appliedUsage.store==="全部店铺"||r.join(" ").includes(appliedUsage.store));
   const rows: string[][] = pathname.endsWith("usage") ? [] : [[plansDemoWalletCredit.occurredAt,"钱包充值",plansDemoWalletCredit.description,`¥${plansDemoWalletCredit.amountCny.toLocaleString("zh-CN")}.00`,plansDemoWalletCredit.status],...plansDemoPurchases.map(p=>[p.at,p.type,p.detail,`¥${p.amountCny.toLocaleString("zh-CN")}.00`,p.status]),...demoPurchases.map(p=>[p.at,p.type,p.detail,"¥"+p.amountCny.toFixed(2),p.status])];
+  const walletRows=[
+   {id:"credit",at:plansDemoWalletCredit.occurredAt,type:"模拟充值",detail:plansDemoWalletCredit.description,amount:"+"+"¥"+plansDemoWalletCredit.amountCny.toLocaleString("zh-CN")+".00",balance:"¥10,000.00"},
+   ...plansDemoPurchases.map((p,i)=>({id:p.id,at:p.at,type:"模拟购买",detail:p.type+" · "+p.detail,amount:"-¥"+p.amountCny.toLocaleString("zh-CN")+".00",balance:"¥"+(plansDemoWalletCredit.amountCny-plansDemoPurchases.slice(0,i+1).reduce((v,item)=>v+item.amountCny,0)).toLocaleString("zh-CN")+".00"})),
+   ...demoPurchases.map(p=>({id:p.id,at:p.at,type:p.status,detail:p.type+" · "+p.detail,amount:(p.type==="账户充值"?"+":"-")+"¥"+p.amountCny.toFixed(2),balance:"¥"+p.balanceAfter.toFixed(2)}))
+  ];
+  const filteredOrderRows=rows.filter(orderMatches);
+  const filteredUsageRows=rows.filter(usageRowMatches);
+  const pageSlice=<T,>(items:T[],pager:TablePageState):T[]=>items.slice((Math.min(pager.page,Math.max(1,Math.ceil(items.length/pager.size)))-1)*pager.size,Math.min(pager.page,Math.max(1,Math.ceil(items.length/pager.size)))*pager.size);
+  const updatePage=(set:React.Dispatch<React.SetStateAction<TablePageState>>)=>(page:number)=>set(v=>({...v,page}));
+  const updateSize=(set:React.Dispatch<React.SetStateAction<TablePageState>>)=>(size:number)=>set({page:1,size});
   const reviewDialog=requestReview?<div className={styles.planDetailBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setRequestReview(null)}}>
    <section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="确认模拟购买">
     <header><div><h2>确认{requestReview.type==="账户充值"?"模拟充值":"模拟购买"}</h2><p>仅使用演示钱包和本地模拟权益，不会扣除真实资金，也不会创建真实支付订单。</p></div><button type="button" aria-label="关闭申请弹窗" onClick={()=>setRequestReview(null)}>×</button></header>
