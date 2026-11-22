@@ -32,7 +32,7 @@ function Showcase() {
   const demoOrg=organizations.find(o=>o.id===identity.organizationId);
   const restricted=identity.organizationId===tenant.id&&identity.memberId!=="admin";
   const permissions=accountState.rolePermissions[selectedRole]||[];
-  const canView= !restricted||router.pathname.startsWith("/workbench/account/profile")||router.pathname==="/workbench/notifications"||permissions.includes(permissionKey(router.pathname,"view"));
+  const canView= !restricted||router.pathname==="/workbench/notifications"||permissions.includes(permissionKey(router.pathname,"view"));
   const changeIdentity=(next:typeof identity)=>{switchIdentity(next);router.push("/workbench");};
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
