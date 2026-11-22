@@ -37,7 +37,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const dialogRef=useRef<HTMLDialogElement>(null);
  const id=useId();
  const [form,setForm]=useState<AgentUseConfiguration>(initial);
- const [child,setChild]=useState<""|"add-image"|"language"|"background"|"source"|"library">("");
+ const [child,setChild]=useState<""|"add-image"|"language"|"background"|"source"|"library"|"sort"|"slot-actions"|"official-images"|"ai-images"|"multi-adjust"|"restore">("");
  const [sourceTab,setSourceTab]=useState("应用技能");
  const [slotIndex,setSlotIndex]=useState(0);
  const [selectedFromPicker,setSelectedFromPicker]=useState<string[]>([]);
@@ -51,6 +51,8 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const [skillTab,setSkillTab]=useState<"我的技能"|"团队技能">("我的技能");
  const [librarySelected,setLibrarySelected]=useState("");
  const [libraryQuery,setLibraryQuery]=useState("");
+ const [multiSelected,setMultiSelected]=useState<number[]>([]);
+ const [aiSelected,setAiSelected]=useState<string[]>([]);
 
  useEffect(()=>{
   const previous=document.activeElement;
@@ -61,10 +63,10 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
 
  const set=<K extends keyof AgentUseConfiguration>(key:K,value:AgentUseConfiguration[K])=>setForm(old=>({...old,[key]:value}));
  const flip=(array:string[],value:string,callback:(next:string[])=>void)=>callback(array.includes(value)?array.filter(x=>x!==value):[...array,value]);
- const title=child==="add-image"?"添加图片":child==="language"?"选择生图语言":child==="background"?"统一图片底色":child==="source"?"选择参考素材":child==="library"?"从我的素材库引用":({
+ const title=child==="add-image"?"添加图片":child==="language"?"选择生图语言":child==="background"?"统一图片底色":child==="source"?"选择参考素材":child==="library"?"从我的素材库引用":child==="sort"?"智能排序":child==="slot-actions"?"图片快捷调整":child==="official-images"?"添加官方图片":child==="ai-images"?"选择 AI 渲染图片":child==="multi-adjust"?"多选调整":child==="restore"?"恢复上次顺序？":({
   "product-image":"AI图片优化设置","pod-ai":"AI重构图片设置","pod-hybrid":"混合模式设置","pod-pattern-split":"图片裂变模式","pod-pattern-custom":"自定义指令模式","skills":"选择技能","knowledge":"选择知识库"
  } as Record<ConfigurationMode,string>)[mode];
- const desc=child==="add-image"?"选择图片来源，再将图片加入当前编排位置。":child==="language"?"不设置时不指定生图语言；选择后生效。":child==="background"?"不设置时不限制背景；选择后生效。":child==="source"?"请选择参考图片的来源，再选定具体图片。":child==="library"?"来源：POD素材管理工具 / 我的素材库 · 图片裂变仅引用 1 张参考图。":({
+ const desc=child==="add-image"?"选择图片来源，再将图片加入当前编排位置。":child==="language"?"不设置时不指定生图语言；选择后生效。":child==="background"?"不设置时不限制背景；选择后生效。":child==="source"?"请选择参考图片的来源，再选定具体图片。":child==="library"?"来源：POD素材管理工具 / 我的素材库 · 图片裂变仅引用 1 张参考图。":child==="sort"?"选择一个排序策略，应用后仍可继续手动调整。":child==="slot-actions"?"不拖拽也能完成微调。":child==="official-images"?"从官方渲染结果中继续加入最终图片序列（原型示例）。":child==="ai-images"?"支持多选；AI 自动补全可与已选渲染结果同时使用。":child==="multi-adjust"?"选择多张图片后可一次性移动或移除。":child==="restore"?"将恢复到最近一次保存的图片组合与顺序。":({
   "product-image":"选择优化方式，再配置主图或详情图。",
   "pod-ai":"选择优化方式，再配置主图或详情图。",
   "pod-hybrid":"从多种图片来源自由组合，按需完成最终刊登图片编排。",
@@ -88,6 +90,35 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
   setMessage("");
  };
  const activeTarget=form.imageTarget??"主图";
+ const compact=(v:(string|null)[])=>v.filter((x):x is string=>Boolean(x));
+ const pad=(v:string[])=>Array.from({length:8},(_,i)=>v[i]??null);
+ const reorderSlot=(action:"left"|"right"|"first"|"last"|"remove")=>{
+  const current=slots.slice();
+  const v=current[slotIndex];
+  if(!v)return;
+  if(action==="remove"){current[slotIndex]=null;setSlots(current);setChild("");return;}
+  let next=slotIndex;
+  if(action==="left")next=Math.max(0,slotIndex-1);
+  if(action==="right")next=Math.min(7,slotIndex+1);
+  if(action==="first")next=0;
+  if(action==="last")next=7;
+  current.splice(slotIndex,1);
+  current.splice(next,0,v);
+  setSlots(current.slice(0,8));setSlotIndex(next);setChild("");
+ };
+ const applyMulti=(action:"first"|"last"|"remove")=>{
+  const chosen=slots.filter((v,i)=>v&&multiSelected.includes(i)) as string[];
+  const other=slots.filter((v,i)=>v&&!multiSelected.includes(i)) as string[];
+  const result=action==="remove"?other:action==="first"?[...chosen,...other]:[...other,...chosen];
+  setSlots(pad(result));setMultiSelected([]);setChild("");
+ };
+ const addManyAi=()=>{
+  if(!aiSelected.length){setMessage("请至少选择一张 AI 渲染图片。");return;}
+  const next=slots.slice();let at=slotIndex;
+  for(const label of aiSelected){while(at<8&&next[at])at++;if(at>=8)break;next[at]="AI·"+label;at++;}
+  setSlots(next);setAiSelected([]);setChild("");setMessage("");
+ };
+
  const isImage=mode==="product-image"||mode==="pod-ai";
  const choice=(items:string[],value:string,change:(v:string)=>void)=><div className={css.segment}>{items.map(v=><button key={v} type="button" aria-pressed={value===v} onClick={()=>change(v)}>{v}</button>)}</div>;
  const maybeNotice=message?<p role="status" className={css.notice}>{message}</p>:null;
@@ -103,11 +134,22 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
     <div className={css.optionGrid}>{["复古花卉字母","宇宙猫咪图形","复古日落纹理","植物线描","蝴蝶结图案","阳光笑脸字样","波浪渐变装饰","宠物轮廓主题"].filter(x=>x.includes(libraryQuery)).map((x,i)=><button type="button" key={x} aria-pressed={librarySelected===x} onClick={()=>setLibrarySelected(x)}>{String(i+1).padStart(2,"0")} · {x}</button>)}</div>
     <p>当前已选：{librarySelected||"未选择参考素材"} · 单选 1 张 · 引用不移动或删除原素材</p>
    </div>
+   :child==="sort"?<div className={css.stack}>{[["转化优先","把识别、购买理由、场景等高转化图片优先"],["官方图优先","优先展示官方渲染图片，再穿插 AI 图片"],["AI图优先","优先展示 AI 重构图片，再补充官方图片"]].map(([name,desc])=><button key={name} type="button" onClick={()=>{
+    const priority=(v:string)=>name==="官方图优先"?(v.startsWith("官方")?0:1):name==="AI图优先"?(v.startsWith("AI")?0:1):/购买理由|场景|识别/.test(v)?0:1;
+    const vals=compact(slots);setSlots(pad(vals.sort((a,b)=>priority(a)-priority(b))));setChild("");
+   }}>{name} · {desc}</button>)}</div>
+   :child==="slot-actions"?<div className={css.optionGrid}>{([["向左移动一位","left"],["向右移动一位","right"],["移到最前","first"],["移到最后","last"],["从最终序列移除","remove"]] as const).map(([name,action])=><button key={action} onClick={()=>reorderSlot(action)}>{name}</button>)}</div>
+   :child==="official-images"?<div className={css.stack}><p className={css.tip}>仅显示 Figma 原型示例，尚未读取第三方平台的实际官方图片。</p><div className={css.optionGrid}>{["第一张","第二张","第三张","第四张","第五张","第六张","第七张","第八张"].map((name,i)=><button key={name} onClick={()=>addSlot("官方·"+name)}>{String(i+1).padStart(2,"0")} · {name} · 选择</button>)}</div></div>
+   :child==="ai-images"?<div className={css.stack}><div className={css.optionGrid}>{officialDetail.map((name,i)=><label className={css.imageChoice} key={name}><input type="checkbox" checked={aiSelected.includes(name)} onChange={()=>flip(aiSelected,name,setAiSelected)}/>{String(i+1).padStart(2,"0")} · {name}</label>)}</div><p>可勾选多张，添加时自动放入未占用的编排位置，最多 8 张。</p></div>
+   :child==="multi-adjust"?<div className={css.stack}><div className={css.optionGrid}>{slots.map((slot,i)=>slot?<label className={css.imageChoice} key={i}><input type="checkbox" checked={multiSelected.includes(i)} onChange={()=>setMultiSelected(old=>old.includes(i)?old.filter(x=>x!==i):[...old,i])}/>{String(i+1).padStart(2,"0")} · {slot}</label>:null)}</div><p>已选 {multiSelected.length} 张</p><div className={css.toolbar}><button onClick={()=>applyMulti("first")} disabled={!multiSelected.length}>移到最前</button><button onClick={()=>applyMulti("last")} disabled={!multiSelected.length}>移到最后</button><button onClick={()=>applyMulti("remove")} disabled={!multiSelected.length}>移除</button></div></div>
+   :child==="restore"?<p>将恢复到最近一次保存的图片组合与顺序，未保存的调整会被覆盖。</p>
    :child==="add-image"?<>
-    <div className={css.tabGrid}>{["应用技能","预设指令AI重构","从本地上传","自定义指令"].map(t=><button key={t} aria-pressed={sourceTab===t} onClick={()=>setSourceTab(t)}>{t}</button>)}</div>
+    <div className={css.tabGrid}>{["应用技能","预设指令AI重构","从本地上传","自定义指令","官方图片","AI 渲染图片"].map(t=><button key={t} aria-pressed={sourceTab===t} onClick={()=>setSourceTab(t)}>{t}</button>)}</div>
     <section className={css.panel}><h3>{sourceTab}</h3>
      {sourceTab==="应用技能"?<><p>沿用步骤 3 已启用的技能，按图片所在位置匹配。</p><button type="button" onClick={()=>addSlot("技能·"+String(slotIndex+1).padStart(2,"0"))}>应用到当前编排位置</button></>
      :sourceTab==="预设指令AI重构"?<div className={css.optionGrid}>{(form.hybridTarget==="详情图"?officialDetail:initialOfficial).map((name,i)=><button key={name} onClick={()=>addSlot("AI·"+name)}>{String(i+1).padStart(2,"0")} · {name}</button>)}</div>
+     :sourceTab==="官方图片"?<button type="button" onClick={()=>setChild("official-images")}>选择官方图片</button>
+     :sourceTab==="AI 渲染图片"?<button type="button" onClick={()=>setChild("ai-images")}>选择 AI 渲染图片</button>
      :sourceTab==="从本地上传"?<><label>选择图片文件<input type="file" accept="image/*" onChange={e=>{const file=e.target.files?.[0];setFileName(file?.name??"");}}/></label><p>演示版不上传文件至服务器。</p><button type="button" disabled={!fileName} onClick={()=>addSlot("本地·"+fileName)}>确认添加所选图片</button></>
      :<><label>自定义图片指令<textarea value={assetName} onChange={e=>setAssetName(e.target.value)} placeholder="例如：服装产品主体、面料质感、英文卖点、1:1 构图"/></label><button type="button" disabled={!assetName.trim()} onClick={()=>addSlot("AI·自定义指令")}>应用当前指令</button></>}
     </section>
@@ -126,8 +168,8 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
     <div className={css.inline}><span>配置对象</span>{choice(["主图","详情图"],form.hybridTarget??"主图",x=>set("hybridTarget",x as AgentUseConfiguration["hybridTarget"]))}<span>视觉策略</span>{choice(["共用视觉素材","分别生成"],form.hybridStrategy??"共用视觉素材",x=>set("hybridStrategy",x as AgentUseConfiguration["hybridStrategy"]))}</div>
     <section className={css.panel}><h3>图片添加说明</h3><p>图片来源：应用技能、预设指令AI重构、本地上传、自定义指令。</p><p>编排方式：点击图片位置的“＋”添加；已添加图片可更换或移除。</p></section>
     <h3>最终图片编排</h3><p>最多 8 张图片，按位置添加；支持更换和删除。</p>
-    <div className={css.slotGrid}>{slots.map((v,i)=><div className={css.slot} key={i}><small>{String(i+1).padStart(2,"0")}</small><button type="button" aria-label={"添加第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setSourceTab("应用技能");setChild("add-image");}}>{v?<span>{v}</span>:"＋"}</button>{v?<button type="button" aria-label={"移除第 "+(i+1)+" 张图片"} onClick={()=>setSlots(old=>old.map((x,j)=>j===i?null:x))}>×</button>:null}</div>)}</div>
-    <div className={css.toolbar}><button type="button" onClick={()=>setChild("language")}>语言：{form.imageLanguage??"不设置"}</button><button type="button" onClick={()=>setChild("background")}>底色：{form.imageBackground??"不设置"}</button></div>
+    <div className={css.slotGrid}>{slots.map((v,i)=><div className={css.slot} key={i}><small>{String(i+1).padStart(2,"0")}</small><button type="button" aria-label={"添加第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setSourceTab("应用技能");setChild("add-image");}}>{v?<span>{v}</span>:"＋"}</button>{v?<button type="button" aria-label={"调整第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setChild("slot-actions");}}>···</button>:null}</div>)}</div>
+    <div className={css.toolbar}><button type="button" onClick={()=>setChild("language")}>语言：{form.imageLanguage??"不设置"}</button><button type="button" onClick={()=>setChild("background")}>底色：{form.imageBackground??"不设置"}</button><button type="button" disabled={!compact(slots).length} onClick={()=>setChild("sort")}>智能排序</button><button type="button" disabled={!compact(slots).length} onClick={()=>setChild("multi-adjust")}>多选调整</button><button type="button" onClick={()=>setChild("restore")}>恢复上次顺序</button></div>
    </div>
    :mode==="pod-pattern-split"?<div className={css.stack}><label>参考素材<button type="button" className={css.sourceButton} onClick={()=>setChild("source")}>＋ 上传图片 / 从素材库选择</button></label><p>{form.splitSource?"当前来源："+form.splitSource:"从本地或素材库中选择 1 张参考图片"}</p>{form.splitSource==="本地上传"?<label>选择参考图片<input type="file" accept="image/*" onChange={e=>set("splitReference",e.target.files?.[0]?.name??"")}/></label>:null}<h3>裂变强度</h3><div className={css.optionGrid}>{["保守变化","适度创新","大胆裂变"].map(x=><button type="button" key={x} aria-pressed={(form.splitStrength??"适度创新")===x} onClick={()=>set("splitStrength",x)}>{x}</button>)}</div><p>保留主体关键特征，可调整色彩、细节和局部排版。</p></div>
    :mode==="pod-pattern-custom"?<div className={css.stack}><label>生成指令<textarea aria-label="生成指令" rows={5} placeholder="例如：黑色底，朋克风，加入不同样式的闪电和英文短句，适合腰部印刷……" value={form.patternPrompt??""} onChange={e=>set("patternPrompt",e.target.value)}/></label><p>AI 会优先遵循你的指令，同时自动做印刷适配与合规检查（实际能力待接入）。</p></div>
@@ -140,6 +182,8 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
    {maybeNotice}
   </main>
   <footer className={css.footer}><button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child?"返回":"取消"}</button><button type="button" className={css.primary} onClick={()=>{
+   if(child==="restore"){setSlots(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));setChild("");return;}
+   if(child==="ai-images"){addManyAi();return;}
    if(child==="library"){
     if(!librarySelected){setMessage("请选择一张参考素材。");return;}
     setForm(v=>({...v,splitSource:"素材库",splitReference:librarySelected}));setChild("");setMessage("已选择原型素材示例；未读取真实素材库。");return;
