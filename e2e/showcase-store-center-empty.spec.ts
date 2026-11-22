@@ -2,7 +2,7 @@ import {expect,test} from "@playwright/test";
 const root="/shuomi/#/workbench";
 // The legacy workflow tests intentionally begin with an empty tenant.
 test.beforeEach(async({page},info)=>{
- if(info.title.startsWith("organization-scoped")||info.title.startsWith("My Stores Figma optimized asset layout")||info.title.startsWith("expired 30-day store service")||info.title.startsWith("four colleague stores are bound"))return;
+ if(info.title.startsWith("organization-scoped")||info.title.startsWith("My Stores Figma optimized asset layout")||info.title.startsWith("expired 30-day store service")||info.title.startsWith("four colleague stores are bound")||info.title.startsWith("colleague service ledger survives"))return;
  await page.goto(root+"/stores");
  await page.evaluate(()=>{
   sessionStorage.setItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001","[]");
@@ -536,4 +536,40 @@ test("binding starts 30-day service only after a provider ID is returned; failur
  expect(created?.id).toMatch(/^SIM-SHEIN-/);
  expect(created?.periods).toBe(1);
  expect(created?.duration).toBe(30*86400000);
+});
+
+test("colleague service ledger survives reload and re-seeding without charging four more periods",async({page})=>{
+ await page.goto(root+"/account/organization/resources");
+ await page.evaluate(()=>{
+  const key="shuomi-demo-account-suite-SM-ENT-000001-v1";
+  const suite=JSON.parse(localStorage.getItem(key)||"{}");
+  suite.storeAllocations={...(suite.storeAllocations||{}),"SIM-COLLEAGUE-01":8};
+  localStorage.setItem(key,JSON.stringify(suite));
+  localStorage.removeItem("shuomi-showcase-colleague-service-ledger-v1");
+  sessionStorage.removeItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001");
+  sessionStorage.removeItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001-expired-fixture-v1");
+ });
+ await page.reload();
+ const colleague=page.locator("[data-account-suite]").getByRole("row").filter({hasText:"模拟同事01"});
+ await expect(colleague).toContainText("已用 5 · 剩余 4");
+ await expect(colleague).toContainText("服务中 4 家");
+ await page.reload();
+ await expect(colleague).toContainText("已用 5 · 剩余 4");
+ // A fresh session recreates the synthetic fixtures: restoration must use the
+ // original charged ledger rather than issue a second four-period debit.
+ const snapshot=await page.evaluate(()=>{
+  const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
+  return stores.filter((s:{id:string})=>/^SIM-C01-0[1-4]$/.test(s.id)).map((s:{id:string;serviceExpiresAt?:string})=>[s.id,s.serviceExpiresAt]);
+ });
+ await page.evaluate(()=>{
+  sessionStorage.removeItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001");
+  sessionStorage.removeItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001-expired-fixture-v1");
+ });
+ await page.reload();
+ await expect(colleague).toContainText("已用 5 · 剩余 4");
+ const snapshotRestored=await page.evaluate(()=>{
+  const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
+  return stores.filter((s:{id:string})=>/^SIM-C01-0[1-4]$/.test(s.id)).map((s:{id:string;serviceExpiresAt?:string})=>[s.id,s.serviceExpiresAt]);
+ });
+ expect(snapshotRestored).toEqual(snapshot);
 });
