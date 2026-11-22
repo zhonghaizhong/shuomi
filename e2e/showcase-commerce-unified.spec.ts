@@ -232,8 +232,8 @@ test("plans overview shows no payable reminder or fictional last order",async({p
  await expect(overview).toContainText("未来 7 天内到期：0 家");
  await expect(overview).toContainText("暂无待处理店铺");
  await expect(overview.getByRole("button",{name:"处理",exact:true})).toHaveCount(0);
- await expect(overview).toContainText("积分与数据余额为 0");
- await expect(overview).toContainText("最近模拟充值：¥10,000.00");
+ await expect(overview).toContainText("积分 ¥1,000、数据 ¥500");
+ await expect(overview).toContainText("模拟购买 4 笔共 ¥1,839.00");
  await expect(overview.getByRole("button",{name:"进入账单与订单"})).toBeVisible();
 });
 
@@ -241,14 +241,14 @@ test("empty billing filters remain functional without inventing paid records",as
  await page.goto(root+"/plans/orders");
  const plans=page.locator('[data-commerce-unified="plans"]');
  const rows=plans.locator('[class*="planTableScroll"] [class*="planOrderColumns"][class*="serviceRow"]');
- await expect(rows).toHaveCount(1);
+ await expect(rows).toHaveCount(5);
  await plans.getByRole("combobox",{name:"全部状态"}).selectOption("已支付");
  await plans.getByRole("textbox",{name:"搜索账单"}).fill("不存在的订单");
  await expect(rows).toHaveCount(0);
  await plans.getByRole("button",{name:"确定",exact:true}).click();
  await expect(rows).toHaveCount(0);
  await plans.getByRole("button",{name:"重置",exact:true}).click();
- await expect(rows).toHaveCount(1);
+ await expect(rows).toHaveCount(5);
  await expect(plans.getByRole("combobox",{name:"全部状态"})).toHaveValue("全部状态");
  await expect(plans.getByRole("textbox",{name:"搜索账单"})).toHaveValue("");
  await expect(plans.getByRole("button",{name:"导出账单"})).toBeEnabled();
@@ -257,13 +257,13 @@ test("plans zero-value balances and free 5 GiB storage agree across all pages",a
  await page.goto(root+"/plans");
  let plans=page.locator('[data-commerce-unified="plans"]');
  await expect(plans).toContainText("0 家");
- await expect(plans).toContainText("5.00 GiB");
+ await expect(plans).toContainText("8.00 GiB");
  await expect(plans).toContainText("已用 0.00 GiB");
  await expect(plans).not.toContainText("8,650");
  await expect(plans).not.toContainText("300,000 条");
  await page.goto(root+"/plans/entitlements");
  plans=page.locator('[data-commerce-unified="plans"]');
- await expect(plans).toContainText("默认容量 5.00 GiB");
+ await expect(plans).toContainText("免费容量 5.00 GiB");
  await expect(plans).toContainText("已用 0.00 GiB");
  await expect(plans.getByRole("button",{name:"前往资源与额度"})).toBeVisible();
  await page.goto(root+"/plans/usage");
@@ -271,9 +271,9 @@ test("plans zero-value balances and free 5 GiB storage agree across all pages",a
  await expect(plans).toContainText("本月使用 0 条数据");
  await page.goto(root+"/plans/top-up");
  plans=page.locator('[data-commerce-unified="plans"]');
- await expect(plans).toContainText("¥10,000.00");
+ await expect(plans).toContainText("¥8,161.00");
  await expect(plans).toContainText("累计充值 ¥10,000");
- await expect(plans).toContainText("累计支出 ¥0");
+ await expect(plans).toContainText("累计支出 ¥1,839");
  await expect(plans).toContainText("钱包充值流水");
  await expect(plans).toContainText("模拟充值");
 });
@@ -286,7 +286,7 @@ test("plans visual polish keeps five accessible entries and a grounded storage u
  for(const name of ["套餐方案","我的权益","用量明细","充值中心","账单与订单"])
   await expect(cards.getByRole("button",{name:"进入"+name})).toBeVisible();
  await expect(plans).toContainText("已用 0.00 GiB");
- await expect(plans).toContainText("剩余 5.00 GiB");
+ await expect(plans).toContainText("剩余 8.00 GiB");
  await expect(plans.locator('[class*="usageBar"]')).toHaveCount(4);
  await cards.getByRole("button",{name:"进入我的权益"}).click();
  await expect(page.locator('[data-commerce-unified="plans"] [class*="planEntitlementCards"] article')).toHaveCount(4);
@@ -316,7 +316,7 @@ test("plans premium cards, empty transactions and purchase controls remain usabl
 test("plans draft workflow persists in top-up without creating actual orders",async({page})=>{
  await page.goto(root+"/plans/top-up");
  const topup=page.locator('[data-commerce-unified="plans"]');
- await expect(topup).toContainText("¥10,000.00");
+ await expect(topup).toContainText("¥8,161.00");
  await topup.getByRole("spinbutton",{name:"充值金额（元）"}).fill("100");
  await topup.getByRole("button",{name:"账户充值",exact:true}).click();
  const review=page.getByRole("dialog",{name:"确认申请草稿"});
@@ -348,7 +348,7 @@ test("plans draft workflow persists in top-up without creating actual orders",as
  await expect(billing).toContainText("模拟已到账");
  await expect(billing).not.toContainText("待提交 · 未支付");
  await page.goto(root+"/plans/top-up");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("¥10,000.00");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("模拟购买成功");
 });
 test("plans store service and storage request review without granting paid resources",async({page})=>{
  await page.goto(root+"/plans/top-up");
@@ -368,7 +368,7 @@ test("plans store service and storage request review without granting paid resou
  await expect(localDrafts).toContainText("店铺服务");
  await expect(localDrafts).toContainText("企业存储");
  await page.goto(root+"/plans/entitlements");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("默认容量 5.00 GiB");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("免费容量 5.00 GiB");
  await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("已用 0.00 GiB");
  await page.goto(root+"/plans/orders");
  await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("模拟已到账");
@@ -377,27 +377,33 @@ test("plans store service and storage request review without granting paid resou
  await page.getByRole("dialog",{name:"发票管理"}).getByRole("button",{name:"关闭",exact:true}).click();
 });
 
-test("showcase wallet credits exactly CNY 10,000 with a matching simulated receipt and no paid resources",async({page})=>{
+test("four simulated service purchases debit the 10k wallet and update entitlements without pretending real payment",async({page})=>{
  await page.goto(root+"/plans/top-up");
  const wallet=page.locator('[data-commerce-unified="plans"]');
- await expect(wallet).toContainText("¥10,000.00");
+ await expect(wallet).toContainText("¥8,161.00");
  await expect(wallet).toContainText("累计充值 ¥10,000");
- await expect(wallet).toContainText("累计支出 ¥0");
+ await expect(wallet).toContainText("累计支出 ¥1,839");
  const ledger=wallet.getByRole("region",{name:"模拟钱包充值流水"});
  await expect(ledger).toContainText("+¥10,000.00");
- await expect(ledger).toContainText("模拟充值");
- await expect(ledger).toContainText("非真实资金流水");
+ for(const amount of ["-¥336.00","-¥1,000.00","-¥500.00","-¥3.00"])await expect(ledger).toContainText(amount);
+ await expect(ledger).toContainText("模拟购买");
  await page.goto(root+"/plans/orders");
  const orders=page.locator('[data-commerce-unified="plans"]');
- await expect(orders).toContainText("模拟已到账");
- await expect(orders).toContainText("¥10,000.00");
- await orders.getByRole("button",{name:"详情",exact:true}).first().click();
+ for(const name of ["店铺服务","token 积分","数据资源","企业存储"])await expect(orders).toContainText(name);
+ await expect(orders.locator('[class*="planOrderColumns"][class*="serviceRow"]')).toHaveCount(5);
+ await expect(orders).toContainText("模拟购买成功");
+ await orders.getByRole("button",{name:"详情",exact:true}).last().click();
  const receipt=page.getByRole("dialog",{name:"订单详情"});
- await expect(receipt).toContainText("非真实支付订单");
+ await expect(receipt).toContainText("模拟充值或服务购买记录");
  await receipt.getByRole("button",{name:"关闭",exact:true}).click();
  await page.goto(root+"/plans/entitlements");
  const rights=page.locator('[data-commerce-unified="plans"]');
- await expect(rights).toContainText("默认容量 5.00 GiB");
+ await expect(rights).toContainText("2 期");
+ await expect(rights).toContainText("¥1,000");
+ await expect(rights).toContainText("¥500");
+ await expect(rights).toContainText("免费容量 5.00 GiB + 已模拟购买扩容 3.00 GiB");
+ await expect(rights).toContainText("总容量 8.00 GiB");
  await expect(rights).toContainText("已用 0.00 GiB");
- await expect(rights).not.toContainText("10,000");
+ await page.goto(root+"/account/organization");
+ await expect(page.locator('[data-account-suite]')).toContainText("8 GiB");
 });
