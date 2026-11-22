@@ -4,7 +4,7 @@ import {useRouter} from "next/navigation";
 import {Store, Sparkles, Database, HardDrive} from "lucide-react";
 import {showcaseTenant as tenant} from "./showcase-tenant";
 import {useDemoPurchases} from "../showcase-purchases";
-import {useDemoStoreBindings,countConsumedStorePeriods,demoStoreServiceActive,saveDemoStoreBindings,startDemoStoreService} from "../store-binding-demo";
+import {useDemoStoreBindings,countConsumedStorePeriods,demoStoreServiceActive,saveDemoStoreBindings,startDemoStoreService,type DemoStoreBinding} from "../store-binding-demo";
 import {useShowcaseSuite,useMemberReferralPortfolio,addAudit,totalEarnings,availableEarnings,permissionTree,permissionKey,permissionSummary,normalizeRolePermissions,toggleRolePermission,togglePermissionGroup,descendants,type PermissionMode,type Member,type SuiteState} from "./showcase-account-state";
 import type {ConsoleNavNode} from "@/lib/workbench/console-navigation";
 import s from "./showcase-account-suite.module.css";
@@ -82,7 +82,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   const renewableOwner=renewableStore?.ownerMemberId||"";
   const renewAvailable=memberId==="admin"?storeRemaining:Number(state.storeAllocations[memberId]||0);
   const storeDate=(value?:string)=>value?new Date(value).toLocaleDateString("zh-CN"):"—";
-  const storeServiceLabel=(store:{serviceExpiresAt?:string;servicePeriods?:number;platformIdStatus?:"已激活"|"获取失败"})=>{
+  const storeServiceLabel=(store:DemoStoreBinding)=>{
    if(store.platformIdStatus==="获取失败")return "未激活";
    if(store.platformIdStatus==="已激活"&&demoStoreServiceActive(store)&&Date.parse(store.serviceExpiresAt||"")-Date.now()>7*86400000)return "已激活";
    if(store.platformIdStatus==="已激活"&&!store.servicePeriods)return "已激活";
