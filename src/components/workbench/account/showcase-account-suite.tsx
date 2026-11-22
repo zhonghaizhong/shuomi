@@ -7,6 +7,7 @@ import {useDemoPurchases} from "../showcase-purchases";
 import {useShowcaseSuite,useMemberReferralPortfolio,addAudit,totalEarnings,availableEarnings,permissionTree,permissionKey,permissionSummary,normalizeRolePermissions,toggleRolePermission,togglePermissionGroup,descendants,type PermissionMode,type Member,type SuiteState} from "./showcase-account-state";
 import type {ConsoleNavNode} from "@/lib/workbench/console-navigation";
 import s from "./showcase-account-suite.module.css";
+import {PayoutConfigurator} from "./showcase-payout-configurator";
 const root="/workbench/account";
 const goPath=(path:string)=>root+path+"?preview=1";
 const money=(n:number)=>"¥"+n.toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -132,7 +133,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
  const addEarning=()=>{const value=Number(amount);if(!Number.isFinite(value)||value<=0||value>100000){setError("请输入大于0且不超过100000的模拟佣金。");return}if(!email.trim()){setError("请填写模拟客户标识。");return}
   change(referralAudit({...state,referrals:[{id:crypto.randomUUID(),at:Date.now(),referred:email.trim(),amount:Math.round(value*100)/100,status:"已结算"},...state.referrals]},"推广与收益","模拟推广收益已审核并结算："+money(value)),"一笔模拟推广佣金已结算，余额已同步。")
  };
- const savePayout=()=>{if(account.trim().length<4){setError("请输入至少4位的演示收款标识。");return}change(referralAudit({...state,payoutAccount:account.trim()},"提现管理","更新模拟收款方式"),"模拟收款方式已保存。")};
+ const saveConfiguredPayout=(configured:string)=>change(referralAudit({...state,payoutAccount:configured},"提现管理","已通过演示安全验证，配置默认收款账户："+configured),"默认收款账户已保存（模拟验证，无真实转账）。");
  const withdraw=()=>{const cents=Math.round(Number(amount)*100);const availableCents=Math.round(balance*100);if(!state.payoutAccount){setError("请先设置收款方式。");return}if(!Number.isSafeInteger(cents)||cents<=0||cents>availableCents){setError("提现金额必须大于0且不超过可提现余额。");return}
  let remaining=cents;const after=state.referrals.flatMap(item=>{if(item.status!=="已结算"||remaining<=0)return [item];const itemCents=Math.round(item.amount*100),taken=Math.min(itemCents,remaining);remaining-=taken;if(taken===itemCents)return [{...item,status:"已提现" as const}];return [{...item,id:crypto.randomUUID(),amount:taken/100,status:"已提现" as const},{...item,amount:(itemCents-taken)/100,status:"已结算" as const}]});
  if(remaining!==0){setError("可提现余额核对失败，未生成提现记录。");return}const n=cents/100;const item={id:crypto.randomUUID(),at:Date.now(),amount:n,account:state.payoutAccount,status:"模拟审核通过" as const};change(referralAudit({...state,referrals:after,withdrawals:[item,...state.withdrawals]},"提现管理","模拟提现并审核通过："+money(n)),"模拟提现申请已审核通过，剩余收益保留；未发起实际转账。")
@@ -339,9 +340,9 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
      </>}
     {modal==="role"&&<label>角色名称<input aria-label="角色名称" value={name} onChange={e=>setName(e.target.value)} placeholder="例如：运营专员"/></label>}
     {modal==="earning"&&<><label>模拟客户标识<input aria-label="模拟客户标识" value={email} onChange={e=>setEmail(e.target.value)} placeholder="例如：TEST-CUSTOMER-001"/></label><label>模拟佣金金额（元）<input type="number" min="0.01" step="0.01" aria-label="模拟佣金金额" value={amount} onChange={e=>setAmount(e.target.value)}/></label></>}
-    {modal==="payout"&&<label>演示收款标识<input aria-label="演示收款标识" value={account} onChange={e=>setAccount(e.target.value)} placeholder="不要输入真实银行账号"/></label>}
+    {modal==="payout"&&<PayoutConfigurator organizationId={organizationId} memberId={memberId} current={state.payoutAccount} onSave={saveConfiguredPayout}/>}
     {modal==="withdraw"&&<><p>当前可提现金额：{money(balance)}。支持部分提现，剩余收益继续保留为可提现余额。</p><label>模拟提现金额<input type="number" step="0.01" aria-label="模拟提现金额" value={amount} onChange={e=>setAmount(e.target.value)}/></label></>}
-    {error&&<p role="alert" className={s.error}>{error}</p>}<footer><button onClick={close}>取消</button><button className={s.primary} onClick={()=>({invite:addMember,member:updateMember,role:addRole,permissions:savePermissions,storage:saveResources,earning:addEarning,payout:savePayout,withdraw}[modal])()} disabled={modal==="member"&&selected==="admin"}>{modal==="invite"?"确认邀请":modal==="payout"?"保存账户":modal==="withdraw"?"确认提现":"确认并模拟通过"}</button></footer>
+    {error&&<p role="alert" className={s.error}>{error}</p>}{modal!=="payout"&&<footer><button onClick={close}>取消</button><button className={s.primary} onClick={()=>({invite:addMember,member:updateMember,role:addRole,permissions:savePermissions,storage:saveResources,earning:addEarning,withdraw}[modal])()} disabled={modal==="member"&&selected==="admin"}>{modal==="invite"?"确认邀请":modal==="withdraw"?"确认提现":"确认并模拟通过"}</button></footer>}
    </section></div>}
   <p className={s.disclaimer}>所有账户、权限、收益和审核操作均为本地演示数据，非真实身份认证、平台授权、支付或转账。成员推广数据按演示账号分别保存。</p>
  </main>;
