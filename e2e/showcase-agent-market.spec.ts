@@ -144,3 +144,34 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await page.keyboard.press("Escape");
  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
+
+
+test("My Agents model and Enter Use dialogs are viewport-centered on desktop and mobile",async({page})=>{
+ for(const viewport of [{width:1440,height:900},{width:2560,height:1440},{width:390,height:844}]){
+  await page.setViewportSize(viewport);
+  await page.goto(base+"/mine");
+  const centered=async()=>{
+   const modal=page.getByRole("dialog");
+   await expect(modal).toBeVisible();
+   const box=await modal.boundingBox();
+   expect(box).not.toBeNull();
+   expect(Math.abs(box!.x+box!.width/2-viewport.width/2),"horizontal center").toBeLessThanOrEqual(3);
+   expect(Math.abs(box!.y+box!.height/2-viewport.height/2),"vertical center").toBeLessThanOrEqual(3);
+   expect(box!.x).toBeGreaterThanOrEqual(8);
+   expect(box!.y).toBeGreaterThanOrEqual(8);
+   expect(box!.x+box!.width).toBeLessThanOrEqual(viewport.width-8);
+   expect(box!.y+box!.height).toBeLessThanOrEqual(viewport.height-8);
+  };
+  await page.getByRole("button",{name:"模型设置"}).first().click();
+  await centered();
+  await page.getByRole("dialog").getByRole("button",{name:/自定义模型/}).click();
+  await centered();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button",{name:"进入使用"}).first().click();
+  await centered();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button",{name:"进入使用"}).last().click();
+  await centered();
+  await page.keyboard.press("Escape");
+ }
+});
