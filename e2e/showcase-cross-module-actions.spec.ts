@@ -77,9 +77,11 @@ test("billing filters support scalable search, multiple types and custom dates",
  const toggle=filter.getByRole("button",{name:"筛选条件"});
  await expect(toggle).toHaveAttribute("aria-expanded","false");
  await expect(filter.getByRole("checkbox")).toHaveCount(0);
+ await expect(filter.getByText("订单状态",{exact:true})).toHaveCount(0);
  await toggle.click();
  await expect(toggle).toHaveAttribute("aria-expanded","true");
  await expect(filter.getByRole("group",{name:"快捷时间"}).getByRole("button",{name:"自定义"})).toBeVisible();
+ await expect(filter.getByText("订单状态",{exact:true})).toHaveCount(0);
  await filter.getByRole("group",{name:"快捷时间"}).getByRole("button",{name:"自定义"}).click();
  await filter.getByRole("button",{name:"确定",exact:true}).click();
  await expect(filter.getByRole("alert")).toContainText("完整且有效");
