@@ -623,3 +623,10 @@
 .memberPagination select{min-height:34px;padding:5px 10px;font-size:13px}
 .page .memberPagination button{min-height:34px;padding:5px 11px}
 @media(max-width:600px){.memberFilters label:first-child,.memberFilters label:nth-child(2){width:100%}.memberPagination{align-items:start}}
+
+/* One unified member resource editor, consistent in both themes. */
+.resourceAllocationFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.resourceAllocationFields label{min-width:0;display:grid;gap:6px;padding:12px;border:1px solid var(--line);border-radius:7px;background:var(--inset);color:var(--ink);font-size:13px;font-weight:600}
+.resourceAllocationFields label small{font-size:12px;font-weight:400;color:var(--muted)}
+.resourceAllocationFields input{min-width:0;background:var(--surface)}
+@media(max-width:560px){.resourceAllocationFields{grid-template-columns:1fr}}
