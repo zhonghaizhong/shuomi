@@ -120,21 +120,41 @@ test("three colleagues and twenty new users have consistent simulated top-ups, s
  await expect(suite.getByRole("row").filter({hasText:"子账号"})).toContainText("3 人");
  await page.goto(base+"/referrals/center");
  const table=suite.getByRole("region",{name:"邀请新用户消费记录"});
- await expect(table.getByRole("row")).toHaveCount(21);
+ await expect(table.getByRole("row")).toHaveCount(11);
  await expect(table).toContainText("¥4,000.00");
  await expect(table).toContainText("¥3,360.00");
  await expect(table).toContainText("¥640.00");
  await expect(table).toContainText("SIM-ORDER-STORE-01");
  await expect(table).toContainText("¥16.80");
+ await table.getByRole("navigation",{name:"邀请新用户消费记录分页"}).getByRole("button",{name:"下一页"}).click();
+ await expect(table).toContainText("SIM-ORDER-STORE-20");
  await page.goto(base+"/referrals/earnings");
  const rows=suite.locator("table").first().getByRole("row");
- await expect(rows).toHaveCount(21);
+ await expect(rows).toHaveCount(11);
  await expect(suite).toContainText("¥336.00");
  await expect(suite).toContainText("10%");
+ await expect(suite).not.toContainText("SIM-ORDER-STORE-20");
+ await suite.getByRole("navigation",{name:"推广收益明细分页"}).getByRole("button",{name:"下一页"}).click();
  await expect(suite).toContainText("SIM-ORDER-STORE-20");
  await page.reload();
  await page.goto(base+"/referrals/center");
- await expect(suite.getByRole("region",{name:"邀请新用户消费记录"}).getByRole("row")).toHaveCount(21);
+ await expect(suite.getByRole("region",{name:"邀请新用户消费记录"}).getByRole("row")).toHaveCount(11);
+});
+test("referral overview stays compact and both independent ledgers paginate without losing totals",async({page})=>{
+ await page.goto(base+"/referrals");
+ const suite=page.locator("[data-account-suite]");
+ const customer=suite.getByRole("region",{name:"邀请新用户消费记录"});
+ await expect(customer.getByRole("row")).toHaveCount(6);
+ await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("每页 5 条");
+ await expect(suite).toContainText("¥336.00");
+ await customer.getByRole("navigation",{name:"邀请新用户消费记录分页"}).getByRole("button",{name:"下一页"}).click();
+ await expect(customer).toContainText("第 2 / 4 页");
+ await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("第 1 / 4 页");
+ await suite.getByRole("button",{name:"查看全部收益记录"}).click();
+ await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("每页 10 条");
+ await expect(suite.locator("table").first().getByRole("row")).toHaveCount(11);
+ await suite.getByRole("navigation",{name:"推广收益明细分页"}).getByRole("button",{name:"下一页"}).click();
+ await expect(suite).toContainText("SIM-ORDER-STORE-20");
 });
 test("enterprise and referral subpages preserve approved dark/light surfaces and do not overflow",async({page})=>{
  for(const route of ["/organization","/organization/members","/organization/roles","/organization/resources","/organization/audit","/referrals","/referrals/center","/referrals/earnings","/referrals/withdrawals","/referrals/rules"]){
