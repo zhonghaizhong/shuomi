@@ -93,7 +93,7 @@ export function RouteDetailPreview({ pathname, organizationId="SM-ENT-000001", m
   const page = routes[pathname];
   if (!page) return null;
   if (pathname === "/workbench/supply/applications" || pathname.startsWith("/workbench/supply/applications/")) return <PreferredApplicationPreview key={pathname} pathname={pathname} />;
-  if (pathname === "/workbench/account/profile/business" || pathname === "/workbench/account/profile/verification") return <AccountProfilePreview key={pathname} pathname={pathname} />;
+  if (pathname === "/workbench/account/profile/business" || pathname === "/workbench/account/profile/verification") return <AccountProfilePreview key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   return <RoutePage key={pathname+"-"+organizationId+"-"+memberId} page={page} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
 }
 
