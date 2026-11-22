@@ -50,8 +50,15 @@ test("model setting selection is saved in this preview and can be reopened", asy
   await expect(modal).toContainText("官方模型");
   await expect(modal).toContainText("自定义模型");
   await modal.getByRole("button", { name: /自定义模型/ }).click();
-  await expect(modal.getByRole("button", { name: /自定义模型/ })).toHaveAttribute("aria-pressed", "true");
-  await modal.getByRole("button", { name: "保存设置" }).click();
+  await expect(modal.getByRole("heading", { name: "自定义模型" })).toBeVisible();
+  await modal.getByRole("button", { name: "测试连接" }).click();
+  await expect(modal.getByRole("status")).toContainText("请填写");
+  await modal.getByRole("textbox", { name: "模型服务商" }).fill("演示供应商");
+  await modal.getByRole("textbox", { name: "模型名称" }).fill("demo-model");
+  await modal.getByLabel("API Key").fill("demo-key-not-real");
+  await modal.getByRole("button", { name: "测试连接" }).click();
+  await expect(modal.getByRole("status")).toContainText("尚未连接模型服务");
+  await modal.getByRole("button", { name: "保存并启用" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "模型设置", exact: true }).first().click();
   await expect(page.getByRole("dialog").getByRole("button", { name: /自定义模型/ })).toHaveAttribute("aria-pressed", "true");
@@ -97,4 +104,29 @@ test("market cards and customization page do not overflow the desktop viewport",
     const dimensions = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
     expect(dimensions.scroll, route).toBeLessThanOrEqual(dimensions.client + 2);
   }
+});
+
+test("enter use opens Figma-based skill, knowledge and image configuration without creating a real task",async({page})=>{
+ await page.goto(base+"/mine");
+ await page.getByRole("button",{name:"进入使用"}).first().click();
+ const dialog=page.getByRole("dialog",{name:"商品优化智能体"});
+ await expect(dialog).toContainText("步骤 1 · 选择技能（可选）");
+ await expect(dialog).toContainText("步骤 2 · 选择知识库（可选）");
+ await expect(dialog).toContainText("步骤 3 · 配置图片优化（按需）");
+ await dialog.getByRole("checkbox",{name:"标题优化"}).check();
+ await dialog.getByRole("checkbox",{name:"平台规则"}).check();
+ await dialog.getByRole("button",{name:"开启"}).click();
+ await dialog.getByRole("button",{name:"保存为模板"}).click();
+ await expect(dialog.getByRole("status")).toContainText("请先填写图片优化设置");
+ await dialog.getByRole("textbox",{name:"图片优化指令"}).fill("只优化主图，不修改商品规格");
+ await dialog.getByRole("button",{name:"设置图片优化"}).click();
+ await dialog.getByRole("button",{name:"预览优化范围"}).click();
+ await expect(dialog.getByRole("status")).toContainText("标题优化");
+ await dialog.getByRole("button",{name:"保存为模板"}).click();
+ await expect(dialog).toHaveCount(0);
+ await expect(page.getByRole("status")).toContainText("已保存为模板");
+ await page.getByRole("button",{name:"进入使用"}).last().click();
+ await expect(page.getByRole("dialog",{name:"POD刊登智能体"})).toContainText("步骤 4 · 保存模板");
+ await page.keyboard.press("Escape");
+ await expect(page.getByRole("dialog")).toHaveCount(0);
 });
