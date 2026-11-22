@@ -82,7 +82,9 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   const renewableOwner=renewableStore?.ownerMemberId||"";
   const renewAvailable=memberId==="admin"?storeRemaining:Number(state.storeAllocations[memberId]||0);
   const storeDate=(value?:string)=>value?new Date(value).toLocaleDateString("zh-CN"):"—";
-  const storeServiceLabel=(store:{serviceExpiresAt?:string;servicePeriods?:number})=>{
+  const storeServiceLabel=(store:{serviceExpiresAt?:string;servicePeriods?:number;platformIdStatus?:"已激活"|"获取失败"})=>{
+   if(store.platformIdStatus==="获取失败")return "未激活";
+   if(store.platformIdStatus==="已激活"&&!store.servicePeriods)return "已激活";
    if(!store.serviceExpiresAt||Date.parse(store.serviceExpiresAt)<=Date.now())return store.servicePeriods?"已到期":"未激活";
    return Date.parse(store.serviceExpiresAt)-Date.now()<=30*86400000?"即将到期":"使用中";
   };
@@ -350,9 +352,15 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
 
   {storeListOwner&&<div className={s.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)closeStoreDialogs()}}><section className={s.storeListDialog} role="dialog" aria-modal="true" aria-label={storeListOwner==="admin"?"企业店铺":"店铺详情"}>
     <header><div><h2>{storeListOwner==="admin"?"企业店铺":"店铺详情"}</h2><p>{storeListOwner==="admin"?"共 "+storeDialogStores.length+" 家 · 管理员及成员名下店铺":(state.members.find(m=>m.id===storeListOwner)?.name||"成员")+" · 已绑定 "+storeDialogStores.length+" 家"}</p></div><button type="button" aria-label="关闭查看店铺弹窗" onClick={closeStoreDialogs}>×</button></header>
-    <p className={s.dialogHint}>每家店铺独立计算有效期，列表过长可在弹窗内滚动。即将到期及已到期店铺可续费。</p>
+    <p className={s.dialogHint}>平台 ID 激活与30天服务期分开管理。模拟店铺的第三方 ID 仅供测试；获取失败可重试。</p>
     <input aria-label="搜索店铺名称" placeholder={storeListOwner==="admin"?"搜索店铺名称 / 归属成员":"搜索店铺名称"} value={storeListSearch} onChange={e=>setStoreListSearch(e.target.value)}/>
-    <div className={s.storeListScroll}><table><thead><tr><th>店铺</th><th>状态</th><th>绑定时间</th><th>到期时间</th>{storeListOwner==="admin"&&<th>归属成员</th>}<th>操作</th></tr></thead><tbody>{storeDialogFiltered.map(store=>{const status=storeServiceLabel(store);return <tr key={store.id}><td><strong>{store.name}</strong></td><td><span className={status==="已到期"?s.storeExpired:status==="即将到期"?s.storeSoon:s.storeActive}>{status}</span></td><td>{storeDate(store.serviceStartedAt||store.createdAt)}</td><td>{storeDate(store.serviceExpiresAt)}</td>{storeListOwner==="admin"&&<td>{state.members.find(m=>m.id===store.ownerMemberId)?.name||store.owner||"—"}</td>}<td>{status==="使用中"?"—":<button type="button" className={s.storeViewButton} onClick={()=>{setRenewStoreId(store.id);setRenewCount("1");setStoreDialogError("")}}>{status==="未激活"?"开通":"续费"}</button>}</td></tr>})}</tbody></table>{!storeDialogFiltered.length&&<p className={s.dialogHint}>暂无符合条件的店铺。</p>}</div>
+    <div className={s.storeListScroll}><table><thead><tr><th>店铺</th><th>状态</th><th>绑定时间</th><th>到期时间</th>{storeListOwner==="admin"&&<th>归属成员</th>}<th>操作</th></tr></thead><tbody>{storeDialogFiltered.map(store=>{const status=storeServiceLabel(store);return <tr key={store.id}><td><strong>{store.name}</strong></td><td><span className={status==="已到期"?s.storeExpired:status==="即将到期"?s.storeSoon:s.storeActive}>{status}</span></td><td>{storeDate(store.serviceStartedAt||store.createdAt)}</td><td>{storeDate(store.serviceExpiresAt)}</td>{storeListOwner==="admin"&&<td>{state.members.find(m=>m.id===store.ownerMemberId)?.name||store.owner||"—"}</td>}<td>{store.platformIdStatus==="获取失败"?<button type="button" className={s.storeViewButton} onClick={()=>{
+      // The synthetic retry succeeds only for the designated demo fixture; no platform API is called.
+      if(store.id!=="SIM-C01-05"){setStoreDialogError("该店铺尚未接入第三方平台ID查询接口。");return;}
+      const updated=boundStores.all.map(item=>item.id===store.id?{...item,platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-05"}:item);
+      if(!saveDemoStoreBindings(organizationId,updated))setStoreDialogError("模拟重新获取失败，请重试。");
+      else{setStoreDialogError("");setNotice("模拟获取平台店铺 ID 成功，已激活。真实平台接口尚未接入。")}
+     }}>重试获取</button>:status==="使用中"||status==="已激活"?"—":<button type="button" className={s.storeViewButton} onClick={()=>{setRenewStoreId(store.id);setRenewCount("1");setStoreDialogError("")}}>续费</button>}</td></tr>})}</tbody></table>{!storeDialogFiltered.length&&<p className={s.dialogHint}>暂无符合条件的店铺。</p>}</div>
     <p className={s.dialogHint}>{storeListOwner==="admin"?"管理员可查看企业全部店铺；续费统一使用企业资源池剩余期数，不扣成员已分配余额。":"成员自行续费扣本人已分配期数；管理员代续费使用企业资源池，不扣成员余额。"}</p>
     <footer><button type="button" onClick={closeStoreDialogs}>关闭</button></footer>
   </section></div>}
