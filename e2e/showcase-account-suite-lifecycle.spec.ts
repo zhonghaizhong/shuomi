@@ -26,7 +26,7 @@ test("legacy account demo records are cleared once while preserving the new comp
  await expect(page.locator('[data-document-kind="business"]')).not.toContainText("legacy.pdf");
  await page.goto(base+"/organization/members");
  const suite=page.locator("[data-account-suite]");
- await expect(suite.getByRole("row")).toHaveCount(2);
+ await expect(suite.getByRole("row")).toHaveCount(5);
  await expect(suite).not.toContainText("张琳");
  await page.reload();
  await expect(suite.getByRole("row")).toHaveCount(2);
@@ -78,10 +78,10 @@ test("synthetic enterprise uses one tenant across account home, members, roles a
  await expect(suite).toContainText("50,000");
  await expect(suite).toContainText("0 GiB");
 });
-test("synthetic referral flow starts at zero and updates earnings and withdrawal records",async({page})=>{
+test("synthetic referral earnings are attributed to store consumption and manual withdrawals remain usable",async({page})=>{
  await page.goto(base+"/referrals");
  const suite=page.locator("[data-account-suite]");
- await expect(suite).toContainText("¥0.00");
+ await expect(suite).toContainText("¥336.00");
  await page.goto(base+"/referrals/center");
  await suite.getByRole("button",{name:"模拟一笔推广成交并结算"}).click();
  const dialog=suite.getByRole("dialog",{name:"模拟推广收益"});
@@ -107,6 +107,34 @@ test("synthetic referral flow starts at zero and updates earnings and withdrawal
  await expect(page.locator('[data-commerce-unified="account"]')).toContainText("¥0.00");
  await page.goto(base+"/organization/audit");
  await expect(suite).toContainText("模拟提现并审核通过");
+});
+test("three colleagues and twenty new users have consistent simulated top-ups, store charges and 10% earnings",async({page})=>{
+ await page.goto(base+"/organization/members");
+ const suite=page.locator("[data-account-suite]");
+ await expect(suite.getByRole("row")).toHaveCount(5);
+ for(let i=1;i<=3;i++){
+  const name="模拟同事"+String(i).padStart(2,"0");
+  await expect(suite.getByRole("row").filter({hasText:name})).toContainText("子账号");
+ }
+ await page.goto(base+"/organization/roles");
+ await expect(suite.getByRole("row").filter({hasText:"子账号"})).toContainText("3 人");
+ await page.goto(base+"/referrals/center");
+ const table=suite.getByRole("region",{name:"邀请新用户消费记录"});
+ await expect(table.getByRole("row")).toHaveCount(21);
+ await expect(table).toContainText("¥4,000.00");
+ await expect(table).toContainText("¥3,360.00");
+ await expect(table).toContainText("¥640.00");
+ await expect(table).toContainText("SIM-ORDER-STORE-01");
+ await expect(table).toContainText("¥16.80");
+ await page.goto(base+"/referrals/earnings");
+ const rows=suite.locator("table").first().getByRole("row");
+ await expect(rows).toHaveCount(21);
+ await expect(suite).toContainText("¥336.00");
+ await expect(suite).toContainText("10%");
+ await expect(suite).toContainText("SIM-ORDER-STORE-20");
+ await page.reload();
+ await page.goto(base+"/referrals/center");
+ await expect(suite.getByRole("region",{name:"邀请新用户消费记录"}).getByRole("row")).toHaveCount(21);
 });
 test("enterprise and referral subpages preserve approved dark/light surfaces and do not overflow",async({page})=>{
  for(const route of ["/organization","/organization/members","/organization/roles","/organization/resources","/organization/audit","/referrals","/referrals/center","/referrals/earnings","/referrals/withdrawals","/referrals/rules"]){
