@@ -572,5 +572,6 @@ test("ten purchased store-renewal periods become allocatable to colleague01 and 
  await page.reload();
  await expect(page.locator("[data-account-suite]")).toContainText("已分配 10 · 剩余 2");
  await page.goto("/shuomi/#/workbench/plans/entitlements");
- await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("12");
+ await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("2");
+ await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("企业总期数：12 期 · 已分配：10 期");
 });
