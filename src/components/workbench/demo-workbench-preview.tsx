@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import styles from "./demo-workbench-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts } from "./plans-demo-facts";
 import {useDemoPurchases} from "./showcase-purchases";
-import {useDemoStoreBindings,countConsumedStorePeriods,demoStoreServiceActive} from "./store-binding-demo";
+import {useDemoStoreBindings,countConsumedStorePeriods,countPoolConsumedStorePeriods,demoStoreServiceActive} from "./store-binding-demo";
 import {getDemoMembership} from "../../../showcase/demo-identity";
 import { hasRouteDetailPreview, RouteDetailPreview } from "./route-detail-preview";
 import { ChatIntroduction } from "./ai-workbench/chat-introduction";
@@ -115,7 +115,7 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
   const scopedBoundCount=organizationAdmin?bindingSummary.organizationCount:bindingSummary.visibleCount;
   const scopedBindingLabel=organizationAdmin?"本组织":"本人";
   const allocatedRenewals=organizationId==="SM-ENT-000001"?Object.values(accountSuite.storeAllocations).reduce((sum,number)=>sum+(Number(number)||0),0):0;
-  const consumedRenewals=countConsumedStorePeriods(bindingSummary.all);
+  const consumedRenewals=countPoolConsumedStorePeriods(bindingSummary.all);
   const activeStoreServices=bindingSummary.visible.filter(store=>demoStoreServiceActive(store)).length;
   const expiringStoreServices=bindingSummary.visible.filter(store=>demoStoreServiceActive(store)&&typeof store.serviceExpiresAt==="string"&&Date.parse(store.serviceExpiresAt)-Date.now()<=7*24*60*60*1000).length;
   const expiredStoreServices=bindingSummary.visible.filter(store=>Number(store.servicePeriods)>0&&!demoStoreServiceActive(store)).length;
