@@ -5,9 +5,9 @@ import css from "./showcase-store-center.module.css";
 import {useShowcaseSuite} from "../account/showcase-account-state";
 
 type Store={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string};
-const key="shuomi-store-center-empty-v3";
-// Never migrate old showcase fixtures or session drafts into the newly cleared store center.
-const obsoleteKeys=["shuomi-store-center-empty-v2","shuomi-store-center-empty-v1"];
+const key="shuomi-store-center-empty-v4";
+// Reset previous demo stores and groups once after deployment. Leave newly created v4 records intact.
+const obsoleteKeys=["shuomi-store-center-empty-v3","shuomi-store-center-empty-v2","shuomi-store-center-empty-v1"];
 // The first three entry descriptions follow Figma's Store Center introduction (1220:359).
 // Listing Management is the newer real second-level navigation item and is inserted
 // without reworking the approved Vuexy visual tokens or other page layouts.
@@ -30,7 +30,7 @@ const collaboration=[
  {title:"店铺商品",detail:"刊登状态、库存及数据同步"},
  {title:"订单管理",detail:"待办、采购、发货及物流跟踪"},
 ] as const;
-function read():Store[]{try{for(const old of obsoleteKeys)sessionStorage.removeItem(old);const v=JSON.parse(sessionStorage.getItem(key)||"[]");return Array.isArray(v)?v.filter((x:Store)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"):[]}catch{return []}}
+function read():Store[]{try{for(const old of obsoleteKeys){sessionStorage.removeItem(old);sessionStorage.removeItem(old+"-groups");}const v=JSON.parse(sessionStorage.getItem(key)||"[]");return Array.isArray(v)?v.filter((x:Store)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"):[]}catch{return []}}
 export function ShowcaseStoreCenter({pathname,navigate}:{pathname:string;navigate:(path:string)=>void}){
  const {state:enterpriseState}=useShowcaseSuite();
  const owners=[...new Set(enterpriseState.members.filter(member=>member.status==="正常").map(member=>member.name))];
