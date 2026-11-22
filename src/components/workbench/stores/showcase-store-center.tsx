@@ -4,26 +4,12 @@ import {Building2,Package,Truck,Plus,Search,ShieldCheck,ClipboardList} from "luc
 import css from "./showcase-store-center.module.css";
 import {useShowcaseSuite} from "../account/showcase-account-state";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
+import {demoStoreKey,readDemoStoreBindings,saveDemoStoreBindings,type DemoStoreBinding} from "../store-binding-demo";
 
-type Store={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string;ownerMemberId:string};
-const keyPrefix="shuomi-store-center-demo-ten-v2";
+type Store=DemoStoreBinding;
 const demoSites=["美国站","加拿大站","英国站","德国站","法国站"] as const;
 const demoTenant="SM-ENT-000001";
-const demoColleague="SIM-COLLEAGUE-01";
-function storeKey(organizationId:string){return keyPrefix+"-"+organizationId;}
-function seededStores(organizationId:string):Store[]{
- if(organizationId!==demoTenant)return [];
- return (["admin",demoColleague] as const).flatMap(memberId=>{
-  const isAdmin=memberId==="admin";
-  return demoSites.map((region,index)=>({
-   id:(isAdmin?"SIM-ADMIN-":"SIM-C01-")+String(index+1).padStart(2,"0"),
-   name:(isAdmin?"管理员演示店铺":"同事01演示店铺")+String(index+1).padStart(2,"0"),
-   platform:"SHEIN" as const,region,type:["全托管","半托管","自营","全托管","半托管"][index],
-   status:"待授权" as const,createdAt:"2026-11-22 15:19",
-   group:"未分组",owner:isAdmin?"管理员":"模拟同事01",ownerMemberId:memberId
-  }));
- });
-}
+const storeKey=demoStoreKey;
 // Reset previous demo stores and groups once after deployment. Leave newly created v4 records intact.
 const obsoleteKeys=["shuomi-store-center-empty-v3","shuomi-store-center-empty-v2","shuomi-store-center-empty-v1"];
 // The first three entry descriptions follow Figma's Store Center introduction (1220:359).
@@ -49,14 +35,8 @@ const collaboration=[
  {title:"订单管理",detail:"待办、采购、发货及物流跟踪"},
 ] as const;
 function read(organizationId:string):Store[]{
- const key=storeKey(organizationId);
- try{
-  for(const old of obsoleteKeys){sessionStorage.removeItem(old);sessionStorage.removeItem(old+"-groups");}
-  const raw=sessionStorage.getItem(key);
-  if(raw===null)return seededStores(organizationId);
-  const values=JSON.parse(raw);
-  return Array.isArray(values)?values.filter((x:Store)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"&&typeof x.ownerMemberId==="string"):[];
- }catch{return seededStores(organizationId);}
+ try{for(const old of obsoleteKeys){sessionStorage.removeItem(old);sessionStorage.removeItem(old+"-groups");}}catch{}
+ return readDemoStoreBindings(organizationId);
 }
 export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organizationId=demoTenant}:{pathname:string;navigate:(path:string)=>void;memberId?:string;organizationId?:string}){
  const key=storeKey(organizationId);
@@ -84,7 +64,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [settingsDraft,setSettingsDraft]=useState({group:"未分组",owner:""});
  const [platformFilter,setPlatformFilter]=useState("全部平台"),[regionFilter,setRegionFilter]=useState("全部站点"),[typeFilter,setTypeFilter]=useState("全部类型");
  const [appliedFilters,setAppliedFilters]=useState({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"});
- useEffect(()=>{try{sessionStorage.setItem(key,JSON.stringify(allStores))}catch{}},[allStores,key]);
+ useEffect(()=>{saveDemoStoreBindings(organizationId,allStores)},[allStores,organizationId]);
  useEffect(()=>{try{sessionStorage.setItem(key+"-groups",JSON.stringify(groups))}catch{}},[groups]);
  useEffect(()=>{setQuery("");setSearch("");setNotice("");setDialog(false);setEditing(null);setConfirmDelete(null);setInspecting(null);setAuthorizationHelp(false);setSyncing(null);setEntered(null);setGroupsOpen(false);setManageId(null);setMoreId(null);setCreatingGroup(false);setAddingOwner(false);setGroupError("");setDetailTab("店铺概览")},[pathname]);
  useEffect(()=>{if(!dialog&&!editing&&!confirmDelete&&!inspecting&&!authorizationHelp&&!syncing&&!groupsOpen&&!manageId&&!moreId&&!creatingGroup&&!addingOwner&&!groupRename)return;const onKey=(e:KeyboardEvent)=>{if(e.key!=="Escape")return;if(creatingGroup){setCreatingGroup(false);return;}if(addingOwner){setAddingOwner(false);return;}if(groupRename){setGroupRename(null);return;}if(groupsOpen){setGroupsOpen(false);return;}if(confirmDelete){setConfirmDelete(null);return;}if(editing){setEditing(null);return;}if(inspecting){setInspecting(null);return;}if(syncing){setSyncing(null);return;}if(authorizationHelp){setAuthorizationHelp(false);return;}if(dialog||manageId){setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("");return;}if(moreId)setMoreId(null)};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey)},[dialog,editing,confirmDelete,inspecting,authorizationHelp,syncing,groupsOpen,manageId,moreId,creatingGroup,addingOwner,groupRename]);
