@@ -36,6 +36,23 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
   if(element&&!element.open)element.showModal();
   return()=>{element?.close();if(previous instanceof HTMLElement&&previous.isConnected)previous.focus();};
  },[]);
+
+ useEffect(()=>{
+  if(info.kind!=="use")return;
+  try{
+   const raw=sessionStorage.getItem("shuomi-demo-agent-template-"+info.title);
+   if(!raw)return;
+   const data=JSON.parse(raw);
+   if(Array.isArray(data.skills))setSkills(data.skills.filter((v:unknown)=>typeof v==="string"));
+   if(Array.isArray(data.knowledge))setKnowledge(data.knowledge.filter((v:unknown)=>typeof v==="string"));
+   if(typeof data.imageOptimization==="boolean")setImageOptimization(data.imageOptimization);
+   if(typeof data.imageInstructions==="string"){setImageInstructions(data.imageInstructions);setImageConfigured(Boolean(data.imageInstructions.trim()));}
+   if(typeof data.podImageMode==="string")setPodImageMode(data.podImageMode);
+   if(typeof data.podPatternMode==="string")setPodPatternMode(data.podPatternMode);
+   if(Number.isSafeInteger(data.podQuantity)&&data.podQuantity>=1&&data.podQuantity<=20)setPodQuantity(data.podQuantity);
+   if(typeof data.podTransparent==="boolean")setPodTransparent(data.podTransparent);
+  }catch{/* A missing or malformed browser draft never prevents opening the dialog. */}
+ },[info]);
  const isModel=info.kind==="model",isUse=info.kind==="use",isPod=info.title.includes("POD");
  const toggle=(items:string[],set:(value:string[])=>void,item:string)=>set(items.includes(item)?items.filter(v=>v!==item):[...items,item]);
  const validCustom=custom.provider.trim()&&custom.model.trim()&&custom.apiKey.trim();
@@ -95,7 +112,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    </section>
    <footer className={styles.footer}><button type="button" className={styles.secondary} onClick={onClose}>取消</button><button type="button" className={styles.primary} onClick={()=>selected==="custom"?chooseCustom():onSaveModel(info.title,"official")}>保存设置</button></footer>
   </>
-  :isPod?<div className={styles.useLayout}>
+  :isPod?<><div className={styles.savedTemplate}><button className={styles.secondary} type="button" onClick={()=>setShowPreview(v=>!v)}>查看模板</button><small>当前配置仅用于本地演示，真实执行请进入已适配业务流程。</small></div><div className={styles.useLayout}>
    <div className={styles.useSteps}>
     <section className={styles.useStep}><h3>步骤 1 · 图片生成方式</h3><p>选择本次 POD 商品图片的生成方式，可在生成刊登方案前调整。</p><div className={styles.podModes}>{[["AI重构模式","引用技能 · 官方方案 · 自定义指令"],["混合模式","支持固定图片 + AI 生成，灵活组合主图与详情图"]].map(([name,desc])=><button key={name} type="button" aria-pressed={podImageMode===name} onClick={()=>setPodImageMode(name)}><strong>{name}</strong><small>{desc}</small></button>)}</div><p>AI 相关能力按积分计费（实际计费未接入）。</p></section>
     <section className={styles.useStep}><h3>步骤 2 · 是否启用知识库</h3><p>按需选择要引用的知识；未选择时，AI 不读取任何知识库。</p><div className={styles.picks}>{["平台规则","运营方法","合规参考"].map(item=><label key={item}><input type="checkbox" checked={knowledge.includes(item)} onChange={()=>toggle(knowledge,setKnowledge,item)}/>{item}</label>)}</div></section>
@@ -103,8 +120,8 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
     <section className={styles.useStep}><h3>步骤 4 · 贴图素材</h3><p>选择本次贴图素材的生成方式，点击模式卡进入配置。</p><div className={styles.podModes}>{[["AI自动模式","AI自动确定主题、风格、元素与排版"],["图片裂变模式","根据参考图片裂变多套新贴图"],["自定义指令模式","依据创作指令生成个性化贴图"]].map(([name,desc])=><button type="button" key={name} aria-pressed={podPatternMode===name} onClick={()=>setPodPatternMode(name)}><strong>{name}</strong><small>{desc}</small></button>)}</div><label className={styles.imageInstructions}>贴图说明（可选）<textarea aria-label="贴图说明" value={imageInstructions} onChange={e=>setImageInstructions(e.target.value)} rows={2} placeholder="输入贴图主题、风格、构图或参考说明"/></label><label className={styles.podCheck}><input type="checkbox" checked={podTransparent} onChange={e=>setPodTransparent(e.target.checked)}/>生成透明背景</label></section>
     <section className={styles.useStep}><h3>步骤 5 · 生成数量</h3><p>执行时按批次商品数量自动计算。</p><div className={styles.podCount}><span>每个商品生成</span><button aria-label="减少生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.max(1,v-1))}>−</button><strong>{podQuantity}</strong><button aria-label="增加生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.min(20,v+1))}>+</button><span>个</span></div><div className={styles.actionsRow}><button type="button" className={styles.secondary} onClick={()=>setShowPreview(v=>!v)}>预览配置</button><button type="button" className={styles.primary} onClick={saveTemplate}>保存为模板</button></div>{showPreview?<p role="status" className={styles.inlineNotice}>{podImageMode} · {podPatternMode} · {podQuantity} 个 · {podTransparent?"透明 PNG":"普通背景"} · 已选技能 {skills.length} 项 · 已选知识 {knowledge.length} 项</p>:null}</section>
    </div><aside className={styles.useHelp}><h3>POD 刊登说明</h3><p>配置图片、知识库、贴图素材与生成数量，保存为模板后可在「已适配」流程中调用。</p><h4>图片生成</h4><p>AI 重构或混合模式按需选择，固定图片不会被无意替换。</p><h4>贴图素材</h4><p>AI 自动、图片裂变或自定义指令，分别定义素材生成方式。</p><h4>结果去向</h4><p>已适配调用 · 待审核 · 发布</p><p>当前为交互演示，不会真实生成图片、扣除积分或刊登商品。</p></aside>
-  </div>
-  :<>
+  </div></>
+  :<><div className={styles.savedTemplate}><button className={styles.secondary} type="button" onClick={()=>setShowPreview(v=>!v)}>查看模板</button><small>保存后可从已适配流程调用；当前为配置演示。</small></div>
    <div className={styles.useLayout}>
     <div className={styles.useSteps}>
      <section className={styles.useStep}><h3>步骤 1 · 选择技能（可选）</h3><p>技能为可选项，可不选择；只运行实际启用的优化配置。</p><div className={styles.choiceRow}><div><strong>启用执行技能</strong><small>按需选择技能；未选择也可以保存模板。</small></div><span>{skills.length?`已启用 ${skills.length} 项`:"未启用"}</span></div><div className={styles.picks}>{["标题优化","商品描述优化","图片优化"].map(item=><label key={item}><input type="checkbox" checked={skills.includes(item)} onChange={()=>toggle(skills,setSkills,item)}/>{item}</label>)}</div></section>
