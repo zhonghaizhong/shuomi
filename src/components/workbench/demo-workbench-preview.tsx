@@ -117,19 +117,19 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
   const allocatedRenewals=organizationId==="SM-ENT-000001"?Object.values(accountSuite.storeAllocations).reduce((sum,number)=>sum+(Number(number)||0),0):0;
   const consumedRenewals=countConsumedStorePeriods(bindingSummary.all);
   const activeStoreServices=bindingSummary.visible.filter(store=>demoStoreServiceActive(store)).length;
-  const availableRenewals=Math.max(0,resourceTotals.renewalPeriods-allocatedRenewals-consumedRenewals);
+  const availableRenewals=organizationAdmin?Math.max(0,resourceTotals.renewalPeriods-allocatedRenewals-consumedRenewals):Math.max(0,accountSuite.storeAllocations[memberId]||0);
   const sumAllocated=(values:Record<string,number>)=>Object.values(values).reduce((sum,value)=>sum+(Number(value)||0),0);
   const allocatedPoints=sumAllocated(accountSuite.pointAllocations);
   const allocatedData=sumAllocated(accountSuite.dataAllocations);
   const allocatedStorage=sumAllocated(accountSuite.allocations);
-  const availablePoints=Math.max(0,resourceTotals.aiPoints-allocatedPoints);
-  const availableData=Math.max(0,resourceTotals.dataRows-allocatedData);
-  const availableStorage=Math.max(0,resourceTotals.storageGiB-allocatedStorage);
+  const availablePoints=organizationAdmin?Math.max(0,resourceTotals.aiPoints-allocatedPoints):Math.max(0,accountSuite.pointAllocations[memberId]||0);
+  const availableData=organizationAdmin?Math.max(0,resourceTotals.dataRows-allocatedData):Math.max(0,accountSuite.dataAllocations[memberId]||0);
+  const availableStorage=organizationAdmin?Math.max(0,resourceTotals.storageGiB-allocatedStorage):Math.max(0,accountSuite.allocations[memberId]||0);
   const displayPoints=resourceTotals.aiPoints.toLocaleString("zh-CN");
   const displayData=resourceTotals.dataRows.toLocaleString("zh-CN")+" 条";
   const displayStorage=(resourceTotals.storageGiB-plansDemoFacts.storageUsedGiB).toFixed(2)+" GiB";
-  const latestWallet=resourcePurchases.length?resourcePurchases[0].balanceAfter:(organizationId==="SM-ENT-000001"?plansDemoFacts.walletBalanceCny:0);
-  const totalSimulatedSpent=(organizationId==="SM-ENT-000001"?plansDemoFacts.walletSpentCny:0)+resourcePurchases.filter(p=>p.type!=="账户充值").reduce((total,p)=>total+p.amountCny,0);
+  const latestWallet=organizationAdmin?(resourcePurchases.length?resourcePurchases[0].balanceAfter:(organizationId==="SM-ENT-000001"?plansDemoFacts.walletBalanceCny:0)):0;
+  const totalSimulatedSpent=organizationAdmin?((organizationId==="SM-ENT-000001"?plansDemoFacts.walletSpentCny:0)+resourcePurchases.filter(p=>p.type!=="账户充值").reduce((total,p)=>total+p.amountCny,0)):0;
   const referralBalance=availableEarnings(accountSuite);
   const earnedTotal=totalEarnings(accountSuite);
   // The Figma account activity section retains its layout, while displayed records
