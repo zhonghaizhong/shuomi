@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 
 // Shared showcase-only store register. Binding is not platform authorization or a paid subscription.
-export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number};
+export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;archived?:boolean};
 const prefix="shuomi-store-center-demo-ten-v2";
 const eventName="shuomi-demo-store-bindings-changed";
 const mainTenant="SM-ENT-000001";
@@ -59,6 +59,7 @@ export function useDemoStoreBindings(organizationId:string,memberId="admin",isAd
   refresh();
   return ()=>{window.removeEventListener(eventName,onChange);window.removeEventListener("pageshow",refresh);window.removeEventListener("focus",refresh);};
  },[organizationId]);
- const visible=isAdministrator?all:all.filter(item=>item.ownerMemberId===memberId);
- return {all,visible,organizationCount:all.length,memberCount:all.filter(item=>item.ownerMemberId===memberId).length,visibleCount:visible.length,authorizedCount:0,pendingCount:all.length};
+ const current=all.filter(item=>!item.archived);
+ const visible=isAdministrator?current:current.filter(item=>item.ownerMemberId===memberId);
+ return {all,visible,organizationCount:current.length,memberCount:current.filter(item=>item.ownerMemberId===memberId).length,visibleCount:visible.length,authorizedCount:0,pendingCount:current.length};
 }
