@@ -177,6 +177,7 @@ test("role permission editing persists and affects linked role rows",async({page
  await role.getByRole("button",{name:"配置权限"}).click();
  const dialog=suite.getByRole("dialog",{name:"配置角色权限"});
  await dialog.getByRole("checkbox",{name:"数据服务"}).check();
+ await dialog.getByRole("checkbox",{name:"供应市场"}).check();
  await dialog.getByRole("checkbox",{name:"供应市场"}).uncheck();
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
  await expect(role).toContainText("数据服务");
