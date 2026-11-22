@@ -266,7 +266,7 @@ test("plans zero-value balances and free 5 GiB storage agree across all pages",a
  plans=page.locator('[data-commerce-unified="plans"]');
  await expect(plans).toContainText("免费容量");
  await expect(plans).toContainText("5.00 GiB");
- await expect(plans).toContainText("已用容量");
+ await expect(plans).toContainText("实际已用");
  await expect(plans).toContainText("0.00 GiB");
  await expect(plans.getByRole("button",{name:"前往资源与额度"})).toBeVisible();
  await page.goto(root+"/plans/usage");
@@ -383,7 +383,7 @@ test("four simulated service purchases debit the 10k wallet and update entitleme
  await receipt.getByRole("button",{name:"关闭",exact:true}).click();
  await page.goto(root+"/plans/entitlements");
  const rights=page.locator('[data-commerce-unified="plans"]');
- await expect(rights).toContainText("待分配期数");
+ await expect(rights).toContainText("剩余可分配期数");
  await expect(rights).toContainText("2");
  await expect(rights).toContainText("10,000,000");
  await expect(rights).toContainText("50,000");
@@ -391,7 +391,7 @@ test("four simulated service purchases debit the 10k wallet and update entitleme
  await expect(rights).toContainText("扩容容量");
  await expect(rights).toContainText("3.00 GiB");
  await expect(rights).toContainText("8.00 GiB");
- await expect(rights).toContainText("已用容量");
+ await expect(rights).toContainText("实际已用");
  await expect(rights).toContainText("0.00 GiB");
  await page.goto(root+"/account/organization");
  await expect(page.locator('[data-account-suite]')).toContainText("8 GiB");
@@ -413,7 +413,8 @@ test("user-defined conversion rates credit demo AI 10m points and data 50k rows 
  area=page.locator('[data-commerce-unified="plans"]');
  await expect(area).toContainText("10,000,000");
  await expect(area).toContainText("50,000");
- await expect(area).toContainText("模拟已到账");
+ await expect(area).toContainText("剩余可分配");
+ await expect(area).toContainText("已分配：0");
  await page.goto(root+"/plans/orders");
  area=page.locator('[data-commerce-unified="plans"]');
  await expect(area).toContainText("10,000,000 积分");
@@ -428,7 +429,7 @@ test("plans entitlement cards show balanced two-value store renewal and three-ro
  const cards=page.locator('[data-commerce-unified="plans"] [class*="planEntitlementCards"] article');
  await expect(cards).toHaveCount(4);
  await expect(cards.nth(0).getByText("已绑定店铺")).toBeVisible();
- await expect(cards.nth(0).getByText("待分配期数")).toBeVisible();
+ await expect(cards.nth(0).getByText("剩余可分配期数")).toBeVisible();
  await expect(cards.nth(0).locator('[class*="planEntitlementStoreSplit"] strong').first()).toContainText("0");
  await expect(cards.nth(0).locator('[class*="planEntitlementStoreSplit"] strong').last()).toContainText("2");
  await expect(cards.nth(1)).toContainText("10,000,000");
