@@ -29,6 +29,7 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
  const [organizationDraft,setOrganizationDraft]=useState("");
  const [switchError,setSwitchError]=useState("");
  const [profileName,setProfileName]=useState(tenant.username);
+ const [profileEmail,setProfileEmail]=useState(tenant.email);
  const [step,setStep]=useState<"options"|"online"|"message">("options");
  const [message,setMessage]=useState("");
  const [safety,setSafety]=useState<"logout"|"delete"|null>(null);
@@ -44,10 +45,11 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
  },[panel,safety]);
  const toggle=(name:"support"|"account")=>{setPanel(old=>old===name?null:name);setStep("options");setAccountStep("menu");setSafety(null);setSwitchError("");
   try{const profile=JSON.parse(sessionStorage.getItem("shuomi-demo-account-settings-"+tenant.id)||"null");setProfileName(typeof profile?.name==="string"&&profile.name.trim()?profile.name.trim():tenant.username)}catch{setProfileName(tenant.username)}
+  try{const security=JSON.parse(localStorage.getItem("shuomi-demo-security-"+tenant.id)||"null");setProfileEmail(typeof security?.email==="string"&&security.email.trim()?security.email.trim():tenant.email)}catch{setProfileEmail(tenant.email)}
  };
  const member=identity.organizationId===tenant.id?members.find(m=>m.id===identity.memberId):null;
  const displayName=identity.organizationId!==tenant.id?tenant.username:identity.memberId==="admin"?profileName:(member?.name||"无效子账号");
- const displayEmail=identity.organizationId!==tenant.id?tenant.email:(member?.email||tenant.email);
+ const displayEmail=identity.organizationId!==tenant.id?profileEmail:(identity.memberId==="admin"?profileEmail:(member?.email||tenant.email));
  const currentOrganization=organizations.find(o=>o.id===identity.organizationId)?.name||tenant.name;
  const addDemoOrganization=()=>{const name=organizationDraft.trim();if(!onAddOrganization(name)){setSwitchError("请输入新的组织名称（最多 8 个模拟组织，名称不能重复）。");return}setOrganizationDraft("");setSwitchError("")};
  const selectedOrganization=organizations.find(o=>o.id===identity.organizationId);
