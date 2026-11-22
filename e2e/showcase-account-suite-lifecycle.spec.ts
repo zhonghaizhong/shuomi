@@ -118,8 +118,8 @@ test("three colleagues and twenty referred users keep commissions after Figma pr
  await page.goto(base+"/referrals/center");
  await expect(suite.getByRole("region",{name:"我的推广"})).toBeVisible();
  await expect(suite.getByRole("region",{name:"近30天推广转化"})).toContainText("付费");
- await expect(suite.getByRole("region",{name:"最近收益"}).getByRole("row")).toHaveCount(6);
- await expect(suite.getByRole("region",{name:"最近收益"})).toContainText("¥16.80");
+ await expect(suite.getByRole("region",{name:"推广明细"}).getByRole("row")).toHaveCount(11);
+ await expect(suite.getByRole("region",{name:"推广明细"})).toContainText("¥16.80");
  await expect(suite.getByRole("region",{name:"推广中心核心指标"})).toContainText("¥336.00");
  await page.goto(base+"/referrals/earnings");
  const rows=suite.locator("table").first().getByRole("row");
@@ -131,7 +131,7 @@ test("three colleagues and twenty referred users keep commissions after Figma pr
  await page.reload();
  await expect(suite.locator("table").first().getByRole("row")).toHaveCount(11);
 });
-test("Figma promotion center has separate link/code copy, four metrics, funnel and compact recent earnings",async({page})=>{
+test("Figma promotion center preserves sharing and funnel while promoting invitation conversion detail",async({page})=>{
  await page.goto(base+"/referrals/center");
  const suite=page.locator("[data-account-suite]");
  const metrics=suite.getByRole("region",{name:"推广中心核心指标"});
@@ -142,10 +142,48 @@ test("Figma promotion center has separate link/code copy, four metrics, funnel a
  await expect(share).toContainText("推广二维码");
  await expect(share.getByRole("button",{name:"复制"})).toHaveCount(2);
  await expect(suite.getByRole("region",{name:"近30天推广转化"})).toContainText("访问量尚未接入统计");
- const recent=suite.getByRole("region",{name:"最近收益"});
- await expect(recent.getByRole("row")).toHaveCount(6);
- await recent.getByRole("button",{name:"查看全部收益"}).click();
+ const ledger=suite.getByRole("region",{name:"推广明细"});
+ await expect(ledger.getByRole("row")).toHaveCount(11);
+ await expect(ledger).toContainText("共 28 条");
+ await expect(ledger).toContainText("累计邀请");
+ await expect(ledger).toContainText("未消费");
+ await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"未注册"}).click();
+ await expect(ledger).toContainText("共 5 条");
+ await expect(ledger.getByRole("row")).toHaveCount(6);
+ await ledger.getByRole("button",{name:"查看详情"}).first().click();
+ const detail=suite.getByRole("dialog",{name:"推广用户详情"});
+ await expect(detail).toContainText("尚未注册");
+ await expect(detail).toContainText("尚无有效消费记录");
+ await detail.getByRole("button",{name:"关闭推广用户详情"}).click();
+ await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"已消费"}).click();
+ await expect(ledger).toContainText("共 20 条");
+ await ledger.getByRole("navigation",{name:"推广明细分页"}).getByRole("button",{name:"下一页"}).click();
+ await expect(ledger).toContainText("第 2 / 2 页");
+ await ledger.getByRole("button",{name:"查看详情"}).first().click();
+ const paid=suite.getByRole("dialog",{name:"推广用户详情"});
+ await expect(paid).toContainText("¥168.00");
+ await paid.getByRole("button",{name:"查看收益明细"}).click();
  await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("每页 10 条");
+});
+test("promotion invitation status and search filters stay independent of live earnings records",async({page})=>{
+ await page.goto(base+"/referrals/center");
+ const suite=page.locator("[data-account-suite]");
+ const ledger=suite.getByRole("region",{name:"推广明细"});
+ await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"已注册",exact:true}).click();
+ await expect(ledger).toContainText("共 2 条");
+ await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"已验证"}).click();
+ await expect(ledger).toContainText("共 1 条");
+ await ledger.getByRole("group",{name:"邀请状态筛选"}).getByRole("button",{name:"全部"}).click();
+ await ledger.getByRole("textbox",{name:"搜索推广邀请"}).fill("SIM-REF-USER-20");
+ await expect(ledger).toContainText("共 1 条");
+ await expect(ledger.getByRole("row")).toHaveCount(2);
+ await ledger.getByRole("textbox",{name:"搜索推广邀请"}).fill("NO-SUCH-INVITE");
+ await expect(ledger).toContainText("共 0 条");
+ await expect(ledger).toContainText("当前条件下没有邀请记录");
+ await page.reload();
+ await expect(suite.getByRole("region",{name:"推广明细"})).toContainText("共 28 条");
+ await page.goto(base+"/referrals/earnings");
+ await expect(suite).toContainText("¥336.00");
 });
 test("promotion rules match six Figma sections without presenting demo commissions as live policy",async({page})=>{
  await page.goto(base+"/referrals/rules");
