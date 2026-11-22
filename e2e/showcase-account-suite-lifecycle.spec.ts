@@ -273,7 +273,7 @@ test("per member storage allocation is bounded by enterprise capacity and logged
  await expect(suite).toContainText("存储上限：2.5 GiB");
 });
 test("partial withdrawals retain remaining earnings and save independent withdrawal records",async({page})=>{
- await page.goto(base+"/referrals/center");
+ await page.goto(base+"/referrals/earnings");
  const suite=page.locator("[data-account-suite]");
  await suite.getByRole("button",{name:"模拟一笔推广成交并结算"}).click();
  let dialog=suite.getByRole("dialog",{name:"模拟推广收益"});
