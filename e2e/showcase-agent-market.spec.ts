@@ -217,3 +217,35 @@ test("POD image, material and language subdialogs match Figma and preserve confi
  await page.getByRole("button",{name:"进入使用"}).last().click();
  await expect(page.getByRole("dialog",{name:"POD刊登智能体"})).toContainText("自定义指令已填写");
 });
+
+test("POD hybrid editing includes Figma image source, reorder, multi-select and restore dialogs",async({page})=>{
+ await page.goto(base+"/mine");
+ await page.getByRole("button",{name:"进入使用"}).last().click();
+ const pod=page.getByRole("dialog",{name:"POD刊登智能体"});
+ await pod.getByRole("button",{name:/混合模式/}).click();
+ const hybrid=page.getByRole("dialog",{name:"混合模式设置"});
+ await hybrid.getByRole("button",{name:"添加第 1 张图片"}).click();
+ await hybrid.getByRole("button",{name:"官方图片",exact:true}).click();
+ await hybrid.getByRole("button",{name:"选择官方图片"}).click();
+ await expect(hybrid).toContainText("添加官方图片");
+ await hybrid.getByRole("button",{name:/01 · 第一张/}).click();
+ await hybrid.getByRole("button",{name:"添加第 2 张图片"}).click();
+ await hybrid.getByRole("button",{name:"AI 渲染图片",exact:true}).click();
+ await hybrid.getByRole("button",{name:"选择 AI 渲染图片"}).click();
+ await hybrid.getByRole("checkbox",{name:/核心购买理由/}).check();
+ await hybrid.getByRole("button",{name:"确认选择"}).click();
+ await hybrid.getByRole("button",{name:"智能排序"}).click();
+ await hybrid.getByRole("button",{name:/AI图优先/}).click();
+ await hybrid.getByRole("button",{name:"调整第 1 张图片"}).click();
+ await expect(hybrid).toContainText("图片快捷调整");
+ await hybrid.getByRole("button",{name:"向右移动一位"}).click();
+ await hybrid.getByRole("button",{name:"多选调整"}).click();
+ await expect(hybrid).toContainText("多选调整");
+ await hybrid.getByRole("button",{name:"返回"}).click();
+ await hybrid.getByRole("button",{name:"恢复上次顺序"}).click();
+ await expect(hybrid).toContainText("恢复上次顺序？");
+ await hybrid.getByRole("button",{name:"确认选择"}).click();
+ await hybrid.getByRole("button",{name:"保存组合"}).click();
+ await expect(hybrid).toHaveCount(0);
+ await expect(pod).toBeVisible();
+});
