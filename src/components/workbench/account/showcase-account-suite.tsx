@@ -100,13 +100,16 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
     for(let i=0;i<periods;i++)updated=startDemoStoreService(updated);
     return updated;
    });
+   if(!saveDemoStoreBindings(organizationId,next)){setStoreDialogError("店铺服务保存失败，续费期数未扣除。");return;}
    if(renewableOwner!=="admin"){
     const allocated=state.storeAllocations[renewableOwner]||0;
     if(!primary.commit({...primary.state,storeAllocations:{...primary.state.storeAllocations,[renewableOwner]:allocated-periods}})){
-     setStoreDialogError("成员续费额度扣减失败，店铺没有续费。");return;
+     if(!saveDemoStoreBindings(organizationId,boundStores.all)){
+      setStoreDialogError("成员额度扣减失败，店铺回滚也失败，请停止操作并检查记录。");return;
+     }
+     setStoreDialogError("成员额度扣减失败，店铺续费已回滚，期数未扣除。");return;
     }
    }
-   if(!saveDemoStoreBindings(organizationId,next)){setStoreDialogError("店铺服务保存失败，请核对当前记录。");return;}
    setNotice(renewableStore.name+" 已续费 "+periods+" 期，每期30天。");
    setRenewStoreId(null);setStoreDialogError("");
   };
