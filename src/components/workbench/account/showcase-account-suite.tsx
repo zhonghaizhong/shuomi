@@ -42,22 +42,21 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   withdrawals:next.withdrawals,payoutAccount:next.payoutAccount,referralCode:next.referralCode
  }):primary.commit(next);
  const suffix=pathname.slice(root.length)||"/organization";const [title,desc]=screens[suffix]||screens["/organization"];
- const [modal,setModal]=useState<Modal>(null);const [permissions,setPermissions]=useState<string[]>([]);const [name,setName]=useState("");const [email,setEmail]=useState("");const [role,setRole]=useState("子账号");const [selected,setSelected]=useState("");const [amount,setAmount]=useState("100");const [account,setAccount]=useState("");const [query,setQuery]=useState("");const [applied,setApplied]=useState("");const [notice,setNotice]=useState("");const [error,setError]=useState("");const [customerPage,setCustomerPage]=useState(1);const [earningsPage,setEarningsPage]=useState(1);const [promotionStatus,setPromotionStatus]=useState("all");const [promotionSearch,setPromotionSearch]=useState("");const [promotionPage,setPromotionPage]=useState(1);const [promotionDetail,setPromotionDetail]=useState<string|null>(null);const [resourceSearch,setResourceSearch]=useState("");const [resourceStatus,setResourceStatus]=useState("正常");const [resourcePageSize,setResourcePageSize]=useState(10);const [resourcePage,setResourcePage]=useState(1);
+ const [modal,setModal]=useState<Modal>(null);const [permissions,setPermissions]=useState<string[]>([]);const [name,setName]=useState("");const [email,setEmail]=useState("");const [role,setRole]=useState("子账号");const [selected,setSelected]=useState("");const [amount,setAmount]=useState("100");const [account,setAccount]=useState("");const [query,setQuery]=useState("");const [applied,setApplied]=useState("");const [notice,setNotice]=useState("");const [error,setError]=useState("");const [customerPage,setCustomerPage]=useState(1);const [earningsPage,setEarningsPage]=useState(1);const [promotionStatus,setPromotionStatus]=useState("all");const [promotionSearch,setPromotionSearch]=useState("");const [promotionPage,setPromotionPage]=useState(1);const [promotionDetail,setPromotionDetail]=useState<string|null>(null);const [memberSearch,setMemberSearch]=useState("");const [memberStatus,setMemberStatus]=useState("all");const [memberPageSize,setMemberPageSize]=useState(10);const [memberPage,setMemberPage]=useState(1);
  const enterprise=suffix.startsWith("/organization"),overview=suffix==="/organization",referral=suffix.startsWith("/referrals");
  const sectionMenu=enterprise?menu.slice(0,5):menu.slice(5);
  useEffect(()=>{if(!promotionDetail)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setPromotionDetail(null)};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[promotionDetail]);
  useEffect(()=>{if(!modal)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setModal(null)};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[modal]);
  const currentMember=state.members.find(x=>x.id===selected);
  const activeMembers=state.members.filter(x=>x.status==="正常");
- const resourceMembers=state.members.filter(m=>{
-  const search=resourceSearch.trim().toLocaleLowerCase();
-  return (resourceStatus==="all"||m.status===resourceStatus)
-   &&(!search||m.name.toLocaleLowerCase().includes(search));
+ const filteredMembers=state.members.filter(m=>{
+  const search=memberSearch.trim().toLocaleLowerCase();
+  return (memberStatus==="all"||m.status===memberStatus)
+   &&(!search||[m.name,m.email].some(value=>value.toLocaleLowerCase().includes(search)));
  });
- const resourcePageCount=Math.max(1,Math.ceil(resourceMembers.length/resourcePageSize));
- const currentResourcePage=Math.min(resourcePage,resourcePageCount);
- const visibleResourceMembers=resourceMembers.slice((currentResourcePage-1)*resourcePageSize,currentResourcePage*resourcePageSize);
-
+ const memberPageCount=Math.max(1,Math.ceil(filteredMembers.length/memberPageSize));
+ const currentMemberPage=Math.min(memberPage,memberPageCount);
+ const pagedMembers=filteredMembers.slice((currentMemberPage-1)*memberPageSize,currentMemberPage*memberPageSize);
  const balance=availableEarnings(state);
  const usedStorage=Object.values(state.allocations).reduce((sum,n)=>sum+(Number(n)||0),0);
  const storageRemaining=Math.max(0,tenant.storageGiB-usedStorage);
@@ -85,7 +84,6 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
  let remaining=cents;const after=state.referrals.flatMap(item=>{if(item.status!=="已结算"||remaining<=0)return [item];const itemCents=Math.round(item.amount*100),taken=Math.min(itemCents,remaining);remaining-=taken;if(taken===itemCents)return [{...item,status:"已提现" as const}];return [{...item,id:crypto.randomUUID(),amount:taken/100,status:"已提现" as const},{...item,amount:(itemCents-taken)/100,status:"已结算" as const}]});
  if(remaining!==0){setError("可提现余额核对失败，未生成提现记录。");return}const n=cents/100;const item={id:crypto.randomUUID(),at:Date.now(),amount:n,account:state.payoutAccount,status:"模拟审核通过" as const};change(referralAudit({...state,referrals:after,withdrawals:[item,...state.withdrawals]},"提现管理","模拟提现并审核通过："+money(n)),"模拟提现申请已审核通过，剩余收益保留；未发起实际转账。")
  };
- const viewMember=state.members.filter(m=>(m.name+" "+m.email+" "+m.role+" "+m.status).includes(applied));
  const viewAudit=state.audit.filter(a=>(a.actor+" "+a.message+" "+a.category).includes(applied));
  const nav=(path:string)=>{close();setPromotionDetail(null);setNotice("");setQuery("");setApplied("");router.push(goPath(path))};
  const referralPageSize=suffix==="/referrals"?5:10;
@@ -137,19 +135,21 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
        {label:"企业存储",value:tenant.storageGiB+" GiB",hint:"免费 5 GiB + 模拟扩容 3 GiB · 已分配 "+usedStorage.toFixed(1)+" GiB",Icon:HardDrive,tone:"storage"}
       ] as const).map(({label,value,hint,Icon,tone})=><article key={label} data-tone={tone}><div className={s.resourceIcon}><Icon size={21} strokeWidth={1.9} aria-hidden="true"/></div><span className={s.resourceLabel}>{label}</span><strong>{value}</strong><small>{hint}</small>{tone==="storage"&&<div className={s.storageTrack} role="progressbar" aria-label="已分配企业存储" aria-valuemin={0} aria-valuemax={tenant.storageGiB} aria-valuenow={Math.min(tenant.storageGiB,usedStorage)}><div style={{width:Math.max(0,Math.min(100,tenant.storageGiB?usedStorage/tenant.storageGiB*100:0))+"%"}}/></div>}</article>)}
     </div></section>
-    <section className={`${s.panel} ${s.resourcePanel}`} aria-label="成员资源分配"><header><h2>成员资源分配</h2><p>企业存储为共享容量，可按成员设置上限；未授权的店铺及未充值的额度不预置分配。</p></header>
-    <div className={s.resourceFilters}>
-     <label className={s.resourceSearch}>搜索成员<input type="search" aria-label="搜索资源成员" placeholder="输入成员姓名" value={resourceSearch} onChange={e=>{setResourceSearch(e.target.value);setResourcePage(1)}}/></label>
-     <label className={s.resourceStatus}>状态<select aria-label="筛选资源状态" value={resourceStatus} onChange={e=>{setResourceStatus(e.target.value);setResourcePage(1)}}><option value="正常">正常</option><option value="已停用">已停用</option><option value="all">全部状态</option></select></label>
-    </div>
-    <div className={`${s.tableWrap} ${s.resourceTable}`}><table><thead><tr><th>成员 / 角色</th><th>已绑定店铺</th><th>AI 积分余额</th><th>数据额度（条）</th><th>存储上限（GiB）</th></tr></thead><tbody>{visibleResourceMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong><small className={s.memberRole}>{m.role}{m.status==="已停用"?" · 已停用":""}</small></td><td>0</td><td>0</td><td>0</td><td>{(state.allocations[m.id]||0).toFixed(1)}</td></tr>)}</tbody></table>{!resourceMembers.length&&<div className={s.empty}>{state.members.length===0?"暂无企业成员，邀请后可分配资源。":"没有符合条件的成员"}</div>}</div>
-    <div className={s.resourcePagination}>
-     <div className={s.resourcePageSize}><label htmlFor="resource-member-page-size">每页显示</label><select id="resource-member-page-size" value={resourcePageSize} onChange={e=>{setResourcePageSize(Number(e.target.value));setResourcePage(1)}}><option value={10}>10 条</option><option value={20}>20 条</option><option value={50}>50 条</option></select><span>共 {resourceMembers.length} 位成员</span></div>
-     <div className={s.resourcePageActions}><span aria-live="polite">第 {currentResourcePage} / {resourcePageCount} 页</span><button type="button" aria-label="资源表上一页" disabled={currentResourcePage<=1} onClick={()=>setResourcePage(p=>Math.max(1,p-1))}>上一页</button><button type="button" aria-label="资源表下一页" disabled={currentResourcePage>=resourcePageCount} onClick={()=>setResourcePage(p=>Math.min(resourcePageCount,p+1))}>下一页</button></div>
-    </div></section>
+
   </>}
-  {suffix==="/organization/members"&&<>{tiles([["启用成员",String(activeMembers.length),"包含管理员"],["管理员","1","拥有全部权限"],["已停用成员",String(state.members.length-activeMembers.length),"可按需重新启用"],["模拟审核","自动通过","添加后立即生效"]])}
-   <section className={s.panel}><header><h2>成员列表</h2><p>邀请成员后即按模拟后台审核通过加入。</p></header><div className={s.toolbar}><input aria-label="搜索成员" placeholder="搜索成员、邮箱或角色" value={query} onChange={e=>setQuery(e.target.value)}/><button onClick={()=>{setQuery("");setApplied("")}}>重置</button><button className={s.primary} onClick={()=>setApplied(query.trim())}>确定</button></div><div className={s.tableWrap}><table><thead><tr>{["成员","登录邮箱","角色","状态","加入时间","操作"].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{viewMember.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.email}</td><td>{m.role}</td><td><span className={s.approved}>{m.status}</span></td><td>{timestamp(m.joined)}</td><td><div className={s.rowActions}><button onClick={()=>open("member",m.id)}>查看{m.id==="admin"?"":" / 调整"}</button>{m.id!=="admin"&&<button onClick={()=>toggleMember(m)}>{m.status==="正常"?"停用":"启用"}</button>}</div></td></tr>)}</tbody></table></div></section>
+  {suffix==="/organization/members"&&<>{tiles([["启用成员",String(activeMembers.length),"包含管理员"],["管理员",String(state.members.filter(m=>m.role==="管理员"&&m.status==="正常").length),"拥有全部权限"],["已停用成员",String(state.members.length-activeMembers.length),"可按需重新启用"],["模拟审核","自动通过","添加后立即生效"]])}
+   <section className={`${s.panel} ${s.memberManagement}`} aria-label="成员列表">
+    <header><h2>成员列表</h2><p>管理当前企业成员、角色及状态，支持搜索与分页。</p></header>
+    <div className={s.memberFilters}>
+     <label>搜索成员<input type="search" aria-label="搜索成员" placeholder="输入姓名或邮箱" value={memberSearch} onChange={e=>{setMemberSearch(e.target.value);setMemberPage(1)}}/></label>
+     <label>状态<select aria-label="筛选成员状态" value={memberStatus} onChange={e=>{setMemberStatus(e.target.value);setMemberPage(1)}}><option value="all">全部状态</option><option value="正常">正常</option><option value="已停用">已停用</option></select></label>
+    </div>
+    <div className={`${s.tableWrap} ${s.memberTable}`}><table><thead><tr>{["成员","登录邮箱","角色","状态","加入时间","操作"].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{pagedMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.email}</td><td>{m.role}</td><td><span className={m.status==="正常"?s.approved:s.memberInactive}>{m.status}</span></td><td>{timestamp(m.joined)}</td><td><div className={s.rowActions}><button onClick={()=>open("member",m.id)}>查看{m.id==="admin"?"":" / 调整"}</button>{m.id!=="admin"&&<button onClick={()=>toggleMember(m)}>{m.status==="正常"?"停用":"启用"}</button>}</div></td></tr>)}</tbody></table>{!filteredMembers.length&&<div className={s.empty}>没有符合条件的成员。</div>}</div>
+    <div className={s.memberPagination}>
+     <div><label htmlFor="members-page-size">每页显示</label><select id="members-page-size" value={memberPageSize} onChange={e=>{setMemberPageSize(Number(e.target.value));setMemberPage(1)}}><option value={10}>10 条</option><option value={20}>20 条</option><option value={50}>50 条</option></select><span>共 {filteredMembers.length} 位成员</span></div>
+     <div><span aria-live="polite">第 {currentMemberPage} / {memberPageCount} 页</span><button type="button" aria-label="成员上一页" disabled={currentMemberPage<=1} onClick={()=>setMemberPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" aria-label="成员下一页" disabled={currentMemberPage>=memberPageCount} onClick={()=>setMemberPage(p=>Math.min(memberPageCount,p+1))}>下一页</button></div>
+    </div>
+   </section>
   </>}
   {suffix==="/organization/roles"&&<>{tiles([["系统角色","1","管理员不可删除"],["业务角色",String(state.roles.length-1),"可继续新建"],["企业成员",String(activeMembers.length),"角色生效人数"],["待审核事项","0","模拟审核全部通过"]])}
    <section className={s.panel}><header><h2>角色权限</h2><p>新增角色可以在邀请成员及调整成员时直接使用。</p></header><div className={s.tableWrap}><table><thead><tr><th>角色名称</th><th>权限范围</th><th>关联成员</th><th>性质</th><th>操作</th></tr></thead><tbody>{state.roles.map(r=><tr key={r}><td><strong>{r}</strong></td><td>{r==="管理员"?"全部权限":permissionSummary(state.rolePermissions[r]||[])}</td><td>{state.members.filter(m=>m.role===r&&m.status==="正常").length} 人</td><td>{r==="管理员"?"系统角色":"业务角色"}</td><td><button disabled={r==="管理员"} onClick={()=>open("permissions",r)}>配置权限</button></td></tr>)}</tbody></table></div><div className={s.quicklinks}><button onClick={()=>nav("/organization/members")}>管理成员角色</button></div></section>
