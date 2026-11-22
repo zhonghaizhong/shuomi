@@ -3,6 +3,7 @@ import {useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
 import {Store, Sparkles, Database, HardDrive} from "lucide-react";
 import {showcaseTenant as tenant} from "./showcase-tenant";
+import {useDemoPurchases} from "../showcase-purchases";
 import {useShowcaseSuite,useMemberReferralPortfolio,addAudit,totalEarnings,availableEarnings,permissionTree,permissionKey,permissionSummary,normalizeRolePermissions,toggleRolePermission,togglePermissionGroup,descendants,type PermissionMode,type Member,type SuiteState} from "./showcase-account-state";
 import type {ConsoleNavNode} from "@/lib/workbench/console-navigation";
 import s from "./showcase-account-suite.module.css";
@@ -34,6 +35,7 @@ function PermissionBranch({node,depth,grants,onChange}:{node:ConsoleNavNode;dept
 export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=tenant.id,organizationName=tenant.name}:{pathname:string;memberId?:string;organizationId?:string;organizationName?:string}){
  const router=useRouter();
  const primary=useShowcaseSuite();
+ const {totals:enterpriseTotals}=useDemoPurchases();
  const scoped=useMemberReferralPortfolio(memberId,organizationId);
  const colleagueReferral=pathname.includes("/referrals")&&(memberId!=="admin"||organizationId!==tenant.id);
  const state:SuiteState=colleagueReferral?{...primary.state,...scoped.portfolio}:primary.state;
@@ -59,14 +61,14 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
  const pagedMembers=filteredMembers.slice((currentMemberPage-1)*memberPageSize,currentMemberPage*memberPageSize);
  const balance=availableEarnings(state);
  const usedStorage=Object.values(state.allocations).reduce((sum,n)=>sum+(Number(n)||0),0);
- const storageRemaining=Math.max(0,tenant.storageGiB-usedStorage);
-  const storeQuota=tenant.renewals;
+ const storageRemaining=Math.max(0,enterpriseTotals.storageGiB-usedStorage);
+  const storeQuota=enterpriseTotals.renewalPeriods;
   const usedStores=Object.values(state.storeAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
   const usedPoints=Object.values(state.pointAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
   const usedData=Object.values(state.dataAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
   const storeRemaining=Math.max(0,storeQuota-usedStores);
-  const pointRemaining=Math.max(0,tenant.points-usedPoints);
-  const dataRemaining=Math.max(0,tenant.data-usedData);
+  const pointRemaining=Math.max(0,enterpriseTotals.aiPoints-usedPoints);
+  const dataRemaining=Math.max(0,enterpriseTotals.dataRows-usedData);
  const referralAudit=(next:SuiteState,category:string,message:string):SuiteState=>colleagueReferral?{...next,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:(primary.state.members.find(m=>m.id===memberId)?.name||memberId)+" · "+organizationName,category,message},...next.audit]}:addAudit(next,category,message);
  const change=(next:SuiteState,message:string)=>{if(commit(next)){setNotice(message);setError("");setModal(null);return true}setError("当前浏览器存储不可用，操作未保存。");return false};
  const close=()=>{setModal(null);setError("");setSelected("");setName("");setEmail("");setRole("子账号");setAmount("100");setStoreAmount("0");setPointAmount("0");setDataAmount("0");setAccount("");setPermissions([])};
@@ -153,10 +155,10 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
     <section className={s.panel} aria-label="企业资源"><header><h2>企业资源</h2><p>展示当前企业可用资源与共享容量情况</p></header><div className={s.resourceSummary}>
       {([
        {label:"店铺",value:String(tenant.stores)+" 家",hint:tenant.stores?"当前已绑定店铺":"未绑定店铺",Icon:Store,tone:"store"},
-       {label:"AI 积分",value:tenant.points.toLocaleString("zh-CN"),hint:tenant.points?"可用积分余额":"当前无可用积分",Icon:Sparkles,tone:"points"},
-       {label:"数据额度",value:tenant.data.toLocaleString("zh-CN")+" 条",hint:tenant.data?"剩余可用数据条数":"暂无剩余额度",Icon:Database,tone:"data"},
-       {label:"企业存储",value:tenant.storageGiB+" GiB",hint:"免费 5 GiB + 模拟扩容 3 GiB · 已分配 "+usedStorage.toFixed(1)+" GiB",Icon:HardDrive,tone:"storage"}
-      ] as const).map(({label,value,hint,Icon,tone})=><article key={label} data-tone={tone}><div className={s.resourceIcon}><Icon size={21} strokeWidth={1.9} aria-hidden="true"/></div><span className={s.resourceLabel}>{label}</span><strong>{value}</strong><small>{hint}</small>{tone==="storage"&&<div className={s.storageTrack} role="progressbar" aria-label="已分配企业存储" aria-valuemin={0} aria-valuemax={tenant.storageGiB} aria-valuenow={Math.min(tenant.storageGiB,usedStorage)}><div style={{width:Math.max(0,Math.min(100,tenant.storageGiB?usedStorage/tenant.storageGiB*100:0))+"%"}}/></div>}</article>)}
+       {label:"AI 积分",value:enterpriseTotals.aiPoints.toLocaleString("zh-CN"),hint:enterpriseTotals.aiPoints?"可用积分余额":"当前无可用积分",Icon:Sparkles,tone:"points"},
+       {label:"数据额度",value:enterpriseTotals.dataRows.toLocaleString("zh-CN")+" 条",hint:enterpriseTotals.dataRows?"剩余可用数据条数":"暂无剩余额度",Icon:Database,tone:"data"},
+       {label:"企业存储",value:enterpriseTotals.storageGiB+" GiB",hint: "免费 5 GiB + 扩容 "+(enterpriseTotals.storageGiB-5).toFixed(1)+" GiB · 已分配 "+usedStorage.toFixed(1)+" GiB",Icon:HardDrive,tone:"storage"}
+      ] as const).map(({label,value,hint,Icon,tone})=><article key={label} data-tone={tone}><div className={s.resourceIcon}><Icon size={21} strokeWidth={1.9} aria-hidden="true"/></div><span className={s.resourceLabel}>{label}</span><strong>{value}</strong><small>{hint}</small>{tone==="storage"&&<div className={s.storageTrack} role="progressbar" aria-label="已分配企业存储" aria-valuemin={0} aria-valuemax={enterpriseTotals.storageGiB} aria-valuenow={Math.min(enterpriseTotals.storageGiB,usedStorage)}><div style={{width:Math.max(0,Math.min(100,enterpriseTotals.storageGiB?usedStorage/enterpriseTotals.storageGiB*100:0))+"%"}}/></div>}</article>)}
     </div></section>
 
   </>}
@@ -177,7 +179,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   {suffix==="/organization/roles"&&<>{tiles([["系统角色","1","管理员不可删除"],["业务角色",String(state.roles.length-1),"可继续新建"],["企业成员",String(activeMembers.length),"角色生效人数"],["待审核事项","0","模拟审核全部通过"]])}
    <section className={s.panel}><header><h2>角色权限</h2><p>新增角色可以在邀请成员及调整成员时直接使用。</p></header><div className={s.tableWrap}><table><thead><tr><th>角色名称</th><th>权限范围</th><th>关联成员</th><th>性质</th><th>操作</th></tr></thead><tbody>{state.roles.map(r=><tr key={r}><td><strong>{r}</strong></td><td>{r==="管理员"?"全部权限":permissionSummary(state.rolePermissions[r]||[])}</td><td>{state.members.filter(m=>m.role===r&&m.status==="正常").length} 人</td><td>{r==="管理员"?"系统角色":"业务角色"}</td><td><button disabled={r==="管理员"} onClick={()=>open("permissions",r)}>配置权限</button></td></tr>)}</tbody></table></div><div className={s.quicklinks}><button onClick={()=>nav("/organization/members")}>管理成员角色</button></div></section>
   </>}
-  {suffix==="/organization/resources"&&<>{tiles([["店铺名额",String(storeQuota),"已分配 "+usedStores+" · 剩余 "+storeRemaining],["AI 积分",tenant.points.toLocaleString("zh-CN"),"已分配 "+usedPoints.toLocaleString("zh-CN")+" · 剩余 "+pointRemaining.toLocaleString("zh-CN")],["数据额度",tenant.data.toLocaleString("zh-CN"),"已分配 "+usedData.toLocaleString("zh-CN")+" · 剩余 "+dataRemaining.toLocaleString("zh-CN")],["共享存储",tenant.storageGiB+" GiB","免费 5 GiB + 扩容 3 GiB · 已分配 "+usedStorage.toFixed(1)+" GiB · 剩余 "+storageRemaining.toFixed(1)+" GiB"]])}
+  {suffix==="/organization/resources"&&<>{tiles([["店铺名额",String(storeQuota),"已分配 "+usedStores+" · 剩余 "+storeRemaining],["AI 积分",enterpriseTotals.aiPoints.toLocaleString("zh-CN"),"已分配 "+usedPoints.toLocaleString("zh-CN")+" · 剩余 "+pointRemaining.toLocaleString("zh-CN")],["数据额度",enterpriseTotals.dataRows.toLocaleString("zh-CN"),"已分配 "+usedData.toLocaleString("zh-CN")+" · 剩余 "+dataRemaining.toLocaleString("zh-CN")],["共享存储",enterpriseTotals.storageGiB+" GiB", "免费 5 GiB + 扩容 "+(enterpriseTotals.storageGiB-5).toFixed(1)+" GiB · 已分配 "+usedStorage.toFixed(1)+" GiB · 剩余 "+storageRemaining.toFixed(1)+" GiB"]])}
    <section className={s.panel}><header><h2>成员资源分配</h2><p>统一为成员分配店铺名额、AI 积分、数据条数和存储上限。各项额度独立核算，不能超过企业剩余额度。</p></header><div className={s.tableWrap}><table><thead><tr><th>成员</th><th>角色</th><th>店铺</th><th>AI 积分</th><th>数据条数</th><th>存储上限</th><th>操作</th></tr></thead><tbody>{activeMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.role}</td><td>{state.storeAllocations[m.id]||0}</td><td>{(state.pointAllocations[m.id]||0).toLocaleString("zh-CN")}</td><td>{(state.dataAllocations[m.id]||0).toLocaleString("zh-CN")}</td><td>{(state.allocations[m.id]||0).toFixed(1)} GiB</td><td><button disabled={m.id==="admin"} onClick={()=>open("storage",m.id)}>分配资源</button></td></tr>)}</tbody></table></div><div className={s.quicklinks}><button onClick={()=>router.push("/workbench/plans/top-up?preview=1")}>前往充值中心</button><button onClick={()=>router.push("/workbench/store-center?preview=1")}>前往店铺中心</button></div></section>
   </>}
   {suffix==="/organization/audit"&&<>{tiles([["操作记录",String(state.audit.length),"本企业模拟事件"],["成员变更",String(state.audit.filter(x=>x.category==="成员与权限").length),"成员邀请、状态、角色"],["角色配置",String(state.audit.filter(x=>x.category==="角色权限").length),"企业角色调整"],["推广与收益",String(state.audit.filter(x=>x.category.includes("推广")||x.category.includes("提现")).length),"模拟收益与提现"]])}
@@ -304,7 +306,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
        <label>店铺名额 <small>可设置上限：{storeRemaining+(state.storeAllocations[selected]||0)} 个</small><input type="number" aria-label="分配店铺名额" min="0" max={storeRemaining+(state.storeAllocations[selected]||0)} step="1" value={storeAmount} onChange={e=>setStoreAmount(e.target.value)}/></label>
        <label>AI 积分 <small>可设置上限：{(pointRemaining+(state.pointAllocations[selected]||0)).toLocaleString("zh-CN")}</small><input type="number" aria-label="分配AI积分" min="0" max={pointRemaining+(state.pointAllocations[selected]||0)} step="1" value={pointAmount} onChange={e=>setPointAmount(e.target.value)}/></label>
        <label>数据条数 <small>可设置上限：{(dataRemaining+(state.dataAllocations[selected]||0)).toLocaleString("zh-CN")} 条</small><input type="number" aria-label="分配数据条数" min="0" max={dataRemaining+(state.dataAllocations[selected]||0)} step="1" value={dataAmount} onChange={e=>setDataAmount(e.target.value)}/></label>
-       <label>存储上限（GiB）<small>可设置上限：{(storageRemaining+(state.allocations[selected]||0)).toFixed(1)} GiB</small><input type="number" aria-label="成员存储上限" min="0" max={tenant.storageGiB} step="0.1" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
+       <label>存储上限（GiB）<small>可设置上限：{(storageRemaining+(state.allocations[selected]||0)).toFixed(1)} GiB</small><input type="number" aria-label="成员存储上限" min="0" max={enterpriseTotals.storageGiB} step="0.1" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
       </div>
      </>}
     {modal==="role"&&<label>角色名称<input aria-label="角色名称" value={name} onChange={e=>setName(e.target.value)} placeholder="例如：运营专员"/></label>}
