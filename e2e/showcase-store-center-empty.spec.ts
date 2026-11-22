@@ -312,8 +312,8 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  await expect(area.getByText("统一管理店铺连接、授权、网络环境和数据状态。")).toBeVisible();
 
  const filter=area.getByRole("form",{name:"店铺筛选"});
- const criteria=filter.getByLabel("条件筛选");
- const actions=filter.getByLabel("搜索与操作");
+ const criteria=filter.locator('[aria-label="条件筛选"]');
+ const actions=filter.locator('[aria-label="搜索与操作"]');
  for(const field of ["平台筛选","站点筛选","店铺类型筛选","店铺分组筛选","店铺状态筛选"])await expect(criteria.getByLabel(field)).toBeVisible();
  await expect(actions.getByLabel("搜索店铺")).toBeVisible();
  await expect(actions.getByRole("button",{name:"重置"})).toBeVisible();
