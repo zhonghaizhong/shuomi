@@ -104,7 +104,7 @@ test("synthetic referral earnings are attributed to store consumption and manual
  await expect(suite).toContainText("¥120.00");
  await page.goto(base+"/referrals/withdrawals");
  await suite.getByRole("button",{name:"配置账户"}).click();
- const account=suite.getByRole("dialog",{name:"配置账户"});
+ const account=suite.getByRole("dialog",{name:"配置收款账户"});
  await configureDemoPayout(account,"TEST-PAYOUT-001");
  await suite.getByRole("button",{name:"申请提现"}).click();
  const withdrawal=suite.getByRole("dialog",{name:"申请提现"});
@@ -238,7 +238,7 @@ test("30 attributed visitors 25 registered 20 paid stay consistent across referr
  await page.goto(base+"/referrals/withdrawals");
  await expect(suite.getByRole("button",{name:"申请提现"})).toBeEnabled();
  await suite.getByRole("button",{name:"配置账户"}).click();
- const payout=suite.getByRole("dialog",{name:"配置账户"});
+ const payout=suite.getByRole("dialog",{name:"配置收款账户"});
  await configureDemoPayout(payout,"TEST-30-25-20");
  await suite.getByRole("button",{name:"申请提现"}).click();
  const withdrawal=suite.getByRole("dialog",{name:"申请提现"});
@@ -413,7 +413,7 @@ test("partial withdrawals retain remaining earnings and save independent withdra
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
  await page.goto(base+"/referrals/withdrawals");
  await suite.getByRole("button",{name:"配置账户"}).click();
- dialog=suite.getByRole("dialog",{name:"配置账户"});
+ dialog=suite.getByRole("dialog",{name:"配置收款账户"});
  await configureDemoPayout(dialog,"TEST-ACCOUNT");
  await suite.getByRole("button",{name:"申请提现"}).click();
  dialog=suite.getByRole("dialog",{name:"申请提现"});
