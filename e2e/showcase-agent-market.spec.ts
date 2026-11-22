@@ -118,8 +118,13 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await dialog.getByRole("button",{name:"开启"}).click();
  await dialog.getByRole("button",{name:"保存为模板"}).click();
  await expect(dialog.getByRole("status")).toContainText("请先填写图片优化设置");
- await dialog.getByRole("textbox",{name:"图片优化指令"}).fill("只优化主图，不修改商品规格");
  await dialog.getByRole("button",{name:"设置图片优化"}).click();
+ const imageSettings=page.getByRole("dialog",{name:"AI图片优化设置"});
+ await expect(imageSettings).toContainText("共用视觉素材");
+ await imageSettings.getByRole("button",{name:"自定义指令"}).click();
+ await imageSettings.getByRole("textbox",{name:"图片任务指令 1"}).fill("只优化主图，不修改商品规格");
+ await imageSettings.getByRole("button",{name:"确认选择"}).click();
+ await expect(imageSettings).toHaveCount(0);
  await dialog.getByRole("button",{name:"预览优化范围"}).click();
  await expect(dialog.getByRole("status")).toContainText("标题优化");
  await dialog.getByRole("button",{name:"保存为模板"}).click();
@@ -137,7 +142,19 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(pod).toContainText("步骤 4 · 贴图素材");
  await expect(pod).toContainText("步骤 5 · 生成数量");
  await pod.getByRole("button",{name:/混合模式/}).click();
+ const hybrid=page.getByRole("dialog",{name:"混合模式设置"});
+ await expect(hybrid.getByRole("button",{name:"添加第 1 张图片"})).toBeVisible();
+ await hybrid.getByRole("button",{name:"添加第 1 张图片"}).click();
+ await expect(hybrid).toContainText("预设指令AI重构");
+ await hybrid.getByRole("button",{name:"预设指令AI重构"}).click();
+ await hybrid.getByRole("button",{name:/商品识别主图/}).click();
+ await hybrid.getByRole("button",{name:"保存组合"}).click();
+ await expect(hybrid).toHaveCount(0);
  await pod.getByRole("button",{name:/图片裂变模式/}).click();
+ const split=page.getByRole("dialog",{name:"图片裂变模式"});
+ await split.getByRole("button",{name:"大胆裂变"}).click();
+ await split.getByRole("button",{name:"保存配置"}).click();
+ await expect(split).toHaveCount(0);
  await pod.getByRole("button",{name:"增加生成数量"}).click();
  await pod.getByRole("button",{name:"预览配置"}).click();
  await expect(pod.getByRole("status")).toContainText("4 个");
@@ -174,4 +191,27 @@ test("My Agents model and Enter Use dialogs are viewport-centered on desktop and
   await centered();
   await page.keyboard.press("Escape");
  }
+});
+
+test("POD image, material and language subdialogs match Figma and preserve configuration",async({page})=>{
+ await page.goto(base+"/mine");
+ await page.getByRole("button",{name:"进入使用"}).last().click();
+ const pod=page.getByRole("dialog",{name:"POD刊登智能体"});
+ await pod.getByRole("button",{name:/AI重构模式/}).click();
+ const ai=page.getByRole("dialog",{name:"AI重构图片设置"});
+ await ai.getByRole("button",{name:"分别优化"}).click();
+ await ai.getByRole("button",{name:"语言：不设置"}).click();
+ await expect(ai).toContainText("选择生图语言");
+ await ai.getByRole("button",{name:"英语",exact:true}).click();
+ await ai.getByRole("button",{name:"底色：不设置"}).click();
+ await ai.getByRole("button",{name:"白色背景",exact:true}).click();
+ await ai.getByRole("button",{name:"确认选择"}).click();
+ await pod.getByRole("button",{name:/自定义指令模式/}).click();
+ const custom=page.getByRole("dialog",{name:"自定义指令模式"});
+ await custom.getByRole("textbox",{name:"生成指令"}).fill("透明背景的简洁印花，适合胸前印刷");
+ await custom.getByRole("button",{name:"保存配置"}).click();
+ await pod.getByRole("button",{name:"保存为模板"}).click();
+ await expect(pod).toHaveCount(0);
+ await page.getByRole("button",{name:"进入使用"}).last().click();
+ await expect(page.getByRole("dialog",{name:"POD刊登智能体"})).toContainText("自定义指令已填写");
 });
