@@ -23,6 +23,33 @@ test("Figma store center preserves new listing submenu and clean independent dat
   await expect(page.locator("[data-store-center-showcase]").getByText("共 0 条")).toBeVisible();
  }
 });
+test("store center resets previous demo stores and groups and all listing stages remain empty",async({page})=>{
+ await page.goto(root+"/stores");
+ await page.evaluate(()=>{
+  sessionStorage.setItem("shuomi-store-center-empty-v3",JSON.stringify([{id:"DEMO-OLD",name:"旧测试店铺",platform:"SHEIN",region:"美国站",type:"半托管",status:"待授权",createdAt:"2026-11-21"}]));
+  sessionStorage.setItem("shuomi-store-center-empty-v3-groups",JSON.stringify(["旧测试分组"]));
+  sessionStorage.removeItem("shuomi-store-center-empty-v4");
+  sessionStorage.removeItem("shuomi-store-center-empty-v4-groups");
+ });
+ await page.reload();
+ await expect(page.locator('[data-store-center-showcase="stores"]').getByRole("heading",{name:"尚未绑定店铺"})).toBeVisible();
+ await expect(page.locator('[data-store-center-showcase="stores"]')).not.toContainText("旧测试店铺");
+ await page.getByRole("button",{name:"管理分组"}).click();
+ await expect(page.getByRole("dialog",{name:"管理分组"})).not.toContainText("旧测试分组");
+ for(const path of ["/store-products","/store-orders"]){
+  await page.goto(root+path);
+  await expect(page.locator("[data-store-center-showcase]")).toContainText("共 0 条");
+ }
+ for(const stage of ["missing","review"]){
+  await page.goto(root+"/listing/"+stage);
+  const listing=page.locator("[data-listing-stage]");
+  await expect(listing).toContainText("商品列表（共 0 个商品）");
+  await expect(listing).toContainText("暂无商品记录");
+ }
+ await page.goto(root+"/listing/uploaded");
+ await expect(page.locator("[data-showcase-uploaded]")).toContainText("共 0 条记录");
+ await expect(page.locator("[data-showcase-uploaded]")).toContainText("暂无已上传商品记录");
+});
 test("Manage Groups is visible in the My Stores top actions even when there are no stores",async({page})=>{
  await page.goto(root+"/stores");
  const area=page.locator('[data-store-center-showcase="stores"]');
