@@ -47,11 +47,13 @@ test("theme toggle and account menu follow Figma, with safe dialog for logout/de
  await theme.click();
  await expect(page.locator(".light.showcase-shell").count()).resolves.toBe(0).catch(()=>undefined);
  await expect(page.getByRole("button",{name:"切换深色主题"})).toHaveAttribute("aria-pressed","true");
- const account=page.getByRole("button",{name:"示例用户账户"});
+ const account=page.getByRole("button",{name:/账户$/}).last();
  await account.click();
  const popup=page.getByRole("dialog",{name:"账户快捷操作"});
  await expect(popup).toBeVisible();
- await expect(popup).toContainText("user@sumi.ai");
+ await expect(popup).toContainText("admin@example.com");
+ await expect(popup).toContainText("武汉硕米电子商务有限公司");
+ await expect(popup.getByRole("button",{name:"切换账户与企业组织"})).toBeVisible();
  await popup.getByRole("button",{name:"退出登录"}).click();
  await expect(page.getByRole("alertdialog")).toContainText("不会退出真实登录");
  await page.getByRole("button",{name:"返回账户菜单"}).click();
