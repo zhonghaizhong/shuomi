@@ -23,6 +23,18 @@ export function demoStoreServiceActive(store:DemoStoreBinding,now=Date.now()):bo
 export function countConsumedStorePeriods(stores:readonly DemoStoreBinding[]):number{
  return stores.reduce((total,s)=>total+(Number.isSafeInteger(s.servicePeriods)&&Number(s.servicePeriods)>0?Number(s.servicePeriods):0),0);
 }
+/** Four successful colleague fixture bindings were paid before this demo ledger existed.
+ * Their first period belongs to historical paid service, not the newly purchased
+ * enterprise period pool. Later renewals on these stores do consume the pool.
+ * Ordinary bindings, including expired fixtures and new stores, consume normally.
+ */
+export function countPoolConsumedStorePeriods(stores:readonly DemoStoreBinding[]):number{
+ return stores.reduce((total,store)=>{
+  const periods=Number.isSafeInteger(store.servicePeriods)&&Number(store.servicePeriods)>0?Number(store.servicePeriods):0;
+  const previouslyPaid=/^SIM-C01-0[1-4]$/.test(store.id)&&store.ownerMemberId==="SIM-COLLEAGUE-01"&&Boolean(store.platformStoreId);
+  return total+Math.max(0,periods-(previouslyPaid?1:0));
+ },0);
+}
 export function startDemoStoreService(store:DemoStoreBinding,now=Date.now()):DemoStoreBinding{
  const wasActive=demoStoreServiceActive(store,now);
  const end=wasActive?Date.parse(store.serviceExpiresAt!):now;
