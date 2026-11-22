@@ -171,7 +171,7 @@ export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=
   const referredCustomers=[...originalCustomers,...demoReferredCustomers.filter(customer=>!customerIds.has(customer.id))];
   const existingInvitations=Array.isArray(v.trackedInvitations)?v.trackedInvitations as TrackedInvitation[]:[];
   const trackedIds=new Set(existingInvitations.map(item=>item.id));
-  const trackedInvitations=[...existingInvitations,...demoTrackedInvitations.filter(item=>!trackedIds.has(item.id))];
+  const trackedInvitations=[...existingInvitations.map(item=>demoTrackedInvitations.find(fixture=>fixture.id===item.id)||item),...demoTrackedInvitations.filter(item=>!trackedIds.has(item.id))];
   const originalReferrals=Array.isArray(v.referrals)?v.referrals as ReferralItem[]:[];
   const referralIds=new Set(originalReferrals.map(item=>item.id));
   const referrals=[...originalReferrals,...demoReferralEarnings.filter(item=>!referralIds.has(item.id))];
