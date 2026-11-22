@@ -4,7 +4,7 @@ import {useRouter} from "next/navigation";
 import {Store, Sparkles, Database, HardDrive} from "lucide-react";
 import {showcaseTenant as tenant} from "./showcase-tenant";
 import {useDemoPurchases} from "../showcase-purchases";
-import {useDemoStoreBindings,countConsumedStorePeriods,demoStoreServiceActive,saveDemoStoreBindings,startDemoStoreService,type DemoStoreBinding} from "../store-binding-demo";
+import {useDemoStoreBindings,countConsumedStorePeriods,countPoolConsumedStorePeriods,demoStoreServiceActive,saveDemoStoreBindings,startDemoStoreService,type DemoStoreBinding} from "../store-binding-demo";
 import {useShowcaseSuite,useMemberReferralPortfolio,addAudit,totalEarnings,availableEarnings,permissionTree,permissionKey,permissionSummary,normalizeRolePermissions,toggleRolePermission,togglePermissionGroup,descendants,type PermissionMode,type Member,type SuiteState} from "./showcase-account-state";
 import type {ConsoleNavNode} from "@/lib/workbench/console-navigation";
 import s from "./showcase-account-suite.module.css";
@@ -70,7 +70,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
  const storageRemaining=Math.max(0,enterpriseTotals.storageGiB-usedStorage);
   const storeQuota=enterpriseTotals.renewalPeriods;
   const usedStores=Object.values(state.storeAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
-  const consumedStorePeriods=countConsumedStorePeriods(boundStores.all);
+  const consumedStorePeriods=countPoolConsumedStorePeriods(boundStores.all);
   const usedPoints=Object.values(state.pointAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
   const usedData=Object.values(state.dataAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
   const storeRemaining=Math.max(0,storeQuota-usedStores-consumedStorePeriods);
