@@ -118,8 +118,8 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  await page.goto(base+"/account/referrals/withdrawals");
  const restored=page.locator("[data-account-suite]");
  await expect(restored).toContainText("¥336.00");
- await expect(restored).toContainText("尚未设置");
- await expect(restored).toContainText("暂无提现记录");
+ await expect(restored).toContainText("ADMIN-DEMO-PAYOUT");
+ await expect(restored).toContainText("¥50.00");
  await expect(restored).not.toContainText("C01-ONLY-PAYOUT");
  await page.goto(base+"/account/referrals/center");
  await expect(restored.getByRole("region",{name:"推广中心核心指标"})).toContainText("30");
