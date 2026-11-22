@@ -43,7 +43,7 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
   if(raw===null)return seeds(organizationId);
   const parsed:unknown=JSON.parse(raw);
   if(!Array.isArray(parsed))return [];
-  const valid=(parsed as DemoStoreBinding[]).filter((x:DemoStoreBinding)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&(x.status==="已绑定"||x.status==="待授权")&&typeof x.ownerMemberId==="string");
+  const valid=(parsed as DemoStoreBinding[]).filter((x:DemoStoreBinding)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&(x.status==="已绑定"||String(x.status)==="待授权")&&typeof x.ownerMemberId==="string");
   // One-time additive migration for existing browser sessions; never recreate stores after a user removes them.
   const migrationKey=demoStoreKey(organizationId)+"-expired-fixture-v1";
   if(organizationId===mainTenant&&!sessionStorage.getItem(migrationKey)){
