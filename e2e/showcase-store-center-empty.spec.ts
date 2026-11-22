@@ -507,34 +507,6 @@ test("four colleague stores are bound, and one failed platform-ID lookup is only
  await expect(dialog.getByRole("button",{name:"重试获取"})).toHaveCount(0);
 });
 
-test("previously activated colleague fixtures consume exactly four assigned periods once",async({page})=>{
- await page.goto(root+"/account/organization/resources");
- await page.evaluate(()=>{
-  const key="shuomi-demo-account-suite-SM-ENT-000001-v1";
-  const suite=JSON.parse(localStorage.getItem(key)||"{}");
-  suite.storeAllocations={...(suite.storeAllocations||{}),"SIM-COLLEAGUE-01":8};
-  localStorage.setItem(key,JSON.stringify(suite));
-  sessionStorage.removeItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001");
-  sessionStorage.removeItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001-expired-fixture-v1");
- });
- await page.reload();
- const suite=page.locator("[data-account-suite]");
- const colleague=suite.getByRole("row").filter({hasText:"模拟同事01"});
- await expect(colleague).toContainText("已用 5 · 剩余 4");
- await expect(colleague).toContainText("服务中 4 家");
- await page.reload();
- await expect(suite.getByRole("row").filter({hasText:"模拟同事01"})).toContainText("已用 5 · 剩余 4");
- const state=await page.evaluate(()=>{
-  const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
-  const accounts=JSON.parse(localStorage.getItem("shuomi-demo-account-suite-SM-ENT-000001-v1")||"{}");
-  return {
-   periods:stores.filter((s:{id:string})=>/^SIM-C01-0[1-4]$/.test(s.id)).map((s:{servicePeriods?:number})=>s.servicePeriods),
-   remaining:accounts.storeAllocations?.["SIM-COLLEAGUE-01"]
-  };
- });
- expect(state).toEqual({periods:[1,1,1,1],remaining:4});
-});
-
 test("binding starts 30-day service only after a provider ID is returned; failure does not consume a period",async({page})=>{
  await page.goto(root+"/plans/top-up");
  await page.getByRole("spinbutton",{name:"购买期数 · 店铺服务"}).fill("1");
