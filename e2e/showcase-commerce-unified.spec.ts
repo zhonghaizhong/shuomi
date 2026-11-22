@@ -305,3 +305,68 @@ test("plans premium cards, empty transactions and purchase controls remain usabl
   await expect(page.getByRole("dialog",{name:"流水详情"})).toHaveCount(0);
  }
 });
+
+
+test("plans complete a local-only draft workflow across top-up, orders, cancellation and refresh",async({page})=>{
+ await page.goto(root+"/plans/top-up");
+ const topup=page.locator('[data-commerce-unified="plans"]');
+ await expect(topup).toContainText("¥0.00");
+ await topup.getByRole("spinbutton",{name:"充值金额（元）"}).fill("100");
+ await topup.getByRole("button",{name:"账户充值",exact:true}).click();
+ const review=page.getByRole("dialog",{name:"确认申请草稿"});
+ await expect(review).toContainText("不会发起支付");
+ await expect(review).toContainText("100 元");
+ await review.getByRole("button",{name:"返回修改"}).click();
+ await expect(review).toHaveCount(0);
+ await topup.getByRole("button",{name:"账户充值",exact:true}).click();
+ await review.getByRole("button",{name:"保存申请草稿"}).click();
+ await expect(review).toHaveCount(0);
+ await expect(topup).toContainText("已保存申请草稿");
+ await expect(topup).toContainText("¥0.00");
+ await topup.getByRole("button",{name:"查看申请草稿"}).click();
+ const bills=page.locator('[data-commerce-unified="plans"]');
+ await expect(bills.getByText("暂无账单与订单记录。")).toBeVisible();
+ await expect(bills.getByRole("region",{name:"本地业务申请草稿"})).toContainText("账户充值");
+ await expect(bills.getByRole("region",{name:"本地业务申请草稿"})).toContainText("待提交");
+ await page.reload();
+ await expect(page.getByRole("region",{name:"本地业务申请草稿"})).toContainText("账户充值");
+ await bills.getByRole("combobox",{name:"草稿状态筛选"}).selectOption("已取消");
+ await expect(bills.getByRole("region",{name:"本地业务申请草稿"}).getByText("暂无业务申请草稿。可从充值中心创建。")).toBeVisible();
+ await bills.getByRole("combobox",{name:"草稿状态筛选"}).selectOption("全部状态");
+ await bills.getByRole("region",{name:"本地业务申请草稿"}).getByRole("button",{name:"详情"}).click();
+ const detail=page.getByRole("dialog",{name:"申请草稿详情"});
+ await expect(detail).toContainText("未支付");
+ await detail.getByRole("button",{name:"取消草稿"}).click();
+ await expect(detail).toHaveCount(0);
+ await expect(bills.getByRole("region",{name:"本地业务申请草稿"})).toContainText("已取消");
+ await bills.getByRole("region",{name:"本地业务申请草稿"}).getByRole("button",{name:"详情"}).click();
+ await page.getByRole("dialog",{name:"申请草稿详情"}).getByRole("button",{name:"移除本地记录"}).click();
+ await expect(bills.getByRole("region",{name:"本地业务申请草稿"})).toContainText("暂无业务申请草稿");
+ await expect(bills).toContainText("¥0.00");
+});
+test("plans store service and storage request review without granting paid resources",async({page})=>{
+ await page.goto(root+"/plans/top-up");
+ const area=page.locator('[data-commerce-unified="plans"]');
+ const purchase=area.locator('[class*="planPurchaseCards"] article');
+ await purchase.first().getByRole("spinbutton").fill("2");
+ await purchase.first().getByRole("button",{name:"购买续费期数"}).click();
+ let review=page.getByRole("dialog",{name:"确认申请草稿"});
+ await expect(review).toContainText("¥336.00");
+ await review.getByRole("button",{name:"保存申请草稿"}).click();
+ await purchase.last().getByRole("spinbutton").fill("3");
+ await purchase.last().getByRole("button",{name:"购买扩容"}).click();
+ review=page.getByRole("dialog",{name:"确认申请草稿"});
+ await expect(review).toContainText("¥3.00");
+ await review.getByRole("button",{name:"保存申请草稿"}).click();
+ await page.goto(root+"/plans/entitlements");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("默认容量 5.00 GiB");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("已用 0.00 GiB");
+ await page.goto(root+"/plans/orders");
+ const draftArea=page.getByRole("region",{name:"本地业务申请草稿"});
+ await expect(draftArea).toContainText("店铺服务");
+ await expect(draftArea).toContainText("企业存储");
+ await expect(page.locator('[data-commerce-unified="plans"]').getByText("暂无账单与订单记录。")).toBeVisible();
+ await page.getByRole("button",{name:"发票管理"}).click();
+ await expect(page.getByRole("dialog",{name:"发票管理"})).toContainText("暂无可申请发票");
+ await page.getByRole("dialog",{name:"发票管理"}).getByRole("button",{name:"关闭",exact:true}).click();
+});
