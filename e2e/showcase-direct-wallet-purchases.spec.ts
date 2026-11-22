@@ -23,5 +23,5 @@ test("demo wallet directly purchases resources without local application drafts"
  await expect(page.getByRole("button",{name:"使用充值余额"}).first()).toBeEnabled();
  await page.getByRole("button",{name:"使用充值余额"}).first().click();
  await expect(page.getByRole("dialog",{name:"确认模拟购买"})).toHaveCount(0);
- await expect(page.getByRole("status")).toContainText("余额不足");
+ await expect(page.getByText("演示钱包余额不足，请调整购买数量。")).toBeVisible();
 });
