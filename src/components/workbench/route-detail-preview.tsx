@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./route-detail-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit, plansDemoPurchases, plansDemoRates } from "./plans-demo-facts";
+import {readDemoPurchases,writeDemoPurchases,useDemoPurchases} from "./showcase-purchases";
 import { ChatNewPreview } from "./chat-new-preview";
 import { ShowcaseChatCollections } from "./showcase-chat-collections";
 import { PreferredApplicationPreview } from "./preferred-application-preview";
@@ -148,26 +149,17 @@ function OrderFulfillmentPage({ active, setActive, query, setQuery, submit, filt
   return <><section className={styles.orderMetrics}>{[["今日订单", "86", "较昨日 +12"], ["待处理", "—", "持续统计"], ["待发货", "12", "需处理"], ["运输中", "43", "物流正常"], ["已完成", "—", "持续统计"], ["售后中", "—", "持续统计"], ["异常订单", "2", "优先处理"]].map(([a,b,c],i)=><article data-step={i} key={a}><div><span>{a}</span><small>{c}</small></div><strong>{b}</strong></article>)}</section><section className={styles.orderTabs}>{["全部订单", "待处理", "待发货", "运输中", "已完成", "售后中", "异常订单"].map(x=><button key={x} className={active===x?styles.selected:""} onClick={()=>setActive(x)}>{x}</button>)}<small>当前开放平台： SHEIN</small></section><section className={styles.productFilters}><div className={styles.commerceFilterSelects}>{["全部平台","全部站点","全部店铺","全部状态","全部时间"].map(x=><FilterSelect key={x} label={x} filters={filters} setFilter={setFilter}/>)}</div><div className={styles.commerceFilterActions}><input aria-label="搜索订单号或商品" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索订单号或商品名称"/><button onClick={()=>{setQuery("");resetFilters()}}>重置</button><button className={styles.primary} onClick={()=>submit("确认筛选")}>确认</button><button onClick={()=>submit("批量发货")}>批量发货</button></div></section><section className={styles.orderTable}><header><h2>订单与履约列表 <small>共86笔今日订单</small></h2><small>每页100条</small></header><div className={styles.orderTableHead}><span>□</span><b>订单 / 商品</b><b>平台 / 站点</b><b>店铺</b><b>金额</b><b>下单时间</b><b>履约状态</b><b>物流状态</b><b>发货时限</b><b>操作</b></div>{items.filter(r=>(active==="全部订单"||active==="全部"||r[6]===active)&&r.join(" ").includes(query)&&containsFilter(r,filters,"全部站点")&&containsFilter(r,filters,"全部店铺")&&containsFilter(r,filters,"全部状态")&&containsFilter(r,filters,"全部时间")).map((r,i)=><div className={styles.orderTableRow} key={r[0]}><input type="checkbox" aria-label={`选择订单${r[0]}`}/><span><b>{r[0]}</b><small>{r[1]}</small></span><span><b className={styles.platformTag}>SHEIN</b>　{r[2]}</span><span>{r[3]}</span><strong>{r[4]}</strong><span>{r[5]}</span><b className={styles.statusTag} data-state={r[6]}>{r[6]}</b><b className={styles.statusTag} data-state={r[7]}>{r[7]}</b><small>{i<2?i===0?"06:18:42":"12:40:10":"—"}</small><button onClick={()=>submit(r[6]==="待发货"?"开始发货":"查看订单")}>{r[6]==="待发货"?"去发货":"查看"}</button></div>)}</section></>;
 }
 
-type DemoPurchase={id:string;at:string;type:string;quantity:number;amountCny:number;detail:string;balanceAfter:number;status:"模拟购买成功"|"模拟充值成功"};
-const PLANS_PURCHASES_KEY="shuomi-showcase-plans-direct-purchases-v1";
-function readDemoPurchases():DemoPurchase[]{
- try{
-  const raw=JSON.parse(localStorage.getItem(PLANS_PURCHASES_KEY)||"[]");
-  return Array.isArray(raw)?raw.filter(x=>x&&typeof x.id==="string"&&typeof x.type==="string"&&Number.isFinite(x.amountCny)&&Number.isFinite(x.quantity)&&Number.isFinite(x.balanceAfter)).slice(0,200):[];
- }catch{return []}
-}
 function priceOf(type:string,quantity:number):number{
  return Math.round((type==="店铺服务"?quantity*168:type==="企业存储"?quantity:quantity)*100)/100;
 }
 function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filters, setFilter, resetFilters, router }: DetailState & { pathname: string; router: ReturnType<typeof useRouter> }) {
   const [purchaseAmounts,setPurchaseAmounts]=useState<Record<string,string>>({});
-  const [demoPurchases,setDemoPurchases]=useState<DemoPurchase[]>([]);
+  const {purchases:demoPurchases,setPurchases:setDemoPurchases,totals:demoTotals}=useDemoPurchases();
   const purchaseSubmitting=useRef(false);
   const [requestReview,setRequestReview]=useState<{type:string;quantity:number;quote:string}|null>(null);
   const [walletAmount,setWalletAmount]=useState("");
   const [invoiceOpen,setInvoiceOpen]=useState(false);
   const [requestNotice,setRequestNotice]=useState("");
-  useEffect(()=>{setDemoPurchases(readDemoPurchases())},[]);
   useEffect(()=>{
    if(!invoiceOpen)return;
    const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")setInvoiceOpen(false)};
@@ -201,7 +193,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
    const entry:DemoPurchase={id:crypto.randomUUID(),at:new Date().toLocaleString("zh-CN",{hour12:false}),type,quantity,amountCny:amount,detail,balanceAfter:Math.round((freshBalance+(type==="账户充值"?amount:-amount))*100)/100,status:type==="账户充值"?"模拟充值成功":"模拟购买成功"};
    const next=[entry,...fresh].slice(0,200);
    purchaseSubmitting.current=true;
-   try{localStorage.setItem(PLANS_PURCHASES_KEY,JSON.stringify(next))}catch{purchaseSubmitting.current=false;setRequestNotice("当前浏览器无法保存交易，未扣款。");return}
+   if(!writeDemoPurchases(next)){purchaseSubmitting.current=false;setRequestNotice("当前浏览器无法保存交易，未扣款。");return}
    setDemoPurchases(next);setRequestReview(null);setRequestNotice(type==="账户充值"?"模拟充值已到账（非真实付款）。":"模拟购买成功，权益已更新（非真实付款）。");
    setPurchaseAmounts(v=>({...v,[type]:""}));if(type==="账户充值")setWalletAmount("");
   };
@@ -237,23 +229,23 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
     <div className={styles.cardTitle}><h3>店铺服务</h3><span>可分配续费期数</span></div>
     <div className={styles.planEntitlementStoreSplit}>
      <div><small>已绑定店铺</small><strong>{plansDemoFacts.activeStores}<em>家</em></strong></div>
-     <div><small>待分配期数</small><strong>{plansDemoFacts.renewalPeriods+extraFor("店铺服务")}<em>期</em></strong></div>
+     <div><small>待分配期数</small><strong>{demoTotals.renewalPeriods}<em>期</em></strong></div>
     </div>
     <div className={styles.planEntitlementNotes}><span>购买的续费期数进入企业资源池</span><span>绑定店铺后即可分配使用</span></div>
    </article>
    <article className={styles.card} data-tone={1}>
     <div className={styles.cardTitle}><h3>token 积分</h3><span>模拟已到账</span></div>
-    <strong className={styles.planEntitlementValue}>{(plansDemoFacts.aiPoints+Math.round(extraFor("token 积分")*plansDemoRates.aiPointsPerCny)).toLocaleString("zh-CN")}</strong>
-    <div className={styles.planEntitlementNotes}><span>兑换标准：¥1 = 10,000 积分</span><span>已模拟到账：{(plansDemoFacts.aiPoints+Math.round(extraFor("token 积分")*plansDemoRates.aiPointsPerCny)).toLocaleString("zh-CN")} 积分</span></div>
+    <strong className={styles.planEntitlementValue}>{(demoTotals.aiPoints).toLocaleString("zh-CN")}</strong>
+    <div className={styles.planEntitlementNotes}><span>兑换标准：¥1 = 10,000 积分</span><span>已模拟到账：{(demoTotals.aiPoints).toLocaleString("zh-CN")} 积分</span></div>
    </article>
    <article className={styles.card} data-tone={2}>
     <div className={styles.cardTitle}><h3>数据服务</h3><span>模拟已到账</span></div>
-    <strong className={styles.planEntitlementValue}>{(plansDemoFacts.dataRows+Math.round(extraFor("数据资源")/plansDemoRates.dataCnyPerRow)).toLocaleString("zh-CN")} 条</strong>
-    <div className={styles.planEntitlementNotes}><span>兑换标准：¥0.01 / 条</span><span>已模拟到账：{(plansDemoFacts.dataRows+Math.round(extraFor("数据资源")/plansDemoRates.dataCnyPerRow)).toLocaleString("zh-CN")} 条</span></div>
+    <strong className={styles.planEntitlementValue}>{(demoTotals.dataRows).toLocaleString("zh-CN")} 条</strong>
+    <div className={styles.planEntitlementNotes}><span>兑换标准：¥0.01 / 条</span><span>已模拟到账：{(demoTotals.dataRows).toLocaleString("zh-CN")} 条</span></div>
    </article>
    <article className={styles.card} data-tone={3}>
     <div className={styles.cardTitle}><h3>企业存储</h3><span>企业共享</span></div>
-    <strong className={styles.planEntitlementValue}>{(plansDemoFacts.storageCapacityGiB+extraFor("企业存储")).toFixed(2)} GiB</strong>
+    <strong className={styles.planEntitlementValue}>{(demoTotals.storageGiB).toFixed(2)} GiB</strong>
     <div className={styles.planEntitlementStorageDetails}>
      <div><span>免费容量</span><strong>5.00 GiB</strong></div>
      <div><span>扩容容量</span><strong>{(3+extraFor("企业存储")).toFixed(2)} GiB</strong></div>
