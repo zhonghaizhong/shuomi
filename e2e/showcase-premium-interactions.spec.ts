@@ -82,6 +82,12 @@ test("cleared store product and order pages show truthful empty states and worki
 });
 
 test("My Stores filters work on local drafts and other account modules preserve their entry points",async({page})=>{
+ // The two expired demo fixtures have consumed the original two service periods.
+ // Buy one period before binding; an unallocated store must never bypass the quota gate.
+ await page.goto(base+"/plans/top-up");
+ await page.getByRole("spinbutton",{name:"购买期数 · 店铺服务"}).fill("1");
+ await page.getByRole("button",{name:"购买续费期数"}).click();
+ await page.getByRole("dialog",{name:"确认模拟购买"}).getByRole("button",{name:"确认购买并扣除演示余额"}).click();
  await page.goto(base+"/stores");
  const root=page.locator('[data-store-center-showcase="stores"]');
  await root.getByRole("button",{name:"绑定新店铺"}).first().click();
