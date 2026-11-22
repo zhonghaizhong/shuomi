@@ -422,3 +422,29 @@
  }
  .page[data-account-suite="/organization"] .resourceSummary article strong{font-size:27px}
 }
+
+/* Compact enterprise resources: maintain the horizontal three-zone arrangement. */
+.page[data-account-suite="/organization"] .resourceSummary article{
+ min-height:148px;
+ padding:15px 20px;
+}
+.page[data-account-suite="/organization"] .resourceSummary article[data-tone="storage"]{
+ min-height:148px;
+ padding:15px 20px;
+ row-gap:8px;
+}
+.page[data-account-suite="/organization"] .resourceSummary article[data-tone="storage"] .storageTrack{
+ height:4px;
+}
+@media(max-width:700px){
+ .page[data-account-suite="/organization"] .resourceSummary article,
+ .page[data-account-suite="/organization"] .resourceSummary article[data-tone="storage"]{
+  min-height:148px;
+ }
+}
+@media(max-width:400px){
+ .page[data-account-suite="/organization"] .resourceSummary article,
+ .page[data-account-suite="/organization"] .resourceSummary article[data-tone="storage"]{
+  padding:15px 14px;
+ }
+}
