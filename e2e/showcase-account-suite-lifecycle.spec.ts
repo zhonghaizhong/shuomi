@@ -82,7 +82,7 @@ test("synthetic referral earnings are attributed to store consumption and manual
  await page.goto(base+"/referrals");
  const suite=page.locator("[data-account-suite]");
  await expect(suite).toContainText("¥336.00");
- await page.goto(base+"/referrals/center");
+ await page.goto(base+"/referrals/earnings");
  await suite.getByRole("button",{name:"模拟一笔推广成交并结算"}).click();
  const dialog=suite.getByRole("dialog",{name:"模拟推广收益"});
  await dialog.getByRole("textbox",{name:"模拟客户标识"}).fill("TEST-CUSTOMER-001");
@@ -108,53 +108,44 @@ test("synthetic referral earnings are attributed to store consumption and manual
  await page.goto(base+"/organization/audit");
  await expect(suite).toContainText("模拟提现并审核通过");
 });
-test("three colleagues and twenty new users have consistent simulated top-ups, store charges and 10% earnings",async({page})=>{
+test("three colleagues and twenty referred users keep commissions after Figma promotion-center alignment",async({page})=>{
  await page.goto(base+"/organization/members");
  const suite=page.locator("[data-account-suite]");
  await expect(suite.getByRole("row")).toHaveCount(5);
- for(let i=1;i<=3;i++){
-  const name="模拟同事"+String(i).padStart(2,"0");
-  await expect(suite.getByRole("row").filter({hasText:name})).toContainText("子账号");
- }
+ for(let i=1;i<=3;i++)await expect(suite.getByRole("row").filter({hasText:"模拟同事"+String(i).padStart(2,"0")})).toContainText("子账号");
  await page.goto(base+"/organization/roles");
  await expect(suite.getByRole("row").filter({hasText:"子账号"})).toContainText("3 人");
  await page.goto(base+"/referrals/center");
- const table=suite.getByRole("region",{name:"邀请新用户消费记录"});
- await expect(table.getByRole("row")).toHaveCount(11);
- await expect(table).toContainText("¥4,000.00");
- await expect(table).toContainText("¥3,360.00");
- await expect(table).toContainText("¥640.00");
- await expect(table).toContainText("SIM-ORDER-STORE-01");
- await expect(table).toContainText("¥16.80");
- await table.getByRole("navigation",{name:"邀请新用户消费记录分页"}).getByRole("button",{name:"下一页"}).click();
- await expect(table).toContainText("SIM-ORDER-STORE-20");
+ await expect(suite.getByRole("region",{name:"我的推广"})).toBeVisible();
+ await expect(suite.getByRole("region",{name:"近30天推广转化"})).toContainText("付费");
+ await expect(suite.getByRole("region",{name:"最近收益"}).getByRole("row")).toHaveCount(6);
+ await expect(suite.getByRole("region",{name:"最近收益"})).toContainText("¥16.80");
+ await expect(suite.getByRole("region",{name:"推广中心核心指标"})).toContainText("¥336.00");
  await page.goto(base+"/referrals/earnings");
  const rows=suite.locator("table").first().getByRole("row");
  await expect(rows).toHaveCount(11);
  await expect(suite).toContainText("¥336.00");
  await expect(suite).toContainText("10%");
- await expect(suite).not.toContainText("SIM-ORDER-STORE-20");
  await suite.getByRole("navigation",{name:"推广收益明细分页"}).getByRole("button",{name:"下一页"}).click();
  await expect(suite).toContainText("SIM-ORDER-STORE-20");
  await page.reload();
- await page.goto(base+"/referrals/center");
- await expect(suite.getByRole("region",{name:"邀请新用户消费记录"}).getByRole("row")).toHaveCount(11);
-});
-test("referral overview stays compact and both independent ledgers paginate without losing totals",async({page})=>{
- await page.goto(base+"/referrals");
- const suite=page.locator("[data-account-suite]");
- const customer=suite.getByRole("region",{name:"邀请新用户消费记录"});
- await expect(customer.getByRole("row")).toHaveCount(6);
- await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("每页 5 条");
- await expect(suite).toContainText("¥336.00");
- await customer.getByRole("navigation",{name:"邀请新用户消费记录分页"}).getByRole("button",{name:"下一页"}).click();
- await expect(customer).toContainText("第 2 / 4 页");
- await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("第 1 / 4 页");
- await suite.getByRole("button",{name:"查看全部收益记录"}).click();
- await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("每页 10 条");
  await expect(suite.locator("table").first().getByRole("row")).toHaveCount(11);
- await suite.getByRole("navigation",{name:"推广收益明细分页"}).getByRole("button",{name:"下一页"}).click();
- await expect(suite).toContainText("SIM-ORDER-STORE-20");
+});
+test("Figma promotion center has separate link/code copy, four metrics, funnel and compact recent earnings",async({page})=>{
+ await page.goto(base+"/referrals/center");
+ const suite=page.locator("[data-account-suite]");
+ const metrics=suite.getByRole("region",{name:"推广中心核心指标"});
+ for(const label of ["累计推广人数","有效注册","付费用户","累计收益"])await expect(metrics).toContainText(label);
+ const share=suite.getByRole("region",{name:"我的推广"});
+ await expect(share).toContainText("推广链接");
+ await expect(share).toContainText("推广码");
+ await expect(share).toContainText("推广二维码");
+ await expect(share.getByRole("button",{name:"复制"})).toHaveCount(2);
+ await expect(suite.getByRole("region",{name:"近30天推广转化"})).toContainText("访问量尚未接入统计");
+ const recent=suite.getByRole("region",{name:"最近收益"});
+ await expect(recent.getByRole("row")).toHaveCount(6);
+ await recent.getByRole("button",{name:"查看全部收益"}).click();
+ await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("每页 10 条");
 });
 test("enterprise and referral subpages preserve approved dark/light surfaces and do not overflow",async({page})=>{
  for(const route of ["/organization","/organization/members","/organization/roles","/organization/resources","/organization/audit","/referrals","/referrals/center","/referrals/earnings","/referrals/withdrawals","/referrals/rules"]){
