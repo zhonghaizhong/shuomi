@@ -164,3 +164,7 @@
 .dialog .podCount span{font-size:14px;color:var(--agent-dialog-muted);}
 .dialog .podCount strong{min-width:32px;text-align:center;color:var(--agent-dialog-text);font-size:17px;}
 .dialog .podCount button{border:1px solid var(--agent-dialog-border);border-radius:6px;background:var(--agent-dialog-surface);color:var(--agent-dialog-text);min-width:32px;min-height:32px;font-size:18px;cursor:pointer;}
+
+
+.dialog .savedTemplate{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.dialog .savedTemplate small{font-size:13px;color:var(--agent-dialog-muted);}
