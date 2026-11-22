@@ -389,9 +389,14 @@ test("other organization purchase ledger stays isolated from the primary organiz
  await page.getByRole("button",{name:/linchen_demo账户/}).click();
  await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
  const switcher=page.getByRole("dialog",{name:"切换账户与企业组织"});
- await switcher.getByRole("tab",{name:"切换企业"}).click();
- await switcher.getByRole("button",{name:/模拟企业A（运营公司）/}).click();
+ await switcher.getByRole("button",{name:/模拟同事01/}).click();
  await switcher.getByRole("button",{name:"确认切换"}).click();
+ await page.getByRole("button",{name:/模拟同事01账户/}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ const organizationSwitch=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await organizationSwitch.getByRole("tab",{name:"切换企业"}).click();
+ await organizationSwitch.getByRole("button",{name:/模拟企业A（运营公司）/}).click();
+ await organizationSwitch.getByRole("button",{name:"确认切换"}).click();
  await page.goto(root+"/plans/entitlements");
  const entitlements=page.locator('[data-commerce-unified="plans"]');
  await expect(entitlements).toContainText("已绑定店铺");
