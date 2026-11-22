@@ -1,6 +1,7 @@
 /** Shared, non-billable showcase facts. These do not represent a real account. */
 export const plansDemoFacts = {
   activeStores: 0,
+  renewalPeriods: 2,
   expiringStores: 0,
   aiPoints: 0,
   dataRows: 0,
