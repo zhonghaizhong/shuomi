@@ -231,23 +231,24 @@ test("plans overview shows no payable reminder or fictional last order",async({p
  await expect(overview.getByRole("button",{name:"处理",exact:true})).toHaveCount(0);
  await expect(overview).toContainText("积分与数据余额为 0");
  await expect(overview).toContainText("暂无充值、购买或续费订单");
- await expect(overview.getByRole("button",{name:"查看账单"})).toBeVisible();
+ await expect(overview.getByRole("button",{name:"进入账单与订单"})).toBeVisible();
 });
 
-test("billing filters wait until confirmation, then reset and export reflect applied selection",async({page})=>{
+test("empty billing filters remain functional without inventing paid records",async({page})=>{
  await page.goto(root+"/plans/orders");
  const plans=page.locator('[data-commerce-unified="plans"]');
  const rows=plans.locator('[class*="planTableScroll"] [class*="planOrderColumns"][class*="serviceRow"]');
- await expect(rows).toHaveCount(5);
+ await expect(rows).toHaveCount(0);
  await plans.getByRole("combobox",{name:"全部状态"}).selectOption("已支付");
- await plans.getByRole("textbox",{name:"搜索账单"}).fill("一号店");
- await expect(rows).toHaveCount(5);
+ await plans.getByRole("textbox",{name:"搜索账单"}).fill("不存在的订单");
+ await expect(rows).toHaveCount(0);
  await plans.getByRole("button",{name:"确定",exact:true}).click();
- await expect(rows).toHaveCount(1);
- await expect(rows.first()).toContainText("一号店续费");
+ await expect(rows).toHaveCount(0);
  await plans.getByRole("button",{name:"重置",exact:true}).click();
- await expect(rows).toHaveCount(5);
+ await expect(rows).toHaveCount(0);
  await expect(plans.getByRole("combobox",{name:"全部状态"})).toHaveValue("全部状态");
+ await expect(plans.getByRole("textbox",{name:"搜索账单"})).toHaveValue("");
+ await expect(plans.getByRole("button",{name:"导出账单"})).toBeDisabled();
 });
 test("plans zero-value balances and free 5 GiB storage agree across all pages",async({page})=>{
  await page.goto(root+"/plans");
@@ -280,8 +281,9 @@ test("plans visual polish keeps five accessible entries and a grounded storage u
  await expect(cards).toHaveCount(5);
  for(const name of ["套餐方案","我的权益","用量明细","充值中心","账单与订单"])
   await expect(cards.getByRole("button",{name:"进入"+name})).toBeVisible();
- await expect(plans.getByRole("progressbar",{name:"企业存储使用率"})).toHaveAttribute("aria-valuenow","0");
- await expect(plans.locator('[class*="usageBar"] i')).toHaveCount(1);
+ await expect(plans).toContainText("已用 0.00 GiB");
+ await expect(plans).toContainText("剩余 5.00 GiB");
+ await expect(plans.locator('[class*="usageBar"]')).toHaveCount(4);
  await cards.getByRole("button",{name:"进入我的权益"}).click();
  await expect(page.locator('[data-commerce-unified="plans"] [class*="planEntitlementCards"] article')).toHaveCount(4);
 });
