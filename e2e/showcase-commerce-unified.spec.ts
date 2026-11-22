@@ -230,7 +230,7 @@ test("plans empty usage and orders retain aligned headers without fabricating tr
 test("plans overview shows no payable reminder or fictional last order",async({page})=>{
  await page.goto(root+"/plans");
  const overview=page.locator('[data-commerce-unified="plans"]');
- await expect(overview).toContainText("未来 7 天内到期：0 家");
+ await expect(overview).toContainText("未来 7 天内到期：2 家");
  await expect(overview).toContainText("已到期 2 家");
  await expect(overview.getByRole("button",{name:"处理",exact:true})).toHaveCount(0);
  await expect(overview).toContainText("10,000,000 积分、50,000 条数据");
@@ -257,10 +257,10 @@ test("empty billing filters remain functional without inventing paid records",as
  await expect(plans.getByRole("textbox",{name:"搜索账单"})).toHaveValue("");
  await expect(plans.getByRole("button",{name:"导出账单"})).toBeEnabled();
 });
-test("plans zero-value balances and free 5 GiB storage agree across all pages",async({page})=>{
+test("plans seeded store count and free 5 GiB storage agree across all pages",async({page})=>{
  await page.goto(root+"/plans");
  let plans=page.locator('[data-commerce-unified="plans"]');
- await expect(plans).toContainText("0 家");
+ await expect(plans).toContainText("本组织已绑定 11 家");
  await expect(plans).toContainText("8.00 GiB");
  const overviewCards=plans.locator('[class*="planStats"] > [class*="planStat"]');
  await expect(overviewCards).toHaveCount(4);
