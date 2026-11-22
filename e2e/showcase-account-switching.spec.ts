@@ -100,6 +100,14 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  await expect(own).toContainText("¥80.80");
  await expect(own).toContainText("C01-ONLY-PAYOUT");
  await expect(own).toContainText("¥20.00");
+ const scopedStorage=await page.evaluate(()=>{
+  const member=JSON.parse(localStorage.getItem("shuomi-demo-member-referrals-v1-SIM-COLLEAGUE-01")||"null");
+  const primary=JSON.parse(localStorage.getItem("shuomi-demo-account-suite-SM-ENT-000001-v1")||"null");
+  return {member,primary};
+ });
+ expect(scopedStorage.member.audit.some((event:{actor:string;category:string})=>event.actor==="模拟同事01"&&event.category==="提现管理")).toBeTruthy();
+ expect(scopedStorage.member.withdrawals).toHaveLength(1);
+ expect(scopedStorage.primary.withdrawals).toHaveLength(0);
  await page.reload();
  await expect(own).toContainText("¥80.80");
  await expect(own).toContainText("C01-ONLY-PAYOUT");
