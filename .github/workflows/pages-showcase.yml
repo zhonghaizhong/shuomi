@@ -10,13 +10,12 @@ permissions:
 
 concurrency:
   group: github-pages-showcase
-  # Keep the active deployment alive when other contributors push to main.
-  # GitHub Actions will queue the most recent pending run instead of cancelling
-  # every in-progress build before the website can be published.
+  # Keep active builds running; replace superseded pending releases.
   cancel-in-progress: false
 
 jobs:
   build:
+    name: Build Pages artifact
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -35,28 +34,73 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build interactive static showcase
         run: pnpm run build:pages
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist-pages
+
+  verify-sidebar:
+    name: Verify sidebar
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:pages
       - name: Cache Playwright Chromium browser
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('pnpm-lock.yaml') }}
-      - name: Install Chromium system dependencies
-        run: pnpm exec playwright install-deps chromium
-      - name: Install Chromium browser if cache is missing
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+      - run: pnpm exec playwright install-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install chromium
       - name: Verify sidebar on desktop and small screens
         run: pnpm exec playwright test --config playwright.sidebar.config.ts
+
+  verify-interactions:
+    name: Verify showcase interactions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:pages
+      - name: Cache Playwright Chromium browser
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium
       - name: Verify showcase action dialogs and cross-module flows
         run: pnpm exec playwright test --config playwright.showcase-interactions.config.ts
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist-pages
 
   deploy:
     if: github.ref == 'refs/heads/main'
-    needs: build
+    needs: [build, verify-sidebar, verify-interactions]
     runs-on: ubuntu-latest
     permissions:
       pages: write
