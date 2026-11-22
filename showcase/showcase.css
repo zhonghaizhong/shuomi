@@ -500,3 +500,32 @@ html.light body {background:#f8f7fa;color:#444050;}
 .light .showcase-shell:has([data-enterprise-space]) .showcase-account-icon{
  background:#e6f3f0;border-color:#087f6c;color:#087f6c;
 }
+
+
+/* Profile identity and organization switching: Vuexy visual system. */
+.showcase-account-menu:has(.showcase-account-switch){width:min(370px,calc(100vw - 24px));max-height:min(74vh,660px);overflow:auto}
+.showcase-account-menu .showcase-menu-head small{overflow-wrap:anywhere}
+.showcase-account-switch{display:grid;gap:7px;padding-top:11px}
+.showcase-account-switch h3{margin:10px 0 3px;color:#eae7f5;font-size:13px;font-weight:700}
+.showcase-account-switch>p{margin:3px 0;color:#b8b5c9;font-size:12px;line-height:1.5}
+.showcase-account-switch .showcase-menu-back{display:inline-flex;align-items:center;gap:7px;justify-self:start;background:transparent;border:0;padding:4px 0;color:#b9aaff;cursor:pointer;font-size:12px}
+.showcase-switch-choice{display:flex;align-items:center;gap:10px;width:100%;min-height:49px;padding:9px 10px;text-align:left;background:#393e55;border:1px solid #4a4f69;border-radius:7px;color:#e9e6f3;cursor:pointer}
+.showcase-switch-choice>span{display:grid;flex:1;min-width:0;gap:3px}
+.showcase-switch-choice strong{font-size:13px;overflow-wrap:anywhere}
+.showcase-switch-choice small{font-size:11px;color:#b3aec7;overflow-wrap:anywhere}
+.showcase-switch-choice[aria-pressed="true"]{border-color:#7367f0;background:#7367f021}
+.showcase-switch-choice>svg{color:#a8a0f7;flex:none}
+.showcase-switch-choice:hover{border-color:#9088ef}
+.showcase-switch-add{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:6px}
+.showcase-switch-add>span{grid-column:1/-1;font-size:12px;color:#b8b5c9}
+.showcase-switch-add>input{width:100%;min-width:0;background:#393e55;border:1px solid #4a4f69;border-radius:6px;padding:8px 10px;color:#e9e6f3;font:inherit;font-size:13px}
+.showcase-switch-add>button,.showcase-switch-boundary button{border:1px solid #7367f0;border-radius:6px;background:#7367f0;color:#fff;padding:8px 13px;cursor:pointer}
+.showcase-switch-boundary{max-width:700px;margin:36px auto;padding:30px;border:1px solid #49465d;border-radius:9px;background:#2f3349;color:#e2e2f0}
+.showcase-switch-boundary h2{margin:0 0 12px;font-size:20px}
+.showcase-switch-boundary p{font-size:14px;line-height:1.7;color:#bcb9cd}
+.light .showcase-switch-choice,.light .showcase-switch-add>input{background:#f8f7fa;border-color:#ddd9e9;color:#444050}
+.light .showcase-switch-choice[aria-pressed="true"]{background:#eeecff;border-color:#7367f0}
+.light .showcase-account-switch h3{color:#444050}
+.light .showcase-account-switch>p,.light .showcase-switch-add>span,.light .showcase-switch-choice small{color:#6f6b7d}
+.light .showcase-switch-boundary{background:#fff;border-color:#e3dfed;color:#444050}
+.light .showcase-switch-boundary p{color:#6f6b7d}
