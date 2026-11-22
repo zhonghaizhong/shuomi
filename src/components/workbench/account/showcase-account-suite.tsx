@@ -3,7 +3,7 @@ import {useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
 import {Store, Sparkles, Database, HardDrive} from "lucide-react";
 import {showcaseTenant as tenant} from "./showcase-tenant";
-import {useShowcaseSuite,addAudit,totalEarnings,availableEarnings,permissionTree,permissionKey,permissionSummary,normalizeRolePermissions,toggleRolePermission,togglePermissionGroup,descendants,type PermissionMode,type Member,type SuiteState} from "./showcase-account-state";
+import {useShowcaseSuite,useMemberReferralPortfolio,addAudit,totalEarnings,availableEarnings,permissionTree,permissionKey,permissionSummary,normalizeRolePermissions,toggleRolePermission,togglePermissionGroup,descendants,type PermissionMode,type Member,type SuiteState} from "./showcase-account-state";
 import type {ConsoleNavNode} from "@/lib/workbench/console-navigation";
 import s from "./showcase-account-suite.module.css";
 const root="/workbench/account";
@@ -31,8 +31,16 @@ function PermissionBranch({node,depth,grants,onChange}:{node:ConsoleNavNode;dept
   <label><input type="checkbox" aria-label={node.label+" 操作"} checked={grants.includes(permissionKey(node.href,"operate"))} onChange={e=>onChange(node,"operate",e.target.checked)}/><span>操作</span></label>
  </div>{node.children?.map(child=><PermissionBranch key={child.href} node={child} depth={depth+1} grants={grants} onChange={onChange}/>)}</>;
 }
-export function ShowcaseAccountSuite({pathname}:{pathname:string}){
- const router=useRouter();const {state,commit}=useShowcaseSuite();
+export function ShowcaseAccountSuite({pathname,memberId="admin"}:{pathname:string;memberId?:string}){
+ const router=useRouter();
+ const primary=useShowcaseSuite();
+ const scoped=useMemberReferralPortfolio(memberId);
+ const colleagueReferral=pathname.includes("/referrals")&&memberId!=="admin";
+ const state:SuiteState=colleagueReferral?{...primary.state,...scoped.portfolio}:primary.state;
+ const commit=(next:SuiteState):boolean=>colleagueReferral?scoped.commitPortfolio({
+  referredCustomers:next.referredCustomers,trackedVisits:next.trackedVisits,referrals:next.referrals,
+  withdrawals:next.withdrawals,payoutAccount:next.payoutAccount,referralCode:next.referralCode
+ }):primary.commit(next);
  const suffix=pathname.slice(root.length)||"/organization";const [title,desc]=screens[suffix]||screens["/organization"];
  const [modal,setModal]=useState<Modal>(null);const [permissions,setPermissions]=useState<string[]>([]);const [name,setName]=useState("");const [email,setEmail]=useState("");const [role,setRole]=useState("子账号");const [selected,setSelected]=useState("");const [amount,setAmount]=useState("100");const [account,setAccount]=useState("");const [query,setQuery]=useState("");const [applied,setApplied]=useState("");const [notice,setNotice]=useState("");const [error,setError]=useState("");const [customerPage,setCustomerPage]=useState(1);const [earningsPage,setEarningsPage]=useState(1);const [promotionStatus,setPromotionStatus]=useState("all");const [promotionSearch,setPromotionSearch]=useState("");const [promotionPage,setPromotionPage]=useState(1);const [promotionDetail,setPromotionDetail]=useState<string|null>(null);const [resourceSearch,setResourceSearch]=useState("");const [resourceRole,setResourceRole]=useState("all");const [resourceStatus,setResourceStatus]=useState("正常");const [resourcePageSize,setResourcePageSize]=useState(10);const [resourcePage,setResourcePage]=useState(1);
  const enterprise=suffix.startsWith("/organization"),overview=suffix==="/organization",referral=suffix.startsWith("/referrals");
@@ -117,6 +125,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  return <main className={s.page} data-account-suite={suffix}>
   <header className={s.hero}><div><small>我的账户 / {enterprise?"企业空间":"推广与收益"}{overview||suffix==="/referrals"?"":" / "+title}</small><h1>{title}</h1><p>{desc}</p></div>{(suffix==="/organization/members"||suffix==="/organization/roles"||suffix==="/referrals/withdrawals")&&<div className={s.heroActions}>{suffix==="/organization/members"&&<button className={s.primary} onClick={()=>open("invite")}>邀请成员</button>}{suffix==="/organization/roles"&&<button className={s.primary} onClick={()=>open("role")}>新建角色</button>}{suffix==="/referrals/withdrawals"&&<button className={s.primary} disabled={!balance||!state.payoutAccount} onClick={()=>open("withdraw")}>申请模拟提现</button>}</div>}</header>
   <nav className={s.subNavigation} aria-label={enterprise?"企业空间业务导航":"推广与收益业务导航"}>{sectionMenu.map(([label,path])=><button key={path} type="button" aria-current={suffix===path?"page":undefined} onClick={()=>nav(path)}>{label}</button>)}</nav>
+  {colleagueReferral&&<p className={s.disclaimer} role="note">当前推广主体：模拟同事01 · colleague01@example.test。推广记录、收益、收款方式和提现记录均为该成员独立演示数据。</p>}
   {notice&&<div className={s.notice} role="status">{notice}<button onClick={()=>setNotice("")} aria-label="关闭消息">×</button></div>}
   <section className={s.identity}><div className={s.avatar}>硕</div><div className={s.identityInfo}><h2>{tenant.name}</h2><p><span className={s.approved}>已认证（模拟）</span> 企业编号：{tenant.id} · 管理员：{tenant.admin}</p></div><span className={s.mode}>演示企业空间 · 不影响真实账户</span></section>
   {overview&&<>
@@ -277,6 +286,6 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
     {modal==="withdraw"&&<><p>当前可提现金额：{money(balance)}。支持部分提现，剩余收益继续保留为可提现余额。</p><label>模拟提现金额<input type="number" step="0.01" aria-label="模拟提现金额" value={amount} onChange={e=>setAmount(e.target.value)}/></label></>}
     {error&&<p role="alert" className={s.error}>{error}</p>}<footer><button onClick={close}>取消</button><button className={s.primary} onClick={()=>({invite:addMember,member:updateMember,role:addRole,permissions:savePermissions,storage:saveStorage,earning:addEarning,payout:savePayout,withdraw}[modal])()} disabled={modal==="member"&&selected==="admin"}>确认并模拟通过</button></footer>
    </section></div>}
-  <p className={s.disclaimer}>所有账户、权限、收益和审核操作均为当前演示企业的本地模拟记录，非真实身份认证、平台授权、支付或转账。</p>
+  <p className={s.disclaimer}>所有账户、权限、收益和审核操作均为本地演示数据，非真实身份认证、平台授权、支付或转账。成员推广数据按演示账号分别保存。</p>
  </main>;
 }
