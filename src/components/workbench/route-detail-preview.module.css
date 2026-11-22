@@ -2337,3 +2337,83 @@
  .page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseOffer{margin-bottom:18px}
  .page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseRate{font-size:23px}
 }
+
+
+/* Entitlements: consistent summary blocks and a calm two-level information hierarchy. */
+.page[data-commerce-unified="plans"] .planEntitlementCards{
+ align-items:stretch;gap:16px;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card{
+ box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;
+ gap:0;min-height:234px;padding:20px 20px 18px;
+ border:1px solid var(--plans-border);border-radius:9px;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .cardTitle{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:8px;flex-wrap:nowrap;width:100%;min-height:30px;margin:0 0 12px;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .cardTitle h3{
+ font-size:17px;line-height:1.35;font-weight:700;min-width:0;white-space:nowrap;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .cardTitle span{
+ flex:0 0 auto;margin-left:auto;white-space:nowrap;font-size:12px;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card .planEntitlementValue{
+ box-sizing:border-box;display:flex;align-items:center;
+ min-width:0;width:100%;min-height:65px;padding:11px 15px;
+ flex:none;border-radius:7px;
+ font-size:clamp(23px,1.9vw,30px);font-weight:750;
+ letter-spacing:-.5px;line-height:1.25;white-space:nowrap;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementStoreSplit{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+ width:100%;min-height:65px;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementStoreSplit>div{
+ box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;
+ min-width:0;padding:10px 12px;gap:3px;
+ border-left:3px solid var(--plans-accent);border-radius:7px;
+ background:color-mix(in srgb,var(--plans-accent) 12%,var(--plans-bg));
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementStoreSplit small{
+ font-size:12px;color:var(--plans-muted);white-space:nowrap;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementStoreSplit strong{
+ display:flex;align-items:baseline;gap:5px;
+ color:var(--plans-text);font-size:24px;font-weight:750;
+ line-height:1.12;font-variant-numeric:tabular-nums;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementStoreSplit em{
+ font-style:normal;font-size:12px;font-weight:550;color:var(--plans-muted);
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementNotes{
+ display:flex;flex-direction:column;gap:6px;
+ margin:12px 0 0;min-width:0;color:var(--plans-muted);
+ font-size:13px;line-height:1.5;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementNotes span{
+ display:block;overflow-wrap:anywhere;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementStorageDetails{
+ display:grid;grid-template-columns:1fr;gap:5px;min-width:0;margin:10px 0 0;
+ font-size:13px;line-height:1.35;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementStorageDetails>div{
+ display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+ min-width:0;
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementStorageDetails span{
+ color:var(--plans-muted);
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .planEntitlementStorageDetails strong{
+ color:var(--plans-text);font-size:13px;font-weight:650;
+ white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+@media(max-width:700px){
+ .page[data-commerce-unified="plans"] .planEntitlementCards .card{
+  min-height:0;padding:18px;
+ }
+ .page[data-commerce-unified="plans"] .planEntitlementCards .card .planEntitlementValue{
+  font-size:clamp(23px,6vw,30px);
+ }
+}
