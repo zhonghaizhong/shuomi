@@ -49,6 +49,9 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
   // Only update the five known synthetic colleague fixtures; never invent platform IDs for real bindings.
   // A preexisting explicit activation state (including retry success) must be preserved.
   const migrated=organizationId===mainTenant?valid.map(store=>{
+   // Only backfill synthetic IDs for the known, already paid historical test fixtures.
+   if(store.id==="SIM-ADMIN-EXPIRED-01"&&!store.platformStoreId)return {...store,platformStoreId:"SIM-SHEIN-ADMIN-EXPIRED-01"};
+   if(store.id==="SIM-C01-EXPIRED-01"&&!store.platformStoreId)return {...store,platformStoreId:"SIM-SHEIN-C01-EXPIRED-01"};
    // A failed ID lookup is a failed binding attempt, never an active bound store.
    if(store.id==="SIM-C01-05"&&(!store.servicePeriods||store.platformIdStatus==="获取失败"))return {...store,platformIdStatus:"获取失败" as const,platformStoreId:undefined,archived:true};
    const match=/^SIM-C01-0([1-5])$/.exec(store.id);
