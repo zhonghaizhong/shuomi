@@ -152,10 +152,12 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   if(!name.trim())return;
   if(stores.some(s=>s.name.trim().toLowerCase()===name.trim().toLowerCase())){setCodeNotice("已存在同名店铺，请修改名称后重试。");return;}
   if(availablePeriods<1){setCodeNotice("当前可用店铺服务期数为 0，无法绑定新店铺。请先购买续费期数；子账号需由本组织管理员分配至少 1 期。");return;}
+  if(authAccount.trim()&&allStores.some(s=>!s.archived&&s.platform==="SHEIN"&&s.bindingAccount?.trim().toLowerCase()===authAccount.trim().toLowerCase())){setCodeNotice("此平台子账户已关联当前组织的绑定记录。不能为同一身份重复开通服务期；请管理原店铺。");return;}
   // The provider response below is a mock. A real SHEIN platform ID must come from its API.
   // MOCK-FAIL tests binding failure without writing a store or charging a period.
   const providerId=authAccount.trim().toUpperCase()==="MOCK-FAIL"?"":"SIM-SHEIN-"+crypto.randomUUID().slice(0,12).toUpperCase();
   if(!providerId){setCodeNotice("模拟获取平台店铺 ID 失败，绑定未完成，未扣期数；请检查账号并重试。");return;}
+  if(allStores.some(s=>s.platform==="SHEIN"&&s.platformStoreId===providerId)){setCodeNotice("此平台店铺 ID 已存在绑定记录，不允许重复绑定；请管理原店铺。");return;}
   const n:Store={id:"DEMO-"+crypto.randomUUID().slice(0,8).toUpperCase(),name:name.trim(),platform:"SHEIN",region,type,group:newGroup,owner:newOwner.trim(),status:"已绑定",ownerMemberId:memberId,createdAt:new Date().toLocaleString("zh-CN"),platformStoreId:providerId,bindingAccount:authAccount.trim(),authorizationMethod,fixedIpPreference:fixedIp};
   const next=[...allStores,startDemoStoreService(n)];
   if(!saveDemoStoreBindings(organizationId,next)){setCodeNotice("保存绑定记录失败，未扣期数。");return;}
@@ -280,6 +282,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   {(dialog||managedStore)?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget){setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}}><section className={css.dialog+" "+css.authDialog} role="dialog" aria-modal="true" aria-label={managedStore?"管理店铺":"绑定新店铺"}><header><div><h2>{managedStore?"管理店铺":"绑定新店铺"}</h2><p>{managedStore?"修改基础资料及授权设置；未提交的更改不会保存。":"选择平台与授权方式，取得平台店铺 ID 后完成绑定并开始 30 天服务。"}</p></div><button aria-label="关闭弹窗" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>×</button></header>
   {!managedStore?<div className={css.hint} role="status">当前可用店铺服务：{availablePeriods} 期。{availablePeriods<1?"额度不足，不能绑定新店铺。请先购买服务期数，子账号请联系本组织管理员分配。":"获取平台店铺 ID 成功后才完成绑定、扣减 1 期并开始 30 天服务。"}</div>:null}
   {managedStore?<div className={css.bindingIdentity} role="group" aria-label="已绑定平台身份"><div><span>平台店铺 ID（唯一且不可修改）</span><strong data-testid="locked-platform-store-id">{managedStore.platformStoreId||"平台 ID 未获取"}</strong></div><p>该 ID 在首次成功绑定后锁定，续费只延长本店铺服务期，不能转移到另一家平台店铺。站点和店铺类型也随绑定身份锁定；需更换店铺请重新购买服务期并绑定。</p></div>:null}
+  {managedStore&&!managedStore.bindingAccount?<p className={css.hint}>这条历史绑定记录未保存原授权子账户名称；平台 ID 仍已锁定，不能通过补填账号切换店铺。</p>:null}
   {managedStore?.connectionIssue?<div className={css.manageWarning} role="status"><strong>连接异常 · {managedStore.connectionIssue}</strong><span>此店已绑定且服务有效。保存资料不会自动恢复连接，需经平台接口实际检测确认。</span></div>:null}
   <form className={css.manageForm} onSubmit={submitBinding}>
     <div className={css.bindingGrid}>
