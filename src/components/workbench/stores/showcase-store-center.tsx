@@ -44,9 +44,11 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const administrator=memberId==="admin"||getDemoMembership({organizationId,memberId})?.role==="管理员";
  const {state:enterpriseState,commit:commitEnterprise}=useShowcaseSuite();
  const {totals:resourceTotals}=useDemoPurchases(organizationId);
- const owners=[...new Set(enterpriseState.members.filter(member=>member.status==="正常").map(member=>member.name))];
+ const ownerMembers=enterpriseState.members.filter(member=>member.status==="正常");
+ const owners=[...new Set(ownerMembers.map(member=>member.name))];
  const [allStores,setAllStores]=useState<Store[]>(()=>read(organizationId));
  const stores=administrator?allStores.filter(s=>!s.archived):allStores.filter(s=>s.ownerMemberId===memberId&&!s.archived);
+ const deletedStores=allStores.filter(s=>s.archived&&Boolean(s.platformStoreId)&&Number(s.servicePeriods)>0&&(administrator||s.ownerMemberId===memberId));
  const isMainTenant=organizationId===demoTenant;
  const consumedPeriods=countPoolConsumedStorePeriods(allStores);
  const allocatedPeriods=Object.values(enterpriseState.storeAllocations).reduce((total,v)=>total+(Number(v)||0),0);
@@ -55,19 +57,27 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const validBinding=(s:Store)=>Boolean(s.platformStoreId&&Number(s.servicePeriods)>0);
  const isExpired=(s:Store)=>validBinding(s)&&!demoStoreServiceActive(s);
  const hasConnectionIssue=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s)&&Boolean(s.connectionIssue);
- const isNormal=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s)&&!hasConnectionIssue(s);
- const isExpiring=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s)&&Date.parse(s.serviceExpiresAt!)-Date.now()<=7*86400000;
+ const isNormal=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s)&&!hasConnectionIssue(s)&&!isExpiring(s);
+ const isExpiring=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s)&&!s.connectionIssue&&Date.parse(s.serviceExpiresAt!)-Date.now()<=7*86400000;
  // Only previously bound, paid and still-in-service stores with a confirmed connection fault need reconnection.
  const needsAttention=(s:Store)=>hasConnectionIssue(s);
  const activeServiceStores=stores.filter(isNormal).length;
  const expiredServiceStores=stores.filter(isExpired).length;
  const connectionIssueStores=stores.filter(needsAttention).length;
  const expiringServiceStores=stores.filter(isExpiring).length;
- const [metricFilter,setMetricFilter]=useState<"all"|"normal"|"expiring"|"expired"|"attention">("all");
+ const [metricFilter,setMetricFilter]=useState<"all"|"normal"|"expiring"|"expired"|"attention"|"deleted">("all");
  const [selectedStores,setSelectedStores]=useState<string[]>([]);
  const [groupAssignOpen,setGroupAssignOpen]=useState(false);
  const [moveStoreId,setMoveStoreId]=useState<string|null>(null);
  const [moveGroup,setMoveGroup]=useState("未分组");
+ const [checkConnectionId,setCheckConnectionId]=useState<string|null>(null);
+ const [ipDialogOpen,setIpDialogOpen]=useState(false);
+ const [ipAddress,setIpAddress]=useState("");
+ const [ipPort,setIpPort]=useState("");
+ const [ipUser,setIpUser]=useState("");
+ const [ipPassword,setIpPassword]=useState("");
+ const [ipShowPassword,setIpShowPassword]=useState(false);
+ const [ipError,setIpError]=useState("");
  const [bulkGroup,setBulkGroup]=useState("未分组");
  const [pageNumber,setPageNumber]=useState(1);
  const pageSize=10;
@@ -98,7 +108,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
    const visible=administrator?previous:previous.filter(s=>s.ownerMemberId===memberId);
    const changed=typeof next==="function"?next(visible):next;
    if(administrator)return changed;
-   return [...previous.filter(s=>s.ownerMemberId!==memberId),...changed.map(s=>({...s,ownerMemberId:memberId}))];
+   return [...previous.filter(s=>s.ownerMemberId!==memberId),...changed];
   });
  }
  const [dialog,setDialog]=useState(false),[name,setName]=useState(""),[region,setRegion]=useState("美国站"),[type,setType]=useState("半托管"),[newGroup,setNewGroup]=useState("未分组"),[newOwner,setNewOwner]=useState("");
@@ -114,26 +124,28 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [appliedFilters,setAppliedFilters]=useState({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"});
  useEffect(()=>{saveDemoStoreBindings(organizationId,allStores)},[allStores,organizationId]);
  useEffect(()=>{try{sessionStorage.setItem(key+"-groups",JSON.stringify(groups))}catch{}},[groups]);
- useEffect(()=>{setQuery("");setSearch("");setNotice("");setDialog(false);setEditing(null);setConfirmDelete(null);setInspecting(null);setSyncing(null);setRenewalId(null);setRenewalPeriods(1);setRenewalError("");setEntered(null);setGroupsOpen(false);setManageId(null);setMoreId(null);setCreatingGroup(false);setAddingOwner(false);setGroupError("");setDetailTab("店铺概览");setSelectedStores([]);setMetricFilter("all");setPageNumber(1);setGroupAssignOpen(false);setMoveStoreId(null)},[pathname]);
- useEffect(()=>{if(!dialog&&!editing&&!confirmDelete&&!inspecting&&!syncing&&!renewalId&&!moveStoreId&&!groupsOpen&&!manageId&&!moreId&&!creatingGroup&&!addingOwner&&!groupRename)return;const onKey=(e:KeyboardEvent)=>{if(e.key!=="Escape")return;if(creatingGroup){setCreatingGroup(false);return;}if(addingOwner){setAddingOwner(false);return;}if(groupRename){setGroupRename(null);return;}if(groupsOpen){setGroupsOpen(false);return;}if(confirmDelete){setConfirmDelete(null);return;}if(editing){setEditing(null);return;}if(inspecting){setInspecting(null);return;}if(syncing){setSyncing(null);return;}if(renewalId){setRenewalId(null);setRenewalError("");return;}if(moveStoreId){setMoveStoreId(null);return;}if(dialog||manageId){setDialog(false);setManageId(null);return;}if(moreId)setMoreId(null)};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey)},[dialog,editing,confirmDelete,inspecting,syncing,renewalId,moveStoreId,groupsOpen,manageId,moreId,creatingGroup,addingOwner,groupRename]);
+ useEffect(()=>{setQuery("");setSearch("");setNotice("");setDialog(false);setEditing(null);setConfirmDelete(null);setInspecting(null);setSyncing(null);setRenewalId(null);setRenewalPeriods(1);setRenewalError("");setEntered(null);setGroupsOpen(false);setManageId(null);setMoreId(null);setIpDialogOpen(false);setCheckConnectionId(null);setCreatingGroup(false);setAddingOwner(false);setGroupError("");setDetailTab("店铺概览");setSelectedStores([]);setMetricFilter("all");setPageNumber(1);setGroupAssignOpen(false);setMoveStoreId(null)},[pathname]);
+ useEffect(()=>{if(!dialog&&!editing&&!confirmDelete&&!inspecting&&!syncing&&!renewalId&&!moveStoreId&&!ipDialogOpen&&!checkConnectionId&&!groupsOpen&&!manageId&&!moreId&&!creatingGroup&&!addingOwner&&!groupRename)return;const onKey=(e:KeyboardEvent)=>{if(e.key!=="Escape")return;if(ipDialogOpen){setIpDialogOpen(false);setIpError("");return;}if(checkConnectionId){setCheckConnectionId(null);return;}if(creatingGroup){setCreatingGroup(false);return;}if(addingOwner){setAddingOwner(false);return;}if(groupRename){setGroupRename(null);return;}if(groupsOpen){setGroupsOpen(false);return;}if(confirmDelete){setConfirmDelete(null);return;}if(editing){setEditing(null);return;}if(inspecting){setInspecting(null);return;}if(syncing){setSyncing(null);return;}if(renewalId){setRenewalId(null);setRenewalError("");return;}if(moveStoreId){setMoveStoreId(null);return;}if(dialog||manageId){setDialog(false);setManageId(null);return;}if(moreId)setMoreId(null)};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey)},[dialog,editing,confirmDelete,inspecting,syncing,renewalId,moveStoreId,ipDialogOpen,checkConnectionId,groupsOpen,manageId,moreId,creatingGroup,addingOwner,groupRename]);
  useEffect(()=>{if(!moreId)return;const dismiss=(event:PointerEvent)=>{const target=event.target;if(!(target instanceof Element))return;if(target.closest('[role="menu"][aria-label="店铺操作"],button[aria-label^="更多操作 · "]'))return;setMoreId(null)};document.addEventListener("pointerdown",dismiss);return()=>document.removeEventListener("pointerdown",dismiss)},[moreId]);
  const route=pathname==="/workbench/store-center"?"home":pathname==="/workbench/stores"?"stores":pathname==="/workbench/store-products"?"products":"orders";
  const heading=route==="home"?"店铺中心":route==="stores"?"我的店铺":route==="products"?"店铺商品":"订单履约";
   const intro=route==="home"?"围绕店铺绑定、商品刊登、数据同步和订单交付形成业务闭环；经营分析与 AI 执行由对应模块负责。":route==="stores"?"统一管理店铺连接、授权、网络环境和数据状态。":route==="products"?"商品来自实际同步结果，不展示虚构商品。":"订单来自实际同步记录，不展示虚构交易或履约结果。";
  const link=(path:string)=>navigate(path+"?preview=1");
- function submitBinding(e:FormEvent){e.preventDefault();if(authorizationMethod==="API 授权（暂未开放）"){setCodeNotice("API 授权暂未开放，请选择子账户授权方式。");return;}if(!name.trim()){setCodeNotice("请先填写自定义名称。");return;}if(manageId){const original=stores.find(s=>s.id===manageId);if(!original?.platformStoreId){setCodeNotice("未找到原绑定的平台店铺 ID，请重新核验，不能修改绑定身份。");return;}if(stores.some(s=>s.id!==manageId&&s.name.trim().toLowerCase()===name.trim().toLowerCase())){setCodeNotice("店铺名称已存在，请修改后保存。");return;}setStores(old=>old.map(x=>x.id===manageId?{...x,name:name.trim(),group:newGroup,owner:newOwner.trim()}:x));setManageId(null);setAuthPassword("");setAuthCode("");setNotice("资料已保存。平台店铺 ID、站点、店铺类型及服务期未变；更换店铺必须重新绑定并购买服务期。");}else add(e);}
+ function submitBinding(e:FormEvent){e.preventDefault();if(authorizationMethod==="API 授权（暂未开放）"){setCodeNotice("API 授权暂未开放，请选择子账户授权方式。");return;}if(!name.trim()){setCodeNotice("请先填写自定义名称。");return;}if(manageId){const original=stores.find(s=>s.id===manageId);if(!original?.platformStoreId){setCodeNotice("未找到原绑定的平台店铺 ID，请重新核验，不能修改绑定身份。");return;}if(stores.some(s=>s.id!==manageId&&s.name.trim().toLowerCase()===name.trim().toLowerCase())){setCodeNotice("店铺名称已存在，请修改后保存。");return;}const selectedMember=newOwner?ownerMembers.find(m=>m.name===newOwner):ownerMembers.find(m=>m.id==="admin");if(!selectedMember){setCodeNotice("请选择本组织内状态正常的负责人，不能转移给其他组织。");return;}if(!administrator&&selectedMember.id!==memberId){setCodeNotice("跨成员转移店铺需要本组织管理员操作。");return;}setAllStores(old=>old.map(x=>x.id===manageId?{...x,name:name.trim(),group:newGroup,owner:selectedMember.name,ownerMemberId:selectedMember.id,fixedIpPreference:fixedIp,proxyIpAddress:fixedIp?ipAddress:undefined,proxyIpPort:fixedIp?ipPort:undefined,proxyIpUser:fixedIp?ipUser:undefined}:x));setManageId(null);setAuthPassword("");setAuthCode("");setNotice("保存成功：所属权已更新，平台店铺 ID、服务期限及连接状态保持原样。");}else add(e);}
  function commitFilters(){setPageNumber(1);setSelectedStores([]);setSearch(query.trim());setAppliedFilters({platform:platformFilter,region:regionFilter,type:typeFilter,group:groupFilter,status:statusFilter})}
  const detailStore=stores.find(s=>s.id===inspecting);
  const enteredStore=stores.find(s=>s.id===entered);
  const managedStore=stores.find(s=>s.id===manageId);
+ const connectionStore=stores.find(s=>s.id===checkConnectionId);
  const movingStore=stores.find(s=>s.id===moveStoreId);
  const renewalStore=stores.find(s=>s.id===renewalId);
  const renewStart=renewalStore?(demoStoreServiceActive(renewalStore)?Date.parse(renewalStore.serviceExpiresAt!):Date.now()):Date.now();
  const renewEnd=renewStart+(Number.isSafeInteger(renewalPeriods)&&renewalPeriods>0?renewalPeriods:0)*30*86400000;
  function enterStore(id:string,tab="店铺概览"){const store=stores.find(x=>x.id===id);if(!store)return;setSettingsDraft({group:store.group||"未分组",owner:store.owner||""});setMoreId(null);setInspecting(null);setDetailTab(tab);setEntered(id)}
  function createBindingGroup(e:FormEvent){e.preventDefault();const v=groupName.trim();if(!v){setGroupError("请输入分组名称。");return;}if(v==="未分组"||groups.includes(v)){setGroupError("分组名称已存在，请更换名称。");return;}setGroups(old=>[...old,v]);setNewGroup(v);setGroupName("");setGroupError("");setCreatingGroup(false);setNotice("已新建分组，并自动选中该分组；绑定店铺信息仍保留。")}
- function openBinding(id:string|null=null){const item=stores.find(s=>s.id===id);setManageId(id);setDialog(!id);setName(item?.name||"");setRegion(item?.region||"美国站");setType(item?.type||"半托管");setNewGroup(item?.group||"未分组");setNewOwner(item?.owner||"");setAuthorizationMethod(item?.authorizationMethod||"子账户邮箱验证码");setAuthAccount(item?.bindingAccount||"");setAuthPassword("");setAuthCode("");setShowPassword(false);setFixedIp(item?.fixedIpPreference||false);setCodeNotice("");}
-  const list=stores.filter(x=>[x.name,x.id,x.region,x.type].join(" ").toLowerCase().includes(search.toLowerCase())&&(appliedFilters.platform==="全部平台"||x.platform===appliedFilters.platform)&&(appliedFilters.region==="全部站点"||x.region===appliedFilters.region)&&(appliedFilters.type==="全部类型"||x.type===appliedFilters.type)&&(appliedFilters.group==="全部分组"||(x.group||"未分组")===appliedFilters.group)&&(appliedFilters.status==="全部状态"||(appliedFilters.status==="正常"&&isNormal(x))||(appliedFilters.status==="需要处理"&&needsAttention(x)))&&(metricFilter==="all"||metricFilter==="normal"&&isNormal(x)||metricFilter==="expiring"&&isExpiring(x)||metricFilter==="expired"&&isExpired(x)||metricFilter==="attention"&&needsAttention(x)));
+ function openBinding(id:string|null=null){const item=stores.find(s=>s.id===id);setManageId(id);setDialog(!id);setName(item?.name||"");setRegion(item?.region||"美国站");setType(item?.type||"半托管");setNewGroup(item?.group||"未分组");setNewOwner(item?.owner||"");setAuthorizationMethod(item?.authorizationMethod||"子账户邮箱验证码");setAuthAccount(item?.bindingAccount||"");setAuthPassword("");setAuthCode("");setShowPassword(false);setFixedIp(item?.fixedIpPreference||false);setIpAddress(item?.proxyIpAddress||"");setIpPort(item?.proxyIpPort||"");setIpUser(item?.proxyIpUser||"");setIpPassword("");setIpError("");setIpDialogOpen(false);setCheckConnectionId(null);setCodeNotice("");}
+ function saveIpConfiguration(e:FormEvent){e.preventDefault();const parts=ipAddress.trim().split(".");if(parts.length!==4||parts.some(x=>!/^(0|[1-9][0-9]{0,2})$/.test(x)||Number(x)>255)){setIpError("请输入有效的 IPv4 地址。");return;}const port=Number(ipPort);if(!Number.isSafeInteger(port)||port<1||port>65535){setIpError("端口须为 1–65535。");return;}setIpAddress(ipAddress.trim());setIpPort(String(port));setFixedIp(true);setIpDialogOpen(false);setIpPassword("");setIpError("");setCodeNotice("已保存固定 IP 演示配置。平台请求需要真实代理出口接入才可实现防关联，不会将未验证的代理标记为已生效。");}
+  const list=(metricFilter==="deleted"?deletedStores:stores).filter(x=>[x.name,x.id,x.region,x.type].join(" ").toLowerCase().includes(search.toLowerCase())&&(appliedFilters.platform==="全部平台"||x.platform===appliedFilters.platform)&&(appliedFilters.region==="全部站点"||x.region===appliedFilters.region)&&(appliedFilters.type==="全部类型"||x.type===appliedFilters.type)&&(appliedFilters.group==="全部分组"||(x.group||"未分组")===appliedFilters.group)&&(appliedFilters.status==="全部状态"||(appliedFilters.status==="正常"&&isNormal(x))||(appliedFilters.status==="需要处理"&&needsAttention(x)))&&(metricFilter==="deleted"||metricFilter==="all"||metricFilter==="normal"&&isNormal(x)||metricFilter==="expiring"&&isExpiring(x)||metricFilter==="expired"&&isExpired(x)||metricFilter==="attention"&&needsAttention(x)));
  const pageCount=Math.max(1,Math.ceil(list.length/pageSize));
  const currentPage=Math.min(pageNumber,pageCount);
  const visibleStores=list.slice((currentPage-1)*pageSize,currentPage*pageSize);
@@ -146,7 +158,8 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
 
  function resetFilters(){setMetricFilter("all");setPageNumber(1);setSelectedStores([]);setQuery("");setSearch("");setPlatformFilter("全部平台");setRegionFilter("全部站点");setTypeFilter("全部类型");setGroupFilter("全部分组");setStatusFilter("全部状态");setAppliedFilters({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"})}
  function saveRename(e:FormEvent){e.preventDefault();if(!editing||!name.trim())return;if(stores.some(s=>s.id!==editing&&s.name.trim().toLowerCase()===name.trim().toLowerCase())){setNotice("名称与现有演示店铺重复，请修改后再保存。");return;}setStores(old=>old.map(s=>s.id===editing?{...s,name:name.trim()}:s));setEditing(null);setName("");setNotice("店铺名称已保存在当前浏览器演示会话中。")}
- function deleteDemo(){if(!confirmDelete)return;setStores(old=>old.map(s=>s.id===confirmDelete&&Number(s.servicePeriods)>0?{...s,archived:true}:s).filter(s=>s.id!==confirmDelete||s.archived));setConfirmDelete(null);setNotice("演示店铺已解绑。已消耗的店铺服务期数不会因解绑而退还。")}
+ function deleteDemo(){if(!confirmDelete)return;setStores(old=>old.map(s=>s.id===confirmDelete?{...s,archived:true}:s));setConfirmDelete(null);setNotice("店铺已移至已删除，可恢复；平台店铺 ID、服务期和原所属权均保留，不退款。")}
+ function restoreStore(id:string){setAllStores(old=>old.map(s=>s.id===id&&(administrator||s.ownerMemberId===memberId)?{...s,archived:false}:s));setNotice("店铺已恢复原负责人、平台店铺 ID、服务期限和连接状态。");}
  function add(e:FormEvent){
   e.preventDefault();
   if(!name.trim())return;
@@ -158,7 +171,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   const providerId=authAccount.trim().toUpperCase()==="MOCK-FAIL"?"":"SIM-SHEIN-"+crypto.randomUUID().slice(0,12).toUpperCase();
   if(!providerId){setCodeNotice("模拟获取平台店铺 ID 失败，绑定未完成，未扣期数；请检查账号并重试。");return;}
   if(allStores.some(s=>s.platform==="SHEIN"&&s.platformStoreId===providerId)){setCodeNotice("此平台店铺 ID 已存在绑定记录，不允许重复绑定；请管理原店铺。");return;}
-  const n:Store={id:"DEMO-"+crypto.randomUUID().slice(0,8).toUpperCase(),name:name.trim(),platform:"SHEIN",region,type,group:newGroup,owner:newOwner.trim(),status:"已绑定",ownerMemberId:memberId,createdAt:new Date().toLocaleString("zh-CN"),platformStoreId:providerId,bindingAccount:authAccount.trim(),authorizationMethod,fixedIpPreference:fixedIp};
+  const n:Store={id:"DEMO-"+crypto.randomUUID().slice(0,8).toUpperCase(),name:name.trim(),platform:"SHEIN",region,type,group:newGroup,owner:newOwner.trim(),status:"已绑定",ownerMemberId:memberId,createdAt:new Date().toLocaleString("zh-CN"),platformStoreId:providerId,bindingAccount:authAccount.trim(),authorizationMethod,fixedIpPreference:fixedIp,proxyIpAddress:fixedIp?ipAddress:undefined,proxyIpPort:fixedIp?ipPort:undefined,proxyIpUser:fixedIp?ipUser:undefined};
   const next=[...allStores,startDemoStoreService(n)];
   if(!saveDemoStoreBindings(organizationId,next)){setCodeNotice("保存绑定记录失败，未扣期数。");return;}
   if(!consumePeriod()){saveDemoStoreBindings(organizationId,allStores);setCodeNotice("扣减期数失败，店铺绑定已回滚。");return;}
@@ -218,7 +231,8 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       ["normal","正常店铺",activeServiceStores,"连接与服务正常"],
       ["expiring","即将到期",expiringServiceStores,"未来 7 天"],
       ["expired","已到期",expiredServiceStores,"服务期已过"],
-      ["attention","待处理",connectionIssueStores,"连接异常"]
+      ["attention","待处理",connectionIssueStores,"连接异常"],
+      ["deleted","已删除",deletedStores.length,"可恢复"]
     ] as const).map(([key,title,value,subtitle])=><button type="button" key={key} className={css.storeMetric} data-tone={key} aria-pressed={metricFilter===key} onClick={()=>chooseMetric(key)}><span>{title}</span><small>{subtitle}</small><strong>{value} <em>家</em></strong></button>)}</section>
     {connectionIssueStores>0?<section className={css.attention}><span>有 {connectionIssueStores} 家已绑定且服务有效的店铺连接异常，需检查授权或平台接口。</span><button onClick={()=>chooseMetric("attention")}>查看待处理</button></section>:null}
    <form className={css.filters} aria-label="店铺筛选" onSubmit={e=>{e.preventDefault();commitFilters()}}>
@@ -240,10 +254,10 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
     {selectedStores.length>0?<div className={css.storeBulk} role="region" aria-label="批量操作"><span>已选择 {checkedStores.length} 家店铺</span><div><button type="button" onClick={()=>setGroupAssignOpen(!groupAssignOpen)}>加入分组</button><button type="button" disabled={!checkedStores.length} onClick={bulkSync}>批量同步</button><button type="button" onClick={()=>{setSelectedStores([]);setGroupAssignOpen(false)}}>取消选择</button></div>{groupAssignOpen?<div className={css.bulkGroupPicker}><select aria-label="选择批量分组" value={bulkGroup} onChange={e=>setBulkGroup(e.target.value)}><option>未分组</option>{groups.map(g=><option key={g}>{g}</option>)}</select><button type="button" className={css.primary} onClick={applyGroupToSelection}>确认加入</button></div>:null}</div>:null}
     {list.length?<div className={css.storeList}>{visibleStores.map(s=><article className={css.storeCard} key={s.id}>
      <div className={css.storeRow}>
-      <div className={css.storeIdentity}><input type="checkbox" aria-label={"选择"+s.name} checked={selectedStores.includes(s.id)} onChange={e=>setSelectedStores(current=>e.target.checked?[...current.filter(id=>id!==s.id),s.id]:current.filter(id=>id!==s.id))}/><div><strong>{s.name}</strong><small>店铺 ID：{s.platformStoreId||s.id}</small><small>{s.owner||"管理员"} · {s.group||"未分组"}</small></div></div>
+      <div className={css.storeIdentity}><input type="checkbox" aria-label={"选择"+s.name} checked={selectedStores.includes(s.id)} onChange={e=>setSelectedStores(current=>e.target.checked?[...current.filter(id=>id!==s.id),s.id]:current.filter(id=>id!==s.id))}/><div><strong>{s.name}</strong><small>店铺 ID：{s.platformStoreId||s.id}</small><small>{ownerMembers.find(m=>m.id===s.ownerMemberId)?.name||s.owner||"管理员"} · {s.group||"未分组"}</small></div></div>
       <div className={css.storeRowTags}><span>SHEIN</span><span>{s.region}</span><span>{s.type}</span></div>
-      <div className={css.storeRowState}><strong data-state={isNormal(s)?"active":isExpired(s)?"expired":hasConnectionIssue(s)?"expired":"unknown"}>{isExpired(s)?"服务已到期":hasConnectionIssue(s)?"连接异常":isNormal(s)?"服务有效":"资料待核实"}</strong><small>{hasConnectionIssue(s)?s.connectionIssue:s.platformStoreId?"平台 ID 已获取 · 同步未接入":"平台 ID 待核实"}</small><small>服务期限：{s.serviceExpiresAt?new Date(s.serviceExpiresAt).toLocaleDateString("zh-CN"):"待核实"}</small></div>
-      <div className={css.storeRowButtons}><button type="button" onClick={()=>{setMoveStoreId(s.id);setMoveGroup(s.group||"未分组")}}>移动分组</button><button type="button" className={css.dangerAction} onClick={()=>setConfirmDelete(s.id)}>删除店铺</button><button type="button" className={css.renewAction} disabled={!validBinding(s)} onClick={()=>openRenewal(s.id)}>续费</button><button type="button" onClick={()=>openBinding(s.id)}>管理店铺</button></div>
+      <div className={css.storeRowState}><strong data-state={isNormal(s)?"active":isExpired(s)?"expired":hasConnectionIssue(s)?"expired":"unknown"}>{isExpired(s)?"服务已到期":hasConnectionIssue(s)?"连接异常":isExpiring(s)?"即将到期":isNormal(s)?"服务有效":"资料待核实"}</strong><small>{hasConnectionIssue(s)?s.connectionIssue:s.platformStoreId?"平台 ID 已获取 · 同步未接入":"平台 ID 待核实"}</small><small>服务期限：{s.serviceExpiresAt?new Date(s.serviceExpiresAt).toLocaleDateString("zh-CN"):"待核实"}</small></div>
+      <div className={css.storeRowButtons}>{metricFilter==="deleted"?<button type="button" className={css.primary} onClick={()=>restoreStore(s.id)}>恢复店铺</button>:<><button type="button" onClick={()=>{setMoveStoreId(s.id);setMoveGroup(s.group||"未分组")}}>移动分组</button><button type="button" className={css.dangerAction} onClick={()=>setConfirmDelete(s.id)}>删除店铺</button><button type="button" className={css.renewAction} disabled={!validBinding(s)} onClick={()=>openRenewal(s.id)}>续费</button><button type="button" onClick={()=>openBinding(s.id)}>管理店铺</button></>}</div>
      </div>
     </article>)}</div>:<div className={css.empty}><Building2 size={34}/><h3>{stores.length?"没有符合条件的店铺":"尚未绑定店铺"}</h3><p>{stores.length?"请调整筛选条件。":"当前没有店铺。绑定后即可管理店铺。商品与订单仅在实际同步后显示。"}</p><button className={css.primary} onClick={()=>stores.length?resetFilters():openBinding()}>{stores.length?"清空筛选":"绑定新店铺"}</button></div>}
     {list.length>pageSize?<nav aria-label="店铺列表分页" className={css.storePages}><span>第 {currentPage} / {pageCount} 页</span><button type="button" disabled={currentPage<=1} onClick={()=>{setPageNumber(currentPage-1);setSelectedStores([])}}>上一页</button><button type="button" disabled={currentPage>=pageCount} onClick={()=>{setPageNumber(currentPage+1);setSelectedStores([])}}>下一页</button></nav>:null}
@@ -290,21 +304,21 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       <label>站点<select aria-label="站点" value={region} disabled={Boolean(managedStore)} onChange={e=>setRegion(e.target.value)}>{demoSites.map(site=><option key={site}>{site}</option>)}<option>其他站点</option></select></label>
       <label>店铺类型<select aria-label="店铺类型" value={type} disabled={Boolean(managedStore)} onChange={e=>setType(e.target.value)}><option>半托管</option><option>全托管</option><option>自营</option></select></label>
       <label>自定义名称<input aria-label="自定义名称" required maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="请输入店铺自定义名称"/><small>仅在系统内显示，不影响平台店铺原名。</small></label>
-      <label>负责人<select aria-label="负责人" value={newOwner} onChange={e=>setNewOwner(e.target.value)}><option value="">管理员（默认）</option>{owners.map(owner=><option key={owner} value={owner}>{owner}</option>)}</select><small>用于任务分配和日常协作。<button type="button" className={css.inlineLink} onClick={()=>setAddingOwner(true)}>＋ 添加负责人</button></small></label>
+      <label>负责人<select aria-label="负责人" value={newOwner} onChange={e=>setNewOwner(e.target.value)}><option value="">管理员（默认）</option>{owners.filter(owner=>owner!==ownerMembers.find(m=>m.id==="admin")?.name).map(owner=><option key={owner} value={owner}>{owner}</option>)}</select><small>用于任务分配和日常协作。<button type="button" className={css.inlineLink} onClick={()=>setAddingOwner(true)}>＋ 添加负责人</button></small></label>
       <label>店铺分组<select aria-label="绑定店铺分组" value={newGroup} onChange={e=>setNewGroup(e.target.value)}><option>未分组</option>{groups.map(g=><option key={g}>{g}</option>)}</select><small>便于分类筛选。<button type="button" className={css.inlineLink} onClick={()=>{setCreatingGroup(true);setGroupName("");setGroupError("")}}>＋ 新建分组</button></small></label>
     </div>
     <div className={css.authSection}><strong>{managedStore?"原绑定授权信息（只读）":"选择授权方式"}</strong>{managedStore?<p className={css.hint}>仅回显非敏感的原绑定资料。密码、验证码不保存也不回显。需要重授权时必须向平台核验返回的店铺 ID 与原 ID 一致，否则拒绝连接，不能借用现有服务期。</p>:null}<fieldset disabled={Boolean(managedStore)} className={css.authLock}><div className={css.authOptions}><button type="button" className={authorizationMethod!=="API 授权（暂未开放）"?css.authSelected:""} onClick={()=>setAuthorizationMethod("子账户邮箱验证码")} aria-pressed={authorizationMethod!=="API 授权（暂未开放）"}><b>子账户授权</b><small>填写平台子账户信息完成验证</small></button><button type="button" className={authorizationMethod==="API 授权（暂未开放）"?css.authSelected:""} onClick={()=>setAuthorizationMethod("API 授权（暂未开放）")} aria-pressed={authorizationMethod==="API 授权（暂未开放）"}><b>API 授权</b><small>适用于接口密钥授权 · 暂未开放</small></button></div>
     {authorizationMethod==="API 授权（暂未开放）"?<p className={css.hint}>API 授权暂未开放，请选择子账户授权。此处不会创建授权或访问令牌。</p>:<>
     <label>子账户账号<input aria-label="子账户账号" autoComplete="off" value={authAccount} onChange={e=>setAuthAccount(e.target.value)} placeholder="请输入子账户账号"/></label>
     <label>子账户密码<div className={css.passwordField}><input aria-label="子账户密码" autoComplete="new-password" type={showPassword?"text":"password"} value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="请输入子账户密码"/><button type="button" onClick={()=>setShowPassword(x=>!x)}>{showPassword?"隐藏":"显示"}</button></div></label>
-    <div className={css.fixedIp}><div><strong>启用固定IP</strong><p>通过指定网络出口发起授权，减少异地登录或平台风控；仅在需要固定网络环境时启用。</p></div><label className={css.toggleLabel}><input type="checkbox" aria-label="启用固定IP" checked={fixedIp} onChange={e=>setFixedIp(e.target.checked)}/><span>{fixedIp?"已启用（仅演示）":"未启用"}</span></label></div>
+    
     <div className={css.verification}><strong>验证码接收方式</strong><div className={css.codeModes}><button type="button" aria-pressed={authorizationMethod==="子账户邮箱验证码"} onClick={()=>setAuthorizationMethod("子账户邮箱验证码")}>邮箱验证码</button><button type="button" aria-pressed={authorizationMethod==="子账户手机验证码"} onClick={()=>setAuthorizationMethod("子账户手机验证码")}>手机验证码</button></div><small>验证码将发送至该子账户绑定{authorizationMethod==="子账户邮箱验证码"?"邮箱":"手机号"}（正式授权时）</small></div>
     <label>验证码<div className={css.passwordField}><input aria-label="验证码" autoComplete="one-time-code" value={authCode} onChange={e=>setAuthCode(e.target.value)} placeholder="请输入验证码"/><button type="button" onClick={()=>setCodeNotice("当前为演示展示，尚未接通 SHEIN 官方验证码发送服务，未发送验证码。")}>接收验证码</button></div></label>
     <p className={css.hint}>账户凭据仅用于正式平台授权验证。本展示站不会发送凭据，也不会持久化密码或验证码。</p></>}
     {fixedIp?<p className={css.hint}>正式固定 IP 需要配置可用的代理网络出口；演示页面不会伪造 IP 或验证结果。</p>:null}
-    </fieldset></div>
+    </fieldset><div className={css.fixedIp}><div><strong>启用固定IP · 防关联</strong><p>使用独立代理出口减少多店铺共用网络环境导致的关联风险；实际生效以正式网络服务为准。</p></div><label className={css.toggleLabel}><input type="checkbox" aria-label="启用固定IP" checked={fixedIp} onChange={e=>{if(e.target.checked){setIpDialogOpen(true);setIpError("")}else{setFixedIp(false);setIpDialogOpen(false)}}}/><span>{fixedIp?"已配置（演示）":"未启用"}</span></label>{fixedIp?<button type="button" className={css.inlineLink} onClick={()=>setIpDialogOpen(true)}>配置IP</button>:null}</div></div>
     {codeNotice?<p className={css.warning} role="status">{codeNotice}</p>:null}
-    <footer className={css.dialogActions}>{managedStore?<button type="button" className={css.inlineLink} onClick={()=>{const id=managedStore.id;setManageId(null);setAuthPassword("");setAuthCode("");enterStore(id,"店铺概览")}}>查看店铺详情</button>:null}<button type="button" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>取消</button><button className={css.primary} type="submit" disabled={authorizationMethod==="API 授权（暂未开放）"||(!managedStore&&availablePeriods<1)}>{managedStore?"保存修改":"确认绑定"}</button></footer>
+    <footer className={css.dialogActions}>{managedStore?<button type="button" className={css.inlineLink} onClick={()=>{const id=managedStore.id;setManageId(null);setAuthPassword("");setAuthCode("");setCheckConnectionId(id)}}>检测连接</button>:null}<button type="button" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>取消</button><button className={css.primary} type="submit" disabled={authorizationMethod==="API 授权（暂未开放）"||(!managedStore&&availablePeriods<1)}>{managedStore?"保存修改":"确认绑定"}</button></footer>
   </form></section></div>:null}
 
  </main>
