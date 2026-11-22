@@ -603,3 +603,23 @@
 .resourcePanel .resourceFilters input,.resourcePanel .resourceFilters select{box-sizing:border-box;width:100%;height:40px;min-height:40px;padding:7px 12px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font-size:14px}
 .resourcePanel .resourceFilters input:focus,.resourcePanel .resourceFilters select:focus{border-color:var(--primary)}
 @media(max-width:520px){.resourcePanel .resourceFilters{gap:10px}.resourcePanel .resourceFilters .resourceSearch{width:100%}.resourcePanel .resourceFilters .resourceStatus{width:100%}}
+
+
+/* Member management owns the member search, status filter, bounded table and pagination. */
+.memberManagement{gap:16px}
+.memberManagement>header{display:grid;gap:5px;justify-content:start;align-items:start;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.memberManagement>header p{font-size:13px}
+.memberFilters{display:flex;align-items:end;gap:14px;flex-wrap:wrap}
+.memberFilters label{display:grid;gap:6px;min-width:0;font-size:12px;font-weight:600;color:var(--muted)}
+.memberFilters label:first-child{width:min(320px,100%)}
+.memberFilters label:nth-child(2){width:155px}
+.memberFilters input,.memberFilters select{box-sizing:border-box;width:100%;min-height:40px;padding:7px 12px;font-size:14px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink)}
+.memberTable{max-height:590px;overflow:auto;overscroll-behavior:contain}
+.memberTable thead th{position:sticky;top:0;z-index:1;background:var(--inset)}
+.memberTable tbody tr{height:62px}
+.memberInactive{font-size:13px;color:var(--muted)}
+.memberPagination{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.memberPagination>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.memberPagination select{min-height:34px;padding:5px 10px;font-size:13px}
+.page .memberPagination button{min-height:34px;padding:5px 11px}
+@media(max-width:600px){.memberFilters label:first-child,.memberFilters label:nth-child(2){width:100%}.memberPagination{align-items:start}}
