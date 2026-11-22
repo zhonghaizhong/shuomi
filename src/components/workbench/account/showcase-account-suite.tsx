@@ -118,10 +118,10 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
   {suffix==="/organization/audit"&&<>{tiles([["操作记录",String(state.audit.length),"本企业模拟事件"],["成员变更",String(state.audit.filter(x=>x.category==="成员与权限").length),"成员邀请、状态、角色"],["角色配置",String(state.audit.filter(x=>x.category==="角色权限").length),"企业角色调整"],["推广与收益",String(state.audit.filter(x=>x.category.includes("推广")||x.category.includes("提现")).length),"模拟收益与提现"]])}
    <section className={s.panel}><header><h2>操作记录</h2><p>所有在本次模拟中确认的变更都在这里留痕。</p></header><div className={s.toolbar}><input value={query} aria-label="搜索操作记录" onChange={e=>setQuery(e.target.value)} placeholder="搜索操作人、类型、内容"/><button onClick={()=>{setQuery("");setApplied("")}}>重置</button><button className={s.primary} onClick={()=>setApplied(query.trim())}>确定</button></div><div className={s.tableWrap}><table><thead><tr><th>操作时间</th><th>操作人</th><th>所属模块</th><th>操作内容</th><th>结果</th></tr></thead><tbody>{viewAudit.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{x.actor}</td><td>{x.category}</td><td>{x.message}</td><td>模拟完成</td></tr>)}</tbody></table>{!viewAudit.length&&<div className={s.empty}>暂无相关操作记录。</div>}</div></section>
   </>}
-  {referral&&<>{tiles([["累计推广收益",money(totalEarnings(state)),"本企业模拟收益"],["可提现余额",money(balance),"模拟已结算金额"],["已提现",money(state.withdrawals.reduce((sum,x)=>sum+x.amount,0)),"只记模拟记录"],["模拟邀请用户",String(state.referredCustomers.length),"用户充值后产生独立店铺服务订单"]])}
+  {referral&&<>{suffix!=="/referrals/center"&&tiles([["累计推广收益",money(totalEarnings(state)),"本企业模拟收益"],["可提现余额",money(balance),"模拟已结算金额"],["已提现",money(state.withdrawals.reduce((sum,x)=>sum+x.amount,0)),"只记模拟记录"],["模拟邀请用户",String(state.referredCustomers.length),"用户充值后产生独立店铺服务订单"]])}
 
    {suffix==="/referrals/center"&&<>
-    <div className={s.metrics} aria-label="推广中心核心指标">{([
+    <div className={s.metrics} role="region" aria-label="推广中心核心指标">{([
      ["累计推广人数",String(state.referredCustomers.length),"已关联的模拟邀请用户"],
      ["有效注册",String(state.referredCustomers.length),"模拟完成注册"],
      ["付费用户",String(state.referredCustomers.filter(x=>x.storeFeeCny>0).length),"已产生基础店铺服务消费"],
