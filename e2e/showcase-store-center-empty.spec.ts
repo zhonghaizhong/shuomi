@@ -19,7 +19,7 @@ test("organization-scoped simulated bindings show ten to enterprise admin, five 
  await expect(area).toContainText("同事01演示店铺01");
  for(const site of ["美国站","加拿大站","英国站","德国站","法国站"])await expect(area).toContainText(site);
  const openSwitch=async()=>{
-  await page.getByRole("button",{name:/账户$/}).first().click();
+  await page.getByRole("button",{name:/(linchen_demo|模拟同事01)账户/}).click();
   await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
   return page.getByRole("dialog",{name:"切换账户与企业组织"});
  };
