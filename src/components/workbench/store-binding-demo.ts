@@ -55,7 +55,7 @@ function seeds(organizationId:string):DemoStoreBinding[]{
 export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
  try{
   const raw=sessionStorage.getItem(demoStoreKey(organizationId));
-  if(raw===null)return seeds(organizationId);
+  if(raw===null){if(organizationId===mainTenant)sessionStorage.setItem(demoStoreKey(organizationId)+"-admin-status-v1","1");return seeds(organizationId);}
   const parsed:unknown=JSON.parse(raw);
   if(!Array.isArray(parsed))return [];
   const valid=(parsed as DemoStoreBinding[]).filter((x:DemoStoreBinding)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&(x.status==="已绑定"||String(x.status)==="待授权")&&typeof x.ownerMemberId==="string");
