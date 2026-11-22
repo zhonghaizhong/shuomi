@@ -27,7 +27,7 @@ export type AgentUseConfiguration={
 
 const initialOfficial=["商品识别主图","核心购买理由","核心需求解决","产品结构确认","核心细节证据","核心使用场景","卖点选择理由","规格购买确认"];
 const officialDetail=["核心购买理由","核心需求解决","核心使用场景","细节证据","功能卖点确认","使用体验延展","规格购买确认","购买理由总结"];
-const availableSkills=["商品标题整理","商品描述优化","标准商品套图","场景化商品展示","POD图片生成","贴图优化","文案生成"];
+const availableSkills=["商品标题规范优化（示例）","商品图片优化（示例）"];
 const availableKnowledge=["平台规则","运营方法","合规参考"];
 const languages=["不设置（默认关闭）","英语","中文","西班牙语","法语","德语","日语"];
 
@@ -37,7 +37,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const dialogRef=useRef<HTMLDialogElement>(null);
  const id=useId();
  const [form,setForm]=useState<AgentUseConfiguration>(initial);
- const [child,setChild]=useState<""|"add-image"|"language"|"background"|"source">("");
+ const [child,setChild]=useState<""|"add-image"|"language"|"background"|"source"|"library">("");
  const [sourceTab,setSourceTab]=useState("应用技能");
  const [slotIndex,setSlotIndex]=useState(0);
  const [selectedFromPicker,setSelectedFromPicker]=useState<string[]>([]);
@@ -48,6 +48,9 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const [selectedImgs,setSelectedImgs]=useState<number[]>(initial.selectedImages??[]);
  const [slots,setSlots]=useState<(string|null)[]>(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));
  const [selectedItems,setSelectedItems]=useState<string[]>(mode==="knowledge"?initial.selectedKnowledge??[]:initial.selectedSkills??[]);
+ const [skillTab,setSkillTab]=useState<"我的技能"|"团队技能">("我的技能");
+ const [librarySelected,setLibrarySelected]=useState("");
+ const [libraryQuery,setLibraryQuery]=useState("");
 
  useEffect(()=>{
   const previous=document.activeElement;
@@ -58,10 +61,10 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
 
  const set=<K extends keyof AgentUseConfiguration>(key:K,value:AgentUseConfiguration[K])=>setForm(old=>({...old,[key]:value}));
  const flip=(array:string[],value:string,callback:(next:string[])=>void)=>callback(array.includes(value)?array.filter(x=>x!==value):[...array,value]);
- const title=child==="add-image"?"添加图片":child==="language"?"选择生图语言":child==="background"?"统一图片底色":child==="source"?"选择参考素材":({
+ const title=child==="add-image"?"添加图片":child==="language"?"选择生图语言":child==="background"?"统一图片底色":child==="source"?"选择参考素材":child==="library"?"从我的素材库引用":({
   "product-image":"AI图片优化设置","pod-ai":"AI重构图片设置","pod-hybrid":"混合模式设置","pod-pattern-split":"图片裂变模式","pod-pattern-custom":"自定义指令模式","skills":"选择技能","knowledge":"选择知识库"
  } as Record<ConfigurationMode,string>)[mode];
- const desc=child==="add-image"?"选择图片来源，再将图片加入当前编排位置。":child==="language"?"不设置时不指定生图语言；选择后生效。":child==="background"?"不设置时不限制背景；选择后生效。":child==="source"?"请选择参考图片的来源，再选定具体图片。":({
+ const desc=child==="add-image"?"选择图片来源，再将图片加入当前编排位置。":child==="language"?"不设置时不指定生图语言；选择后生效。":child==="background"?"不设置时不限制背景；选择后生效。":child==="source"?"请选择参考图片的来源，再选定具体图片。":child==="library"?"来源：POD素材管理工具 / 我的素材库 · 图片裂变仅引用 1 张参考图。":({
   "product-image":"选择优化方式，再配置主图或详情图。",
   "pod-ai":"选择优化方式，再配置主图或详情图。",
   "pod-hybrid":"从多种图片来源自由组合，按需完成最终刊登图片编排。",
@@ -93,7 +96,13 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
   <main className={css.body}>
    {child==="language"?<div className={css.optionGrid}>{languages.map(x=><button key={x} aria-pressed={(form.imageLanguage??languages[0])===x} onClick={()=>{set("imageLanguage",x);setChild("");}}>{x}</button>)}</div>
    :child==="background"?<div className={css.stack}><h3>背景指令</h3>{choice(["不设置","白色背景","自定义背景要求"],form.imageBackground??"不设置",x=>set("imageBackground",x))}{form.imageBackground==="自定义背景要求"?<label>自定义背景要求<textarea aria-label="自定义背景要求" value={form.imageBackgroundCustom??""} onChange={e=>set("imageBackgroundCustom",e.target.value)} placeholder="例如：浅灰摄影棚背景、柔和自然光、保持商品主体不变……" /></label>:null}<p>所有主图和详情图都会遵循此配置。</p></div>
-   :child==="source"?<div className={css.optionGrid}>{["本地上传","素材库"].map(x=><button key={x} onClick={()=>{set("splitSource",x);setChild("");setMessage(x==="素材库"?"素材库尚未接入，当前可保存来源选择。":"选择了本地图片来源。");}}>{x}</button>)}</div>
+   :child==="source"?<div className={css.optionGrid}><button type="button" onClick={()=>{set("splitSource","本地上传");setChild("");}}>本地上传 · 从电脑选择图片</button><button type="button" onClick={()=>setChild("library")}>素材库 · 选择已保存图片</button></div>
+   :child==="library"?<div className={css.stack}>
+    <p className={css.tip}>以下为 Figma 原型示例；正式引用需要接入 POD 素材管理工具中真实的「我的素材库」。</p>
+    <input aria-label="搜索素材名称或关键词" placeholder="搜索素材名称或关键词" value={libraryQuery} onChange={e=>setLibraryQuery(e.target.value)} />
+    <div className={css.optionGrid}>{["复古花卉字母","宇宙猫咪图形","复古日落纹理","植物线描","蝴蝶结图案","阳光笑脸字样","波浪渐变装饰","宠物轮廓主题"].filter(x=>x.includes(libraryQuery)).map((x,i)=><button type="button" key={x} aria-pressed={librarySelected===x} onClick={()=>setLibrarySelected(x)}>{String(i+1).padStart(2,"0")} · {x}</button>)}</div>
+    <p>当前已选：{librarySelected||"未选择参考素材"} · 单选 1 张 · 引用不移动或删除原素材</p>
+   </div>
    :child==="add-image"?<>
     <div className={css.tabGrid}>{["应用技能","预设指令AI重构","从本地上传","自定义指令"].map(t=><button key={t} aria-pressed={sourceTab===t} onClick={()=>setSourceTab(t)}>{t}</button>)}</div>
     <section className={css.panel}><h3>{sourceTab}</h3>
@@ -122,15 +131,24 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
    </div>
    :mode==="pod-pattern-split"?<div className={css.stack}><label>参考素材<button type="button" className={css.sourceButton} onClick={()=>setChild("source")}>＋ 上传图片 / 从素材库选择</button></label><p>{form.splitSource?"当前来源："+form.splitSource:"从本地或素材库中选择 1 张参考图片"}</p>{form.splitSource==="本地上传"?<label>选择参考图片<input type="file" accept="image/*" onChange={e=>set("splitReference",e.target.files?.[0]?.name??"")}/></label>:null}<h3>裂变强度</h3><div className={css.optionGrid}>{["保守变化","适度创新","大胆裂变"].map(x=><button type="button" key={x} aria-pressed={(form.splitStrength??"适度创新")===x} onClick={()=>set("splitStrength",x)}>{x}</button>)}</div><p>保留主体关键特征，可调整色彩、细节和局部排版。</p></div>
    :mode==="pod-pattern-custom"?<div className={css.stack}><label>生成指令<textarea aria-label="生成指令" rows={5} placeholder="例如：黑色底，朋克风，加入不同样式的闪电和英文短句，适合腰部印刷……" value={form.patternPrompt??""} onChange={e=>set("patternPrompt",e.target.value)}/></label><p>AI 会优先遵循你的指令，同时自动做印刷适配与合规检查（实际能力待接入）。</p></div>
-   :<div className={css.stack}><p>按需勾选，可多选，不选择也可以保存模板。</p><div className={css.optionGrid}>{(mode==="skills"?availableSkills:availableKnowledge).map(x=><label className={css.imageChoice} key={x}><input type="checkbox" checked={selectedItems.includes(x)} onChange={()=>flip(selectedItems,x,setSelectedItems)}/>{x}</label>)}</div></div>}
+   :mode==="skills"?<div className={css.stack}>
+    <div className={css.segment}>{(["我的技能","团队技能"] as const).map(tab=><button key={tab} type="button" aria-pressed={skillTab===tab} onClick={()=>setSkillTab(tab)}>{tab}</button>)}</div>
+    {skillTab==="我的技能"?<section className={css.panel}><h3>已启用的个人技能</h3>{availableSkills.map((name,i)=><label className={css.imageChoice} key={name}><input type="checkbox" checked={selectedItems.includes(name)} onChange={()=>flip(selectedItems,name,setSelectedItems)}/><span><strong>{name}</strong><small>v1 · 已启用 · 私有 · {i?"选择后可设置图片优化范围和方式":"演示商品标题格式规范化"}</small></span></label>)}<p>以上仅为原型示例技能；正式调用以技能库权限和可用版本为准。</p></section>:<section className={css.panel}><h3>可用团队技能</h3><p>当前原型没有配置可选择的团队技能。可在技能库核实团队技能审核状态和可用版本。</p></section>}
+    <div className={css.inline}><strong>已选 {selectedItems.length} 项</strong><button type="button" onClick={()=>setSelectedItems([])}>清空</button></div>
+   </div>
+   :<div className={css.stack}><p>按需勾选，可多选，不选择也可以保存模板。</p><div className={css.optionGrid}>{availableKnowledge.map(x=><label className={css.imageChoice} key={x}><input type="checkbox" checked={selectedItems.includes(x)} onChange={()=>flip(selectedItems,x,setSelectedItems)}/>{x}</label>)}</div></div>}
    {maybeNotice}
   </main>
   <footer className={css.footer}><button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child?"返回":"取消"}</button><button type="button" className={css.primary} onClick={()=>{
+   if(child==="library"){
+    if(!librarySelected){setMessage("请选择一张参考素材。");return;}
+    setForm(v=>({...v,splitSource:"素材库",splitReference:librarySelected}));setChild("");setMessage("已选择原型素材示例；未读取真实素材库。");return;
+   }
    if(child==="language"||child==="background"){setChild("");return;}
    if(child){setChild("");return;}
    if(mode==="pod-pattern-custom"&&!form.patternPrompt?.trim()){setMessage("请填写生成指令后保存配置。");return;}
    if(isImage&&form.generationRule==="自定义指令"&&!tasks.some(t=>t.prompt.trim())){setMessage("请至少填写一条独立生成指令。");return;}
    commit();
-  }}>{child?"确认选择":mode==="pod-hybrid"?"保存组合":mode==="skills"||mode==="knowledge"?"确认选择":mode==="pod-ai"||mode==="product-image"?"确认选择":"保存配置"}</button></footer>
+  }}>{child?"确认选择":mode==="pod-hybrid"?"保存组合":mode==="skills"?"完成选择":mode==="knowledge"?"确认选择":mode==="pod-ai"||mode==="product-image"?"确认选择":"保存配置"}</button></footer>
  </dialog>;
 }
