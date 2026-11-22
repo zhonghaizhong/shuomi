@@ -14,7 +14,8 @@ test("administrator fixture status and bounded pagination separate two connectio
  await page.goto(root+"/stores");
  const area=page.locator('[data-store-center-showcase="stores"]');
  const metrics=area.getByRole("region",{name:"店铺运营概览"});
- await expect(metrics.getByRole("button",{name:/正常店铺/})).toContainText("7 家");
+ await expect(metrics.getByRole("button",{name:/正常店铺/})).toContainText("5 家");
+ await expect(metrics.getByRole("button",{name:/即将到期/})).toContainText("2 家");
  await expect(metrics.getByRole("button",{name:/待处理/})).toContainText("2 家");
  await expect(area.getByRole("navigation",{name:"店铺列表分页"})).toContainText("第 1 / 2 页");
  await expect(area.locator('article[class*="storeCard"]')).toHaveCount(10);
@@ -23,8 +24,8 @@ test("administrator fixture status and bounded pagination separate two connectio
  await expect(area).toContainText("管理员演示店铺04");
  await expect(area).toContainText("管理员演示店铺05");
  await metrics.getByRole("button",{name:/正常店铺/}).click();
- await expect(area.locator('article[class*="storeCard"]')).toHaveCount(7);
- for(const n of ["01","02","03"])await expect(area.locator('article[class*="storeCard"]').filter({hasText:"管理员演示店铺"+n})).toContainText("服务有效");
+ await expect(area.locator('article[class*="storeCard"]')).toHaveCount(5);
+ for(const n of ["02","03"])await expect(area.locator('article[class*="storeCard"]').filter({hasText:"管理员演示店铺"+n})).toContainText("服务有效");
  await expect(area).not.toContainText("管理员演示店铺04");
 });
 test("organization-scoped simulated bindings show eleven to enterprise admin, five to colleague, and isolate other organizations",async({page})=>{
@@ -149,7 +150,14 @@ test("Figma binding modal has account, OTP, groups, fixed IP and honest authoriz
  await dlg.getByRole("button",{name:"接收验证码"}).click();
  await expect(dlg.getByRole("status").filter({hasText:"未发送验证码"})).toBeVisible();
  await dlg.getByLabel("启用固定IP").check();
- await expect(dlg.getByText("已启用（仅演示）")).toBeVisible();
+ const ip=page.getByRole("dialog",{name:"固定IP配置"});
+ await expect(ip).toContainText("IP的作用");
+ await expect(ip).toContainText("防关联");
+ await ip.getByLabel("IP地址").fill("192.168.1.10");
+ await ip.getByLabel("端口").fill("8080");
+ await ip.getByRole("button",{name:"保存并启用"}).click();
+ await expect(ip).toHaveCount(0);
+ await expect(dlg.getByText("已配置（演示）")).toBeVisible();
  await dlg.getByRole("button",{name:"API 授权"}).click();
  await expect(dlg.getByRole("button",{name:"确认绑定"})).toBeDisabled();
  await dlg.getByRole("button",{name:"子账户授权"}).click();
@@ -158,7 +166,9 @@ test("Figma binding modal has account, OTP, groups, fixed IP and honest authoriz
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByText("测试绑定流程",{exact:true})).toBeVisible();
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
   await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"服务信息",exact:true}).click();
   await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("已绑定");
  await page.goto(root+"/store-products");
@@ -248,6 +258,46 @@ test("every bound card always presents four aligned actions; moving group and un
  await confirmation.getByRole("button",{name:"取消"}).click();
  await expect(card).toBeVisible();
 });
+test("soft deleted stores recover unchanged platform ID, owner and service periods",async({page})=>{
+ const area=await createDemo(page,"待恢复演示店铺");
+ const card=area.locator('article[class*="storeCard"]').filter({hasText:"待恢复演示店铺"});
+ const original=await page.evaluate(()=>JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]").find((s:{name:string})=>s.name==="待恢复演示店铺"));
+ await card.getByRole("button",{name:"删除店铺"}).click();
+ await page.getByRole("alertdialog",{name:"确认移除演示店铺"}).getByRole("button",{name:"确认移除"}).click();
+ await expect(area).not.toContainText("待恢复演示店铺");
+ await area.getByRole("button",{name:/已删除/}).click();
+ const archived=area.locator('article[class*="storeCard"]').filter({hasText:"待恢复演示店铺"});
+ await expect(archived.getByRole("button",{name:"恢复店铺"})).toBeVisible();
+ await archived.getByRole("button",{name:"恢复店铺"}).click();
+ await area.getByRole("button",{name:/已绑定店铺/}).click();
+ await expect(area).toContainText("待恢复演示店铺");
+ const restored=await page.evaluate(()=>JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]").find((s:{name:string})=>s.name==="待恢复演示店铺"));
+ expect(restored.platformStoreId).toBe(original.platformStoreId);
+ expect(restored.ownerMemberId).toBe(original.ownerMemberId);
+ expect(restored.serviceExpiresAt).toBe(original.serviceExpiresAt);
+ expect(restored.servicePeriods).toBe(original.servicePeriods);
+ expect(restored.archived).toBe(false);
+});
+test("administrator transfers store ownership to colleague without changing service or connection state",async({page})=>{
+ const area=await createDemo(page,"所属权转移测试店铺");
+ const before=await page.evaluate(()=>JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]").find((s:{name:string})=>s.name==="所属权转移测试店铺"));
+ await area.getByRole("button",{name:"管理店铺",exact:true}).click();
+ const dlg=page.getByRole("dialog",{name:"管理店铺"});
+ await dlg.getByRole("combobox",{name:"负责人"}).selectOption({label:"模拟同事01"});
+ await dlg.getByRole("button",{name:"保存修改"}).click();
+ const after=await page.evaluate(()=>JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]").find((s:{name:string})=>s.name==="所属权转移测试店铺"));
+ expect(after.ownerMemberId).toBe("SIM-COLLEAGUE-01");
+ expect(after.platformStoreId).toBe(before.platformStoreId);
+ expect(after.servicePeriods).toBe(before.servicePeriods);
+ expect(after.serviceExpiresAt).toBe(before.serviceExpiresAt);
+ expect(after.connectionIssue).toBe(before.connectionIssue);
+ await page.getByRole("button",{name:/linchen_demo账户/}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ await page.getByRole("dialog",{name:"切换账户与企业组织"}).getByRole("button",{name:/模拟同事01/}).click();
+ await page.getByRole("dialog",{name:"切换账户与企业组织"}).getByRole("button",{name:"确认切换"}).click();
+ await page.goto(root+"/stores");
+ await expect(page.locator('[data-store-center-showcase="stores"]')).toContainText("所属权转移测试店铺");
+});
 test("Figma filters apply only on confirm and reset together",async({page})=>{
  const area=await createDemo(page,"筛选店铺");
  await area.getByLabel("站点筛选").selectOption("加拿大站");
@@ -264,7 +314,9 @@ test("Figma filters apply only on confirm and reset together",async({page})=>{
 test("Figma Manage opens modal and retains settings under store-detail tabs, without fake authorization",async({page})=>{
  const area=await createDemo(page,"待修改店铺");
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await expect(details).toBeVisible();
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
@@ -275,7 +327,9 @@ test("Figma Manage opens modal and retains settings under store-detail tabs, wit
  await page.getByRole("button",{name:"返回我的店铺"}).click();
  await expect(area).toContainText("林晨");
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await details.getByRole("button",{name:"编辑店铺资料"}).click();
  const authorization=page.getByRole("dialog",{name:"管理店铺"});
@@ -312,7 +366,9 @@ test("Figma binding group and owner affordances preserve draft and follow compan
 test("store detail retains rename, edit and unlink without card menu",async({page})=>{
  const area=await createDemo(page,"待操作店铺");
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  for(const label of ["修改自定义名称","编辑店铺资料","解绑店铺"])await expect(details.getByRole("button",{name:label})).toBeVisible();
@@ -329,7 +385,9 @@ test("store detail retains rename, edit and unlink without card menu",async({pag
 test("enter-store is a full five-tab Figma detail view rather than a generic workspace modal",async({page})=>{
  const area=await createDemo(page,"店铺详情演示");
  await area.getByRole("button",{name:"管理店铺"}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  await expect(page.getByRole("dialog",{name:"店铺工作台"})).toHaveCount(0);
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await expect(details).toBeVisible();
@@ -345,14 +403,18 @@ test("enter-store is a full five-tab Figma detail view rather than a generic wor
 test("store settings are staged until Save, and returning discards uncommitted edits",async({page})=>{
  const area=await createDemo(page,"待保存设置");
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await page.getByRole("button",{name:"返回我的店铺"}).click();
  await expect(area).not.toContainText("林晨");
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await expect(details.getByLabel("店铺负责人")).toHaveValue("");
  await details.getByLabel("店铺负责人").selectOption("林晨");
@@ -368,7 +430,9 @@ test("Figma group creation, rename and deletion preserve store rather than unlin
  await groups.getByRole("button",{name:"创建分组"}).click();
  await groups.getByRole("button",{name:"完成"}).click();
  await area.getByRole("button",{name:"管理店铺"}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await details.getByRole("button",{name:"店铺设置"}).click();
  await details.getByLabel("店铺所属分组").selectOption("原型分组");
@@ -388,7 +452,9 @@ test("Figma group creation, rename and deletion preserve store rather than unlin
 test("Escape closes the topmost Figma overlay without dropping the store-detail page",async({page})=>{
  const area=await createDemo(page,"保持上下文店铺");
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await details.getByRole("button",{name:"管理分组"}).click();
@@ -399,7 +465,9 @@ test("Escape closes the topmost Figma overlay without dropping the store-detail 
  await expect(details.getByRole("button",{name:"店铺设置",exact:true})).toHaveAttribute("aria-current","page");
  await page.getByRole("button",{name:"返回我的店铺"}).click();
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await expect(details.getByRole("button",{name:"解绑店铺"})).toBeVisible();
 });
@@ -424,8 +492,8 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByRole("heading",{name:"我的店铺"})).toBeVisible();
  const overview=area.getByRole("region",{name:"店铺运营概览"});
- for(const metric of ["已绑定店铺","正常店铺","即将到期","已到期","待处理"])await expect(overview.getByText(metric,{exact:true})).toBeVisible();
- await expect(overview.getByRole("button")).toHaveCount(5);
+ for(const metric of ["已绑定店铺","正常店铺","即将到期","已到期","待处理","已删除"])await expect(overview.getByText(metric,{exact:true})).toBeVisible();
+ await expect(overview.getByRole("button")).toHaveCount(6);
  await expect(area.getByText("统一管理店铺连接、授权、网络环境和数据状态。")).toBeVisible();
 
  const filter=area.getByRole("form",{name:"店铺筛选"});
@@ -499,7 +567,9 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  const activeCard=stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"});
  await expect(activeCard).toContainText("服务有效");
  await activeCard.getByRole("button",{name:"管理店铺",exact:true}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  const detail=page.getByRole("region",{name:"店铺详情页面"});
  await detail.getByRole("button",{name:"服务信息",exact:true}).click();
  await detail.getByRole("button",{name:"续费30天",exact:true}).click();
@@ -586,7 +656,9 @@ test("expired 30-day store service prevents synchronization until renewed",async
  const card=page.locator('[data-store-center-showcase="stores"] article[class*="storeCard"]').filter({hasText:"管理员演示店铺01"});
  await expect(card).toContainText("服务已到期");
  await card.getByRole("button",{name:"管理店铺"}).click();
-  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+  await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
+  await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
+  await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"数据同步"}).click();
  await page.getByRole("region",{name:"店铺详情页面"}).getByRole("button",{name:"立即同步"}).click();
  await expect(page.getByRole("dialog",{name:"立即同步"})).toContainText("请先确认服务期");
