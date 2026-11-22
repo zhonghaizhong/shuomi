@@ -13,7 +13,7 @@ test.beforeEach(async({page},info)=>{
 test("organization-scoped simulated bindings show eleven to enterprise admin, five to colleague, and isolate other organizations",async({page})=>{
  await page.goto(root+"/stores");
  const area=page.locator('[data-store-center-showcase="stores"]');
- await expect(area.getByText("店铺总数")).toBeVisible();
+ await expect(area.getByText("已绑定店铺")).toBeVisible();
  await expect(area).toContainText("共 11 家店铺");
  await expect(area).toContainText("管理员演示店铺01");
  await expect(area).toContainText("同事01演示店铺01");
@@ -140,11 +140,23 @@ test("Figma binding modal has account, OTP, groups, fixed IP and honest authoriz
  await expect(dlg).toHaveCount(0);
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByText("测试绑定流程",{exact:true})).toBeVisible();
- await area.getByRole("button",{name:"查看店铺",exact:true}).click();
+ await area.getByRole("button",{name:"管理店铺",exact:true}).click();
   await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"服务信息",exact:true}).click();
   await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("已绑定");
  await page.goto(root+"/store-products");
  await expect(page.getByRole("heading",{name:"暂无已同步商品"})).toBeVisible();
+});
+test("compact store rows show batch actions only after selection and preserve local group changes",async({page})=>{
+ const area=await createDemo(page,"批量店铺");
+ await expect(area.getByRole("region",{name:"批量操作"})).toHaveCount(0);
+ await area.getByRole("checkbox",{name:"选择批量店铺"}).check();
+ const bulk=area.getByRole("region",{name:"批量操作"});
+ await expect(bulk).toContainText("已选择 1 家店铺");
+ await bulk.getByRole("button",{name:"加入分组"}).click();
+ await bulk.getByLabel("选择批量分组").selectOption("未分组");
+ await bulk.getByRole("button",{name:"确认加入"}).click();
+ await expect(bulk).toHaveCount(0);
+ await expect(area.getByText("批量店铺",{exact:true})).toBeVisible();
 });
 test("Figma filters apply only on confirm and reset together",async({page})=>{
  const area=await createDemo(page,"筛选店铺");
@@ -161,7 +173,7 @@ test("Figma filters apply only on confirm and reset together",async({page})=>{
 });
 test("Figma Manage opens store settings; Reauthorize opens binding, without fake authorization",async({page})=>{
  const area=await createDemo(page,"待修改店铺");
- await area.getByRole("button",{name:"管理",exact:true}).click();
+ await area.getByRole("button",{name:"管理店铺",exact:true}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await expect(details).toBeVisible();
  await expect(details.getByRole("button",{name:"店铺设置",exact:true})).toHaveAttribute("aria-current","page");
@@ -169,8 +181,8 @@ test("Figma Manage opens store settings; Reauthorize opens binding, without fake
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await details.getByRole("button",{name:"保存设置"}).click();
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await expect(area).toContainText("负责人：林晨");
- await area.getByRole("button",{name:"管理",exact:true}).click();
+ await expect(area).toContainText("林晨");
+ await area.getByRole("button",{name:"管理店铺",exact:true}).click();
  await details.getByRole("button",{name:"编辑店铺资料"}).click();
  const authorization=page.getByRole("dialog",{name:"管理店铺"});
  await expect(authorization.getByLabel("子账户账号")).toBeVisible();
@@ -205,7 +217,7 @@ test("Figma binding group and owner affordances preserve draft and follow compan
 });
 test("store detail retains rename, edit and unlink without card menu",async({page})=>{
  const area=await createDemo(page,"待操作店铺");
- await area.getByRole("button",{name:"管理",exact:true}).click();
+ await area.getByRole("button",{name:"管理店铺",exact:true}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  for(const label of ["修改自定义名称","编辑店铺资料","解绑店铺"])await expect(details.getByRole("button",{name:label})).toBeVisible();
  await details.getByRole("button",{name:"修改自定义名称"}).click();
@@ -220,7 +232,7 @@ test("store detail retains rename, edit and unlink without card menu",async({pag
 });
 test("enter-store is a full five-tab Figma detail view rather than a generic workspace modal",async({page})=>{
  const area=await createDemo(page,"店铺详情演示");
- await area.getByRole("button",{name:"查看店铺"}).click();
+ await area.getByRole("button",{name:"管理店铺"}).click();
  await expect(page.getByRole("dialog",{name:"店铺工作台"})).toHaveCount(0);
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await expect(details).toBeVisible();
@@ -235,12 +247,12 @@ test("enter-store is a full five-tab Figma detail view rather than a generic wor
 });
 test("store settings are staged until Save, and returning discards uncommitted edits",async({page})=>{
  const area=await createDemo(page,"待保存设置");
- await area.getByRole("button",{name:"管理",exact:true}).click();
+ await area.getByRole("button",{name:"管理店铺",exact:true}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await expect(area).not.toContainText("负责人：林晨");
- await area.getByRole("button",{name:"管理",exact:true}).click();
+ await expect(area).not.toContainText("林晨");
+ await area.getByRole("button",{name:"管理店铺",exact:true}).click();
  await expect(details.getByLabel("店铺负责人")).toHaveValue("");
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await details.getByRole("button",{name:"保存设置"}).click();
@@ -254,7 +266,7 @@ test("Figma group creation, rename and deletion preserve store rather than unlin
  await groups.getByRole("textbox",{name:"分组名称"}).fill("原型分组");
  await groups.getByRole("button",{name:"创建分组"}).click();
  await groups.getByRole("button",{name:"完成"}).click();
- await area.getByRole("button",{name:"查看店铺"}).click();
+ await area.getByRole("button",{name:"管理店铺"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await details.getByRole("button",{name:"店铺设置"}).click();
  await details.getByLabel("店铺所属分组").selectOption("原型分组");
@@ -273,7 +285,7 @@ test("Figma group creation, rename and deletion preserve store rather than unlin
 });
 test("Escape closes the topmost Figma overlay without dropping the store-detail page",async({page})=>{
  const area=await createDemo(page,"保持上下文店铺");
- await area.getByRole("button",{name:"查看店铺",exact:true}).click();
+ await area.getByRole("button",{name:"管理店铺",exact:true}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await details.getByRole("button",{name:"管理分组"}).click();
@@ -283,7 +295,7 @@ test("Escape closes the topmost Figma overlay without dropping the store-detail 
  await expect(details).toBeVisible();
  await expect(details.getByRole("button",{name:"店铺设置",exact:true})).toHaveAttribute("aria-current","page");
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await area.getByRole("button",{name:"管理",exact:true}).click();
+ await area.getByRole("button",{name:"管理店铺",exact:true}).click();
  await expect(details.getByRole("button",{name:"解绑店铺"})).toBeVisible();
 });
 test("store-center UI keeps approved dark/light Vuexy surface colors",async({page})=>{
@@ -307,8 +319,8 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByRole("heading",{name:"我的店铺"})).toBeVisible();
  const overview=area.getByRole("region",{name:"店铺运营概览"});
- for(const metric of ["店铺总数","正常店铺","需要处理","同步正常"])await expect(overview.getByText(metric,{exact:true})).toBeVisible();
- await expect(overview.locator("article")).toHaveCount(4);
+ for(const metric of ["已绑定店铺","正常店铺","即将到期","已到期","待处理"])await expect(overview.getByText(metric,{exact:true})).toBeVisible();
+ await expect(overview.getByRole("button")).toHaveCount(5);
  await expect(area.getByText("统一管理店铺连接、授权、网络环境和数据状态。")).toBeVisible();
 
  const filter=area.getByRole("form",{name:"店铺筛选"});
@@ -319,13 +331,13 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  await expect(actions.getByRole("button",{name:"重置"})).toBeVisible();
  await expect(actions.getByRole("button",{name:"确认"})).toBeVisible();
  const cards=area.locator("article[class*=\"storeCard\"]").filter({hasText:"管理员演示店铺01"});
- for(const caption of ["在线商品","待处理订单","服务到期日"])await expect(cards.first()).toContainText(caption);
- await expect(cards.first()).toContainText("负责人：");
+ await expect(cards.first()).toContainText("店铺 ID：");
+ await expect(cards.first()).toContainText("服务期限：");
+ await expect(cards.first()).toContainText("管理员");
  await expect(cards.first()).not.toContainText("平台授权");
  await expect(cards.first()).not.toContainText("网络环境");
- await expect(cards.first().getByRole("button",{name:"管理",exact:true})).toBeVisible();
- await expect(cards.first().getByRole("button",{name:"查看店铺"})).toBeVisible();
- await expect(cards.first().getByRole("button")).toHaveCount(2);
+ await expect(cards.first().getByRole("button",{name:"管理店铺",exact:true})).toBeVisible();
+ await expect(cards.first().getByRole("button")).toHaveCount(1);
  await area.getByLabel("站点筛选").selectOption("美国站");
  await area.getByRole("button",{name:"确认",exact:true}).click();
  await expect(area).toContainText("管理员演示店铺01");
@@ -378,7 +390,7 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await page.goto(root+"/stores");
  const activeCard=stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"});
  await expect(activeCard).toContainText("服务有效");
- await activeCard.getByRole("button",{name:"查看店铺",exact:true}).click();
+ await activeCard.getByRole("button",{name:"管理店铺",exact:true}).click();
  const detail=page.getByRole("region",{name:"店铺详情页面"});
  await detail.getByRole("button",{name:"服务信息",exact:true}).click();
  await detail.getByRole("button",{name:"续费30天",exact:true}).click();
@@ -458,7 +470,7 @@ test("expired 30-day store service prevents synchronization until renewed",async
  await page.reload();
  const card=page.locator('[data-store-center-showcase="stores"] article[class*="storeCard"]').filter({hasText:"管理员演示店铺01"});
  await expect(card).toContainText("服务已到期");
- await card.getByRole("button",{name:"查看店铺"}).click();
+ await card.getByRole("button",{name:"管理店铺"}).click();
  await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"数据同步"}).click();
  await page.getByRole("region",{name:"店铺详情页面"}).getByRole("button",{name:"立即同步"}).click();
  await expect(page.getByRole("dialog",{name:"立即同步"})).toContainText("请先确认服务期");
@@ -497,7 +509,7 @@ test("new binding is blocked without an available 30-day service period",async({
 test("four colleague stores are bound, and one failed platform-ID lookup is only a failed attempt",async({page})=>{
  await page.goto(root+"/account/organization/resources");
  const suite=page.locator("[data-account-suite]");
- await suite.getByRole("row").filter({hasText:"模拟同事01"}).getByRole("button",{name:"查看店铺"}).click();
+ await suite.getByRole("row").filter({hasText:"模拟同事01"}).getByRole("button",{name:"管理店铺"}).click();
  const dialog=page.getByRole("dialog",{name:"店铺详情"});
  for(let i=1;i<=4;i++)await expect(dialog.getByRole("row").filter({hasText:"同事01演示店铺"+String(i).padStart(2,"0")})).toBeVisible();
  await expect(dialog.getByRole("row").filter({hasText:"同事01演示店铺05"})).toHaveCount(0);
