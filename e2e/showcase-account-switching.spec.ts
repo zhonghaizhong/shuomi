@@ -1,6 +1,6 @@
 import {expect,test} from "@playwright/test";
 const base="/shuomi/#/workbench";
-test("account menu displays the actual demo tenant and supports isolated member and organization switching",async({page})=>{
+test("account switching confirms staged member and organization selection with isolated context",async({page})=>{
  await page.goto(base+"/account");
  const avatar=page.getByRole("button",{name:"linchen_demo账户"});
  await avatar.click();
@@ -9,8 +9,18 @@ test("account menu displays the actual demo tenant and supports isolated member 
  await expect(menu).toContainText("武汉硕米电子商务有限公司");
  await expect(menu).not.toContainText("user@sumi.ai");
  await menu.getByRole("button",{name:"切换账户与企业组织"}).click();
- await expect(menu).toContainText("模拟同事01");
- await menu.getByRole("button",{name:/模拟同事01/}).click();
+ const switcher=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await expect(switcher).toBeVisible();
+ await expect(switcher).toContainText("当前身份");
+ await expect(switcher).toContainText("模拟同事01");
+ await switcher.getByRole("button",{name:/模拟同事01/}).click();
+ await expect(switcher.getByRole("button",{name:/模拟同事01/})).toHaveAttribute("aria-pressed","true");
+ await switcher.getByRole("button",{name:"取消"}).click();
+ await expect(page.getByRole("button",{name:"linchen_demo账户"})).toBeVisible();
+ await avatar.click();
+ await menu.getByRole("button",{name:"切换账户与企业组织"}).click();
+ await switcher.getByRole("button",{name:/模拟同事01/}).click();
+ await switcher.getByRole("button",{name:"确认切换"}).click();
  await expect(page.getByRole("button",{name:"模拟同事01账户"})).toBeVisible();
  await page.goto(base+"/account/organization/roles");
  await expect(page.getByRole("status")).toContainText("没有该页面的访问权限");
@@ -18,9 +28,11 @@ test("account menu displays the actual demo tenant and supports isolated member 
  await expect(page.getByRole("button",{name:"linchen_demo账户"})).toBeVisible();
  await page.getByRole("button",{name:"linchen_demo账户"}).click();
  await menu.getByRole("button",{name:"切换账户与企业组织"}).click();
- await menu.getByRole("textbox",{name:"添加模拟企业组织"}).fill("示例第二企业");
- await menu.getByRole("button",{name:"添加",exact:true}).click();
- await menu.getByRole("button",{name:/示例第二企业/}).click();
+ await switcher.getByRole("tab",{name:"切换企业"}).click();
+ await switcher.getByRole("textbox",{name:"新增模拟企业"}).fill("示例第二企业");
+ await switcher.getByRole("button",{name:"添加企业"}).click();
+ await switcher.getByRole("button",{name:/示例第二企业/}).click();
+ await switcher.getByRole("button",{name:"确认切换"}).click();
  await expect(page.getByRole("status")).toContainText("示例第二企业 · 独立演示空间");
  await expect(page.getByRole("status")).not.toContainText("¥336");
  await page.reload();
