@@ -3,7 +3,7 @@ import {useEffect,useState,type FormEvent} from "react";
 import {Building2,Package,Truck,Plus,Search,ShieldCheck,ClipboardList} from "lucide-react";
 import css from "./showcase-store-center.module.css";
 import {useShowcaseSuite} from "../account/showcase-account-state";
-import {getDemoMembership} from "@/showcase/demo-identity";
+import {getDemoMembership} from "../../../../showcase/demo-identity";
 
 type Store={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string;ownerMemberId:string};
 const keyPrefix="shuomi-store-center-demo-ten-v2";
