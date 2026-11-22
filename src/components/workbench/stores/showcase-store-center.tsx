@@ -278,7 +278,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
     <div className={css.fixedIp}><div><strong>启用固定IP</strong><p>通过指定网络出口发起授权，减少异地登录或平台风控；仅在需要固定网络环境时启用。</p></div><label className={css.toggleLabel}><input type="checkbox" aria-label="启用固定IP" checked={fixedIp} onChange={e=>setFixedIp(e.target.checked)}/><span>{fixedIp?"已启用（仅演示）":"未启用"}</span></label></div>
     {fixedIp?<p className={css.hint}>正式固定 IP 需要配置可用的代理网络出口；演示页面不会伪造 IP 或验证结果。</p>:null}
     {codeNotice?<p className={css.warning} role="status">{codeNotice}</p>:null}
-    <footer className={css.dialogActions}><button type="button" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>取消</button><button className={css.primary} type="submit" disabled={authorizationMethod==="API 授权（暂未开放）"||(!managedStore&&availablePeriods<1)}>{managedStore?"保存修改":"确认绑定"}</button></footer>
+    <footer className={css.dialogActions}>{managedStore?<button type="button" className={css.inlineLink} onClick={()=>{const id=managedStore.id;setManageId(null);setAuthPassword("");setAuthCode("");enterStore(id,"店铺概览")}}>查看店铺详情</button>:null}<button type="button" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>取消</button><button className={css.primary} type="submit" disabled={authorizationMethod==="API 授权（暂未开放）"||(!managedStore&&availablePeriods<1)}>{managedStore?"保存修改":"确认绑定"}</button></footer>
   </form></section></div>:null}
 
  </main>
