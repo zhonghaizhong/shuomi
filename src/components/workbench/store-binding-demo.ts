@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
+import {readSuite,writeSuite} from "./account/showcase-account-state";
 
 // Shared showcase-only store register. Binding is not platform authorization or a paid subscription.
 export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;platformStoreId?:string;platformIdStatus?:"已激活"|"获取失败";archived?:boolean};
@@ -73,10 +74,36 @@ export function saveDemoStoreBindings(organizationId:string,items:DemoStoreBindi
   return true;
  }catch{return false;}
 }
+/**
+ * One-time showcase ledger reconciliation: four synthetic colleague stores already
+ * have simulated platform IDs, but the older fixtures never started their paid
+ * 30-day service. Deduct exactly one allocated period per unbilled fixture.
+ * Platform identification remains independent from a real provider API.
+ */
+export function reconcileColleagueDemoStorePeriods(organizationId:string):boolean{
+ if(organizationId!==mainTenant||typeof window==="undefined")return false;
+ const before=readDemoStoreBindings(organizationId);
+ const missing=before.filter(store=>/^SIM-C01-0[1-4]$/.test(store.id)&&store.ownerMemberId===colleague&&store.platformIdStatus==="已激活"&&Boolean(store.platformStoreId)&&!Number(store.servicePeriods));
+ if(!missing.length)return false;
+ const suite=readSuite();
+ const allocated=Number(suite.storeAllocations[colleague]||0);
+ // Never create services if there is insufficient member allocation.
+ if(!Number.isSafeInteger(allocated)||allocated<missing.length)return false;
+ const ids=new Set(missing.map(store=>store.id));
+ const after=before.map(store=>ids.has(store.id)?startDemoStoreService(store):store);
+ if(!saveDemoStoreBindings(organizationId,after))return false;
+ if(!writeSuite({...suite,storeAllocations:{...suite.storeAllocations,[colleague]:allocated-missing.length}})){
+  saveDemoStoreBindings(organizationId,before);
+  return false;
+ }
+ return true;
+}
+
 export function useDemoStoreBindings(organizationId:string,memberId="admin",isAdministrator=memberId==="admin"){
  const [all,setAll]=useState<DemoStoreBinding[]>(()=>readDemoStoreBindings(organizationId));
  useEffect(()=>{
   const refresh=()=>setAll(readDemoStoreBindings(organizationId));
+  reconcileColleagueDemoStorePeriods(organizationId);
   const onChange=(event:Event)=>{if((event as CustomEvent<string>).detail===organizationId)refresh();};
   window.addEventListener(eventName,onChange);
   window.addEventListener("pageshow",refresh);
