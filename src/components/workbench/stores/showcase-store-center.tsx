@@ -190,7 +190,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   {editing?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setEditing(null)}}><section className={css.dialog} role="dialog" aria-modal="true" aria-label="管理店铺名称"><header><div><h2>管理店铺名称</h2><p>只修改本地演示资料，不影响平台店铺。</p></div><button aria-label="关闭弹窗" onClick={()=>setEditing(null)}>×</button></header><form onSubmit={saveRename}><label>店铺名称<input required maxLength={80} autoFocus value={name} onChange={e=>setName(e.target.value)}/></label><footer><button type="button" onClick={()=>setEditing(null)}>取消</button><button className={css.primary} type="submit">保存修改</button></footer></form></section></div>:null}
   {confirmDelete?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setConfirmDelete(null)}}><section className={css.dialog} role="alertdialog" aria-modal="true" aria-label="确认移除演示店铺"><header><div><h2>移除演示店铺</h2><p>确认移除这条浏览器演示记录？不涉及真实商品或订单。</p></div><button aria-label="关闭弹窗" onClick={()=>setConfirmDelete(null)}>×</button></header><footer className={css.dialogActions}><button onClick={()=>setConfirmDelete(null)}>取消</button><button className={css.primary} onClick={deleteDemo}>确认移除</button></footer></section></div>:null}
 
-  {(dialog||managedStore)?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget){setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}}><section className={css.dialog+" "+css.authDialog} role="dialog" aria-modal="true" aria-label={managedStore?"管理店铺":"绑定新店铺"}><header><div><h2>{managedStore?"管理店铺":"绑定新店铺"}</h2><p>选择平台、站点、负责人，提交即完成店铺绑定。店铺服务按店铺独立计费，每 30 天为一期。绑定新店铺时如有可用期数，将自动消耗 1 期并开始计时；没有期数则仅登记资料，服务保持未激活。</p></div><button aria-label="关闭弹窗" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>×</button></header>
+  {(dialog||managedStore)?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget){setDialog(false);setManageId(null);}}}><section className={css.dialog+" "+css.authDialog} role="dialog" aria-modal="true" aria-label={managedStore?"管理店铺":"绑定新店铺"}><header><div><h2>{managedStore?"管理店铺":"绑定新店铺"}</h2><p>选择平台、站点、负责人，提交即完成店铺绑定。店铺服务按店铺独立计费，每 30 天为一期。绑定新店铺时如有可用期数，将自动消耗 1 期并开始计时；没有期数则仅登记资料，服务保持未激活。</p></div><button aria-label="关闭弹窗" onClick={()=>{setDialog(false);setManageId(null);}}>×</button></header>
   <form onSubmit={submitBinding}>
     <div className={css.bindingGrid}>
       <label>平台<select aria-label="平台" value="SHEIN" disabled><option>SHEIN</option></select></label>
@@ -210,7 +210,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
 
 
     {codeNotice?<p className={css.warning} role="status">{codeNotice}</p>:null}
-    <footer className={css.dialogActions}><button type="button" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>取消</button><button className={css.primary} type="submit">{managedStore?"保存修改":"确认绑定"}</button></footer>
+    <footer className={css.dialogActions}><button type="button" onClick={()=>{setDialog(false);setManageId(null);}}>取消</button><button className={css.primary} type="submit">{managedStore?"保存修改":"确认绑定"}</button></footer>
   </form></section></div>:null}
 
  </main>
