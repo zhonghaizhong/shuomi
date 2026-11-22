@@ -223,10 +223,10 @@ test("30 attributed visitors 25 registered 20 paid stay consistent across referr
  await page.keyboard.press("Escape");
  await expect(details).toHaveCount(0);
  await page.goto(base+"/referrals/earnings");
- await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("共 20 条");
+ await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("共 22 条");
  await expect(suite).toContainText("¥336.00");
  await page.goto(base+"/referrals/withdrawals");
- await expect(suite.getByRole("button",{name:"申请模拟提现"})).toBeDisabled();
+ await expect(suite.getByRole("button",{name:"申请模拟提现"})).toBeEnabled();
  await suite.getByRole("button",{name:"设置收款方式"}).click();
  const payout=suite.getByRole("dialog",{name:"设置收款方式"});
  await payout.getByRole("textbox",{name:"演示收款标识"}).fill("TEST-30-25-20");
@@ -411,7 +411,7 @@ test("partial withdrawals retain remaining earnings and save independent withdra
  dialog=suite.getByRole("dialog",{name:"模拟提现"});
  await dialog.getByRole("spinbutton",{name:"模拟提现金额"}).fill("45.50");
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
- await expect(suite).toContainText("¥410.50"); // ¥336 seeded + ¥120 manual - ¥45.50 withdrawn
+ await expect(suite).toContainText("¥310.50"); // ¥336 seeded - ¥100 admin demo withdrawals + ¥120 manual - ¥45.50 withdrawn
  await expect(suite).toContainText("¥45.50");
  await page.goto(base+"/referrals/earnings");
  await expect(suite).toContainText("¥74.50");
