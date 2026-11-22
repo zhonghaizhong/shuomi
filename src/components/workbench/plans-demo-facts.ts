@@ -1,16 +1,16 @@
 /** Shared, non-billable showcase facts. These do not represent a real account. */
 export const plansDemoFacts = {
-  activeStores: 5,
-  expiringStores: 1,
-  aiPoints: 8650,
-  dataRows: 300000,
+  activeStores: 0,
+  expiringStores: 0,
+  aiPoints: 0,
+  dataRows: 0,
   storageCapacityGiB: 5,
-  storageUsedGiB: 2,
-  storageReservedGiB: 0.25,
+  storageUsedGiB: 0,
+  storageReservedGiB: 0,
   get storageAvailableGiB(){return this.storageCapacityGiB-this.storageUsedGiB-this.storageReservedGiB;},
-  walletBalanceCny: 5000,
-  walletTopUpsCny: 12000,
-  walletSpentCny: 7000,
+  walletBalanceCny: 0,
+  walletTopUpsCny: 0,
+  walletSpentCny: 0,
 } as const;
 export const plansDemoDisplay = {
   activeStores: `${plansDemoFacts.activeStores} 家使用中`,
