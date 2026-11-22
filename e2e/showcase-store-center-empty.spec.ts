@@ -14,7 +14,7 @@ test("administrator fixture status and bounded pagination separate two connectio
  await page.goto(root+"/stores");
  const area=page.locator('[data-store-center-showcase="stores"]');
  const metrics=area.getByRole("region",{name:"店铺运营概览"});
- await expect(metrics.getByRole("button",{name:/正常店铺/})).toContainText("3 家");
+ await expect(metrics.getByRole("button",{name:/正常店铺/})).toContainText("7 家");
  await expect(metrics.getByRole("button",{name:/待处理/})).toContainText("2 家");
  await expect(area.getByRole("navigation",{name:"店铺列表分页"})).toContainText("第 1 / 2 页");
  await expect(area.locator('article[class*="storeCard"]')).toHaveCount(10);
@@ -23,7 +23,8 @@ test("administrator fixture status and bounded pagination separate two connectio
  await expect(area).toContainText("管理员演示店铺04");
  await expect(area).toContainText("管理员演示店铺05");
  await metrics.getByRole("button",{name:/正常店铺/}).click();
- await expect(area.locator('article[class*="storeCard"]')).toHaveCount(3);
+ await expect(area.locator('article[class*="storeCard"]')).toHaveCount(7);
+ for(const n of ["01","02","03"])await expect(area.locator('article[class*="storeCard"]').filter({hasText:"管理员演示店铺"+n})).toContainText("服务有效");
  await expect(area).not.toContainText("管理员演示店铺04");
 });
 test("organization-scoped simulated bindings show eleven to enterprise admin, five to colleague, and isolate other organizations",async({page})=>{
