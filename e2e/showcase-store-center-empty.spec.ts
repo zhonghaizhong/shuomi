@@ -158,6 +158,26 @@ test("compact store rows show batch actions only after selection and preserve lo
  await expect(bulk).toHaveCount(0);
  await expect(area.getByText("批量店铺",{exact:true})).toBeVisible();
 });
+test("pending includes only previously bound active stores with confirmed connection faults, never expired stores",async({page})=>{
+ const area=await createDemo(page,"连接异常店铺");
+ await page.evaluate(()=>{
+  const key="shuomi-store-center-demo-ten-v2-SM-ENT-000001";
+  const values=JSON.parse(sessionStorage.getItem(key)||"[]");
+  const store=values.find((s:{name:string})=>s.name==="连接异常店铺");
+  if(!store)throw new Error("Expected bound store");
+  store.connectionIssue="平台接口异常";
+  values.push({...store,id:"EXPIRED-TEST-ONLY",name:"已到期但连接状态不作为待处理",connectionIssue:undefined,serviceExpiresAt:"2026-01-01T00:00:00.000Z"});
+  sessionStorage.setItem(key,JSON.stringify(values));
+ });
+ await page.reload();
+ const overview=area.getByRole("region",{name:"店铺运营概览"});
+ await expect(overview.getByRole("button",{name:/待处理/})).toContainText("1 家");
+ await expect(overview.getByRole("button",{name:/已到期/})).toContainText("1 家");
+ await overview.getByRole("button",{name:/待处理/}).click();
+ await expect(area).toContainText("连接异常店铺");
+ await expect(area).not.toContainText("已到期但连接状态不作为待处理");
+ await expect(area.locator('article[class*="storeCard"]').filter({hasText:"连接异常店铺"})).toContainText("平台接口异常");
+});
 test("Figma filters apply only on confirm and reset together",async({page})=>{
  const area=await createDemo(page,"筛选店铺");
  await area.getByLabel("站点筛选").selectOption("加拿大站");
