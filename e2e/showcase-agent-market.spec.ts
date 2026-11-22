@@ -206,6 +206,8 @@ test("POD image, material and language subdialogs match Figma and preserve confi
  await ai.getByRole("button",{name:"底色：不设置"}).click();
  await ai.getByRole("button",{name:"白色背景",exact:true}).click();
  await ai.getByRole("button",{name:"确认选择"}).click();
+ await ai.getByRole("button",{name:"确认选择"}).click();
+ await expect(ai).toHaveCount(0);
  await pod.getByRole("button",{name:/自定义指令模式/}).click();
  const custom=page.getByRole("dialog",{name:"自定义指令模式"});
  await custom.getByRole("textbox",{name:"生成指令"}).fill("透明背景的简洁印花，适合胸前印刷");
