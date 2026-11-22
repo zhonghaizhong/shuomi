@@ -23,9 +23,9 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
  try{
   const raw=sessionStorage.getItem(demoStoreKey(organizationId));
   if(raw===null)return seeds(organizationId);
-  const parsed=JSON.parse(raw);
+  const parsed:unknown=JSON.parse(raw);
   if(!Array.isArray(parsed))return [];
-  return parsed.filter((x):x is DemoStoreBinding=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"&&typeof x.ownerMemberId==="string");
+  return (parsed as DemoStoreBinding[]).filter((x:DemoStoreBinding)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"&&typeof x.ownerMemberId==="string");
  }catch{return seeds(organizationId);}
 }
 export function saveDemoStoreBindings(organizationId:string,items:DemoStoreBinding[]):boolean{
