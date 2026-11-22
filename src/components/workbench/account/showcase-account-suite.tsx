@@ -79,7 +79,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const visibleEarnings=state.referrals.slice((visibleEarningsPage-1)*referralPageSize,visibleEarningsPage*referralPageSize);
  const recent30Day=Date.now()-30*24*60*60*1000;
  const recentReferralCustomers=state.referredCustomers.filter(x=>x.registeredAt>=recent30Day);
- const recentRegistrations=recentReferralCustomers.length;
+ const recentRegistrations=recentReferralCustomers.length+state.trackedInvitations.filter(x=>!!x.registeredAt&&x.registeredAt>=recent30Day).length;
  const recentPaidCustomers=recentReferralCustomers.filter(x=>x.storeFeeCny>0).length;
  const recentEarned=state.referrals.filter(x=>x.at>=recent30Day).reduce((sum,x)=>sum+x.amount,0);
  const promotionRows=[
@@ -136,9 +136,9 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
 
    {suffix==="/referrals/center"&&<>
     <div className={s.metrics} role="region" aria-label="推广中心核心指标">{([
-     ["累计推广人数",String(state.referredCustomers.length),"已关联的模拟邀请用户"],
-     ["有效注册",String(state.referredCustomers.length),"模拟完成注册"],
-     ["付费用户",String(state.referredCustomers.filter(x=>x.storeFeeCny>0).length),"已产生基础店铺服务消费"],
+     ["累计推广人数",String(promotionRows.length),"已记录的定向邀请及关联用户"],
+     ["有效注册",String(knownRegistered),"模拟注册且已完成验证"],
+     ["付费用户",String(knownPaid),"已产生基础店铺服务消费"],
      ["累计收益",money(totalEarnings(state)),"按已消费订单计算的模拟佣金"]
     ] as [string,string,string][]).map(([label,value,hint],i)=><article key={label} data-tone={i}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}</div>
     <div className={s.referralDesignGrid}>
