@@ -202,3 +202,29 @@
 .page .headerActions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;flex-shrink:0}
 .page .headerActions button{white-space:nowrap}
 @media(max-width:680px){.page .headerActions{justify-content:flex-start;width:100%}}
+
+
+/* Figma 1560:460 My Stores: clear captioned search/select row, with Vuexy tokens. */
+.page .filters{display:grid;grid-template-columns:minmax(180px,1.5fr) repeat(5,minmax(106px,1fr)) auto auto;align-items:end;gap:10px;padding:16px;background:var(--st-bg);border:1px solid var(--st-line);border-radius:8px}
+.page .filters .storeSearchField,.page .filters .storeFilterField{grid-column:auto;display:grid;align-content:end;gap:7px;min-width:0;max-width:none;color:var(--st-text);font-size:13px;font-weight:600}
+.page .filters .filterCaption{color:var(--st-muted);font-size:12px;line-height:16px;font-weight:600;white-space:nowrap}
+.page .filters .searchControl{display:flex;align-items:center;gap:9px;min-width:0;min-height:42px;padding:0 11px;border:1px solid var(--st-line);border-radius:7px;background:var(--st-control)}
+.page .filters .searchControl:focus-within{border-color:var(--st-accent)}
+.page .filters .searchControl input{min-height:38px;min-width:0;width:100%;padding:0;border:0;background:transparent;color:var(--st-text);font-size:13px;outline:none}
+.page .filters .storeFilterField select{height:42px;width:100%;min-width:0;margin:0;padding:0 10px;border:1px solid var(--st-line);border-radius:7px;background:var(--st-control);color:var(--st-text);font-size:13px}
+.page .filters>button{height:42px;min-height:42px;margin:0;padding:8px 15px;align-self:end;border-radius:7px}
+.page .storeList article.storeCard{grid-template-columns:minmax(0,1fr) auto;gap:0 18px;padding:16px 19px}
+.page .storeList .storeTop{grid-column:1/-1;display:flex;gap:12px;align-items:center;padding:0 0 12px;border-bottom:1px solid var(--st-line)}
+.page .storeList .storeStatus{margin-left:auto;white-space:nowrap}
+.page .storeList .storeHealth{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 11px}
+.page .storeList .storeHealth>div{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:10px 13px;border:1px solid var(--st-line);border-radius:7px;background:var(--st-bg)}
+.page .storeList .storeHealth small{font-size:12px;color:var(--st-muted);white-space:nowrap}
+.page .storeList .storeHealth strong{font-size:13px;color:var(--st-text);font-weight:650;white-space:nowrap}
+.page .storeList .storeFacts{grid-column:1;grid-row:auto;margin:0;padding:12px 0;border-top:1px solid var(--st-line);border-bottom:0}
+.page .storeList .storeBottom{grid-column:2;grid-row:auto;display:grid;justify-items:end;align-content:center;gap:8px;margin:0;padding:12px 0;border-top:1px solid var(--st-line)}
+.page .storeList .storeButtons{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px}
+.page .storeList .storeButtons button{min-height:36px;padding:6px 12px;white-space:nowrap}
+@media(max-width:1360px){.page .filters{grid-template-columns:repeat(3,minmax(0,1fr))}.page .filters .storeSearchField{grid-column:span 2}.page .filters .storeFilterField{grid-column:auto}}
+@media(max-width:1100px){.page .storeList article.storeCard{grid-template-columns:1fr}.page .storeList .storeFacts,.page .storeList .storeBottom{grid-column:1;grid-row:auto}.page .storeList .storeBottom{justify-items:start;border-top:0;padding:4px 0 0}.page .storeList .storeButtons{justify-content:flex-start}}
+@media(max-width:700px){.page .filters{grid-template-columns:repeat(2,minmax(0,1fr))}.page .filters .storeSearchField{grid-column:1/-1}.page .storeList .storeTop{flex-wrap:wrap}.page .storeList .storeStatus{margin-left:0}.page .storeList .storeHealth{grid-template-columns:1fr}.page .storeList .storeHealth>div{padding:9px 12px}.page .storeList .storeFacts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:440px){.page .filters{grid-template-columns:minmax(0,1fr)}.page .filters .storeSearchField,.page .filters .storeFilterField{grid-column:1}.page .storeList .storeButtons{width:100%}}
