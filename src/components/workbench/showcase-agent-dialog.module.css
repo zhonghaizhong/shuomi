@@ -98,3 +98,56 @@
 .dialog :is(.modelOption,.close,.secondary,.current){background:var(--agent-dialog-raised);border-color:var(--agent-dialog-border);color:var(--agent-dialog-text);}
 .dialog .tags span{color:var(--agent-dialog-text);background:var(--agent-dialog-raised);}
 .dialog :is(.primary,.secondary,.modelOption,.close):focus-visible{outline:2px solid #7367f0;outline-offset:2px;}
+
+
+/* Model and Enter Use interaction layout: Figma structure, approved Vuexy palette. */
+.dialog .heading h2{font-size:20px;line-height:28px;}
+.dialog .heading p{font-size:14px;}
+.dialog .modelOptions{gap:12px;margin-top:22px;}
+.dialog .modelOptions h3{font-size:14px;}
+.dialog .modelOption{min-height:74px;padding:12px 14px;}
+.dialog .modelOption strong{font-size:14px;}
+.dialog .modelOption small{font-size:14px;}
+.dialog .modelOption b{font-size:13px;min-width:84px;}
+.dialog .current{min-height:66px;box-sizing:border-box;}
+.dialog .footer{margin-top:24px;}
+.dialog .primary,.dialog .secondary{font-size:14px;}
+.dialog .customForm{display:grid;gap:12px;margin-top:20px;}
+.dialog .customForm label,.dialog .imageInstructions{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--agent-dialog-text);}
+.dialog .customForm input,.dialog .imageInstructions textarea{
+ box-sizing:border-box;display:block;width:100%;min-height:40px;padding:9px 12px;
+ border:1px solid var(--agent-dialog-border);border-radius:6px;background:var(--agent-dialog-raised);
+ color:var(--agent-dialog-text);font:inherit;font-weight:400;outline:none;
+}
+.dialog .customForm input:focus,.dialog .imageInstructions textarea:focus{border-color:#7367f0;box-shadow:0 0 0 2px #7367f02e;}
+.dialog .customForm input::placeholder,.dialog .imageInstructions textarea::placeholder{color:var(--agent-dialog-muted);}
+.dialog .customForm>.secondary{justify-self:start;}
+.dialog .securityNote,.dialog .inlineNotice{font-size:13px;line-height:1.55;color:var(--agent-dialog-muted);margin:0;}
+.dialog .inlineNotice{padding:10px 12px;border:1px solid var(--agent-dialog-border);border-radius:6px;background:var(--agent-dialog-raised);}
+.dialog .useLayout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;margin-top:20px;}
+.dialog.useDialog{width:min(1040px,calc(100vw - 32px));max-height:min(90vh,900px);}
+.dialog .useSteps{display:grid;gap:12px;min-width:0;}
+.dialog .useStep,.dialog .useHelp{padding:16px;border:1px solid var(--agent-dialog-border);background:var(--agent-dialog-raised);border-radius:8px;}
+.dialog .useStep h3,.dialog .useHelp h3{font-size:16px;margin:0 0 5px;color:var(--agent-dialog-text);}
+.dialog .useStep>p,.dialog .useHelp p{font-size:14px;line-height:1.5;margin:0 0 12px;color:var(--agent-dialog-muted);}
+.dialog .choiceRow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;}
+.dialog .choiceRow>div:first-child{display:grid;gap:6px;}
+.dialog .choiceRow strong,.dialog .useHelp strong{font-size:14px;color:var(--agent-dialog-text);}
+.dialog .choiceRow small{font-size:13px;color:var(--agent-dialog-muted);}
+.dialog .choiceRow>span{white-space:nowrap;font-size:13px;color:#c5bdff;}
+.dialog .picks{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+.dialog .picks label{display:flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--agent-dialog-border);border-radius:6px;font-size:13px;color:var(--agent-dialog-text);cursor:pointer;}
+.dialog .picks input{accent-color:#7367f0;width:15px;height:15px;}
+.dialog .toggleButtons,.dialog .actionsRow{display:flex;gap:8px;flex-wrap:wrap;}
+.dialog .toggleButtons button{min-height:34px;border:1px solid var(--agent-dialog-border);border-radius:6px;background:var(--agent-dialog-surface);color:var(--agent-dialog-text);padding:0 12px;cursor:pointer;}
+.dialog .toggleButtons .activeToggle{background:#7367f0;border-color:#7367f0;color:#fff;}
+.dialog .imageInstructions{margin-top:12px;}
+.dialog .imageInstructions textarea{resize:vertical;}
+.dialog .imageInstructions button{justify-self:start;}
+.dialog .useHelp{align-self:start;}
+.dialog .useHelp h4{font-size:14px;margin:15px 0 9px;color:#c0b9ff;}
+.dialog .useHelp strong{display:block;margin-bottom:5px;}
+.dialog .useHelp p{margin-bottom:10px;}
+.dialog :is(input,textarea,.toggleButtons button,.picks label):focus-visible{outline:2px solid #7367f0;outline-offset:2px;}
+@media(max-width:820px){.dialog .useLayout{grid-template-columns:1fr;}.dialog .useHelp{order:2;}.dialog.useDialog{width:calc(100vw - 24px);}}
+@media(max-width:560px){.dialog .choiceRow{align-items:flex-start;flex-direction:column;}.dialog .customForm{gap:10px;}}
