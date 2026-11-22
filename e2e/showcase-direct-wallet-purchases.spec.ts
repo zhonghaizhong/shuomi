@@ -1,0 +1,27 @@
+import {test,expect} from "@playwright/test";
+const topup="/shuomi/#/workbench/plans/top-up";
+const rights="/shuomi/#/workbench/plans/entitlements";
+test("demo wallet directly purchases resources without local application drafts",async({page})=>{
+ await page.goto(topup);
+ const wallet=page.getByText("账户可用余额").locator("..");
+ await expect(wallet).toContainText("8,161.00");
+ await page.getByRole("spinbutton",{name:"购买期数 · 店铺服务"}).fill("1");
+ await page.getByRole("button",{name:"购买续费期数"}).click();
+ const confirm=page.getByRole("dialog",{name:"确认模拟购买"});
+ await expect(confirm).toContainText("¥168.00");
+ await confirm.getByRole("button",{name:"确认购买并扣除演示余额"}).click();
+ await expect(wallet).toContainText("7,993.00");
+ await expect(page.getByRole("region",{name:"本地充值申请草稿"})).toHaveCount(0);
+ await expect(page.getByRole("region",{name:"模拟钱包充值流水"})).toContainText("模拟购买成功");
+ await page.goto(rights);
+ await expect(page.getByText("待分配期数")).toBeVisible();
+ await expect(page.locator("[class*=planEntitlementStoreSplit]")).toContainText("3");
+ await page.reload();
+ await expect(page.locator("[class*=planEntitlementStoreSplit]")).toContainText("3");
+ await page.goto(topup);
+ await page.getByRole("spinbutton",{name:"使用金额（元） · token 积分"}).fill("10000");
+ await expect(page.getByRole("button",{name:"使用充值余额"}).first()).toBeEnabled();
+ await page.getByRole("button",{name:"使用充值余额"}).first().click();
+ await expect(page.getByRole("dialog",{name:"确认模拟购买"})).toHaveCount(0);
+ await expect(page.getByRole("status")).toContainText("余额不足");
+});
