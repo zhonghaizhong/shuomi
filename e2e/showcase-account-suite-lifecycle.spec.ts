@@ -168,14 +168,14 @@ test("per member storage allocation is bounded by enterprise capacity and logged
  await page.goto(base+"/organization/resources");
  await suite.getByRole("row").filter({hasText:"模拟资源运营"}).getByRole("button",{name:"分配存储"}).click();
  dialog=suite.getByRole("dialog",{name:"分配成员存储"});
- await dialog.getByRole("spinbutton",{name:"成员存储上限"}).fill("6");
+ await dialog.getByRole("spinbutton",{name:"成员存储上限"}).fill("9");
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
  await expect(dialog.getByRole("alert")).toContainText("超出企业可分配");
  await dialog.getByRole("spinbutton",{name:"成员存储上限"}).fill("2.5");
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
  await expect(suite.getByRole("row").filter({hasText:"模拟资源运营"})).toContainText("2.5 GiB");
  await page.reload();
- await expect(suite).toContainText("剩余 2.5 GiB");
+ await expect(suite).toContainText("剩余 5.5 GiB");
  await page.goto(base+"/organization/audit");
  await expect(suite).toContainText("存储上限：2.5 GiB");
 });
