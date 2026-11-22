@@ -327,3 +327,33 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  await area.getByRole("button",{name:"重置"}).click();
  await expect(area).toContainText("管理员演示店铺02");
 });
+
+
+test("organization-scoped store bindings synchronize with plans and enterprise resources without fake billing",async({page})=>{
+ await page.goto(root+"/stores");
+ const stores=page.locator('[data-store-center-showcase="stores"]');
+ await expect(stores).toContainText("共 10 家");
+ await page.goto(root+"/plans");
+ await expect(page.locator('[class*="planOverview"]')).toContainText("本组织已绑定 10 家");
+ await expect(page.locator('[class*="planOverview"]')).toContainText("已使用 0 期");
+ await page.goto(root+"/plans/entitlements");
+ const card=page.locator('[class*="planEntitlementCards"]').getByRole("heading",{name:"店铺服务"}).locator("..");
+ await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("10");
+ await expect(card).toContainText("剩余可分配");
+ await page.goto(root+"/account/organization");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("10");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("待授权 10 家");
+ await page.goto(root+"/account/profile");
+ await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("系统登记店铺");
+ await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("10 家 · 待授权");
+ await page.goto(root+"/stores");
+ await stores.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const binding=page.getByRole("dialog",{name:"绑定新店铺"});
+ await binding.getByRole("textbox",{name:"自定义名称"}).fill("联动校验管理员店铺");
+ await binding.getByRole("button",{name:"提交授权"}).click();
+ await expect(stores).toContainText("共 11 家");
+ await page.goto(root+"/plans/entitlements");
+ await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("11");
+ await page.goto(root+"/account/organization");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("待授权 11 家");
+});
