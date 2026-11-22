@@ -13,7 +13,7 @@ const money=(n:number)=>"¥"+n.toLocaleString("zh-CN",{minimumFractionDigits:2,m
 const timestamp=(n:number)=>new Date(n).toLocaleString("zh-CN");
 const screens:Record<string,[string,string]>={
  "/organization":["企业空间","统一管理当前企业的成员、角色、资源及操作记录。"],
- "/organization/members":["成员与权限","管理真实的演示成员记录；新增成员在模拟审核通过后加入企业。"],
+ "/organization/members":["成员与权限","管理演示成员账号、邮箱及邀请状态；邀请需接受后才会启用。"],
  "/organization/roles":["角色权限","设置企业内的业务角色，权限修改同步到成员记录。"],
  "/organization/resources":["资源与额度","查看店铺、积分、数据与存储资源，资源不足时不可分配。"],
  "/organization/audit":["操作记录","查询当前企业的演示操作记录，支持筛选与查看。"],
@@ -51,6 +51,8 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
  useEffect(()=>{if(!modal)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setModal(null)};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[modal]);
  const currentMember=state.members.find(x=>x.id===selected);
  const activeMembers=state.members.filter(x=>x.status==="正常");
+ const pendingMembers=state.members.filter(x=>x.status==="邀请中");
+ const disabledMembers=state.members.filter(x=>x.status==="已停用");
  const filteredMembers=state.members.filter(m=>{
   const search=memberSearch.trim().toLocaleLowerCase();
   return (memberStatus==="all"||m.status===memberStatus)
@@ -73,12 +75,14 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
  const change=(next:SuiteState,message:string)=>{if(commit(next)){setNotice(message);setError("");setModal(null);return true}setError("当前浏览器存储不可用，操作未保存。");return false};
  const close=()=>{setModal(null);setError("");setSelected("");setName("");setEmail("");setRole("子账号");setAmount("100");setStoreAmount("0");setPointAmount("0");setDataAmount("0");setAccount("");setPermissions([])};
  const open=(target:Modal,id="")=>{close();setModal(target);setSelected(id);if(target==="member"){const m=state.members.find(x=>x.id===id);if(m)setRole(m.role)}if(target==="permissions")setPermissions(normalizeRolePermissions(state.rolePermissions[id]||[]));if(target==="storage"){setAmount(String(state.allocations[id]||0));setStoreAmount(String(state.storeAllocations[id]||0));setPointAmount(String(state.pointAllocations[id]||0));setDataAmount(String(state.dataAllocations[id]||0))}};
- const addMember=()=>{const value=email.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)){setError("请输入有效的成员邮箱地址。");return}if(state.members.some(m=>m.email.toLowerCase()===value)){setError("该邮箱已经属于当前企业。");return}if(!name.trim()){setError("请输入成员姓名。");return}
-  const member:Member={id:crypto.randomUUID(),name:name.trim(),email:value,role,status:"正常",joined:Date.now()};
-  change(addAudit({...state,members:[...state.members,member]},"成员与权限","邀请并模拟审核通过："+member.name+"（"+role+"）"),"成员已加入企业（模拟审核通过）。")
+ const addMember=()=>{const value=email.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)){setError("请输入有效的成员邮箱地址。");return}if(state.members.some(m=>m.email.toLowerCase()===value)){setError("该邮箱已经属于当前企业或正在邀请中。");return}if(!/^[a-zA-Z][a-zA-Z0-9._-]{2,31}$/.test(name.trim())){setError("请输入3–32位账号，以字母开头，可包含字母、数字、点、下划线和连字符。");return}if(state.members.some(m=>m.name.toLowerCase()===name.trim().toLowerCase())){setError("该账号已存在，请更换账号。");return}
+  const member:Member={id:crypto.randomUUID(),name:name.trim(),email:value,role,status:"邀请中",joined:Date.now()};
+  change(addAudit({...state,members:[...state.members,member]},"成员与权限","创建模拟邀请："+member.name+"（"+value+"，"+role+"）"),"邀请已记录，等待成员接受（演示模式未发送真实邮件）。")
  };
  const updateMember=()=>{if(!currentMember||currentMember.id==="admin")return;change(addAudit({...state,members:state.members.map(m=>m.id===currentMember.id?{...m,role}:m)},"成员与权限","调整成员 "+currentMember.name+" 角色为 "+role),"成员角色已更新。")};
- const toggleMember=(m:Member)=>{if(m.id==="admin")return;const target=m.status==="正常"?"已停用":"正常";change(addAudit({...state,members:state.members.map(x=>x.id===m.id?{...x,status:target}:x)},"成员与权限",m.name+" 已"+target),"成员状态已更新。")};
+ const toggleMember=(m:Member)=>{if(m.id==="admin"||m.status==="邀请中")return;const target=m.status==="正常"?"已停用":"正常";change(addAudit({...state,members:state.members.map(x=>x.id===m.id?{...x,status:target}:x)},"成员与权限",m.name+" 已"+target),"成员状态已更新。")};
+ const acceptInvitation=(m:Member)=>{if(m.status!=="邀请中")return;change(addAudit({...state,members:state.members.map(x=>x.id===m.id?{...x,status:"正常" as const,joined:Date.now()}:x)},"成员与权限","模拟接受成员邀请："+m.name),"邀请已在演示模式中接受，成员现在已启用。")};
+ const cancelInvitation=(m:Member)=>{if(m.status!=="邀请中")return;change(addAudit({...state,members:state.members.filter(x=>x.id!==m.id)},"成员与权限","取消模拟邀请："+m.name),"邀请已取消。")};
  const addRole=()=>{const value=name.trim();if(!value||state.roles.includes(value)){setError("请输入未使用的角色名称。");return}change(addAudit({...state,roles:[...state.roles,value],rolePermissions:{...state.rolePermissions,[value]:[]}},"角色权限","新建角色："+value),"新角色已加入企业角色列表。")};
  const savePermissions=()=>{if(selected==="管理员")return;const list=normalizeRolePermissions(permissions);change(addAudit({...state,rolePermissions:{...state.rolePermissions,[selected]:list}},"角色权限","更新角色 "+selected+" 权限："+permissionSummary(list)),"角色权限已保存，关联成员同步使用此配置（仅演示）。")};
  const saveResources=()=>{
@@ -151,7 +155,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   {notice&&<div className={s.notice} role="status">{notice}<button onClick={()=>setNotice("")} aria-label="关闭消息">×</button></div>}
   <section className={s.identity}><div className={s.avatar}>硕</div><div className={s.identityInfo}><h2>{tenant.name}</h2><p><span className={s.approved}>已认证（模拟）</span> 企业编号：{tenant.id} · 管理员：{tenant.admin}</p></div><span className={s.mode}>演示企业空间 · 不影响真实账户</span></section>
   {overview&&<>
-    <div className={s.enterpriseStats} role="region" aria-label="企业空间概览"><div className={s.metrics}>{([["企业成员",String(activeMembers.length),"当前启用的企业成员"],["已绑定店铺",String(tenant.stores),"当前企业已授权店铺"],["待处理邀请","0","模拟入驻审核均已完成"]] as const).map(([label,value,hint],i)=><article key={label} data-tone={i}><span className={s.enterpriseMetricNumber}>{value}</span><div className={s.enterpriseMetricText}><strong>{label}</strong><small>{hint}</small></div></article>)}</div></div>
+    <div className={s.enterpriseStats} role="region" aria-label="企业空间概览"><div className={s.metrics}>{([["企业成员",String(activeMembers.length),"当前启用的企业成员"],["已绑定店铺",String(tenant.stores),"当前企业已授权店铺"],["邀请中",String(pendingMembers.length),"等待成员接受邀请"]] as const).map(([label,value,hint],i)=><article key={label} data-tone={i}><span className={s.enterpriseMetricNumber}>{value}</span><div className={s.enterpriseMetricText}><strong>{label}</strong><small>{hint}</small></div></article>)}</div></div>
     <section className={s.panel} aria-label="企业资源"><header><h2>企业资源</h2><p>展示当前企业可用资源与共享容量情况</p></header><div className={s.resourceSummary}>
       {([
        {label:"店铺",value:String(tenant.stores)+" 家",hint:tenant.stores?"当前已绑定店铺":"未绑定店铺",Icon:Store,tone:"store"},
@@ -162,14 +166,14 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
     </div></section>
 
   </>}
-  {suffix==="/organization/members"&&<>{tiles([["启用成员",String(activeMembers.length),"包含管理员"],["管理员",String(state.members.filter(m=>m.role==="管理员"&&m.status==="正常").length),"拥有全部权限"],["已停用成员",String(state.members.length-activeMembers.length),"可按需重新启用"],["模拟审核","自动通过","添加后立即生效"]])}
+  {suffix==="/organization/members"&&<>{tiles([["启用成员",String(activeMembers.length),"包含管理员"],["管理员",String(state.members.filter(m=>m.role==="管理员"&&m.status==="正常").length),"拥有全部权限"],["已停用成员",String(disabledMembers.length),"可按需重新启用"],["邀请中",String(pendingMembers.length),"等待成员接受"]])}
    <section className={`${s.panel} ${s.memberManagement}`} aria-label="成员列表">
     <header><h2>成员列表</h2><p>管理当前企业成员、角色及状态，支持搜索与分页。</p></header>
     <div className={s.memberFilters}>
      <label>搜索成员<input type="search" aria-label="搜索成员" placeholder="输入姓名或邮箱" value={memberSearch} onChange={e=>{setMemberSearch(e.target.value);setMemberPage(1)}}/></label>
-     <label>状态<select aria-label="筛选成员状态" value={memberStatus} onChange={e=>{setMemberStatus(e.target.value);setMemberPage(1)}}><option value="all">全部状态</option><option value="正常">正常</option><option value="已停用">已停用</option></select></label>
+     <label>状态<select aria-label="筛选成员状态" value={memberStatus} onChange={e=>{setMemberStatus(e.target.value);setMemberPage(1)}}><option value="all">全部状态</option><option value="正常">正常</option><option value="已停用">已停用</option><option value="邀请中">邀请中</option></select></label>
     </div>
-    <div className={`${s.tableWrap} ${s.memberTable}`}><table><thead><tr>{["成员","登录邮箱","角色","状态","加入时间","操作"].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{pagedMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.email}</td><td>{m.role}</td><td><span className={m.status==="正常"?s.approved:s.memberInactive}>{m.status}</span></td><td>{timestamp(m.joined)}</td><td><div className={s.rowActions}><button onClick={()=>open("member",m.id)}>查看{m.id==="admin"?"":" / 调整"}</button>{m.id!=="admin"&&<button onClick={()=>toggleMember(m)}>{m.status==="正常"?"停用":"启用"}</button>}</div></td></tr>)}</tbody></table>{!filteredMembers.length&&<div className={s.empty}>没有符合条件的成员。</div>}</div>
+    <div className={`${s.tableWrap} ${s.memberTable}`}><table><thead><tr>{["账号","邮箱","角色","状态","加入 / 邀请时间","操作"].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{pagedMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.email}</td><td>{m.role}</td><td><span className={m.status==="正常"?s.approved:s.memberInactive}>{m.status}</span></td><td>{timestamp(m.joined)}</td><td><div className={s.rowActions}><button onClick={()=>open("member",m.id)}>查看{m.id==="admin"?"":" / 调整"}</button>{m.status==="邀请中"?<><button onClick={()=>acceptInvitation(m)}>模拟接受</button><button onClick={()=>cancelInvitation(m)}>取消邀请</button></>:m.id!=="admin"&&<button onClick={()=>toggleMember(m)}>{m.status==="正常"?"停用":"启用"}</button>}</div></td></tr>)}</tbody></table>{!filteredMembers.length&&<div className={s.empty}>没有符合条件的成员。</div>}</div>
     <div className={s.memberPagination}>
      <div><label htmlFor="members-page-size">每页显示</label><select id="members-page-size" value={memberPageSize} onChange={e=>{setMemberPageSize(Number(e.target.value));setMemberPage(1)}}><option value={10}>10 条</option><option value={20}>20 条</option><option value={50}>50 条</option></select><span>共 {filteredMembers.length} 位成员</span></div>
      <div><span aria-live="polite">第 {currentMemberPage} / {memberPageCount} 页</span><button type="button" aria-label="成员上一页" disabled={currentMemberPage<=1} onClick={()=>setMemberPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" aria-label="成员下一页" disabled={currentMemberPage>=memberPageCount} onClick={()=>setMemberPage(p=>Math.min(memberPageCount,p+1))}>下一页</button></div>
@@ -276,8 +280,8 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
     <footer><button type="button" onClick={()=>setPromotionDetail(null)}>关闭</button>{selectedPromotion.spent>0&&<button type="button" className={s.primary} onClick={()=>nav("/referrals/earnings")}>查看收益明细</button>}</footer>
    </section>
   </div>}
-  {modal&&<div className={s.overlay} onMouseDown={e=>e.target===e.currentTarget&&close()}><section className={modal==="permissions"?`${s.dialog} ${s.permissionDialog}`:s.dialog} role="dialog" aria-modal="true" aria-label={{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员资源",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}><header><h2>{{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员存储",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}</h2><button aria-label="关闭弹窗" onClick={close}>×</button></header><p className={s.dialogHint}>模拟企业后台审核自动通过，确认后会在当前浏览器档案和操作记录中留存。</p>
-    {modal==="invite"&&<><label>成员姓名<input aria-label="成员姓名" value={name} onChange={e=>setName(e.target.value)} placeholder="输入成员姓名"/></label><label>成员邮箱<input aria-label="成员邮箱" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="输入测试邮箱"/></label></>}
+  {modal&&<div className={s.overlay} onMouseDown={e=>e.target===e.currentTarget&&close()}><section className={modal==="permissions"?`${s.dialog} ${s.permissionDialog}`:s.dialog} role="dialog" aria-modal="true" aria-label={{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员资源",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}><header><h2>{{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员存储",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}</h2><button aria-label="关闭弹窗" onClick={close}>×</button></header><p className={s.dialogHint}>{modal==="invite"?"演示邀请将记录为“邀请中”，不会发送真实邮件；成员接受邀请后才启用。":"此处操作仅作用于当前演示数据，变更会记录在操作日志中。"}</p>
+    {modal==="invite"&&<><label>账号<input aria-label="成员账号" value={name} onChange={e=>setName(e.target.value)} placeholder="输入登录账号，如 colleague04"/></label><label>邮箱<input aria-label="成员邮箱" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="输入邀请邮箱"/></label></>}
     {modal==="member"&&<p>成员：{currentMember?.name||"未找到成员"} · {currentMember?.email}</p>}
     {(modal==="invite"||modal==="member")&&<label>业务角色<select aria-label="业务角色" disabled={modal==="member"&&selected==="admin"} value={role} onChange={e=>setRole(e.target.value)}>{state.roles.map(x=><option key={x}>{x}</option>)}</select></label>}
     {modal==="permissions"&&<fieldset className={s.permissionList}><legend>权限范围 · {selected}</legend>
@@ -313,7 +317,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
     {modal==="earning"&&<><label>模拟客户标识<input aria-label="模拟客户标识" value={email} onChange={e=>setEmail(e.target.value)} placeholder="例如：TEST-CUSTOMER-001"/></label><label>模拟佣金金额（元）<input type="number" min="0.01" step="0.01" aria-label="模拟佣金金额" value={amount} onChange={e=>setAmount(e.target.value)}/></label></>}
     {modal==="payout"&&<label>演示收款标识<input aria-label="演示收款标识" value={account} onChange={e=>setAccount(e.target.value)} placeholder="不要输入真实银行账号"/></label>}
     {modal==="withdraw"&&<><p>当前可提现金额：{money(balance)}。支持部分提现，剩余收益继续保留为可提现余额。</p><label>模拟提现金额<input type="number" step="0.01" aria-label="模拟提现金额" value={amount} onChange={e=>setAmount(e.target.value)}/></label></>}
-    {error&&<p role="alert" className={s.error}>{error}</p>}<footer><button onClick={close}>取消</button><button className={s.primary} onClick={()=>({invite:addMember,member:updateMember,role:addRole,permissions:savePermissions,storage:saveResources,earning:addEarning,payout:savePayout,withdraw}[modal])()} disabled={modal==="member"&&selected==="admin"}>确认并模拟通过</button></footer>
+    {error&&<p role="alert" className={s.error}>{error}</p>}<footer><button onClick={close}>取消</button><button className={s.primary} onClick={()=>({invite:addMember,member:updateMember,role:addRole,permissions:savePermissions,storage:saveResources,earning:addEarning,payout:savePayout,withdraw}[modal])()} disabled={modal==="member"&&selected==="admin"}>{modal==="invite"?"确认邀请":"确认并模拟通过"}</button></footer>
    </section></div>}
   <p className={s.disclaimer}>所有账户、权限、收益和审核操作均为本地演示数据，非真实身份认证、平台授权、支付或转账。成员推广数据按演示账号分别保存。</p>
  </main>;
