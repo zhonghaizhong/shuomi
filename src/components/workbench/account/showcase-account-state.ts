@@ -62,11 +62,55 @@ export function togglePermissionGroup(values:readonly string[],node:ConsoleNavNo
  }
  return result;
 }
+// The administrator is a protected system role. The former three sample business
+// roles are retired from the fixture; existing custom roles are preserved.
+export const retiredSampleRoles=["运营负责人","商品运营","订单客服"] as const;
+export const subaccountRole="子账号";
+const subaccountGrants:{path:string;mode:PermissionMode;children?:boolean}[]=[
+ {path:"/workbench",mode:"view",children:true},
+ {path:"/workbench/ai",mode:"view"},
+ {path:"/workbench/ai/chat",mode:"operate",children:true},
+ {path:"/workbench/ai/tasks",mode:"operate",children:true},
+ {path:"/workbench/ai/projects",mode:"view",children:true},
+ {path:"/workbench/ai/reports",mode:"view",children:true},
+ {path:"/workbench/supply",mode:"view",children:true},
+ {path:"/workbench/agents",mode:"view"},
+ {path:"/workbench/agents/market",mode:"view"},
+ {path:"/workbench/agents/mine",mode:"view"},
+ {path:"/workbench/tools",mode:"view"},
+ {path:"/workbench/tools/official",mode:"view"},
+ {path:"/workbench/tools/mine",mode:"operate"},
+ {path:"/workbench/data",mode:"view"},
+ {path:"/workbench/data/market",mode:"view"},
+ {path:"/workbench/data/mine",mode:"operate"},
+ {path:"/workbench/store-center",mode:"view"},
+ {path:"/workbench/stores",mode:"operate"},
+ {path:"/workbench/listing",mode:"operate",children:true},
+ {path:"/workbench/store-products",mode:"view"},
+ {path:"/workbench/store-orders",mode:"view",children:true}
+];
+export const subaccountPreset=normalizeRolePermissions(subaccountGrants.flatMap(({path,mode,children})=>{
+ const node=allNodes.find(item=>item.href===path);
+ if(!node)return [];
+ return (children?descendants(node):[node]).flatMap(item=>[
+  permissionKey(item.href,"view"),
+  ...(mode==="operate"?[permissionKey(item.href,"operate")]:[])
+ ]);
+}));
 export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rolePermissions:Record<string,string[]>;allocations:Record<string,number>;referrals:ReferralItem[];withdrawals:Withdrawal[];payoutAccount:string;referralCode:string};
 const KEY="shuomi-demo-account-suite-SM-ENT-000001-v1";
-export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)}],audit:[],roles:["管理员","运营负责人","商品运营","订单客服"],rolePermissions:{"管理员":[...permissionOptions],"运营负责人":["店铺中心","商品中心","刊登管理","供应市场","AI工作台"],"商品运营":["商品中心","刊登管理","供应市场"],"订单客服":["店铺中心"]},allocations:{},referrals:[],withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
+export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)}],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},referrals:[],withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
 const valid=(value:unknown):value is SuiteState=>!!value&&typeof value==="object"&&Array.isArray((value as SuiteState).members)&&Array.isArray((value as SuiteState).audit)&&Array.isArray((value as SuiteState).roles)&&Array.isArray((value as SuiteState).referrals)&&Array.isArray((value as SuiteState).withdrawals);
-export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(valid(v))return {...structuredClone(initialSuite),...v,rolePermissions:Object.fromEntries(Object.entries({...initialSuite.rolePermissions,...(v.rolePermissions||{})}).map(([role,permissions])=>[role,normalizeRolePermissions(Array.isArray(permissions)?permissions:[])])),allocations:{...(v.allocations||{})}}}catch{}return structuredClone(initialSuite)}
+export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(valid(v)){
+  const obsolete=new Set<string>(retiredSampleRoles);
+  const roles=["管理员",subaccountRole,...(Array.isArray(v.roles)?v.roles:[]).filter((role:string)=>role!=="管理员"&&role!==subaccountRole&&!obsolete.has(role))];
+  const allowedRoles=new Set(roles);
+  const rolePermissions=Object.fromEntries(Object.entries({...initialSuite.rolePermissions,...(v.rolePermissions||{})})
+    .filter(([role])=>allowedRoles.has(role))
+    .map(([role,permissions])=>[role,normalizeRolePermissions(Array.isArray(permissions)?permissions:[])]));
+  const members=(v.members as Member[]).map(member=>obsolete.has(member.role)?{...member,role:subaccountRole}:member);
+  return {...structuredClone(initialSuite),...v,roles,rolePermissions,members,allocations:{...(v.allocations||{})}};
+ }}catch{}return structuredClone(initialSuite)}
 export function writeSuite(v:SuiteState):boolean{resetLegacyAccountDemoOnce();try{localStorage.setItem(KEY,JSON.stringify(v));window.dispatchEvent(new Event("shuomi-suite-updated"));return true}catch{return false}}
 export function addAudit(state:SuiteState,category:string,message:string):SuiteState{return {...state,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:tenant.admin,category,message},...state.audit]}}
 export function useShowcaseSuite(){const [state,setState]=useState<SuiteState>(initialSuite);useEffect(()=>{const sync=()=>setState(readSuite());sync();window.addEventListener("shuomi-suite-updated",sync);return()=>window.removeEventListener("shuomi-suite-updated",sync)},[]);const commit=(newState:SuiteState)=>{if(!writeSuite(newState))return false;setState(newState);return true};return {state,commit}}
