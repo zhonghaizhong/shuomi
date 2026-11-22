@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./route-detail-preview.module.css";
-import { plansDemoDisplay, plansDemoFacts } from "./plans-demo-facts";
+import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit } from "./plans-demo-facts";
 import { ChatNewPreview } from "./chat-new-preview";
 import { ShowcaseChatCollections } from "./showcase-chat-collections";
 import { PreferredApplicationPreview } from "./preferred-application-preview";
@@ -226,7 +226,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const positivePurchase=(label:string)=>Number.isFinite(purchaseValue(label))&&purchaseValue(label)>0;
   const purchaseEstimate=(label:string)=>!positivePurchase(label)?"请先输入数量或金额":label==="店铺服务"?"预计扣款：¥"+(purchaseValue(label)*168).toFixed(2)+" · 计入企业续费期数余额":label==="企业存储"?"预计费用：¥"+purchaseValue(label).toFixed(2)+" · 有效期 30 天":"按当前实时兑换规则结算，不预估虚构积分或数据额度";
   const usageRowMatches=(r:string[])=>r.join(" ").includes(appliedUsage.query)&&(appliedUsage.tab==="全部"||appliedUsage.tab==="全部流水"||r[1].includes(appliedUsage.tab))&&(appliedUsage.movement==="全部变动"||(appliedUsage.movement==="扣减"?r[4].startsWith("-"):appliedUsage.movement==="充值"?r[4].startsWith("+"):r[3].includes("赠送")))&&(appliedUsage.store==="全部店铺"||r.join(" ").includes(appliedUsage.store));
-  const rows: string[][] = [];
+  const rows: string[][] = pathname.endsWith("usage") ? [] : [[plansDemoWalletCredit.occurredAt,"钱包充值",plansDemoWalletCredit.description,`¥${plansDemoWalletCredit.amountCny.toLocaleString("zh-CN")}.00`,plansDemoWalletCredit.status]];
   const reviewDialog=requestReview?<div className={styles.planDetailBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setRequestReview(null)}}>
    <section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="确认申请草稿">
     <header><div><h2>确认申请草稿</h2><p>仅保存到当前浏览器；不会发起支付、扣除钱包余额或增加资源权益。</p></div><button type="button" aria-label="关闭申请弹窗" onClick={()=>setRequestReview(null)}>×</button></header>
@@ -244,7 +244,17 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
  {name:"token 积分",type:"资源兑换",description:"使用钱包余额兑换 token 积分，按实时兑换比例结算。",unit:"使用金额（元）",placeholder:"请输入使用金额（元）",action:"使用充值余额"},
  {name:"数据资源",type:"资源兑换",description:"使用钱包余额兑换数据额度，按当前单价结算。",unit:"使用金额（元）",placeholder:"请输入使用金额（元）",action:"使用充值余额"},
  {name:"企业存储",type:"独立扩容",description:"默认免费共享 5 GiB；扩容按 ¥1/GiB/30天 计费。",unit:"扩容容量（GiB）",placeholder:"请输入扩容容量（GiB）",action:"购买扩容"}
-] as const).map(({name,type,description,unit,placeholder,action},i)=><article className={styles.card} data-tone={i} key={name}><div className={styles.cardTitle}><h3>{name}</h3><span>{type}</span></div><p className={styles.planPurchaseIntro}>{description}</p><div className={styles.planPurchaseAction}><label>{unit}<input aria-label={unit+" · "+name} placeholder={placeholder} type="number" min="0.01" step={name==="店铺服务"?"1":name==="企业存储"?"1":"0.01"} value={purchaseAmounts[name]||""} onChange={e=>setPurchaseAmounts(v=>({...v,[name]:e.target.value}))}/></label><small role="status">{purchaseEstimate(name)}</small><button className={styles.primary} disabled={!positivePurchase(name)||(name==="店铺服务"&&!Number.isInteger(purchaseValue(name)))||(name==="企业存储"&&!Number.isInteger(purchaseValue(name)))} onClick={()=>openReview(name,purchaseValue(name),purchaseEstimate(name))}>{action}</button></div></article>)}</section>{draftAlert}{reviewDialog}</>;
+] as const).map(({name,type,description,unit,placeholder,action},i)=><article className={styles.card} data-tone={i} key={name}><div className={styles.cardTitle}><h3>{name}</h3><span>{type}</span></div><p className={styles.planPurchaseIntro}>{description}</p><div className={styles.planPurchaseAction}><label>{unit}<input aria-label={unit+" · "+name} placeholder={placeholder} type="number" min="0.01" step={name==="店铺服务"?"1":name==="企业存储"?"1":"0.01"} value={purchaseAmounts[name]||""} onChange={e=>setPurchaseAmounts(v=>({...v,[name]:e.target.value}))}/></label><small role="status">{purchaseEstimate(name)}</small><button className={styles.primary} disabled={!positivePurchase(name)||(name==="店铺服务"&&!Number.isInteger(purchaseValue(name)))||(name==="企业存储"&&!Number.isInteger(purchaseValue(name)))} onClick={()=>openReview(name,purchaseValue(name),purchaseEstimate(name))}>{action}</button></div></article>)}</section>
+ <section className={styles.table} aria-label="模拟钱包充值流水">
+  <header><div><h2>钱包充值流水</h2><small>本页仅显示演示到账记录；不代表真实资金流水</small></div></header>
+  <div className={styles.planTableScroll}>
+   <div className={`${styles.tableHead} ${styles.planWalletColumns}`}>{["时间","类型","说明","金额","余额"].map(x=><span key={x}>{x}</span>)}</div>
+   <div className={`${styles.serviceRow} ${styles.planWalletColumns}`}>
+    <span>{plansDemoWalletCredit.occurredAt}</span><span>模拟充值</span><span>{plansDemoWalletCredit.description}</span>
+    <span>+¥{plansDemoWalletCredit.amountCny.toLocaleString("zh-CN")}.00</span><span>{plansDemoDisplay.walletBalance}</span>
+   </div>
+  </div>
+ </section>{draftAlert}{reviewDialog}</>;
 
   return <><section className={styles.metrics}>{[["近30天支出", "¥0.00", "暂无费用记录"], ["店铺服务", "¥0.00", "暂无续费记录"], ["token 积分充值", "¥0.00", "暂无充值记录"], ["其他服务", "¥0.00", "暂无服务订单"]].map(([a,b,c])=><article key={a} className={styles.planMetricCard}><strong className={styles.planMetricValue}>{b}</strong><div className={styles.planMetricCopy}><span>{a}</span><small>{c}</small></div></article>)}</section><section className={styles.toolbar} aria-label="账单筛选"><input aria-label="搜索账单" value={orderDraft.query} onChange={e=>setOrderDraft(v=>({...v,query:e.target.value}))} placeholder="搜索账单号或费用内容"/>{([["全部时间","time"],["全部类型","type"],["全部状态","status"]] as const).map(([label,key])=><select key={key} aria-label={label} value={orderDraft[key]} onChange={e=>setOrderDraft(v=>({...v,[key]:e.target.value}))}>{[label,...(filterChoices[label]||[])].map(x=><option key={x}>{x}</option>)}</select>)}<button onClick={()=>{setOrderDraft({query:"",time:"全部时间",type:"全部类型",status:"全部状态"});setAppliedOrder({query:"",time:"全部时间",type:"全部类型",status:"全部状态"})}}>重置</button><button className={styles.primary} onClick={()=>setAppliedOrder(orderDraft)}>确定</button><button disabled={!rows.some(orderMatches)} onClick={()=>downloadDemoCsv("账单与订单-演示.csv",rows.filter(orderMatches))}>导出账单</button></section><section className={styles.table}><header><h2>账单与订单</h2><button onClick={()=>setInvoiceOpen(true)}>发票管理</button></header><div className={styles.planTableScroll}><div className={`${styles.tableHead} ${styles.planOrderColumns}`}>{["时间","类型","内容","金额","状态","操作"].map(x=><span key={x}>{x}</span>)}</div>{rows.filter(orderMatches).map((r,i)=><div className={`${styles.serviceRow} ${styles.planOrderColumns}`} key={i}>{r.slice(0,5).map((x,j)=><span key={j}>{x}</span>)}<button onClick={()=>setPlanDetail({kind:"order",row:r})}>详情</button></div>)}{!rows.some(orderMatches)&&<p className={styles.planEmpty}>暂无符合条件的账单与订单记录。</p>}</div></section>
  <section className={styles.table} aria-label="本地业务申请草稿">
@@ -259,11 +269,11 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
      <button type="button" onClick={()=>setSelectedRequest(row.id)}>详情</button>
     </div>)}
    </div>}
- </section>{draftAlert}{planDetail?.kind==="order"&&<div className={styles.planDetailBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setPlanDetail(null)}}><section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="订单详情"><header><div><h2>订单详情</h2><p>仅展示当前演示订单记录，不代表真实订单或付款。</p></div><button type="button" aria-label="关闭订单详情" onClick={()=>setPlanDetail(null)}>×</button></header><div className={styles.planDetailHighlight}><span>订单金额</span><strong>{planDetail.row[3]}</strong><small>{planDetail.row[4]} · {planDetail.row[1]}</small></div><dl>{[["时间",planDetail.row[0]],["费用类型",planDetail.row[1]],["订单内容",planDetail.row[2]],["金额",planDetail.row[3]],["状态",planDetail.row[4]]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><footer><button type="button" onClick={()=>setPlanDetail(null)}>关闭</button></footer></section></div>}
+ </section>{draftAlert}{planDetail?.kind==="order"&&<div className={styles.planDetailBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setPlanDetail(null)}}><section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="订单详情"><header><div><h2>订单详情</h2><p>此记录为模拟充值到账凭据，非真实支付订单，不可用于报销或开票。</p></div><button type="button" aria-label="关闭订单详情" onClick={()=>setPlanDetail(null)}>×</button></header><div className={styles.planDetailHighlight}><span>订单金额</span><strong>{planDetail.row[3]}</strong><small>{planDetail.row[4]} · {planDetail.row[1]}</small></div><dl>{[["时间",planDetail.row[0]],["费用类型",planDetail.row[1]],["订单内容",planDetail.row[2]],["金额",planDetail.row[3]],["状态",planDetail.row[4]]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><footer><button type="button" onClick={()=>setPlanDetail(null)}>关闭</button></footer></section></div>}
  {invoiceOpen?<div className={styles.planDetailBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setInvoiceOpen(false)}}>
   <section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="发票管理">
-   <header><div><h2>发票管理</h2><p>真实付款成功后，符合开票规则的交易才会出现在这里。</p></div><button type="button" aria-label="关闭发票管理" onClick={()=>setInvoiceOpen(false)}>×</button></header>
-   <p className={styles.planEmpty}>暂无可申请发票的已支付订单；本地业务申请草稿不能开票。</p>
+   <header><div><h2>发票管理</h2><p>真实付款成功且符合开票规则的交易才可开票；模拟充值不属于真实交易。</p></div><button type="button" aria-label="关闭发票管理" onClick={()=>setInvoiceOpen(false)}>×</button></header>
+   <p className={styles.planEmpty}>暂无可开票的真实已支付订单；模拟充值及本地申请草稿不能开票。</p>
    <footer><button type="button" onClick={()=>setInvoiceOpen(false)}>关闭</button></footer>
   </section>
  </div>:null}{currentRequest?<div className={styles.planDetailBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setSelectedRequest(null)}}>
