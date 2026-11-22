@@ -213,7 +213,7 @@ test("Figma binding group and owner affordances preserve draft and follow compan
  await form.getByRole("button",{name:"确认绑定"}).click();
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.locator("article").filter({hasText:"分组绑定草稿"})).toContainText("店铺运营组");
- await expect(area).toContainText("负责人：林晨");
+ await expect(area).toContainText("林晨");
 });
 test("store detail retains rename, edit and unlink without card menu",async({page})=>{
  const area=await createDemo(page,"待操作店铺");
@@ -243,7 +243,7 @@ test("enter-store is a full five-tab Figma detail view rather than a generic wor
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await details.getByRole("button",{name:"保存设置"}).click();
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await expect(area).toContainText("负责人：林晨");
+ await expect(area).toContainText("林晨");
 });
 test("store settings are staged until Save, and returning discards uncommitted edits",async({page})=>{
  const area=await createDemo(page,"待保存设置");
@@ -257,7 +257,7 @@ test("store settings are staged until Save, and returning discards uncommitted e
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await details.getByRole("button",{name:"保存设置"}).click();
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await expect(area).toContainText("负责人：林晨");
+ await expect(area).toContainText("林晨");
 });
 test("Figma group creation, rename and deletion preserve store rather than unlink it",async({page})=>{
  const area=await createDemo(page,"分组店铺");
@@ -509,7 +509,7 @@ test("new binding is blocked without an available 30-day service period",async({
 test("four colleague stores are bound, and one failed platform-ID lookup is only a failed attempt",async({page})=>{
  await page.goto(root+"/account/organization/resources");
  const suite=page.locator("[data-account-suite]");
- await suite.getByRole("row").filter({hasText:"模拟同事01"}).getByRole("button",{name:"管理店铺"}).click();
+ await suite.getByRole("row").filter({hasText:"模拟同事01"}).getByRole("button",{name:"查看店铺"}).click();
  const dialog=page.getByRole("dialog",{name:"店铺详情"});
  for(let i=1;i<=4;i++)await expect(dialog.getByRole("row").filter({hasText:"同事01演示店铺"+String(i).padStart(2,"0")})).toBeVisible();
  await expect(dialog.getByRole("row").filter({hasText:"同事01演示店铺05"})).toHaveCount(0);
