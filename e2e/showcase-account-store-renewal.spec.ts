@@ -40,3 +40,25 @@ test("resource quota store dialogs show owner-scoped stores and renew expired ad
  await page.goto(root+"/plans/entitlements");
  await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：3 期");
 });
+
+test("the five colleague demo stores show four simulated platform IDs and one retriable failure",async({page})=>{
+ await page.goto(root+"/account/organization/resources");
+ const suite=page.locator("[data-account-suite]");
+ await suite.getByRole("row").filter({hasText:"模拟同事01"}).getByRole("button",{name:"查看店铺"}).click();
+ const dialog=page.getByRole("dialog",{name:"店铺详情"});
+ for(let i=1;i<=4;i++){
+  const row=dialog.getByRole("row").filter({hasText:"同事01演示店铺"+String(i).padStart(2,"0")});
+  await expect(row).toContainText("已激活");
+ }
+ const failed=dialog.getByRole("row").filter({hasText:"同事01演示店铺05"});
+ await expect(failed).toContainText("未激活");
+ await expect(dialog.getByRole("button",{name:"重试获取"})).toHaveCount(1);
+ await failed.getByRole("button",{name:"重试获取"}).click();
+ await expect(failed).toContainText("已激活");
+ await expect(dialog.getByRole("button",{name:"重试获取"})).toHaveCount(0);
+ const simulated=await page.evaluate(()=>{
+  const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
+  return stores.filter((s:{id:string})=>/^SIM-C01-0[1-5]$/.test(s.id)).map((s:{id:string;platformStoreId?:string})=>s.platformStoreId||"");
+ });
+ expect(simulated).toEqual(["SIM-SHEIN-C01-01","SIM-SHEIN-C01-02","SIM-SHEIN-C01-03","SIM-SHEIN-C01-04","SIM-SHEIN-C01-05"]);
+});
