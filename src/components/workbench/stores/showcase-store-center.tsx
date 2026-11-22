@@ -54,12 +54,14 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const availablePeriods=administrator?(isMainTenant?Math.max(0,resourceTotals.renewalPeriods-consumedPeriods-allocatedPeriods):Math.max(0,resourceTotals.renewalPeriods-consumedPeriods)):(isMainTenant?Math.max(0,ownAssignedPeriods):0);
  const validBinding=(s:Store)=>Boolean(s.platformStoreId&&Number(s.servicePeriods)>0);
  const isExpired=(s:Store)=>validBinding(s)&&!demoStoreServiceActive(s);
- const isNormal=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s);
- const isExpiring=(s:Store)=>isNormal(s)&&Date.parse(s.serviceExpiresAt!)-Date.now()<=7*86400000;
- const needsAttention=(s:Store)=>!validBinding(s)||isExpired(s);
+ const hasConnectionIssue=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s)&&Boolean(s.connectionIssue);
+ const isNormal=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s)&&!hasConnectionIssue(s);
+ const isExpiring=(s:Store)=>validBinding(s)&&demoStoreServiceActive(s)&&Date.parse(s.serviceExpiresAt!)-Date.now()<=7*86400000;
+ // Only previously bound, paid and still-in-service stores with a confirmed connection fault need reconnection.
+ const needsAttention=(s:Store)=>hasConnectionIssue(s);
  const activeServiceStores=stores.filter(isNormal).length;
  const expiredServiceStores=stores.filter(isExpired).length;
- const inactiveServiceStores=stores.filter(s=>!validBinding(s)).length;
+ const connectionIssueStores=stores.filter(needsAttention).length;
  const expiringServiceStores=stores.filter(isExpiring).length;
  const [metricFilter,setMetricFilter]=useState<"all"|"normal"|"expiring"|"expired"|"attention">("all");
  const [selectedStores,setSelectedStores]=useState<string[]>([]);
@@ -198,12 +200,12 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   </>:route==="stores"?<>
     <section className={css.storeMetrics} aria-label="店铺运营概览">{([
       ["all","已绑定店铺",stores.filter(validBinding).length,"当前账户"],
-      ["normal","正常店铺",activeServiceStores,"服务有效"],
+      ["normal","正常店铺",activeServiceStores,"连接与服务正常"],
       ["expiring","即将到期",expiringServiceStores,"未来 7 天"],
       ["expired","已到期",expiredServiceStores,"服务期已过"],
-      ["attention","待处理",expiredServiceStores+inactiveServiceStores,"需关注事项"]
+      ["attention","待处理",connectionIssueStores,"连接异常"]
     ] as const).map(([key,title,value,subtitle])=><button type="button" key={key} className={css.storeMetric} data-tone={key} aria-pressed={metricFilter===key} onClick={()=>chooseMetric(key)}><span>{title}</span><small>{subtitle}</small><strong>{value} <em>家</em></strong></button>)}</section>
-    {expiredServiceStores+inactiveServiceStores>0?<section className={css.attention}><span>有 {expiredServiceStores+inactiveServiceStores} 家店铺需要处理 · 已到期 {expiredServiceStores} 家 · 待核实 {inactiveServiceStores} 家</span><button onClick={()=>chooseMetric("attention")}>查看待处理</button></section>:null}
+    {connectionIssueStores>0?<section className={css.attention}><span>有 {connectionIssueStores} 家已绑定且服务有效的店铺连接异常，需检查授权或平台接口。</span><button onClick={()=>chooseMetric("attention")}>查看待处理</button></section>:null}
    <form className={css.filters} aria-label="店铺筛选" onSubmit={e=>{e.preventDefault();commitFilters()}}>
     <div className={css.filterCriteria} aria-label="条件筛选">
       <select aria-label="平台筛选" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option>全部平台</option><option>SHEIN</option></select>
@@ -225,8 +227,8 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
      <div className={css.storeRow}>
       <div className={css.storeIdentity}><input type="checkbox" aria-label={"选择"+s.name} checked={selectedStores.includes(s.id)} onChange={e=>setSelectedStores(current=>e.target.checked?[...current.filter(id=>id!==s.id),s.id]:current.filter(id=>id!==s.id))}/><div><strong>{s.name}</strong><small>店铺 ID：{s.platformStoreId||s.id}</small><small>{s.owner||"管理员"} · {s.group||"未分组"}</small></div></div>
       <div className={css.storeRowTags}><span>SHEIN</span><span>{s.region}</span><span>{s.type}</span></div>
-      <div className={css.storeRowState}><strong data-state={isNormal(s)?"active":isExpired(s)?"expired":"unknown"}>{isExpired(s)?"服务已到期":isNormal(s)?"服务有效":"资料待核实"}</strong><small>{s.platformStoreId?"平台 ID 已获取":"平台 ID 待核实"} · 同步未接入</small><small>服务期限：{s.serviceExpiresAt?new Date(s.serviceExpiresAt).toLocaleDateString("zh-CN"):"待核实"}</small></div>
-      <div className={css.storeRowButtons}>{isExpired(s)?<button type="button" className={css.primary} onClick={()=>enterStore(s.id,"服务信息")}>续费</button>:null}<button type="button" onClick={()=>enterStore(s.id,"店铺设置")}>管理店铺</button></div>
+      <div className={css.storeRowState}><strong data-state={isNormal(s)?"active":isExpired(s)?"expired":hasConnectionIssue(s)?"expired":"unknown"}>{isExpired(s)?"服务已到期":hasConnectionIssue(s)?"连接异常":isNormal(s)?"店铺正常":"资料待核实"}</strong><small>{hasConnectionIssue(s)?s.connectionIssue:s.platformStoreId?"平台 ID 已获取 · 同步未接入":"平台 ID 待核实"}</small><small>服务期限：{s.serviceExpiresAt?new Date(s.serviceExpiresAt).toLocaleDateString("zh-CN"):"待核实"}</small></div>
+      <div className={css.storeRowButtons}>{isExpired(s)?<button type="button" className={css.primary} onClick={()=>enterStore(s.id,"服务信息")}>续费</button>:hasConnectionIssue(s)?<button type="button" className={css.primary} onClick={()=>enterStore(s.id,"数据同步")}>检查连接</button>:null}<button type="button" onClick={()=>enterStore(s.id,"店铺设置")}>管理店铺</button></div>
      </div>
     </article>)}</div>:<div className={css.empty}><Building2 size={34}/><h3>{stores.length?"没有符合条件的店铺":"尚未绑定店铺"}</h3><p>{stores.length?"请调整筛选条件。":"当前没有店铺。绑定后即可管理店铺。商品与订单仅在实际同步后显示。"}</p><button className={css.primary} onClick={()=>stores.length?resetFilters():openBinding()}>{stores.length?"清空筛选":"绑定新店铺"}</button></div>}
     {list.length>pageSize?<nav aria-label="店铺列表分页" className={css.storePages}><span>第 {currentPage} / {pageCount} 页</span><button type="button" disabled={currentPage<=1} onClick={()=>{setPageNumber(currentPage-1);setSelectedStores([])}}>上一页</button><button type="button" disabled={currentPage>=pageCount} onClick={()=>{setPageNumber(currentPage+1);setSelectedStores([])}}>下一页</button></nav>:null}
