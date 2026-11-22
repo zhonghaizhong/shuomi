@@ -333,6 +333,8 @@ test("organization-scoped store bindings synchronize with plans and enterprise r
  await page.goto(root+"/stores");
  const stores=page.locator('[data-store-center-showcase="stores"]');
  await expect(stores).toContainText("共 10 家");
+ await page.goto(root+"/account");
+ await expect(page.locator('[class*="accountBottom"]')).toContainText("已绑定 10 家 · 待授权 10 家");
  await page.goto(root+"/plans");
  await expect(page.locator('[class*="planOverview"]')).toContainText("本组织已绑定 10 家");
  await expect(page.locator('[class*="planOverview"]')).toContainText("已使用 0 期");
