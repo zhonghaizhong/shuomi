@@ -67,7 +67,9 @@ test("synthetic enterprise uses one tenant across account home, members, roles a
  await expect(suite).toContainText("邀请并模拟审核通过");
  await expect(suite).toContainText("调整成员");
  await page.goto(base+"/organization/resources");
- await expect(suite).toContainText("尚未充值");
+ await expect(suite).toContainText("模拟已到账");
+ await expect(suite).toContainText("10,000,000");
+ await expect(suite).toContainText("50,000");
  await expect(suite).toContainText("0 GiB");
 });
 test("synthetic referral flow starts at zero and updates earnings and withdrawal records",async({page})=>{
