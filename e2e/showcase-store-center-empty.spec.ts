@@ -421,7 +421,7 @@ test("store settings are staged until Save, and returning discards uncommitted e
   await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
   await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
- await expect(details.getByLabel("店铺负责人")).toHaveValue("");
+ await expect(details.getByLabel("店铺负责人")).toHaveValue(before.owner);
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await details.getByRole("button",{name:"保存设置"}).click();
  await page.getByRole("button",{name:"返回我的店铺"}).click();
