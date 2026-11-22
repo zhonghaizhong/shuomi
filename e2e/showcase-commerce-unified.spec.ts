@@ -218,9 +218,12 @@ test("plans empty usage and orders retain aligned headers without fabricating tr
  await page.goto(root+"/plans/orders");
  const orders=page.locator('[data-commerce-unified="plans"]');
  await expect(orders.locator('[class*="planOrderColumns"]').first().locator("span")).toHaveCount(6);
- await expect(orders.getByText("暂无账单与订单记录。")).toBeVisible();
- await expect(orders.getByRole("button",{name:"详情"})).toHaveCount(0);
- await expect(orders.getByRole("button",{name:"导出账单"})).toBeDisabled();
+ await expect(orders).toContainText("模拟已到账");
+ await expect(orders).toContainText("¥10,000.00");
+ await orders.getByRole("button",{name:"详情",exact:true}).first().click();
+ await expect(page.getByRole("dialog",{name:"订单详情"})).toContainText("非真实支付订单");
+ await page.getByRole("dialog",{name:"订单详情"}).getByRole("button",{name:"关闭",exact:true}).click();
+ await expect(orders.getByRole("button",{name:"导出账单"})).toBeEnabled();
 });
 
 test("plans overview shows no payable reminder or fictional last order",async({page})=>{
@@ -230,7 +233,7 @@ test("plans overview shows no payable reminder or fictional last order",async({p
  await expect(overview).toContainText("暂无待处理店铺");
  await expect(overview.getByRole("button",{name:"处理",exact:true})).toHaveCount(0);
  await expect(overview).toContainText("积分与数据余额为 0");
- await expect(overview).toContainText("暂无充值、购买或续费订单");
+ await expect(overview).toContainText("最近模拟充值：¥10,000.00");
  await expect(overview.getByRole("button",{name:"进入账单与订单"})).toBeVisible();
 });
 
@@ -238,17 +241,17 @@ test("empty billing filters remain functional without inventing paid records",as
  await page.goto(root+"/plans/orders");
  const plans=page.locator('[data-commerce-unified="plans"]');
  const rows=plans.locator('[class*="planTableScroll"] [class*="planOrderColumns"][class*="serviceRow"]');
- await expect(rows).toHaveCount(0);
+ await expect(rows).toHaveCount(1);
  await plans.getByRole("combobox",{name:"全部状态"}).selectOption("已支付");
  await plans.getByRole("textbox",{name:"搜索账单"}).fill("不存在的订单");
  await expect(rows).toHaveCount(0);
  await plans.getByRole("button",{name:"确定",exact:true}).click();
  await expect(rows).toHaveCount(0);
  await plans.getByRole("button",{name:"重置",exact:true}).click();
- await expect(rows).toHaveCount(0);
+ await expect(rows).toHaveCount(1);
  await expect(plans.getByRole("combobox",{name:"全部状态"})).toHaveValue("全部状态");
  await expect(plans.getByRole("textbox",{name:"搜索账单"})).toHaveValue("");
- await expect(plans.getByRole("button",{name:"导出账单"})).toBeDisabled();
+ await expect(plans.getByRole("button",{name:"导出账单"})).toBeEnabled();
 });
 test("plans zero-value balances and free 5 GiB storage agree across all pages",async({page})=>{
  await page.goto(root+"/plans");
@@ -268,10 +271,11 @@ test("plans zero-value balances and free 5 GiB storage agree across all pages",a
  await expect(plans).toContainText("本月使用 0 条数据");
  await page.goto(root+"/plans/top-up");
  plans=page.locator('[data-commerce-unified="plans"]');
- await expect(plans).toContainText("¥0.00");
- await expect(plans).toContainText("累计充值 ¥0");
+ await expect(plans).toContainText("¥10,000.00");
+ await expect(plans).toContainText("累计充值 ¥10,000");
  await expect(plans).toContainText("累计支出 ¥0");
- await expect(plans).toContainText("暂无充值、消费或兑换流水");
+ await expect(plans).toContainText("钱包充值流水");
+ await expect(plans).toContainText("模拟充值");
 });
 
 test("plans visual polish keeps five accessible entries and a grounded storage utilization bar",async({page})=>{
@@ -312,7 +316,7 @@ test("plans premium cards, empty transactions and purchase controls remain usabl
 test("plans complete a local-only draft workflow across top-up, orders, cancellation and refresh",async({page})=>{
  await page.goto(root+"/plans/top-up");
  const topup=page.locator('[data-commerce-unified="plans"]');
- await expect(topup).toContainText("¥0.00");
+ await expect(topup).toContainText("¥10,000.00");
  await topup.getByRole("spinbutton",{name:"充值金额（元）"}).fill("100");
  await topup.getByRole("button",{name:"账户充值",exact:true}).click();
  const review=page.getByRole("dialog",{name:"确认申请草稿"});
@@ -324,10 +328,10 @@ test("plans complete a local-only draft workflow across top-up, orders, cancella
  await review.getByRole("button",{name:"保存申请草稿"}).click();
  await expect(review).toHaveCount(0);
  await expect(topup).toContainText("已保存申请草稿");
- await expect(topup).toContainText("¥0.00");
+ await expect(topup).toContainText("¥10,000.00");
  await topup.getByRole("button",{name:"查看申请草稿"}).click();
  const bills=page.locator('[data-commerce-unified="plans"]');
- await expect(bills.getByText("暂无账单与订单记录。")).toBeVisible();
+ await expect(bills).toContainText("模拟已到账");
  await expect(bills.getByRole("region",{name:"本地业务申请草稿"})).toContainText("账户充值");
  await expect(bills.getByRole("region",{name:"本地业务申请草稿"})).toContainText("待提交");
  await page.reload();
@@ -344,7 +348,7 @@ test("plans complete a local-only draft workflow across top-up, orders, cancella
  await bills.getByRole("region",{name:"本地业务申请草稿"}).getByRole("button",{name:"详情"}).click();
  await page.getByRole("dialog",{name:"申请草稿详情"}).getByRole("button",{name:"移除本地记录"}).click();
  await expect(bills.getByRole("region",{name:"本地业务申请草稿"})).toContainText("暂无业务申请草稿");
- await expect(bills).toContainText("¥0.00");
+ await expect(bills).toContainText("¥10,000.00");
 });
 test("plans store service and storage request review without granting paid resources",async({page})=>{
  await page.goto(root+"/plans/top-up");
@@ -367,8 +371,33 @@ test("plans store service and storage request review without granting paid resou
  const draftArea=page.getByRole("region",{name:"本地业务申请草稿"});
  await expect(draftArea).toContainText("店铺服务");
  await expect(draftArea).toContainText("企业存储");
- await expect(page.locator('[data-commerce-unified="plans"]').getByText("暂无账单与订单记录。")).toBeVisible();
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("模拟已到账");
  await page.getByRole("button",{name:"发票管理"}).click();
- await expect(page.getByRole("dialog",{name:"发票管理"})).toContainText("暂无可申请发票");
+ await expect(page.getByRole("dialog",{name:"发票管理"})).toContainText("暂无可开票的真实已支付订单");
  await page.getByRole("dialog",{name:"发票管理"}).getByRole("button",{name:"关闭",exact:true}).click();
+});
+
+test("showcase wallet credits exactly CNY 10,000 with a matching simulated receipt and no paid resources",async({page})=>{
+ await page.goto(root+"/plans/top-up");
+ const wallet=page.locator('[data-commerce-unified="plans"]');
+ await expect(wallet).toContainText("¥10,000.00");
+ await expect(wallet).toContainText("累计充值 ¥10,000");
+ await expect(wallet).toContainText("累计支出 ¥0");
+ const ledger=wallet.getByRole("region",{name:"模拟钱包充值流水"});
+ await expect(ledger).toContainText("+¥10,000.00");
+ await expect(ledger).toContainText("模拟充值");
+ await expect(ledger).toContainText("非真实资金流水");
+ await page.goto(root+"/plans/orders");
+ const orders=page.locator('[data-commerce-unified="plans"]');
+ await expect(orders).toContainText("模拟已到账");
+ await expect(orders).toContainText("¥10,000.00");
+ await orders.getByRole("button",{name:"详情",exact:true}).first().click();
+ const receipt=page.getByRole("dialog",{name:"订单详情"});
+ await expect(receipt).toContainText("非真实支付订单");
+ await receipt.getByRole("button",{name:"关闭",exact:true}).click();
+ await page.goto(root+"/plans/entitlements");
+ const rights=page.locator('[data-commerce-unified="plans"]');
+ await expect(rights).toContainText("默认容量 5.00 GiB");
+ await expect(rights).toContainText("已用 0.00 GiB");
+ await expect(rights).not.toContainText("10,000");
 });
