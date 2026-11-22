@@ -136,7 +136,6 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
   const [demoGoals, setDemoGoals] = useState<DemoGoal[]>([]);
   const [demoDrafts, setDemoDrafts] = useState<DemoDraft[]>([]);
   const [selectedDetail, setSelectedDetail] = useState<DemoDetail | null>(null);
-  const [selectedAdvice, setSelectedAdvice] = useState("");
   const [agentCategory, setAgentCategory] = useState("全部");
   const [agentStatus, setAgentStatus] = useState("全部");
   const [enabledShowcaseAgents, setEnabledShowcaseAgents] = useState<string[]>(() => {
