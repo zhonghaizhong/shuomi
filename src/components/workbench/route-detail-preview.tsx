@@ -168,6 +168,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const {purchases:demoPurchases,setPurchases:setDemoPurchases,totals:demoTotals}=useDemoPurchases();
   const {state:enterpriseSuite}=useShowcaseSuite();
   const bindingSummary=useDemoStoreBindings(organizationId,memberId,memberId==="admin");
+  const memberVisibleStores=memberId==="admin"?bindingSummary.organizationCount:bindingSummary.visibleCount;
   const assignedStorePeriods=Object.values(enterpriseSuite.storeAllocations).reduce((sum,value)=>sum+(Number(value)||0),0);
   const availableStorePeriods=Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods);
   // Consumption is intentionally zero until the corresponding business modules are connected.
@@ -269,10 +270,10 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
     <article className={styles.card} data-tone={0}>
       <div className={styles.cardTitle}><h3>店铺服务</h3><span>剩余可分配</span></div>
       <div className={styles.planEntitlementStoreSplit}>
-        <div><small>已绑定店铺</small><strong>{bindingSummary.organizationCount}<em>家</em></strong></div>
+        <div><small>已绑定店铺</small><strong>{memberVisibleStores}<em>家</em></strong></div>
         <div><small>剩余可分配期数</small><strong>{availableStorePeriods}<em>期</em></strong></div>
       </div>
-      <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>已授权：0 家 · 待授权：{bindingSummary.pendingCount} 家 · 已使用：0 期</span><span>剩余可分配：{availableStorePeriods} 期 · 绑定店铺不自动消耗续费期数</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
+      <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>已授权：0 家 · 待授权：{memberVisibleStores} 家 · 已使用：0 期</span><span>剩余可分配：{availableStorePeriods} 期 · 绑定店铺不自动消耗续费期数</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
     </article>
     <article className={styles.card} data-tone={1}>
       <div className={styles.cardTitle}><h3>token 积分</h3><span>剩余可分配</span></div>
