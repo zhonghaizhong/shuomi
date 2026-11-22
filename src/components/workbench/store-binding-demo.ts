@@ -85,21 +85,56 @@ export function saveDemoStoreBindings(organizationId:string,items:DemoStoreBindi
  * 30-day service. Deduct exactly one allocated period per unbilled fixture.
  * Platform identification remains independent from a real provider API.
  */
+const colleagueServiceLedgerKey="shuomi-showcase-colleague-service-ledger-v1";
+type ColleagueServiceRecord={id:string;serviceStartedAt:string;serviceExpiresAt:string;servicePeriods:number};
+function readColleagueServiceLedger():ColleagueServiceRecord[]|null{
+ try{
+  const raw=localStorage.getItem(colleagueServiceLedgerKey);
+  if(!raw)return null;
+  const value:unknown=JSON.parse(raw);
+  if(!Array.isArray(value)||value.length!==4)return null;
+  const rows=value as ColleagueServiceRecord[];
+  return rows.every(row=>/^SIM-C01-0[1-4]$/.test(row.id)&&Number.isSafeInteger(row.servicePeriods)&&row.servicePeriods>0&&Number.isFinite(Date.parse(row.serviceStartedAt))&&Number.isFinite(Date.parse(row.serviceExpiresAt)))?rows:null;
+ }catch{return null;}
+}
+/**
+ * Reconcile the four pre-seeded, successful demo bindings once.
+ * Store fixtures live in sessionStorage and may be regenerated on reload.
+ * Persist the charged service ledger separately in localStorage: regeneration
+ * restores the original service dates WITHOUT charging four more periods.
+ */
 export function reconcileColleagueDemoStorePeriods(organizationId:string):boolean{
  if(organizationId!==mainTenant||typeof window==="undefined")return false;
  const before=readDemoStoreBindings(organizationId);
  const missing=before.filter(store=>/^SIM-C01-0[1-4]$/.test(store.id)&&store.ownerMemberId===colleague&&store.platformIdStatus==="已激活"&&Boolean(store.platformStoreId)&&!Number(store.servicePeriods));
  if(!missing.length)return false;
+ const ledger=readColleagueServiceLedger();
+ if(ledger){
+  const byId=new Map(ledger.map(row=>[row.id,row]));
+  const restored=before.map(store=>{
+   const recorded=byId.get(store.id);
+   return recorded&&!Number(store.servicePeriods)?{...store,...recorded}:store;
+  });
+  return saveDemoStoreBindings(organizationId,restored);
+ }
  const suite=readSuite();
  const allocated=Number(suite.storeAllocations[colleague]||0);
- // Never create services if there is insufficient member allocation.
  if(!Number.isSafeInteger(allocated)||allocated<missing.length)return false;
  const ids=new Set(missing.map(store=>store.id));
  const after=before.map(store=>ids.has(store.id)?startDemoStoreService(store):store);
+ const rows=after.filter(store=>/^SIM-C01-0[1-4]$/.test(store.id)&&store.serviceStartedAt&&store.serviceExpiresAt).map(store=>({
+  id:store.id,serviceStartedAt:store.serviceStartedAt!,serviceExpiresAt:store.serviceExpiresAt!,servicePeriods:store.servicePeriods!
+ }));
+ if(rows.length!==4)return false;
  if(!saveDemoStoreBindings(organizationId,after))return false;
  if(!writeSuite({...suite,storeAllocations:{...suite.storeAllocations,[colleague]:allocated-missing.length}})){
   saveDemoStoreBindings(organizationId,before);
   return false;
+ }
+ try{
+  localStorage.setItem(colleagueServiceLedgerKey,JSON.stringify(rows));
+ }catch{
+  // The session record remains the authority for this page view.
  }
  return true;
 }
