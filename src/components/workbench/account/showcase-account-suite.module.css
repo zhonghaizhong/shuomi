@@ -499,3 +499,12 @@
 .permissionRow input,.permissionGroupHeading input{appearance:auto;width:17px;height:17px;min-height:17px;flex:none;accent-color:var(--primary);cursor:pointer}
 .permissionRow:focus-within{background:color-mix(in srgb,var(--primary) 7%,transparent)}
 @media(max-width:600px){.permissionDialog{padding:16px}.permissionList{padding:10px}.permissionGroupHeading{padding:10px}.permissionRow{grid-template-columns:minmax(0,1fr) 65px 65px;padding-right:8px;column-gap:3px}.permissionNodeName{font-size:12px}.permissionRow label{font-size:11px}.permissionTree{max-height:52dvh}}
+
+/* Paginated referral ledgers keep the overview compact as records grow. */
+.recordPager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px;padding:10px 2px 0;border-top:1px solid var(--line)}
+.recordPager>span{color:var(--muted);font-size:13px;line-height:1.6}
+.recordPager>div{display:flex;align-items:center;gap:8px}
+.recordPager button{min-height:34px;padding:5px 12px}
+.recordMore{display:flex;justify-content:flex-end;margin-top:10px}
+.recordMore button{border-color:color-mix(in srgb,var(--primary) 45%,var(--line));color:var(--primary);background:color-mix(in srgb,var(--primary) 7%,var(--surface))}
+@media(max-width:600px){.recordPager{align-items:stretch}.recordPager>div{width:100%;justify-content:flex-end}.recordMore button{width:100%}}
