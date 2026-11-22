@@ -439,3 +439,50 @@ test("plans entitlement cards show balanced two-value store renewal and three-ro
  await expect(cards.nth(3)).toContainText("3.00 GiB");
  await expect(cards.nth(3)).toContainText("0.00 GiB");
 });
+
+
+test("wallet billing and usage ledgers paginate independently with 10/20/50 records",async({page})=>{
+ await page.goto(root+"/plans/top-up");
+ await page.evaluate(()=>{
+  const key="shuomi-showcase-plans-direct-purchases-v1";
+  const purchases=Array.from({length:31},(_,i)=>({
+   id:"PAGE-TEST-"+i,at:"2026/11/22 14:"+String(i).padStart(2,"0")+":00",
+   type:"店铺服务",quantity:1,amountCny:168,detail:"1 期（每期 30 天）",
+   balanceAfter:7993-i*168,status:"模拟购买成功"
+  }));
+  localStorage.setItem(key,JSON.stringify(purchases));
+ });
+ await page.reload();
+ const walletNav=page.getByRole("navigation",{name:"钱包充值流水分页"});
+ const walletSection=walletNav.locator("..");
+ const walletRows=walletSection.locator('[class*="planTableScroll"] [class*="serviceRow"]');
+ await expect(walletNav).toContainText("共 36 条记录");
+ await expect(walletRows).toHaveCount(10);
+ await walletNav.getByRole("button",{name:"钱包充值流水下一页"}).click();
+ await expect(walletNav).toContainText("第 2 / 4 页");
+ await expect(walletRows).toHaveCount(10);
+ await walletNav.getByRole("combobox",{name:"钱包充值流水每页显示"}).selectOption("20");
+ await expect(walletNav).toContainText("第 1 / 2 页");
+ await expect(walletRows).toHaveCount(20);
+ await walletNav.getByRole("combobox",{name:"钱包充值流水每页显示"}).selectOption("50");
+ await expect(walletRows).toHaveCount(36);
+ await expect(walletNav.getByRole("button",{name:"钱包充值流水下一页"})).toBeDisabled();
+ await page.goto(root+"/plans/orders");
+ const orderNav=page.getByRole("navigation",{name:"账单与订单分页"});
+ const orderSection=orderNav.locator("..");
+ const orderRows=orderSection.locator('[class*="planTableScroll"] [class*="serviceRow"]');
+ await expect(orderNav).toContainText("共 36 条记录");
+ await expect(orderRows).toHaveCount(10);
+ await orderNav.getByRole("button",{name:"账单与订单下一页"}).click();
+ await expect(orderNav).toContainText("第 2 / 4 页");
+ await expect(orderRows).toHaveCount(10);
+ await page.getByRole("textbox",{name:"搜索账单"}).fill("PAGE-TEST-NONEXISTENT");
+ await page.getByRole("button",{name:"确定"}).click();
+ await expect(orderNav).toContainText("共 0 条记录");
+ await expect(orderNav).toContainText("第 1 / 1 页");
+ await expect(orderRows).toHaveCount(0);
+ await page.goto(root+"/plans/usage");
+ const usageNav=page.getByRole("navigation",{name:"流水明细分页"});
+ await expect(usageNav).toContainText("共 0 条记录");
+ await expect(usageNav.getByRole("button",{name:"流水明细下一页"})).toBeDisabled();
+});
