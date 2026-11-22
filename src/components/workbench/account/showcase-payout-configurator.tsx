@@ -33,9 +33,11 @@ export function PayoutConfigurator({organizationId,memberId,current,onSave}:{org
  const [bank,setBank]=useState("");
  const [defaultChoice,setDefaultChoice]=useState(true);
  const [file,setFile]=useState<File|null>(null);
+ const [filePreview,setFilePreview]=useState("");
  const [verification,setVerification]=useState<"手机验证"|"邮箱验证"|null>(null);
  const [error,setError]=useState("");
  useEffect(()=>{setAccounts(readAccounts(key,current))},[key,current]);
+ useEffect(()=>{if(!file){setFilePreview("");return;}const url=URL.createObjectURL(file);setFilePreview(url);return()=>URL.revokeObjectURL(url)},[file]);
  const label=(a:SavedAccount)=>a.kind+" · "+a.masked;
  const begin=(target:Kind,id:string|null=null)=>{
   setKind(target);setEditingId(id);setStage("edit");setRecipient("");setIdentifier("");setBank("");
@@ -86,7 +88,7 @@ export function PayoutConfigurator({organizationId,memberId,current,onSave}:{org
   <label className={styles.field}>{kind==="银行卡"?"持卡人姓名":"收款人姓名"}<input aria-label={kind==="银行卡"?"持卡人姓名":"收款人姓名"} value={recipient} onChange={e=>setRecipient(e.target.value)} placeholder={kind==="银行卡"?"请输入持卡人姓名":"请输入实名姓名"} autoComplete="off"/></label>
   <label className={styles.field}>{kind==="银行卡"?"银行卡号":kind==="微信"?"微信号":"支付宝账号"}<input aria-label={kind==="银行卡"?"银行卡号":kind==="微信"?"微信号":"支付宝账号"} value={identifier} onChange={e=>setIdentifier(e.target.value)} placeholder={kind==="银行卡"?"请输入银行卡号":kind==="微信"?"请输入微信号":"请输入手机号或邮箱"} autoComplete="off"/></label>
   {kind==="银行卡"&&<label className={styles.field}>开户银行<input aria-label="开户银行" value={bank} onChange={e=>setBank(e.target.value)} placeholder="请输入开户银行"/></label>}
-  {kind!=="银行卡"&&<label className={styles.field}>收款码图片（可选）<input aria-label="收款码图片" type="file" accept="image/png,image/jpeg" onChange={e=>setFile(e.target.files?.[0]||null)}/><small>{file?"已选择："+file.name:"支持 JPG / PNG，仅本次配置展示，不存储原始图片"}</small></label>}
+  {kind!=="银行卡"&&<label className={styles.field}>收款码图片（可选）<input aria-label="收款码图片" type="file" accept="image/png,image/jpeg" onChange={e=>setFile(e.target.files?.[0]||null)}/><small>{file?"已选择："+file.name:"支持 JPG / PNG，仅本次配置展示，不存储原始图片"}</small>{filePreview&&<img className={styles.preview} src={filePreview} alt="收款码预览"/>}</label>}
   <label className={styles.check}><input type="checkbox" checked={defaultChoice} onChange={e=>setDefaultChoice(e.target.checked)}/><span>设为默认收款方式<small>提现时优先使用此账户</small></span></label>
   <p className={styles.tip}>请确保收款账户与实名认证信息一致。演示模式不校验真实身份，请使用虚构数据。</p>
   {error&&<p role="alert" className={styles.error}>{error}</p>}
