@@ -119,9 +119,9 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
   const activeStoreServices=bindingSummary.visible.filter(store=>demoStoreServiceActive(store)).length;
   const availableRenewals=organizationAdmin?Math.max(0,resourceTotals.renewalPeriods-allocatedRenewals-consumedRenewals):Math.max(0,accountSuite.storeAllocations[memberId]||0);
   const sumAllocated=(values:Record<string,number>)=>Object.values(values).reduce((sum,value)=>sum+(Number(value)||0),0);
-  const allocatedPoints=sumAllocated(accountSuite.pointAllocations);
-  const allocatedData=sumAllocated(accountSuite.dataAllocations);
-  const allocatedStorage=sumAllocated(accountSuite.allocations);
+  const allocatedPoints=organizationId==="SM-ENT-000001"?sumAllocated(accountSuite.pointAllocations):0;
+  const allocatedData=organizationId==="SM-ENT-000001"?sumAllocated(accountSuite.dataAllocations):0;
+  const allocatedStorage=organizationId==="SM-ENT-000001"?sumAllocated(accountSuite.allocations):0;
   const availablePoints=organizationAdmin?Math.max(0,resourceTotals.aiPoints-allocatedPoints):Math.max(0,accountSuite.pointAllocations[memberId]||0);
   const availableData=organizationAdmin?Math.max(0,resourceTotals.dataRows-allocatedData):Math.max(0,accountSuite.dataAllocations[memberId]||0);
   const availableStorage=organizationAdmin?Math.max(0,resourceTotals.storageGiB-allocatedStorage):Math.max(0,accountSuite.allocations[memberId]||0);
