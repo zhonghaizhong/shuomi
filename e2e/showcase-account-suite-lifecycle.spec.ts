@@ -159,6 +159,29 @@ test("role permission editing persists and affects linked role rows",async({page
  await page.goto(base+"/organization/audit");
  await expect(suite).toContainText("更新角色 商品运营 权限");
 });
+test("role permission tree follows actual first, second and third-level sidebar and saves view/action grants",async({page})=>{
+ await page.goto(base+"/organization/roles");
+ const suite=page.locator("[data-account-suite]");
+ const role=suite.getByRole("row").filter({hasText:"订单客服"});
+ await role.getByRole("button",{name:"配置权限"}).click();
+ const dialog=suite.getByRole("dialog",{name:"配置角色权限"});
+ for(const label of ["运营驾驶舱","AI工作台","供应市场","智能市场","工具市场","生态服务","数据服务","店铺中心","订单管理","套餐与权益","系统设置","我的账户"])
+  await expect(dialog.getByRole("checkbox",{name:label,exact:true})).toHaveCount(1);
+ await expect(dialog.getByRole("checkbox",{name:"硕米Chat 查看"})).toBeVisible();
+ await expect(dialog.getByRole("checkbox",{name:"新建会话 查看"})).toBeVisible();
+ await expect(dialog.getByRole("checkbox",{name:"待确认 操作"})).toBeVisible();
+ await dialog.getByRole("checkbox",{name:"新建会话 操作"}).check();
+ await expect(dialog.getByRole("checkbox",{name:"新建会话 查看"})).toBeChecked();
+ await dialog.getByRole("checkbox",{name:"新建会话 查看"}).uncheck();
+ await expect(dialog.getByRole("checkbox",{name:"新建会话 操作"})).not.toBeChecked();
+ await dialog.getByRole("checkbox",{name:"工具市场",exact:true}).check();
+ await expect(dialog.getByRole("checkbox",{name:"工具定制 操作"})).toBeChecked();
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await expect(role).toContainText("工具市场");
+ await page.reload();
+ await suite.getByRole("row").filter({hasText:"订单客服"}).getByRole("button",{name:"配置权限"}).click();
+ await expect(suite.getByRole("dialog",{name:"配置角色权限"}).getByRole("checkbox",{name:"工具定制 操作"})).toBeChecked();
+});
 test("per member storage allocation is bounded by enterprise capacity and logged",async({page})=>{
  await page.goto(base+"/organization/members");
  const suite=page.locator("[data-account-suite]");
