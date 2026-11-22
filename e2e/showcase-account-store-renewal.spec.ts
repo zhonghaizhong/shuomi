@@ -3,7 +3,7 @@ const root="/shuomi/#/workbench";
 test("resource quota store dialogs show owner-scoped stores and renew expired admin store",async({page})=>{
  await page.goto(root+"/account/organization/resources");
  const suite=page.locator("[data-account-suite]");
- const adminRow=suite.getByRole("row").filter({hasText:"钟海忠"});
+ const adminRow=suite.getByRole("row").filter({hasText:"林晨"});
  await adminRow.getByRole("button",{name:"查看店铺"}).click();
  const all=page.getByRole("dialog",{name:"企业店铺"});
  await expect(all).toContainText("管理员已到期测试店铺");
@@ -24,7 +24,7 @@ test("resource quota store dialogs show owner-scoped stores and renew expired ad
  await page.getByRole("button",{name:"购买续费期数"}).click();
  await page.getByRole("dialog",{name:"确认模拟购买"}).getByRole("button",{name:"确认购买并扣除演示余额"}).click();
  await page.goto(root+"/account/organization/resources");
- const row=page.locator("[data-account-suite]").getByRole("row").filter({hasText:"钟海忠"});
+ const row=page.locator("[data-account-suite]").getByRole("row").filter({hasText:"林晨"});
  await row.getByRole("button",{name:"查看店铺"}).click();
  const listing=page.getByRole("dialog",{name:"企业店铺"});
  const expired=listing.getByRole("row").filter({hasText:"管理员已到期测试店铺"});
