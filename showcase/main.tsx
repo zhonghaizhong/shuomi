@@ -33,7 +33,7 @@ function Showcase() {
   const demoOrg=organizations.find(o=>o.id===identity.organizationId);
   const restricted=selectedRole!=="管理员";
   const permissions=accountState.rolePermissions[selectedRole]||[];
-  const ownReferralPreview=restricted&&identity.memberId==="SIM-COLLEAGUE-01"&&(router.pathname==="/workbench/account/referrals"||router.pathname.startsWith("/workbench/account/referrals/"));
+  const ownReferralPreview=restricted&&(router.pathname==="/workbench/account/referrals"||router.pathname.startsWith("/workbench/account/referrals/"));
   const canView= !restricted||router.pathname==="/workbench/notifications"||ownReferralPreview||permissions.includes(permissionKey(router.pathname,"view"));
   const changeIdentity=(next:typeof identity)=>{switchIdentity(next);router.push("/workbench");};
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
