@@ -313,12 +313,12 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
      </div>
      <p className={s.permissionHelp}>仅保存到当前演示企业；真实导航可见性、页面访问和接口操作权限需由正式服务端鉴权接管，不能以此作为安全授权。</p>
     </fieldset>}
-    {modal==="storage"&&<><p>成员：{currentMember?.name} · 按企业额度统一分配，修改时会保留该成员已分配的额度。</p>
+    {modal==="storage"&&<><p>成员：{currentMember?.name} · 下方显示企业当前剩余可分配额度；修改时可同时调整该成员已有的分配额度。</p>
       <div className={s.resourceAllocationFields}>
-       <label>店铺续费期数 <small>可设置上限：{storeRemaining+(state.storeAllocations[selected]||0)} 个</small><input type="number" aria-label="分配店铺续费期数" min="0" max={storeRemaining+(state.storeAllocations[selected]||0)} step="1" value={storeAmount} onChange={e=>setStoreAmount(e.target.value)}/></label>
-       <label>AI 积分 <small>可设置上限：{(pointRemaining+(state.pointAllocations[selected]||0)).toLocaleString("zh-CN")}</small><input type="number" aria-label="分配AI积分" min="0" max={pointRemaining+(state.pointAllocations[selected]||0)} step="1" value={pointAmount} onChange={e=>setPointAmount(e.target.value)}/></label>
-       <label>数据条数 <small>可设置上限：{(dataRemaining+(state.dataAllocations[selected]||0)).toLocaleString("zh-CN")} 条</small><input type="number" aria-label="分配数据条数" min="0" max={dataRemaining+(state.dataAllocations[selected]||0)} step="1" value={dataAmount} onChange={e=>setDataAmount(e.target.value)}/></label>
-       <label>存储上限（GiB）<small>可设置上限：{(storageRemaining+(state.allocations[selected]||0)).toFixed(1)} GiB</small><input type="number" aria-label="成员存储上限" min="0" max={enterpriseTotals.storageGiB} step="0.1" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
+       <label>店铺续费期数 <small>剩余可分配：{storeRemaining} 期 · 本成员已分配：{state.storeAllocations[selected]||0} 期</small><input type="number" aria-label="分配店铺续费期数" min="0" max={storeRemaining+(state.storeAllocations[selected]||0)} step="1" value={storeAmount} onChange={e=>setStoreAmount(e.target.value)}/></label>
+       <label>AI 积分 <small>剩余可分配：{pointRemaining.toLocaleString("zh-CN")} · 本成员已分配：{(state.pointAllocations[selected]||0).toLocaleString("zh-CN")}</small><input type="number" aria-label="分配AI积分" min="0" max={pointRemaining+(state.pointAllocations[selected]||0)} step="1" value={pointAmount} onChange={e=>setPointAmount(e.target.value)}/></label>
+       <label>数据条数 <small>剩余可分配：{dataRemaining.toLocaleString("zh-CN")} 条 · 本成员已分配：{(state.dataAllocations[selected]||0).toLocaleString("zh-CN")} 条</small><input type="number" aria-label="分配数据条数" min="0" max={dataRemaining+(state.dataAllocations[selected]||0)} step="1" value={dataAmount} onChange={e=>setDataAmount(e.target.value)}/></label>
+       <label>存储上限（GiB）<small>剩余可分配：{storageRemaining.toFixed(1)} GiB · 本成员已分配：{(state.allocations[selected]||0).toFixed(1)} GiB</small><input type="number" aria-label="成员存储上限" min="0" max={enterpriseTotals.storageGiB} step="0.1" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
       </div>
      </>}
     {modal==="role"&&<label>角色名称<input aria-label="角色名称" value={name} onChange={e=>setName(e.target.value)} placeholder="例如：运营专员"/></label>}
