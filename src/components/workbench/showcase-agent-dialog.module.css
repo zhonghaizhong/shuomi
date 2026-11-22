@@ -179,12 +179,14 @@
  margin:auto;
  /* Chromium's native dialog placement is 4px below the viewport midpoint.
     Correct the measured top-layer offset without changing horizontal position. */
- transform:translateY(-4px);
+ transform:none;
  max-width:calc(100vw - 32px);
  max-height:calc(100dvh - 32px);
  overflow-y:auto;
  overscroll-behavior:contain;
 }
+/* Only the tall model-source state needs its measured 4px native offset corrected. */
+.dialog:modal:has(.modelOptions){transform:translateY(-4px)}
 @media(max-width:560px){
  .dialog:modal{max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);}
 }
