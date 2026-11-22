@@ -190,7 +190,8 @@ test("legacy default business roles disappear while the subaccount preset stays 
  await expect(dialog.getByRole("checkbox",{name:"硕米Chat 操作"})).toBeChecked();
  await expect(dialog.getByRole("checkbox",{name:"待上传 操作"})).toBeChecked();
  await expect(dialog.getByRole("checkbox",{name:"我的店铺 操作"})).toBeChecked();
- await expect(dialog.getByRole("checkbox",{name:"套餐与权益 操作"})).not.toBeChecked();
+ await expect(dialog.getByRole("checkbox",{name:"套餐与权益",exact:true})).not.toBeChecked();
+ await expect(dialog.getByRole("checkbox",{name:"充值中心 操作"})).not.toBeChecked();
  await expect(dialog.getByRole("checkbox",{name:"系统设置 操作"})).not.toBeChecked();
  await expect(dialog.getByRole("checkbox",{name:"推广与收益 操作"})).not.toBeChecked();
  await dialog.getByRole("button",{name:"取消",exact:true}).click();
