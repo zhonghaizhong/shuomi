@@ -205,6 +205,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const additionalTopups=demoPurchases.filter(p=>p.type==="账户充值").reduce((sum,p)=>sum+p.amountCny,0);
   const openReview=(type:string,quantity:number,quote:string)=>{
    setRequestNotice("");purchaseSubmitting.current=false;
+   if(!organizationAdmin){setRequestNotice("当前身份是企业子账号，不能使用企业钱包购买或充值。请联系本组织管理员购买并分配资源。");return;}
    if(!Number.isFinite(quantity)||quantity<=0){setRequestNotice("请输入大于 0 的有效数量或金额。");return}
    if(!Number.isSafeInteger(Math.round(quantity*100))||Math.abs(Math.round(quantity*100)-quantity*100)>0.000001){setRequestNotice("金额最多保留两位小数。");return}
    if((type==="店铺服务"||type==="企业存储")&&!Number.isInteger(quantity)){setRequestNotice("店铺续费期数和扩容 GiB 必须为整数。");return}
@@ -213,6 +214,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   };
   const confirmPurchase=()=>{
    if(!requestReview||purchaseSubmitting.current)return;
+   if(!organizationAdmin){setRequestNotice("只有当前组织管理员才能确认企业模拟交易。");setRequestReview(null);return;}
    const {type,quantity}=requestReview;
    const amount=priceOf(type,quantity);
    const fresh=readDemoPurchases(organizationId);
