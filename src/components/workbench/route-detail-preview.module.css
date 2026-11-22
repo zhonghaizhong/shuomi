@@ -2236,3 +2236,104 @@
   align-items:flex-start;flex-direction:column;padding:17px;
  }
 }
+
+
+/* Vuexy purchase panel: one clean surface, clear unit pricing and anchored actions. */
+.page[data-commerce-unified="plans"] .planPurchaseCards{
+ gap:16px;align-items:stretch;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .card{
+ position:relative;overflow:hidden;box-sizing:border-box;
+ min-height:352px;display:flex;flex-direction:column;align-items:stretch;
+ gap:0;padding:22px 20px 20px;
+ border:1px solid var(--plans-border);border-radius:10px;
+ background:var(--plans-bg);
+ box-shadow:0 3px 14px rgba(22,18,56,.035);
+ transition:border-color .18s ease,box-shadow .18s ease;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .card::before{
+ content:"";position:absolute;inset:0 auto 0 0;width:3px;
+ background:var(--plans-accent);
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .card:focus-within{
+ border-color:color-mix(in srgb,var(--plans-primary) 45%,var(--plans-border));
+ box-shadow:0 0 0 3px color-mix(in srgb,var(--plans-primary) 10%,transparent);
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .cardTitle{
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;
+ gap:8px;width:100%;min-height:30px;margin:0 0 20px;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .cardTitle h3{
+ min-width:0;font-size:17px;font-weight:700;line-height:1.35;
+ color:var(--plans-text);white-space:nowrap;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .cardTitle span{
+ margin-left:auto;flex:0 0 auto;padding:5px 9px;
+ border-radius:5px;font-size:12px;font-weight:550;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseOffer{
+ display:flex;flex-direction:column;align-items:flex-start;
+ width:100%;min-width:0;gap:6px;margin:0 0 18px;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseEyebrow{
+ color:var(--plans-muted);font-size:12px;font-weight:550;line-height:1.4;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseRate{
+ display:block;width:100%;min-width:0;margin:0;
+ color:var(--plans-text);font-size:clamp(20px,1.55vw,25px);
+ line-height:1.28;font-weight:750;letter-spacing:-.45px;
+ font-variant-numeric:tabular-nums;white-space:normal;
+ overflow-wrap:normal;word-break:keep-all;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseIntro{
+ flex:none;min-height:0;margin:0;
+ color:var(--plans-muted);font-size:13px;line-height:1.55;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction{
+ display:flex;flex-direction:column;gap:10px;width:100%;
+ margin:auto 0 0;padding:17px 0 0;
+ border:0;border-top:1px solid var(--plans-border);
+ border-radius:0;background:transparent;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction label{
+ display:flex;flex-direction:column;gap:7px;margin:0;
+ font-size:13px;font-weight:650;color:var(--plans-text);
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction input{
+ box-sizing:border-box;min-width:0;width:100%;
+ min-height:44px;padding:0 13px;
+ border:1px solid var(--plans-border);border-radius:7px;
+ background:var(--plans-inset);color:var(--plans-text);
+ font-size:14px;font-weight:500;
+ transition:border-color .15s ease,box-shadow .15s ease;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction input:focus{
+ outline:none;border-color:var(--plans-primary);
+ box-shadow:0 0 0 3px color-mix(in srgb,var(--plans-primary) 14%,transparent);
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction small[role="status"]{
+ display:flex;align-items:center;min-height:34px;
+ margin:0;color:var(--plans-muted);
+ font-size:12px;line-height:1.45;font-variant-numeric:tabular-nums;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction button{
+ width:100%;min-height:43px;align-self:stretch;
+ margin:0;border-radius:7px;font-size:14px;font-weight:650;
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction button:not(:disabled){
+ box-shadow:0 3px 9px color-mix(in srgb,var(--plans-primary) 17%,transparent);
+}
+.page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseAction button:disabled{
+ opacity:.58;box-shadow:none;cursor:not-allowed;
+}
+@media(max-width:1250px){
+ .page[data-commerce-unified="plans"] .planPurchaseCards .card{min-height:325px}
+ .page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseRate{font-size:24px}
+}
+@media(max-width:700px){
+ .page[data-commerce-unified="plans"] .planPurchaseCards .card{
+  min-height:0;padding:20px 18px;
+ }
+ .page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseOffer{margin-bottom:18px}
+ .page[data-commerce-unified="plans"] .planPurchaseCards .planPurchaseRate{font-size:23px}
+}
