@@ -15,7 +15,9 @@
 .sectionHeader p { margin:0; }
 .entryGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
 .entry { display:flex; min-height:154px; min-width:0; flex-direction:column; padding:14px 16px; border:1px solid var(--border); border-radius:var(--radius); background:var(--card); box-shadow:none; }
-.entry[data-tone="teal"] { --entry-tone:var(--primary); }
+.entry[data-tone="teal"] { --entry-tone:#0e9485; border-left:3px solid var(--entry-tone); }
+.entry[data-tone="teal"] .entryHead>span { border:1px solid color-mix(in srgb,var(--entry-tone) 24%,var(--border)); }
+.entry[data-tone="teal"] .entryFooter strong { color:var(--entry-tone); }
 .entry[data-tone="blue"] { --entry-tone:var(--console-blue); }
 .entry[data-tone="purple"] { --entry-tone:var(--console-purple); }
 .entryHead { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
