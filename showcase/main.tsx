@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Menu, X } from "lucide-react";
 import { ShowcaseTopbarActions, ShowcaseNotifications } from "./topbar-interactions";
+import {useDemoIdentity} from "./demo-identity";
+import {useShowcaseSuite,permissionKey} from "@/components/workbench/account/showcase-account-state";
+import {showcaseTenant as tenant} from "@/components/workbench/account/showcase-tenant";
 import { DemoWorkbenchPreview } from "@/components/workbench/demo-workbench-preview";
 import { CockpitPreview } from "@/components/workbench/cockpit/cockpit-preview";
 import { ConsoleNavigation } from "@/components/workbench/console/console-navigation";
@@ -22,6 +25,15 @@ function SidebarToggleGlyph({ collapsed }: { collapsed: boolean }) {
 
 function Showcase() {
   const router = useRouter();
+  const {identity,organizations,switchIdentity,addOrganization}=useDemoIdentity();
+  const {state:accountState}=useShowcaseSuite();
+  const member=identity.organizationId===tenant.id?accountState.members.find(m=>m.id===identity.memberId&&m.status==="正常"):null;
+  const selectedRole=identity.organizationId===tenant.id?(member?.role||"无效成员"):"管理员";
+  const demoOrg=organizations.find(o=>o.id===identity.organizationId);
+  const restricted=identity.organizationId===tenant.id&&identity.memberId!=="admin";
+  const permissions=accountState.rolePermissions[selectedRole]||[];
+  const canView= !restricted||router.pathname.startsWith("/workbench/account/profile")||router.pathname==="/workbench/notifications"||permissions.includes(permissionKey(router.pathname,"view"));
+  const changeIdentity=(next:typeof identity)=>{switchIdentity(next);router.push("/workbench");};
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [readNoticeIds,setReadNoticeIds] = useState<number[]>([4]);
@@ -65,9 +77,9 @@ function Showcase() {
       <header className="showcase-topbar">
         <button className="showcase-mobile-menu-toggle" type="button" aria-label="打开侧边栏" aria-expanded={mobileMenuOpen} aria-controls="workbench-desktop-navigation" onClick={() => setMobileMenuOpen(true)}><Menu size={22} aria-hidden="true" /></button>
         <div className="showcase-brand-message"><strong>打造属于自己的AI电商团队</strong><span>SHUOMI AI ENGINE</span></div>
-        <ShowcaseTopbarActions navigate={router.push} pathname={router.pathname} light={isLightTheme} onTheme={() => setIsLightTheme(value => !value)} read={readNoticeIds} />
+        <ShowcaseTopbarActions navigate={router.push} pathname={router.pathname} light={isLightTheme} onTheme={() => setIsLightTheme(value => !value)} read={readNoticeIds} identity={identity} organizations={organizations} members={accountState.members} onSwitchIdentity={changeIdentity} onAddOrganization={addOrganization} />
       </header>
-      <main className="showcase-content">{router.pathname === "/workbench/notifications" ? <ShowcaseNotifications navigate={router.push} read={readNoticeIds} markRead={id => setReadNoticeIds(ids => ids.includes(id) ? ids : [...ids,id])} markAll={ids => setReadNoticeIds(current => [...new Set([...current,...ids])])} /> : router.pathname === "/workbench" ? <CockpitPreview /> : <DemoWorkbenchPreview pathname={router.pathname} />}</main>
+      <main className="showcase-content">{identity.organizationId!==tenant.id ? <section className="showcase-switch-boundary" role="status"><h2>{demoOrg?.name||"模拟组织"} · 独立演示空间</h2><p>该组织尚未接入企业成员、店铺、权益或经营数据。为避免显示另一家企业的数据，当前只展示独立空状态。</p><button type="button" onClick={()=>changeIdentity({organizationId:tenant.id,memberId:"admin"})}>返回原企业管理员</button></section> : (!member||!canView) ? <section className="showcase-switch-boundary" role="status"><h2>当前子账号没有该页面的访问权限</h2><p>已切换为 {member?.name||"无效账号"}（{selectedRole}）。仅展示角色已授予的演示页面；正式权限仍须服务端校验。</p><button type="button" onClick={()=>changeIdentity({organizationId:tenant.id,memberId:"admin"})}>返回管理员</button></section> : router.pathname === "/workbench/notifications" ? <ShowcaseNotifications navigate={router.push} read={readNoticeIds} markRead={id => setReadNoticeIds(ids => ids.includes(id) ? ids : [...ids,id])} markAll={ids => setReadNoticeIds(current => [...new Set([...current,...ids])])} /> : router.pathname === "/workbench" ? <CockpitPreview /> : <DemoWorkbenchPreview pathname={router.pathname} />}</main>
     </div>
   </div>;
   </div>;
