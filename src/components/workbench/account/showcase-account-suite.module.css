@@ -571,3 +571,21 @@
 .promotionTimeline li small{display:block;color:var(--muted);font-size:12px}
 @media(max-width:880px){.promotionMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.promotionMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.promotionFilters input{max-width:none}.promotionTabs button{flex:1}.promotionDetailSummary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Overview member resources: compact, bounded and searchable at large member counts. */
+.resourceFilters{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.resourceFilters label{display:grid;gap:5px;color:var(--muted);font-size:12px;font-weight:600;min-width:0}
+.resourceFilters .resourceSearch{flex:1 1 240px;max-width:380px}
+.resourceFilters input{width:100%;min-height:39px;font-size:14px}
+.resourceFilters select{min-width:132px;min-height:39px;font-size:14px}
+.page .resourceFilters .resourceReset{min-height:39px;padding:7px 16px}
+.resourceTable{max-height:560px;overflow:auto;overscroll-behavior:contain}
+.resourceTable th{position:sticky;top:0;z-index:1;background:var(--inset)}
+.resourceTable tbody tr{height:64px}
+.resourceTable td{font-variant-numeric:tabular-nums}
+.resourcePagination{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.resourcePageSize,.resourcePageActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.resourcePageSize select{min-height:34px;font-size:13px}
+.page .resourcePageActions button{min-height:34px;padding:5px 11px}
+@media(max-width:700px){.resourceFilters{align-items:stretch}.resourceFilters label,.resourceFilters .resourceSearch{flex:1 1 100%;max-width:none}.resourceFilters select{width:100%}.resourcePagination{align-items:flex-start}.resourceTable{max-height:470px}}
