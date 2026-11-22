@@ -240,7 +240,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const activeOrderFilterCount=Number(orderDraft.time!=="全部时间")+Number(orderDraft.types.length>0);
   const appliedOrderFilterCount=Number(appliedOrder.time!=="全部时间")+Number(appliedOrder.types.length>0);
   const billDay=(input:string)=>{
-    const match=input.match(/(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})|(?:^|\\D)(\\d{1,2})[-/](\\d{1,2})(?:\\D|$)/);
+    const match=input.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})|(?:^|\D)(\d{1,2})[-/](\d{1,2})(?:\D|$)/);
     if(!match)return "";
     if(match[1])return [match[1],match[2].padStart(2,"0"),match[3].padStart(2,"0")].join("-");
     const year=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Shanghai",year:"numeric"}).format(new Date());
