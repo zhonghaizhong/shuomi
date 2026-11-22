@@ -174,15 +174,15 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const assignedStorePeriods=organizationId==="SM-ENT-000001"?Object.values(enterpriseSuite.storeAllocations).reduce((sum,value)=>sum+(Number(value)||0),0):0;
   const consumedStorePeriods=countConsumedStorePeriods(bindingSummary.all);
   const activeServiceCount=bindingSummary.visible.filter(store=>demoStoreServiceActive(store)).length;
-  const availableStorePeriods=Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods-consumedStorePeriods);
+  const availableStorePeriods=organizationAdmin?Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods-consumedStorePeriods):Math.max(0,organizationId==="SM-ENT-000001"?(enterpriseSuite.storeAllocations[memberId]||0):0);
   // Consumption is intentionally zero until the corresponding business modules are connected.
   const allocated=(items:Record<string,number>)=>Object.values(items).reduce((sum,value)=>sum+(Number(value)||0),0);
   const assignedAi=organizationId==="SM-ENT-000001"?allocated(enterpriseSuite.pointAllocations):0;
   const assignedData=organizationId==="SM-ENT-000001"?allocated(enterpriseSuite.dataAllocations):0;
   const assignedStorage=organizationId==="SM-ENT-000001"?allocated(enterpriseSuite.allocations):0;
-  const availableAi=Math.max(0,demoTotals.aiPoints-assignedAi);
-  const availableData=Math.max(0,demoTotals.dataRows-assignedData);
-  const availableStorage=Math.max(0,demoTotals.storageGiB-assignedStorage);
+  const availableAi=organizationAdmin?Math.max(0,demoTotals.aiPoints-assignedAi):Math.max(0,enterpriseSuite.pointAllocations[memberId]||0);
+  const availableData=organizationAdmin?Math.max(0,demoTotals.dataRows-assignedData):Math.max(0,enterpriseSuite.dataAllocations[memberId]||0);
+  const availableStorage=organizationAdmin?Math.max(0,demoTotals.storageGiB-assignedStorage):Math.max(0,enterpriseSuite.allocations[memberId]||0);
   const physicalStorageRemaining=Math.max(0,demoTotals.storageGiB-plansDemoFacts.storageUsedGiB);
   const purchaseSubmitting=useRef(false);
   const [requestReview,setRequestReview]=useState<{type:string;quantity:number;quote:string}|null>(null);
@@ -317,7 +317,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
         <div><small>已绑定店铺</small><strong>{memberVisibleStores}<em>家</em></strong></div>
         <div><small>剩余可分配期数</small><strong>{availableStorePeriods}<em>期</em></strong></div>
       </div>
-      <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>已授权：0 家 · 待授权：{memberVisibleStores} 家 · 服务中：{activeServiceCount} 家 · 已使用：{consumedStorePeriods} 期</span><span>剩余可分配：{availableStorePeriods} 期 · 每店 30 天/期，开通或续费消耗 1 期</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
+      <div className={styles.planEntitlementNotes}><span>{organizationAdmin?`企业总期数：${demoTotals.renewalPeriods} 期 · 已分配：${assignedStorePeriods} 期`:`本人剩余可用期数：${availableStorePeriods} 期`}</span><span>已授权：0 家 · 待授权：{memberVisibleStores} 家 · 服务中：{activeServiceCount} 家 · 已使用：{organizationAdmin?consumedStorePeriods:countConsumedStorePeriods(bindingSummary.visible)} 期</span><span>剩余可分配：{availableStorePeriods} 期 · 每店 30 天/期，开通或续费消耗 1 期</span><span>{organizationAdmin?"可在企业空间 → 资源与额度分配给成员":"续费期数由本组织管理员分配"}</span></div>
     </article>
     <article className={styles.card} data-tone={1}>
       <div className={styles.cardTitle}><h3>token 积分</h3><span>剩余可分配</span></div>
@@ -374,6 +374,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
       <p className={styles.billingFilterHelp}>店铺选项根据实际流水动态更新，搜索后选择；时间支持自定义日期区间。更细的记录可使用主搜索框查找。</p>
     </div>:null}
    </section><section className={styles.table}><header><h2>流水明细</h2></header><div className={styles.planTableScroll}><div className={`${styles.tableHead} ${styles.planUsageColumns}`}>{["时间","类型","业务对象","变动说明","变动","变动后余额","操作"].map(label=><span key={label}>{label}</span>)}</div>{pageSlice(filteredUsageRows,usagePage).map((r,i)=><div className={`${styles.serviceRow} ${styles.planUsageColumns}`} key={i}>{r.map((x,j)=><span key={j}>{x}</span>)}<button onClick={()=>setPlanDetail({kind:"usage",row:r})}>详情</button></div>)}</div>{!filteredUsageRows.length&&<p className={styles.planEmpty}>暂无用量流水。充值或使用资源后将在此显示记录。</p>}<LedgerPagination name="流水明细" total={filteredUsageRows.length} page={usagePage.page} size={usagePage.size} onPage={updatePage(setUsagePage)} onSize={updateSize(setUsagePage)}/></section>{planDetail?.kind==="usage"&&<div className={styles.planDetailBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setPlanDetail(null)}}><section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="流水详情"><header><div><h2>流水详情</h2><p>演示流水，不涉及真实扣费或账务。</p></div><button type="button" aria-label="关闭流水详情" onClick={()=>setPlanDetail(null)}>×</button></header><div className={styles.planDetailHighlight}><span>变动金额或额度</span><strong>{planDetail.row[4]}</strong><small>{planDetail.row[1]} · {planDetail.row[2]}</small></div><dl>{[["时间",planDetail.row[0]],["资源类型",planDetail.row[1]],["业务对象",planDetail.row[2]],["变动说明",planDetail.row[3]],["变动金额或额度",planDetail.row[4]],["变动后余额",planDetail.row[5]]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><footer><button type="button" onClick={()=>setPlanDetail(null)}>关闭</button></footer></section></div>}</>;
+  if (!organizationAdmin&&(pathname.endsWith("top-up")||pathname.endsWith("orders"))) return <section className={styles.noticeBar}><b>企业账务仅管理员可管理</b><span>当前子账号只能查看个人已分配权益与店铺服务期。请联系本组织管理员购买、充值或分配资源。</span><button type="button" onClick={()=>router.push("/workbench/plans/entitlements?preview=1")}>查看我的权益</button></section>;
   if (pathname.endsWith("top-up")) return <><section className={styles.noticeBar}><b>账户可用余额</b><span><strong>¥{currentWallet.toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})}</strong>　累计模拟充值 ¥{((primaryOrganization?plansDemoFacts.walletTopUpsCny:0)+additionalTopups).toLocaleString("zh-CN")} · 累计模拟支出 ¥{((primaryOrganization?plansDemoFacts.walletSpentCny:0)+additionalSpent).toLocaleString("zh-CN")}。余额用于续费、积分与数据兑换，存储扩容独立购买。</span><label>充值金额（元）<input type="number" aria-label="充值金额（元）" min="0.01" step="0.01" value={walletAmount} onChange={e=>setWalletAmount(e.target.value)} placeholder="输入充值金额"/></label><button className={styles.primary} disabled={!Number.isFinite(Number(walletAmount))||Number(walletAmount)<=0} onClick={()=>openReview("账户充值",Number(walletAmount),"仅模拟钱包到账，不发起真实支付")}>账户充值</button></section><section className={styles.planSectionHeading}><h2>使用充值余额</h2><p>选择资源类型并填写金额或期数。确认后直接扣除演示钱包余额并增加模拟权益；不涉及真实支付或实际开通。</p></section><section className={`${styles.cards} ${styles.fourCards} ${styles.planPurchaseCards}`}>{([
  {name:"店铺服务",type:"续费",rate:"¥168 / 期",description:"每期 30 天 · 购买后进入企业期数池",unit:"购买期数",placeholder:"请填写续费期数",action:"购买续费期数"},
  {name:"token 积分",type:"资源兑换",rate:"¥1 = 10,000 积分",description:"按金额兑换 · 积分余额长期有效",unit:"使用金额（元）",placeholder:"请输入使用金额（元）",action:"使用充值余额"},
