@@ -54,10 +54,10 @@ function ScopedStoreList({scope}:{scope:StoreCenterScope}){
  const expiredCount=allItemsLoaded?data!.items.filter(item=>item.serviceStatus==="expired"||item.serviceExpiresAt&&Date.parse(item.serviceExpiresAt)<=Date.now()).length:null;
  const metricRows=[
  {label:"已绑定店铺",value:metrics?.total,hint:"当前授权范围",filter:"all",enabled:true},
- {label:"正常店铺",value:metrics?.normal,hint:"连接与服务有效",filter:"normal",enabled:metrics?.normal!==null},
+ {label:"正常店铺",value:metrics?.normal,hint:"连接与服务有效",filter:"normal",enabled:typeof metrics?.normal==="number"},
  {label:"即将到期",value:expiringCount,hint:allItemsLoaded?"未来 7 天":"仅完整列表可统计",filter:"expiring",enabled:allItemsLoaded},
  {label:"已到期",value:expiredCount,hint:allItemsLoaded?"服务期已过":"仅完整列表可统计",filter:"expired",enabled:allItemsLoaded},
- {label:"待处理",value:metrics?.attention,hint:"授权或同步等异常",filter:"attention",enabled:metrics?.attention!==null}
+ {label:"待处理",value:metrics?.attention,hint:"授权或同步等异常",filter:"attention",enabled:typeof metrics?.attention==="number"}
  ] as const;
  const shownItems=(localStatus==="all"?data?.items:data?.items.filter(item=>localStatus==="expired"?(item.serviceStatus==="expired"||Boolean(item.serviceExpiresAt&&Date.parse(item.serviceExpiresAt)<=Date.now())):item.serviceStatus==="active"&&Boolean(item.serviceExpiresAt&&Date.parse(item.serviceExpiresAt)>Date.now()&&Date.parse(item.serviceExpiresAt)-Date.now()<=7*86400000)))??[];
  const openMetric=(filter:typeof metricRows[number]["filter"])=>{setSelected([]);if(filter==="expiring"||filter==="expired"){setLocalStatus(filter);return;}setLocalStatus("all");update({...filters,page:1,attention:filter==="normal"?"normal":filter==="attention"?"attention":undefined})};
@@ -88,7 +88,7 @@ function ScopedStoreList({scope}:{scope:StoreCenterScope}){
      <div className={styles.compactIdentity}>{canWrite?<input aria-label={`选择${item.name}`} type="checkbox" checked={selected.includes(item.id)} onChange={event=>check(item,event.target.checked)}/>:null}<div><h3>{item.name}</h3><p>店铺 ID：{item.externalStoreId||item.id}</p><p>负责人：<ResponsibleName id={item.profile.responsibleMemberId} scope={scope}/> · {data.facets.groups.find(group=>group.id===item.profile.groupId)?.name??"未分组"}</p></div></div>
      <div className={styles.compactTags}><span>{item.platform.toUpperCase()}</span><span>{item.region}</span><span>{typeLabel(item.signals.applicationType)}</span></div>
      <div className={styles.compactState}><strong data-tone={item.serviceStatus==="expired"?"expired":item.serviceStatus==="active"?"good":"unknown"}>{item.serviceStatus==="expired"?"服务已到期":item.serviceStatus==="active"?"服务有效":item.serviceStatus==="suspended"?"服务暂停":"服务待核实"}</strong><small>{connectionLabel(item.connectionStatus)} · {item.signals.syncHealthy?"同步正常":syncLabel(item.signals.productSync,item.signals.orderSync)}</small><small>服务期限：{item.serviceExpiresAt?new Date(item.serviceExpiresAt).toLocaleDateString("zh-CN"):"待核实"}</small></div>
-     <div className={styles.compactActions}>{item.serviceStatus==="expired"?<Link className={styles.enter} href={`/workbench/stores/${item.id}#service`}>续费</Link>:null}<Link className={styles.outlineLink} href={`/workbench/stores/${item.id}`}>管理店铺</Link></div>
+     <div className={styles.compactActions}>{item.serviceStatus==="expired"?<Link className={styles.enter} href={`/workbench/stores/${item.id}`}>续费</Link>:null}<Link className={styles.outlineLink} href={`/workbench/stores/${item.id}`}>管理店铺</Link></div>
    </div>
   </li>)}</ul>}
   {data?<div className={styles.pagination}><span>第 {data.pagination.page} 页，共 {data.pagination.total} 家店铺</span><div><Select aria-label="每页店铺数" value={filters.pageSize} onChange={event=>update({...filters,page:1,pageSize:Number(event.target.value)})}>{[10,20,50,100].map(size=><option key={size} value={size}>{size} 条 / 页</option>)}</Select><Button size="sm" variant="outline" aria-label="上一页" disabled={data.pagination.page<=1} onClick={()=>update({...filters,page:filters.page-1})}><ChevronLeft size={14}/></Button><span>{filters.page}</span><Button size="sm" variant="outline" aria-label="下一页" disabled={data.pagination.page*data.pagination.pageSize>=data.pagination.total} onClick={()=>update({...filters,page:filters.page+1})}><ChevronRight size={14}/></Button></div></div>:null}
