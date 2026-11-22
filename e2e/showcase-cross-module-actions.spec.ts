@@ -102,3 +102,25 @@ test("billing filters support scalable search, multiple types and custom dates",
  await expect(toggle).toHaveText("筛选条件");
  await expect(filter.getByRole("button",{name:"导出账单"})).toBeVisible();
 });
+
+
+test("usage filters keep a stable toolbar as stores and dates grow",async({page})=>{
+ await page.goto(base+"/plans/usage");
+ const area=page.getByRole("region",{name:"用量流水筛选"});
+ await expect(area.getByRole("textbox",{name:"搜索流水"})).toBeVisible();
+ await expect(area.getByRole("combobox")).toHaveCount(0);
+ await area.getByRole("button",{name:"用量筛选条件"}).click();
+ await expect(area.getByRole("group",{name:"用量快捷时间"})).toBeVisible();
+ await area.getByRole("group",{name:"用量快捷时间"}).getByRole("button",{name:"自定义"}).click();
+ await area.getByRole("button",{name:"确定",exact:true}).click();
+ await expect(area.getByRole("alert")).toContainText("有效的起止日期");
+ await area.getByLabel("用量开始日期").fill("2026-01-01");
+ await area.getByLabel("用量结束日期").fill("2026-12-31");
+ await area.getByRole("group",{name:"用量变动类型"}).getByRole("button",{name:"扣减"}).click();
+ await area.getByRole("button",{name:"确定",exact:true}).click();
+ await expect(area.getByRole("button",{name:"用量筛选条件"})).toHaveAttribute("aria-expanded","false");
+ await area.getByRole("button",{name:"重置"}).click();
+ await area.getByRole("button",{name:"用量筛选条件"}).click();
+ await expect(area.getByRole("group",{name:"用量快捷时间"}).getByRole("button",{name:"全部时间"})).toHaveAttribute("aria-pressed","true");
+ await expect(area.getByRole("group",{name:"用量变动类型"}).getByRole("button",{name:"全部变动"})).toHaveAttribute("aria-pressed","true");
+});
