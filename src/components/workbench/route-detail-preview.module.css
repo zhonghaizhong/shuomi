@@ -2569,3 +2569,73 @@
   .page[data-commerce-unified="plans"] .billingAdvancedFilters{grid-template-columns:1fr;padding:12px}
   .page[data-commerce-unified="plans"] .billingAppliedFilters{padding-inline:12px}
 }
+
+
+/* Billing filter groups scale by content rather than growing native select menus. */
+.page[data-commerce-unified="plans"] .billingAdvancedFilters{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;
+ align-items:start;padding:16px;
+}
+.page[data-commerce-unified="plans"] .billingFilterSection{
+ display:grid;align-content:start;gap:10px;min-width:0;padding:14px;
+ border:1px solid var(--plans-border);border-radius:8px;background:var(--plans-bg);
+}
+.page[data-commerce-unified="plans"] .billingFilterSection:first-child{grid-column:1/-1}
+.page[data-commerce-unified="plans"] .billingFilterLabel{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:14px;font-weight:700;color:var(--plans-text)}
+.page[data-commerce-unified="plans"] .billingFilterLabel small{font-size:12px;font-weight:500;color:var(--plans-muted)}
+.page[data-commerce-unified="plans"] .billingTimePresets{display:flex;flex-wrap:wrap;gap:8px}
+.page[data-commerce-unified="plans"] .billingTimePresets button{
+ min-height:36px;padding:6px 12px;border:1px solid var(--plans-border);
+ border-radius:6px;color:var(--plans-text);background:var(--plans-bg);font-size:13px;font-weight:600;cursor:pointer;
+}
+.page[data-commerce-unified="plans"] .billingTimePresets button[aria-pressed="true"]{
+ color:var(--plans-primary);border-color:var(--plans-primary);
+ background:color-mix(in srgb,var(--plans-primary) 12%,var(--plans-bg));
+}
+.page[data-commerce-unified="plans"] .billingDateRange{display:flex;flex-wrap:wrap;align-items:end;gap:11px}
+.page[data-commerce-unified="plans"] .billingDateRange>label{display:grid;flex:1 1 180px;gap:6px;font-size:12px;color:var(--plans-muted)}
+.page[data-commerce-unified="plans"] .billingDateRange>span{padding-bottom:10px;color:var(--plans-muted)}
+.page[data-commerce-unified="plans"] .billingDateRange input,
+.page[data-commerce-unified="plans"] .billingFilterSection>input{
+ box-sizing:border-box;display:block;width:100%;min-width:0;min-height:40px;
+ padding:8px 11px;border:1px solid var(--plans-border);border-radius:7px;
+ background:var(--plans-bg);color:var(--plans-text);font:inherit;font-size:13px;
+}
+.page[data-commerce-unified="plans"] .billingChoiceList{
+ display:grid;align-content:start;gap:3px;max-height:180px;overflow-y:auto;overscroll-behavior:contain;
+ border:1px solid var(--plans-border);border-radius:7px;padding:5px;
+}
+.page[data-commerce-unified="plans"] .billingChoiceList label{
+ display:flex;align-items:center;gap:10px;min-height:36px;padding:6px 9px;
+ border-radius:6px;cursor:pointer;color:var(--plans-text);font-size:13px;
+}
+.page[data-commerce-unified="plans"] .billingChoiceList label:hover{
+ background:color-mix(in srgb,var(--plans-primary) 8%,var(--plans-bg));
+}
+.page[data-commerce-unified="plans"] .billingChoiceList input{
+ width:17px;height:17px;margin:0;flex:none;accent-color:var(--plans-primary);cursor:pointer;
+}
+.page[data-commerce-unified="plans"] .billingChoiceList p{
+ padding:12px;margin:0;color:var(--plans-muted);font-size:13px;
+}
+.page[data-commerce-unified="plans"] .billingClearChoice{
+ justify-self:start;border:0;background:transparent;color:var(--plans-primary);
+ padding:4px 0;font-size:12px;font-weight:600;cursor:pointer;
+}
+.page[data-commerce-unified="plans"] .billingFilterHelp{
+ grid-column:1/-1;margin:0;font-size:12px;line-height:1.6;color:var(--plans-muted);
+}
+.page[data-commerce-unified="plans"] .billingFilterError{
+ grid-column:1/-1;margin:0;padding:10px;border:1px solid #eb5757;
+ border-radius:6px;color:#ed6570;font-size:13px;
+}
+.page[data-commerce-unified="plans"] .billingTimePresets button:focus-visible,
+.page[data-commerce-unified="plans"] .billingChoiceList input:focus-visible,
+.page[data-commerce-unified="plans"] .billingFilterSection input:focus-visible{
+ outline:2px solid var(--plans-primary);outline-offset:2px;
+}
+@media(max-width:720px){
+ .page[data-commerce-unified="plans"] .billingAdvancedFilters{grid-template-columns:1fr;gap:10px;padding:12px}
+ .page[data-commerce-unified="plans"] .billingFilterSection:first-child{grid-column:auto}
+ .page[data-commerce-unified="plans"] .billingFilterHelp{grid-column:auto}
+}
