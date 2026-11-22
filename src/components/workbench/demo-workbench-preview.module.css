@@ -3591,8 +3591,8 @@
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard {
  position:relative;display:flex;flex-direction:column;align-items:stretch;
  min-width:0;min-height:196px;padding:20px;gap:12px;
- border:1px solid var(--plans-line);border-radius:10px;
- background:var(--plans-bg);box-shadow:0 2px 10px rgb(0 0 0 / 3%);
+ border:1px solid var(--plans-line);border-radius:8px;
+ background:var(--plans-bg);box-shadow:none;
  overflow:hidden;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:nth-child(1) {--entry-accent:#7367f0}
@@ -3601,8 +3601,7 @@
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:nth-child(4) {--entry-accent:#db8c25}
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:nth-child(5) {--entry-accent:#d4689e}
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard::before {
- content:"";position:absolute;top:0;left:18px;right:18px;width:auto;
- height:3px;bottom:auto;border-radius:0 0 4px 4px;background:var(--entry-accent);
+ content:none;
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryTop {
  display:flex;align-items:center;gap:12px;min-width:0;min-height:44px;
@@ -3632,9 +3631,9 @@
  transition:background-color .18s ease,border-color .18s ease;
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:hover {
- transform:translateY(-1px);
- border-color:color-mix(in srgb,var(--entry-accent) 36%,var(--plans-line));
- box-shadow:0 8px 20px rgb(0 0 0 / 5%);
+ transform:none;
+ border-color:var(--plans-line);
+ box-shadow:0 6px 18px rgb(0 0 0 / 5%);
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:focus-within {
  outline:2px solid var(--plans-primary);outline-offset:2px;
@@ -3813,4 +3812,35 @@
 @media(max-width:460px) {
  .page[data-commerce-unified="plans"] .planBottom>article>header {flex-wrap:wrap}
  .page[data-commerce-unified="plans"] .usageBar {padding:12px}
+}
+
+
+/* Plans overview: neutral borders and no duplicate action strip. */
+.page[data-commerce-unified="plans"] .planOverview{
+ grid-template-columns:minmax(0,1fr);align-items:start;
+}
+.page[data-commerce-unified="plans"] .planStats{
+ grid-column:1;grid-row:auto;margin-top:3px;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard,
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard:hover,
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard:focus-within{
+ border:1px solid var(--plans-line);
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard::before{
+ content:none;display:none;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryIndex{
+ border-color:color-mix(in srgb,var(--entry-accent) 23%,var(--plans-line));
+}
+.page[data-commerce-unified="plans"] .planBottom>article>header{
+ justify-content:flex-start;
+}
+.page[data-commerce-unified="plans"] .planBottom>aside>footer{
+ display:block;
+}
+@media(max-width:850px){
+ .page[data-commerce-unified="plans"] .planStats{
+  grid-column:1;grid-row:auto;
+ }
 }
