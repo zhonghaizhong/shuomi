@@ -125,13 +125,13 @@ export const demoReferredCustomers:ReferredCustomer[]=Array.from({length:20},(_,
 });
 // Separate synthetic invitations demonstrate follow-up stages. They are NOT measured visits,
 // and no unknown public-link visitor is counted as an invited person.
-export const demoTrackedInvitations:TrackedInvitation[]=Array.from({length:8},(_,index)=>({
+export const demoTrackedInvitations:TrackedInvitation[]=Array.from({length:10},(_,index)=>({
  id:"SIM-INV-PENDING-"+String(index+1).padStart(2,"0"),
  name:"模拟受邀用户"+String(index+1).padStart(2,"0"),
  invitedAt:Date.UTC(2026,10,21,8,index*4),
  source:"定向邀请",
  ...(index>=5?{registeredAt:Date.UTC(2026,10,21,9,index*4)}:{}),
- ...(index===7?{verifiedAt:Date.UTC(2026,10,21,10,35)}:{})
+ ...(index>=5?{verifiedAt:Date.UTC(2026,10,21,10,index*4)}:{})
 }));
 export const demoReferralEarnings:ReferralItem[]=demoReferredCustomers.map(customer=>({
  id:"SIM-COMMISSION-"+customer.id,
@@ -144,7 +144,9 @@ export const demoReferralEarnings:ReferralItem[]=demoReferredCustomers.map(custo
  rate:demoReferralRate
 }));
 export const demoReferralSummary={
- invitations:demoReferredCustomers.length,
+ invitations:demoReferredCustomers.length+demoTrackedInvitations.length,
+ registrations:demoReferredCustomers.length+demoTrackedInvitations.filter(x=>!!x.registeredAt).length,
+ paidCustomers:demoReferredCustomers.filter(x=>x.storeFeeCny>0).length,
  totalTopUpsCny:demoReferredCustomers.reduce((sum,item)=>sum+item.walletTopUpCny,0),
  totalStoreSpendCny:demoReferredCustomers.reduce((sum,item)=>sum+item.storeFeeCny,0),
  totalWalletBalanceCny:demoReferredCustomers.reduce((sum,item)=>sum+item.walletBalanceCny,0),
