@@ -43,7 +43,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const key=storeKey(organizationId);
  const administrator=memberId==="admin"||getDemoMembership({organizationId,memberId})?.role==="管理员";
  const {state:enterpriseState,commit:commitEnterprise}=useShowcaseSuite();
- const {totals:resourceTotals}=useDemoPurchases();
+ const {totals:resourceTotals}=useDemoPurchases(organizationId);
  const owners=[...new Set(enterpriseState.members.filter(member=>member.status==="正常").map(member=>member.name))];
  const [allStores,setAllStores]=useState<Store[]>(()=>read(organizationId));
  const stores=administrator?allStores.filter(s=>!s.archived):allStores.filter(s=>s.ownerMemberId===memberId&&!s.archived);
@@ -51,13 +51,11 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const consumedPeriods=countConsumedStorePeriods(allStores);
  const allocatedPeriods=Object.values(enterpriseState.storeAllocations).reduce((total,v)=>total+(Number(v)||0),0);
  const ownAssignedPeriods=enterpriseState.storeAllocations[memberId]||0;
- const availablePeriods=isMainTenant?(administrator&&memberId==="admin"
-  ?Math.max(0,resourceTotals.renewalPeriods-consumedPeriods-allocatedPeriods)
-  :Math.max(0,ownAssignedPeriods)):0;
+ const availablePeriods=administrator?(isMainTenant?Math.max(0,resourceTotals.renewalPeriods-consumedPeriods-allocatedPeriods):Math.max(0,resourceTotals.renewalPeriods-consumedPeriods)):(isMainTenant?Math.max(0,ownAssignedPeriods):0);
  const activeServiceStores=stores.filter(s=>demoStoreServiceActive(s)).length;
  function consumePeriod():boolean{
   if(availablePeriods<1)return false;
-  if(memberId!=="admin"&&isMainTenant){
+  if(!administrator&&isMainTenant){
    return commitEnterprise({...enterpriseState,storeAllocations:{...enterpriseState.storeAllocations,[memberId]:ownAssignedPeriods-1}});
   }
   return true;
