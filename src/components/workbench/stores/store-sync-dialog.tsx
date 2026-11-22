@@ -14,13 +14,14 @@ const intentSchema=z.object({key:observationID,input:observationBeginSchema}).st
 type Intent=z.infer<typeof intentSchema>;
 const statusLabels:Record<string,string>={pending:"等待启动",running:"正在同步",completed:"遍历完成",partial:"部分结果",failed:"同步失败",suspended:"同步暂停"};
 const inaccessibleReceipt=(error:unknown)=>error instanceof ObservationError&&((error.status===404&&error.code==="NOT_FOUND")||(error.status===403&&error.code==="PERMISSION_DENIED"));
-export function StoreSyncDialog({store,scope,onClose,onChanged,initialKind="products"}:{initialKind?:ObservationKind;store:CatalogItem;scope:StoreCenterScope;onClose:()=>void;onChanged:()=>Promise<unknown>}){
+export function StoreSyncDialog({store,scope,onClose,onChanged,initialKind="products",selectedStoreIds}:{initialKind?:ObservationKind;selectedStoreIds?:string[];store:CatalogItem;scope:StoreCenterScope;onClose:()=>void;onChanged:()=>Promise<unknown>}){
  const context=useWorkbenchContext();
  const [selectedKind,setSelectedKind]=useState<ObservationKind>(initialKind),[all,setAll]=useState(false),[intent,setIntent]=useState<Intent|null>(null),[ready,setReady]=useState(false),[message,setMessage]=useState("");
  const key=`store-dialog-sync:${scope.organizationId}:${scope.userId}`,lifetime=useRef(new AbortController());
  useEffect(()=>{const controller=new AbortController();lifetime.current=controller;let active=true;void Promise.resolve().then(()=>{if(!active)return;try{const raw=sessionStorage.getItem(key);if(raw){const parsed=intentSchema.safeParse(JSON.parse(raw));if(!parsed.success)throw Error("invalid intent");setIntent(parsed.data)}setReady(true)}catch{setMessage("无法读取或保存原同步操作键，请检查浏览器存储。")}});return()=>{active=false;controller.abort()}},[key]);
  const kind=intent?.input.kind??selectedKind;
- const readinessStore=intent?(intent.input.stores.length===1&&intent.input.stores[0]===store.id?store:undefined):all?undefined:store;
+ const batchIds=selectedStoreIds?.length?selectedStoreIds:undefined;
+ const readinessStore=intent?(intent.input.stores.length===1&&intent.input.stores[0]===store.id?store:undefined):all||batchIds?undefined:store;
  const client=useQueryClient();
  const unsupportedNewKind=!intent&&store.platform!=="shein"&&kind==="orders";
  const caps=useQuery({queryKey:["store-dialog-sync-capability",scope.organizationId,scope.userId,kind,context.permissions,context.storeObservationsAvailable],queryFn:({signal})=>observationRequest(`${kind}/capabilities`,scope,observationCapabilitiesSchema,signal),enabled:context.storeObservationsAvailable!==false&&context.permissions.includes(`workbench.store.${kind}.read`),retry:false,gcTime:0});
@@ -30,7 +31,7 @@ export function StoreSyncDialog({store,scope,onClose,onChanged,initialKind="prod
  const begin=()=>{
   if(!ready||start.isPending||!caps.data?.canSync||unsupportedNewKind)return;
   if(intent){start.mutate(intent);return}
-  try{const captured:Intent={key:crypto.randomUUID(),input:{kind,stores:all?[]:[store.id]}};sessionStorage.setItem(key,JSON.stringify(captured));setIntent(captured);start.mutate(captured)}catch{setMessage("无法保存原同步操作键，同步尚未开始。")}
+  try{const captured:Intent={key:crypto.randomUUID(),input:{kind,stores:all?[]:batchIds??[store.id]}};sessionStorage.setItem(key,JSON.stringify(captured));setIntent(captured);start.mutate(captured)}catch{setMessage("无法保存原同步操作键，同步尚未开始。")}
  };
  const finished=Boolean(receipt.data?.syncs.length && receipt.data.syncs.every(sync=>sync.status!=="pending"&&sync.status!=="running"));
  const reset=()=>{if(!finished)return;sessionStorage.removeItem(key);setIntent(null);setMessage("");start.reset()};
@@ -39,7 +40,7 @@ export function StoreSyncDialog({store,scope,onClose,onChanged,initialKind="prod
  return <ResourceDialog title="同步店铺数据" onClose={onClose} locked={start.isPending||ensure.isPending} className={styles.dialog}>
   <p>读取平台数据并保存观察结果，经营操作继续在平台处理。TEMU 与 Walmart 当前只开放商品同步；Walmart 库存缺项仍显示未知。</p>
   <label>同步数据<Select value={kind} disabled={Boolean(intent)||start.isPending} onChange={event=>setSelectedKind(event.target.value as ObservationKind)}><option value="products">商品与库存</option><option value="orders" disabled={!intent&&store.platform!=="shein"}>订单</option></Select></label>
-  <label>同步范围<Select value={intent?(intent.input.stores.length?"original":"all"):all?"all":"current"} disabled={Boolean(intent)||start.isPending} onChange={event=>setAll(event.target.value==="all")}>{intent?.input.stores.length?<option value="original">原选定店铺：{intent.input.stores.map(id=>id===store.id?store.name:id).join("、")}</option>:null}<option value="current">当前店铺：{store.name}</option><option value="all">当前全部授权店铺</option></Select></label>
+  <label>同步范围<Select value={intent?(intent.input.stores.length?"original":"all"):all?"all":"current"} disabled={Boolean(intent)||start.isPending||Boolean(batchIds)} onChange={event=>setAll(event.target.value==="all")}>{intent?.input.stores.length?<option value="original">原选定店铺：{intent.input.stores.map(id=>id===store.id?store.name:id).join("、")}</option>:null}<option value="current">{batchIds?`已选择 ${batchIds.length} 家店铺`:`当前店铺：${store.name}`}</option><option value="all">当前全部授权店铺</option></Select></label>
   <StoreReadinessNotice caps={{...caps,admitted:context.storeObservationsAvailable}} permissions={context.permissions} kind={kind} store={readinessStore}/>
   {kind==="orders"?<p className={styles.hint}>全托管消费者订单沿平台合同未开放。</p>:null}
   {intent?<p>原命令键：{intent.key}</p>:null}
