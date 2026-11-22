@@ -11,7 +11,7 @@ type CustomForm={provider:string;model:string;apiKey:string;endpoint:string};
 export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTemplate}:{
  dialog:AgentPreviewDialog;onClose:()=>void;
  onSaveModel:(title:string,model:"official"|"custom")=>void;
- onSaveTemplate?:(title:string,configuration:{skills:string[];knowledge:string[];imageOptimization:boolean;imageInstructions:string})=>void;
+ onSaveTemplate?:(title:string,configuration:{skills:string[];knowledge:string[];imageOptimization:boolean;imageInstructions:string;podImageMode?:string;podPatternMode?:string;podQuantity?:number;podTransparent?:boolean})=>void;
 }){
  const ref=useRef<HTMLDialogElement>(null);
  const id=useId();
@@ -25,13 +25,18 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  const [imageInstructions,setImageInstructions]=useState("");
  const [imageConfigured,setImageConfigured]=useState(false);
  const [showPreview,setShowPreview]=useState(false);
+ const [podImageMode,setPodImageMode]=useState("AI重构模式");
+ const [podPatternMode,setPodPatternMode]=useState("AI自动模式");
+ const [podQuantity,setPodQuantity]=useState(3);
+ const [podTransparent,setPodTransparent]=useState(true);
+
  useEffect(()=>{
   const previous=document.activeElement;
   const element=ref.current;
   if(element&&!element.open)element.showModal();
   return()=>{element?.close();if(previous instanceof HTMLElement&&previous.isConnected)previous.focus();};
  },[]);
- const isModel=info.kind==="model",isUse=info.kind==="use";
+ const isModel=info.kind==="model",isUse=info.kind==="use",isPod=info.title.includes("POD");
  const toggle=(items:string[],set:(value:string[])=>void,item:string)=>set(items.includes(item)?items.filter(v=>v!==item):[...items,item]);
  const validCustom=custom.provider.trim()&&custom.model.trim()&&custom.apiKey.trim();
  const customSubmit=()=>{
@@ -50,7 +55,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  };
  const saveTemplate=()=>{
   if(imageOptimization&&!imageConfigured){setMessage("已开启图片优化，请先填写图片优化设置。");return;}
-  onSaveTemplate?.(info.title,{skills,knowledge,imageOptimization,imageInstructions});
+  onSaveTemplate?.(info.title,{skills,knowledge,imageOptimization,imageInstructions,podImageMode:isPod?podImageMode:undefined,podPatternMode:isPod?podPatternMode:undefined,podQuantity:isPod?podQuantity:undefined,podTransparent:isPod?podTransparent:undefined});
   onClose();
  };
  return <dialog ref={ref} className={`${styles.dialog} ${isUse?styles.useDialog:""}`} aria-labelledby={id}
@@ -90,6 +95,15 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    </section>
    <footer className={styles.footer}><button type="button" className={styles.secondary} onClick={onClose}>取消</button><button type="button" className={styles.primary} onClick={()=>selected==="custom"?chooseCustom():onSaveModel(info.title,"official")}>保存设置</button></footer>
   </>
+  :isPod?<div className={styles.useLayout}>
+   <div className={styles.useSteps}>
+    <section className={styles.useStep}><h3>步骤 1 · 图片生成方式</h3><p>选择本次 POD 商品图片的生成方式，可在生成刊登方案前调整。</p><div className={styles.podModes}>{[["AI重构模式","引用技能 · 官方方案 · 自定义指令"],["混合模式","支持固定图片 + AI 生成，灵活组合主图与详情图"]].map(([name,desc])=><button key={name} type="button" aria-pressed={podImageMode===name} onClick={()=>setPodImageMode(name)}><strong>{name}</strong><small>{desc}</small></button>)}</div><p>AI 相关能力按积分计费（实际计费未接入）。</p></section>
+    <section className={styles.useStep}><h3>步骤 2 · 是否启用知识库</h3><p>按需选择要引用的知识；未选择时，AI 不读取任何知识库。</p><div className={styles.picks}>{["平台规则","运营方法","合规参考"].map(item=><label key={item}><input type="checkbox" checked={knowledge.includes(item)} onChange={()=>toggle(knowledge,setKnowledge,item)}/>{item}</label>)}</div></section>
+    <section className={styles.useStep}><h3>步骤 3 · 启用技能</h3><p>按需选择我的技能或团队技能，使用技能规范贴图生成与图片优化。</p><div className={styles.picks}>{["POD图片生成","贴图优化","文案生成"].map(item=><label key={item}><input type="checkbox" checked={skills.includes(item)} onChange={()=>toggle(skills,setSkills,item)}/>{item}</label>)}</div></section>
+    <section className={styles.useStep}><h3>步骤 4 · 贴图素材</h3><p>选择本次贴图素材的生成方式，点击模式卡进入配置。</p><div className={styles.podModes}>{[["AI自动模式","AI自动确定主题、风格、元素与排版"],["图片裂变模式","根据参考图片裂变多套新贴图"],["自定义指令模式","依据创作指令生成个性化贴图"]].map(([name,desc])=><button type="button" key={name} aria-pressed={podPatternMode===name} onClick={()=>setPodPatternMode(name)}><strong>{name}</strong><small>{desc}</small></button>)}</div><label className={styles.imageInstructions}>贴图说明（可选）<textarea aria-label="贴图说明" value={imageInstructions} onChange={e=>setImageInstructions(e.target.value)} rows={2} placeholder="输入贴图主题、风格、构图或参考说明"/></label><label className={styles.podCheck}><input type="checkbox" checked={podTransparent} onChange={e=>setPodTransparent(e.target.checked)}/>生成透明背景</label></section>
+    <section className={styles.useStep}><h3>步骤 5 · 生成数量</h3><p>执行时按批次商品数量自动计算。</p><div className={styles.podCount}><span>每个商品生成</span><button aria-label="减少生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.max(1,v-1))}>−</button><strong>{podQuantity}</strong><button aria-label="增加生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.min(20,v+1))}>+</button><span>个</span></div><div className={styles.actionsRow}><button type="button" className={styles.secondary} onClick={()=>setShowPreview(v=>!v)}>预览配置</button><button type="button" className={styles.primary} onClick={saveTemplate}>保存为模板</button></div>{showPreview?<p role="status" className={styles.inlineNotice}>{podImageMode} · {podPatternMode} · {podQuantity} 个 · {podTransparent?"透明 PNG":"普通背景"} · 已选技能 {skills.length} 项 · 已选知识 {knowledge.length} 项</p>:null}</section>
+   </div><aside className={styles.useHelp}><h3>POD 刊登说明</h3><p>配置图片、知识库、贴图素材与生成数量，保存为模板后可在「已适配」流程中调用。</p><h4>图片生成</h4><p>AI 重构或混合模式按需选择，固定图片不会被无意替换。</p><h4>贴图素材</h4><p>AI 自动、图片裂变或自定义指令，分别定义素材生成方式。</p><h4>结果去向</h4><p>已适配调用 · 待审核 · 发布</p><p>当前为交互演示，不会真实生成图片、扣除积分或刊登商品。</p></aside>
+  </div>
   :<>
    <div className={styles.useLayout}>
     <div className={styles.useSteps}>
