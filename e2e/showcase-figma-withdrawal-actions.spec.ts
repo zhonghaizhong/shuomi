@@ -64,3 +64,75 @@ test("Figma account configuration supports bank, Alipay and default account swit
  await page.reload();
  await expect(suite).toContainText("支付宝 · pa******56");
 });
+
+test("simulate adding WeChat, Alipay and bank accounts then modifying an existing payment method",async({page})=>{
+ await page.goto(route);
+ const suite=page.locator("[data-account-suite]");
+ const openConfig=async()=>{await suite.getByRole("button",{name:"配置账户"}).click();return suite.getByRole("dialog",{name:"配置收款账户"});};
+ let dialog=await openConfig();
+ await dialog.getByRole("button",{name:"设置微信账户"}).click();
+ await dialog.getByRole("textbox",{name:"收款人姓名"}).fill("测试微信收款人");
+ await dialog.getByRole("textbox",{name:"微信号"}).fill("wx-test-0011");
+ await dialog.getByRole("button",{name:"保存并验证"}).click();
+ await dialog.getByRole("button",{name:"去验证"}).first().click();
+ await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
+ await expect(suite).toContainText("微信 · wx******11");
+
+ dialog=await openConfig();
+ await dialog.getByRole("button",{name:/支付宝账户/}).last().click();
+ await dialog.getByRole("textbox",{name:"收款人姓名"}).fill("测试支付宝收款人");
+ await dialog.getByRole("textbox",{name:"支付宝账号"}).fill("alipay-0022");
+ await dialog.getByRole("checkbox").uncheck();
+ await dialog.getByRole("button",{name:"保存并验证"}).click();
+ await dialog.getByRole("button",{name:"去验证"}).last().click();
+ await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
+ await expect(suite).toContainText("微信 · wx******11");
+
+ dialog=await openConfig();
+ await dialog.getByRole("button",{name:"设置银行卡账户"}).click();
+ await dialog.getByRole("textbox",{name:"持卡人姓名"}).fill("测试银行卡持卡人");
+ await dialog.getByRole("textbox",{name:"银行卡号"}).fill("6222000000003344");
+ await dialog.getByRole("textbox",{name:"开户银行"}).fill("演示银行");
+ await dialog.getByRole("checkbox").uncheck();
+ await dialog.getByRole("button",{name:"保存并验证"}).click();
+ await dialog.getByRole("button",{name:"去验证"}).first().click();
+ await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
+
+ dialog=await openConfig();
+ await expect(dialog).toContainText("微信 · wx******11");
+ await expect(dialog).toContainText("支付宝 · al******22");
+ await expect(dialog).toContainText("银行卡 · 62******44");
+ const wxRow=dialog.locator("div").filter({hasText:"微信 · wx******11"}).filter({has:dialog.getByRole("button",{name:"修改"})}).last();
+ await wxRow.getByRole("button",{name:"修改"}).click();
+ await dialog.getByRole("textbox",{name:"收款人姓名"}).fill("测试微信修改");
+ await dialog.getByRole("textbox",{name:"微信号"}).fill("wx-revised-0099");
+ await dialog.getByRole("button",{name:"保存并验证"}).click();
+ await dialog.getByRole("button",{name:"去验证"}).last().click();
+ await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
+ await expect(suite).toContainText("微信 · wx******99");
+ await page.reload();
+ dialog=await openConfig();
+ await expect(dialog).toContainText("微信 · wx******99");
+ await expect(dialog).not.toContainText("微信 · wx******11");
+ await expect(dialog).toContainText("支付宝 · al******22");
+ await expect(dialog).toContainText("银行卡 · 62******44");
+});
+
+test("configured payout method buttons use Vuexy primary tokens in both themes",async({page})=>{
+ await page.goto(route);
+ const suite=page.locator("[data-account-suite]");
+ const openConfig=async()=>{await suite.getByRole("button",{name:"配置账户"}).click();return suite.getByRole("dialog",{name:"配置收款账户"});};
+ let dialog=await openConfig();
+ await dialog.getByRole("button",{name:"设置微信账户"}).click();
+ const active=dialog.getByRole("button",{name:"微信",exact:true});
+ const action=dialog.getByRole("button",{name:"保存并验证"});
+ const colors=await Promise.all([active,action].map(x=>x.evaluate(el=>({bg:getComputedStyle(el).backgroundColor,text:getComputedStyle(el).color}))));
+ for(const style of colors){expect(style.bg).toBe("rgb(115, 103, 240)");expect(style.text).toBe("rgb(255, 255, 255)");}
+ await page.keyboard.press("Escape");
+ const switchLight=page.getByRole("button",{name:"切换浅色主题"});
+ if(await switchLight.isVisible())await switchLight.click();
+ dialog=await openConfig();
+ await dialog.getByRole("button",{name:"设置微信账户"}).click();
+ const lightColors=await Promise.all([dialog.getByRole("button",{name:"微信",exact:true}),dialog.getByRole("button",{name:"保存并验证"})].map(x=>x.evaluate(el=>({bg:getComputedStyle(el).backgroundColor,text:getComputedStyle(el).color}))));
+ for(const style of lightColors){expect(style.bg).toBe("rgb(115, 103, 240)");expect(style.text).toBe("rgb(255, 255, 255)");}
+});
