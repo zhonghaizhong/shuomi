@@ -104,7 +104,9 @@ test("simulate adding WeChat, Alipay and bank accounts then modifying an existin
  await expect(dialog).toContainText("微信 · wx******11");
  await expect(dialog).toContainText("支付宝 · al******22");
  await expect(dialog).toContainText("银行卡 · 62******44");
- const wxRow=dialog.locator("div").filter({hasText:"微信 · wx******11"}).filter({has:dialog.getByRole("button",{name:"修改"})}).last();
+ const wxRow=dialog.locator("section").filter({hasText:"微信 · wx******11"});
+ await expect(wxRow).toHaveCount(1);
+ await expect(wxRow.getByRole("button",{name:"修改"})).toBeVisible();
  await wxRow.getByRole("button",{name:"修改"}).click();
  await dialog.getByRole("textbox",{name:"收款人姓名"}).fill("测试微信修改");
  await dialog.getByRole("textbox",{name:"微信号"}).fill("wx-revised-0099");
