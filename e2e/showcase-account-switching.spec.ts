@@ -101,11 +101,11 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  await expect(own).toContainText("C01-ONLY-PAYOUT");
  await expect(own).toContainText("¥20.00");
  const scopedStorage=await page.evaluate(()=>{
-  const member=JSON.parse(localStorage.getItem("shuomi-demo-member-referrals-v1-SIM-COLLEAGUE-01")||"null");
+  const member=JSON.parse(localStorage.getItem("shuomi-demo-member-referrals-v2-SM-ENT-000001::SIM-COLLEAGUE-01")||"null");
   const primary=JSON.parse(localStorage.getItem("shuomi-demo-account-suite-SM-ENT-000001-v1")||"null");
   return {member,primary};
  });
- expect(scopedStorage.member.audit.some((event:{actor:string;category:string})=>event.actor==="模拟同事01"&&event.category==="提现管理")).toBeTruthy();
+ expect(scopedStorage.member.audit.some((event:{actor:string;category:string})=>event.actor.includes("模拟同事01")&&event.category==="提现管理")).toBeTruthy();
  expect(scopedStorage.member.withdrawals).toHaveLength(1);
  expect(scopedStorage.primary.withdrawals).toHaveLength(0);
  await page.reload();
@@ -138,4 +138,65 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  await page.goto(base+"/account/referrals/withdrawals");
  await expect(colleague02).toContainText("暂无提现记录");
  await expect(colleague02).not.toContainText("C01-ONLY-PAYOUT");
+});
+
+test("same colleague has separate referral wallets in main company, organization A and organization B",async({page})=>{
+ await page.goto(base+"/account");
+ await page.getByRole("button",{name:"linchen_demo账户"}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ let dialog=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await dialog.getByRole("button",{name:/模拟同事01/}).click();
+ await dialog.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(base+"/account/referrals/center");
+ const own=page.locator("[data-account-suite]");
+ await expect(own.getByRole("region",{name:"推广中心核心指标"})).toContainText("10");
+ await expect(own).toContainText("¥100.80");
+ await page.getByRole("button",{name:"模拟同事01账户"}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ dialog=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await dialog.getByRole("tab",{name:"切换企业"}).click();
+ await dialog.getByRole("button",{name:/模拟企业A（运营公司）/}).click();
+ await dialog.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(base+"/account/referrals/center");
+ const orgA=page.locator("[data-account-suite]");
+ await expect(orgA.getByRole("note")).toContainText("模拟企业A");
+ await expect(orgA.getByRole("region",{name:"推广明细"})).toContainText("共 0 条");
+ await expect(orgA.getByRole("region",{name:"推广中心核心指标"})).toContainText("¥0.00");
+ await expect(orgA).not.toContainText("同事01模拟客户");
+ await page.goto(base+"/account/referrals/withdrawals");
+ await expect(orgA).toContainText("尚未设置");
+ await orgA.getByRole("button",{name:"设置收款方式"}).click();
+ const payout=orgA.getByRole("dialog",{name:"设置收款方式"});
+ await payout.getByRole("textbox",{name:"演示收款标识"}).fill("ORG-A-ONLY");
+ await payout.getByRole("button",{name:"确认并模拟通过"}).click();
+ await expect(orgA).toContainText("ORG-A-ONLY");
+ await page.getByRole("button",{name:"模拟同事01账户"}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ dialog=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await dialog.getByRole("tab",{name:"切换企业"}).click();
+ await dialog.getByRole("button",{name:/模拟企业B（供应链公司）/}).click();
+ await dialog.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(base+"/account/referrals/withdrawals");
+ const orgB=page.locator("[data-account-suite]");
+ await expect(orgB.getByRole("note")).toContainText("模拟企业B");
+ await expect(orgB).toContainText("尚未设置");
+ await expect(orgB).not.toContainText("ORG-A-ONLY");
+ await expect(orgB).toContainText("暂无提现记录");
+ await page.getByRole("button",{name:"模拟同事01账户"}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ dialog=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await dialog.getByRole("tab",{name:"切换企业"}).click();
+ await dialog.getByRole("button",{name:/模拟企业A（运营公司）/}).click();
+ await dialog.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(base+"/account/referrals/withdrawals");
+ await expect(page.locator("[data-account-suite]")).toContainText("ORG-A-ONLY");
+ await expect(page.locator("[data-account-suite]")).not.toContainText("C01-ONLY-PAYOUT");
+ const storage=await page.evaluate(()=>({
+  primary:localStorage.getItem("shuomi-demo-member-referrals-v2-SM-ENT-000001::SIM-COLLEAGUE-01"),
+  companyA:localStorage.getItem("shuomi-demo-member-referrals-v2-SIM-ORG-COLLEAGUE-ADMIN::SIM-COLLEAGUE-01"),
+  companyB:localStorage.getItem("shuomi-demo-member-referrals-v2-SIM-ORG-COLLEAGUE-MEMBER::SIM-COLLEAGUE-01")
+ }));
+ expect(storage.companyA).not.toBe(storage.primary);
+ expect(JSON.parse(storage.companyA||"null").payoutAccount).toBe("ORG-A-ONLY");
+ expect(storage.companyB).toBeNull();
 });
