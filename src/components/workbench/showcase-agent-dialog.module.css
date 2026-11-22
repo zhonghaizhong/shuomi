@@ -173,14 +173,11 @@
 /* Native modal dialogs must be centered in the VIEWPORT, never in the
    workbench content column or relative to the triggering card. */
 .dialog:modal{
+ /* Native modal center of viewport, without fractional translate rounding. */
  position:fixed;
- inset:auto;
- top:50%;
- left:50%;
- right:auto;
- bottom:auto;
- margin:0;
- transform:translate(-50%,-50%);
+ inset:0;
+ margin:auto;
+ transform:none;
  max-width:calc(100vw - 32px);
  max-height:calc(100dvh - 32px);
  overflow-y:auto;
