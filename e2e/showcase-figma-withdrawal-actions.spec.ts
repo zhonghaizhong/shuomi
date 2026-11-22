@@ -17,7 +17,7 @@ test("Figma payout actions show configuration and withdrawal, with saved account
  await expect(suite.getByRole("button",{name:"设置收款方式"})).toHaveCount(0);
  await expect(suite.getByRole("button",{name:"申请模拟提现"})).toHaveCount(0);
  await suite.getByRole("button",{name:"配置账户"}).click();
- const account=suite.getByRole("dialog",{name:"配置账户"});
+ const account=suite.getByRole("dialog",{name:"配置收款账户"});
  await configureDemoPayout(account,"ADMIN-NEW-DEMO-PAYOUT");
  await expect(suite).toContainText("微信 · AD******UT");
  await suite.getByRole("button",{name:"申请提现"}).click();
