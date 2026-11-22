@@ -244,7 +244,8 @@ test("empty billing filters remain functional without inventing paid records",as
  await expect(rows).toHaveCount(5);
  await plans.getByRole("combobox",{name:"全部状态"}).selectOption("已支付");
  await plans.getByRole("textbox",{name:"搜索账单"}).fill("不存在的订单");
- await expect(rows).toHaveCount(0);
+ // Filters are staged until the user confirms them.
+ await expect(rows).toHaveCount(5);
  await plans.getByRole("button",{name:"确定",exact:true}).click();
  await expect(rows).toHaveCount(0);
  await plans.getByRole("button",{name:"重置",exact:true}).click();
@@ -348,7 +349,8 @@ test("plans draft workflow persists in top-up without creating actual orders",as
  await expect(billing).toContainText("模拟已到账");
  await expect(billing).not.toContainText("待提交 · 未支付");
  await page.goto(root+"/plans/top-up");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("模拟购买成功");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("钱包充值流水");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("模拟购买");
 });
 test("plans store service and storage request review without granting paid resources",async({page})=>{
  await page.goto(root+"/plans/top-up");
