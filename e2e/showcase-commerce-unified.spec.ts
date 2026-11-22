@@ -53,10 +53,10 @@ test("store filtering and member invitations are operational",async({page})=>{
  await suite.getByRole("button",{name:"邀请成员"}).click();
  const dialog=suite.getByRole("dialog",{name:"邀请成员"});
  await expect(dialog).toBeVisible();
- await dialog.getByRole("textbox",{name:"成员姓名"}).fill("综合验收成员");
+ await dialog.getByRole("textbox",{name:"成员手机号"}).fill("+8613800138033");
  await dialog.getByRole("textbox",{name:"成员邮箱"}).fill("commerce-ci@example.com");
- await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
- await expect(suite).toContainText("综合验收成员");
+ await dialog.getByRole("button",{name:"确认邀请"}).click();
+ await expect(suite.getByRole("row").filter({hasText:"commerce-ci@example.com"})).toContainText("邀请中");
 });
 
 test("plans and account profile forms provide editable, persisted demo actions",async({page})=>{
