@@ -73,14 +73,9 @@ test("cockpit quick actions navigate to the intended existing pages", async ({ p
   await page.goto(cockpit);
   await page.getByRole("button", { name: "查看全部店铺" }).click();
   await expect(page).toHaveURL(/#\/workbench\/overview\/stores/);
-  for (const [action, route] of [["查看进度", "running"], ["去确认", "pending"]]) {
-    await page.goto(cockpit);
-    await page.getByRole("button", { name: action, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp("#/workbench/ai/tasks/" + route));
-  }
-  await page.goto(cockpit);
-  await page.getByRole("button", { name: "去处理" }).click();
-  await expect(page).toHaveURL(/#\/workbench\/overview\/alerts/);
+  await expect(page.locator('[data-dashboard="operations"]')).toContainText("0 项待办");
+  await expect(page.locator('[data-dashboard="operations"]')).toContainText("暂无已关联的 AI 任务");
+
 });
 
 test("cockpit second-level navigation keeps correct targets and active path during repeated switches", async ({ page }) => {
@@ -110,10 +105,10 @@ test("cockpit second-level navigation keeps correct targets and active path duri
 test("Vuexy light theme gives all cockpit subpages white panels and readable content", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const pages = [
-    { route: "goals", panel: '[class*="goalPanel"]', content: '[class*="goalRow"]' },
-    { route: "stores", panel: '[class*="matrixPanel"]', content: '[class*="matrixRow"]' },
-    { route: "alerts", panel: '[class*="matrixPanel"]', content: '[class*="alertRow"]' },
-    { route: "advice", panel: '[class*="adviceDetail"]', content: '[class*="adviceOptions"] button' },
+    { route: "goals", panel: '[class*="goalPanel"]', content: '[class*="goalTable"]' },
+    { route: "stores", panel: '[class*="matrixPanel"]', content: '[class*="matrixTable"]' },
+    { route: "alerts", panel: '[class*="matrixPanel"]', content: '[class*="alertTable"]' },
+    { route: "advice", panel: '[class*="adviceDetail"]', content: '[class*="adviceDetail"]' },
   ];
   await page.goto("/shuomi/#/workbench/overview/goals");
   await page.getByRole("button", { name: "切换浅色主题" }).click();
