@@ -230,7 +230,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const reviewDialog=requestReview?<div className={styles.planDetailBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setRequestReview(null)}}>
    <section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="确认申请草稿">
     <header><div><h2>确认申请草稿</h2><p>仅保存到当前浏览器；不会发起支付、扣除钱包余额或增加资源权益。</p></div><button type="button" aria-label="关闭申请弹窗" onClick={()=>setRequestReview(null)}>×</button></header>
-    <dl><div><dt>申请类型</dt><dd>{requestReview.type}</dd></div><div><dt>数量或金额</dt><dd>{requestReview.quantity}{requestReview.type==="账户充值"||requestReview.type==="AI 积分"||requestReview.type==="数据资源"?" 元":requestReview.type==="企业存储"?" GiB":" 期"}</dd></div><div><dt>费用说明</dt><dd>{requestReview.quote}</dd></div><div><dt>处理状态</dt><dd>待提交 · 尚未付款</dd></div></dl>
+    <dl><div><dt>申请类型</dt><dd>{requestReview.type}</dd></div><div><dt>数量或金额</dt><dd>{requestReview.quantity}{requestReview.type==="账户充值"||requestReview.type==="AI 积分"||requestReview.type==="token 积分"||requestReview.type==="数据资源"?" 元":requestReview.type==="企业存储"?" GiB":" 期"}</dd></div><div><dt>费用说明</dt><dd>{requestReview.quote}</dd></div><div><dt>处理状态</dt><dd>待提交 · 尚未付款</dd></div></dl>
     <footer><button type="button" onClick={()=>setRequestReview(null)}>返回修改</button><button type="button" className={styles.primary} onClick={confirmDraft}>保存申请草稿</button></footer>
    </section>
   </div>:null;
