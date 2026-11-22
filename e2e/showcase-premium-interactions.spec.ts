@@ -75,7 +75,9 @@ test("cleared store product and order pages show truthful empty states and worki
   await expect(root.getByText("共 0 条")).toBeVisible();
   await root.getByRole("button",{name:"前往我的店铺"}).click();
   await expect(root).toHaveAttribute("data-store-center-showcase","stores");
-  await expect(root.getByRole("heading",{name:"尚未绑定店铺"})).toBeVisible();
+  await expect(root).toContainText("共 10 家");
+  await expect(root).toContainText("管理员演示店铺01");
+  await expect(root).toContainText("同事01演示店铺01");
  }
 });
 
