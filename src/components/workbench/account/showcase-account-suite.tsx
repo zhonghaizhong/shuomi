@@ -156,7 +156,22 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
    {suffix==="/referrals/earnings"&&<div className={s.referralManualActions}><button type="button" onClick={()=>open("earning")}>模拟一笔推广成交并结算</button></div>}
    {(suffix==="/referrals/earnings"||suffix==="/referrals")&&<section className={s.panel}><header><h2>收益明细</h2><p>本次模拟按已支付的基础店铺服务费 × 10% 产生佣金；用户钱包充值和未消费余额不产生佣金。所有数据仅用于演示。</p></header><div className={s.tableWrap}><table><thead><tr><th>时间</th><th>模拟客户</th><th>消费订单</th><th>已消费金额</th><th>佣金比例</th><th>收益金额</th><th>结算状态</th></tr></thead><tbody>{visibleEarnings.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{x.referred}</td><td>{x.orderId||"手动模拟"}</td><td>{x.paidCny===undefined?"—":money(x.paidCny)}</td><td>{x.rate===undefined?"手动模拟":(x.rate*100).toFixed(0)+"%"}</td><td>{money(x.amount)}</td><td>{x.status}（模拟）</td></tr>)}</tbody></table>{!state.referrals.length&&<div className={s.empty}>暂无推广收益。</div>}</div>{pagination("推广收益明细",state.referrals.length,visibleEarningsPage,earningsPageCount,setEarningsPage)}{suffix==="/referrals"&&<div className={s.recordMore}><button type="button" onClick={()=>nav("/referrals/earnings")}>查看全部收益记录</button></div>}</section>}
       {suffix==="/referrals/withdrawals"&&<><section className={s.panel}><header><h2>模拟收款方式</h2><p>不输入真实银行卡号；只保存演示标识。</p></header><div className={s.linkRow}><div><span>当前收款方式</span><strong>{state.payoutAccount||"尚未设置"}</strong></div><button onClick={()=>{open("payout");setAccount(state.payoutAccount)}}>设置收款方式</button></div></section><section className={s.panel}><header><h2>提现记录</h2><p>审核环节全部模拟通过，不发起真实打款。</p></header><div className={s.tableWrap}><table><thead><tr><th>申请时间</th><th>金额</th><th>收款标识</th><th>状态</th></tr></thead><tbody>{state.withdrawals.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{money(x.amount)}</td><td>{x.account}</td><td>{x.status}</td></tr>)}</tbody></table>{!state.withdrawals.length&&<div className={s.empty}>暂无提现记录。</div>}</div></section></>}
-   {suffix==="/referrals/rules"&&<section className={s.panel}><header><h2>推广结算与审核说明</h2><p>当前仅用于闭环验收，不代表正式佣金标准或真实支付义务。</p></header><div className={s.rules}><article><b>01</b><h3>推广归因</h3><p>推广码归属当前模拟企业。正式系统需要真实访问和订单归因数据。</p></article><article><b>02</b><h3>收益结算</h3><p>本次演示邀请 20 位新用户，按已扣费的基础店铺服务费 × 10% 自动产生模拟佣金；充值与未消费余额不计佣。也可手工模拟额外收益。</p></article><article><b>03</b><h3>提现处理</h3><p>演示收款账户完成设置后，可模拟完整记录提现，系统记录审核通过，不会转账。</p></article><article><b>04</b><h3>数据边界</h3><p>所有收益、客户标识和提现均为模拟，不能视为真实经营数据。</p></article></div></section>}
+   {suffix==="/referrals/rules"&&<>
+    <section className={s.panel} aria-label="推广规则生效说明">
+     <header><h2>当前规则以平台实际生效版本为准</h2><p>以下内容为当前完整规则说明；佣金比例、结算周期及可推广业务由平台统一配置，规则变更后以最新生效版本执行。</p></header>
+     <p className={s.ruleDemoNotice}>当前页面为功能演示，尚未连接正式规则配置与支付结算服务。下面展示 Figma 原型的规则文案，不表示这些政策已经对真实用户生效。</p>
+    </section>
+    <section className={s.referralRuleGrid} aria-label="推广规则条款">
+     {([
+      ["推广关系如何建立","用户通过推广链接、推广码或二维码首次注册并完成账号验证后建立推广关系。推广关系以系统最终记录为准，重复注册、无效账号不计入有效推广。"],
+      ["哪些订单产生收益","符合平台推广政策并完成支付的套餐、token 积分充值、数据服务、店铺续费等订单可产生收益；退款、撤销、异常或违规订单不计入有效收益。"],
+      ["收益如何计算","收益按订单所属业务及下单时生效的佣金规则自动计算，不同业务的收益比例可以不同，最终金额以系统收益明细和实际结算结果为准。"],
+      ["结算与退款处理","订单达到结算条件后由待结算转为已结算；发生退款、撤销或风控判定异常时，未结算收益取消，已结算收益可按规则冲正或扣回。"],
+      ["提现规则","仅已结算并进入可提现余额的收益可以申请提现。提现前需绑定有效收款账户，到账时间以平台处理状态和实际支付渠道为准。"],
+      ["违规推广处理","禁止虚假注册、刷单、自买自返、批量账号等违规推广行为。异常推广关系、订单及收益可被取消，严重违规时平台可限制推广或提现功能。"]
+     ] as const).map(([heading,description])=><article className={s.referralRuleCard} key={heading}><h3>{heading}</h3><p>{description}</p></article>)}
+    </section>
+   </>}
   </>}
   {modal&&<div className={s.overlay} onMouseDown={e=>e.target===e.currentTarget&&close()}><section className={modal==="permissions"?`${s.dialog} ${s.permissionDialog}`:s.dialog} role="dialog" aria-modal="true" aria-label={{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员存储",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}><header><h2>{{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员存储",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}</h2><button aria-label="关闭弹窗" onClick={close}>×</button></header><p className={s.dialogHint}>模拟企业后台审核自动通过，确认后会在当前浏览器档案和操作记录中留存。</p>
     {modal==="invite"&&<><label>成员姓名<input aria-label="成员姓名" value={name} onChange={e=>setName(e.target.value)} placeholder="输入成员姓名"/></label><label>成员邮箱<input aria-label="成员邮箱" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="输入测试邮箱"/></label></>}
