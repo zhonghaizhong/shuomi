@@ -329,7 +329,7 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
 });
 
 
-test("organization-scoped store bindings synchronize with plans and enterprise resources without fake billing",async({page})=>{
+test("organization-scoped store bindings activate 30-day plans and synchronize with enterprise resources",async({page})=>{
  await page.goto(root+"/stores");
  const stores=page.locator('[data-store-center-showcase="stores"]');
  await expect(stores).toContainText("共 10 家");
@@ -354,8 +354,15 @@ test("organization-scoped store bindings synchronize with plans and enterprise r
  await binding.getByRole("textbox",{name:"自定义名称"}).fill("联动校验管理员店铺");
  await binding.getByRole("button",{name:"提交授权"}).click();
  await expect(stores).toContainText("共 11 家");
+ const service=await page.evaluate(()=>{
+  const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
+  const added=stores.find((s:{name:string})=>s.name==="联动校验管理员店铺");
+  return added&&{periods:added.servicePeriods,duration:Date.parse(added.serviceExpiresAt)-Date.parse(added.serviceStartedAt)};
+ });
+ expect(service).toEqual({periods:1,duration:30*24*60*60*1000});
  await page.goto(root+"/plans/entitlements");
  await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("11");
+ await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：1 期");
  await page.goto(root+"/account/organization");
  await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("待授权 11 家");
 });
