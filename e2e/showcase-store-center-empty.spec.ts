@@ -308,9 +308,9 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByRole("heading",{name:"我的店铺"})).toBeVisible();
  for(const caption of ["搜索","平台","站点","店铺类型","店铺状态","店铺分组"]){
-  await expect(area.locator("form").filter({has:area.getByLabel("搜索店铺")}).first().getByText(caption,{exact:true})).toBeVisible();
+  await expect(area.locator("form").filter({has:page.getByLabel("搜索店铺")}).first().getByText(caption,{exact:true})).toBeVisible();
  }
- const cards=area.locator("article").filter({has:area.getByText("管理员演示店铺01")});
+ const cards=area.locator("article[class*=\"storeCard\"]").filter({hasText:"管理员演示店铺01"});
  await expect(cards.first()).toContainText("平台授权");
  await expect(cards.first()).toContainText("网络环境");
  await expect(cards.first()).toContainText("数据同步");
