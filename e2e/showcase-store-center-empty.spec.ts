@@ -154,7 +154,8 @@ test("Figma filters apply only on confirm and reset together",async({page})=>{
  await expect(area.getByText("筛选店铺",{exact:true})).toBeVisible();
  await area.getByLabel("店铺状态筛选").selectOption("需要处理");
  await area.getByRole("button",{name:"确认",exact:true}).click();
- await expect(area.getByText("筛选店铺",{exact:true})).toBeVisible();
+ // An active store is excluded by the service-attention filter.
+ await expect(area.getByText("筛选店铺",{exact:true})).toHaveCount(0);
 });
 test("Figma Manage opens store settings; Reauthorize opens binding, without fake authorization",async({page})=>{
  const area=await createDemo(page,"待修改店铺");
@@ -430,7 +431,7 @@ test("other organization purchase ledger stays isolated from the primary organiz
  await expect(entitlements.locator('[class*="planEntitlementStoreSplit"]')).toContainText("1");
 });
 
-test("expired 30-day store service shows expired status and blocks synchronization until renewed",async({page})=>{
+test("expired 30-day store service prevents synchronization until renewed",async({page})=>{
  await page.goto(root+"/stores");
  // Wait for the seeded store to render and session storage effects to commit.
  await expect(page.locator('[data-store-center-showcase="stores"] article[class*="storeCard"]').filter({hasText:"管理员演示店铺01"})).toBeVisible();
@@ -448,10 +449,13 @@ test("expired 30-day store service shows expired status and blocks synchronizati
  const card=page.locator('[data-store-center-showcase="stores"] article[class*="storeCard"]').filter({hasText:"管理员演示店铺01"});
  await expect(card).toContainText("服务已到期");
  await card.getByRole("button",{name:"立即同步"}).click();
- await expect(page.getByRole("dialog",{name:"立即同步"})).toContainText("请先购买并激活 30 天服务期");
- await page.getByRole("dialog",{name:"立即同步"}).getByRole("button",{name:"取消"}).click();
- await card.getByRole("button",{name:"开通30天"}).click();
- await expect(card).toContainText("服务中");
- await page.goto(root+"/plans/entitlements");
- await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：2 期");
+ await expect(page.getByRole("dialog",{name:"立即同步"})).toContainText("请先购买并开通30天服务期");
+ await page.getByRole("dialog",{name:"立即同步"}).getByRole("button",{name:"我知道了"}).click();
+ await card.getByRole("button",{name:"进入店铺"}).click();
+ await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"服务信息"}).click();
+ await expect(page.getByRole("region",{name:"店铺详情页面"})).toContainText("已到期");
+ // This scenario has no unassigned service periods, so activation must not succeed without a purchase.
+ await page.getByRole("region",{name:"店铺详情页面"}).getByRole("button",{name:"开通30天"}).click();
+ await expect(page.locator('[data-store-center-showcase="stores"]')).toContainText("当前可用店铺服务期数不足");
+ await expect(page.getByRole("region",{name:"店铺详情页面"})).toContainText("已到期");
 });
