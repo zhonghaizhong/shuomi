@@ -20,7 +20,7 @@ const screens:Record<string,[string,string]>={
  "/referrals/center":["推广中心","分享专属推广链接，跟进模拟邀请及推广转化。"],
  "/referrals/earnings":["收益明细","查看模拟收益来源、时间与结算状态。"],
  "/referrals/withdrawals":["提现管理","模拟登记收款方式并提交提现，审核自动通过。"],
- "/referrals/rules":["推广规则","了解推广关系、收益记录及模拟结算方式。"]
+ "/referrals/rules":["推广规则","当前有效的推广、收益、结算与提现规则统一在本页说明。"]
 };
 type Modal="invite"|"member"|"role"|"permissions"|"storage"|"earning"|"payout"|"withdraw"|null;
 const menu=[["企业空间","/organization"],["成员管理","/organization/members"],["角色权限","/organization/roles"],["资源与额度","/organization/resources"],["操作记录","/organization/audit"],["推广与收益","/referrals"],["推广中心","/referrals/center"],["收益明细","/referrals/earnings"],["提现管理","/referrals/withdrawals"],["推广规则","/referrals/rules"]] as const;
