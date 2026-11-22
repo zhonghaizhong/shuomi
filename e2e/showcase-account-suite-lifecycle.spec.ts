@@ -147,6 +147,25 @@ test("Figma promotion center has separate link/code copy, four metrics, funnel a
  await recent.getByRole("button",{name:"查看全部收益"}).click();
  await expect(suite.getByRole("navigation",{name:"推广收益明细分页"})).toContainText("每页 10 条");
 });
+test("promotion rules match six Figma sections without presenting demo commissions as live policy",async({page})=>{
+ await page.goto(base+"/referrals/rules");
+ const suite=page.locator("[data-account-suite]");
+ const intro=suite.getByRole("region",{name:"推广规则生效说明"});
+ await expect(intro).toContainText("当前规则以平台实际生效版本为准");
+ await expect(intro).toContainText("佣金比例、结算周期及可推广业务由平台统一配置");
+ await expect(intro).toContainText("尚未连接正式规则配置");
+ const terms=suite.getByRole("region",{name:"推广规则条款"});
+ const expected=["推广关系如何建立","哪些订单产生收益","收益如何计算","结算与退款处理","提现规则","违规推广处理"];
+ for(const name of expected)await expect(terms.getByRole("heading",{name,exact:true})).toBeVisible();
+ await expect(terms.locator("article")).toHaveCount(6);
+ await expect(terms).toContainText("token 积分充值");
+ await expect(terms).toContainText("退款");
+ await expect(terms).not.toContainText("本次演示邀请 20 位新用户");
+ await page.setViewportSize({width:390,height:844});
+ await expect(terms).toBeVisible();
+ const width=await terms.evaluate(element=>element.getBoundingClientRect().width);
+ expect(width).toBeLessThan(390);
+});
 test("enterprise and referral subpages preserve approved dark/light surfaces and do not overflow",async({page})=>{
  for(const route of ["/organization","/organization/members","/organization/roles","/organization/resources","/organization/audit","/referrals","/referrals/center","/referrals/earnings","/referrals/withdrawals","/referrals/rules"]){
   await page.setViewportSize({width:1440,height:900});
