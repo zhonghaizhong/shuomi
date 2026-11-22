@@ -68,3 +68,27 @@ test("agent activation status is shared with my agents",async({page})=>{
  await page.getByRole("button",{name:"我的智能体"}).click();
  await expect(page.getByText("已启用智能体 1")).toBeVisible();
 });
+
+
+test("billing filters remain compact, expand on demand and preserve actions",async({page})=>{
+ await page.goto(base+"/plans/orders");
+ const filter=page.getByRole("region",{name:"账单筛选"});
+ await expect(filter.getByRole("textbox",{name:"搜索账单"})).toBeVisible();
+ const toggle=filter.getByRole("button",{name:"筛选条件"});
+ await expect(toggle).toHaveAttribute("aria-expanded","false");
+ await expect(filter.getByRole("combobox",{name:"全部时间"})).toHaveCount(0);
+ await expect(filter.getByRole("combobox",{name:"全部类型"})).toHaveCount(0);
+ await expect(filter.getByRole("combobox",{name:"全部状态"})).toHaveCount(0);
+ await toggle.click();
+ await expect(toggle).toHaveAttribute("aria-expanded","true");
+ await filter.getByRole("combobox",{name:"全部类型"}).selectOption({label:"店铺服务"});
+ await expect(toggle).toContainText("1");
+ await filter.getByRole("button",{name:"确定",exact:true}).click();
+ await expect(toggle).toHaveAttribute("aria-expanded","false");
+ await expect(filter).toContainText("已筛选 1 项");
+ await expect(filter.getByRole("button",{name:"店铺服务 ×"})).toBeVisible();
+ await filter.getByRole("button",{name:"重置"}).click();
+ await expect(filter).not.toContainText("已筛选 1 项");
+ await expect(toggle).toHaveText("筛选条件");
+ await expect(filter.getByRole("button",{name:"导出账单"})).toBeVisible();
+});
