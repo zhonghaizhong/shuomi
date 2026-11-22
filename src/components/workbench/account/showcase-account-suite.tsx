@@ -56,6 +56,25 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
  const activeMembers=state.members.filter(x=>x.status==="正常");
  const pendingMembers=state.members.filter(x=>x.status==="邀请中");
  const disabledMembers=state.members.filter(x=>x.status==="已停用");
+ const filteredMembers=state.members.filter(m=>{
+  const search=memberSearch.trim().toLocaleLowerCase();
+  return (memberStatus==="all"||m.status===memberStatus)
+   &&(!search||[m.name,m.email,m.phone||""].some(value=>value.toLocaleLowerCase().includes(search)));
+ });
+ const memberPageCount=Math.max(1,Math.ceil(filteredMembers.length/memberPageSize));
+ const currentMemberPage=Math.min(memberPage,memberPageCount);
+ const pagedMembers=filteredMembers.slice((currentMemberPage-1)*memberPageSize,currentMemberPage*memberPageSize);
+ const balance=availableEarnings(state);
+ const usedStorage=Object.values(state.allocations).reduce((sum,n)=>sum+(Number(n)||0),0);
+ const storageRemaining=Math.max(0,enterpriseTotals.storageGiB-usedStorage);
+  const storeQuota=enterpriseTotals.renewalPeriods;
+  const usedStores=Object.values(state.storeAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
+  const consumedStorePeriods=countConsumedStorePeriods(boundStores.all);
+  const usedPoints=Object.values(state.pointAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
+  const usedData=Object.values(state.dataAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
+  const storeRemaining=Math.max(0,storeQuota-usedStores-consumedStorePeriods);
+  const pointRemaining=Math.max(0,enterpriseTotals.aiPoints-usedPoints);
+  const dataRemaining=Math.max(0,enterpriseTotals.dataRows-usedData);
   const storeDialogStores=boundStores.all.filter(store=>!store.archived&&(storeListOwner==="admin"?(memberId==="admin"||store.ownerMemberId===memberId):store.ownerMemberId===storeListOwner));
   const storeDialogFiltered=storeDialogStores.filter(store=>[store.name,store.id,state.members.find(m=>m.id===store.ownerMemberId)?.name||""].join(" ").toLowerCase().includes(storeListSearch.trim().toLowerCase()));
   const renewableStore=boundStores.all.find(store=>store.id===renewStoreId&&!store.archived);
@@ -90,25 +109,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
    setNotice(renewableStore.name+" 已续费 "+periods+" 期，每期30天。");
    setRenewStoreId(null);setStoreDialogError("");
   };
- const filteredMembers=state.members.filter(m=>{
-  const search=memberSearch.trim().toLocaleLowerCase();
-  return (memberStatus==="all"||m.status===memberStatus)
-   &&(!search||[m.name,m.email,m.phone||""].some(value=>value.toLocaleLowerCase().includes(search)));
- });
- const memberPageCount=Math.max(1,Math.ceil(filteredMembers.length/memberPageSize));
- const currentMemberPage=Math.min(memberPage,memberPageCount);
- const pagedMembers=filteredMembers.slice((currentMemberPage-1)*memberPageSize,currentMemberPage*memberPageSize);
- const balance=availableEarnings(state);
- const usedStorage=Object.values(state.allocations).reduce((sum,n)=>sum+(Number(n)||0),0);
- const storageRemaining=Math.max(0,enterpriseTotals.storageGiB-usedStorage);
-  const storeQuota=enterpriseTotals.renewalPeriods;
-  const usedStores=Object.values(state.storeAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
-  const consumedStorePeriods=countConsumedStorePeriods(boundStores.all);
-  const usedPoints=Object.values(state.pointAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
-  const usedData=Object.values(state.dataAllocations).reduce((sum,n)=>sum+(Number(n)||0),0);
-  const storeRemaining=Math.max(0,storeQuota-usedStores-consumedStorePeriods);
-  const pointRemaining=Math.max(0,enterpriseTotals.aiPoints-usedPoints);
-  const dataRemaining=Math.max(0,enterpriseTotals.dataRows-usedData);
+
  const referralAudit=(next:SuiteState,category:string,message:string):SuiteState=>colleagueReferral?{...next,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:(primary.state.members.find(m=>m.id===memberId)?.name||memberId)+" · "+organizationName,category,message},...next.audit]}:addAudit(next,category,message);
  const change=(next:SuiteState,message:string)=>{if(commit(next)){setNotice(message);setError("");setModal(null);return true}setError("当前浏览器存储不可用，操作未保存。");return false};
  const close=()=>{setModal(null);setError("");setSelected("");setName("");setEmail("");setPhone("");setRole("子账号");setAmount("100");setStoreAmount("0");setPointAmount("0");setDataAmount("0");setAccount("");setPermissions([])};
