@@ -2,7 +2,7 @@ import {expect,test} from "@playwright/test";
 const root="/shuomi/#/workbench";
 // The legacy workflow tests intentionally begin with an empty tenant.
 test.beforeEach(async({page},info)=>{
- if(info.title.startsWith("organization-scoped")||info.title.startsWith("My Stores Figma optimized asset layout")||info.title.startsWith("expired 30-day store service")||info.title.startsWith("four colleague stores are bound")||info.title.startsWith("colleague service ledger survives"))return;
+ if(info.title.startsWith("organization-scoped")||info.title.startsWith("My Stores Figma optimized asset layout")||info.title.startsWith("expired 30-day store service")||info.title.startsWith("four colleague stores are bound")||info.title.startsWith("historically paid colleague demo stores survive"))return;
  await page.goto(root+"/stores");
  await page.evaluate(()=>{
   sessionStorage.setItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001","[]");
