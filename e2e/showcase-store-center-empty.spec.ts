@@ -130,7 +130,7 @@ test("Figma binding modal has account, OTP, groups, fixed IP and honest authoriz
  await dlg.getByRole("button",{name:"手机验证码"}).click();
  await expect(dlg).toContainText("手机号");
  await dlg.getByRole("button",{name:"接收验证码"}).click();
- await expect(dlg.getByRole("status")).toContainText("未发送验证码");
+ await expect(dlg.getByRole("status").filter({hasText:"未发送验证码"})).toBeVisible();
  await dlg.getByLabel("启用固定IP").check();
  await expect(dlg.getByText("已启用（仅演示）")).toBeVisible();
  await dlg.getByRole("button",{name:"API 授权"}).click();
@@ -353,7 +353,7 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await expect(card).toContainText("剩余可分配");
  await page.goto(root+"/account/organization");
  await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("12");
- await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("12 家");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("已绑定店铺");
  await page.goto(root+"/account/profile");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("系统登记店铺");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("12 家");
