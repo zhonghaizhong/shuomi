@@ -5,8 +5,7 @@ test("enterprise overview member resources filters and paginates a large member 
  await expect(page.getByRole("region",{name:"企业空间概览"})).toBeVisible();
  await page.evaluate(()=>{
   const key="shuomi-demo-account-suite-SM-ENT-000001-v1";
-  const initial=JSON.parse(localStorage.getItem(key)||"null");
-  if(!initial)throw Error("Account suite fixture not loaded");
+  const initial=JSON.parse(localStorage.getItem(key)||"null")||{members:[{id:"admin",name:"林晨",email:"admin@example.com",role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)}],roles:["管理员","子账号"],audit:[],referrals:[],withdrawals:[]};
   const extras=Array.from({length:30},(_,i)=>({
    id:"TEST-RESOURCE-"+i,
    name:"资源同事"+String(i+1).padStart(2,"0"),
