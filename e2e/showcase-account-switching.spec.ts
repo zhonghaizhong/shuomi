@@ -107,7 +107,8 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  });
  expect(scopedStorage.member.audit.some((event:{actor:string;category:string})=>event.actor.includes("模拟同事01")&&event.category==="提现管理")).toBeTruthy();
  expect(scopedStorage.member.withdrawals).toHaveLength(1);
- expect(scopedStorage.primary.withdrawals).toHaveLength(0);
+ // The administrator portfolio can remain at its pristine in-memory default until the first edit.
+ expect(scopedStorage.primary?.withdrawals ?? []).toHaveLength(0);
  await page.reload();
  await expect(own).toContainText("¥80.80");
  await expect(own).toContainText("C01-ONLY-PAYOUT");
