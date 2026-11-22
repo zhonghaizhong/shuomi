@@ -455,19 +455,20 @@ test("expired 30-day store service prevents synchronization until renewed",async
   item.serviceStartedAt="2026-09-01T00:00:00.000Z";
   item.serviceExpiresAt="2026-10-01T00:00:00.000Z";
   item.servicePeriods=1;
+   item.platformStoreId="SIM-SHEIN-ADMIN-01";
   sessionStorage.setItem(key,JSON.stringify(stores));
  });
  await page.reload();
  const card=page.locator('[data-store-center-showcase="stores"] article[class*="storeCard"]').filter({hasText:"管理员演示店铺01"});
  await expect(card).toContainText("服务已到期");
  await card.getByRole("button",{name:"立即同步"}).click();
- await expect(page.getByRole("dialog",{name:"立即同步"})).toContainText("请先购买并开通30天服务期");
+ await expect(page.getByRole("dialog",{name:"立即同步"})).toContainText("请先确认服务期");
  await page.getByRole("dialog",{name:"立即同步"}).getByRole("button",{name:"我知道了"}).click();
  await card.getByRole("button",{name:"进入店铺"}).click();
  await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"服务信息"}).click();
  await expect(page.getByRole("region",{name:"店铺详情页面"})).toContainText("已到期");
- // This scenario has no unassigned service periods, so activation must not succeed without a purchase.
- await page.getByRole("region",{name:"店铺详情页面"}).getByRole("button",{name:"开通30天"}).click();
+ // This scenario has no unassigned service periods, so renewal must not succeed without a purchase.
+ await page.getByRole("region",{name:"店铺详情页面"}).getByRole("button",{name:"续费30天"}).click();
  await expect(page.locator('[data-store-center-showcase="stores"]')).toContainText("当前可用店铺服务期数不足");
  await expect(page.getByRole("region",{name:"店铺详情页面"})).toContainText("已到期");
 });
