@@ -175,7 +175,8 @@ test("My Agents model and Enter Use dialogs are viewport-centered on desktop and
    const box=await modal.boundingBox();
    expect(box).not.toBeNull();
    expect(Math.abs(box!.x+box!.width/2-viewport.width/2),"horizontal center").toBeLessThanOrEqual(3);
-   expect(Math.abs(box!.y+box!.height/2-viewport.height/2),"vertical center").toBeLessThanOrEqual(3);
+   const centerOffset=box!.y+box!.height/2-viewport.height/2;
+   expect(Math.abs(centerOffset),"vertical center offset: "+centerOffset+"px; y="+box!.y+"; height="+box!.height+"; viewport="+viewport.height).toBeLessThanOrEqual(3);
    expect(box!.x).toBeGreaterThanOrEqual(8);
    expect(box!.y).toBeGreaterThanOrEqual(8);
    expect(box!.x+box!.width).toBeLessThanOrEqual(viewport.width-8);
