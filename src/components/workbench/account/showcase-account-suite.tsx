@@ -84,6 +84,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   const storeDate=(value?:string)=>value?new Date(value).toLocaleDateString("zh-CN"):"—";
   const storeServiceLabel=(store:{serviceExpiresAt?:string;servicePeriods?:number;platformIdStatus?:"已激活"|"获取失败"})=>{
    if(store.platformIdStatus==="获取失败")return "未激活";
+   if(store.platformIdStatus==="已激活"&&demoStoreServiceActive(store)&&Date.parse(store.serviceExpiresAt||"")-Date.now()>7*86400000)return "已激活";
    if(store.platformIdStatus==="已激活"&&!store.servicePeriods)return "已激活";
    if(!store.serviceExpiresAt||Date.parse(store.serviceExpiresAt)<=Date.now())return store.servicePeriods?"已到期":"未激活";
    return Date.parse(store.serviceExpiresAt)-Date.now()<=30*86400000?"即将到期":"使用中";
