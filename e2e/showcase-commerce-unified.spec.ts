@@ -130,7 +130,7 @@ test("enterprise operations and referral transactions have working entry points"
  await page.goto(root+"/account/organization");
  const suite=page.locator("[data-account-suite]");
  await expect(suite.getByRole("heading",{name:"企业资源",exact:true})).toBeVisible();
- await expect(suite.getByRole("heading",{name:"成员资源分配",exact:true})).toBeVisible();
+ await expect(suite.getByRole("heading",{name:"成员资源分配",exact:true})).toHaveCount(0);
  await suite.getByRole("navigation",{name:"企业空间业务导航"}).getByRole("button",{name:"资源与额度",exact:true}).click();
  await expect(page).toHaveURL(/account\/organization\/resources/);
  await expect(page.locator("[data-account-suite]").getByRole("heading",{name:"成员资源分配"})).toBeVisible();
@@ -275,8 +275,8 @@ test("plans zero-value balances and free 5 GiB storage agree across all pages",a
  await page.goto(root+"/plans/top-up");
  plans=page.locator('[data-commerce-unified="plans"]');
  await expect(plans).toContainText("¥8,161.00");
- await expect(plans).toContainText("累计充值 ¥10,000");
- await expect(plans).toContainText("累计支出 ¥1,839");
+ await expect(plans).toContainText("累计模拟充值 ¥10,000");
+ await expect(plans).toContainText("累计模拟支出 ¥1,839");
  await expect(plans).toContainText("钱包充值流水");
  await expect(plans).toContainText("模拟充值");
 });
@@ -317,78 +317,55 @@ test("plans premium cards, empty transactions and purchase controls remain usabl
 });
 
 
-test("plans draft workflow persists in top-up without creating actual orders",async({page})=>{
+test("plans simulated top-up immediately credits local wallet without actual payment",async({page})=>{
  await page.goto(root+"/plans/top-up");
  const topup=page.locator('[data-commerce-unified="plans"]');
  await expect(topup).toContainText("¥8,161.00");
  await topup.getByRole("spinbutton",{name:"充值金额（元）"}).fill("100");
  await topup.getByRole("button",{name:"账户充值",exact:true}).click();
- const review=page.getByRole("dialog",{name:"确认申请草稿"});
- await expect(review).toContainText("不会发起支付");
- await expect(review).toContainText("100 元");
+ const review=page.getByRole("dialog",{name:"确认模拟购买"});
+ await expect(review).toContainText("不会扣除真实资金");
  await review.getByRole("button",{name:"返回修改"}).click();
  await topup.getByRole("button",{name:"账户充值",exact:true}).click();
- await review.getByRole("button",{name:"保存申请草稿"}).click();
- await expect(topup).toContainText("已保存本地申请草稿");
- const drafts=topup.getByRole("region",{name:"本地充值申请草稿"});
- await expect(drafts).toContainText("账户充值");
- await expect(drafts).toContainText("待提交");
+ await review.getByRole("button",{name:"确认模拟充值"}).click();
+ await expect(topup).toContainText("¥8,261.00");
+ await expect(topup.getByRole("region",{name:"本地充值申请草稿"})).toHaveCount(0);
+ await expect(topup.getByRole("region",{name:"模拟钱包充值流水"})).toContainText("模拟充值成功");
  await page.reload();
- const stored=page.getByRole("region",{name:"本地充值申请草稿"});
- await expect(stored).toContainText("账户充值");
- await stored.getByRole("combobox",{name:"草稿状态筛选"}).selectOption("已取消");
- await expect(stored).toContainText("当前筛选下暂无申请草稿");
- await stored.getByRole("combobox",{name:"草稿状态筛选"}).selectOption("全部状态");
- await stored.getByRole("button",{name:"详情"}).click();
- const detail=page.getByRole("dialog",{name:"申请草稿详情"});
- await expect(detail).toContainText("未支付");
- await detail.getByRole("button",{name:"取消草稿"}).click();
- await expect(stored).toContainText("已取消");
- await stored.getByRole("button",{name:"详情"}).click();
- await page.getByRole("dialog",{name:"申请草稿详情"}).getByRole("button",{name:"移除本地记录"}).click();
- await expect(stored).toHaveCount(0);
- await page.goto(root+"/plans/orders");
- const billing=page.locator('[data-commerce-unified="plans"]');
- await expect(billing).toContainText("模拟已到账");
- await expect(billing).not.toContainText("待提交 · 未支付");
- await page.goto(root+"/plans/top-up");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("钱包充值流水");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("模拟购买");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("¥8,261.00");
 });
-test("plans store service and storage request review without granting paid resources",async({page})=>{
+test("store renewals and storage expansion directly debit demo wallet and credit entitlements",async({page})=>{
  await page.goto(root+"/plans/top-up");
  const area=page.locator('[data-commerce-unified="plans"]');
- const purchase=area.locator('[class*="planPurchaseCards"] article');
- await purchase.first().getByRole("spinbutton").fill("2");
- await purchase.first().getByRole("button",{name:"购买续费期数"}).click();
- let review=page.getByRole("dialog",{name:"确认申请草稿"});
+ const cards=area.locator('[class*="planPurchaseCards"] article');
+ await cards.first().getByRole("spinbutton").fill("2");
+ await cards.first().getByRole("button",{name:"购买续费期数"}).click();
+ let review=page.getByRole("dialog",{name:"确认模拟购买"});
  await expect(review).toContainText("¥336.00");
- await review.getByRole("button",{name:"保存申请草稿"}).click();
- await purchase.last().getByRole("spinbutton").fill("3");
- await purchase.last().getByRole("button",{name:"购买扩容"}).click();
- review=page.getByRole("dialog",{name:"确认申请草稿"});
+ await review.getByRole("button",{name:"确认购买并扣除演示余额"}).click();
+ await cards.last().getByRole("spinbutton").fill("3");
+ await cards.last().getByRole("button",{name:"购买扩容"}).click();
+ review=page.getByRole("dialog",{name:"确认模拟购买"});
  await expect(review).toContainText("¥3.00");
- await review.getByRole("button",{name:"保存申请草稿"}).click();
- const localDrafts=area.getByRole("region",{name:"本地充值申请草稿"});
- await expect(localDrafts).toContainText("店铺服务");
- await expect(localDrafts).toContainText("企业存储");
+ await review.getByRole("button",{name:"确认购买并扣除演示余额"}).click();
+ await expect(area).toContainText("¥7,822.00");
+ await expect(area.getByRole("region",{name:"本地充值申请草稿"})).toHaveCount(0);
  await page.goto(root+"/plans/entitlements");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("免费容量");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("5.00 GiB");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("已用容量");
+ const rights=page.locator('[data-commerce-unified="plans"]');
+ await expect(rights.locator('[class*="planEntitlementStoreSplit"]')).toContainText("4");
+ await expect(rights).toContainText("11.00 GiB");
+ await expect(rights).toContainText("6.00 GiB");
  await page.goto(root+"/plans/orders");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("模拟已到账");
+ await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("模拟购买成功");
  await page.getByRole("button",{name:"发票管理"}).click();
  await expect(page.getByRole("dialog",{name:"发票管理"})).toContainText("暂无可开票的真实已支付订单");
- await page.getByRole("dialog",{name:"发票管理"}).getByRole("button",{name:"关闭",exact:true}).click();
 });
-
 test("four simulated service purchases debit the 10k wallet and update entitlements without pretending real payment",async({page})=>{
  await page.goto(root+"/plans/top-up");
  const wallet=page.locator('[data-commerce-unified="plans"]');
  await expect(wallet).toContainText("¥8,161.00");
- await expect(wallet).toContainText("累计充值 ¥10,000");
- await expect(wallet).toContainText("累计支出 ¥1,839");
+ await expect(wallet).toContainText("累计模拟充值 ¥10,000");
+ await expect(wallet).toContainText("累计模拟支出 ¥1,839");
  const ledger=wallet.getByRole("region",{name:"模拟钱包充值流水"});
  await expect(ledger).toContainText("+¥10,000.00");
  for(const amount of ["-¥336.00","-¥1,000.00","-¥500.00","-¥3.00"])await expect(ledger).toContainText(amount);
@@ -442,8 +419,8 @@ test("user-defined conversion rates credit demo AI 10m points and data 50k rows 
  await expect(area).toContainText("10,000,000 积分");
  await expect(area).toContainText("50,000 条数据");
  await page.goto(root+"/account/organization/resources");
- await expect(page.locator('[data-account-suite]')).toContainText("10000000");
- await expect(page.locator('[data-account-suite]')).toContainText("50000");
+ await expect(page.locator('[data-account-suite]')).toContainText("10,000,000");
+ await expect(page.locator('[data-account-suite]')).toContainText("50,000");
 });
 
 test("plans entitlement cards show balanced two-value store renewal and three-row storage breakdown",async({page})=>{
