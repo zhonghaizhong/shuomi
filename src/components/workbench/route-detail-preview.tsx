@@ -7,6 +7,7 @@ import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit, plansDemoPurch
 import {readDemoPurchases,writeDemoPurchases,useDemoPurchases,type DemoPurchase} from "./showcase-purchases";
 import {useShowcaseSuite} from "./account/showcase-account-state";
 import {useDemoStoreBindings,countConsumedStorePeriods,demoStoreServiceActive} from "./store-binding-demo";
+import {getDemoMembership} from "../../../showcase/demo-identity";
 import { ChatNewPreview } from "./chat-new-preview";
 import { ShowcaseChatCollections } from "./showcase-chat-collections";
 import { PreferredApplicationPreview } from "./preferred-application-preview";
@@ -167,17 +168,18 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const [purchaseAmounts,setPurchaseAmounts]=useState<Record<string,string>>({});
   const {purchases:demoPurchases,setPurchases:setDemoPurchases,totals:demoTotals}=useDemoPurchases(organizationId);
   const {state:enterpriseSuite}=useShowcaseSuite();
-  const bindingSummary=useDemoStoreBindings(organizationId,memberId,memberId==="admin");
-  const memberVisibleStores=memberId==="admin"?bindingSummary.organizationCount:bindingSummary.visibleCount;
-  const assignedStorePeriods=Object.values(enterpriseSuite.storeAllocations).reduce((sum,value)=>sum+(Number(value)||0),0);
+  const organizationAdmin=memberId==="admin"||getDemoMembership({organizationId,memberId})?.role==="管理员";
+  const bindingSummary=useDemoStoreBindings(organizationId,memberId,organizationAdmin);
+  const memberVisibleStores=organizationAdmin?bindingSummary.organizationCount:bindingSummary.visibleCount;
+  const assignedStorePeriods=organizationId==="SM-ENT-000001"?Object.values(enterpriseSuite.storeAllocations).reduce((sum,value)=>sum+(Number(value)||0),0):0;
   const consumedStorePeriods=countConsumedStorePeriods(bindingSummary.all);
   const activeServiceCount=bindingSummary.visible.filter(store=>demoStoreServiceActive(store)).length;
   const availableStorePeriods=Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods-consumedStorePeriods);
   // Consumption is intentionally zero until the corresponding business modules are connected.
   const allocated=(items:Record<string,number>)=>Object.values(items).reduce((sum,value)=>sum+(Number(value)||0),0);
-  const assignedAi=allocated(enterpriseSuite.pointAllocations);
-  const assignedData=allocated(enterpriseSuite.dataAllocations);
-  const assignedStorage=allocated(enterpriseSuite.allocations);
+  const assignedAi=organizationId==="SM-ENT-000001"?allocated(enterpriseSuite.pointAllocations):0;
+  const assignedData=organizationId==="SM-ENT-000001"?allocated(enterpriseSuite.dataAllocations):0;
+  const assignedStorage=organizationId==="SM-ENT-000001"?allocated(enterpriseSuite.allocations):0;
   const availableAi=Math.max(0,demoTotals.aiPoints-assignedAi);
   const availableData=Math.max(0,demoTotals.dataRows-assignedData);
   const availableStorage=Math.max(0,demoTotals.storageGiB-assignedStorage);
