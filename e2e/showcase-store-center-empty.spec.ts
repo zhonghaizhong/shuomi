@@ -355,6 +355,12 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await page.goto(root+"/account/profile");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("系统登记店铺");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("12 家");
+ // The two pre-expired fixtures have already consumed the initial two service periods.
+ // Purchase two additional periods to verify a new binding and its subsequent renewal.
+ await page.goto(root+"/plans/top-up");
+ await page.getByRole("spinbutton",{name:"购买期数 · 店铺服务"}).fill("2");
+ await page.getByRole("button",{name:"购买续费期数"}).click();
+ await page.getByRole("dialog",{name:"确认模拟购买"}).getByRole("button",{name:"确认购买并扣除演示余额"}).click();
  await page.goto(root+"/stores");
  await stores.getByRole("button",{name:"绑定新店铺"}).first().click();
  const binding=page.getByRole("dialog",{name:"绑定新店铺"});
