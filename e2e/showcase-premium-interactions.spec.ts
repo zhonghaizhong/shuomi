@@ -94,11 +94,17 @@ test("My Stores filters work on local drafts and other account modules preserve 
  const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
  await dialog.getByRole("textbox",{name:"自定义名称"}).fill("筛选交互检查");
  await dialog.getByRole("button",{name:"确认绑定"}).click();
+ // The seeded tenant has more than one page of stores; find the newly bound
+ // store through the confirmed search rather than assuming it is on page 1.
+ await root.getByRole("textbox",{name:"搜索店铺"}).fill("筛选交互检查");
+ await root.getByRole("button",{name:"确认",exact:true}).click();
  await expect(root.getByText("筛选交互检查",{exact:true})).toBeVisible();
  await root.getByLabel("站点筛选").selectOption("加拿大站");
  await root.getByRole("button",{name:"确认",exact:true}).click();
  await expect(root.getByText("筛选交互检查",{exact:true})).toHaveCount(0);
  await root.getByRole("button",{name:"重置"}).click();
+ await root.getByRole("textbox",{name:"搜索店铺"}).fill("筛选交互检查");
+ await root.getByRole("button",{name:"确认",exact:true}).click();
  await expect(root.getByText("筛选交互检查",{exact:true})).toBeVisible();
  await page.goto(base+"/plans/orders");
  await expect(page.getByRole("heading",{level:1}).first()).toBeVisible();
