@@ -635,3 +635,5 @@
 .payoutActions{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:10px}
 .payoutActions button{min-width:104px;white-space:nowrap}
 @media(max-width:600px){.payoutActions{width:100%;justify-content:flex-start}.payoutActions button{flex:1}}
+
+.payoutDialog{width:min(680px,100%)}
