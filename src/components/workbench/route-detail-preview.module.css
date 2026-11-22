@@ -2201,3 +2201,38 @@
  .page[data-commerce-unified="plans"] .noticeBar>label{width:100%;justify-content:space-between}
  .page[data-commerce-unified="plans"] .noticeBar>label input{max-width:60%;width:170px}
 }
+
+
+/* Entitlements: compact enterprise resource entry after de-duplicating summary. */
+.page[data-commerce-unified="plans"] .planResourceLink {
+ display:flex;align-items:center;justify-content:space-between;gap:20px;
+ padding:20px 24px;min-width:0;
+ border:1px solid var(--plans-border);border-radius:8px;
+ background:var(--plans-bg);color:var(--plans-text);
+}
+.page[data-commerce-unified="plans"] .planResourceLink>div {min-width:0}
+.page[data-commerce-unified="plans"] .planResourceLink h2 {
+ margin:0 0 5px;color:var(--plans-text);font-size:19px;font-weight:650;
+}
+.page[data-commerce-unified="plans"] .planResourceLink p {
+ margin:0;font-size:14px;line-height:1.6;color:var(--plans-muted);
+}
+.page[data-commerce-unified="plans"] .planResourceLink button {
+ display:inline-flex;align-items:center;justify-content:center;
+ min-height:40px;flex:none;padding:8px 15px;
+ border:1px solid color-mix(in srgb,var(--plans-primary) 30%,var(--plans-border));
+ border-radius:6px;background:color-mix(in srgb,var(--plans-primary) 8%,var(--plans-bg));
+ color:var(--plans-primary);font-size:14px;font-weight:600;cursor:pointer;
+}
+.page[data-commerce-unified="plans"] .planResourceLink button:hover {
+ border-color:var(--plans-primary);
+ background:color-mix(in srgb,var(--plans-primary) 14%,var(--plans-bg));
+}
+.page[data-commerce-unified="plans"] .planResourceLink button:focus-visible {
+ outline:2px solid var(--plans-primary);outline-offset:2px;
+}
+@media(max-width:650px) {
+ .page[data-commerce-unified="plans"] .planResourceLink {
+  align-items:flex-start;flex-direction:column;padding:17px;
+ }
+}
