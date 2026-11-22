@@ -10,11 +10,11 @@ test.beforeEach(async({page},info)=>{
  });
  await page.reload();
 });
-test("organization-scoped simulated bindings show twelve to enterprise admin, six to colleague, and isolate other organizations",async({page})=>{
+test("organization-scoped simulated bindings show eleven to enterprise admin, five to colleague, and isolate other organizations",async({page})=>{
  await page.goto(root+"/stores");
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByText("店铺总数")).toBeVisible();
- await expect(area).toContainText("共 12 家店铺");
+ await expect(area).toContainText("共 11 家店铺");
  await expect(area).toContainText("管理员演示店铺01");
  await expect(area).toContainText("同事01演示店铺01");
  for(const site of ["美国站","加拿大站","英国站","德国站","法国站"])await expect(area).toContainText(site);
@@ -27,7 +27,7 @@ test("organization-scoped simulated bindings show twelve to enterprise admin, si
  await switcher.getByRole("button",{name:/模拟同事01/}).click();
  await switcher.getByRole("button",{name:"确认切换"}).click();
  await page.goto(root+"/stores");
- await expect(area).toContainText("共 6 家店铺");
+ await expect(area).toContainText("共 5 家店铺");
  await expect(area).toContainText("同事01演示店铺01");
  await expect(area).not.toContainText("管理员演示店铺01");
  switcher=await openSwitch();
@@ -49,7 +49,7 @@ test("organization-scoped simulated bindings show twelve to enterprise admin, si
  await switcher.getByRole("button",{name:"确认切换"}).click();
  await page.goto(root+"/stores");
  await expect(area).toContainText("同事01演示店铺01");
- await expect(area).toContainText("共 6 家店铺");
+ await expect(area).toContainText("共 5 家店铺");
  await expect(area).not.toContainText("企业B独立店铺");
 });
 
@@ -341,22 +341,22 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
 test("organization-scoped store bindings activate 30-day plans and synchronize with enterprise resources",async({page})=>{
  await page.goto(root+"/stores");
  const stores=page.locator('[data-store-center-showcase="stores"]');
- await expect(stores).toContainText("共 12 家");
+ await expect(stores).toContainText("共 11 家");
  await page.goto(root+"/account");
- await expect(page.locator('[class*="accountBottom"]')).toContainText("已绑定 12 家");
+ await expect(page.locator('[class*="accountBottom"]')).toContainText("已绑定 11 家");
  await page.goto(root+"/plans");
- await expect(page.locator('[class*="planOverview"]')).toContainText("本组织已绑定 12 家");
+ await expect(page.locator('[class*="planOverview"]')).toContainText("本组织已绑定 11 家");
  await expect(page.locator('[class*="planOverview"]')).toContainText("已使用 2 期");
  await page.goto(root+"/plans/entitlements");
  const card=page.locator('[class*="planEntitlementCards"]').getByRole("heading",{name:"店铺服务"}).locator("..");
- await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("12");
+ await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("11");
  await expect(card).toContainText("剩余可分配");
  await page.goto(root+"/account/organization");
- await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("12");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("11");
  await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("已绑定店铺");
  await page.goto(root+"/account/profile");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("系统登记店铺");
- await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("12 家");
+ await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("11 家");
  // The two pre-expired fixtures have already consumed the initial two service periods.
  // Purchase two additional periods to verify a new binding and its subsequent renewal.
  await page.goto(root+"/plans/top-up");
@@ -368,7 +368,7 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  const binding=page.getByRole("dialog",{name:"绑定新店铺"});
  await binding.getByRole("textbox",{name:"自定义名称"}).fill("联动校验管理员店铺");
  await binding.getByRole("button",{name:"确认绑定"}).click();
- await expect(stores).toContainText("共 13 家");
+ await expect(stores).toContainText("共 12 家");
  const service=await page.evaluate(()=>{
   const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
   const added=stores.find((s:{name:string})=>s.name==="联动校验管理员店铺");
@@ -376,7 +376,7 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  });
  expect(service).toEqual({periods:1,duration:30*24*60*60*1000});
  await page.goto(root+"/plans/entitlements");
- await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("13");
+ await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("12");
  await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：3 期");
  await page.goto(root+"/stores");
  const activeCard=stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"});
@@ -399,7 +399,7 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await expect(stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"})).toContainText("服务中");
 
  await page.goto(root+"/account/organization");
- await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("13已绑定店铺");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("12已绑定店铺");
 });
 
 
@@ -495,17 +495,14 @@ test("new binding is blocked without an available 30-day service period",async({
  await expect(area).toContainText("共 2 家店铺");
 });
 
-test("colleague's five seeded platform IDs include four simulated activations and one retryable failure",async({page})=>{
+test("four colleague stores are bound, and one failed platform-ID lookup is only a failed attempt",async({page})=>{
  await page.goto(root+"/account/organization/resources");
  const suite=page.locator("[data-account-suite]");
  await suite.getByRole("row").filter({hasText:"模拟同事01"}).getByRole("button",{name:"查看店铺"}).click();
  const dialog=page.getByRole("dialog",{name:"店铺详情"});
- for(let i=1;i<=4;i++)await expect(dialog.getByRole("row").filter({hasText:"同事01演示店铺"+String(i).padStart(2,"0")})).toContainText("已激活");
- const failed=dialog.getByRole("row").filter({hasText:"同事01演示店铺05"});
- await expect(failed).toContainText("未激活");
- await expect(dialog.getByRole("button",{name:"重试获取"})).toHaveCount(1);
- await failed.getByRole("button",{name:"重试获取"}).click();
- await expect(failed).toContainText("已激活");
+ for(let i=1;i<=4;i++)await expect(dialog.getByRole("row").filter({hasText:"同事01演示店铺"+String(i).padStart(2,"0")})).toBeVisible();
+ await expect(dialog.getByRole("row").filter({hasText:"同事01演示店铺05"})).toHaveCount(0);
+ await expect(dialog).toContainText("1 条模拟绑定失败记录");
  await expect(dialog.getByRole("button",{name:"重试获取"})).toHaveCount(0);
 });
 
