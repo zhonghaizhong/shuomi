@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import styles from "./route-detail-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit, plansDemoPurchases, plansDemoRates } from "./plans-demo-facts";
 import {readDemoPurchases,writeDemoPurchases,useDemoPurchases} from "./showcase-purchases";
+import {useShowcaseSuite} from "./account/showcase-account-state";
 import { ChatNewPreview } from "./chat-new-preview";
 import { ShowcaseChatCollections } from "./showcase-chat-collections";
 import { PreferredApplicationPreview } from "./preferred-application-preview";
@@ -155,6 +156,9 @@ function priceOf(type:string,quantity:number):number{
 function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filters, setFilter, resetFilters, router }: DetailState & { pathname: string; router: ReturnType<typeof useRouter> }) {
   const [purchaseAmounts,setPurchaseAmounts]=useState<Record<string,string>>({});
   const {purchases:demoPurchases,setPurchases:setDemoPurchases,totals:demoTotals}=useDemoPurchases();
+  const {state:enterpriseSuite}=useShowcaseSuite();
+  const assignedStorePeriods=Object.values(enterpriseSuite.storeAllocations).reduce((sum,value)=>sum+(Number(value)||0),0);
+  const availableStorePeriods=Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods);
   const purchaseSubmitting=useRef(false);
   const [requestReview,setRequestReview]=useState<{type:string;quantity:number;quote:string}|null>(null);
   const [walletAmount,setWalletAmount]=useState("");
@@ -229,9 +233,9 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
     <div className={styles.cardTitle}><h3>店铺服务</h3><span>可分配续费期数</span></div>
     <div className={styles.planEntitlementStoreSplit}>
      <div><small>已绑定店铺</small><strong>{plansDemoFacts.activeStores}<em>家</em></strong></div>
-     <div><small>待分配期数</small><strong>{demoTotals.renewalPeriods}<em>期</em></strong></div>
+     <div><small>待分配期数</small><strong>{availableStorePeriods}<em>期</em></strong></div>
     </div>
-    <div className={styles.planEntitlementNotes}><span>购买的续费期数进入企业资源池</span><span>绑定店铺后即可分配使用</span></div>
+    <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
    </article>
    <article className={styles.card} data-tone={1}>
     <div className={styles.cardTitle}><h3>token 积分</h3><span>模拟已到账</span></div>
