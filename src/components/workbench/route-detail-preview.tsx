@@ -322,20 +322,20 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
     <article className={styles.card} data-tone={1}>
       <div className={styles.cardTitle}><h3>token 积分</h3><span>剩余可分配</span></div>
       <strong className={styles.planEntitlementValue}>{availableAi.toLocaleString("zh-CN")}</strong>
-      <div className={styles.planEntitlementNotes}><span>兑换标准：¥1 = 10,000 积分</span><span>企业总额：{demoTotals.aiPoints.toLocaleString("zh-CN")} · 已分配：{assignedAi.toLocaleString("zh-CN")}</span><span>已使用：0 · 剩余：{availableAi.toLocaleString("zh-CN")}</span></div>
+      <div className={styles.planEntitlementNotes}><span>兑换标准：¥1 = 10,000 积分</span><span>{organizationAdmin?`企业总额：${demoTotals.aiPoints.toLocaleString("zh-CN")} · 已分配：${assignedAi.toLocaleString("zh-CN")}`:`本人已分配：${availableAi.toLocaleString("zh-CN")}`}</span><span>已使用：0 · 剩余：{availableAi.toLocaleString("zh-CN")}</span></div>
     </article>
     <article className={styles.card} data-tone={2}>
       <div className={styles.cardTitle}><h3>数据服务</h3><span>剩余可分配</span></div>
       <strong className={styles.planEntitlementValue}>{availableData.toLocaleString("zh-CN")} 条</strong>
-      <div className={styles.planEntitlementNotes}><span>兑换标准：¥0.01 / 条</span><span>企业总额：{demoTotals.dataRows.toLocaleString("zh-CN")} 条 · 已分配：{assignedData.toLocaleString("zh-CN")} 条</span><span>已使用：0 条 · 剩余：{availableData.toLocaleString("zh-CN")} 条</span></div>
+      <div className={styles.planEntitlementNotes}><span>兑换标准：¥0.01 / 条</span><span>{organizationAdmin?`企业总额：${demoTotals.dataRows.toLocaleString("zh-CN")} 条 · 已分配：${assignedData.toLocaleString("zh-CN")} 条`:`本人已分配：${availableData.toLocaleString("zh-CN")} 条`}</span><span>已使用：0 条 · 剩余：{availableData.toLocaleString("zh-CN")} 条</span></div>
     </article>
     <article className={styles.card} data-tone={3}>
       <div className={styles.cardTitle}><h3>企业存储</h3><span>剩余可分配</span></div>
       <strong className={styles.planEntitlementValue}>{availableStorage.toFixed(2)} GiB</strong>
       <div className={styles.planEntitlementStorageDetails}>
-        <div><span>免费容量</span><strong>5.00 GiB</strong></div>
-        <div><span>扩容容量</span><strong>{(3+extraFor("企业存储")).toFixed(2)} GiB</strong></div>
-        <div><span>已分配上限</span><strong>{assignedStorage.toFixed(2)} GiB</strong></div>
+        <div><span>免费容量</span><strong>{organizationAdmin?"5.00 GiB":"企业共享，不直接归属个人"}</strong></div>
+        <div><span>扩容容量</span><strong>{((organizationId==="SM-ENT-000001"?3:0)+extraFor("企业存储")).toFixed(2)} GiB</strong></div>
+        <div><span>已分配上限</span><strong>{(organizationAdmin?assignedStorage:availableStorage).toFixed(2)} GiB</strong></div>
         <div><span>实际已用</span><strong>{plansDemoFacts.storageUsedGiB.toFixed(2)} GiB</strong></div>
         <div><span>实际剩余空间</span><strong>{physicalStorageRemaining.toFixed(2)} GiB</strong></div>
       </div>
