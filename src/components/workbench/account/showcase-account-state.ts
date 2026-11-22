@@ -154,7 +154,7 @@ export const demoReferralSummary={
  totalWalletBalanceCny:demoReferredCustomers.reduce((sum,item)=>sum+item.walletBalanceCny,0),
  totalCommissionCny:demoReferralEarnings.reduce((sum,item)=>sum+item.amount,0)
 };
-export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rolePermissions:Record<string,string[]>;allocations:Record<string,number>;referredCustomers:ReferredCustomer[];trackedVisits:TrackedVisit[];referrals:ReferralItem[];withdrawals:Withdrawal[];payoutAccount:string;referralCode:string};
+export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rolePermissions:Record<string,string[]>;allocations:Record<string,number>;storeAllocations:Record<string,number>;pointAllocations:Record<string,number>;dataAllocations:Record<string,number>;referredCustomers:ReferredCustomer[];trackedVisits:TrackedVisit[];referrals:ReferralItem[];withdrawals:Withdrawal[];payoutAccount:string;referralCode:string};
 
 // Referral records belong to an individual demo member, never to the organization-wide account suite.
 // The administrator's existing fixture stays in SuiteState for backwards compatibility.
@@ -226,7 +226,7 @@ export function useMemberReferralPortfolio(memberId:string,organizationId:string
  return {portfolio,commitPortfolio};
 }
 const KEY="shuomi-demo-account-suite-SM-ENT-000001-v1";
-export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)},...demoColleagues],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},referredCustomers:demoReferredCustomers,trackedVisits:demoTrackedVisits,referrals:demoReferralEarnings,withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
+export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)},...demoColleagues],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},storeAllocations:{},pointAllocations:{},dataAllocations:{},referredCustomers:demoReferredCustomers,trackedVisits:demoTrackedVisits,referrals:demoReferralEarnings,withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
 const valid=(value:unknown):value is SuiteState=>!!value&&typeof value==="object"&&Array.isArray((value as SuiteState).members)&&Array.isArray((value as SuiteState).audit)&&Array.isArray((value as SuiteState).roles)&&Array.isArray((value as SuiteState).referrals)&&Array.isArray((value as SuiteState).withdrawals);
 export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(valid(v)){
   const obsolete=new Set<string>(retiredSampleRoles);
@@ -247,7 +247,7 @@ export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=
   const originalReferrals=Array.isArray(v.referrals)?v.referrals as ReferralItem[]:[];
   const referralIds=new Set(originalReferrals.map(item=>item.id));
   const referrals=[...originalReferrals,...demoReferralEarnings.filter(item=>!referralIds.has(item.id))];
-  return {...structuredClone(initialSuite),...v,roles,rolePermissions,members,referredCustomers,trackedVisits,referrals,allocations:{...(v.allocations||{})}};
+  return {...structuredClone(initialSuite),...v,roles,rolePermissions,members,referredCustomers,trackedVisits,referrals,allocations:{...(v.allocations||{})},storeAllocations:{...(v.storeAllocations||{})},pointAllocations:{...(v.pointAllocations||{})},dataAllocations:{...(v.dataAllocations||{})}};
  }}catch{}return structuredClone(initialSuite)}
 export function writeSuite(v:SuiteState):boolean{resetLegacyAccountDemoOnce();try{localStorage.setItem(KEY,JSON.stringify(v));window.dispatchEvent(new Event("shuomi-suite-updated"));return true}catch{return false}}
 export function addAudit(state:SuiteState,category:string,message:string):SuiteState{return {...state,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:tenant.admin,category,message},...state.audit]}}
