@@ -8,6 +8,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+
+# Supersede obsolete validation runs when newer commits arrive on the same branch.
+# GitHub Pages deployment uses its own non-cancelling concurrency group.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   figma-home:
     runs-on: ubuntu-latest
@@ -27,7 +33,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
       - run: pnpm run build:pages
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Restore cached Chromium
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Chromium system libraries
+        run: pnpm exec playwright install-deps chromium
+      - name: Install Chromium browser if not cached
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium
       - run: pnpm exec playwright test --config playwright.tool-home.config.ts
 
       - name: Save rendered tool market screenshots
