@@ -34,7 +34,7 @@ function PermissionBranch({node,depth,grants,onChange}:{node:ConsoleNavNode;dept
 export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const router=useRouter();const {state,commit}=useShowcaseSuite();
  const suffix=pathname.slice(root.length)||"/organization";const [title,desc]=screens[suffix]||screens["/organization"];
- const [modal,setModal]=useState<Modal>(null);const [permissions,setPermissions]=useState<string[]>([]);const [name,setName]=useState("");const [email,setEmail]=useState("");const [role,setRole]=useState("商品运营");const [selected,setSelected]=useState("");const [amount,setAmount]=useState("100");const [account,setAccount]=useState("");const [query,setQuery]=useState("");const [applied,setApplied]=useState("");const [notice,setNotice]=useState("");const [error,setError]=useState("");
+ const [modal,setModal]=useState<Modal>(null);const [permissions,setPermissions]=useState<string[]>([]);const [name,setName]=useState("");const [email,setEmail]=useState("");const [role,setRole]=useState("子账号");const [selected,setSelected]=useState("");const [amount,setAmount]=useState("100");const [account,setAccount]=useState("");const [query,setQuery]=useState("");const [applied,setApplied]=useState("");const [notice,setNotice]=useState("");const [error,setError]=useState("");
  const enterprise=suffix.startsWith("/organization"),overview=suffix==="/organization",referral=suffix.startsWith("/referrals");
  const sectionMenu=enterprise?menu.slice(0,5):menu.slice(5);
  useEffect(()=>{if(!modal)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setModal(null)};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[modal]);
@@ -44,7 +44,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const usedStorage=Object.values(state.allocations).reduce((sum,n)=>sum+(Number(n)||0),0);
  const storageRemaining=Math.max(0,tenant.storageGiB-usedStorage);
  const change=(next:SuiteState,message:string)=>{if(commit(next)){setNotice(message);setError("");setModal(null);return true}setError("当前浏览器存储不可用，操作未保存。");return false};
- const close=()=>{setModal(null);setError("");setSelected("");setName("");setEmail("");setRole("商品运营");setAmount("100");setAccount("");setPermissions([])};
+ const close=()=>{setModal(null);setError("");setSelected("");setName("");setEmail("");setRole("子账号");setAmount("100");setAccount("");setPermissions([])};
  const open=(target:Modal,id="")=>{close();setModal(target);setSelected(id);if(target==="member"){const m=state.members.find(x=>x.id===id);if(m)setRole(m.role)}if(target==="permissions")setPermissions(normalizeRolePermissions(state.rolePermissions[id]||[]));if(target==="storage")setAmount(String(state.allocations[id]||0))};
  const addMember=()=>{const value=email.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)){setError("请输入有效的成员邮箱地址。");return}if(state.members.some(m=>m.email.toLowerCase()===value)){setError("该邮箱已经属于当前企业。");return}if(!name.trim()){setError("请输入成员姓名。");return}
   const member:Member={id:crypto.randomUUID(),name:name.trim(),email:value,role,status:"正常",joined:Date.now()};
