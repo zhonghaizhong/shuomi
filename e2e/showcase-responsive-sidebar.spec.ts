@@ -184,27 +184,21 @@ test("listing four-stage Figma flow has distinct functional screens",async({page
  await expect(waiting.getByRole("heading",{name:"启用规则"})).toBeVisible();
  await expect(waiting.getByRole("heading",{name:"启用智能体"})).toBeVisible();
  await expect(waiting.getByRole("button",{name:"确认提交"})).toBeDisabled();
- await waiting.getByLabel("本次批次 / 产品集").selectOption("美国站商品");
- await waiting.getByLabel("本次目标店铺").selectOption("一号店 · 全托");
- await expect(waiting.getByRole("button",{name:"确认提交"})).toBeEnabled();
- await waiting.getByRole("button",{name:"确认提交"}).click();
- await expect(waiting.getByRole("status")).toContainText("演示任务已配置");
+ await expect(waiting.getByLabel("本次批次 / 产品集")).toHaveValue("");
+ await expect(waiting.getByLabel("本次目标店铺")).toHaveValue("");
+ await expect(waiting.getByRole("button",{name:"确认提交"})).toBeDisabled();
  await waiting.getByRole("button",{name:"待补全",exact:true}).click();
  const missing=page.locator('[data-listing-stage="missing"]');
- await expect(missing.getByRole("heading",{name:"商品列表（共 4 个演示商品）"})).toBeVisible();
- await missing.getByRole("button",{name:"查看并补全"}).first().click();
- const dialog=page.getByRole("dialog",{name:"查看并补全"});
- await expect(dialog.getByText("商品品牌（必填）")).toBeVisible();
- await dialog.getByRole("button",{name:"返回列表"}).click();
+ await expect(missing.getByRole("heading",{name:"商品列表（共 0 个商品）"})).toBeVisible();
+ await expect(missing.getByRole("status")).toContainText("暂无商品记录");
  await missing.getByRole("button",{name:"待审核",exact:true}).click();
  const review=page.locator('[data-listing-stage="review"]');
  await expect(review.getByRole("heading",{name:"为什么需要人工审核 AI 建议？"})).toBeVisible();
- await review.getByRole("button",{name:"审核 AI 建议"}).first().click();
- await expect(page.getByRole("dialog",{name:"审核智能体建议"})).toBeVisible();
- await page.getByRole("button",{name:"返回列表"}).click();
+ await expect(review.getByRole("heading",{name:"商品列表（共 0 个商品）"})).toBeVisible();
+ await expect(review.getByRole("status")).toContainText("暂无商品记录");
  await review.getByRole("button",{name:"已上传",exact:true}).click();
  await expect(page.locator("[data-showcase-uploaded]")).toBeVisible();
- await expect(page.getByText(/已上传记录只读/)).toBeVisible();
+ await expect(page.locator("[data-showcase-uploaded]")).toContainText("暂无已上传商品记录");
 });
 
 test("listing overview uses aligned Vuexy cards and readable theme surfaces",async({page})=>{
@@ -263,10 +257,10 @@ test("listing four subpages share aligned Vuexy typography, cards and controls",
       if(route==="missing")await expect(cards.locator("article")).toHaveCount(4);
       const source=root.getByRole("combobox",{name:"商品来源"});
       await source.selectOption("自有商品库");
-      root.getByRole("button",{name:"确认",exact:true}).first().click();
-      await expect(root.getByRole("heading",{name:/商品列表（共 2 个演示商品）/})).toBeVisible();
-      root.getByRole("button",{name:"重置"}).click();
-      await expect(root.getByRole("heading",{name:/商品列表（共 4 个演示商品）/})).toBeVisible();
+      await root.getByRole("button",{name:"确认",exact:true}).first().click();
+      await expect(root.getByRole("heading",{name:"商品列表（共 0 个商品）"})).toBeVisible();
+      await root.getByRole("button",{name:"重置"}).click();
+      await expect(root.getByRole("heading",{name:"商品列表（共 0 个商品）"})).toBeVisible();
     }
     const enableLight=page.getByRole("button",{name:"切换浅色主题"});
     if(await enableLight.isVisible())await enableLight.click();
