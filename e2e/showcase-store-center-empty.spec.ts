@@ -363,6 +363,22 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await page.goto(root+"/plans/entitlements");
  await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("11");
  await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：1 期");
+ await page.goto(root+"/stores");
+ const activeCard=stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"});
+ await expect(activeCard).toContainText("服务中");
+ await activeCard.getByRole("button",{name:"续费30天"}).click();
+ const renewed=await page.evaluate(()=>{
+  const raw=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
+  const store=raw.find((s:{name:string})=>s.name==="联动校验管理员店铺");
+  return store&&{periods:store.servicePeriods,duration:Date.parse(store.serviceExpiresAt)-Date.parse(store.serviceStartedAt)};
+ });
+ expect(renewed).toEqual({periods:2,duration:60*24*60*60*1000});
+ await expect(activeCard).toContainText("服务中");
+ await page.goto(root+"/plans/entitlements");
+ await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：2 期");
+ await page.goto(root+"/stores");
+ await expect(stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"})).toContainText("服务中");
+
  await page.goto(root+"/account/organization");
  await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("待授权 11 家");
 });
