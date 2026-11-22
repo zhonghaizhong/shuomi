@@ -609,3 +609,20 @@ html.light body {background:#f8f7fa;color:#444050;}
 .light .showcase-identity-cancel{color:#5b5669;border-color:#d8d4e2}
 @media(max-width:550px){.showcase-identity-overlay{padding:10px}.showcase-identity-head{padding:17px 17px 12px}.showcase-identity-current{margin:0 17px 14px}.showcase-identity-tabs{margin:0 17px}.showcase-identity-body{padding:16px 17px}.showcase-identity-footer{padding:13px 17px;flex-wrap:wrap}.showcase-identity-footer p{max-width:none}.showcase-identity-footer>div{width:100%;justify-content:flex-end}}
 @media(prefers-reduced-motion:reduce){.showcase-identity-option{transition:none}}
+
+
+/* Search inside the staged account/organization switch dialog. */
+.showcase-identity-search{display:flex;align-items:center;gap:9px;min-height:42px;width:100%;padding:0 12px;border:1px solid #585b75;border-radius:7px;background:#393d55;color:#bcb9cd;transition:border-color .15s}
+.showcase-identity-search:focus-within{border-color:#958aff;box-shadow:0 0 0 2px #7367f026}
+.showcase-identity-search>svg{flex:none}
+.showcase-identity-search input{flex:1;min-width:0;height:40px;border:0;outline:none;background:transparent;color:#f0edff;font:inherit;font-size:13px}
+.showcase-identity-search input::placeholder{color:#aaa8be;opacity:1}
+.showcase-identity-search input::-webkit-search-cancel-button{display:none}
+.showcase-identity-search button{display:grid;place-items:center;flex:none;width:27px;height:27px;padding:0;background:transparent;color:#bcb9cd;border:0;border-radius:5px;cursor:pointer}
+.showcase-identity-search button:hover{background:#7367f026;color:#e5e0ff}
+.light .showcase-identity-search{background:#fff;border-color:#dbdade;color:#6f6b7d}
+.light .showcase-identity-search:focus-within{border-color:#7367f0;box-shadow:0 0 0 2px #7367f01c}
+.light .showcase-identity-search input{color:#444050}
+.light .showcase-identity-search input::placeholder{color:#777182}
+.light .showcase-identity-search button{color:#6f6b7d}
+.light .showcase-identity-search button:hover{background:#f1efff;color:#6556cc}
