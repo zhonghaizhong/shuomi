@@ -80,7 +80,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   const storeDialogFiltered=storeDialogStores.filter(store=>[store.name,store.id,state.members.find(m=>m.id===store.ownerMemberId)?.name||""].join(" ").toLowerCase().includes(storeListSearch.trim().toLowerCase()));
   const renewableStore=boundStores.all.find(store=>store.id===renewStoreId&&!store.archived);
   const renewableOwner=renewableStore?.ownerMemberId||"";
-  const renewAvailable=renewableOwner==="admin"?storeRemaining:Number(state.storeAllocations[renewableOwner]||0);
+  const renewAvailable=memberId==="admin"?storeRemaining:Number(state.storeAllocations[memberId]||0);
   const storeDate=(value?:string)=>value?new Date(value).toLocaleDateString("zh-CN"):"—";
   const storeServiceLabel=(store:{serviceExpiresAt?:string;servicePeriods?:number})=>{
    if(!store.serviceExpiresAt||Date.parse(store.serviceExpiresAt)<=Date.now())return store.servicePeriods?"已到期":"未激活";
@@ -93,7 +93,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
    if(!renewableStore||!Number.isSafeInteger(periods)||periods<1||periods>120){setStoreDialogError("请输入1至120之间的有效续费期数。");return;}
    if(memberId!=="admin"&&renewableOwner!==memberId){setStoreDialogError("只能续费本人名下的店铺。");return;}
    if(organizationId!==tenant.id){setStoreDialogError("其他组织的续费额度尚未接入，请勿跨组织扣减。");return;}
-   if(periods>renewAvailable){setStoreDialogError("续费期数不足，请先购买或由管理员分配续费期数。");return;}
+   if(periods>renewAvailable){setStoreDialogError("续费期数不足，请先购买企业资源或由管理员分配本人续费期数。");return;}
    const next=boundStores.all.map(store=>{
     if(store.id!==renewableStore.id)return store;
     let updated=store;
@@ -101,16 +101,16 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
     return updated;
    });
    if(!saveDemoStoreBindings(organizationId,next)){setStoreDialogError("店铺服务保存失败，续费期数未扣除。");return;}
-   if(renewableOwner!=="admin"){
-    const allocated=state.storeAllocations[renewableOwner]||0;
-    if(!primary.commit({...primary.state,storeAllocations:{...primary.state.storeAllocations,[renewableOwner]:allocated-periods}})){
+   if(memberId!=="admin"){
+    const allocated=state.storeAllocations[memberId]||0;
+    if(!primary.commit({...primary.state,storeAllocations:{...primary.state.storeAllocations,[memberId]:allocated-periods}})){
      if(!saveDemoStoreBindings(organizationId,boundStores.all)){
       setStoreDialogError("成员额度扣减失败，店铺回滚也失败，请停止操作并检查记录。");return;
      }
      setStoreDialogError("成员额度扣减失败，店铺续费已回滚，期数未扣除。");return;
     }
    }
-   setNotice(renewableStore.name+" 已续费 "+periods+" 期，每期30天。");
+   setNotice(renewableStore.name+" 已续费 "+periods+" 期，每期30天；"+(memberId==="admin"?"已使用企业资源池续费期数。":"已扣除本人已分配续费期数。"));
    setRenewStoreId(null);setStoreDialogError("");
   };
 
@@ -353,14 +353,14 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
     <p className={s.dialogHint}>每家店铺独立计算有效期，列表过长可在弹窗内滚动。即将到期及已到期店铺可续费。</p>
     <input aria-label="搜索店铺名称" placeholder={storeListOwner==="admin"?"搜索店铺名称 / 归属成员":"搜索店铺名称"} value={storeListSearch} onChange={e=>setStoreListSearch(e.target.value)}/>
     <div className={s.storeListScroll}><table><thead><tr><th>店铺</th><th>状态</th><th>绑定时间</th><th>到期时间</th>{storeListOwner==="admin"&&<th>归属成员</th>}<th>操作</th></tr></thead><tbody>{storeDialogFiltered.map(store=>{const status=storeServiceLabel(store);return <tr key={store.id}><td><strong>{store.name}</strong></td><td><span className={status==="已到期"?s.storeExpired:status==="即将到期"?s.storeSoon:s.storeActive}>{status}</span></td><td>{storeDate(store.serviceStartedAt||store.createdAt)}</td><td>{storeDate(store.serviceExpiresAt)}</td>{storeListOwner==="admin"&&<td>{state.members.find(m=>m.id===store.ownerMemberId)?.name||store.owner||"—"}</td>}<td>{status==="使用中"?"—":<button type="button" className={s.storeViewButton} onClick={()=>{setRenewStoreId(store.id);setRenewCount("1");setStoreDialogError("")}}>{status==="未激活"?"开通":"续费"}</button>}</td></tr>})}</tbody></table>{!storeDialogFiltered.length&&<p className={s.dialogHint}>暂无符合条件的店铺。</p>}</div>
-    <p className={s.dialogHint}>{storeListOwner==="admin"?"管理员可查看企业全部店铺；代续费扣除店铺归属成员的续费期数。":"成员可自行续费；管理员代续费也扣除该成员的续费期数。"}</p>
+    <p className={s.dialogHint}>{storeListOwner==="admin"?"管理员可查看企业全部店铺；续费统一使用企业资源池剩余期数，不扣成员已分配余额。":"成员自行续费扣本人已分配期数；管理员代续费使用企业资源池，不扣成员余额。"}</p>
     <footer><button type="button" onClick={closeStoreDialogs}>关闭</button></footer>
   </section></div>}
   {renewableStore&&storeListOwner&&<div className={s.storeRenewOverlay} onMouseDown={e=>{if(e.target===e.currentTarget){setRenewStoreId(null);setStoreDialogError("")}}}><section className={s.storeRenewDialog} role="dialog" aria-modal="true" aria-label="店铺续费">
     <header><div><h2>店铺续费</h2><p>{(state.members.find(m=>m.id===renewableOwner)?.name||"管理员")+" · "+renewableStore.name}</p></div><button type="button" aria-label="关闭续费弹窗" onClick={()=>{setRenewStoreId(null);setStoreDialogError("")}}>×</button></header>
     <p className={s.dialogHint}>当前到期时间：<strong>{storeDate(renewableStore.serviceExpiresAt)}</strong>。{demoStoreServiceActive(renewableStore)?"续费只延长当前店铺有效期。":"已到期店铺续费成功后恢复使用，不新增店铺名额。"}</p>
     <label className={s.storeRenewField}>续费周期 <small>30天 / 期</small><input aria-label="续费周期" type="number" min="1" max="120" step="1" value={renewCount} onChange={e=>{setRenewCount(e.target.value);setStoreDialogError("")}} placeholder="请输入续费周期"/></label>
-    <div className={s.storeRenewSummary}><span>可用续费期数：{renewAvailable} 期</span><span>续费后到期：{Number.isSafeInteger(Number(renewCount))&&Number(renewCount)>0&&Number(renewCount)<=120?new Date(Math.max(Date.now(),Date.parse(renewableStore.serviceExpiresAt||"")||0)+Number(renewCount)*30*86400000).toLocaleDateString("zh-CN"):"—"}</span></div>
+    <div className={s.storeRenewSummary}><span>{memberId==="admin"?"企业资源池可用":"本人已分配可用"}续费期数：{renewAvailable} 期</span><span>续费后到期：{Number.isSafeInteger(Number(renewCount))&&Number(renewCount)>0&&Number(renewCount)<=120?new Date(Math.max(Date.now(),Date.parse(renewableStore.serviceExpiresAt||"")||0)+Number(renewCount)*30*86400000).toLocaleDateString("zh-CN"):"—"}</span></div>
     {storeDialogError&&<p className={s.error} role="alert">{storeDialogError}</p>}
     <footer><button type="button" onClick={()=>{setRenewStoreId(null);setStoreDialogError("")}}>取消</button><button type="button" className={s.primary} onClick={renewStore}>确认续费</button></footer>
   </section></div>}
