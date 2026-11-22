@@ -1667,10 +1667,10 @@
   padding:16px 15px;min-height:156px;display:flex;flex-direction:column;
   box-shadow:inset 2px 0 0 #7367f0;
 }
-.page[data-commerce-unified] .planEntrances article[data-step="1"]{box-shadow:inset 2px 0 0 #4fd1bd}
-.page[data-commerce-unified] .planEntrances article[data-step="2"]{box-shadow:inset 2px 0 0 #ad8aff}
-.page[data-commerce-unified] .planEntrances article[data-step="3"]{box-shadow:inset 2px 0 0 #f4bf64}
-.page[data-commerce-unified] .planEntrances article[data-step="4"]{box-shadow:inset 2px 0 0 #f38eb3}
+
+
+
+
 .page[data-commerce-unified] .planEntrances article :is(p,b){color:#c3c1d3;font-size:13px;line-height:1.55}
 .page[data-commerce-unified] .planBottom{grid-template-columns:minmax(0,1.55fr) minmax(320px,.85fr)}
 .page[data-commerce-unified] .usageBar>div{gap:10px;align-items:center}
@@ -3826,6 +3826,7 @@
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:hover,
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:focus-within{
  border:1px solid var(--plans-line);
+ box-shadow:none;
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard::before{
  content:none;display:none;
