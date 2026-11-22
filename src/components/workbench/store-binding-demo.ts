@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
+import {readSuite,writeSuite} from "./account/showcase-account-state";
 
 // Shared showcase-only store register. Binding is not platform authorization or a paid subscription.
 export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;platformStoreId?:string;platformIdStatus?:"已激活"|"获取失败";archived?:boolean};
@@ -8,8 +9,6 @@ const eventName="shuomi-demo-store-bindings-changed";
 const mainTenant="SM-ENT-000001";
 const colleague="SIM-COLLEAGUE-01";
 const sites=["美国站","加拿大站","英国站","德国站","法国站"];
-const fixtureStart="2026-11-22T07:19:00.000Z";
-const fixtureEnd="2026-12-22T07:19:00.000Z";
 const expiredDemoStores:DemoStoreBinding[]=[
  {id:"SIM-ADMIN-EXPIRED-01",name:"管理员已到期测试店铺",platform:"SHEIN",region:"美国站",type:"全托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"管理员",ownerMemberId:"admin",serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1,platformStoreId:"SIM-SHEIN-ADMIN-EXPIRED-01"},
  {id:"SIM-C01-EXPIRED-01",name:"同事01已到期测试店铺",platform:"SHEIN",region:"英国站",type:"半托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"模拟同事01",ownerMemberId:colleague,serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1,platformStoreId:"SIM-SHEIN-C01-EXPIRED-01"}
@@ -37,7 +36,7 @@ function seeds(organizationId:string):DemoStoreBinding[]{
   platform:"SHEIN" as const,region,type:["全托管","半托管","自营","全托管","半托管"][index],
   status:"已绑定" as const,createdAt:"2026-11-22 15:19",group:"未分组",
   owner:memberId==="admin"?"管理员":"模拟同事01",ownerMemberId:memberId,
-  ...(memberId===colleague?index===4?{platformIdStatus:"获取失败" as const,archived:true}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index+1).padStart(2,"0"),serviceStartedAt:fixtureStart,serviceExpiresAt:fixtureEnd,servicePeriods:1}:{})
+  ...(memberId===colleague?index===4?{platformIdStatus:"获取失败" as const,archived:true}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index+1).padStart(2,"0")}:{})
  }))),...expiredDemoStores];
 }
 export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
@@ -55,11 +54,10 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
    if(store.id==="SIM-C01-EXPIRED-01"&&!store.platformStoreId)return {...store,platformStoreId:"SIM-SHEIN-C01-EXPIRED-01"};
    // A failed ID lookup is a failed binding attempt, never an active bound store.
    if(store.id==="SIM-C01-05"&&(!store.servicePeriods||store.platformIdStatus==="获取失败"))return {...store,platformIdStatus:"获取失败" as const,platformStoreId:undefined,archived:true};
-   if(/^SIM-C01-0[1-4]$/.test(store.id)&&store.platformStoreId&&!Number(store.servicePeriods))return {...store,serviceStartedAt:fixtureStart,serviceExpiresAt:fixtureEnd,servicePeriods:1};
    const match=/^SIM-C01-0([1-5])$/.exec(store.id);
    if(!match||store.platformIdStatus)return store;
    const index=Number(match[1]);
-   return index===5?{...store,platformIdStatus:"获取失败" as const,archived:true}:{...store,platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index).padStart(2,"0"),serviceStartedAt:fixtureStart,serviceExpiresAt:fixtureEnd,servicePeriods:1};
+   return index===5?{...store,platformIdStatus:"获取失败" as const,archived:true}:{...store,platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index).padStart(2,"0")};
   }):valid;
   // One-time additive migration for existing browser sessions; never recreate stores after a user removes them.
   const migrationKey=demoStoreKey(organizationId)+"-expired-fixture-v1";
@@ -87,10 +85,65 @@ export function saveDemoStoreBindings(organizationId:string,items:DemoStoreBindi
  * 30-day service. Deduct exactly one allocated period per unbilled fixture.
  * Platform identification remains independent from a real provider API.
  */
+const colleagueServiceLedgerKey="shuomi-showcase-colleague-service-ledger-v1";
+type ColleagueServiceRecord={id:string;serviceStartedAt:string;serviceExpiresAt:string;servicePeriods:number};
+function readColleagueServiceLedger():ColleagueServiceRecord[]|null{
+ try{
+  const raw=localStorage.getItem(colleagueServiceLedgerKey);
+  if(!raw)return null;
+  const value:unknown=JSON.parse(raw);
+  if(!Array.isArray(value)||value.length!==4)return null;
+  const rows=value as ColleagueServiceRecord[];
+  return rows.every(row=>/^SIM-C01-0[1-4]$/.test(row.id)&&Number.isSafeInteger(row.servicePeriods)&&row.servicePeriods>0&&Number.isFinite(Date.parse(row.serviceStartedAt))&&Number.isFinite(Date.parse(row.serviceExpiresAt)))?rows:null;
+ }catch{return null;}
+}
+/**
+ * Reconcile the four pre-seeded, successful demo bindings once.
+ * Store fixtures live in sessionStorage and may be regenerated on reload.
+ * Persist the charged service ledger separately in localStorage: regeneration
+ * restores the original service dates WITHOUT charging four more periods.
+ */
+export function reconcileColleagueDemoStorePeriods(organizationId:string):boolean{
+ if(organizationId!==mainTenant||typeof window==="undefined")return false;
+ const before=readDemoStoreBindings(organizationId);
+ const missing=before.filter(store=>/^SIM-C01-0[1-4]$/.test(store.id)&&store.ownerMemberId===colleague&&store.platformIdStatus==="已激活"&&Boolean(store.platformStoreId)&&!Number(store.servicePeriods));
+ if(!missing.length)return false;
+ const ledger=readColleagueServiceLedger();
+ if(ledger){
+  const byId=new Map(ledger.map(row=>[row.id,row]));
+  const restored=before.map(store=>{
+   const recorded=byId.get(store.id);
+   return recorded&&!Number(store.servicePeriods)?{...store,...recorded}:store;
+  });
+  return saveDemoStoreBindings(organizationId,restored);
+ }
+ const suite=readSuite();
+ const allocated=Number(suite.storeAllocations[colleague]||0);
+ if(!Number.isSafeInteger(allocated)||allocated<missing.length)return false;
+ const ids=new Set(missing.map(store=>store.id));
+ const after=before.map(store=>ids.has(store.id)?startDemoStoreService(store):store);
+ const rows=after.filter(store=>/^SIM-C01-0[1-4]$/.test(store.id)&&store.serviceStartedAt&&store.serviceExpiresAt).map(store=>({
+  id:store.id,serviceStartedAt:store.serviceStartedAt!,serviceExpiresAt:store.serviceExpiresAt!,servicePeriods:store.servicePeriods!
+ }));
+ if(rows.length!==4)return false;
+ if(!saveDemoStoreBindings(organizationId,after))return false;
+ if(!writeSuite({...suite,storeAllocations:{...suite.storeAllocations,[colleague]:allocated-missing.length}})){
+  saveDemoStoreBindings(organizationId,before);
+  return false;
+ }
+ try{
+  localStorage.setItem(colleagueServiceLedgerKey,JSON.stringify(rows));
+ }catch{
+  // The session record remains the authority for this page view.
+ }
+ return true;
+}
+
 export function useDemoStoreBindings(organizationId:string,memberId="admin",isAdministrator=memberId==="admin"){
  const [all,setAll]=useState<DemoStoreBinding[]>(()=>readDemoStoreBindings(organizationId));
  useEffect(()=>{
   const refresh=()=>setAll(readDemoStoreBindings(organizationId));
+  reconcileColleagueDemoStorePeriods(organizationId);
   const onChange=(event:Event)=>{if((event as CustomEvent<string>).detail===organizationId)refresh();};
   window.addEventListener(eventName,onChange);
   window.addEventListener("pageshow",refresh);
