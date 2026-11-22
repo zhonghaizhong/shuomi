@@ -6,7 +6,8 @@ import {consoleNavigation, type ConsoleNavNode} from "@/lib/workbench/console-na
 
 export type Member={id:string;name:string;email:string;role:string;status:"正常"|"已停用";joined:number};
 export type AccountEvent={id:string;at:number;actor:string;category:string;message:string};
-export type ReferralItem={id:string;at:number;referred:string;amount:number;status:"已结算"|"已提现"};
+export type ReferralItem={id:string;at:number;referred:string;amount:number;status:"已结算"|"已提现";orderId?:string;paidCny?:number;rate?:number};
+export type ReferredCustomer={id:string;name:string;registeredAt:number;walletTopUpCny:number;storeId:string;storeOrderId:string;storeFeeCny:number;walletBalanceCny:number;commissionCny:number;status:"模拟绑定已消费"};
 export type Withdrawal={id:string;at:number;amount:number;account:string;status:"模拟审核通过"};
 // Role permissions in Showcase mirror the actual sidebar. They are local demo
 // settings, not authoritative server authorization grants.
@@ -97,9 +98,50 @@ export const subaccountPreset=normalizeRolePermissions(subaccountGrants.flatMap(
   ...(mode==="operate"?[permissionKey(item.href,"operate")]:[])
  ]);
 }));
-export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rolePermissions:Record<string,string[]>;allocations:Record<string,number>;referrals:ReferralItem[];withdrawals:Withdrawal[];payoutAccount:string;referralCode:string};
+/** Isolated synthetic tenant transactions: no real payment, sign-up or store authorization. */
+export const demoReferralRate=0.10;
+export const demoStoreFeeCny=168;
+export const demoCustomerTopUpCny=200;
+export const demoColleagues:Member[]=Array.from({length:3},(_,index)=>({
+ id:"SIM-COLLEAGUE-"+String(index+1).padStart(2,"0"),
+ name:"模拟同事"+String(index+1).padStart(2,"0"),
+ email:"colleague"+String(index+1).padStart(2,"0")+"@example.test",
+ role:subaccountRole,status:"正常",joined:Date.UTC(2026,10,22,2,15+index)
+}));
+export const demoReferredCustomers:ReferredCustomer[]=Array.from({length:20},(_,index)=>{
+ const serial=String(index+1).padStart(2,"0");
+ return {
+  id:"SIM-REF-USER-"+serial,name:"模拟新用户"+serial,
+  registeredAt:Date.UTC(2026,10,22,2,20+index),
+  walletTopUpCny:demoCustomerTopUpCny,
+  storeId:"SIM-SHEIN-STORE-"+serial,
+  storeOrderId:"SIM-ORDER-STORE-"+serial,
+  storeFeeCny:demoStoreFeeCny,
+  walletBalanceCny:demoCustomerTopUpCny-demoStoreFeeCny,
+  commissionCny:Math.round(demoStoreFeeCny*demoReferralRate*100)/100,
+  status:"模拟绑定已消费"
+ };
+});
+export const demoReferralEarnings:ReferralItem[]=demoReferredCustomers.map(customer=>({
+ id:"SIM-COMMISSION-"+customer.id,
+ at:customer.registeredAt+180000,
+ referred:customer.name,
+ amount:customer.commissionCny,
+ status:"已结算",
+ orderId:customer.storeOrderId,
+ paidCny:customer.storeFeeCny,
+ rate:demoReferralRate
+}));
+export const demoReferralSummary={
+ invitations:demoReferredCustomers.length,
+ totalTopUpsCny:demoReferredCustomers.reduce((sum,item)=>sum+item.walletTopUpCny,0),
+ totalStoreSpendCny:demoReferredCustomers.reduce((sum,item)=>sum+item.storeFeeCny,0),
+ totalWalletBalanceCny:demoReferredCustomers.reduce((sum,item)=>sum+item.walletBalanceCny,0),
+ totalCommissionCny:demoReferralEarnings.reduce((sum,item)=>sum+item.amount,0)
+};
+export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rolePermissions:Record<string,string[]>;allocations:Record<string,number>;referredCustomers:ReferredCustomer[];referrals:ReferralItem[];withdrawals:Withdrawal[];payoutAccount:string;referralCode:string};
 const KEY="shuomi-demo-account-suite-SM-ENT-000001-v1";
-export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)}],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},referrals:[],withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
+export const initialSuite:SuiteState={members:[{id:"admin",name:tenant.admin,email:tenant.email,role:"管理员",status:"正常",joined:Date.UTC(2026,10,21)},...demoColleagues],audit:[],roles:["管理员",subaccountRole],rolePermissions:{"管理员":allNodes.flatMap(node=>[permissionKey(node.href,"view"),permissionKey(node.href,"operate")]),[subaccountRole]:subaccountPreset},allocations:{},referredCustomers:demoReferredCustomers,referrals:demoReferralEarnings,withdrawals:[],payoutAccount:"",referralCode:"SM-ENT-000001"};
 const valid=(value:unknown):value is SuiteState=>!!value&&typeof value==="object"&&Array.isArray((value as SuiteState).members)&&Array.isArray((value as SuiteState).audit)&&Array.isArray((value as SuiteState).roles)&&Array.isArray((value as SuiteState).referrals)&&Array.isArray((value as SuiteState).withdrawals);
 export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(valid(v)){
   const obsolete=new Set<string>(retiredSampleRoles);
@@ -108,8 +150,16 @@ export function readSuite():SuiteState{resetLegacyAccountDemoOnce();try{const v=
   const rolePermissions=Object.fromEntries(Object.entries({...initialSuite.rolePermissions,...(v.rolePermissions||{})})
     .filter(([role])=>allowedRoles.has(role))
     .map(([role,permissions])=>[role,normalizeRolePermissions(Array.isArray(permissions)?permissions:[])]));
-  const members=(v.members as Member[]).map(member=>obsolete.has(member.role)?{...member,role:subaccountRole}:member);
-  return {...structuredClone(initialSuite),...v,roles,rolePermissions,members,allocations:{...(v.allocations||{})}};
+  const originalMembers=(v.members as Member[]).map(member=>obsolete.has(member.role)?{...member,role:subaccountRole}:member);
+  const memberIds=new Set(originalMembers.map(member=>member.id));
+  const members=[...originalMembers,...demoColleagues.filter(member=>!memberIds.has(member.id)&&!originalMembers.some(existing=>existing.email===member.email))];
+  const originalCustomers=Array.isArray(v.referredCustomers)?v.referredCustomers as ReferredCustomer[]:[];
+  const customerIds=new Set(originalCustomers.map(customer=>customer.id));
+  const referredCustomers=[...originalCustomers,...demoReferredCustomers.filter(customer=>!customerIds.has(customer.id))];
+  const originalReferrals=Array.isArray(v.referrals)?v.referrals as ReferralItem[]:[];
+  const referralIds=new Set(originalReferrals.map(item=>item.id));
+  const referrals=[...originalReferrals,...demoReferralEarnings.filter(item=>!referralIds.has(item.id))];
+  return {...structuredClone(initialSuite),...v,roles,rolePermissions,members,referredCustomers,referrals,allocations:{...(v.allocations||{})}};
  }}catch{}return structuredClone(initialSuite)}
 export function writeSuite(v:SuiteState):boolean{resetLegacyAccountDemoOnce();try{localStorage.setItem(KEY,JSON.stringify(v));window.dispatchEvent(new Event("shuomi-suite-updated"));return true}catch{return false}}
 export function addAudit(state:SuiteState,category:string,message:string):SuiteState{return {...state,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:tenant.admin,category,message},...state.audit]}}
