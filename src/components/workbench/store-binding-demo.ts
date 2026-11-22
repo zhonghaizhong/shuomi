@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 
 // Shared showcase-only store register. Binding is not platform authorization or a paid subscription.
-export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;archived?:boolean};
+export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;platformStoreId?:string;platformIdStatus?:"已激活"|"获取失败";archived?:boolean};
 const prefix="shuomi-store-center-demo-ten-v2";
 const eventName="shuomi-demo-store-bindings-changed";
 const mainTenant="SM-ENT-000001";
@@ -34,7 +34,8 @@ function seeds(organizationId:string):DemoStoreBinding[]{
   name:(memberId==="admin"?"管理员演示店铺":"同事01演示店铺")+String(index+1).padStart(2,"0"),
   platform:"SHEIN" as const,region,type:["全托管","半托管","自营","全托管","半托管"][index],
   status:"已绑定" as const,createdAt:"2026-11-22 15:19",group:"未分组",
-  owner:memberId==="admin"?"管理员":"模拟同事01",ownerMemberId:memberId
+  owner:memberId==="admin"?"管理员":"模拟同事01",ownerMemberId:memberId,
+  ...(memberId===colleague?index===4?{platformIdStatus:"获取失败" as const}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index+1).padStart(2,"0")}:{})
  }))),...expiredDemoStores];
 }
 export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
@@ -44,16 +45,25 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
   const parsed:unknown=JSON.parse(raw);
   if(!Array.isArray(parsed))return [];
   const valid=(parsed as DemoStoreBinding[]).filter((x:DemoStoreBinding)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&(x.status==="已绑定"||String(x.status)==="待授权")&&typeof x.ownerMemberId==="string");
+  // Only update the five known synthetic colleague fixtures; never invent platform IDs for real bindings.
+  // A preexisting explicit activation state (including retry success) must be preserved.
+  const migrated=organizationId===mainTenant?valid.map(store=>{
+   const match=/^SIM-C01-0([1-5])$/.exec(store.id);
+   if(!match||store.platformIdStatus)return store;
+   const index=Number(match[1]);
+   return index===5?{...store,platformIdStatus:"获取失败" as const}:{...store,platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index).padStart(2,"0")};
+  }):valid;
   // One-time additive migration for existing browser sessions; never recreate stores after a user removes them.
   const migrationKey=demoStoreKey(organizationId)+"-expired-fixture-v1";
   if(organizationId===mainTenant&&!sessionStorage.getItem(migrationKey)){
-   const ids=new Set(valid.map(x=>x.id));
-   const updated=[...valid,...expiredDemoStores.filter(x=>!ids.has(x.id))];
+   const ids=new Set(migrated.map(x=>x.id));
+   const updated=[...migrated,...expiredDemoStores.filter(x=>!ids.has(x.id))];
    sessionStorage.setItem(demoStoreKey(organizationId),JSON.stringify(updated));
    sessionStorage.setItem(migrationKey,"1");
    return updated.map(x=>({...x,status:"已绑定"}));
   }
-  return valid.map(x=>({...x,status:"已绑定"}));
+  if(migrated.some((store,index)=>store!==valid[index]))sessionStorage.setItem(demoStoreKey(organizationId),JSON.stringify(migrated));
+  return migrated.map(x=>({...x,status:"已绑定"}));
  }catch{return seeds(organizationId);}
 }
 export function saveDemoStoreBindings(organizationId:string,items:DemoStoreBinding[]):boolean{
