@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 
 // Shared showcase-only store register. Binding is not platform authorization or a paid subscription.
-export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;platformStoreId?:string;bindingAccount?:string;authorizationMethod?:string;fixedIpPreference?:boolean;platformIdStatus?:"已激活"|"获取失败";connectionIssue?:"授权失效"|"连接失败"|"平台接口异常";archived?:boolean};
+export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;platformStoreId?:string;bindingAccount?:string;authorizationMethod?:string;fixedIpPreference?:boolean;proxyIpAddress?:string;proxyIpPort?:string;proxyIpUser?:string;platformIdStatus?:"已激活"|"获取失败";connectionIssue?:"授权失效"|"连接失败"|"平台接口异常";archived?:boolean};
 const prefix="shuomi-store-center-demo-ten-v2";
 const eventName="shuomi-demo-store-bindings-changed";
 const mainTenant="SM-ENT-000001";
@@ -31,7 +31,7 @@ export function countConsumedStorePeriods(stores:readonly DemoStoreBinding[]):nu
 export function countPoolConsumedStorePeriods(stores:readonly DemoStoreBinding[]):number{
  return stores.reduce((total,store)=>{
   const periods=Number.isSafeInteger(store.servicePeriods)&&Number(store.servicePeriods)>0?Number(store.servicePeriods):0;
-  const previouslyPaid=Boolean(store.platformStoreId)&&((/^SIM-C01-0[1-4]$/.test(store.id)&&store.ownerMemberId==="SIM-COLLEAGUE-01")||(/^SIM-ADMIN-0[1-5]$/.test(store.id)&&store.ownerMemberId==="admin"));
+  const previouslyPaid=Boolean(store.platformStoreId)&&(/^SIM-C01-0[1-4]$/.test(store.id)||/^SIM-ADMIN-0[1-5]$/.test(store.id));
   return total+Math.max(0,periods-(previouslyPaid?1:0));
  },0);
 }
@@ -50,12 +50,12 @@ function seeds(organizationId:string):DemoStoreBinding[]{
   status:"已绑定" as const,createdAt:"2026-11-22 15:19",group:"未分组",
   owner:memberId==="admin"?"管理员":"模拟同事01",ownerMemberId:memberId,
   ...(memberId===colleague?index===4?{platformIdStatus:"获取失败" as const,archived:true}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index+1).padStart(2,"0"),serviceStartedAt:historicalStart,serviceExpiresAt:historicalExpiry,servicePeriods:1}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-ADMIN-"+String(index+1).padStart(2,"0"),serviceStartedAt:historicalStart,serviceExpiresAt:historicalExpiry,servicePeriods:1,...(index===3?{connectionIssue:"平台接口异常" as const}:index===4?{connectionIssue:"授权失效" as const}:{})})
- }))),...expiredDemoStores];
+ }))),...expiredDemoStores].map(s=>s.id==="SIM-ADMIN-01"?{...s,serviceExpiresAt:new Date(Date.now()+5*periodMs/30).toISOString()}:s.id==="SIM-C01-01"?{...s,serviceExpiresAt:new Date(Date.now()+6*periodMs/30).toISOString()}:s);
 }
 export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
  try{
   const raw=sessionStorage.getItem(demoStoreKey(organizationId));
-  if(raw===null){if(organizationId===mainTenant){sessionStorage.setItem(demoStoreKey(organizationId)+"-admin-status-v1","1");sessionStorage.setItem(demoStoreKey(organizationId)+"-expired-fixture-v1","1");}return seeds(organizationId);}
+  if(raw===null){if(organizationId===mainTenant){sessionStorage.setItem(demoStoreKey(organizationId)+"-admin-status-v1","1");sessionStorage.setItem(demoStoreKey(organizationId)+"-expired-fixture-v1","1");sessionStorage.setItem(demoStoreKey(organizationId)+"-expiring-v1","1");}return seeds(organizationId);}
   const parsed:unknown=JSON.parse(raw);
   if(!Array.isArray(parsed))return [];
   const valid=(parsed as DemoStoreBinding[]).filter((x:DemoStoreBinding)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&(x.status==="已绑定"||String(x.status)==="待授权")&&typeof x.ownerMemberId==="string");
@@ -88,6 +88,19 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
    sessionStorage.setItem(demoStoreKey(organizationId),JSON.stringify(revised));
    // Existing expired fixture migration below remains additive.
    migrated.splice(0,migrated.length,...revised);
+  }
+  // One-time migration of two existing, paid, healthy demo shops into the last seven days.
+  // Never repeat after renewal, deletion or manual edits.
+  const expiringKey=demoStoreKey(organizationId)+"-expiring-v1";
+  if(organizationId===mainTenant&&!sessionStorage.getItem(expiringKey)){
+   const revised=migrated.map(s=>{
+    const offset=s.id==="SIM-ADMIN-01"?5:s.id==="SIM-C01-01"?6:0;
+    return offset&&s.platformStoreId&&s.servicePeriods&&!s.connectionIssue&&!s.archived
+      ?{...s,serviceExpiresAt:new Date(Date.now()+offset*86400000).toISOString()}:s;
+   });
+   migrated.splice(0,migrated.length,...revised);
+   sessionStorage.setItem(expiringKey,"1");
+   sessionStorage.setItem(demoStoreKey(organizationId),JSON.stringify(revised));
   }
   // One-time additive migration for existing browser sessions; never recreate stores after a user removes them.
   const migrationKey=demoStoreKey(organizationId)+"-expired-fixture-v1";
