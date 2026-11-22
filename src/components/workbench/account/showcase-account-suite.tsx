@@ -3,7 +3,7 @@ import {useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
 import {Store, Sparkles, Database, HardDrive} from "lucide-react";
 import {showcaseTenant as tenant} from "./showcase-tenant";
-import {useShowcaseSuite,addAudit,totalEarnings,availableEarnings,permissionTree,permissionKey,permissionSummary,normalizeRolePermissions,toggleRolePermission,togglePermissionGroup,descendants,demoReferralRate,type PermissionMode,type Member,type SuiteState} from "./showcase-account-state";
+import {useShowcaseSuite,addAudit,totalEarnings,availableEarnings,permissionTree,permissionKey,permissionSummary,normalizeRolePermissions,toggleRolePermission,togglePermissionGroup,descendants,type PermissionMode,type Member,type SuiteState} from "./showcase-account-state";
 import type {ConsoleNavNode} from "@/lib/workbench/console-navigation";
 import s from "./showcase-account-suite.module.css";
 const root="/workbench/account";
