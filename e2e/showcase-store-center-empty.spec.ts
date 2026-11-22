@@ -136,7 +136,7 @@ test("Figma binding modal has account, OTP, groups, fixed IP and honest authoriz
  await page.goto(root+"/stores");
  await page.getByRole("button",{name:"绑定新店铺"}).first().click();
  const dlg=page.getByRole("dialog",{name:"绑定新店铺"});
- await expect(dlg.getByLabel("平台")).toHaveValue("SHEIN");
+ await expect(dlg.getByLabel("平台",{exact:true})).toHaveValue("SHEIN");
  await dlg.getByLabel("站点").selectOption("加拿大站");
  await dlg.getByLabel("店铺类型").selectOption("全托管");
  await dlg.getByLabel("自定义名称").fill("测试绑定流程");
@@ -202,7 +202,7 @@ test("Figma manage dialog edits a normal store without changing its service or a
  await card.getByRole("button",{name:"管理店铺",exact:true}).click();
  const dialog=page.getByRole("dialog",{name:"管理店铺"});
  await expect(dialog).toBeVisible();
- await expect(dialog.getByLabel("平台")).toHaveValue("SHEIN");
+ await expect(dialog.getByLabel("平台",{exact:true})).toHaveValue("SHEIN");
  await expect(dialog.getByLabel("自定义名称")).toHaveValue("管理弹窗测试店铺");
  await expect(dialog.getByLabel("子账户账号")).toBeVisible();
  await expect(dialog.getByRole("button",{name:"保存修改"})).toBeVisible();
