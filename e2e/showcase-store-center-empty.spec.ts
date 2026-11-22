@@ -10,11 +10,11 @@ test.beforeEach(async({page},info)=>{
  });
  await page.reload();
 });
-test("organization-scoped simulated bindings show ten to enterprise admin, five to colleague, and isolate other organizations",async({page})=>{
+test("organization-scoped simulated bindings show twelve to enterprise admin, six to colleague, and isolate other organizations",async({page})=>{
  await page.goto(root+"/stores");
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByText("店铺总数")).toBeVisible();
- await expect(area).toContainText("共 10 家");
+ await expect(area).toContainText("共 12 家店铺");
  await expect(area).toContainText("管理员演示店铺01");
  await expect(area).toContainText("同事01演示店铺01");
  for(const site of ["美国站","加拿大站","英国站","德国站","法国站"])await expect(area).toContainText(site);
@@ -27,7 +27,7 @@ test("organization-scoped simulated bindings show ten to enterprise admin, five 
  await switcher.getByRole("button",{name:/模拟同事01/}).click();
  await switcher.getByRole("button",{name:"确认切换"}).click();
  await page.goto(root+"/stores");
- await expect(area).toContainText("共 5 家");
+ await expect(area).toContainText("共 6 家店铺");
  await expect(area).toContainText("同事01演示店铺01");
  await expect(area).not.toContainText("管理员演示店铺01");
  switcher=await openSwitch();
@@ -39,7 +39,7 @@ test("organization-scoped simulated bindings show ten to enterprise admin, five 
  await area.getByRole("button",{name:"绑定新店铺"}).first().click();
  const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
  await dialog.getByRole("textbox",{name:"自定义名称"}).fill("企业B独立店铺");
- await dialog.getByRole("button",{name:"提交授权"}).click();
+ await dialog.getByRole("button",{name:"确认绑定"}).click();
  await expect(area).toContainText("企业B独立店铺");
  switcher=await openSwitch();
  await switcher.getByRole("tab",{name:"切换企业"}).click();
@@ -47,7 +47,7 @@ test("organization-scoped simulated bindings show ten to enterprise admin, five 
  await switcher.getByRole("button",{name:"确认切换"}).click();
  await page.goto(root+"/stores");
  await expect(area).toContainText("同事01演示店铺01");
- await expect(area).toContainText("共 5 家");
+ await expect(area).toContainText("共 6 家店铺");
  await expect(area).not.toContainText("企业B独立店铺");
 });
 
@@ -58,7 +58,7 @@ async function createDemo(page:any,name="Figma店铺"){
  const modal=page.getByRole("dialog",{name:"绑定新店铺"});
  await expect(modal).toBeVisible();
  await modal.getByRole("textbox",{name:"自定义名称"}).fill(name);
- await modal.getByRole("button",{name:"提交授权"}).click();
+ await modal.getByRole("button",{name:"确认绑定"}).click();
  await expect(modal).toHaveCount(0);
  await expect(area.getByText(name,{exact:true})).toBeVisible();
  return area;
@@ -132,15 +132,15 @@ test("Figma binding modal has account, OTP, groups, fixed IP and honest authoriz
  await dlg.getByLabel("启用固定IP").check();
  await expect(dlg.getByText("已启用（仅演示）")).toBeVisible();
  await dlg.getByRole("button",{name:"API 授权"}).click();
- await expect(dlg.getByRole("button",{name:"提交授权"})).toBeDisabled();
+ await expect(dlg.getByRole("button",{name:"确认绑定"})).toBeDisabled();
  await dlg.getByRole("button",{name:"子账户授权"}).click();
- await dlg.getByRole("button",{name:"提交授权"}).click();
+ await dlg.getByRole("button",{name:"确认绑定"}).click();
  await expect(dlg).toHaveCount(0);
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.getByText("测试绑定流程",{exact:true})).toBeVisible();
  await area.getByRole("button",{name:"进入店铺",exact:true}).click();
-  await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"授权信息",exact:true}).click();
-  await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("待授权");
+  await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"服务信息",exact:true}).click();
+  await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("已绑定");
  await page.goto(root+"/store-products");
  await expect(page.getByRole("heading",{name:"暂无已同步商品"})).toBeVisible();
 });
@@ -152,7 +152,7 @@ test("Figma filters apply only on confirm and reset together",async({page})=>{
  await expect(area.getByText("筛选店铺",{exact:true})).toHaveCount(0);
  await area.getByRole("button",{name:"重置"}).click();
  await expect(area.getByText("筛选店铺",{exact:true})).toBeVisible();
- await area.getByLabel("店铺状态筛选").selectOption("待授权");
+ await area.getByLabel("店铺状态筛选").selectOption("需要处理");
  await area.getByRole("button",{name:"确认",exact:true}).click();
  await expect(area.getByText("筛选店铺",{exact:true})).toBeVisible();
 });
@@ -168,12 +168,12 @@ test("Figma Manage opens store settings; Reauthorize opens binding, without fake
  await page.getByRole("button",{name:"返回我的店铺"}).click();
  await expect(area.getByText("林晨",{exact:true})).toBeVisible();
  await area.getByRole("button",{name:"更多操作 · 待修改店铺"}).click();
- await area.getByRole("menuitem",{name:"重新授权"}).click();
+ await area.getByRole("menuitem",{name:"编辑店铺资料"}).click();
  const authorization=page.getByRole("dialog",{name:"管理店铺"});
  await expect(authorization.getByLabel("子账户账号")).toBeVisible();
  await authorization.getByRole("button",{name:"保存修改"}).click();
  await area.getByRole("button",{name:"进入店铺",exact:true}).click();
- await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"授权信息",exact:true}).click();
+ await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"服务信息",exact:true}).click();
  await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("待授权");
 });
 test("Figma binding group and owner affordances preserve draft and follow company member flow",async({page})=>{
@@ -195,7 +195,7 @@ test("Figma binding group and owner affordances preserve draft and follow compan
  await owner.getByRole("button",{name:"暂不添加"}).click();
  await expect(form).toBeVisible();
  await form.getByLabel("负责人").selectOption("林晨");
- await form.getByRole("button",{name:"提交授权"}).click();
+ await form.getByRole("button",{name:"确认绑定"}).click();
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.locator("article").filter({hasText:"分组绑定草稿"}).getByText("店铺运营组",{exact:true})).toBeVisible();
  await expect(area.getByText("林晨",{exact:true})).toBeVisible();
@@ -204,7 +204,7 @@ test("Figma more-operation menu wires rename, reauthorization and safe unlink",a
  const area=await createDemo(page,"待操作店铺");
  await area.getByRole("button",{name:"更多操作 · 待操作店铺"}).click();
  const menu=area.getByRole("menu",{name:"店铺操作"});
- for(const label of ["修改自定义名称","调整负责人","调整分组","重新授权","解绑店铺"])await expect(menu.getByRole("menuitem",{name:label})).toBeVisible();
+ for(const label of ["修改自定义名称","调整负责人","调整分组","编辑店铺资料","解绑店铺"])await expect(menu.getByRole("menuitem",{name:label})).toBeVisible();
  await menu.getByRole("menuitem",{name:"修改自定义名称"}).click();
  const edit=page.getByRole("dialog",{name:"管理店铺名称"});
  await edit.getByRole("textbox",{name:"店铺名称"}).fill("已重命名店铺");
@@ -319,7 +319,7 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  await expect(cards.first()).toContainText("平台授权");
  await expect(cards.first()).toContainText("网络环境");
  await expect(cards.first()).toContainText("数据同步");
- await expect(cards.first()).toContainText("待授权");
+ await expect(cards.first()).toContainText("已绑定");
  await expect(cards.first()).toContainText("待检测");
  await expect(cards.first()).toContainText("未开始");
  await expect(cards.first()).toContainText("店铺分组");
@@ -358,7 +358,7 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await stores.getByRole("button",{name:"绑定新店铺"}).first().click();
  const binding=page.getByRole("dialog",{name:"绑定新店铺"});
  await binding.getByRole("textbox",{name:"自定义名称"}).fill("联动校验管理员店铺");
- await binding.getByRole("button",{name:"提交授权"}).click();
+ await binding.getByRole("button",{name:"确认绑定"}).click();
  await expect(stores).toContainText("共 11 家");
  const service=await page.evaluate(()=>{
   const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
@@ -424,7 +424,7 @@ test("other organization purchase ledger stays isolated from the primary organiz
  await stores.getByRole("button",{name:"绑定新店铺"}).first().click();
  const binding=page.getByRole("dialog",{name:"绑定新店铺"});
  await binding.getByRole("textbox",{name:"自定义名称"}).fill("企业A模拟付费店铺");
- await binding.getByRole("button",{name:"提交授权"}).click();
+ await binding.getByRole("button",{name:"确认绑定"}).click();
  await expect(stores).toContainText("服务中");
  await page.goto(root+"/plans/entitlements");
  await expect(entitlements.locator('[class*="planEntitlementStoreSplit"]')).toContainText("1");
