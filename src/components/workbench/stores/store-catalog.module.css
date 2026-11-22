@@ -37,3 +37,16 @@
 .readinessDisclosure summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
 .readinessDisclosure[open] { flex-basis:100%; }
+
+
+/* My Stores search convention: five filters on left; search/reset/confirm on right. */
+.filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:center;padding:10px 12px;min-height:62px}
+.filterCriteria{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;min-width:0;align-items:center}
+.filterSearchActions{display:grid;grid-template-columns:minmax(0,1fr) 74px 74px;gap:8px;min-width:0;align-items:center}
+.filterCriteria select,.filterSearchActions button{height:42px;min-width:0;padding:0 8px;font-size:var(--label-text-size);border-radius:var(--control-radius)}
+.filterSearchActions .search{height:42px;min-width:0;padding:0 10px;gap:6px}
+.filterSearchActions .search input{height:40px;min-width:0;padding-left:0;font-size:var(--label-text-size)}
+.filterSearchActions button{white-space:nowrap}
+@media(max-width:1320px){.filters{grid-template-columns:1fr}.filterCriteria{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:720px){.filterCriteria{grid-template-columns:repeat(2,minmax(0,1fr))}.filterSearchActions{grid-template-columns:minmax(0,1fr) 64px 64px}}
+@media(max-width:420px){.filterSearchActions{grid-template-columns:minmax(0,1fr) 56px 56px;gap:5px}.filterSearchActions button{padding:0 4px}}
