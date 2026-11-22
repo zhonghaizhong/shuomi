@@ -219,3 +219,35 @@ test("same colleague has separate referral wallets in main company, organization
  expect(JSON.parse(storage.companyA||"null").audit.some((item:{actor:string})=>item.actor.includes("模拟企业A"))).toBeTruthy();
  expect(storage.companyB).toBeNull();
 });
+
+test("primary administrator has two ¥50 demo withdrawals, isolated from colleagues and other organizations",async({page})=>{
+ await page.goto(base+"/account/referrals/withdrawals");
+ const admin=page.locator("[data-account-suite]");
+ await expect(admin).toContainText("ADMIN-DEMO-PAYOUT");
+ await expect(admin).toContainText("¥236.00");
+ await expect(admin).toContainText("¥100.00");
+ const withdrawalRows=admin.getByRole("row").filter({hasText:"ADMIN-DEMO-PAYOUT"});
+ await expect(withdrawalRows).toHaveCount(2);
+ await withdrawalRows.first().getByText("¥50.00").waitFor();
+ await expect(withdrawalRows.nth(1)).toContainText("¥50.00");
+ await page.reload();
+ await expect(admin.getByRole("row").filter({hasText:"ADMIN-DEMO-PAYOUT"})).toHaveCount(2);
+ await page.getByRole("button",{name:"linchen_demo账户"}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ let switcher=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await switcher.getByRole("button",{name:/模拟同事01/}).click();
+ await switcher.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(base+"/account/referrals/withdrawals");
+ const colleague=page.locator("[data-account-suite]");
+ await expect(colleague).toContainText("暂无提现记录");
+ await expect(colleague).not.toContainText("ADMIN-DEMO-PAYOUT");
+ await page.getByRole("button",{name:"模拟同事01账户"}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ switcher=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await switcher.getByRole("tab",{name:"切换企业"}).click();
+ await switcher.getByRole("button",{name:/模拟企业A（运营公司）/}).click();
+ await switcher.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(base+"/account/referrals/withdrawals");
+ await expect(page.locator("[data-account-suite]")).toContainText("暂无提现记录");
+ await expect(page.locator("[data-account-suite]")).not.toContainText("ADMIN-DEMO-PAYOUT");
+});
