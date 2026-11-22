@@ -3,7 +3,8 @@ import {useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
 import {Store, Sparkles, Database, HardDrive} from "lucide-react";
 import {showcaseTenant as tenant} from "./showcase-tenant";
-import {useShowcaseSuite,addAudit,totalEarnings,availableEarnings,permissionOptions,type Member,type SuiteState} from "./showcase-account-state";
+import {useShowcaseSuite,addAudit,totalEarnings,availableEarnings,permissionTree,permissionKey,permissionSummary,normalizeRolePermissions,toggleRolePermission,togglePermissionGroup,descendants,type PermissionMode,type Member,type SuiteState} from "./showcase-account-state";
+import type {ConsoleNavNode} from "@/lib/workbench/console-navigation";
 import s from "./showcase-account-suite.module.css";
 const root="/workbench/account";
 const goPath=(path:string)=>root+path+"?preview=1";
@@ -23,6 +24,13 @@ const screens:Record<string,[string,string]>={
 };
 type Modal="invite"|"member"|"role"|"permissions"|"storage"|"earning"|"payout"|"withdraw"|null;
 const menu=[["企业空间","/organization"],["成员管理","/organization/members"],["角色权限","/organization/roles"],["资源与额度","/organization/resources"],["操作记录","/organization/audit"],["推广与收益","/referrals"],["推广中心","/referrals/center"],["收益明细","/referrals/earnings"],["提现管理","/referrals/withdrawals"],["推广规则","/referrals/rules"]] as const;
+function PermissionBranch({node,depth,grants,onChange}:{node:ConsoleNavNode;depth:number;grants:readonly string[];onChange:(node:ConsoleNavNode,mode:PermissionMode,checked:boolean)=>void}){
+ return <><div className={s.permissionRow} style={{paddingLeft:Math.min(depth,3)*18+12}}>
+  <span className={s.permissionNodeName}>{node.label}</span>
+  <label><input type="checkbox" aria-label={node.label+" 查看"} checked={grants.includes(permissionKey(node.href,"view"))} onChange={e=>onChange(node,"view",e.target.checked)}/><span>查看</span></label>
+  <label><input type="checkbox" aria-label={node.label+" 操作"} checked={grants.includes(permissionKey(node.href,"operate"))} onChange={e=>onChange(node,"operate",e.target.checked)}/><span>操作</span></label>
+ </div>{node.children?.map(child=><PermissionBranch key={child.href} node={child} depth={depth+1} grants={grants} onChange={onChange}/>)}</>;
+}
 export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const router=useRouter();const {state,commit}=useShowcaseSuite();
  const suffix=pathname.slice(root.length)||"/organization";const [title,desc]=screens[suffix]||screens["/organization"];
@@ -37,7 +45,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const storageRemaining=Math.max(0,tenant.storageGiB-usedStorage);
  const change=(next:SuiteState,message:string)=>{if(commit(next)){setNotice(message);setError("");setModal(null);return true}setError("当前浏览器存储不可用，操作未保存。");return false};
  const close=()=>{setModal(null);setError("");setSelected("");setName("");setEmail("");setRole("商品运营");setAmount("100");setAccount("");setPermissions([])};
- const open=(target:Modal,id="")=>{close();setModal(target);setSelected(id);if(target==="member"){const m=state.members.find(x=>x.id===id);if(m)setRole(m.role)}if(target==="permissions")setPermissions(state.rolePermissions[id]||[]);if(target==="storage")setAmount(String(state.allocations[id]||0))};
+ const open=(target:Modal,id="")=>{close();setModal(target);setSelected(id);if(target==="member"){const m=state.members.find(x=>x.id===id);if(m)setRole(m.role)}if(target==="permissions")setPermissions(normalizeRolePermissions(state.rolePermissions[id]||[]));if(target==="storage")setAmount(String(state.allocations[id]||0))};
  const addMember=()=>{const value=email.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)){setError("请输入有效的成员邮箱地址。");return}if(state.members.some(m=>m.email.toLowerCase()===value)){setError("该邮箱已经属于当前企业。");return}if(!name.trim()){setError("请输入成员姓名。");return}
   const member:Member={id:crypto.randomUUID(),name:name.trim(),email:value,role,status:"正常",joined:Date.now()};
   change(addAudit({...state,members:[...state.members,member]},"成员与权限","邀请并模拟审核通过："+member.name+"（"+role+"）"),"成员已加入企业（模拟审核通过）。")
@@ -45,7 +53,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
  const updateMember=()=>{if(!currentMember||currentMember.id==="admin")return;change(addAudit({...state,members:state.members.map(m=>m.id===currentMember.id?{...m,role}:m)},"成员与权限","调整成员 "+currentMember.name+" 角色为 "+role),"成员角色已更新。")};
  const toggleMember=(m:Member)=>{if(m.id==="admin")return;const target=m.status==="正常"?"已停用":"正常";change(addAudit({...state,members:state.members.map(x=>x.id===m.id?{...x,status:target}:x)},"成员与权限",m.name+" 已"+target),"成员状态已更新。")};
  const addRole=()=>{const value=name.trim();if(!value||state.roles.includes(value)){setError("请输入未使用的角色名称。");return}change(addAudit({...state,roles:[...state.roles,value],rolePermissions:{...state.rolePermissions,[value]:[]}},"角色权限","新建角色："+value),"新角色已加入企业角色列表。")};
- const savePermissions=()=>{if(selected==="管理员")return;const list=[...new Set(permissions)];change(addAudit({...state,rolePermissions:{...state.rolePermissions,[selected]:list}},"角色权限","更新角色 "+selected+" 权限："+(list.join("、")||"无")),"角色权限已保存，关联成员同步使用此配置。")};
+ const savePermissions=()=>{if(selected==="管理员")return;const list=normalizeRolePermissions(permissions);change(addAudit({...state,rolePermissions:{...state.rolePermissions,[selected]:list}},"角色权限","更新角色 "+selected+" 权限："+permissionSummary(list)),"角色权限已保存，关联成员同步使用此配置（仅演示）。")};
  const saveStorage=()=>{const n=Number(amount);if(!Number.isFinite(n)||n<0||Math.round(n*10)!==n*10){setError("请输入0至5 GiB之间、精确到0.1 GiB的容量。");return}const previous=state.allocations[selected]||0;if(n>storageRemaining+previous+0.00001){setError("本次设置超出企业可分配存储容量。");return}change(addAudit({...state,allocations:{...state.allocations,[selected]:n}},"资源与额度","设置成员 "+(state.members.find(m=>m.id===selected)?.name||selected)+" 存储上限："+n+" GiB"),"成员存储上限已更新，剩余额度同步调整。")};
  const referralLink=()=>typeof location==="undefined"?"":location.origin+"/shuomi/#/workbench/account/referrals/center?preview=1&ref="+encodeURIComponent(state.referralCode);
  const copyReferral=()=>{navigator.clipboard?.writeText(referralLink()).then(()=>setNotice("推广链接已复制。")).catch(()=>setNotice("复制失败，可直接选中链接复制。"))};
@@ -82,7 +90,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
    <section className={s.panel}><header><h2>成员列表</h2><p>邀请成员后即按模拟后台审核通过加入。</p></header><div className={s.toolbar}><input aria-label="搜索成员" placeholder="搜索成员、邮箱或角色" value={query} onChange={e=>setQuery(e.target.value)}/><button onClick={()=>{setQuery("");setApplied("")}}>重置</button><button className={s.primary} onClick={()=>setApplied(query.trim())}>确定</button></div><div className={s.tableWrap}><table><thead><tr>{["成员","登录邮箱","角色","状态","加入时间","操作"].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{viewMember.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.email}</td><td>{m.role}</td><td><span className={s.approved}>{m.status}</span></td><td>{timestamp(m.joined)}</td><td><div className={s.rowActions}><button onClick={()=>open("member",m.id)}>查看{m.id==="admin"?"":" / 调整"}</button>{m.id!=="admin"&&<button onClick={()=>toggleMember(m)}>{m.status==="正常"?"停用":"启用"}</button>}</div></td></tr>)}</tbody></table></div></section>
   </>}
   {suffix==="/organization/roles"&&<>{tiles([["系统角色","1","管理员不可删除"],["业务角色",String(state.roles.length-1),"可继续新建"],["企业成员",String(activeMembers.length),"角色生效人数"],["待审核事项","0","模拟审核全部通过"]])}
-   <section className={s.panel}><header><h2>角色权限</h2><p>新增角色可以在邀请成员及调整成员时直接使用。</p></header><div className={s.tableWrap}><table><thead><tr><th>角色名称</th><th>权限范围</th><th>关联成员</th><th>性质</th><th>操作</th></tr></thead><tbody>{state.roles.map(r=><tr key={r}><td><strong>{r}</strong></td><td>{r==="管理员"?"全部权限":(state.rolePermissions[r]||[]).join("、")||"尚未配置"}</td><td>{state.members.filter(m=>m.role===r&&m.status==="正常").length} 人</td><td>{r==="管理员"?"系统角色":"业务角色"}</td><td><button disabled={r==="管理员"} onClick={()=>open("permissions",r)}>配置权限</button></td></tr>)}</tbody></table></div><div className={s.quicklinks}><button onClick={()=>nav("/organization/members")}>管理成员角色</button></div></section>
+   <section className={s.panel}><header><h2>角色权限</h2><p>新增角色可以在邀请成员及调整成员时直接使用。</p></header><div className={s.tableWrap}><table><thead><tr><th>角色名称</th><th>权限范围</th><th>关联成员</th><th>性质</th><th>操作</th></tr></thead><tbody>{state.roles.map(r=><tr key={r}><td><strong>{r}</strong></td><td>{r==="管理员"?"全部权限":permissionSummary(state.rolePermissions[r]||[])}</td><td>{state.members.filter(m=>m.role===r&&m.status==="正常").length} 人</td><td>{r==="管理员"?"系统角色":"业务角色"}</td><td><button disabled={r==="管理员"} onClick={()=>open("permissions",r)}>配置权限</button></td></tr>)}</tbody></table></div><div className={s.quicklinks}><button onClick={()=>nav("/organization/members")}>管理成员角色</button></div></section>
   </>}
   {suffix==="/organization/resources"&&<>{tiles([["已绑定店铺",String(tenant.stores),"可分配店铺"],["AI 积分",String(tenant.points),"¥1 = 10,000 积分 · 模拟已到账"],["数据额度",String(tenant.data),"¥0.01/条 · 模拟已到账"],["共享存储",tenant.storageGiB+" GiB","免费 5 GiB + 扩容 3 GiB · 已分配 "+usedStorage.toFixed(1)+" GiB · 剩余 "+storageRemaining.toFixed(1)+" GiB"]])}
    <section className={s.panel}><header><h2>成员资源分配</h2><p>模拟购买店铺服务 2 期待分配；企业 AI 积分 10,000,000、数据额度 50,000 条按模拟规则到账，成员分配暂为 0。</p></header><div className={s.tableWrap}><table><thead><tr><th>成员</th><th>角色</th><th>店铺</th><th>AI 积分</th><th>数据条数</th><th>存储上限</th><th>操作</th></tr></thead><tbody>{activeMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.role}</td><td>0</td><td>0</td><td>0</td><td>{(state.allocations[m.id]||0).toFixed(1)} GiB</td><td><button disabled={m.id==="admin"} onClick={()=>open("storage",m.id)}>分配存储</button></td></tr>)}</tbody></table></div><div className={s.quicklinks}><button onClick={()=>router.push("/workbench/plans/top-up?preview=1")}>前往充值中心</button><button onClick={()=>router.push("/workbench/store-center?preview=1")}>前往店铺中心</button></div></section>
@@ -96,11 +104,31 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
    {suffix==="/referrals/withdrawals"&&<><section className={s.panel}><header><h2>模拟收款方式</h2><p>不输入真实银行卡号；只保存演示标识。</p></header><div className={s.linkRow}><div><span>当前收款方式</span><strong>{state.payoutAccount||"尚未设置"}</strong></div><button onClick={()=>{open("payout");setAccount(state.payoutAccount)}}>设置收款方式</button></div></section><section className={s.panel}><header><h2>提现记录</h2><p>审核环节全部模拟通过，不发起真实打款。</p></header><div className={s.tableWrap}><table><thead><tr><th>申请时间</th><th>金额</th><th>收款标识</th><th>状态</th></tr></thead><tbody>{state.withdrawals.map(x=><tr key={x.id}><td>{timestamp(x.at)}</td><td>{money(x.amount)}</td><td>{x.account}</td><td>{x.status}</td></tr>)}</tbody></table>{!state.withdrawals.length&&<div className={s.empty}>暂无提现记录。</div>}</div></section></>}
    {suffix==="/referrals/rules"&&<section className={s.panel}><header><h2>推广结算与审核说明</h2><p>当前仅用于闭环验收，不代表正式佣金标准或真实支付义务。</p></header><div className={s.rules}><article><b>01</b><h3>推广归因</h3><p>推广码归属当前模拟企业。正式系统需要真实访问和订单归因数据。</p></article><article><b>02</b><h3>收益结算</h3><p>在演示中手工录入一笔模拟收益，后台审核按通过处理并记入可提现余额。</p></article><article><b>03</b><h3>提现处理</h3><p>演示收款账户完成设置后，可模拟完整记录提现，系统记录审核通过，不会转账。</p></article><article><b>04</b><h3>数据边界</h3><p>所有收益、客户标识和提现均为模拟，不能视为真实经营数据。</p></article></div></section>}
   </>}
-  {modal&&<div className={s.overlay} onMouseDown={e=>e.target===e.currentTarget&&close()}><section className={s.dialog} role="dialog" aria-modal="true" aria-label={{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员存储",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}><header><h2>{{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员存储",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}</h2><button aria-label="关闭弹窗" onClick={close}>×</button></header><p className={s.dialogHint}>模拟企业后台审核自动通过，确认后会在当前浏览器档案和操作记录中留存。</p>
+  {modal&&<div className={s.overlay} onMouseDown={e=>e.target===e.currentTarget&&close()}><section className={modal==="permissions"?`${s.dialog} ${s.permissionDialog}`:s.dialog} role="dialog" aria-modal="true" aria-label={{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员存储",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}><header><h2>{{invite:"邀请成员",member:"管理成员",role:"新建角色",permissions:"配置角色权限",storage:"分配成员存储",earning:"模拟推广收益",payout:"设置收款方式",withdraw:"模拟提现"}[modal]}</h2><button aria-label="关闭弹窗" onClick={close}>×</button></header><p className={s.dialogHint}>模拟企业后台审核自动通过，确认后会在当前浏览器档案和操作记录中留存。</p>
     {modal==="invite"&&<><label>成员姓名<input aria-label="成员姓名" value={name} onChange={e=>setName(e.target.value)} placeholder="输入成员姓名"/></label><label>成员邮箱<input aria-label="成员邮箱" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="输入测试邮箱"/></label></>}
     {modal==="member"&&<p>成员：{currentMember?.name||"未找到成员"} · {currentMember?.email}</p>}
     {(modal==="invite"||modal==="member")&&<label>业务角色<select aria-label="业务角色" disabled={modal==="member"&&selected==="admin"} value={role} onChange={e=>setRole(e.target.value)}>{state.roles.map(x=><option key={x}>{x}</option>)}</select></label>}
-    {modal==="permissions"&&<fieldset className={s.permissionList}><legend>权限范围 · {selected}</legend>{permissionOptions.map(permission=><label key={permission}><input type="checkbox" checked={permissions.includes(permission)} onChange={e=>setPermissions(v=>e.target.checked?[...v,permission]:v.filter(x=>x!==permission))}/><span>{permission}</span></label>)}<p>权限分配仅影响本模拟企业的角色配置，不修改真实系统访问权限。</p></fieldset>}
+    {modal==="permissions"&&<fieldset className={s.permissionList}><legend>权限范围 · {selected}</legend>
+     <p className={s.permissionHelp}>权限项与左侧当前功能导航对应。一级模块可批量勾选；二、三级功能分别设置查看与操作。操作权限自动包含查看权限。</p>
+     <div className={s.permissionTree}>
+      {permissionTree.map(node=>{
+       const nodes=descendants(node);
+       const granted=nodes.filter(child=>permissions.includes(permissionKey(child.href,"view"))).length;
+       const all=nodes.every(child=>permissions.includes(permissionKey(child.href,"view"))&&permissions.includes(permissionKey(child.href,"operate")));
+       return <section className={s.permissionGroup} key={node.href}>
+        <div className={s.permissionGroupHeading}>
+         <label><input type="checkbox" aria-label={node.label} checked={all} onChange={e=>setPermissions(v=>togglePermissionGroup(v,node,e.target.checked))}/><strong>{node.label}</strong></label>
+         <small>{granted}/{nodes.length} 个功能可查看</small>
+        </div>
+        <div className={s.permissionChildren}>
+         {node.children?.length?node.children.map(child=><PermissionBranch key={child.href} node={child} depth={0} grants={permissions} onChange={(target,mode,checked)=>setPermissions(v=>toggleRolePermission(v,target,mode,checked))}/>)
+          :<PermissionBranch node={node} depth={0} grants={permissions} onChange={(target,mode,checked)=>setPermissions(v=>toggleRolePermission(v,target,mode,checked))}/>}
+        </div>
+       </section>;
+      })}
+     </div>
+     <p className={s.permissionHelp}>仅保存到当前演示企业；真实导航可见性、页面访问和接口操作权限需由正式服务端鉴权接管，不能以此作为安全授权。</p>
+    </fieldset>}
     {modal==="storage"&&<><p>企业存储总容量 {tenant.storageGiB} GiB，当前剩余可分配 {storageRemaining.toFixed(1)} GiB。</p><label>成员存储上限（GiB）<input type="number" aria-label="成员存储上限" min="0" max={tenant.storageGiB} step="0.1" value={amount} onChange={e=>setAmount(e.target.value)}/></label></>}
     {modal==="role"&&<label>角色名称<input aria-label="角色名称" value={name} onChange={e=>setName(e.target.value)} placeholder="例如：运营专员"/></label>}
     {modal==="earning"&&<><label>模拟客户标识<input aria-label="模拟客户标识" value={email} onChange={e=>setEmail(e.target.value)} placeholder="例如：TEST-CUSTOMER-001"/></label><label>模拟佣金金额（元）<input type="number" min="0.01" step="0.01" aria-label="模拟佣金金额" value={amount} onChange={e=>setAmount(e.target.value)}/></label></>}
