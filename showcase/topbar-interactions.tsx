@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, Headset, LogOut, Mail, MoonStar, Sun, UserRound, X, ShieldAlert, UserCircle2, Send, ArrowLeft, CheckCheck, Clock3 } from "lucide-react";
+import { Bell, Headset, LogOut, Mail, MoonStar, Sun, UserRound, X, ShieldAlert, UserCircle2, Send, ArrowLeft, CheckCheck, Clock3, UsersRound, Building2, Check } from "lucide-react";
+import {showcaseTenant as tenant} from "@/components/workbench/account/showcase-tenant";
+import type {Member} from "@/components/workbench/account/showcase-account-state";
+import type {DemoIdentity,DemoOrganization} from "./demo-identity";
 
 export type Notice = { id:number; title:string; body:string; time:string; type:string; category:"official"|"business" };
 export const demoNotices:Notice[] = [
@@ -11,10 +14,16 @@ export const demoNotices:Notice[] = [
  {id:6,title:"企业资源用量提醒",body:"可前往套餐与权益查看资源使用情况和可用额度。",time:"昨天 16:20",type:"用量提醒",category:"business"}
 ];
 
-export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read }: {
- navigate:(path:string)=>void; pathname:string; light:boolean; onTheme:()=>void; read:number[]
+export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read, identity, organizations, members, onSwitchIdentity, onAddOrganization }: {
+ navigate:(path:string)=>void; pathname:string; light:boolean; onTheme:()=>void; read:number[];
+ identity:DemoIdentity; organizations:DemoOrganization[]; members:Member[];
+ onSwitchIdentity:(next:DemoIdentity)=>void; onAddOrganization:(name:string)=>boolean
 }) {
  const [panel,setPanel]=useState<"support"|"account"|null>(null);
+ const [accountStep,setAccountStep]=useState<"menu"|"switch">("menu");
+ const [organizationDraft,setOrganizationDraft]=useState("");
+ const [switchError,setSwitchError]=useState("");
+ const [profileName,setProfileName]=useState(tenant.username);
  const [step,setStep]=useState<"options"|"online"|"message">("options");
  const [message,setMessage]=useState("");
  const [safety,setSafety]=useState<"logout"|"delete"|null>(null);
@@ -28,7 +37,14 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
   document.addEventListener("keydown",onKey);document.addEventListener("mousedown",onClick);
   return()=>{document.removeEventListener("keydown",onKey);document.removeEventListener("mousedown",onClick)};
  },[panel,safety]);
- const toggle=(name:"support"|"account")=>{setPanel(old=>old===name?null:name);setStep("options");setSafety(null)};
+ const toggle=(name:"support"|"account")=>{setPanel(old=>old===name?null:name);setStep("options");setAccountStep("menu");setSafety(null);setSwitchError("");
+  try{const profile=JSON.parse(sessionStorage.getItem("shuomi-demo-account-settings-"+tenant.id)||"null");setProfileName(typeof profile?.name==="string"&&profile.name.trim()?profile.name.trim():tenant.username)}catch{setProfileName(tenant.username)}
+ };
+ const member=identity.organizationId===tenant.id?members.find(m=>m.id===identity.memberId):null;
+ const displayName=identity.organizationId!==tenant.id?tenant.username:identity.memberId==="admin"?profileName:(member?.name||"无效子账号");
+ const displayEmail=identity.organizationId!==tenant.id?tenant.email:(member?.email||tenant.email);
+ const currentOrganization=organizations.find(o=>o.id===identity.organizationId)?.name||tenant.name;
+ const addDemoOrganization=()=>{const name=organizationDraft.trim();if(!onAddOrganization(name)){setSwitchError("请输入新的组织名称（最多 8 个模拟组织，名称不能重复）。");return}setOrganizationDraft("");setSwitchError("")};
  const mailHref="mailto:support@shuomiai.com?subject="+encodeURIComponent("硕米智能引擎 · 客服留言")+"&body="+encodeURIComponent(message);
  return <>
   <div ref={wrapper} className="showcase-top-actions" aria-label="全局操作">
@@ -50,10 +66,25 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
    <button className="showcase-action-icon" type="button" aria-label="通知" title="通知中心" onClick={()=>{setPanel(null);navigate("/workbench/notifications")}}><Bell size={19}/>{demoNotices.some(n=>n.category==="official"&&!read.includes(n.id))&&<i className="showcase-notification-dot" aria-hidden="true"/>}</button>
    <button className="showcase-action-icon" type="button" aria-label={light?"切换深色主题":"切换浅色主题"} aria-pressed={light} title={light?"切换深色主题":"切换浅色主题"} onClick={onTheme}>{light?<Sun size={19}/>:<MoonStar size={19}/>}</button>
    <div className="showcase-action-wrap">
-    <button className="showcase-account-icon" type="button" aria-label="示例用户账户" title="示例用户" aria-expanded={panel==="account"} onClick={()=>toggle("account")}><UserRound size={21}/><i/></button>
+    <button className="showcase-account-icon" type="button" aria-label={displayName+"账户"} title={displayName} aria-expanded={panel==="account"} onClick={()=>toggle("account")}><UserRound size={21}/><i/></button>
     {panel==="account"&&<section className="showcase-popover showcase-account-menu" role="dialog" aria-label="账户快捷操作">
-     <header className="showcase-menu-head"><span><strong>示例用户</strong><small>user@sumi.ai</small></span><button type="button" aria-label="关闭账户菜单" onClick={()=>setPanel(null)}><X size={16}/></button></header>
-     <div className="showcase-account-links"><button type="button" onClick={()=>{setPanel(null);navigate("/workbench/account/profile")}}><UserCircle2 size={16}/>账户资料</button><button type="button" onClick={()=>setSafety("logout")}><LogOut size={16}/>退出登录</button><button className="showcase-danger-link" type="button" onClick={()=>setSafety("delete")}><ShieldAlert size={16}/>注销账号</button></div>
+     <header className="showcase-menu-head"><span><strong>{displayName}</strong><small>{displayEmail}</small><small>{currentOrganization} · {identity.memberId==="admin"?"管理员":member?.role||"子账号"}（演示）</small></span><button type="button" aria-label="关闭账户菜单" onClick={()=>setPanel(null)}><X size={16}/></button></header>
+     {accountStep==="menu"?<div className="showcase-account-links">
+      <button type="button" onClick={()=>{setPanel(null);navigate("/workbench/account/profile")}}><UserCircle2 size={16}/>账户资料</button>
+      <button type="button" onClick={()=>setAccountStep("switch")}><UsersRound size={16}/>切换账户 / 企业组织</button>
+      <button type="button" onClick={()=>setSafety("logout")}><LogOut size={16}/>退出登录</button>
+      <button className="showcase-danger-link" type="button" onClick={()=>setSafety("delete")}><ShieldAlert size={16}/>注销账号</button>
+     </div>:<div className="showcase-account-switch">
+      <button type="button" className="showcase-menu-back" onClick={()=>setAccountStep("menu")}><ArrowLeft size={14}/>返回账户菜单</button>
+      <p>切换演示身份，不进行真实登录或企业授权。</p>
+      <h3>当前企业成员</h3>
+      {identity.organizationId===tenant.id&&members.filter(m=>m.status==="正常").map(m=><button type="button" className="showcase-switch-choice" aria-pressed={identity.memberId===m.id} key={m.id} onClick={()=>{onSwitchIdentity({organizationId:tenant.id,memberId:m.id});setPanel(null)}}><UserRound size={16}/><span><strong>{m.id==="admin"?profileName:m.name}</strong><small>{m.role} · {m.email}</small></span>{identity.memberId===m.id&&<Check size={15}/>}</button>)}
+      {identity.organizationId!==tenant.id&&<p>其他演示组织仅提供管理员空白空间；切回主企业可选择子账号。</p>}
+      <h3>切换企业组织</h3>
+      {organizations.map(o=><button type="button" className="showcase-switch-choice" aria-pressed={identity.organizationId===o.id} key={o.id} onClick={()=>{onSwitchIdentity({organizationId:o.id,memberId:"admin"});setPanel(null)}}><Building2 size={16}/><span><strong>{o.name}</strong><small>{o.id===tenant.id?"当前已配置企业":"独立演示组织 · 暂无业务数据"}</small></span>{identity.organizationId===o.id&&<Check size={15}/>}</button>)}
+      <label className="showcase-switch-add"><span>新增模拟企业组织</span><input aria-label="模拟组织名称" maxLength={60} value={organizationDraft} onChange={e=>setOrganizationDraft(e.target.value)} placeholder="输入组织名称"/><button type="button" onClick={addDemoOrganization}>添加</button></label>
+      {switchError&&<p role="alert">{switchError}</p>}
+     </div>}
     </section>}
    </div>
   </div>
