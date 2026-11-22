@@ -39,8 +39,10 @@ test("organization-scoped simulated bindings show twelve to enterprise admin, si
  await area.getByRole("button",{name:"绑定新店铺"}).first().click();
  const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
  await dialog.getByRole("textbox",{name:"自定义名称"}).fill("企业B独立店铺");
- await dialog.getByRole("button",{name:"确认绑定"}).click();
- await expect(area).toContainText("企业B独立店铺");
+ await expect(dialog).toContainText("额度不足，不能绑定新店铺");
+ await expect(dialog.getByRole("button",{name:"确认绑定"})).toBeDisabled();
+ await expect(area).not.toContainText("企业B独立店铺");
+ await dialog.getByRole("button",{name:"取消"}).click();
  switcher=await openSwitch();
  await switcher.getByRole("tab",{name:"切换企业"}).click();
  await switcher.getByRole("button",{name:/武汉硕米电子商务有限公司/}).click();
@@ -464,4 +466,27 @@ test("expired 30-day store service prevents synchronization until renewed",async
  await page.getByRole("region",{name:"店铺详情页面"}).getByRole("button",{name:"开通30天"}).click();
  await expect(page.locator('[data-store-center-showcase="stores"]')).toContainText("当前可用店铺服务期数不足");
  await expect(page.getByRole("region",{name:"店铺详情页面"})).toContainText("已到期");
+});
+
+
+test("new binding is blocked without an available 30-day service period",async({page})=>{
+ await page.goto(root+"/stores");
+ await page.evaluate(()=>{
+   const key="shuomi-store-center-demo-ten-v2-SM-ENT-000001";
+   const current=JSON.parse(sessionStorage.getItem(key)||"[]");
+   const now=new Date().toISOString();
+   sessionStorage.setItem(key,JSON.stringify([
+     {id:"TEST-ACTIVE-1",name:"已使用服务一期01",platform:"SHEIN",region:"美国站",type:"半托管",status:"已绑定",createdAt:now,ownerMemberId:"admin",serviceStartedAt:now,serviceExpiresAt:new Date(Date.now()+30*86400000).toISOString(),servicePeriods:1},
+     {id:"TEST-ACTIVE-2",name:"已使用服务一期02",platform:"SHEIN",region:"加拿大站",type:"半托管",status:"已绑定",createdAt:now,ownerMemberId:"admin",serviceStartedAt:now,serviceExpiresAt:new Date(Date.now()+30*86400000).toISOString(),servicePeriods:1}
+   ]));
+ });
+ await page.reload();
+ const area=page.locator('[data-store-center-showcase="stores"]');
+ await area.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
+ await dialog.getByRole("textbox",{name:"自定义名称"}).fill("不得绑定的店铺");
+ await expect(dialog).toContainText("额度不足，不能绑定新店铺");
+ await expect(dialog.getByRole("button",{name:"确认绑定"})).toBeDisabled();
+ await expect(area).not.toContainText("不得绑定的店铺");
+ await expect(area).toContainText("共 2 家店铺");
 });
