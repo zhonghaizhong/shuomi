@@ -48,32 +48,37 @@ function ScopedStoreList({scope}:{scope:StoreCenterScope}){
  const selectedItems=data?.items.filter(item=>selected.includes(item.id))??[];
  const check=(item:CatalogItem,on:boolean)=>setSelected(current=>on?[...current.filter(id=>id!==item.id),item.id].slice(0,100):current.filter(id=>id!==item.id));
  const allSelected=Boolean(data?.items.length && data.items.every(item=>selected.includes(item.id))),errorCode=(query.error as {code?:string}|null)?.code,metrics=data?.metrics;
- const [localStatus,setLocalStatus]=useState<"all"|"expiring"|"expired">("all");
+ // An expired subscription is not a post-binding connection failure. The latter
+ // requires evidence of prior successful binding and observation plus a broken connection.
+ const connectionFailed=(item:CatalogItem)=>item.serviceStatus==="active"&&Boolean(item.externalStoreId)&&Boolean(item.signals.observedAt)&&["disconnected","expired","unavailable"].includes(item.connectionStatus);
+ const isExpiredService=(item:CatalogItem)=>item.serviceStatus==="expired"||Boolean(item.serviceExpiresAt&&Date.parse(item.serviceExpiresAt)<=Date.now());
+ const isExpiringService=(item:CatalogItem)=>item.serviceStatus==="active"&&Boolean(item.serviceExpiresAt&&Date.parse(item.serviceExpiresAt)>Date.now()&&Date.parse(item.serviceExpiresAt)-Date.now()<=7*86400000);
+ const isNormalStore=(item:CatalogItem)=>item.serviceStatus==="active"&&item.connectionStatus==="connected";
+ const [localStatus,setLocalStatus]=useState<"all"|"normal"|"expiring"|"expired"|"attention">("all");
  const allItemsLoaded=Boolean(data&&data.items.length===data.pagination.total);
- const expiringCount=allItemsLoaded?data!.items.filter(item=>item.serviceStatus==="active"&&item.serviceExpiresAt&&Date.parse(item.serviceExpiresAt)-Date.now()<=7*86400000&&Date.parse(item.serviceExpiresAt)>Date.now()).length:null;
- const expiredCount=allItemsLoaded?data!.items.filter(item=>item.serviceStatus==="expired"||item.serviceExpiresAt&&Date.parse(item.serviceExpiresAt)<=Date.now()).length:null;
+ const countWhere=(predicate:(item:CatalogItem)=>boolean)=>allItemsLoaded?data!.items.filter(predicate).length:null;
  const metricRows=[
  {label:"已绑定店铺",value:metrics?.total,hint:"当前授权范围",filter:"all",enabled:true},
- {label:"正常店铺",value:metrics?.normal,hint:"连接与服务有效",filter:"normal",enabled:typeof metrics?.normal==="number"},
- {label:"即将到期",value:expiringCount,hint:allItemsLoaded?"未来 7 天":"仅完整列表可统计",filter:"expiring",enabled:allItemsLoaded},
- {label:"已到期",value:expiredCount,hint:allItemsLoaded?"服务期已过":"仅完整列表可统计",filter:"expired",enabled:allItemsLoaded},
- {label:"待处理",value:metrics?.attention,hint:"授权或同步等异常",filter:"attention",enabled:typeof metrics?.attention==="number"}
+ {label:"正常店铺",value:countWhere(isNormalStore),hint:allItemsLoaded?"连接与服务有效":"需完整数据",filter:"normal",enabled:allItemsLoaded},
+ {label:"即将到期",value:countWhere(isExpiringService),hint:allItemsLoaded?"未来 7 天":"需完整数据",filter:"expiring",enabled:allItemsLoaded},
+ {label:"已到期",value:countWhere(isExpiredService),hint:allItemsLoaded?"服务期已过":"需完整数据",filter:"expired",enabled:allItemsLoaded},
+ {label:"待处理",value:countWhere(connectionFailed),hint:allItemsLoaded?"绑定后连接异常":"需完整数据",filter:"attention",enabled:allItemsLoaded}
  ] as const;
- const shownItems=(localStatus==="all"?data?.items:data?.items.filter(item=>localStatus==="expired"?(item.serviceStatus==="expired"||Boolean(item.serviceExpiresAt&&Date.parse(item.serviceExpiresAt)<=Date.now())):item.serviceStatus==="active"&&Boolean(item.serviceExpiresAt&&Date.parse(item.serviceExpiresAt)>Date.now()&&Date.parse(item.serviceExpiresAt)-Date.now()<=7*86400000)))??[];
- const openMetric=(filter:typeof metricRows[number]["filter"])=>{setSelected([]);if(filter==="expiring"||filter==="expired"){setLocalStatus(filter);return;}setLocalStatus("all");update({...filters,page:1,attention:filter==="normal"?"normal":filter==="attention"?"attention":undefined})};
+ const shownItems=(localStatus==="all"?data?.items:data?.items.filter(item=>localStatus==="expired"?isExpiredService(item):localStatus==="expiring"?isExpiringService(item):localStatus==="attention"?connectionFailed(item):isNormalStore(item)))??[];
+ const openMetric=(filter:typeof metricRows[number]["filter"])=>{setSelected([]);setLocalStatus(filter);if(filters.attention!==undefined)update({...filters,page:1,attention:undefined})};
 
  return <ConsolePage className={styles.page} title="我的店铺" breadcrumbs={findConsoleRoute("/workbench/stores")?.trail} description="统一管理店铺授权、分组与数据同步，让运营更清晰。" actions={canCreate?<Button className={styles.bind} onClick={()=>setDialog({kind:"bind"})}><Plus size={16}/>绑定新店铺</Button>:undefined}>
-  <div className={styles.metrics} aria-label="店铺状态概览">{metricRows.map(({label,value,hint,filter,enabled})=><button type="button" className={styles.metric} key={label} disabled={!enabled} aria-pressed={filter===localStatus&&localStatus!=="all"||filter==="normal"&&filters.attention==="normal"||filter==="attention"&&filters.attention==="attention"} onClick={()=>openMetric(filter)}><div><span>{label}</span><strong>{value??"—"} <small>家</small></strong></div><span className={styles.metricNote}>{hint}</span></button>)}</div>
+  <div className={styles.metrics} aria-label="店铺状态概览">{metricRows.map(({label,value,hint,filter,enabled})=><button type="button" className={styles.metric} key={label} disabled={!enabled} aria-pressed={filter===localStatus} onClick={()=>openMetric(filter)}><div><span>{label}</span><strong>{value??"—"} <small>家</small></strong></div><span className={styles.metricNote}>{hint}</span></button>)}</div>
   {deleted?<p role="status">店铺已删除</p>:null}
   <StoreReadinessNotice caps={readiness} permissions={context.permissions}/>
-  {metrics && !metrics.complete?<div className={styles.notice} role="status"><AlertTriangle size={16}/><span>{metrics.unknown} 家店铺状态尚未完整确认。授权、同步和库存缺项会显示未知。</span><Button variant="ghost" size="sm" onClick={()=>void query.refetch()}>刷新状态</Button></div>:metrics?.attention?<div className={styles.notice}><AlertTriangle size={16}/><span>有 {metrics.attention} 家店铺需要处理，请查看具体授权或同步原因。</span><Button variant="ghost" size="sm" onClick={()=>update({...filters,page:1,attention:"attention"})}>立即处理</Button></div>:<div className={styles.coverage}><CheckCircle2 size={14}/>{metrics?"当前筛选范围内暂无已确认异常":"正在读取当前店铺状态"}</div>}
+  {metrics && !metrics.complete?<div className={styles.notice} role="status"><AlertTriangle size={16}/><span>{metrics.unknown} 家店铺状态尚未完整确认；无法验证连接时不自动判为待处理。</span><Button variant="ghost" size="sm" onClick={()=>void query.refetch()}>刷新状态</Button></div>:allItemsLoaded&&data!.items.some(connectionFailed)?<div className={styles.notice}><AlertTriangle size={16}/><span>有 {data!.items.filter(connectionFailed).length} 家已绑定且服务有效的店铺连接异常，需要重新检查授权或接口。</span><Button variant="ghost" size="sm" onClick={()=>openMetric("attention")}>查看待处理</Button></div>:<div className={styles.coverage}><CheckCircle2 size={14}/>{metrics?"当前没有已确认的绑定后连接异常":"正在读取店铺状态"}</div>}
   <form className={styles.filters} aria-label="店铺筛选" onSubmit={event=>{event.preventDefault();update({...draft,page:1,q:draft.q?.trim()||undefined})}}>
    <div className={styles.filterCriteria} aria-label="条件筛选">
     <Select aria-label="平台" value={draft.platform??""} onChange={event=>setDraft({...draft,platform:(event.target.value||undefined) as CatalogFilters["platform"]})}><option value="">全部平台</option><option value="shein">SHEIN</option><option value="temu">TEMU</option><option value="tiktokshop">TikTok Shop</option><option value="walmart">Walmart 美国站</option></Select>
     <Select aria-label="站点" value={draft.region??""} onChange={event=>setDraft({...draft,region:event.target.value||undefined})}><option value="">全部站点</option>{data?.facets.regions.map(region=><option key={region} value={region}>{region}</option>)}</Select>
     <Select aria-label="店铺类型" value={draft.applicationType??""} onChange={event=>setDraft({...draft,applicationType:(event.target.value||undefined) as CatalogFilters["applicationType"]})}><option value="">全部类型</option>{draft.applicationType&&!data?.facets.applicationTypes.includes(draft.applicationType)?<option value={draft.applicationType} disabled>{typeLabel(draft.applicationType)}（当前不可用）</option>:null}{data?.facets.applicationTypes.map(type=><option key={type} value={type}>{typeLabel(type)}</option>)}</Select>
     <Select aria-label="分组" value={draft.groupId??""} onChange={event=>setDraft({...draft,groupId:event.target.value||undefined})}><option value="">全部分组</option><option value="ungrouped">未分组</option>{data?.facets.groups.map(group=><option key={group.id} value={group.id}>{group.name}</option>)}</Select>
-    <Select aria-label="店铺状态" value={draft.attention??""} onChange={event=>setDraft({...draft,attention:(event.target.value||undefined) as CatalogFilters["attention"]})}><option value="">全部状态</option><option value="normal">正常</option><option value="attention">需要处理</option><option value="unknown">待确认</option></Select>
+    <Select aria-label="店铺状态" value={draft.attention??""} onChange={event=>setDraft({...draft,attention:(event.target.value||undefined) as CatalogFilters["attention"]})}><option value="">全部状态</option><option value="normal">正常</option><option value="attention">需要处理（综合异常）</option><option value="unknown">待确认</option></Select>
    </div>
    <div className={styles.filterSearchActions} aria-label="搜索与操作">
     <label className={styles.search}><Search size={16}/><Input type="search" aria-label="搜索店铺" placeholder="输入店铺名称或 ID" value={draft.q??""} onChange={event=>setDraft({...draft,q:event.target.value})}/></label>
@@ -87,7 +92,7 @@ function ScopedStoreList({scope}:{scope:StoreCenterScope}){
    <div className={styles.compactRow}>
      <div className={styles.compactIdentity}>{canWrite?<input aria-label={`选择${item.name}`} type="checkbox" checked={selected.includes(item.id)} onChange={event=>check(item,event.target.checked)}/>:null}<div><h3>{item.name}</h3><p>店铺 ID：{item.externalStoreId||item.id}</p><p>负责人：<ResponsibleName id={item.profile.responsibleMemberId} scope={scope}/> · {data.facets.groups.find(group=>group.id===item.profile.groupId)?.name??"未分组"}</p></div></div>
      <div className={styles.compactTags}><span>{item.platform.toUpperCase()}</span><span>{item.region}</span><span>{typeLabel(item.signals.applicationType)}</span></div>
-     <div className={styles.compactState}><strong data-tone={item.serviceStatus==="expired"?"expired":item.serviceStatus==="active"?"good":"unknown"}>{item.serviceStatus==="expired"?"服务已到期":item.serviceStatus==="active"?"服务有效":item.serviceStatus==="suspended"?"服务暂停":"服务待核实"}</strong><small>{connectionLabel(item.connectionStatus)} · {item.signals.syncHealthy?"同步正常":syncLabel(item.signals.productSync,item.signals.orderSync)}</small><small>服务期限：{item.serviceExpiresAt?new Date(item.serviceExpiresAt).toLocaleDateString("zh-CN"):"待核实"}</small></div>
+     <div className={styles.compactState}><strong data-tone={item.serviceStatus==="expired"?"expired":connectionFailed(item)?"expired":item.serviceStatus==="active"?"good":"unknown"}>{item.serviceStatus==="expired"?"服务已到期":connectionFailed(item)?"连接异常":item.serviceStatus==="active"?"服务有效":item.serviceStatus==="suspended"?"服务暂停":"服务待核实"}</strong><small>{connectionLabel(item.connectionStatus)} · {item.signals.syncHealthy?"同步正常":syncLabel(item.signals.productSync,item.signals.orderSync)}</small><small>服务期限：{item.serviceExpiresAt?new Date(item.serviceExpiresAt).toLocaleDateString("zh-CN"):"待核实"}</small></div>
      <div className={styles.compactActions}>{item.serviceStatus==="expired"?<Link className={styles.enter} href={`/workbench/stores/${item.id}`}>续费</Link>:null}<Link className={styles.outlineLink} href={`/workbench/stores/${item.id}`}>管理店铺</Link></div>
    </div>
   </li>)}</ul>}
