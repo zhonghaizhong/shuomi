@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./route-detail-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit, plansDemoPurchases, plansDemoRates } from "./plans-demo-facts";
@@ -162,6 +162,7 @@ function priceOf(type:string,quantity:number):number{
 function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filters, setFilter, resetFilters, router }: DetailState & { pathname: string; router: ReturnType<typeof useRouter> }) {
   const [purchaseAmounts,setPurchaseAmounts]=useState<Record<string,string>>({});
   const [demoPurchases,setDemoPurchases]=useState<DemoPurchase[]>([]);
+  const purchaseSubmitting=useRef(false);
   const [requestReview,setRequestReview]=useState<{type:string;quantity:number;quote:string}|null>(null);
   const [walletAmount,setWalletAmount]=useState("");
   const [invoiceOpen,setInvoiceOpen]=useState(false);
@@ -182,15 +183,15 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const additionalSpent=demoPurchases.filter(p=>p.type!=="账户充值").reduce((sum,p)=>sum+p.amountCny,0);
   const additionalTopups=demoPurchases.filter(p=>p.type==="账户充值").reduce((sum,p)=>sum+p.amountCny,0);
   const openReview=(type:string,quantity:number,quote:string)=>{
-   setRequestNotice("");
+   setRequestNotice("");purchaseSubmitting.current=false;
    if(!Number.isFinite(quantity)||quantity<=0){setRequestNotice("请输入大于 0 的有效数量或金额。");return}
-   if(!Number.isSafeInteger(Math.round(quantity*100))||Math.round(quantity*100)!==quantity*100){setRequestNotice("金额最多保留两位小数。");return}
+   if(!Number.isSafeInteger(Math.round(quantity*100))||Math.abs(Math.round(quantity*100)-quantity*100)>0.000001){setRequestNotice("金额最多保留两位小数。");return}
    if((type==="店铺服务"||type==="企业存储")&&!Number.isInteger(quantity)){setRequestNotice("店铺续费期数和扩容 GiB 必须为整数。");return}
    if(type!=="账户充值"&&priceOf(type,quantity)>currentWallet){setRequestNotice("演示钱包余额不足，请调整购买数量。");return}
    setRequestReview({type,quantity,quote});
   };
   const confirmPurchase=()=>{
-   if(!requestReview)return;
+   if(!requestReview||purchaseSubmitting.current)return;
    const {type,quantity}=requestReview;
    const amount=priceOf(type,quantity);
    const fresh=readDemoPurchases();
@@ -199,7 +200,8 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
    const detail=type==="店铺服务"?quantity+" 期（每期 30 天）":type==="token 积分"?Math.round(quantity*plansDemoRates.aiPointsPerCny).toLocaleString("zh-CN")+" 积分":type==="数据资源"?Math.round(quantity/plansDemoRates.dataCnyPerRow).toLocaleString("zh-CN")+" 条":type==="企业存储"?quantity+" GiB / 30 天":"模拟钱包充值";
    const entry:DemoPurchase={id:crypto.randomUUID(),at:new Date().toLocaleString("zh-CN",{hour12:false}),type,quantity,amountCny:amount,detail,balanceAfter:Math.round((freshBalance+(type==="账户充值"?amount:-amount))*100)/100,status:type==="账户充值"?"模拟充值成功":"模拟购买成功"};
    const next=[entry,...fresh].slice(0,200);
-   try{localStorage.setItem(PLANS_PURCHASES_KEY,JSON.stringify(next))}catch{setRequestNotice("当前浏览器无法保存交易，未扣款。");return}
+   purchaseSubmitting.current=true;
+   try{localStorage.setItem(PLANS_PURCHASES_KEY,JSON.stringify(next))}catch{purchaseSubmitting.current=false;setRequestNotice("当前浏览器无法保存交易，未扣款。");return}
    setDemoPurchases(next);setRequestReview(null);setRequestNotice(type==="账户充值"?"模拟充值已到账（非真实付款）。":"模拟购买成功，权益已更新（非真实付款）。");
    setPurchaseAmounts(v=>({...v,[type]:""}));if(type==="账户充值")setWalletAmount("");
   };
