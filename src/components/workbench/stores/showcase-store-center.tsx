@@ -5,7 +5,22 @@ import css from "./showcase-store-center.module.css";
 import {useShowcaseSuite} from "../account/showcase-account-state";
 
 type Store={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string};
-const key="shuomi-store-center-empty-v4";
+const keyPrefix="shuomi-store-center-demo-ten-v1";
+const demoSites=["美国站","加拿大站","英国站","德国站","法国站"] as const;
+const demoTenant="SM-ENT-000001";
+const demoColleague="SIM-COLLEAGUE-01";
+function storeKey(organizationId:string,memberId:string){return keyPrefix+"-"+organizationId+"-"+memberId;}
+function seededStores(organizationId:string,memberId:string):Store[]{
+ if(organizationId!==demoTenant||!["admin",demoColleague].includes(memberId))return [];
+ const isAdmin=memberId==="admin";
+ return demoSites.map((region,index)=>({
+  id:(isAdmin?"SIM-ADMIN-":"SIM-C01-")+String(index+1).padStart(2,"0"),
+  name:(isAdmin?"管理员演示店铺":"同事01演示店铺")+String(index+1).padStart(2,"0"),
+  platform:"SHEIN",region,type:["全托管","半托管","自营","全托管","半托管"][index],
+  status:"待授权",createdAt:"2026-11-22 15:19",
+  group:"未分组",owner:isAdmin?"管理员":"模拟同事01"
+ }));
+}
 // Reset previous demo stores and groups once after deployment. Leave newly created v4 records intact.
 const obsoleteKeys=["shuomi-store-center-empty-v3","shuomi-store-center-empty-v2","shuomi-store-center-empty-v1"];
 // The first three entry descriptions follow Figma's Store Center introduction (1220:359).
@@ -30,12 +45,21 @@ const collaboration=[
  {title:"店铺商品",detail:"刊登状态、库存及数据同步"},
  {title:"订单管理",detail:"待办、采购、发货及物流跟踪"},
 ] as const;
-function read():Store[]{try{for(const old of obsoleteKeys){sessionStorage.removeItem(old);sessionStorage.removeItem(old+"-groups");}const v=JSON.parse(sessionStorage.getItem(key)||"[]");return Array.isArray(v)?v.filter((x:Store)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"):[]}catch{return []}}
-export function ShowcaseStoreCenter({pathname,navigate}:{pathname:string;navigate:(path:string)=>void}){
+function read(organizationId:string,memberId:string):Store[]{
+ const key=storeKey(organizationId,memberId);
+ try{
+  for(const old of obsoleteKeys){sessionStorage.removeItem(old);sessionStorage.removeItem(old+"-groups");}
+  const raw=sessionStorage.getItem(key);
+  if(raw===null)return seededStores(organizationId,memberId);
+  const values=JSON.parse(raw);
+  return Array.isArray(values)?values.filter((x:Store)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&x.platform==="SHEIN"&&x.status==="待授权"):[];
+ }catch{return seededStores(organizationId,memberId);}
+}
+export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organizationId=demoTenant}:{pathname:string;navigate:(path:string)=>void;memberId?:string;organizationId?:string}){
+ const key=storeKey(organizationId,memberId);
  const {state:enterpriseState}=useShowcaseSuite();
  const owners=[...new Set(enterpriseState.members.filter(member=>member.status==="正常").map(member=>member.name))];
- const [stores,setStores]=useState<Store[]>([]);
- useEffect(()=>{setStores(read())},[]);
+ const [stores,setStores]=useState<Store[]>(()=>read(organizationId,memberId));
  const [dialog,setDialog]=useState(false),[name,setName]=useState(""),[region,setRegion]=useState("美国站"),[type,setType]=useState("半托管"),[newGroup,setNewGroup]=useState("未分组"),[newOwner,setNewOwner]=useState("");
  const [authAccount,setAuthAccount]=useState(""),[authPassword,setAuthPassword]=useState(""),[authCode,setAuthCode]=useState(""),[showPassword,setShowPassword]=useState(false),[fixedIp,setFixedIp]=useState(false),[codeNotice,setCodeNotice]=useState(""),[manageId,setManageId]=useState<string|null>(null),[moreId,setMoreId]=useState<string|null>(null),[groupRename,setGroupRename]=useState<string|null>(null),[groupRenameValue,setGroupRenameValue]=useState("");
  const [query,setQuery]=useState(""),[search,setSearch]=useState(""),[notice,setNotice]=useState("");
@@ -48,7 +72,6 @@ export function ShowcaseStoreCenter({pathname,navigate}:{pathname:string;navigat
  const [platformFilter,setPlatformFilter]=useState("全部平台"),[regionFilter,setRegionFilter]=useState("全部站点"),[typeFilter,setTypeFilter]=useState("全部类型");
  const [appliedFilters,setAppliedFilters]=useState({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"});
  useEffect(()=>{try{sessionStorage.setItem(key,JSON.stringify(stores))}catch{}},[stores]);
- useEffect(()=>{try{const v=JSON.parse(sessionStorage.getItem(key+"-groups")||"[]");if(Array.isArray(v))setGroups(v.filter((x):x is string=>typeof x==="string"))}catch{}},[]);
  useEffect(()=>{try{sessionStorage.setItem(key+"-groups",JSON.stringify(groups))}catch{}},[groups]);
  useEffect(()=>{setQuery("");setSearch("");setNotice("");setDialog(false);setEditing(null);setConfirmDelete(null);setInspecting(null);setAuthorizationHelp(false);setSyncing(null);setEntered(null);setGroupsOpen(false);setManageId(null);setMoreId(null);setCreatingGroup(false);setAddingOwner(false);setGroupError("");setDetailTab("店铺概览")},[pathname]);
  useEffect(()=>{if(!dialog&&!editing&&!confirmDelete&&!inspecting&&!authorizationHelp&&!syncing&&!groupsOpen&&!manageId&&!moreId&&!creatingGroup&&!addingOwner&&!groupRename)return;const onKey=(e:KeyboardEvent)=>{if(e.key!=="Escape")return;if(creatingGroup){setCreatingGroup(false);return;}if(addingOwner){setAddingOwner(false);return;}if(groupRename){setGroupRename(null);return;}if(groupsOpen){setGroupsOpen(false);return;}if(confirmDelete){setConfirmDelete(null);return;}if(editing){setEditing(null);return;}if(inspecting){setInspecting(null);return;}if(syncing){setSyncing(null);return;}if(authorizationHelp){setAuthorizationHelp(false);return;}if(dialog||manageId){setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("");return;}if(moreId)setMoreId(null)};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey)},[dialog,editing,confirmDelete,inspecting,authorizationHelp,syncing,groupsOpen,manageId,moreId,creatingGroup,addingOwner,groupRename]);
@@ -120,7 +143,7 @@ export function ShowcaseStoreCenter({pathname,navigate}:{pathname:string;navigat
   </>:route==="stores"?<>
    <section className={css.metrics} aria-label="店铺经营概览">{[["店铺总数",stores.length,"当前店铺资产"],["正常店铺",0,"已授权且同步正常"],["需要处理",stores.length,"等待平台授权"]].map(([title,val,subtitle])=><article key={title} className={css.metricCard}><strong>{val}</strong><div><span>{title}</span><small>{subtitle}</small></div></article>)}</section>
    {stores.length>0?<section className={css.attention}><span>有 {stores.length} 家店铺需要处理：尚未完成 SHEIN 官方授权。</span><button onClick={()=>{resetFilters();setStatusFilter("需要处理");setAppliedFilters(f=>({...f,status:"需要处理"}))}}>立即处理</button></section>:null}
-   <form className={css.filters} onSubmit={e=>{e.preventDefault();commitFilters()}}><label><Search size={16}/><input aria-label="搜索店铺" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索店铺名称或 ID"/></label><select aria-label="平台筛选" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option>全部平台</option><option>SHEIN</option></select><select aria-label="站点筛选" value={regionFilter} onChange={e=>setRegionFilter(e.target.value)}><option>全部站点</option><option>美国站</option><option>加拿大站</option><option>其他站点</option></select><select aria-label="店铺类型筛选" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option>全部类型</option><option>半托管</option><option>全托管</option><option>自营</option></select><select aria-label="店铺状态筛选" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option>全部状态</option><option>正常</option><option>需要处理</option><option>待授权</option></select><select aria-label="店铺分组筛选" value={groupFilter} onChange={e=>setGroupFilter(e.target.value)}><option>全部分组</option><option>未分组</option>{groups.map(g=><option key={g}>{g}</option>)}</select><button type="button" onClick={resetFilters}>重置</button><button className={css.primary} type="submit">确认</button></form>
+   <form className={css.filters} onSubmit={e=>{e.preventDefault();commitFilters()}}><label><Search size={16}/><input aria-label="搜索店铺" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索店铺名称或 ID"/></label><select aria-label="平台筛选" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option>全部平台</option><option>SHEIN</option></select><select aria-label="站点筛选" value={regionFilter} onChange={e=>setRegionFilter(e.target.value)}><option>全部站点</option>{demoSites.map(site=><option key={site}>{site}</option>)}<option>其他站点</option></select><select aria-label="店铺类型筛选" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option>全部类型</option><option>半托管</option><option>全托管</option><option>自营</option></select><select aria-label="店铺状态筛选" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option>全部状态</option><option>正常</option><option>需要处理</option><option>待授权</option></select><select aria-label="店铺分组筛选" value={groupFilter} onChange={e=>setGroupFilter(e.target.value)}><option>全部分组</option><option>未分组</option>{groups.map(g=><option key={g}>{g}</option>)}</select><button type="button" onClick={resetFilters}>重置</button><button className={css.primary} type="submit">确认</button></form>
    <section className={css.panel}><header><h2>店铺列表</h2><span>共 {list.length} 家 · 当前开放平台：SHEIN</span></header>{list.length?<div className={css.storeList}>{list.map(s=><article className={css.storeCard} key={s.id}><div className={css.storeTop}><div className={css.storeIdentity}><span className={css.storeAvatar}>S</span><div><strong>{s.name}</strong><small>店铺 ID：{s.id}</small></div></div><div className={css.storeTags}><span>SHEIN</span><span>{s.region}</span><span>{s.type}</span><span>{s.group||"未分组"}</span></div><div className={css.storeStatus}><span>待授权</span><span>同步待确认</span></div></div><div className={css.storeFacts}><div><small>在线商品</small><strong>—</strong></div><div><small>待处理订单</small><strong>—</strong></div><div><small>库存预警</small><strong>—</strong></div><div><small>负责人</small><strong>{s.owner||"未分配"}</strong></div></div><footer className={css.storeBottom}><span>最近同步：尚未授权</span><div className={css.storeButtons}><button onClick={()=>enterStore(s.id,"店铺设置")}>管理</button><button onClick={()=>setSyncing(s.id)}>立即同步</button><button className={css.primary} onClick={()=>enterStore(s.id)}>进入店铺</button><button aria-label={"更多操作 · "+s.name} onClick={()=>setMoreId(current=>current===s.id?null:s.id)}>···</button></div></footer>{moreId===s.id?<div className={css.morePopover} role="menu" aria-label="店铺操作">
  <button role="menuitem" onClick={()=>{setName(s.name);setEditing(s.id);setMoreId(null)}}>修改自定义名称</button>
  <button role="menuitem" onClick={()=>enterStore(s.id,"店铺设置")}>调整负责人</button>
@@ -132,7 +155,7 @@ export function ShowcaseStoreCenter({pathname,navigate}:{pathname:string;navigat
    <section className={css.metrics}>{(route==="products"?[["已同步商品",0],["待处理",0],["同步异常",0],["已关联店铺",0]]:[["订单总数",0],["待处理订单",0],["发货中",0],["履约异常",0]]).map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
    <section className={css.panel}><header><h2>{route==="products"?"店铺商品列表":"平台订单记录"}</h2><span>共 0 条</span></header><div className={css.empty}>{route==="products"?<Package size={34}/>:<Truck size={34}/>}<h3>{route==="products"?"暂无已同步商品":"暂无平台订单"}</h3><p>{route==="products"?"店铺授权后才能同步真实商品；目前没有商品记录。":"绑定并授权店铺、同步业务数据后，订单才会出现在这里。没有订单时不显示虚构履约进度。"}</p><button className={css.primary} onClick={()=>link("/workbench/stores")}>前往我的店铺</button></div></section>
   </>}
-  <p className={css.disclaimer}>展示页已清除旧版演示店铺和关联的虚构统计；本页不会删除正式业务系统中的店铺、商品、订单及授权。</p>
+  <p className={css.disclaimer}>每个演示账号展示各自独立的待授权店铺资料；尚未完成真实 SHEIN 授权，不产生商品、订单、销售或库存数据。</p>
   {groupsOpen?<div className={css.backdrop+" "+css.groupBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setGroupsOpen(false)}}><section className={css.dialog} role="dialog" aria-modal="true" aria-label="管理分组"><header><div><h2>管理分组</h2><p>与 Figma 一致：新建分组、查看分组内店铺、移除空分组。仅保存到本地演示会话。</p></div><button aria-label="关闭弹窗" onClick={()=>setGroupsOpen(false)}>×</button></header><form onSubmit={e=>{e.preventDefault();const v=groupName.trim();if(!v||groups.includes(v))return;setGroups(old=>[...old,v]);setGroupName("");setNewGroup(v);setNotice("分组已创建，可在绑定和管理店铺时选择。")}}><label>新建分组<input aria-label="分组名称" maxLength={40} value={groupName} onChange={e=>setGroupName(e.target.value)} placeholder="输入分组名称"/></label><button className={css.primary} type="submit" disabled={!groupName.trim()||groups.includes(groupName.trim())}>创建分组</button></form><div className={css.groupList}>{["未分组",...groups].map(g=><div key={g}><strong>{g}</strong><span>{stores.filter(x=>(x.group||"未分组")===g).length} 家店铺</span>{g!=="未分组"?<button type="button" onClick={()=>{setGroupRename(g);setGroupRenameValue(g)}}>重命名</button>:null}{g!=="未分组"?<button onClick={()=>{setStores(old=>old.map(x=>x.group===g?{...x,group:"未分组"}:x));setGroups(old=>old.filter(x=>x!==g));setSettingsDraft(old=>({...old,group:old.group===g?"未分组":old.group}));if(groupFilter===g)resetFilters();setNotice("已移除分组，原店铺自动转入未分组，未解绑店铺。")}}>删除</button>:null}</div>)}</div><footer className={css.dialogActions}><button className={css.primary} onClick={()=>setGroupsOpen(false)}>完成</button></footer></section></div>:null}
 
   {creatingGroup?<div className={css.backdrop+" "+css.groupBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setCreatingGroup(false)}}><section className={css.dialog} role="dialog" aria-modal="true" aria-label="新建店铺分组"><header><div><h2>新建店铺分组</h2><p>创建后会自动加入当前绑定表单的店铺分组，不会清除已填写的信息。</p></div><button aria-label="关闭弹窗" onClick={()=>setCreatingGroup(false)}>×</button></header><form onSubmit={createBindingGroup}><label>分组名称<input required aria-label="新建店铺分组名称" autoFocus maxLength={40} value={groupName} onChange={e=>{setGroupName(e.target.value);setGroupError("")}} placeholder="请输入分组名称"/></label>{groupError?<p role="alert" className={css.warning}>{groupError}</p>:null}<footer className={css.dialogActions}><button type="button" onClick={()=>setCreatingGroup(false)}>取消</button><button className={css.primary} type="submit">创建分组</button></footer></form></section></div>:null}
