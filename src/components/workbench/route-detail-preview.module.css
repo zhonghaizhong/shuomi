@@ -2444,3 +2444,32 @@
 :global(.light) .page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="1"]{--plans-accent:#087f6c}
 :global(.light) .page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="2"]{--plans-accent:#7652c4}
 :global(.light) .page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="3"]{--plans-accent:#9a6519}
+
+
+/* Billing ledgers: consistent, bounded pagination and sticky table headers. */
+.page[data-commerce-unified="plans"] .ledgerPagination{
+ display:flex;align-items:center;justify-content:space-between;gap:14px;
+ padding:15px 16px 4px;margin-top:2px;flex-wrap:wrap;
+ border-top:1px solid var(--plans-border);
+}
+.page[data-commerce-unified="plans"] .ledgerPageSize,
+.page[data-commerce-unified="plans"] .ledgerPageActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--plans-muted);font-size:13px}
+.page[data-commerce-unified="plans"] .ledgerPagination select{
+ min-width:84px;min-height:35px;padding:6px 9px;
+ border:1px solid var(--plans-border);border-radius:7px;
+ background:var(--plans-bg);color:var(--plans-text);font:inherit;
+}
+.page[data-commerce-unified="plans"] .ledgerPagination button{
+ min-height:35px;padding:5px 12px;border:1px solid var(--plans-border);
+ border-radius:7px;background:var(--plans-bg);color:var(--plans-text);
+ font:inherit;font-weight:600;cursor:pointer;
+}
+.page[data-commerce-unified="plans"] .ledgerPagination button:disabled{opacity:.45;cursor:not-allowed}
+.page[data-commerce-unified="plans"] .ledgerPagination select:focus-visible,
+.page[data-commerce-unified="plans"] .ledgerPagination button:focus-visible{outline:2px solid var(--plans-primary);outline-offset:2px}
+.page[data-commerce-unified="plans"] .planTableScroll{max-height:620px;overflow:auto;overscroll-behavior:contain}
+.page[data-commerce-unified="plans"] .planTableScroll .tableHead{position:sticky;top:0;z-index:2}
+@media(max-width:620px){
+ .page[data-commerce-unified="plans"] .ledgerPagination{padding:12px 10px;align-items:start}
+ .page[data-commerce-unified="plans"] .ledgerPageSize,.page[data-commerce-unified="plans"] .ledgerPageActions{width:100%;justify-content:space-between}
+}
