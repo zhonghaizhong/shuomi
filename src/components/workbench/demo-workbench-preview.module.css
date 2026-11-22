@@ -3363,112 +3363,25 @@
 }
 @media(max-width:700px){.page[data-commerce-unified="plans"] .planBottom>aside>div{flex-wrap:wrap}}
 
-/* Plans overview: one coherent statistic hierarchy, neutral secondary navigation. */
-.page[data-commerce-unified="plans"] .planStats>div.planStat{
- display:flex;align-items:center;gap:14px;min-height:94px;padding:15px;
-}
-.page[data-commerce-unified="plans"] .planStats .planStatValue{
- display:flex;align-items:center;justify-content:center;
- min-width:106px;min-height:57px;padding:8px 12px;flex-shrink:0;
- border-radius:7px;border:1px solid color-mix(in srgb,var(--plans-primary) 30%,var(--plans-line));
- background:color-mix(in srgb,var(--plans-primary) 12%,var(--plans-bg));
- color:var(--plans-text);font-size:23px;line-height:1.3;font-weight:700;white-space:nowrap;
-}
-.page[data-commerce-unified="plans"] .planStats .planStatCopy{display:grid;gap:4px;min-width:0}
-.page[data-commerce-unified="plans"] .planStats .planStatCopy span{font-size:14px;color:var(--plans-text);font-weight:600}
-.page[data-commerce-unified="plans"] .planStats .planStatCopy small{font-size:12px;color:var(--plans-muted)}
-.page[data-commerce-unified="plans"] .planActions button{
- min-height:36px;padding:5px 10px;border-color:var(--plans-line);
- background:var(--plans-inset);color:var(--plans-text);
-}
-.page[data-commerce-unified="plans"] .planEntrances article button{
- background:var(--plans-inset);color:var(--plans-primary);border-color:var(--plans-line);
-}
-@media(max-width:950px){.page[data-commerce-unified="plans"] .planStats .planStatValue{min-width:94px;font-size:20px}}
-@media(max-width:650px){.page[data-commerce-unified="plans"] .planStats>div.planStat{flex-wrap:wrap}.page[data-commerce-unified="plans"] .planStats .planStatValue{min-width:98px}}
-
-
-/* Plans entry cards: precise hierarchy and restrained Vuexy affordances. */
-.page[data-commerce-unified="plans"] .planEntrances .planEntryCard{
- display:flex;flex-direction:column;gap:14px;
- min-height:165px;padding:19px 20px;
- background:var(--plans-bg);
- border:1px solid var(--plans-line);border-radius:8px;
- box-shadow:none;
-}
-.page[data-commerce-unified="plans"] .planEntrances .planEntryTop{
- display:flex;align-items:center;gap:11px;min-width:0;
-}
-.page[data-commerce-unified="plans"] .planEntrances .planEntryIndex{
- display:grid;place-items:center;flex:0 0 36px;
- width:36px;height:36px;border-radius:7px;
- background:color-mix(in srgb,var(--plans-primary) 12%,var(--plans-bg));
- border:1px solid color-mix(in srgb,var(--plans-primary) 27%,var(--plans-line));
- color:var(--plans-primary);font-size:14px;font-weight:700;
-}
-.page[data-commerce-unified="plans"] .planEntrances .planEntryTop h3{
- margin:0;color:var(--plans-text);font-size:17px;line-height:1.35;
- white-space:nowrap;
-}
-.page[data-commerce-unified="plans"] .planEntrances .planEntryCard p{
- flex:1;min-height:0;margin:0;color:var(--plans-muted);
- font-size:14px;line-height:1.55;
-}
-.page[data-commerce-unified="plans"] .planEntrances .planEntryCard button{
- margin-top:auto;align-self:flex-start;min-height:34px;
- padding:5px 0;border:0;background:transparent;
- color:var(--plans-primary);font-size:14px;font-weight:600;
-}
-.page[data-commerce-unified="plans"] .planEntrances .planEntryCard button:hover{
- background:transparent;text-decoration:underline;
-}
-.page[data-commerce-unified="plans"] .planEntrances .planEntryCard:focus-within{
- border-color:var(--plans-primary);
+/* Shared overview details: preserve functional reminders and restrained actions. */
+.page[data-commerce-unified="plans"] .planBottom>aside>div button{
+ min-height:36px;padding:6px 12px;background:var(--plans-bg);
+ border:1px solid var(--plans-line);border-radius:6px;
+ color:var(--plans-primary);font-size:14px;
 }
 .page[data-commerce-unified="plans"] .usageBar:not(:has(i)){
- min-height:56px;padding:10px 0;
+ min-height:58px;padding:11px 0;
 }
 .page[data-commerce-unified="plans"] .usageBar:not(:has(i))>div{
  display:grid;grid-template-columns:minmax(110px,1fr) minmax(130px,1fr) minmax(145px,1fr);
  align-items:center;gap:12px;
 }
-.page[data-commerce-unified="plans"] .planBottom>aside>div button{
- min-height:34px;padding:5px 10px;background:var(--plans-bg);
- border-color:var(--plans-line);color:var(--plans-primary);
-}
 @media(max-width:950px){
  .page[data-commerce-unified="plans"] .usageBar:not(:has(i))>div{
- grid-template-columns:1fr 1fr;gap:5px 12px;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 12px;
  }
  .page[data-commerce-unified="plans"] .usageBar:not(:has(i))>div small{grid-column:2}
 }
-
-
-/* Final responsive guard: protect large numerical tiles from cramped desktop widths. */
-@media(max-width:1180px){
- .page[data-commerce-unified="plans"] .planStats{
-  grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
- }
- .page[data-commerce-unified="plans"] .planStats>div.planStat{min-width:0}
- .page[data-commerce-unified="plans"] .planStats .planStatValue{
-  max-width:58%;min-width:106px;white-space:normal;overflow-wrap:anywhere;
- }
-}
-@media(max-width:630px){
- .page[data-commerce-unified="plans"] .planStats{
-  grid-template-columns:1fr;gap:12px;
- }
- .page[data-commerce-unified="plans"] .planStats>div.planStat{
-  flex-wrap:nowrap;min-height:82px;
- }
- .page[data-commerce-unified="plans"] .planStats .planStatValue{
-  min-width:112px;max-width:55%;font-size:20px;
- }
- .page[data-commerce-unified="plans"] .planEntrances .planEntryCard{
-  min-height:135px;
- }
-}
-
 
 /* Plans: measured Vuexy layout; preserve original content, actions and page navigation. */
 .page[data-commerce-unified="plans"] .planOverview {
@@ -3587,4 +3500,61 @@
  .page[data-commerce-unified="plans"] .planStats>div.planStat {min-height:88px;padding:12px}
  .page[data-commerce-unified="plans"] .planStats .planStatValue {min-width:125px;max-width:60%;font-size:21px}
  .page[data-commerce-unified="plans"] .planEntrances .planEntryCard {min-height:150px}
+}
+
+
+/* Final overview component alignment: only plans, not shared navigation. */
+.page[data-commerce-unified="plans"] .planStats .planStatValue {
+ flex-shrink:0;max-width:62%; min-width:0;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard {
+ min-width:0; align-items:stretch;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryTop h3 {
+ font-weight:650; font-size:17px; color:var(--plans-text);
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard button {
+ align-self:flex-start; color:var(--plans-primary);background:var(--plans-inset);
+}
+.page[data-commerce-unified="plans"] .planBottom {
+ align-items:stretch;gap:20px;
+}
+.page[data-commerce-unified="plans"] .planBottom>article,
+.page[data-commerce-unified="plans"] .planBottom>aside {
+ min-width:0;min-height:0;padding:22px 24px;
+ border:1px solid var(--plans-line);border-radius:8px;
+ background:var(--plans-bg);
+}
+.page[data-commerce-unified="plans"] .planBottom>article>header {
+ display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+}
+.page[data-commerce-unified="plans"] .planBottom h2 {
+ color:var(--plans-text);font-size:20px;font-weight:650;line-height:1.4;
+}
+.page[data-commerce-unified="plans"] .planBottom :is(p,small,span) {
+ color:var(--plans-muted);line-height:1.55;
+}
+.page[data-commerce-unified="plans"] .planBottom>aside>div {
+ background:var(--plans-inset);border-color:var(--plans-line);
+}
+.page[data-commerce-unified="plans"] .planBottom button {
+ min-height:36px;border:1px solid var(--plans-line);
+ border-radius:6px;padding:6px 12px;
+ color:var(--plans-primary);background:var(--plans-inset);
+ font-size:14px;font-weight:600;
+}
+.page[data-commerce-unified="plans"] .planBottom button:hover {
+ border-color:var(--plans-primary);
+ background:color-mix(in srgb,var(--plans-primary) 9%,var(--plans-bg));
+}
+.page[data-commerce-unified="plans"] .planBottom button:focus-visible {
+ outline:2px solid var(--plans-primary);outline-offset:2px;
+}
+@media(max-width:950px) {
+ .page[data-commerce-unified="plans"] .planBottom {grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:620px) {
+ .page[data-commerce-unified="plans"] .planBottom>article,
+ .page[data-commerce-unified="plans"] .planBottom>aside {padding:17px}
+ .page[data-commerce-unified="plans"] .planBottom>article>header {flex-wrap:wrap}
 }
