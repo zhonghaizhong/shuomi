@@ -4,7 +4,7 @@ import {showcaseTenant as tenant} from "./showcase-tenant";
 import {resetLegacyAccountDemoOnce} from "./showcase-data-reset";
 import {consoleNavigation, type ConsoleNavNode} from "@/lib/workbench/console-navigation";
 
-export type Member={id:string;name:string;email:string;role:string;status:"正常"|"已停用"|"邀请中";joined:number};
+export type Member={id:string;name:string;email:string;phone?:string;role:string;status:"正常"|"已停用"|"邀请中";joined:number};
 export type AccountEvent={id:string;at:number;actor:string;category:string;message:string};
 export type ReferralItem={id:string;at:number;referred:string;amount:number;status:"已结算"|"已提现";orderId?:string;paidCny?:number;rate?:number};
 export type ReferredCustomer={id:string;name:string;registeredAt:number;walletTopUpCny:number;storeId:string;storeOrderId:string;storeFeeCny:number;walletBalanceCny:number;commissionCny:number;status:"模拟绑定已消费"};
