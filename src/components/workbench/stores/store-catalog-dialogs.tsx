@@ -16,11 +16,12 @@ import {StoreOfficialConnection} from "./store-official-connection";
 import {StoreSyncDialog} from "./store-sync-dialog";
 import styles from "./store-catalog.module.css";
 
-export type CatalogDialog={kind:"bind"}|{kind:"groups"}|{kind:"profile"|"rename"|"sync";item:CatalogItem;initialKind?:"products"|"orders"}|{kind:"assign";items:CatalogItem[]};
+export type CatalogDialog={kind:"bind"}|{kind:"groups"}|{kind:"profile"|"rename"|"sync";item:CatalogItem;initialKind?:"products"|"orders"}|{kind:"assign"|"syncBatch";items:CatalogItem[]};
 type Props={dialog:CatalogDialog;scope:StoreCenterScope;groups:(Group & {count?:number})[];canManageGroups:boolean;onClose:()=>void;onChanged:()=>Promise<unknown>};
 export function StoreCatalogDialogs(props:Props){
  const {dialog}=props;
  if(dialog.kind==="bind")return <BindDialog {...props}/>;
+ if(dialog.kind==="syncBatch")return <StoreSyncDialog initialKind="products" selectedStoreIds={dialog.items.map(item=>item.id)} store={dialog.items[0]} scope={props.scope} onClose={props.onClose} onChanged={props.onChanged}/>;
  if(dialog.kind==="sync")return <StoreSyncDialog initialKind={dialog.initialKind} store={dialog.item} scope={props.scope} onClose={props.onClose} onChanged={props.onChanged}/>;
  if(dialog.kind==="rename")return <RenameDialog {...props} item={dialog.item}/>;
  return <MetadataDialog {...props}/>;
