@@ -163,7 +163,7 @@ export const colleague01Id="SIM-COLLEAGUE-01";
 export function initialMemberReferralPortfolio(memberId:string):ReferralPortfolio{
  const code="SM-"+memberId.replace(/[^A-Z0-9]/gi,"").toUpperCase();
  if(memberId!==colleague01Id)return {referredCustomers:[],trackedVisits:[],referrals:[],withdrawals:[],payoutAccount:"",referralCode:code};
- const customers:ReferredCustomer[]=Array.from({length:6},(_,index)=>{
+ const customers:ReferredCustomer[]=Array.from({length:6},(_,index):ReferredCustomer=>{
   const n=String(index+1).padStart(2,"0");
   return {id:"SIM-C01-CUSTOMER-"+n,name:"同事01模拟客户"+n,
    registeredAt:Date.UTC(2026,10,22,3,10+index),walletTopUpCny:200,
@@ -171,7 +171,7 @@ export function initialMemberReferralPortfolio(memberId:string):ReferralPortfoli
    storeFeeCny:demoStoreFeeCny,walletBalanceCny:200-demoStoreFeeCny,
    commissionCny:Math.round(demoStoreFeeCny*demoReferralRate*100)/100,status:"模拟绑定已消费"};
  });
- const visitors:TrackedVisit[]=Array.from({length:4},(_,index)=>{
+ const visitors:TrackedVisit[]=Array.from({length:4},(_,index):TrackedVisit=>{
   const n=String(index+7).padStart(2,"0");
   return {id:"SIM-C01-VISITOR-"+n,visitedAt:Date.UTC(2026,10,22,3,20+index),
    source:index%2===0?"推广链接":"推广码",
