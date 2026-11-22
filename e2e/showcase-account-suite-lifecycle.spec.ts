@@ -107,7 +107,8 @@ test("synthetic referral earnings are attributed to store consumption and manual
  await page.goto(base+"/referrals/earnings");
  await expect(suite).toContainText("已提现（模拟）");
  await page.goto(base);
- await expect(page.locator('[data-commerce-unified="account"]')).toContainText("¥336.00");
+ await expect(page.locator('[data-commerce-unified="account"]')).toContainText("可提现 ¥236.00");
+ await expect(page.locator('[data-commerce-unified="account"]')).toContainText("累计收益 ¥456.00");
  await page.goto(base+"/organization/audit");
  await expect(suite).toContainText("模拟提现并审核通过");
 });
@@ -129,6 +130,8 @@ test("three colleagues and thirty invited users keep twenty paid commissions aft
  await expect(rows).toHaveCount(11);
  await expect(suite).toContainText("¥336.00");
  await expect(suite).toContainText("10%");
+ await suite.getByRole("navigation",{name:"推广收益明细分页"}).getByRole("button",{name:"下一页"}).click();
+ await expect(suite).toContainText("SIM-ORDER-STORE-18");
  await suite.getByRole("navigation",{name:"推广收益明细分页"}).getByRole("button",{name:"下一页"}).click();
  await expect(suite).toContainText("SIM-ORDER-STORE-20");
  await page.reload();
