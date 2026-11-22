@@ -287,7 +287,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   <form className={css.manageForm} onSubmit={submitBinding}>
     <div className={css.bindingGrid}>
       <label>平台<select aria-label="平台" value="SHEIN" disabled><option>SHEIN</option></select></label>
-      <label>站点<select aria-label="站点" value={region} disabled={Boolean(managedStore)} onChange={e=>setRegion(e.target.value)}><option>美国站</option><option>加拿大站</option><option>其他站点</option></select></label>
+      <label>站点<select aria-label="站点" value={region} disabled={Boolean(managedStore)} onChange={e=>setRegion(e.target.value)}>{demoSites.map(site=><option key={site}>{site}</option>)}<option>其他站点</option></select></label>
       <label>店铺类型<select aria-label="店铺类型" value={type} disabled={Boolean(managedStore)} onChange={e=>setType(e.target.value)}><option>半托管</option><option>全托管</option><option>自营</option></select></label>
       <label>自定义名称<input aria-label="自定义名称" required maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="请输入店铺自定义名称"/><small>仅在系统内显示，不影响平台店铺原名。</small></label>
       <label>负责人<select aria-label="负责人" value={newOwner} onChange={e=>setNewOwner(e.target.value)}><option value="">管理员（默认）</option>{owners.map(owner=><option key={owner} value={owner}>{owner}</option>)}</select><small>用于任务分配和日常协作。<button type="button" className={css.inlineLink} onClick={()=>setAddingOwner(true)}>＋ 添加负责人</button></small></label>
