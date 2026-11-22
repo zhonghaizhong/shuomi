@@ -230,15 +230,40 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const [usageMovement,setUsageMovement]=useState("全部变动");
   const [usageStore,setUsageStore]=useState("全部店铺");
   const [appliedUsage,setAppliedUsage]=useState({query:"",movement:"全部变动",store:"全部店铺",tab:"全部流水"});
-  const [orderDraft,setOrderDraft]=useState({query:"",time:"全部时间",type:"全部类型",status:"全部状态"});
-  const [appliedOrder,setAppliedOrder]=useState({query:"",time:"全部时间",type:"全部类型",status:"全部状态"});
+  type BillFilters={query:string;time:string;from:string;until:string;types:string[];statuses:string[]};
+  const emptyBillFilters=():BillFilters=>({query:"",time:"全部时间",from:"",until:"",types:[],statuses:[]});
+  const [orderDraft,setOrderDraft]=useState<BillFilters>(emptyBillFilters);
+  const [appliedOrder,setAppliedOrder]=useState<BillFilters>(emptyBillFilters);
   const [orderAdvancedOpen,setOrderAdvancedOpen]=useState(false);
-  const activeOrderFilterCount=Number(orderDraft.time!=="全部时间")+Number(orderDraft.type!=="全部类型")+Number(orderDraft.status!=="全部状态");
-  const appliedOrderFilterCount=Number(appliedOrder.time!=="全部时间")+Number(appliedOrder.type!=="全部类型")+Number(appliedOrder.status!=="全部状态");
-  const orderMatches=(r:string[])=>r.join(" ").includes(appliedOrder.query)&&
-    (appliedOrder.time==="全部时间"||r[0].includes(appliedOrder.time))&&
-    (appliedOrder.type==="全部类型"||r[1]===appliedOrder.type)&&
-    (appliedOrder.status==="全部状态"||r[4]===appliedOrder.status);
+  const [billTypeSearch,setBillTypeSearch]=useState("");
+  const [billStatusSearch,setBillStatusSearch]=useState("");
+  const [billFilterError,setBillFilterError]=useState("");
+  const activeOrderFilterCount=Number(orderDraft.time!=="全部时间")+Number(orderDraft.types.length>0)+Number(orderDraft.statuses.length>0);
+  const appliedOrderFilterCount=Number(appliedOrder.time!=="全部时间")+Number(appliedOrder.types.length>0)+Number(appliedOrder.statuses.length>0);
+  const billDay=(input:string)=>{
+    const match=input.match(/(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})|(?:^|\\D)(\\d{1,2})[-/](\\d{1,2})(?:\\D|$)/);
+    if(!match)return "";
+    if(match[1])return [match[1],match[2].padStart(2,"0"),match[3].padStart(2,"0")].join("-");
+    const year=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Shanghai",year:"numeric"}).format(new Date());
+    return [year,(match[4]||"").padStart(2,"0"),(match[5]||"").padStart(2,"0")].join("-");
+  };
+  const todayShanghai=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const billDateMatches=(raw:string,f:BillFilters)=>{
+    if(f.time==="全部时间")return true;
+    const date=billDay(raw);if(!date)return false;
+    const today=todayShanghai();
+    if(f.time==="自定义")return (!f.from||date>=f.from)&&(!f.until||date<=f.until);
+    if(f.time==="本月")return date.slice(0,7)===today.slice(0,7);
+    if(f.time==="今天")return date===today;
+    const duration=f.time==="近7天"?7:f.time==="近30天"?30:0;
+    if(!duration)return true;
+    const start=new Date(today+"T00:00:00Z");start.setUTCDate(start.getUTCDate()-duration+1);
+    return date>=start.toISOString().slice(0,10)&&date<=today;
+  };
+  const orderMatches=(r:string[])=>r.join(" ").toLowerCase().includes(appliedOrder.query.toLowerCase())&&
+    billDateMatches(r[0],appliedOrder)&&
+    (!appliedOrder.types.length||appliedOrder.types.includes(r[1]))&&
+    (!appliedOrder.statuses.length||appliedOrder.statuses.includes(r[4]));
 
   const purchaseValue=(label:string)=>Number(purchaseAmounts[label]||0);
   const positivePurchase=(label:string)=>Number.isFinite(purchaseValue(label))&&purchaseValue(label)>0;
@@ -250,6 +275,13 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
    ...plansDemoPurchases.map((p,i)=>({id:p.id,at:p.at,type:"模拟购买",detail:p.type+" · "+p.detail,amount:"-¥"+p.amountCny.toLocaleString("zh-CN")+".00",balance:"¥"+(plansDemoWalletCredit.amountCny-plansDemoPurchases.slice(0,i+1).reduce((v,item)=>v+item.amountCny,0)).toLocaleString("zh-CN")+".00"})),
    ...demoPurchases.map(p=>({id:p.id,at:p.at,type:p.status,detail:p.type+" · "+p.detail,amount:(p.type==="账户充值"?"+":"-")+"¥"+p.amountCny.toFixed(2),balance:"¥"+p.balanceAfter.toFixed(2)}))
   ];
+  const billTypes=[...new Set(rows.map(r=>r[1]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"zh-CN"));
+  const billStatuses=[...new Set(rows.map(r=>r[4]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"zh-CN"));
+  const toggleBillChoice=(key:"types"|"statuses",value:string)=>setOrderDraft(v=>({...v,[key]:v[key].includes(value)?v[key].filter(x=>x!==value):[...v[key],value]}));
+  const applyBillFilters=()=>{
+    if(orderDraft.time==="自定义"&&(!orderDraft.from||!orderDraft.until||orderDraft.from>orderDraft.until)){setBillFilterError("请选择完整且有效的起止日期。");setOrderAdvancedOpen(true);return;}
+    setBillFilterError("");setAppliedOrder({...orderDraft,query:orderDraft.query.trim()});setOrdersPage(v=>({...v,page:1}));setOrderAdvancedOpen(false);
+  };
   const filteredOrderRows=rows.filter(orderMatches);
   const filteredUsageRows=rows.filter(usageRowMatches);
   const pageSlice=<T,>(items:T[],pager:TablePageState):T[]=>items.slice((Math.min(pager.page,Math.max(1,Math.ceil(items.length/pager.size)))-1)*pager.size,Math.min(pager.page,Math.max(1,Math.ceil(items.length/pager.size)))*pager.size);
@@ -318,20 +350,43 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
  </section>{draftAlert}{reviewDialog}</>;
 
   return <><section className={styles.metrics}>{[["近30天支出", "¥1,839.00", "四笔模拟购买"], ["店铺服务", "¥336.00", "模拟购买 2 期"], ["token 积分", "¥1,000.00", "模拟到账 10,000,000 积分"], ["数据与存储", "¥503.00", "50,000 条数据 + 3 GiB 扩容"]].map(([a,b,c])=><article key={a} className={styles.planMetricCard}><strong className={styles.planMetricValue}>{b}</strong><div className={styles.planMetricCopy}><span>{a}</span><small>{c}</small></div></article>)}</section><section className={styles.billingFilterShell} aria-label="账单筛选">
-    <form className={styles.billingFilterToolbar} onSubmit={e=>{e.preventDefault();setAppliedOrder({...orderDraft,query:orderDraft.query.trim()});setOrdersPage(v=>({...v,page:1}));setOrderAdvancedOpen(false)}}>
+    <form className={styles.billingFilterToolbar} onSubmit={e=>{e.preventDefault();applyBillFilters()}}>
      <input aria-label="搜索账单" value={orderDraft.query} onChange={e=>setOrderDraft(v=>({...v,query:e.target.value}))} placeholder="搜索账单号或费用内容"/>
      <button type="button" className={orderAdvancedOpen||activeOrderFilterCount?styles.billingFilterActive:""} aria-label="筛选条件" aria-expanded={orderAdvancedOpen} aria-controls="billing-advanced-filters" onClick={()=>setOrderAdvancedOpen(v=>!v)}>筛选条件{activeOrderFilterCount?` · ${activeOrderFilterCount}`:""}</button>
      <div className={styles.billingFilterActions}>
-      <button type="button" onClick={()=>{setOrderDraft({query:"",time:"全部时间",type:"全部类型",status:"全部状态"});setAppliedOrder({query:"",time:"全部时间",type:"全部类型",status:"全部状态"});setOrdersPage(v=>({...v,page:1}));setOrderAdvancedOpen(false)}}>重置</button>
+      <button type="button" onClick={()=>{setOrderDraft(emptyBillFilters());setAppliedOrder(emptyBillFilters());setBillTypeSearch("");setBillStatusSearch("");setBillFilterError("");setOrdersPage(v=>({...v,page:1}));setOrderAdvancedOpen(false)}}>重置</button>
       <button type="submit" className={styles.primary}>确定</button>
       <button type="button" disabled={!rows.some(orderMatches)} onClick={()=>downloadDemoCsv("账单与订单-演示.csv",rows.filter(orderMatches))}>导出账单</button>
      </div>
     </form>
     {orderAdvancedOpen?<div id="billing-advanced-filters" className={styles.billingAdvancedFilters} role="group" aria-label="高级筛选条件">
-      {([["时间","全部时间","time"],["费用类型","全部类型","type"],["订单状态","全部状态","status"]] as const).map(([title,label,key])=><label key={key}><span>{title}</span><select aria-label={label} value={orderDraft[key]} onChange={e=>setOrderDraft(v=>({...v,[key]:e.target.value}))}>{[label,...(filterChoices[label]||[])].map(x=><option key={x}>{x}</option>)}</select></label>)}
-      <p>设置筛选条件后，点击上方「确定」更新账单。后续新增条件统一放在这里。</p>
+      <div className={styles.billingFilterSection}>
+        <span className={styles.billingFilterLabel}>时间范围</span>
+        <div className={styles.billingTimePresets} role="group" aria-label="快捷时间">
+          {["全部时间","今天","近7天","近30天","本月","自定义"].map(t=><button type="button" key={t} aria-pressed={orderDraft.time===t} onClick={()=>{setOrderDraft(v=>({...v,time:t}));setBillFilterError("")}}>{t}</button>)}
+        </div>
+        {orderDraft.time==="自定义"?<div className={styles.billingDateRange}>
+          <label>开始日期<input aria-label="账单开始日期" type="date" value={orderDraft.from} max={orderDraft.until||undefined} onChange={e=>{setOrderDraft(v=>({...v,from:e.target.value}));setBillFilterError("")}}/></label>
+          <span aria-hidden="true">至</span>
+          <label>结束日期<input aria-label="账单结束日期" type="date" min={orderDraft.from||undefined} value={orderDraft.until} onChange={e=>{setOrderDraft(v=>({...v,until:e.target.value}));setBillFilterError("")}}/></label>
+        </div>:null}
+      </div>
+      {([["费用类型","types",billTypes,billTypeSearch,setBillTypeSearch],["订单状态","statuses",billStatuses,billStatusSearch,setBillStatusSearch]] as const).map(([title,key,options,term,setTerm])=><div className={styles.billingFilterSection} key={key}>
+        <span className={styles.billingFilterLabel}>{title} <small>{orderDraft[key].length?`已选 ${orderDraft[key].length} 项`:"可多选"}</small></span>
+        <input aria-label={`搜索${title}`} type="search" value={term} onChange={e=>setTerm(e.target.value)} placeholder={`搜索${title}...`}/>
+        <div className={styles.billingChoiceList} role="group" aria-label={title+"选项"}>
+          {options.filter(x=>x.toLowerCase().includes(term.trim().toLowerCase())).map(option=><label key={option}><input type="checkbox" checked={orderDraft[key].includes(option)} onChange={()=>toggleBillChoice(key,option)}/><span>{option}</span></label>)}
+          {!options.some(x=>x.toLowerCase().includes(term.trim().toLowerCase()))?<p>没有匹配的选项</p>:null}
+        </div>
+        {orderDraft[key].length>0?<button className={styles.billingClearChoice} type="button" onClick={()=>setOrderDraft(v=>({...v,[key]:[]}))}>清除此项</button>:null}
+      </div>)}
+      {billFilterError?<p className={styles.billingFilterError} role="alert">{billFilterError}</p>:null}
+      <p className={styles.billingFilterHelp}>费用类型与状态按实际账单动态生成，支持搜索和多选；时间可自行选择日期区间。设置完成后点击上方「确定」。</p>
     </div>:null}
-    {appliedOrderFilterCount>0?<div className={styles.billingAppliedFilters}><span>已筛选 {appliedOrderFilterCount} 项</span>{([["time","全部时间"],["type","全部类型"],["status","全部状态"]] as const).filter(([key,all])=>appliedOrder[key]!==all).map(([key])=><button key={key} type="button" onClick={()=>{setAppliedOrder(v=>({...v,[key]:key==="time"?"全部时间":key==="type"?"全部类型":"全部状态"}));setOrderDraft(v=>({...v,[key]:key==="time"?"全部时间":key==="type"?"全部类型":"全部状态"}));setOrdersPage(v=>({...v,page:1}))}}>{appliedOrder[key]} ×</button>)}</div>:null}
+    {appliedOrderFilterCount>0?<div className={styles.billingAppliedFilters}><span>已筛选 {appliedOrderFilterCount} 类条件</span>
+     {appliedOrder.time!=="全部时间"?<button type="button" onClick={()=>{setAppliedOrder(v=>({...v,time:"全部时间",from:"",until:""}));setOrderDraft(v=>({...v,time:"全部时间",from:"",until:""}));setOrdersPage(v=>({...v,page:1}))}}>{appliedOrder.time==="自定义"?`${appliedOrder.from} 至 ${appliedOrder.until}`:appliedOrder.time} ×</button>:null}
+     {(["types","statuses"] as const).flatMap(key=>appliedOrder[key].map(value=><button key={key+value} type="button" onClick={()=>{setAppliedOrder(v=>({...v,[key]:v[key].filter(x=>x!==value)}));setOrderDraft(v=>({...v,[key]:v[key].filter(x=>x!==value)}));setOrdersPage(v=>({...v,page:1}))}}>{value} ×</button>))}
+    </div>:null}
    </section><section className={styles.table}><header><h2>账单与订单</h2><button onClick={()=>setInvoiceOpen(true)}>发票管理</button></header><div className={styles.planTableScroll}><div className={`${styles.tableHead} ${styles.planOrderColumns}`}>{["时间","类型","内容","金额","状态","操作"].map(x=><span key={x}>{x}</span>)}</div>{pageSlice(filteredOrderRows,ordersPage).map((r,i)=><div className={`${styles.serviceRow} ${styles.planOrderColumns}`} key={i}>{r.slice(0,5).map((x,j)=><span key={j}>{x}</span>)}<button onClick={()=>setPlanDetail({kind:"order",row:r})}>详情</button></div>)}{!filteredOrderRows.length&&<p className={styles.planEmpty}>暂无符合条件的账单与订单记录。</p>}</div><LedgerPagination name="账单与订单" total={filteredOrderRows.length} page={ordersPage.page} size={ordersPage.size} onPage={updatePage(setOrdersPage)} onSize={updateSize(setOrdersPage)}/></section>
 {draftAlert}{planDetail?.kind==="order"&&<div className={styles.planDetailBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setPlanDetail(null)}}><section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="订单详情"><header><div><h2>订单详情</h2><p>这只是演示钱包的模拟充值或服务购买记录，不是实际付款凭证，不可用于报销或开票。</p></div><button type="button" aria-label="关闭订单详情" onClick={()=>setPlanDetail(null)}>×</button></header><div className={styles.planDetailHighlight}><span>订单金额</span><strong>{planDetail.row[3]}</strong><small>{planDetail.row[4]} · {planDetail.row[1]}</small></div><dl>{[["时间",planDetail.row[0]],["费用类型",planDetail.row[1]],["订单内容",planDetail.row[2]],["金额",planDetail.row[3]],["状态",planDetail.row[4]]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><footer><button type="button" onClick={()=>setPlanDetail(null)}>关闭</button></footer></section></div>}
  {invoiceOpen?<div className={styles.planDetailBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setInvoiceOpen(false)}}>
