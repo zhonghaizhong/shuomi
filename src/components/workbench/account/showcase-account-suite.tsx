@@ -38,7 +38,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin"}:{pathname:strin
  const colleagueReferral=pathname.includes("/referrals")&&memberId!=="admin";
  const state:SuiteState=colleagueReferral?{...primary.state,...scoped.portfolio}:primary.state;
  const commit=(next:SuiteState):boolean=>colleagueReferral?scoped.commitPortfolio({
-  referredCustomers:next.referredCustomers,trackedVisits:next.trackedVisits,referrals:next.referrals,
+  audit:next.audit,referredCustomers:next.referredCustomers,trackedVisits:next.trackedVisits,referrals:next.referrals,
   withdrawals:next.withdrawals,payoutAccount:next.payoutAccount,referralCode:next.referralCode
  }):primary.commit(next);
  const suffix=pathname.slice(root.length)||"/organization";const [title,desc]=screens[suffix]||screens["/organization"];
@@ -63,6 +63,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin"}:{pathname:strin
  const balance=availableEarnings(state);
  const usedStorage=Object.values(state.allocations).reduce((sum,n)=>sum+(Number(n)||0),0);
  const storageRemaining=Math.max(0,tenant.storageGiB-usedStorage);
+ const referralAudit=(next:SuiteState,category:string,message:string):SuiteState=>colleagueReferral?{...next,audit:[{id:crypto.randomUUID(),at:Date.now(),actor:primary.state.members.find(m=>m.id===memberId)?.name||memberId,category,message},...next.audit]}:addAudit(next,category,message);
  const change=(next:SuiteState,message:string)=>{if(commit(next)){setNotice(message);setError("");setModal(null);return true}setError("当前浏览器存储不可用，操作未保存。");return false};
  const close=()=>{setModal(null);setError("");setSelected("");setName("");setEmail("");setRole("子账号");setAmount("100");setAccount("");setPermissions([])};
  const open=(target:Modal,id="")=>{close();setModal(target);setSelected(id);if(target==="member"){const m=state.members.find(x=>x.id===id);if(m)setRole(m.role)}if(target==="permissions")setPermissions(normalizeRolePermissions(state.rolePermissions[id]||[]));if(target==="storage")setAmount(String(state.allocations[id]||0))};
@@ -79,12 +80,12 @@ export function ShowcaseAccountSuite({pathname,memberId="admin"}:{pathname:strin
  const copyReferral=()=>{navigator.clipboard?.writeText(referralLink()).then(()=>setNotice("推广链接已复制。")).catch(()=>setNotice("复制失败，可直接选中链接复制。"))};
  const copyReferralCode=()=>{navigator.clipboard?.writeText(state.referralCode).then(()=>setNotice("推广码已复制。")).catch(()=>setNotice("复制失败，请手动复制推广码。"))};
  const addEarning=()=>{const value=Number(amount);if(!Number.isFinite(value)||value<=0||value>100000){setError("请输入大于0且不超过100000的模拟佣金。");return}if(!email.trim()){setError("请填写模拟客户标识。");return}
-  change(addAudit({...state,referrals:[{id:crypto.randomUUID(),at:Date.now(),referred:email.trim(),amount:Math.round(value*100)/100,status:"已结算"},...state.referrals]},"推广与收益","模拟推广收益已审核并结算："+money(value)),"一笔模拟推广佣金已结算，余额已同步。")
+  change(referralAudit({...state,referrals:[{id:crypto.randomUUID(),at:Date.now(),referred:email.trim(),amount:Math.round(value*100)/100,status:"已结算"},...state.referrals]},"推广与收益","模拟推广收益已审核并结算："+money(value)),"一笔模拟推广佣金已结算，余额已同步。")
  };
- const savePayout=()=>{if(account.trim().length<4){setError("请输入至少4位的演示收款标识。");return}change(addAudit({...state,payoutAccount:account.trim()},"提现管理","更新模拟收款方式"),"模拟收款方式已保存。")};
+ const savePayout=()=>{if(account.trim().length<4){setError("请输入至少4位的演示收款标识。");return}change(referralAudit({...state,payoutAccount:account.trim()},"提现管理","更新模拟收款方式"),"模拟收款方式已保存。")};
  const withdraw=()=>{const cents=Math.round(Number(amount)*100);const availableCents=Math.round(balance*100);if(!state.payoutAccount){setError("请先设置收款方式。");return}if(!Number.isSafeInteger(cents)||cents<=0||cents>availableCents){setError("提现金额必须大于0且不超过可提现余额。");return}
  let remaining=cents;const after=state.referrals.flatMap(item=>{if(item.status!=="已结算"||remaining<=0)return [item];const itemCents=Math.round(item.amount*100),taken=Math.min(itemCents,remaining);remaining-=taken;if(taken===itemCents)return [{...item,status:"已提现" as const}];return [{...item,id:crypto.randomUUID(),amount:taken/100,status:"已提现" as const},{...item,amount:(itemCents-taken)/100,status:"已结算" as const}]});
- if(remaining!==0){setError("可提现余额核对失败，未生成提现记录。");return}const n=cents/100;const item={id:crypto.randomUUID(),at:Date.now(),amount:n,account:state.payoutAccount,status:"模拟审核通过" as const};change(addAudit({...state,referrals:after,withdrawals:[item,...state.withdrawals]},"提现管理","模拟提现并审核通过："+money(n)),"模拟提现申请已审核通过，剩余收益保留；未发起实际转账。")
+ if(remaining!==0){setError("可提现余额核对失败，未生成提现记录。");return}const n=cents/100;const item={id:crypto.randomUUID(),at:Date.now(),amount:n,account:state.payoutAccount,status:"模拟审核通过" as const};change(referralAudit({...state,referrals:after,withdrawals:[item,...state.withdrawals]},"提现管理","模拟提现并审核通过："+money(n)),"模拟提现申请已审核通过，剩余收益保留；未发起实际转账。")
  };
  const viewMember=state.members.filter(m=>(m.name+" "+m.email+" "+m.role+" "+m.status).includes(applied));
  const viewAudit=state.audit.filter(a=>(a.actor+" "+a.message+" "+a.category).includes(applied));
