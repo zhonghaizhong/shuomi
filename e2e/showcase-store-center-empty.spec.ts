@@ -301,3 +301,29 @@ test("store-center UI keeps approved dark/light Vuexy surface colors",async({pag
   await expect(page.getByRole("dialog",{name:"绑定新店铺"})).toHaveCount(0);
  }
 });
+
+
+test("My Stores Figma optimized asset layout exposes captions and separate operational statuses",async({page})=>{
+ await page.goto(root+"/stores");
+ const area=page.locator('[data-store-center-showcase="stores"]');
+ await expect(area.getByRole("heading",{name:"我的店铺"})).toBeVisible();
+ for(const caption of ["搜索","平台","站点","店铺类型","店铺状态","店铺分组"]){
+  await expect(area.locator("form").filter({has:area.getByLabel("搜索店铺")}).first().getByText(caption,{exact:true})).toBeVisible();
+ }
+ const cards=area.locator("article").filter({has:area.getByText("管理员演示店铺01")});
+ await expect(cards.first()).toContainText("平台授权");
+ await expect(cards.first()).toContainText("网络环境");
+ await expect(cards.first()).toContainText("数据同步");
+ await expect(cards.first()).toContainText("待授权");
+ await expect(cards.first()).toContainText("待检测");
+ await expect(cards.first()).toContainText("未开始");
+ await expect(cards.first().getByRole("button",{name:"管理",exact:true})).toBeVisible();
+ await expect(cards.first().getByRole("button",{name:"立即同步"})).toBeVisible();
+ await expect(cards.first().getByRole("button",{name:"进入店铺"})).toBeVisible();
+ await area.getByLabel("站点筛选").selectOption("美国站");
+ await area.getByRole("button",{name:"确认",exact:true}).click();
+ await expect(area).toContainText("管理员演示店铺01");
+ await expect(area).not.toContainText("管理员演示店铺02");
+ await area.getByRole("button",{name:"重置"}).click();
+ await expect(area).toContainText("管理员演示店铺02");
+});
