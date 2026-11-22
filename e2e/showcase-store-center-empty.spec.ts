@@ -533,3 +533,40 @@ test("previously activated colleague fixtures consume exactly four assigned peri
  });
  expect(state).toEqual({periods:[1,1,1,1],remaining:4});
 });
+
+test("binding starts 30-day service only after a provider ID is returned; failure does not consume a period",async({page})=>{
+ await page.goto(root+"/plans/top-up");
+ await page.getByRole("spinbutton",{name:"购买期数 · 店铺服务"}).fill("1");
+ await page.getByRole("button",{name:"购买续费期数"}).click();
+ await page.getByRole("dialog",{name:"确认模拟购买"}).getByRole("button",{name:"确认购买并扣除演示余额"}).click();
+ await page.goto(root+"/stores");
+ const area=page.locator('[data-store-center-showcase="stores"]');
+ const before=await page.evaluate(()=>{
+  const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
+  return stores.reduce((n:number,x:{servicePeriods?:number})=>n+(x.servicePeriods||0),0);
+ });
+ await area.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const dlg=page.getByRole("dialog",{name:"绑定新店铺"});
+ await dlg.getByRole("textbox",{name:"自定义名称"}).fill("平台ID校验店铺");
+ await dlg.getByRole("textbox",{name:"子账户账号"}).fill("MOCK-FAIL");
+ await dlg.getByRole("button",{name:"确认绑定"}).click();
+ await expect(dlg).toContainText("绑定未完成，未扣期数");
+ await expect(area.getByText("平台ID校验店铺",{exact:true})).toHaveCount(0);
+ const afterFailed=await page.evaluate(()=>{
+  const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
+  return stores.reduce((n:number,x:{servicePeriods?:number})=>n+(x.servicePeriods||0),0);
+ });
+ expect(afterFailed).toBe(before);
+ await dlg.getByRole("textbox",{name:"子账户账号"}).fill("valid-showcase-seller");
+ await dlg.getByRole("button",{name:"确认绑定"}).click();
+ await expect(dlg).toHaveCount(0);
+ await expect(area.getByText("平台ID校验店铺",{exact:true})).toBeVisible();
+ const created=await page.evaluate(()=>{
+  const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
+  const added=stores.find((x:{name:string})=>x.name==="平台ID校验店铺");
+  return added?{id:added.platformStoreId,periods:added.servicePeriods,duration:Date.parse(added.serviceExpiresAt)-Date.parse(added.serviceStartedAt)}:null;
+ });
+ expect(created?.id).toMatch(/^SIM-SHEIN-/);
+ expect(created?.periods).toBe(1);
+ expect(created?.duration).toBe(30*86400000);
+});
