@@ -170,7 +170,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
    <section className={`${s.panel} ${s.memberManagement}`} aria-label="成员列表">
     <header><h2>成员列表</h2><p>管理当前企业成员、角色及状态，支持搜索与分页。</p></header>
     <div className={s.memberFilters}>
-     <label>搜索成员<input type="search" aria-label="搜索成员" placeholder="输入姓名或邮箱" value={memberSearch} onChange={e=>{setMemberSearch(e.target.value);setMemberPage(1)}}/></label>
+     <label>搜索成员<input type="search" aria-label="搜索成员" placeholder="搜索账号或邮箱" value={memberSearch} onChange={e=>{setMemberSearch(e.target.value);setMemberPage(1)}}/></label>
      <label>状态<select aria-label="筛选成员状态" value={memberStatus} onChange={e=>{setMemberStatus(e.target.value);setMemberPage(1)}}><option value="all">全部状态</option><option value="正常">正常</option><option value="已停用">已停用</option><option value="邀请中">邀请中</option></select></label>
     </div>
     <div className={`${s.tableWrap} ${s.memberTable}`}><table><thead><tr>{["账号","邮箱","角色","状态","加入 / 邀请时间","操作"].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{pagedMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong></td><td>{m.email}</td><td>{m.role}</td><td><span className={m.status==="正常"?s.approved:s.memberInactive}>{m.status}</span></td><td>{timestamp(m.joined)}</td><td><div className={s.rowActions}><button onClick={()=>open("member",m.id)}>查看{m.id==="admin"?"":" / 调整"}</button>{m.status==="邀请中"?<><button onClick={()=>acceptInvitation(m)}>模拟接受</button><button onClick={()=>cancelInvitation(m)}>取消邀请</button></>:m.id!=="admin"&&<button onClick={()=>toggleMember(m)}>{m.status==="正常"?"停用":"启用"}</button>}</div></td></tr>)}</tbody></table>{!filteredMembers.length&&<div className={s.empty}>没有符合条件的成员。</div>}</div>
