@@ -73,6 +73,7 @@ test("cockpit quick actions navigate to the intended existing pages", async ({ p
   await page.goto(cockpit);
   await page.getByRole("button", { name: "查看全部店铺" }).click();
   await expect(page).toHaveURL(/#\/workbench\/overview\/stores/);
+  await page.goto(cockpit);
   await expect(page.locator('[data-dashboard="operations"]')).toContainText("0 项待办");
   await expect(page.locator('[data-dashboard="operations"]')).toContainText("暂无已关联的 AI 任务");
 
@@ -183,8 +184,8 @@ test("switching themes preserves menus and light-page selected card interaction"
   await nav.getByRole("link", { name: "经营建议", exact: true }).click();
   await expect(page).toHaveURL(new RegExp("#/workbench/overview/advice$"));
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
-  await page.getByRole("button", { name: /转化率下降/ }).click();
-  await expect(page.getByRole("heading", { name: "转化率下降" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "暂无可处理的建议" })).toBeVisible();
+  await expect(page.getByRole("status").filter({hasText:"暂无经营建议"})).toBeVisible();
   await page.getByRole("button", { name: "切换深色主题" }).click();
   await expect(page.locator(".dark .showcase-shell")).toBeVisible();
   await page.getByRole("button", { name: "切换浅色主题" }).click();
@@ -269,8 +270,8 @@ test("standard headers keep actions clickable and adapt to narrow screens", asyn
   await expect(page.locator('[class*="page"] > header[class*="header"]')).toBeVisible();
   await page.getByRole("button", { name: "切换浅色主题" }).click();
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
-  await page.getByRole("button", { name: /转化率下降/ }).click();
-  await expect(page.getByRole("heading", { name: "转化率下降" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "暂无可处理的建议" })).toBeVisible();
+  await expect(page.getByRole("status").filter({hasText:"暂无经营建议"})).toBeVisible();
 });
 
 
