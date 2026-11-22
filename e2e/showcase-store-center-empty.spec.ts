@@ -382,3 +382,39 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await page.goto(root+"/account/organization");
  await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("待授权 11 家");
 });
+
+
+test("other organization purchase ledger stays isolated from the primary organization",async({page})=>{
+ await page.goto(root+"/stores");
+ await page.getByRole("button",{name:/linchen_demo账户/}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ const switcher=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await switcher.getByRole("tab",{name:"切换企业"}).click();
+ await switcher.getByRole("button",{name:/模拟企业A（运营公司）/}).click();
+ await switcher.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(root+"/plans/entitlements");
+ const entitlements=page.locator('[data-commerce-unified="plans"]');
+ await expect(entitlements).toContainText("已绑定店铺");
+ await expect(entitlements.locator('[class*="planEntitlementStoreSplit"]')).toContainText("0");
+ await page.goto(root+"/plans/top-up");
+ const wallet=page.locator('[data-commerce-unified="plans"]');
+ await expect(wallet).toContainText("¥0.00");
+ await wallet.getByRole("spinbutton",{name:"充值金额（元）"}).fill("336");
+ await wallet.getByRole("button",{name:"账户充值",exact:true}).click();
+ const dialog=page.getByRole("dialog",{name:"确认模拟购买"});
+ await dialog.getByRole("button",{name:/确认模拟充值/}).click();
+ await wallet.getByRole("spinbutton",{name:"购买期数 · 店铺服务"}).fill("2");
+ await wallet.getByRole("button",{name:"购买续费期数"}).click();
+ await page.getByRole("dialog",{name:"确认模拟购买"}).getByRole("button",{name:"确认购买并扣除演示余额"}).click();
+ await page.goto(root+"/plans/entitlements");
+ await expect(entitlements.locator('[class*="planEntitlementStoreSplit"]')).toContainText("2");
+ await page.goto(root+"/stores");
+ const stores=page.locator('[data-store-center-showcase="stores"]');
+ await stores.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const binding=page.getByRole("dialog",{name:"绑定新店铺"});
+ await binding.getByRole("textbox",{name:"自定义名称"}).fill("企业A模拟付费店铺");
+ await binding.getByRole("button",{name:"提交授权"}).click();
+ await expect(stores).toContainText("服务中");
+ await page.goto(root+"/plans/entitlements");
+ await expect(entitlements.locator('[class*="planEntitlementStoreSplit"]')).toContainText("1");
+});
