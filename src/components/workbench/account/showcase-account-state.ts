@@ -158,11 +158,11 @@ export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rol
 
 // Referral records belong to an individual demo member, never to the organization-wide account suite.
 // The administrator's existing fixture stays in SuiteState for backwards compatibility.
-export type ReferralPortfolio=Pick<SuiteState,"referredCustomers"|"trackedVisits"|"referrals"|"withdrawals"|"payoutAccount"|"referralCode">;
+export type ReferralPortfolio=Pick<SuiteState,"audit"|"referredCustomers"|"trackedVisits"|"referrals"|"withdrawals"|"payoutAccount"|"referralCode">;
 export const colleague01Id="SIM-COLLEAGUE-01";
 export function initialMemberReferralPortfolio(memberId:string):ReferralPortfolio{
  const code="SM-"+memberId.replace(/[^A-Z0-9]/gi,"").toUpperCase();
- if(memberId!==colleague01Id)return {referredCustomers:[],trackedVisits:[],referrals:[],withdrawals:[],payoutAccount:"",referralCode:code};
+ if(memberId!==colleague01Id)return {audit:[],referredCustomers:[],trackedVisits:[],referrals:[],withdrawals:[],payoutAccount:"",referralCode:code};
  const customers:ReferredCustomer[]=Array.from({length:6},(_,index):ReferredCustomer=>{
   const n=String(index+1).padStart(2,"0");
   return {id:"SIM-C01-CUSTOMER-"+n,name:"同事01模拟客户"+n,
@@ -180,12 +180,12 @@ export function initialMemberReferralPortfolio(memberId:string):ReferralPortfoli
  const referrals:ReferralItem[]=customers.map(x=>({id:"SIM-C01-COMMISSION-"+x.id,at:x.registeredAt+180000,
   referred:x.name,amount:x.commissionCny,status:"已结算",orderId:x.storeOrderId,
   paidCny:x.storeFeeCny,rate:demoReferralRate}));
- return {referredCustomers:customers,trackedVisits:visitors,referrals,withdrawals:[],
+ return {audit:[],referredCustomers:customers,trackedVisits:visitors,referrals,withdrawals:[],
   payoutAccount:"",referralCode:code};
 }
 const REFERRAL_PREFIX="shuomi-demo-member-referrals-v1-";
 function validReferralPortfolio(v:unknown):v is ReferralPortfolio{
- return !!v&&typeof v==="object"&&Array.isArray((v as ReferralPortfolio).referredCustomers)
+ return !!v&&typeof v==="object"&&Array.isArray((v as ReferralPortfolio).audit)&&Array.isArray((v as ReferralPortfolio).referredCustomers)
  &&Array.isArray((v as ReferralPortfolio).trackedVisits)&&Array.isArray((v as ReferralPortfolio).referrals)
  &&Array.isArray((v as ReferralPortfolio).withdrawals)&&typeof (v as ReferralPortfolio).payoutAccount==="string"
  &&typeof (v as ReferralPortfolio).referralCode==="string";
