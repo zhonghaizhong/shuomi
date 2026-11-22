@@ -467,7 +467,7 @@
 .page[data-account-suite="/organization"] .resourceSummary article strong{
  grid-column:2;grid-row:2;justify-self:start;
  max-width:100%;min-width:0;margin:0;
- font-size:clamp(20px,1.65vw,27px);line-height:1.32;
+ font-size:clamp(30px,2.1vw,32px);line-height:1.2;
  white-space:normal;overflow-wrap:anywhere;text-align:left;
 }
 .page[data-account-suite="/organization"] .resourceSummary article small{
