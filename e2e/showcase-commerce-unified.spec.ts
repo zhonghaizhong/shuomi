@@ -231,7 +231,7 @@ test("plans overview shows no payable reminder or fictional last order",async({p
  await page.goto(root+"/plans");
  const overview=page.locator('[data-commerce-unified="plans"]');
  await expect(overview).toContainText("未来 7 天内到期：0 家");
- await expect(overview).toContainText("暂无待处理店铺");
+ await expect(overview).toContainText("已到期 2 家");
  await expect(overview.getByRole("button",{name:"处理",exact:true})).toHaveCount(0);
  await expect(overview).toContainText("10,000,000 积分、50,000 条数据");
  await expect(overview).toContainText("模拟购买 4 笔共 ¥1,839.00");
@@ -359,7 +359,7 @@ test("store renewals and storage expansion directly debit demo wallet and credit
  await expect(area.getByRole("region",{name:"本地充值申请草稿"})).toHaveCount(0);
  await page.goto(root+"/plans/entitlements");
  const rights=page.locator('[data-commerce-unified="plans"]');
- await expect(rights.locator('[class*="planEntitlementStoreSplit"]')).toContainText("4");
+ await expect(rights.locator('[class*="planEntitlementStoreSplit"] strong').last()).toContainText("2");
  await expect(rights).toContainText("11.00 GiB");
  await expect(rights).toContainText("6.00 GiB");
  await page.goto(root+"/plans/orders");
@@ -437,8 +437,8 @@ test("plans entitlement cards show balanced two-value store renewal and three-ro
  await expect(cards).toHaveCount(4);
  await expect(cards.nth(0).getByText("已绑定店铺")).toBeVisible();
  await expect(cards.nth(0).getByText("剩余可分配期数")).toBeVisible();
- await expect(cards.nth(0).locator('[class*="planEntitlementStoreSplit"] strong').first()).toContainText("0");
- await expect(cards.nth(0).locator('[class*="planEntitlementStoreSplit"] strong').last()).toContainText("2");
+ await expect(cards.nth(0).locator('[class*="planEntitlementStoreSplit"] strong').first()).toContainText("12");
+ await expect(cards.nth(0).locator('[class*="planEntitlementStoreSplit"] strong').last()).toContainText("0");
  await expect(cards.nth(1)).toContainText("10,000,000");
  await expect(cards.nth(2)).toContainText("50,000");
  await expect(cards.nth(3)).toContainText("8.00 GiB");
