@@ -10,8 +10,8 @@ const mainTenant="SM-ENT-000001";
 const colleague="SIM-COLLEAGUE-01";
 const sites=["美国站","加拿大站","英国站","德国站","法国站"];
 const expiredDemoStores:DemoStoreBinding[]=[
- {id:"SIM-ADMIN-EXPIRED-01",name:"管理员已到期测试店铺",platform:"SHEIN",region:"美国站",type:"全托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"管理员",ownerMemberId:"admin",serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1},
- {id:"SIM-C01-EXPIRED-01",name:"同事01已到期测试店铺",platform:"SHEIN",region:"英国站",type:"半托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"模拟同事01",ownerMemberId:colleague,serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1}
+ {id:"SIM-ADMIN-EXPIRED-01",name:"管理员已到期测试店铺",platform:"SHEIN",region:"美国站",type:"全托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"管理员",ownerMemberId:"admin",serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1,platformStoreId:"SIM-SHEIN-ADMIN-EXPIRED-01"},
+ {id:"SIM-C01-EXPIRED-01",name:"同事01已到期测试店铺",platform:"SHEIN",region:"英国站",type:"半托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"模拟同事01",ownerMemberId:colleague,serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1,platformStoreId:"SIM-SHEIN-C01-EXPIRED-01"}
 ];
 export const demoStoreKey=(organizationId:string)=>prefix+"-"+organizationId;
 export const DEMO_STORE_PERIOD_DAYS=30;
@@ -50,7 +50,7 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
   // A preexisting explicit activation state (including retry success) must be preserved.
   const migrated=organizationId===mainTenant?valid.map(store=>{
    // A failed ID lookup is a failed binding attempt, never an active bound store.
-   if(store.id==="SIM-C01-05"&&store.platformIdStatus==="获取失败")return {...store,archived:true};
+   if(store.id==="SIM-C01-05"&&(!store.servicePeriods||store.platformIdStatus==="获取失败"))return {...store,platformIdStatus:"获取失败" as const,platformStoreId:undefined,archived:true};
    const match=/^SIM-C01-0([1-5])$/.exec(store.id);
    if(!match||store.platformIdStatus)return store;
    const index=Number(match[1]);
