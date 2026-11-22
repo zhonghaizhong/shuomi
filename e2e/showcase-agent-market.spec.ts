@@ -126,7 +126,14 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(dialog).toHaveCount(0);
  await expect(page.getByRole("status")).toContainText("已保存为模板");
  await page.getByRole("button",{name:"进入使用"}).last().click();
- await expect(page.getByRole("dialog",{name:"POD刊登智能体"})).toContainText("步骤 4 · 保存模板");
+ const pod=page.getByRole("dialog",{name:"POD刊登智能体"});
+ await expect(pod).toContainText("步骤 4 · 贴图素材");
+ await expect(pod).toContainText("步骤 5 · 生成数量");
+ await pod.getByRole("button",{name:/混合模式/}).click();
+ await pod.getByRole("button",{name:/图片裂变模式/}).click();
+ await pod.getByRole("button",{name:"增加生成数量"}).click();
+ await pod.getByRole("button",{name:"预览配置"}).click();
+ await expect(pod.getByRole("status")).toContainText("4 个");
  await page.keyboard.press("Escape");
  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
