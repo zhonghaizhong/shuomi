@@ -426,7 +426,7 @@
 .page .storeMetrics button[data-tone="deleted"]{border-color:var(--st-line)}
 .page .storeMetrics button[data-tone="deleted"] strong{color:var(--st-muted)}
 .page .storeRowState strong[data-state="expiring"]{color:#e5a441}
-.page .ipBackdrop{z-index:1000}
+.page .ipBackdrop{z-index:10040}
 .page .ipConfigurationDialog{width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:24px 28px;border-radius:10px;overflow-y:auto}
 .page .ipConfigurationDialog>header{align-items:start}
 .page .ipConfigForm{display:grid;gap:15px}
