@@ -21,7 +21,7 @@ it("accepts the detail deletion notice without weakening business filters",()=>{
 it("offers Walmart and applies its existing filter",async()=>{
  state.query={data,isPending:false,isError:false};render(<StoreListPage/>);
  await userEvent.selectOptions(screen.getByRole("combobox",{name:"平台"}),"walmart");
- await userEvent.click(screen.getByRole("button",{name:"筛选"}));
+ await userEvent.click(screen.getByRole("button",{name:"确认"}));
  expect(state.push.mock.lastCall![0]).toContain("platform=walmart");
 });
 afterEach(()=>{state.query={};state.search="";state.switching=false;state.org="org-a";state.permissions=["workbench.store.read"];state.push.mockReset();state.filters.mockReset();state.retry.mockReset()});
@@ -29,14 +29,13 @@ it("uses server count and shows unknown facts without fake zero or write control
  state.query={data,isPending:false,isError:false};render(<StoreListPage/>);
  expect(screen.getByText("A 店铺")).toBeInTheDocument();expect(screen.getByText("第 1 页，共 1 家店铺")).toBeInTheDocument();expect(screen.getAllByText("未知").length).toBeGreaterThan(0);
  expect(screen.queryByRole("button",{name:"绑定新店铺"})).not.toBeInTheDocument();expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
- expect(screen.getByRole("link",{name:/进入店铺/})).toHaveAttribute("href",`/workbench/store-products?storeId=${item.id}`);
+ expect(screen.getByRole("link",{name:"管理店铺"})).toHaveAttribute("href",`/workbench/stores/${item.id}`);
  expect(screen.getByRole("button",{name:"上一页"})).toBeDisabled();expect(screen.getByRole("button",{name:"下一页"})).toBeDisabled();
 });
-it("opens the supported TEMU product sync from the catalog list",async()=>{
+it("keeps sync in store detail instead of adding a third card action",()=>{
  const temu={...item,platform:"temu"};state.query={data:{...data,items:[temu]},isPending:false,isError:false};render(<StoreListPage/>);
- const sync=screen.getByRole("button",{name:"立即同步"});expect(sync).toBeEnabled();
- expect(sync).not.toHaveAttribute("title","TEMU 商品和订单同步尚未开放。");
- await userEvent.click(sync);expect(state.dialog).toHaveBeenLastCalledWith({kind:"sync",item:temu,initialKind:"products"});
+ expect(screen.getByRole("link",{name:"管理店铺"})).toHaveAttribute("href",`/workbench/stores/${temu.id}`);
+ expect(screen.queryByRole("button",{name:"立即同步"})).not.toBeInTheDocument();
 });
 it.each(["ORGANIZATION_ACCESS_REVOKED","ORGANIZATION_CONTEXT_CHANGED","ORGANIZATION_ACCESS_DENIED"])("hides stale rows and metrics and refreshes context for %s",async(code)=>{
  state.query={data,isPending:false,isError:true,error:{code},refetch:vi.fn()};render(<StoreListPage/>);
