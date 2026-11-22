@@ -77,12 +77,12 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   });
  }
  const [dialog,setDialog]=useState(false),[name,setName]=useState(""),[region,setRegion]=useState("美国站"),[type,setType]=useState("半托管"),[newGroup,setNewGroup]=useState("未分组"),[newOwner,setNewOwner]=useState("");
-  const [codeNotice,setCodeNotice]=useState(""),[manageId,setManageId]=useState<string|null>(null),[moreId,setMoreId]=useState<string|null>(null),[groupRename,setGroupRename]=useState<string|null>(null),[groupRenameValue,setGroupRenameValue]=useState("");
+ const [authAccount,setAuthAccount]=useState(""),[authPassword,setAuthPassword]=useState(""),[authCode,setAuthCode]=useState(""),[showPassword,setShowPassword]=useState(false),[fixedIp,setFixedIp]=useState(false),[codeNotice,setCodeNotice]=useState(""),[manageId,setManageId]=useState<string|null>(null),[moreId,setMoreId]=useState<string|null>(null),[groupRename,setGroupRename]=useState<string|null>(null),[groupRenameValue,setGroupRenameValue]=useState("");
  const [query,setQuery]=useState(""),[search,setSearch]=useState(""),[notice,setNotice]=useState("");
  const [editing,setEditing]=useState<string|null>(null),[confirmDelete,setConfirmDelete]=useState<string|null>(null);
   const [inspecting,setInspecting]=useState<string|null>(null);
  const [syncing,setSyncing]=useState<string|null>(null),[entered,setEntered]=useState<string|null>(null),[groupsOpen,setGroupsOpen]=useState(false),[groupFilter,setGroupFilter]=useState("全部分组"),[statusFilter,setStatusFilter]=useState("全部状态");
- const [detailTab,setDetailTab]=useState("店铺概览"),[groupName,setGroupName]=useState(""),[groups,setGroups]=useState<string[]>(()=>{try{const value=JSON.parse(sessionStorage.getItem(key+"-groups")||"[]");return Array.isArray(value)?value.filter((x):x is string=>typeof x==="string"):[]}catch{return []}});
+ const [detailTab,setDetailTab]=useState("店铺概览"),[groupName,setGroupName]=useState(""),[groups,setGroups]=useState<string[]>(()=>{try{const value=JSON.parse(sessionStorage.getItem(key+"-groups")||"[]");return Array.isArray(value)?value.filter((x):x is string=>typeof x==="string"):[]}catch{return []}}),[authorizationMethod,setAuthorizationMethod]=useState("子账户邮箱验证码");
  const [creatingGroup,setCreatingGroup]=useState(false),[addingOwner,setAddingOwner]=useState(false),[groupError,setGroupError]=useState("");
  const [settingsDraft,setSettingsDraft]=useState({group:"未分组",owner:""});
  const [platformFilter,setPlatformFilter]=useState("全部平台"),[regionFilter,setRegionFilter]=useState("全部站点"),[typeFilter,setTypeFilter]=useState("全部类型");
@@ -96,14 +96,14 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const heading=route==="home"?"店铺中心":route==="stores"?"我的店铺":route==="products"?"店铺商品":"订单履约";
   const intro=route==="home"?"围绕店铺绑定、商品刊登、数据同步和订单交付形成业务闭环；经营分析与 AI 执行由对应模块负责。":route==="stores"?"绑定店铺后即可开始使用。服务按30天一期计费，到期可续费；真实商品和订单仍以实际同步数据为准。":route==="products"?"商品来自实际同步结果，不展示虚构商品。":"订单来自实际同步记录，不展示虚构交易或履约结果。";
  const link=(path:string)=>navigate(path+"?preview=1");
-  function submitBinding(e:FormEvent){e.preventDefault();if(!name.trim()){setCodeNotice("请先填写自定义名称。");return;}if(manageId){setStores(old=>old.map(x=>x.id===manageId?{...x,name:name.trim(),region,type,group:newGroup,owner:newOwner.trim()}:x));setManageId(null);setNotice("店铺资料已保存。");}else add(e);}
+ function submitBinding(e:FormEvent){e.preventDefault();if(authorizationMethod==="API 授权（暂未开放）"){setCodeNotice("API 授权暂未开放，请选择子账户授权方式。");return;}if(!name.trim()){setCodeNotice("请先填写自定义名称。");return;}if(manageId){setStores(old=>old.map(x=>x.id===manageId?{...x,name:name.trim(),region,type,group:newGroup,owner:newOwner.trim()}:x));setManageId(null);setAuthPassword("");setAuthCode("");setNotice("店铺资料已保存。");}else add(e);}
  function commitFilters(){setSearch(query.trim());setAppliedFilters({platform:platformFilter,region:regionFilter,type:typeFilter,group:groupFilter,status:statusFilter})}
  const detailStore=stores.find(s=>s.id===inspecting);
  const enteredStore=stores.find(s=>s.id===entered);
  const managedStore=stores.find(s=>s.id===manageId);
  function enterStore(id:string,tab="店铺概览"){const store=stores.find(x=>x.id===id);if(!store)return;setSettingsDraft({group:store.group||"未分组",owner:store.owner||""});setMoreId(null);setInspecting(null);setDetailTab(tab);setEntered(id)}
  function createBindingGroup(e:FormEvent){e.preventDefault();const v=groupName.trim();if(!v){setGroupError("请输入分组名称。");return;}if(v==="未分组"||groups.includes(v)){setGroupError("分组名称已存在，请更换名称。");return;}setGroups(old=>[...old,v]);setNewGroup(v);setGroupName("");setGroupError("");setCreatingGroup(false);setNotice("已新建分组，并自动选中该分组；绑定店铺信息仍保留。")}
-  function openBinding(id:string|null=null){const item=stores.find(s=>s.id===id);setManageId(id);setDialog(!id);setName(item?.name||"");setRegion(item?.region||"美国站");setType(item?.type||"半托管");setNewGroup(item?.group||"未分组");setNewOwner(item?.owner||"");setCodeNotice("");}
+ function openBinding(id:string|null=null){const item=stores.find(s=>s.id===id);setManageId(id);setDialog(!id);setName(item?.name||"");setRegion(item?.region||"美国站");setType(item?.type||"半托管");setNewGroup(item?.group||"未分组");setNewOwner(item?.owner||"");setAuthorizationMethod("子账户邮箱验证码");setAuthAccount("");setAuthPassword("");setAuthCode("");setShowPassword(false);setFixedIp(false);setCodeNotice("");}
   const list=stores.filter(x=>[x.name,x.id,x.region,x.type].join(" ").toLowerCase().includes(search.toLowerCase())&&(appliedFilters.platform==="全部平台"||x.platform===appliedFilters.platform)&&(appliedFilters.region==="全部站点"||x.region===appliedFilters.region)&&(appliedFilters.type==="全部类型"||x.type===appliedFilters.type)&&(appliedFilters.group==="全部分组"||(x.group||"未分组")===appliedFilters.group)&&(appliedFilters.status==="全部状态"||(appliedFilters.status==="服务中"&&demoStoreServiceActive(x))||(appliedFilters.status==="已到期"&&!demoStoreServiceActive(x)&&!!x.servicePeriods)||(appliedFilters.status==="未激活"&&!demoStoreServiceActive(x)&&!x.servicePeriods)));
  function resetFilters(){setQuery("");setSearch("");setPlatformFilter("全部平台");setRegionFilter("全部站点");setTypeFilter("全部类型");setGroupFilter("全部分组");setStatusFilter("全部状态");setAppliedFilters({platform:"全部平台",region:"全部站点",type:"全部类型",group:"全部分组",status:"全部状态"})}
  function saveRename(e:FormEvent){e.preventDefault();if(!editing||!name.trim())return;if(stores.some(s=>s.id!==editing&&s.name.trim().toLowerCase()===name.trim().toLowerCase())){setNotice("名称与现有演示店铺重复，请修改后再保存。");return;}setStores(old=>old.map(s=>s.id===editing?{...s,name:name.trim()}:s));setEditing(null);setName("");setNotice("店铺名称已保存在当前浏览器演示会话中。")}
@@ -190,7 +190,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
   {editing?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setEditing(null)}}><section className={css.dialog} role="dialog" aria-modal="true" aria-label="管理店铺名称"><header><div><h2>管理店铺名称</h2><p>只修改本地演示资料，不影响平台店铺。</p></div><button aria-label="关闭弹窗" onClick={()=>setEditing(null)}>×</button></header><form onSubmit={saveRename}><label>店铺名称<input required maxLength={80} autoFocus value={name} onChange={e=>setName(e.target.value)}/></label><footer><button type="button" onClick={()=>setEditing(null)}>取消</button><button className={css.primary} type="submit">保存修改</button></footer></form></section></div>:null}
   {confirmDelete?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setConfirmDelete(null)}}><section className={css.dialog} role="alertdialog" aria-modal="true" aria-label="确认移除演示店铺"><header><div><h2>移除演示店铺</h2><p>确认移除这条浏览器演示记录？不涉及真实商品或订单。</p></div><button aria-label="关闭弹窗" onClick={()=>setConfirmDelete(null)}>×</button></header><footer className={css.dialogActions}><button onClick={()=>setConfirmDelete(null)}>取消</button><button className={css.primary} onClick={deleteDemo}>确认移除</button></footer></section></div>:null}
 
-  {(dialog||managedStore)?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget){setDialog(false);setManageId(null);}}}><section className={css.dialog+" "+css.authDialog} role="dialog" aria-modal="true" aria-label={managedStore?"管理店铺":"绑定新店铺"}><header><div><h2>{managedStore?"管理店铺":"绑定新店铺"}</h2><p>选择平台、站点、负责人，提交即完成店铺绑定。店铺服务按店铺独立计费，每 30 天为一期。绑定新店铺时如有可用期数，将自动消耗 1 期并开始计时；没有期数则仅登记资料，服务保持未激活。</p></div><button aria-label="关闭弹窗" onClick={()=>{setDialog(false);setManageId(null);}}>×</button></header>
+  {(dialog||managedStore)?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget){setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}}><section className={css.dialog+" "+css.authDialog} role="dialog" aria-modal="true" aria-label={managedStore?"管理店铺":"绑定新店铺"}><header><div><h2>{managedStore?"管理店铺":"绑定新店铺"}</h2><p>按原有设计选择平台、站点、负责人和第三方店铺绑定方式。绑定成功即登记店铺，不再增加二次授权审核。演示环境不实际验证平台凭据。店铺服务按店铺独立计费，每 30 天为一期。绑定新店铺时如有可用期数，将自动消耗 1 期并开始计时；没有期数则仅登记资料，服务保持未激活。</p></div><button aria-label="关闭弹窗" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>×</button></header>
   <form onSubmit={submitBinding}>
     <div className={css.bindingGrid}>
       <label>平台<select aria-label="平台" value="SHEIN" disabled><option>SHEIN</option></select></label>
@@ -200,17 +200,17 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       <label>负责人<select aria-label="负责人" value={newOwner} onChange={e=>setNewOwner(e.target.value)}><option value="">管理员（默认）</option>{owners.map(owner=><option key={owner} value={owner}>{owner}</option>)}</select><small>用于任务分配和日常协作。<button type="button" className={css.inlineLink} onClick={()=>setAddingOwner(true)}>＋ 添加负责人</button></small></label>
       <label>店铺分组<select aria-label="绑定店铺分组" value={newGroup} onChange={e=>setNewGroup(e.target.value)}><option>未分组</option>{groups.map(g=><option key={g}>{g}</option>)}</select><small>便于分类筛选。<button type="button" className={css.inlineLink} onClick={()=>{setCreatingGroup(true);setGroupName("");setGroupError("")}}>＋ 新建分组</button></small></label>
     </div>
-
-
-
-
-
-
-
-
-
+    <div className={css.authSection}><strong>选择授权方式</strong><div className={css.authOptions}><button type="button" className={authorizationMethod!=="API 授权（暂未开放）"?css.authSelected:""} onClick={()=>setAuthorizationMethod("子账户邮箱验证码")} aria-pressed={authorizationMethod!=="API 授权（暂未开放）"}><b>子账户授权</b><small>填写平台子账户信息完成验证</small></button><button type="button" className={authorizationMethod==="API 授权（暂未开放）"?css.authSelected:""} onClick={()=>setAuthorizationMethod("API 授权（暂未开放）")} aria-pressed={authorizationMethod==="API 授权（暂未开放）"}><b>API 授权</b><small>适用于接口密钥授权 · 暂未开放</small></button></div>
+    {authorizationMethod==="API 授权（暂未开放）"?<p className={css.hint}>API 授权暂未开放，请选择子账户授权。此处不会创建授权或访问令牌。</p>:<>
+    <label>子账户账号<input aria-label="子账户账号" autoComplete="off" value={authAccount} onChange={e=>setAuthAccount(e.target.value)} placeholder="请输入子账户账号"/></label>
+    <label>子账户密码<div className={css.passwordField}><input aria-label="子账户密码" autoComplete="new-password" type={showPassword?"text":"password"} value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="请输入子账户密码"/><button type="button" onClick={()=>setShowPassword(x=>!x)}>{showPassword?"隐藏":"显示"}</button></div></label>
+    <div className={css.verification}><strong>验证码接收方式</strong><div className={css.codeModes}><button type="button" aria-pressed={authorizationMethod==="子账户邮箱验证码"} onClick={()=>setAuthorizationMethod("子账户邮箱验证码")}>邮箱验证码</button><button type="button" aria-pressed={authorizationMethod==="子账户手机验证码"} onClick={()=>setAuthorizationMethod("子账户手机验证码")}>手机验证码</button></div><small>验证码将发送至该子账户绑定{authorizationMethod==="子账户邮箱验证码"?"邮箱":"手机号"}（正式授权时）</small></div>
+    <label>验证码<div className={css.passwordField}><input aria-label="验证码" autoComplete="one-time-code" value={authCode} onChange={e=>setAuthCode(e.target.value)} placeholder="请输入验证码"/><button type="button" onClick={()=>setCodeNotice("当前为演示展示，尚未接通 SHEIN 官方验证码发送服务，未发送验证码。")}>接收验证码</button></div></label>
+    <p className={css.hint}>账户凭据仅用于正式平台授权验证。本展示站不会发送凭据，也不会持久化密码或验证码。</p></>}</div>
+    <div className={css.fixedIp}><div><strong>启用固定IP</strong><p>通过指定网络出口发起授权，减少异地登录或平台风控；仅在需要固定网络环境时启用。</p></div><label className={css.toggleLabel}><input type="checkbox" aria-label="启用固定IP" checked={fixedIp} onChange={e=>setFixedIp(e.target.checked)}/><span>{fixedIp?"已启用（仅演示）":"未启用"}</span></label></div>
+    {fixedIp?<p className={css.hint}>正式固定 IP 需要配置可用的代理网络出口；演示页面不会伪造 IP 或验证结果。</p>:null}
     {codeNotice?<p className={css.warning} role="status">{codeNotice}</p>:null}
-    <footer className={css.dialogActions}><button type="button" onClick={()=>{setDialog(false);setManageId(null);}}>取消</button><button className={css.primary} type="submit">{managedStore?"保存修改":"确认绑定"}</button></footer>
+    <footer className={css.dialogActions}><button type="button" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>取消</button><button className={css.primary} type="submit" disabled={authorizationMethod==="API 授权（暂未开放）"}>{managedStore?"保存修改":"确认绑定"}</button></footer>
   </form></section></div>:null}
 
  </main>
