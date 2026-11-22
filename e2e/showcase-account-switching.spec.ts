@@ -8,7 +8,7 @@ test("account menu displays the actual demo tenant and supports isolated member 
  await expect(menu).toContainText("admin@example.com");
  await expect(menu).toContainText("武汉硕米电子商务有限公司");
  await expect(menu).not.toContainText("user@sumi.ai");
- await menu.getByRole("button",{name:"切换账户 / 企业组织"}).click();
+ await menu.getByRole("button",{name:"切换账户与企业组织"}).click();
  await expect(menu).toContainText("模拟同事01");
  await menu.getByRole("button",{name:/模拟同事01/}).click();
  await expect(page.getByRole("button",{name:"模拟同事01账户"})).toBeVisible();
@@ -17,8 +17,8 @@ test("account menu displays the actual demo tenant and supports isolated member 
  await page.getByRole("button",{name:"返回管理员"}).click();
  await expect(page.getByRole("button",{name:"linchen_demo账户"})).toBeVisible();
  await page.getByRole("button",{name:"linchen_demo账户"}).click();
- await menu.getByRole("button",{name:"切换账户 / 企业组织"}).click();
- await menu.getByRole("textbox",{name:"模拟组织名称"}).fill("示例第二企业");
+ await menu.getByRole("button",{name:"切换账户与企业组织"}).click();
+ await menu.getByRole("textbox",{name:"添加模拟企业组织"}).fill("示例第二企业");
  await menu.getByRole("button",{name:"添加",exact:true}).click();
  await menu.getByRole("button",{name:/示例第二企业/}).click();
  await expect(page.getByRole("status")).toContainText("示例第二企业 · 独立演示空间");
