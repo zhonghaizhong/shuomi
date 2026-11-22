@@ -426,6 +426,8 @@ test("other organization purchase ledger stays isolated from the primary organiz
 
 test("expired 30-day store service shows expired status and blocks synchronization until renewed",async({page})=>{
  await page.goto(root+"/stores");
+ // Wait for the seeded store to render and session storage effects to commit.
+ await expect(page.locator('[data-store-center-showcase="stores"] article[class*="storeCard"]').filter({hasText:"管理员演示店铺01"})).toBeVisible();
  await page.evaluate(()=>{
   const key="shuomi-store-center-demo-ten-v2-SM-ENT-000001";
   const stores=JSON.parse(sessionStorage.getItem(key)||"[]");
