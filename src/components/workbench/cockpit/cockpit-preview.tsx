@@ -98,7 +98,7 @@ export function CockpitPreview() {
           <svg viewBox="0 0 200 200" aria-hidden="true">
             {Array.from({ length: 28 }, (_, index) => {
               const angle = -135 + index * (270 / 27);
-              return <line key={index} x1="100" y1="19" x2="100" y2="34" transform={`rotate(${angle} 100 100)`} data-active={false ? "true" : "false"}/>;
+              return <line key={index} x1="100" y1="19" x2="100" y2="34" transform={`rotate(${angle} 100 100)`} data-active="false"/>;
             })}
           </svg>
           <span><small>高风险占比</small><strong>—</strong></span>
