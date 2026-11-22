@@ -231,6 +231,7 @@ test("Figma Manage opens store settings; Reauthorize opens binding, without fake
   await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await expect(details).toBeVisible();
+ await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await expect(details.getByRole("button",{name:"店铺设置",exact:true})).toHaveAttribute("aria-current","page");
  await expect(page.getByRole("dialog",{name:"管理店铺"})).toHaveCount(0);
  await details.getByLabel("店铺负责人").selectOption("林晨");
@@ -239,6 +240,7 @@ test("Figma Manage opens store settings; Reauthorize opens binding, without fake
  await expect(area).toContainText("林晨");
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
   await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+ await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await details.getByRole("button",{name:"编辑店铺资料"}).click();
  const authorization=page.getByRole("dialog",{name:"管理店铺"});
  await expect(authorization.getByLabel("子账户账号")).toBeVisible();
@@ -276,6 +278,7 @@ test("store detail retains rename, edit and unlink without card menu",async({pag
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
   await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
+ await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  for(const label of ["修改自定义名称","编辑店铺资料","解绑店铺"])await expect(details.getByRole("button",{name:label})).toBeVisible();
  await details.getByRole("button",{name:"修改自定义名称"}).click();
  const edit=page.getByRole("dialog",{name:"管理店铺名称"});
@@ -308,11 +311,13 @@ test("store settings are staged until Save, and returning discards uncommitted e
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
   await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
+ await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await page.getByRole("button",{name:"返回我的店铺"}).click();
  await expect(area).not.toContainText("林晨");
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
   await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+ await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await expect(details.getByLabel("店铺负责人")).toHaveValue("");
  await details.getByLabel("店铺负责人").selectOption("林晨");
  await details.getByRole("button",{name:"保存设置"}).click();
@@ -359,6 +364,7 @@ test("Escape closes the topmost Figma overlay without dropping the store-detail 
  await page.getByRole("button",{name:"返回我的店铺"}).click();
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
   await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
+ await details.getByRole("button",{name:"店铺设置",exact:true}).click();
  await expect(details.getByRole("button",{name:"解绑店铺"})).toBeVisible();
 });
 test("store-center UI keeps approved dark/light Vuexy surface colors",async({page})=>{
@@ -451,6 +457,8 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("12");
  await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：3 期");
  await page.goto(root+"/stores");
+ await stores.getByLabel("搜索店铺").fill("联动校验管理员店铺");
+ await stores.getByRole("button",{name:"确认",exact:true}).click();
  const activeCard=stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"});
  await expect(activeCard).toContainText("服务有效");
  await activeCard.getByRole("button",{name:"管理店铺",exact:true}).click();
