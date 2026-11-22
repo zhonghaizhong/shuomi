@@ -3,6 +3,7 @@ async function configureDemoPayout(dialog:import("@playwright/test").Locator,ide
  await dialog.getByRole("button",{name:"设置微信账户"}).click();
  await dialog.getByRole("textbox",{name:"收款人姓名"}).fill("模拟收款人");
  await dialog.getByRole("textbox",{name:"微信号"}).fill(identifier);
+ await dialog.getByRole("checkbox",{name:/设为默认收款方式/}).check();
  await dialog.getByRole("button",{name:"保存并验证"}).click();
  await dialog.getByRole("button",{name:"去验证"}).first().click();
  await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
@@ -11,9 +12,8 @@ const route="/shuomi/#/workbench/account/referrals/withdrawals";
 test("Figma payout actions show configuration and withdrawal, with saved account and isolated records",async({page})=>{
  await page.goto(route);
  const suite=page.locator("[data-account-suite]");
- const payoutSection=suite.locator("section").filter({has:suite.getByRole("heading",{name:"收款账户",exact:true})}).first();
- await expect(payoutSection.getByRole("button",{name:"配置账户"})).toBeVisible();
- await expect(payoutSection.getByRole("button",{name:"申请提现"})).toBeVisible();
+ await expect(suite.getByRole("button",{name:"配置账户"})).toBeVisible();
+ await expect(suite.getByRole("button",{name:"申请提现"})).toBeVisible();
  await expect(suite.getByRole("button",{name:"设置收款方式"})).toHaveCount(0);
  await expect(suite.getByRole("button",{name:"申请模拟提现"})).toHaveCount(0);
  await suite.getByRole("button",{name:"配置账户"}).click();
@@ -42,6 +42,7 @@ test("Figma account configuration supports bank, Alipay and default account swit
  await dialog.getByRole("textbox",{name:"持卡人姓名"}).fill("模拟持卡人");
  await dialog.getByRole("textbox",{name:"银行卡号"}).fill("1234567890123456");
  await dialog.getByRole("textbox",{name:"开户银行"}).fill("模拟银行");
+ await dialog.getByRole("checkbox",{name:/设为默认收款方式/}).check();
  await dialog.getByRole("button",{name:"保存并验证"}).click();
  await dialog.getByRole("button",{name:"去验证"}).last().click();
  await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
@@ -73,6 +74,7 @@ test("simulate adding WeChat, Alipay and bank accounts then modifying an existin
  await dialog.getByRole("button",{name:"设置微信账户"}).click();
  await dialog.getByRole("textbox",{name:"收款人姓名"}).fill("测试微信收款人");
  await dialog.getByRole("textbox",{name:"微信号"}).fill("wx-test-0011");
+ await dialog.getByRole("checkbox",{name:/设为默认收款方式/}).check();
  await dialog.getByRole("button",{name:"保存并验证"}).click();
  await dialog.getByRole("button",{name:"去验证"}).first().click();
  await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
@@ -153,6 +155,7 @@ test("simulate editing Alipay and bank collection methods without losing separat
  await d.getByRole("button",{name:/支付宝账户/}).last().click();
  await d.getByRole("textbox",{name:"收款人姓名"}).fill("模拟支付宝账户");
  await d.getByRole("textbox",{name:"支付宝账号"}).fill("alipay-new-0044");
+ await d.getByRole("checkbox",{name:/设为默认收款方式/}).check();
  await save(d);
  await expect(suite).toContainText("支付宝 · al******44");
 
