@@ -2417,3 +2417,30 @@
   font-size:clamp(23px,6vw,30px);
  }
 }
+
+
+/* Entitlements: unify each card's accent across rail, title, badge and figures. */
+.page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="0"]{--plans-accent:#8bbaff}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="1"]{--plans-accent:#49d6bd}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="2"]{--plans-accent:#a989f7}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="3"]{--plans-accent:#efb968}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card::before{
+ background:var(--plans-accent);
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card .cardTitle h3{
+ color:var(--plans-accent);
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card .cardTitle span{
+ color:var(--plans-accent);
+ border-color:color-mix(in srgb,var(--plans-accent) 30%,var(--plans-border));
+ background:color-mix(in srgb,var(--plans-accent) 10%,var(--plans-bg));
+}
+.page[data-commerce-unified="plans"] .planEntitlementCards .card .planEntitlementValue,
+.page[data-commerce-unified="plans"] .planEntitlementCards .card .planEntitlementStoreSplit>div{
+ border-left-color:var(--plans-accent);
+ background:color-mix(in srgb,var(--plans-accent) 12%,var(--plans-bg));
+}
+:global(.light) .page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="0"]{--plans-accent:#3569bd}
+:global(.light) .page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="1"]{--plans-accent:#087f6c}
+:global(.light) .page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="2"]{--plans-accent:#7652c4}
+:global(.light) .page[data-commerce-unified="plans"] .planEntitlementCards .card[data-tone="3"]{--plans-accent:#9a6519}
