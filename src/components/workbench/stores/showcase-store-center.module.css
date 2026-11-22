@@ -335,3 +335,62 @@
 .page .manageWarning span{font-size:12px;color:var(--st-muted);line-height:1.6}
 @media(max-width:730px){.page .dialog.authDialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);padding:18px}.page .authDialog .bindingGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.page .authDialog .bindingGrid>label{grid-column:span 1}.page .authDialog .authOptions{grid-template-columns:1fr}.page .authDialog .dialogActions{bottom:-18px;margin:0 -18px -18px;padding:12px 18px}}
 @media(max-width:480px){.page .authDialog .bindingGrid{grid-template-columns:1fr}.page .authDialog .bindingGrid>label{grid-column:1}.page .authDialog .dialogActions{flex-wrap:wrap}}
+
+
+/* Store center: enforce consistent dark/light Vuexy surfaces, aligned controls and bounded list. */
+.page{--st-card-1:#18283c;--st-card-2:#142237;--st-divider:#314761}
+:global(.light) .page{--st-card-1:#f7fafd;--st-card-2:#fff;--st-divider:#dbe7e7}
+.page :is(.header,.panel,.filters,.storeMetrics button.storeMetric,.storeList article.storeCard,.dialog){border:1px solid var(--st-line);color:var(--st-text);box-shadow:none}
+.page :is(.header,.panel,.filters,.dialog){background:var(--st-bg)}
+.page .storeMetrics button.storeMetric{background:var(--st-card-1);border-radius:10px;min-height:96px;padding:15px 16px}
+.page .storeMetrics button.storeMetric>span,.page .storeMetrics button.storeMetric>small{line-height:1.4}
+.page .storeMetrics button.storeMetric>small{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.page .storeList article.storeCard{background:var(--st-card-1);border-radius:10px;min-width:0;overflow:hidden}
+.page .storeRow{width:100%;grid-template-columns:minmax(185px,1.45fr) minmax(165px,1.2fr) minmax(205px,1.45fr) minmax(170px,auto);gap:16px;padding:16px 18px;align-items:center}
+.page .storeRow>div{min-width:0}
+.page .storeRow .storeIdentity{min-width:0;align-items:center}
+.page .storeRow .storeIdentity>div{gap:5px}
+.page .storeRowTags{align-items:center}
+.page .storeRowTags span{border:1px solid var(--st-line);background:var(--st-card-2);color:var(--st-text);white-space:nowrap}
+.page .storeRowState{gap:5px}
+.page .storeRowState small{line-height:1.45}
+.page .storeRowButtons{display:flex;justify-content:flex-end;gap:8px;align-items:center}
+.page .storeRowButtons button{height:38px;min-height:38px;min-width:80px;padding:7px 12px;border-radius:8px}
+.page .storeListHeader{align-items:center;min-height:40px}
+.page .storeListTitle{gap:14px}
+.page .storeListTitle h2{margin:0}
+.page .storeBulk{background:var(--st-card-1);border-color:var(--st-line)}
+.page .storeBulk button{background:var(--st-bg);color:var(--st-text)}
+.page .storePages{min-height:48px;margin-top:6px;padding-top:12px;border-top:1px solid var(--st-divider)}
+.page .storePages button{min-height:36px;height:36px;background:var(--st-card-1);border-radius:8px}
+.page .filters :is(input,select),.page .authDialog :is(input,select){color:var(--st-text);background:var(--st-control);border-color:var(--st-line)}
+.page .filters :is(input,select)::placeholder,.page .authDialog input::placeholder{color:var(--st-muted)}
+.page .filters .filterCriteria,.page .filters .filterSearchActions{align-items:center}
+.page .filters button,.page .filters select{min-height:42px;height:42px}
+.page .dialog{max-width:calc(100vw - 24px);max-height:calc(100dvh - 32px);overflow-y:auto;border-radius:12px;box-shadow:0 22px 65px rgba(0,0,0,.33)}
+.page .dialog>header h2{color:var(--st-text);border-left:3px solid var(--st-accent);padding-left:12px;line-height:1.3}
+.page .dialog>header button{flex:none;border-radius:8px}
+.page .dialogActions{align-items:center;justify-content:flex-end;gap:10px}
+.page .dialogActions button{height:40px;min-height:40px;min-width:100px}
+.page .renewalDialog{width:min(520px,calc(100vw - 32px));padding:22px 24px;gap:16px}
+.page .renewalHeading{padding-bottom:13px;border-bottom:1px solid var(--st-divider)}
+.page .renewalHeading p{margin-top:5px;overflow-wrap:anywhere}
+.page .renewalFacts,.page .renewalPreview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;min-width:0;border-radius:9px;border:1px solid var(--st-divider);background:var(--st-card-1)}
+.page .renewalFacts{min-height:96px}.page .renewalPreview{min-height:82px}
+.page .renewalFacts>div,.page .renewalPreview>div{display:grid;align-content:center;gap:6px;min-width:0;padding:14px 16px}
+.page .renewalFacts>div+div,.page .renewalPreview>div+div{border-left:1px solid var(--st-divider)}
+.page .renewalFacts span,.page .renewalPreview span{font-size:12px;color:var(--st-muted)}
+.page .renewalFacts strong,.page .renewalPreview strong{font-size:20px;font-weight:700;color:var(--st-text);font-variant-numeric:tabular-nums}
+.page .renewalFacts small{font-size:11px;color:var(--st-muted)}
+.page .renewalFacts strong.renewalValid{color:#4dbdaa}
+.page .renewalFacts strong.renewalExpired{color:#ef8995}
+.page .renewalQuantity{display:grid;gap:8px;color:var(--st-text);font-size:14px;font-weight:650}
+.page .renewalQuantity>small{font-weight:400;color:var(--st-muted);font-size:12px}
+.page .renewalInput{display:flex;align-items:center;height:46px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-control);overflow:hidden}
+.page .renewalInput input{width:100%;height:44px;min-width:0;padding:0 14px;outline:0;border:0;color:var(--st-text);background:transparent;font-size:15px}
+.page .renewalInput em{flex:none;font-style:normal;font-size:12px;padding:7px 10px;margin-right:7px;border-radius:6px;color:var(--st-muted);background:var(--st-card-1)}
+.page .renewalDialog>.dialogActions{padding-top:12px;border-top:1px solid var(--st-divider)}
+.page .renewalDialog :is(input,button):focus-visible{outline:2px solid var(--st-accent);outline-offset:2px}
+@media(max-width:1250px){.page .storeRow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.page .storeRow{grid-template-columns:minmax(0,1fr)}.page .storeRowButtons{justify-content:flex-start}.page .renewalFacts strong,.page .renewalPreview strong{font-size:16px}}
+@media(max-width:420px){.page .renewalDialog{padding:16px}.page .renewalFacts>div,.page .renewalPreview>div{padding:10px}.page .renewalDialog>.dialogActions{flex-wrap:wrap}}
