@@ -134,7 +134,7 @@ test("enterprise operations and referral transactions have working entry points"
  await suite.getByRole("navigation",{name:"企业空间业务导航"}).getByRole("button",{name:"资源与额度",exact:true}).click();
  await expect(page).toHaveURL(/account\/organization\/resources/);
  await expect(page.locator("[data-account-suite]").getByRole("heading",{name:"成员资源分配"})).toBeVisible();
- await page.goto(root+"/account/referrals/center");
+ await page.goto(root+"/account/referrals/earnings");
  await page.locator("[data-account-suite]").getByRole("button",{name:"模拟一笔推广成交并结算"}).click();
  const dialog=page.getByRole("dialog",{name:"模拟推广收益"});
  await dialog.getByRole("textbox",{name:"模拟客户标识"}).fill("COMMERCE-ACCEPTANCE");
