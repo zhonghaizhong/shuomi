@@ -79,7 +79,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [editing,setEditing]=useState<string|null>(null),[confirmDelete,setConfirmDelete]=useState<string|null>(null);
  const [inspecting,setInspecting]=useState<string|null>(null),[authorizationHelp,setAuthorizationHelp]=useState(false);
  const [syncing,setSyncing]=useState<string|null>(null),[entered,setEntered]=useState<string|null>(null),[groupsOpen,setGroupsOpen]=useState(false),[groupFilter,setGroupFilter]=useState("全部分组"),[statusFilter,setStatusFilter]=useState("全部状态");
- const [detailTab,setDetailTab]=useState("店铺概览"),[groupName,setGroupName]=useState(""),[groups,setGroups]=useState<string[]>([]),[authorizationMethod,setAuthorizationMethod]=useState("子账户邮箱验证码");
+ const [detailTab,setDetailTab]=useState("店铺概览"),[groupName,setGroupName]=useState(""),[groups,setGroups]=useState<string[]>(()=>{try{const value=JSON.parse(sessionStorage.getItem(key+"-groups")||"[]");return Array.isArray(value)?value.filter((x):x is string=>typeof x==="string"):[]}catch{return []}}),[authorizationMethod,setAuthorizationMethod]=useState("子账户邮箱验证码");
  const [creatingGroup,setCreatingGroup]=useState(false),[addingOwner,setAddingOwner]=useState(false),[groupError,setGroupError]=useState("");
  const [settingsDraft,setSettingsDraft]=useState({group:"未分组",owner:""});
  const [platformFilter,setPlatformFilter]=useState("全部平台"),[regionFilter,setRegionFilter]=useState("全部站点"),[typeFilter,setTypeFilter]=useState("全部类型");
