@@ -394,3 +394,28 @@
 @media(max-width:1250px){.page .storeRow{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.page .storeRow{grid-template-columns:minmax(0,1fr)}.page .storeRowButtons{justify-content:flex-start}.page .renewalFacts strong,.page .renewalPreview strong{font-size:16px}}
 @media(max-width:420px){.page .renewalDialog{padding:16px}.page .renewalFacts>div,.page .renewalPreview>div{padding:10px}.page .renewalDialog>.dialogActions{flex-wrap:wrap}}
+
+
+/* Four equally sized store operations; no missing/uneven buttons on different states. */
+.page .storeRow{grid-template-columns:minmax(170px,1.25fr) minmax(145px,1fr) minmax(180px,1.25fr) minmax(240px,240px);gap:14px}
+.page .storeRowButtons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:center;gap:10px 12px;width:240px;min-width:240px}
+.page .storeRowButtons button{min-width:0;width:100%;min-height:40px;height:40px;padding:7px 9px;font-size:13px;white-space:nowrap;justify-content:center;border-radius:8px}
+.page .storeRowButtons .dangerAction{color:#f18e98;border-color:var(--st-line);background:var(--st-card-2)}
+.page .storeRowButtons .dangerAction:hover{border-color:#de6374;background:color-mix(in srgb,#de6374 12%,var(--st-card-2))}
+.page .storeRowButtons .renewAction{color:#92c9ff;border:1px solid #5681b0;background:#193956}
+:global(.light) .page .storeRowButtons .renewAction{color:#2c659d;background:#e9f3ff;border-color:#96bce8}
+.page .storeRowButtons button:disabled{opacity:.52}
+.page .bindingIdentity{display:grid;gap:8px;padding:13px 16px;border:1px solid var(--st-line);border-radius:9px;background:var(--st-surface)}
+.page .bindingIdentity>div{display:grid;gap:6px}
+.page .bindingIdentity span{color:var(--st-muted);font-size:12px}
+.page .bindingIdentity strong{color:var(--st-text);font-size:15px;line-height:1.5;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.page .bindingIdentity p{margin:0;color:var(--st-muted);font-size:12px;line-height:1.65}
+.page .authDialog .authLock{margin:0;padding:0;border:0;min-width:0;display:grid;gap:13px}
+.page .authDialog .authLock:disabled,.page .authDialog .authLock :is(input,select,button):disabled{opacity:.78}
+.page .authDialog .authLock input:disabled{cursor:not-allowed}
+.page .authDialog .bindingGrid select:disabled{opacity:.82;cursor:not-allowed;background:var(--st-surface)}
+.page .dialog.moveDialog{width:min(450px,calc(100vw - 32px));gap:15px}
+.page .moveGroupLabel{display:grid;gap:8px}
+.page .moveGroupLabel select{width:100%;min-height:42px;background:var(--st-control);color:var(--st-text);border:1px solid var(--st-line);border-radius:8px;padding:8px 12px}
+@media(max-width:1250px){.page .storeRow{grid-template-columns:repeat(2,minmax(0,1fr))}.page .storeRowButtons{width:240px;min-width:0;justify-self:end}}
+@media(max-width:680px){.page .storeRow{grid-template-columns:minmax(0,1fr)}.page .storeRowButtons{width:min(100%,320px);justify-self:stretch;grid-template-columns:repeat(2,minmax(0,1fr))}}
