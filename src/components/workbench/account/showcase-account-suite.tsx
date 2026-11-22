@@ -42,19 +42,17 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   withdrawals:next.withdrawals,payoutAccount:next.payoutAccount,referralCode:next.referralCode
  }):primary.commit(next);
  const suffix=pathname.slice(root.length)||"/organization";const [title,desc]=screens[suffix]||screens["/organization"];
- const [modal,setModal]=useState<Modal>(null);const [permissions,setPermissions]=useState<string[]>([]);const [name,setName]=useState("");const [email,setEmail]=useState("");const [role,setRole]=useState("子账号");const [selected,setSelected]=useState("");const [amount,setAmount]=useState("100");const [account,setAccount]=useState("");const [query,setQuery]=useState("");const [applied,setApplied]=useState("");const [notice,setNotice]=useState("");const [error,setError]=useState("");const [customerPage,setCustomerPage]=useState(1);const [earningsPage,setEarningsPage]=useState(1);const [promotionStatus,setPromotionStatus]=useState("all");const [promotionSearch,setPromotionSearch]=useState("");const [promotionPage,setPromotionPage]=useState(1);const [promotionDetail,setPromotionDetail]=useState<string|null>(null);const [resourceSearch,setResourceSearch]=useState("");const [resourceRole,setResourceRole]=useState("all");const [resourceStatus,setResourceStatus]=useState("正常");const [resourcePageSize,setResourcePageSize]=useState(10);const [resourcePage,setResourcePage]=useState(1);
+ const [modal,setModal]=useState<Modal>(null);const [permissions,setPermissions]=useState<string[]>([]);const [name,setName]=useState("");const [email,setEmail]=useState("");const [role,setRole]=useState("子账号");const [selected,setSelected]=useState("");const [amount,setAmount]=useState("100");const [account,setAccount]=useState("");const [query,setQuery]=useState("");const [applied,setApplied]=useState("");const [notice,setNotice]=useState("");const [error,setError]=useState("");const [customerPage,setCustomerPage]=useState(1);const [earningsPage,setEarningsPage]=useState(1);const [promotionStatus,setPromotionStatus]=useState("all");const [promotionSearch,setPromotionSearch]=useState("");const [promotionPage,setPromotionPage]=useState(1);const [promotionDetail,setPromotionDetail]=useState<string|null>(null);const [resourceSearch,setResourceSearch]=useState("");const [resourceStatus,setResourceStatus]=useState("正常");const [resourcePageSize,setResourcePageSize]=useState(10);const [resourcePage,setResourcePage]=useState(1);
  const enterprise=suffix.startsWith("/organization"),overview=suffix==="/organization",referral=suffix.startsWith("/referrals");
  const sectionMenu=enterprise?menu.slice(0,5):menu.slice(5);
  useEffect(()=>{if(!promotionDetail)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setPromotionDetail(null)};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[promotionDetail]);
  useEffect(()=>{if(!modal)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setModal(null)};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[modal]);
  const currentMember=state.members.find(x=>x.id===selected);
  const activeMembers=state.members.filter(x=>x.status==="正常");
- const resourceRoles=[...new Set(state.members.map(m=>m.role))];
  const resourceMembers=state.members.filter(m=>{
   const search=resourceSearch.trim().toLocaleLowerCase();
-  return (resourceRole==="all"||m.role===resourceRole)
-   &&(resourceStatus==="all"||m.status===resourceStatus)
-   &&(!search||[m.name,m.email,m.role].some(value=>value.toLocaleLowerCase().includes(search)));
+  return (resourceStatus==="all"||m.status===resourceStatus)
+   &&(!search||m.name.toLocaleLowerCase().includes(search));
  });
  const resourcePageCount=Math.max(1,Math.ceil(resourceMembers.length/resourcePageSize));
  const currentResourcePage=Math.min(resourcePage,resourcePageCount);
@@ -139,12 +137,10 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
        {label:"企业存储",value:tenant.storageGiB+" GiB",hint:"免费 5 GiB + 模拟扩容 3 GiB · 已分配 "+usedStorage.toFixed(1)+" GiB",Icon:HardDrive,tone:"storage"}
       ] as const).map(({label,value,hint,Icon,tone})=><article key={label} data-tone={tone}><div className={s.resourceIcon}><Icon size={21} strokeWidth={1.9} aria-hidden="true"/></div><span className={s.resourceLabel}>{label}</span><strong>{value}</strong><small>{hint}</small>{tone==="storage"&&<div className={s.storageTrack} role="progressbar" aria-label="已分配企业存储" aria-valuemin={0} aria-valuemax={tenant.storageGiB} aria-valuenow={Math.min(tenant.storageGiB,usedStorage)}><div style={{width:Math.max(0,Math.min(100,tenant.storageGiB?usedStorage/tenant.storageGiB*100:0))+"%"}}/></div>}</article>)}
     </div></section>
-    <section className={s.panel} aria-label="成员资源分配"><header><h2>成员资源分配</h2><p>企业存储为共享容量，可按成员设置上限；未授权的店铺及未充值的额度不预置分配。</p></header>
+    <section className={`${s.panel} ${s.resourcePanel}`} aria-label="成员资源分配"><header><h2>成员资源分配</h2><p>企业存储为共享容量，可按成员设置上限；未授权的店铺及未充值的额度不预置分配。</p></header>
     <div className={s.resourceFilters}>
-     <label className={s.resourceSearch}>搜索成员<input type="search" aria-label="搜索资源成员" placeholder="姓名或邮箱" value={resourceSearch} onChange={e=>{setResourceSearch(e.target.value);setResourcePage(1)}}/></label>
-     <label>角色<select aria-label="筛选资源角色" value={resourceRole} onChange={e=>{setResourceRole(e.target.value);setResourcePage(1)}}><option value="all">全部角色</option>{resourceRoles.map(role=><option value={role} key={role}>{role}</option>)}</select></label>
-     <label>状态<select aria-label="筛选资源状态" value={resourceStatus} onChange={e=>{setResourceStatus(e.target.value);setResourcePage(1)}}><option value="正常">正常</option><option value="已停用">已停用</option><option value="all">全部状态</option></select></label>
-     <button type="button" className={s.resourceReset} onClick={()=>{setResourceSearch("");setResourceRole("all");setResourceStatus("正常");setResourcePage(1)}}>重置</button>
+     <label className={s.resourceSearch}>搜索成员<input type="search" aria-label="搜索资源成员" placeholder="输入成员姓名" value={resourceSearch} onChange={e=>{setResourceSearch(e.target.value);setResourcePage(1)}}/></label>
+     <label className={s.resourceStatus}>状态<select aria-label="筛选资源状态" value={resourceStatus} onChange={e=>{setResourceStatus(e.target.value);setResourcePage(1)}}><option value="正常">正常</option><option value="已停用">已停用</option><option value="all">全部状态</option></select></label>
     </div>
     <div className={`${s.tableWrap} ${s.resourceTable}`}><table><thead><tr><th>成员 / 角色</th><th>已绑定店铺</th><th>AI 积分余额</th><th>数据额度（条）</th><th>存储上限（GiB）</th></tr></thead><tbody>{visibleResourceMembers.map(m=><tr key={m.id}><td><strong>{m.name}</strong><small className={s.memberRole}>{m.role}{m.status==="已停用"?" · 已停用":""}</small></td><td>0</td><td>0</td><td>0</td><td>{(state.allocations[m.id]||0).toFixed(1)}</td></tr>)}</tbody></table>{!resourceMembers.length&&<div className={s.empty}>{state.members.length===0?"暂无企业成员，邀请后可分配资源。":"没有符合条件的成员"}</div>}</div>
     <div className={s.resourcePagination}>
