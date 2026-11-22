@@ -148,8 +148,63 @@ function OrderFulfillmentPage({ active, setActive, query, setQuery, submit, filt
   return <><section className={styles.orderMetrics}>{[["今日订单", "86", "较昨日 +12"], ["待处理", "—", "持续统计"], ["待发货", "12", "需处理"], ["运输中", "43", "物流正常"], ["已完成", "—", "持续统计"], ["售后中", "—", "持续统计"], ["异常订单", "2", "优先处理"]].map(([a,b,c],i)=><article data-step={i} key={a}><div><span>{a}</span><small>{c}</small></div><strong>{b}</strong></article>)}</section><section className={styles.orderTabs}>{["全部订单", "待处理", "待发货", "运输中", "已完成", "售后中", "异常订单"].map(x=><button key={x} className={active===x?styles.selected:""} onClick={()=>setActive(x)}>{x}</button>)}<small>当前开放平台： SHEIN</small></section><section className={styles.productFilters}><div className={styles.commerceFilterSelects}>{["全部平台","全部站点","全部店铺","全部状态","全部时间"].map(x=><FilterSelect key={x} label={x} filters={filters} setFilter={setFilter}/>)}</div><div className={styles.commerceFilterActions}><input aria-label="搜索订单号或商品" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索订单号或商品名称"/><button onClick={()=>{setQuery("");resetFilters()}}>重置</button><button className={styles.primary} onClick={()=>submit("确认筛选")}>确认</button><button onClick={()=>submit("批量发货")}>批量发货</button></div></section><section className={styles.orderTable}><header><h2>订单与履约列表 <small>共86笔今日订单</small></h2><small>每页100条</small></header><div className={styles.orderTableHead}><span>□</span><b>订单 / 商品</b><b>平台 / 站点</b><b>店铺</b><b>金额</b><b>下单时间</b><b>履约状态</b><b>物流状态</b><b>发货时限</b><b>操作</b></div>{items.filter(r=>(active==="全部订单"||active==="全部"||r[6]===active)&&r.join(" ").includes(query)&&containsFilter(r,filters,"全部站点")&&containsFilter(r,filters,"全部店铺")&&containsFilter(r,filters,"全部状态")&&containsFilter(r,filters,"全部时间")).map((r,i)=><div className={styles.orderTableRow} key={r[0]}><input type="checkbox" aria-label={`选择订单${r[0]}`}/><span><b>{r[0]}</b><small>{r[1]}</small></span><span><b className={styles.platformTag}>SHEIN</b>　{r[2]}</span><span>{r[3]}</span><strong>{r[4]}</strong><span>{r[5]}</span><b className={styles.statusTag} data-state={r[6]}>{r[6]}</b><b className={styles.statusTag} data-state={r[7]}>{r[7]}</b><small>{i<2?i===0?"06:18:42":"12:40:10":"—"}</small><button onClick={()=>submit(r[6]==="待发货"?"开始发货":"查看订单")}>{r[6]==="待发货"?"去发货":"查看"}</button></div>)}</section></>;
 }
 
+type PlansDraft={
+ id:string;type:string;quantity:number;quote:string;createdAt:string;status:"待提交"|"已取消"
+};
+const PLANS_DRAFT_KEY="shuomi-showcase-plans-requests-v1";
+function readPlanDrafts():PlansDraft[]{
+ if(typeof window==="undefined")return [];
+ try{
+  const raw=JSON.parse(window.localStorage.getItem(PLANS_DRAFT_KEY)||"[]");
+  if(!Array.isArray(raw))return [];
+  return raw.filter((item):item is PlansDraft=>Boolean(item)&&typeof item.id==="string"&&typeof item.type==="string"&&typeof item.quantity==="number"&&Number.isFinite(item.quantity)&&typeof item.createdAt==="string"&&(item.status==="待提交"||item.status==="已取消")&&typeof item.quote==="string").slice(0,100);
+ }catch{return []}
+}
+function savePlanDrafts(rows:PlansDraft[]):boolean{
+ try{window.localStorage.setItem(PLANS_DRAFT_KEY,JSON.stringify(rows.slice(0,100)));return true}catch{return false}
+}
+
 function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filters, setFilter, resetFilters, router }: DetailState & { pathname: string; router: ReturnType<typeof useRouter> }) {
   const [purchaseAmounts,setPurchaseAmounts]=useState<Record<string,string>>({});
+  const [requestDrafts,setRequestDrafts]=useState<PlansDraft[]>([]);
+  const [draftReady,setDraftReady]=useState(false);
+  const [requestReview,setRequestReview]=useState<{type:string;quantity:number;quote:string}|null>(null);
+  const [walletAmount,setWalletAmount]=useState("");
+  const [selectedRequest,setSelectedRequest]=useState<string|null>(null);
+  const [requestNotice,setRequestNotice]=useState("");
+  const [requestStatusFilter,setRequestStatusFilter]=useState("全部状态");
+  useEffect(()=>{setRequestDrafts(readPlanDrafts());setDraftReady(true)},[]);
+  useEffect(()=>{
+   if(!requestReview)return;
+   const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();setRequestReview(null)}};
+   window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
+  },[requestReview]);
+  const openReview=(type:string,quantity:number,quote:string)=>{
+   setRequestNotice("");
+   if(!Number.isFinite(quantity)||quantity<=0){setRequestNotice("请输入大于 0 的有效数量或金额。");return}
+   if((type==="店铺服务"||type==="企业存储")&&!Number.isInteger(quantity)){setRequestNotice("店铺续费期数和扩容 GiB 必须为整数。");return}
+   setRequestReview({type,quantity,quote});
+  };
+  const confirmDraft=()=>{
+   if(!requestReview)return;
+   const draft:PlansDraft={id:typeof crypto!=="undefined"&&"randomUUID"in crypto?crypto.randomUUID():String(Date.now()),...requestReview,createdAt:new Date().toISOString(),status:"待提交"};
+   const next=[draft,...requestDrafts].slice(0,100);
+   if(!savePlanDrafts(next)){setRequestNotice("浏览器无法保存申请草稿，请检查本地存储权限。");return}
+   setRequestDrafts(next);setRequestReview(null);setRequestNotice("已保存申请草稿。未扣款、未充值、未开通权益；可前往账单与订单查看或取消。");
+  };
+  const cancelDraft=(id:string)=>{
+   const next=requestDrafts.map(item=>item.id===id?{...item,status:"已取消" as const}:item);
+   if(!savePlanDrafts(next)){setRequestNotice("无法保存取消结果，请重试。");return}
+   setRequestDrafts(next);setRequestNotice("申请草稿已取消，没有产生支付或资源变动。");setSelectedRequest(null);
+  };
+  const removeDraft=(id:string)=>{
+   const next=requestDrafts.filter(item=>item.id!==id);
+   if(!savePlanDrafts(next)){setRequestNotice("无法删除本地草稿，请重试。");return}
+   setRequestDrafts(next);setSelectedRequest(null);setRequestNotice("已移除本地申请草稿。");
+  };
+  const draftMatch=(r:PlansDraft)=>r.status===requestStatusFilter||requestStatusFilter==="全部状态";
+  const currentRequest=requestDrafts.find(r=>r.id===selectedRequest);
+
   const [planDetail,setPlanDetail]=useState<{kind:"usage"|"order";row:string[]}|null>(null);
   const [usageMovement,setUsageMovement]=useState("全部变动");
   const [usageStore,setUsageStore]=useState("全部店铺");
@@ -165,7 +220,16 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const positivePurchase=(label:string)=>Number.isFinite(purchaseValue(label))&&purchaseValue(label)>0;
   const purchaseEstimate=(label:string)=>!positivePurchase(label)?"请先输入数量或金额":label==="店铺服务"?"预计扣款：¥"+(purchaseValue(label)*168).toFixed(2)+" · 计入企业续费期数余额":label==="企业存储"?"预计费用：¥"+purchaseValue(label).toFixed(2)+" · 有效期 30 天":"按当前实时兑换规则结算，不预估虚构积分或数据额度";
   const usageRowMatches=(r:string[])=>r.join(" ").includes(appliedUsage.query)&&(appliedUsage.tab==="全部"||appliedUsage.tab==="全部流水"||r[1].includes(appliedUsage.tab))&&(appliedUsage.movement==="全部变动"||(appliedUsage.movement==="扣减"?r[4].startsWith("-"):appliedUsage.movement==="充值"?r[4].startsWith("+"):r[3].includes("赠送")))&&(appliedUsage.store==="全部店铺"||r.join(" ").includes(appliedUsage.store));
-  const rows: string[][] = []
+  const rows: string[][] = [];
+  const reviewDialog=requestReview?<div className={styles.planDetailBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setRequestReview(null)}}>
+   <section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="确认申请草稿">
+    <header><div><h2>确认申请草稿</h2><p>仅保存到当前浏览器；不会发起支付、扣除钱包余额或增加资源权益。</p></div><button type="button" aria-label="关闭申请弹窗" onClick={()=>setRequestReview(null)}>×</button></header>
+    <dl><div><dt>申请类型</dt><dd>{requestReview.type}</dd></div><div><dt>数量或金额</dt><dd>{requestReview.quantity}{requestReview.type==="账户充值"||requestReview.type==="AI 积分"||requestReview.type==="数据资源"?" 元":requestReview.type==="企业存储"?" GiB":" 期"}</dd></div><div><dt>费用说明</dt><dd>{requestReview.quote}</dd></div><div><dt>处理状态</dt><dd>待提交 · 尚未付款</dd></div></dl>
+    <footer><button type="button" onClick={()=>setRequestReview(null)}>返回修改</button><button type="button" className={styles.primary} onClick={confirmDraft}>保存申请草稿</button></footer>
+   </section>
+  </div>:null;
+  const draftAlert=requestNotice?<p className={styles.planEmpty} role="status">{requestNotice} <button type="button" onClick={()=>router.push("/workbench/plans/orders?preview=1")}>查看申请草稿</button></p>:null;
+
   if (pathname.endsWith("options")) return <><section className={styles.noticeBar}><b>当前收费方案</b><span><strong>基础方案 · 按需使用</strong>　店铺按期购买；AI 积分与数据按需充值；企业存储按扩容包独立计量。</span><button onClick={()=>router.push("/workbench/plans/entitlements?preview=1")}>查看我的权益 →</button></section><section className={`${styles.cards} ${styles.fourCards}`}>{[["店铺服务", "¥168 / 店 / 期", "每期为 30 天；各店铺独立计时，到期未续费停止使用。", "多店优惠按当前配置计算"], ["AI 积分", "金额 · AI 积分", "充值后按模型与任务类型扣减，余额长期保留。", "按实际使用量扣除"], ["数据服务", "金额 · 数据条数", "按当前单价换算，按成功调用的数据条数扣减。", "余额长期保留"], ["企业存储", "¥1 / GiB / 30天", "默认共享 5 GiB；扩容按 GiB 计价，激活后独立计算 30 天。", "到期不自动续费"]].map(([a,b,c,d],i)=><article className={styles.card} data-tone={i} key={a}><h3>{a}</h3><h2>{b}</h2><p>{c}</p><small>{d}</small></article>)}</section><section className={styles.split}><article><h2>计费规则</h2>{["店铺按期结算，各店铺独立计算到期时间", "积分和数据分别充值、分别记账，余额不清零", "企业存储默认 5 GiB；扩容按 ¥1 / GiB / 30 天", "存储容量变动查用量明细，付款交易查账单与订单"].map(x=><p key={x}>•　{x}</p>)}</article><article><h2>相关管理</h2><p>查看当前权益、使用记录或前往充值</p><div className={styles.planTextLinks}><button onClick={()=>router.push("/workbench/plans/usage?preview=1")}>查看用量明细</button><button onClick={()=>router.push("/workbench/plans/top-up?preview=1")}>前往充值中心</button><button onClick={()=>router.push("/workbench/plans/orders?preview=1")}>查看账单与订单</button></div></article></section></>;
   if (pathname.endsWith("entitlements")) return <><section className={styles.noticeBar}><b>企业总权益</b><span>店铺服务　<strong>{plansDemoDisplay.activeStores}</strong>　　AI 积分余额　<strong>{plansDemoDisplay.aiPoints}</strong>　　数据余额　<strong>{plansDemoDisplay.dataRows}</strong>　　企业存储　<strong>{plansDemoDisplay.storageAvailable}</strong></span><button onClick={()=>router.push("/workbench/plans/usage?preview=1")}>查看用量 →</button></section><section className={`${styles.cards} ${styles.fourCards} ${styles.planEntitlementCards}`}>{[["店铺服务", "按期生效", "每家店铺独立计算到期时间；1期 = 30天；到期未续费即停止使用。",plansDemoDisplay.activeStores], ["token 积分", "长期余额", "充值后统一获得积分；赠送资源与充值资源分别记录；使用时按模型与任务类型扣减。",plansDemoDisplay.aiPoints], ["数据服务", "长期余额", "充值后自动换算可用数据条数；按成功调用的数据条数扣减。",plansDemoDisplay.dataRows], ["企业存储", "企业共享", `默认容量 ${plansDemoDisplay.storageCapacity}；已用 ${plansDemoDisplay.storageUsed}；扩容包独立计时，到期不自动续费。`,plansDemoDisplay.storageAvailable]].map(([a,b,c,value],i)=><article className={styles.card} data-tone={i} key={a}><div className={styles.cardTitle}><h3>{a}</h3><span>{b}</span></div><strong className={styles.planEntitlementValue}>{value}</strong><p>{c}</p></article>)}</section><section className={styles.split}><article><h2>已开通能力</h2><p className={styles.planEmpty}>暂无已购买或额外开通的付费能力；基础功能可按平台规则使用。</p></article><article><h2>资源分配在哪里？</h2><p>企业资源统一管理；成员分配、共享存储和扩容状态在企业空间查看。</p><button onClick={()=>router.push("/workbench/account/organization/resources?preview=1")}>前往企业空间 · 资源与额度</button></article></section></>;
   if (pathname.endsWith("usage")) return <><section className={styles.metrics}>{[["店铺费用", "¥0.00", "本月没有店铺费用"], ["AI 积分消耗", "0", "本月消耗 0 积分"], ["数据消耗", "0 条", "本月使用 0 条数据"], ["企业存储占用", plansDemoDisplay.storageUsed, `总容量 ${plansDemoDisplay.storageCapacity}`]].map(([a,b,c])=><article key={a} className={styles.planMetricCard}><strong className={styles.planMetricValue}>{b}</strong><div className={styles.planMetricCopy}><span>{a}</span><small>{c}</small></div></article>)}</section><section className={styles.tabs}>{["全部流水", "店铺费用", "token 积分", "数据额度", "企业存储"].map(x=><button key={x} className={active===x?styles.selected:""} onClick={()=>{setActive(x);setAppliedUsage(v=>({...v,tab:x}))}}>{x}</button>)}</section><section className={styles.toolbar} aria-label="用量流水筛选"><select aria-label="变动类型" value={usageMovement} onChange={e=>setUsageMovement(e.target.value)}>{["全部变动","扣减","充值","赠送"].map(x=><option key={x}>{x}</option>)}</select><select aria-label="关联店铺" value={usageStore} onChange={e=>setUsageStore(e.target.value)}>{["全部店铺"].map(x=><option key={x}>{x}</option>)}</select><input aria-label="搜索流水" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索流水单号或说明"/><button onClick={()=>{setQuery("");setUsageMovement("全部变动");setUsageStore("全部店铺");setActive("全部流水");setAppliedUsage({query:"",movement:"全部变动",store:"全部店铺",tab:"全部流水"})}}>重置</button><button className={styles.primary} onClick={()=>setAppliedUsage({query,movement:usageMovement,store:usageStore,tab:active==="全部"?"全部流水":active})}>确定</button><button disabled={!rows.some(usageRowMatches)} onClick={()=>downloadDemoCsv("用量明细-演示.csv",rows.filter(usageRowMatches))}>导出明细</button></section><section className={styles.table}><header><h2>流水明细</h2><small>尚无实际资源使用流水</small></header><div className={styles.planTableScroll}><div className={`${styles.tableHead} ${styles.planUsageColumns}`}>{["时间","类型","业务对象","变动说明","变动","变动后余额","操作"].map(label=><span key={label}>{label}</span>)}</div>{rows.filter(usageRowMatches).map((r,i)=><div className={`${styles.serviceRow} ${styles.planUsageColumns}`} key={i}>{r.map((x,j)=><span key={j}>{x}</span>)}<button onClick={()=>setPlanDetail({kind:"usage",row:r})}>详情</button></div>)}</div>{!rows.some(usageRowMatches)&&<p className={styles.planEmpty}>暂无用量流水。充值或使用资源后将在此显示记录。</p>}</section>{planDetail?.kind==="usage"&&<div className={styles.planDetailBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setPlanDetail(null)}}><section className={styles.planDetailDialog} role="dialog" aria-modal="true" aria-label="流水详情"><header><div><h2>流水详情</h2><p>演示流水，不涉及真实扣费或账务。</p></div><button type="button" aria-label="关闭流水详情" onClick={()=>setPlanDetail(null)}>×</button></header><div className={styles.planDetailHighlight}><span>变动金额或额度</span><strong>{planDetail.row[4]}</strong><small>{planDetail.row[1]} · {planDetail.row[2]}</small></div><dl>{[["时间",planDetail.row[0]],["资源类型",planDetail.row[1]],["业务对象",planDetail.row[2]],["变动说明",planDetail.row[3]],["变动金额或额度",planDetail.row[4]],["变动后余额",planDetail.row[5]]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><footer><button type="button" onClick={()=>setPlanDetail(null)}>关闭</button></footer></section></div>}</>;
