@@ -20,6 +20,16 @@ test("goal row opens a real detail dialog instead of a fake success toast",async
   await page.getByRole("button",{name:"新建目标"}).click();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog",{name:"新建目标"})).toHaveCount(0);
+  // The store/goal fixture is intentionally empty: create a draft before opening row actions.
+  await expect(page.getByRole("button",{name:"操作"})).toHaveCount(0);
+  await page.getByRole("button",{name:"新建目标"}).click();
+  const create=page.getByRole("dialog",{name:"新建目标"});
+  await create.getByRole("textbox",{name:"目标名称"}).fill("月度利润目标");
+  await create.getByRole("combobox",{name:"适用店铺"}).selectOption("二号店");
+  await create.getByRole("combobox",{name:"目标周期"}).selectOption("每月");
+  await create.getByRole("spinbutton",{name:"目标值"}).fill("12000");
+  await create.getByRole("button",{name:"添加到演示列表"}).click();
+  await expect(page.getByText("月度利润目标",{exact:true})).toBeVisible();
   await page.getByRole("button",{name:"操作"}).first().click();
   const dialog=page.getByRole("dialog");
   await expect(dialog).toContainText("月度利润目标");
