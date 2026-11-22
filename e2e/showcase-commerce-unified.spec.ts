@@ -183,9 +183,9 @@ test("plans usage flow filters and top-up estimates work without issuing real ch
  await expect(rootEl.getByRole("combobox",{name:"关联店铺"})).toBeVisible();
  await rootEl.getByRole("combobox",{name:"变动类型"}).selectOption("扣减");
  await rootEl.getByRole("textbox",{name:"搜索流水"}).fill("商品优化");
- await expect(rootEl.locator('[class*="serviceRow"]')).toHaveCount(4);
+ await expect(rootEl.locator('[class*="serviceRow"]')).toHaveCount(0);
  await rootEl.getByRole("button",{name:"确定",exact:true}).click();
- await expect(rootEl.locator('[class*="serviceRow"]')).toHaveCount(1);
+ await expect(rootEl.locator('[class*="serviceRow"]')).toHaveCount(0);
  await rootEl.getByRole("button",{name:"重置"}).click();
  await expect(rootEl.getByRole("combobox",{name:"变动类型"})).toHaveValue("全部变动");
  await expect(rootEl.getByRole("textbox",{name:"搜索流水"})).toHaveValue("");
@@ -208,36 +208,31 @@ test("plans usage flow filters and top-up estimates work without issuing real ch
 });
 
 
-test("plans details show selected transaction with aligned columns and close safely",async({page})=>{
+test("plans empty usage and orders retain aligned headers without fabricating transactions",async({page})=>{
  await page.goto(root+"/plans/usage");
  const usage=page.locator('[data-commerce-unified="plans"]');
- const usageColumns=usage.locator('[class*="planUsageColumns"]');
- await expect(usageColumns).toHaveCount(5);
- await expect(usageColumns.first().locator("span")).toHaveCount(7);
- await usage.getByRole("button",{name:"详情"}).first().click();
- const detail=page.getByRole("dialog",{name:"流水详情"});
- await expect(detail).toBeVisible();
- await expect(detail).toContainText("商品标题与卖点优化");
- await detail.getByRole("button",{name:"关闭",exact:true}).click();
- await expect(detail).toHaveCount(0);
+ await expect(usage.locator('[class*="planUsageColumns"]').first().locator("span")).toHaveCount(7);
+ await expect(usage.getByText("暂无用量流水。充值或使用资源后将在此显示记录。")).toBeVisible();
+ await expect(usage.getByRole("button",{name:"详情"})).toHaveCount(0);
+ await expect(usage.getByRole("button",{name:"导出明细"})).toBeDisabled();
  await page.goto(root+"/plans/orders");
  const orders=page.locator('[data-commerce-unified="plans"]');
  await expect(orders.locator('[class*="planOrderColumns"]').first().locator("span")).toHaveCount(6);
- await orders.getByRole("button",{name:"详情"}).first().click();
- const orderDialog=page.getByRole("dialog",{name:"订单详情"});
- await expect(orderDialog).toContainText("一号店续费 2 期");
- await orderDialog.getByRole("button",{name:"关闭",exact:true}).click();
- await expect(orderDialog).toHaveCount(0);
-});
-test("plans overview omits unnecessary actions for normal account states",async({page})=>{
- await page.goto(root+"/plans");
- const overview=page.locator('[data-commerce-unified="plans"]');
- await expect(overview).toContainText("未来 7 天内到期：1 家");
- await expect(overview.getByRole("button",{name:"处理"})).toBeVisible();
- await expect(overview).toContainText("无需充值");
- await expect(overview.getByRole("button",{name:"查看账单"})).toBeVisible();
+ await expect(orders.getByText("暂无账单与订单记录。")).toBeVisible();
+ await expect(orders.getByRole("button",{name:"详情"})).toHaveCount(0);
+ await expect(orders.getByRole("button",{name:"导出账单"})).toBeDisabled();
 });
 
+test("plans overview shows no payable reminder or fictional last order",async({page})=>{
+ await page.goto(root+"/plans");
+ const overview=page.locator('[data-commerce-unified="plans"]');
+ await expect(overview).toContainText("未来 7 天内到期：0 家");
+ await expect(overview).toContainText("暂无待处理店铺");
+ await expect(overview.getByRole("button",{name:"处理",exact:true})).toHaveCount(0);
+ await expect(overview).toContainText("积分与数据余额为 0");
+ await expect(overview).toContainText("暂无充值、购买或续费订单");
+ await expect(overview.getByRole("button",{name:"查看账单"})).toBeVisible();
+});
 
 test("billing filters wait until confirmation, then reset and export reflect applied selection",async({page})=>{
  await page.goto(root+"/plans/orders");
@@ -254,19 +249,29 @@ test("billing filters wait until confirmation, then reset and export reflect app
  await expect(rows).toHaveCount(5);
  await expect(plans.getByRole("combobox",{name:"全部状态"})).toHaveValue("全部状态");
 });
-test("plans shared demo balances match across overview, entitlements, usage and wallet",async({page})=>{
+test("plans zero-value balances and free 5 GiB storage agree across all pages",async({page})=>{
  await page.goto(root+"/plans");
  let plans=page.locator('[data-commerce-unified="plans"]');
- await expect(plans).toContainText("8,650");
- await expect(plans).toContainText("300,000 条");
- await expect(plans).toContainText("2.75 GiB");
+ await expect(plans).toContainText("0 家");
+ await expect(plans).toContainText("5.00 GiB");
+ await expect(plans).toContainText("已用 0.00 GiB");
+ await expect(plans).not.toContainText("8,650");
+ await expect(plans).not.toContainText("300,000 条");
  await page.goto(root+"/plans/entitlements");
  plans=page.locator('[data-commerce-unified="plans"]');
- for(const value of ["8,650","300,000 条","2.75 GiB"])await expect(plans).toContainText(value);
+ await expect(plans).toContainText("默认容量 5.00 GiB");
+ await expect(plans).toContainText("已用 0.00 GiB");
+ await expect(plans).toContainText("暂无已购买或额外开通的付费能力");
+ await page.goto(root+"/plans/usage");
+ plans=page.locator('[data-commerce-unified="plans"]');
+ await expect(plans).toContainText("本月使用 0 条数据");
  await page.goto(root+"/plans/top-up");
- await expect(page.locator('[data-commerce-unified="plans"]')).toContainText("¥5,000.00（演示）");
+ plans=page.locator('[data-commerce-unified="plans"]');
+ await expect(plans).toContainText("¥0.00");
+ await expect(plans).toContainText("累计充值 ¥0");
+ await expect(plans).toContainText("累计支出 ¥0");
+ await expect(plans).toContainText("暂无充值、消费或兑换流水");
 });
-
 
 test("plans visual polish keeps five accessible entries and a grounded storage utilization bar",async({page})=>{
  await page.goto(root+"/plans");
@@ -275,12 +280,12 @@ test("plans visual polish keeps five accessible entries and a grounded storage u
  await expect(cards).toHaveCount(5);
  for(const name of ["套餐方案","我的权益","用量明细","充值中心","账单与订单"])
   await expect(cards.getByRole("button",{name:"进入"+name})).toBeVisible();
- await expect(plans.getByRole("progressbar",{name:"企业存储使用率"})).toHaveAttribute("aria-valuenow","40");
+ await expect(plans.getByRole("progressbar",{name:"企业存储使用率"})).toHaveAttribute("aria-valuenow","0");
  await expect(plans.locator('[class*="usageBar"] i')).toHaveCount(1);
  await cards.getByRole("button",{name:"进入我的权益"}).click();
  await expect(page.locator('[data-commerce-unified="plans"] [class*="planEntitlementCards"] article')).toHaveCount(4);
 });
-test("plans premium cards and detail dialogs remain usable in both Vuexy themes",async({page})=>{
+test("plans premium cards, empty transactions and purchase controls remain usable in both Vuexy themes",async({page})=>{
  for(const mode of ["light","dark"] as const){
   await page.goto(root+"/plans/entitlements");
   const switcher=page.getByRole("button",{name:mode==="light"?"切换到浅色主题":"切换到深色主题"});
@@ -296,9 +301,7 @@ test("plans premium cards and detail dialogs remain usable in both Vuexy themes"
    await expect(purchase.nth(i).getByRole("spinbutton")).toBeVisible();
   }
   await page.goto(root+"/plans/usage");
-  await page.locator('[data-commerce-unified="plans"]').getByRole("button",{name:"详情"}).first().click();
-  const detail=page.getByRole("dialog",{name:"流水详情"});
-  await expect(detail.locator('[class*="planDetailHighlight"]')).toContainText("-¥12.80 / 128");
-  await detail.getByRole("button",{name:"关闭",exact:true}).click();
+  await expect(page.locator('[data-commerce-unified="plans"]').getByText("暂无用量流水。充值或使用资源后将在此显示记录。")).toBeVisible();
+  await expect(page.getByRole("dialog",{name:"流水详情"})).toHaveCount(0);
  }
 });
