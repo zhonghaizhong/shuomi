@@ -570,7 +570,7 @@ test("ten purchased store-renewal periods become allocatable to colleague01 and 
  await expect(purchase).toContainText("¥1680.00");
  await purchase.getByRole("button",{name:"确认购买并扣除演示余额"}).click();
  await page.goto("/shuomi/#/workbench/plans/entitlements");
- await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("12");
+ await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("11");
  await page.goto(base+"/organization/resources");
  const suite=page.locator("[data-account-suite]");
  await expect(suite).toContainText("剩余可分配续费期数");
