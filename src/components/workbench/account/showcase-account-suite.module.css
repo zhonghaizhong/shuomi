@@ -479,3 +479,23 @@
 .page[data-account-suite="/organization"] .resourceSummary article[data-tone="storage"] .storageTrack{
  grid-column:1 / -1;grid-row:4;
 }
+
+/* Showcase role permissions: navigation-derived three-level permission matrix. */
+.permissionDialog{width:min(900px,calc(100vw - 36px));max-height:calc(100dvh - 36px)}
+.permissionList{display:block;min-width:0;padding:15px;border-color:var(--line);background:var(--inset)}
+.permissionList .permissionHelp{margin:0 0 12px;font-size:13px;line-height:1.65;color:var(--muted)}
+.permissionList .permissionHelp:last-child{margin:12px 0 0}
+.permissionTree{display:grid;gap:10px;max-height:min(54dvh,530px);overflow:auto;overscroll-behavior:contain;padding:2px 3px 2px 0}
+.permissionGroup{min-width:0;overflow:hidden;border:1px solid var(--line);background:var(--surface);border-radius:7px}
+.permissionGroupHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 15px;background:color-mix(in srgb,var(--primary) 7%,var(--surface));border-bottom:1px solid var(--line)}
+.permissionGroupHeading label{min-height:0;padding:0;background:transparent;border:0;display:flex;align-items:center;gap:10px;flex:none}
+.permissionGroupHeading strong{font-size:14px;color:var(--ink);font-weight:700}
+.permissionGroupHeading small{font-size:12px;color:var(--muted);text-align:right}
+.permissionChildren{padding:4px 0}
+.permissionRow{display:grid;grid-template-columns:minmax(0,1fr) 78px 78px;align-items:center;min-height:39px;column-gap:6px;padding:6px 16px;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.permissionRow:last-child{border-bottom:0}
+.permissionNodeName{min-width:0;font-size:13px;line-height:1.45;color:var(--ink)}
+.permissionRow label{display:flex;align-items:center;justify-content:flex-start;gap:6px;min-height:26px;padding:2px 0;border:0;background:transparent;white-space:nowrap;color:var(--muted);font-size:12px}
+.permissionRow input,.permissionGroupHeading input{appearance:auto;width:17px;height:17px;min-height:17px;flex:none;accent-color:var(--primary);cursor:pointer}
+.permissionRow:focus-within{background:color-mix(in srgb,var(--primary) 7%,transparent)}
+@media(max-width:600px){.permissionDialog{padding:16px}.permissionList{padding:10px}.permissionGroupHeading{padding:10px}.permissionRow{grid-template-columns:minmax(0,1fr) 65px 65px;padding-right:8px;column-gap:3px}.permissionNodeName{font-size:12px}.permissionRow label{font-size:11px}.permissionTree{max-height:52dvh}}
