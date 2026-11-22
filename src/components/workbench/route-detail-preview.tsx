@@ -6,7 +6,7 @@ import styles from "./route-detail-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit, plansDemoPurchases, plansDemoRates } from "./plans-demo-facts";
 import {readDemoPurchases,writeDemoPurchases,useDemoPurchases,type DemoPurchase} from "./showcase-purchases";
 import {useShowcaseSuite} from "./account/showcase-account-state";
-import {useDemoStoreBindings,countConsumedStorePeriods,demoStoreServiceActive} from "./store-binding-demo";
+import {useDemoStoreBindings,countConsumedStorePeriods,countPoolConsumedStorePeriods,demoStoreServiceActive} from "./store-binding-demo";
 import {getDemoMembership} from "../../../showcase/demo-identity";
 import { ChatNewPreview } from "./chat-new-preview";
 import { ShowcaseChatCollections } from "./showcase-chat-collections";
@@ -172,7 +172,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const bindingSummary=useDemoStoreBindings(organizationId,memberId,organizationAdmin);
   const memberVisibleStores=organizationAdmin?bindingSummary.organizationCount:bindingSummary.visibleCount;
   const assignedStorePeriods=organizationId==="SM-ENT-000001"?Object.values(enterpriseSuite.storeAllocations).reduce((sum,value)=>sum+(Number(value)||0),0):0;
-  const consumedStorePeriods=countConsumedStorePeriods(bindingSummary.all);
+  const consumedStorePeriods=countPoolConsumedStorePeriods(bindingSummary.all);
   const activeServiceCount=bindingSummary.visible.filter(store=>demoStoreServiceActive(store)).length;
   const availableStorePeriods=organizationAdmin?Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods-consumedStorePeriods):Math.max(0,organizationId==="SM-ENT-000001"?(enterpriseSuite.storeAllocations[memberId]||0):0);
   // Consumption is intentionally zero until the corresponding business modules are connected.
