@@ -39,13 +39,15 @@ test("enterprise overview has no duplicate member resource table, while member m
 });
 
 
-test("resource allocation edits all four quotas with validation and persists per member",async({page})=>{
+test("resource grants accumulate from organization remaining quota and reject over-allocation",async({page})=>{
  await page.goto(base+"/organization/resources");
  const table=page.getByRole("table");
  const colleague=table.getByRole("row").filter({hasText:"模拟同事01"});
  await colleague.getByRole("button",{name:"分配资源"}).click();
- const dialog=page.getByRole("dialog",{name:"分配成员资源"});
- await dialog.getByRole("spinbutton",{name:"分配店铺名额"}).fill("1");
+ let dialog=page.getByRole("dialog",{name:"分配成员资源"});
+ await expect(dialog.getByRole("spinbutton",{name:"分配店铺续费期数"})).toHaveValue("0");
+ await expect(dialog).toContainText("剩余可分配");
+ await dialog.getByRole("spinbutton",{name:"分配店铺续费期数"}).fill("2");
  await dialog.getByRole("spinbutton",{name:"分配AI积分"}).fill("250000");
  await dialog.getByRole("spinbutton",{name:"分配数据条数"}).fill("4000");
  await dialog.getByRole("spinbutton",{name:"成员存储上限"}).fill("1.5");
@@ -53,16 +55,26 @@ test("resource allocation edits all four quotas with validation and persists per
  await expect(colleague).toContainText("250,000");
  await expect(colleague).toContainText("4,000");
  await expect(colleague).toContainText("1.5 GiB");
+ await colleague.getByRole("button",{name:"分配资源"}).click();
+ dialog=page.getByRole("dialog",{name:"分配成员资源"});
+ await expect(dialog.getByRole("spinbutton",{name:"分配AI积分"})).toHaveValue("0");
+ await expect(dialog.getByText("本成员已分配：250,000")).toBeVisible();
+ await dialog.getByRole("spinbutton",{name:"分配店铺续费期数"}).fill("1");
+ await dialog.getByRole("spinbutton",{name:"分配AI积分"}).fill("50000");
+ await dialog.getByRole("spinbutton",{name:"分配数据条数"}).fill("1000");
+ await dialog.getByRole("spinbutton",{name:"成员存储上限"}).fill("0.5");
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await expect(colleague).toContainText("300,000");
+ await expect(colleague).toContainText("5,000");
+ await expect(colleague).toContainText("2.0 GiB");
  await page.reload();
- await expect(page.getByRole("row").filter({hasText:"模拟同事01"})).toContainText("250,000");
- const colleague02=page.getByRole("row").filter({hasText:"模拟同事02"});
- await colleague02.getByRole("button",{name:"分配资源"}).click();
- const edit=page.getByRole("dialog",{name:"分配成员资源"});
- await edit.getByRole("spinbutton",{name:"分配店铺名额"}).fill("2");
- await edit.getByRole("button",{name:"确认并模拟通过"}).click();
- await expect(edit.getByRole("alert")).toContainText("店铺名额超出");
- await edit.getByRole("spinbutton",{name:"分配店铺名额"}).fill("1");
- await edit.getByRole("button",{name:"确认并模拟通过"}).click();
- await expect(colleague02).toContainText("1");
- await expect(page.getByText("已分配 2 · 剩余 0")).toBeVisible();
+ const persisted=page.getByRole("row").filter({hasText:"模拟同事01"});
+ await expect(persisted).toContainText("300,000");
+ await expect(persisted).toContainText("2.0 GiB");
+ await persisted.getByRole("button",{name:"分配资源"}).click();
+ dialog=page.getByRole("dialog",{name:"分配成员资源"});
+ await dialog.getByRole("spinbutton",{name:"分配AI积分"}).fill("999999999");
+ await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
+ await expect(dialog.getByRole("alert")).toContainText("超出企业可分配额度");
+ await expect(dialog).toBeVisible();
 });
