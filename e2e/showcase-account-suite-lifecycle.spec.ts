@@ -73,10 +73,10 @@ test("synthetic enterprise uses one tenant across account home, members, roles a
  await expect(suite).toContainText("邀请并模拟审核通过");
  await expect(suite).toContainText("调整成员");
  await page.goto(base+"/organization/resources");
- await expect(suite).toContainText("模拟已到账");
+ await expect(suite).toContainText("已分配 0 · 剩余 10,000,000");
  await expect(suite).toContainText("10,000,000");
  await expect(suite).toContainText("50,000");
- await expect(suite).toContainText("0 GiB");
+ await expect(suite).toContainText("0.0 GiB");
 });
 test("synthetic referral earnings are attributed to store consumption and manual withdrawals remain usable",async({page})=>{
  await page.goto(base+"/referrals");
@@ -377,8 +377,8 @@ test("per member storage allocation is bounded by enterprise capacity and logged
  await dialog.getByRole("textbox",{name:"成员邮箱"}).fill("resource@example.com");
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
  await page.goto(base+"/organization/resources");
- await suite.getByRole("row").filter({hasText:"模拟资源运营"}).getByRole("button",{name:"分配存储"}).click();
- dialog=suite.getByRole("dialog",{name:"分配成员存储"});
+ await suite.getByRole("row").filter({hasText:"模拟资源运营"}).getByRole("button",{name:"分配资源"}).click();
+ dialog=suite.getByRole("dialog",{name:"分配成员资源"});
  await dialog.getByRole("spinbutton",{name:"成员存储上限"}).fill("9");
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
  await expect(dialog.getByRole("alert")).toContainText("超出企业可分配");
@@ -388,7 +388,7 @@ test("per member storage allocation is bounded by enterprise capacity and logged
  await page.reload();
  await expect(suite).toContainText("剩余 5.5 GiB");
  await page.goto(base+"/organization/audit");
- await expect(suite).toContainText("存储上限：2.5 GiB");
+ await expect(suite).toContainText("存储 2.5 GiB");
 });
 test("partial withdrawals retain remaining earnings and save independent withdrawal records",async({page})=>{
  await page.goto(base+"/referrals/earnings");
