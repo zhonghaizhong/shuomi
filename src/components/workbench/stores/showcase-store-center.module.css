@@ -273,3 +273,47 @@
 @media(max-width:1320px){.page .filters{grid-template-columns:1fr}.page .filters .filterCriteria{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(max-width:680px){.page .filters .filterCriteria{grid-template-columns:repeat(2,minmax(0,1fr))}.page .filters .filterSearchActions{grid-template-columns:minmax(0,1fr) 64px 64px}}
 @media(max-width:420px){.page .filters .filterCriteria{grid-template-columns:repeat(2,minmax(0,1fr))}.page .filters .filterSearchActions{grid-template-columns:minmax(0,1fr) 56px 56px;gap:5px}.page .filters .filterSearchActions button{padding:0 4px}}
+
+
+/* My Stores: five equal operational statistics, compact rows, contextual bulk controls. */
+.page .storeMetrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.page .storeMetrics button.storeMetric{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:center;align-items:center;gap:7px 8px;text-align:left;min-width:0;min-height:94px;padding:13px 16px;border:1px solid var(--st-line);border-radius:10px;background:var(--st-bg);color:var(--st-text)}
+.page .storeMetric>span{font-size:14px;font-weight:650;white-space:nowrap}
+.page .storeMetric>small{font-size:11px;color:var(--st-muted);text-align:right;white-space:nowrap}
+.page .storeMetric>strong{grid-column:1/-1;color:var(--st-accent);font-size:26px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.page .storeMetric>strong em{font-style:normal;font-size:14px}
+.page .storeMetrics .storeMetric[data-tone="normal"]>strong{color:#4dbdaa}
+.page .storeMetrics .storeMetric[data-tone="expiring"]>strong{color:#dfa14a}
+.page .storeMetrics .storeMetric[data-tone="expired"]>strong{color:#de7786}
+.page .storeMetrics .storeMetric[data-tone="attention"]>strong{color:#dfa14a}
+.page .storeMetrics .storeMetric[aria-pressed="true"]{border-color:var(--st-accent);box-shadow:inset 3px 0 var(--st-accent),0 0 0 1px color-mix(in srgb,var(--st-accent) 30%,transparent)}
+.page .storeListHeader{min-width:0}
+.page .storeListTitle{display:flex;gap:14px;align-items:center;min-width:0;flex-wrap:wrap}
+.page .storeListTitle>span{font-size:12px;color:var(--st-muted)}
+.page .storeListTitle .checkAll{display:flex;align-items:center;gap:7px;font-size:13px;white-space:nowrap;color:var(--st-muted);height:auto;padding:0;border:0;background:transparent}
+.page .storeListTitle input,.page .storeRow input{accent-color:var(--st-accent);width:17px;height:17px;flex:none;cursor:pointer}
+.page .storeBulk{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;border:1px solid var(--st-line);border-radius:9px;background:var(--st-surface);font-size:13px;color:var(--st-muted)}
+.page .storeBulk>div:not(.bulkGroupPicker){display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.page .storeBulk button{min-height:34px;padding:6px 12px}
+.page .storeBulk .bulkGroupPicker{display:flex;align-items:center;gap:8px;flex-basis:100%;justify-content:flex-end}
+.page .storeBulk .bulkGroupPicker select{height:36px;min-width:160px;background:var(--st-control);color:var(--st-text);border:1px solid var(--st-line);border-radius:8px;padding:0 10px}
+.page .storeList article.storeCard{display:block;padding:0;min-height:0;overflow:visible}
+.page .storeRow{display:grid;grid-template-columns:minmax(180px,1.5fr) minmax(160px,1.1fr) minmax(200px,1.5fr) auto;align-items:center;gap:16px;padding:14px 16px;min-width:0}
+.page .storeRow .storeIdentity{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.page .storeRow .storeIdentity>div{display:grid;gap:6px;min-width:0}
+.page .storeRow .storeIdentity strong{font-size:16px;color:var(--st-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page .storeRow .storeIdentity small{font-size:12px;color:var(--st-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page .storeRowTags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.page .storeRowTags span{border-radius:7px;padding:4px 9px;font-size:12px;background:color-mix(in srgb,var(--st-accent) 11%,var(--st-surface));color:var(--st-text)}
+.page .storeRowState{display:grid;gap:6px;min-width:0}
+.page .storeRowState strong{font-weight:650;color:var(--st-muted);font-size:13px}
+.page .storeRowState strong[data-state="active"]{color:#4dbdaa}
+.page .storeRowState strong[data-state="expired"]{color:#de7786}
+.page .storeRowState small{font-size:12px;color:var(--st-muted)}
+.page .storeRowButtons{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.page .storeRowButtons button{min-height:36px;padding:6px 12px;white-space:nowrap}
+.page .storePages{display:flex;align-items:center;justify-content:flex-end;gap:10px;color:var(--st-muted);font-size:13px}
+.page .storePages button{min-height:34px}
+@media(max-width:1200px){.page .storeMetrics{grid-template-columns:repeat(3,minmax(0,1fr))}.page .storeRow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.page .storeRowButtons{justify-content:flex-end}}
+@media(max-width:680px){.page .storeMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.page .storeRow{grid-template-columns:1fr}.page .storeRowButtons{justify-content:flex-start}}
+@media(max-width:420px){.page .storeMetrics{grid-template-columns:1fr}}
