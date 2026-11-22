@@ -3587,12 +3587,12 @@
 .page[data-commerce-unified="plans"] .planEntrances>header span {
  font-size:14px;color:var(--plans-muted);
 }
-/* Premium management entrances: one restrained Vuexy component family. */
+/* Premium plans navigation: consistent restrained Vuexy cards and buttons. */
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard {
  position:relative;display:flex;flex-direction:column;align-items:stretch;
- min-width:0;min-height:198px;padding:21px 20px 18px;gap:13px;
- border:1px solid var(--plans-line);border-radius:9px;
- background:var(--plans-bg);box-shadow:0 2px 8px rgb(0 0 0 / 2%);
+ min-width:0;min-height:196px;padding:20px;gap:12px;
+ border:1px solid var(--plans-line);border-radius:10px;
+ background:var(--plans-bg);box-shadow:0 2px 10px rgb(0 0 0 / 3%);
  overflow:hidden;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:nth-child(1) {--entry-accent:#7367f0}
@@ -3601,9 +3601,8 @@
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:nth-child(4) {--entry-accent:#db8c25}
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:nth-child(5) {--entry-accent:#d4689e}
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard::before {
- content:"";position:absolute;top:0;left:20px;right:20px;height:3px;
- width:auto;bottom:auto;border-radius:0 0 4px 4px;background:var(--entry-accent);
- opacity:.88;
+ content:"";position:absolute;top:0;left:18px;right:18px;width:auto;
+ height:3px;bottom:auto;border-radius:0 0 4px 4px;background:var(--entry-accent);
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryTop {
  display:flex;align-items:center;gap:12px;min-width:0;min-height:44px;
@@ -3611,40 +3610,51 @@
 .page[data-commerce-unified="plans"] .planEntrances .planEntryIndex {
  display:grid;place-items:center;flex:0 0 42px;
  width:42px;height:42px;margin:0;padding:0;
- background:color-mix(in srgb,var(--entry-accent) 11%,var(--plans-bg));
+ background:color-mix(in srgb,var(--entry-accent) 10%,var(--plans-bg));
  border:1px solid color-mix(in srgb,var(--entry-accent) 24%,var(--plans-line));
  border-radius:9px;color:var(--entry-accent);
  font-size:15px;font-weight:700;line-height:1;letter-spacing:.02em;
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryTop h3 {
- min-width:0;margin:0;color:var(--plans-text);
- font-size:17px;line-height:1.4;font-weight:700;white-space:nowrap;
+ margin:0;min-width:0;color:var(--plans-text);font-size:17px;
+ font-weight:700;line-height:1.4;white-space:nowrap;
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard p {
- flex:1;margin:0;min-height:0;color:var(--plans-muted);
+ flex:1;min-height:0;margin:0;color:var(--plans-muted);
  font-size:14px;line-height:1.65;
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard button {
  display:inline-flex;align-items:center;justify-content:center;
  align-self:flex-start;min-width:116px;height:38px;min-height:38px;
- margin-top:auto;padding:0 15px;
- border:1px solid color-mix(in srgb,var(--plans-primary) 28%,var(--plans-line));
- border-radius:6px;background:color-mix(in srgb,var(--plans-primary) 7%,var(--plans-bg));
- color:var(--plans-primary);font-size:14px;font-weight:600;line-height:1.35;
+ margin-top:auto;padding:0 14px;border-radius:6px;
+ font-size:14px;font-weight:600;line-height:1.35;
  box-shadow:none;cursor:pointer;
  transition:background-color .18s ease,border-color .18s ease;
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:hover {
- transform:translateY(-2px);
- border-color:color-mix(in srgb,var(--entry-accent) 45%,var(--plans-line));
- box-shadow:0 10px 24px rgb(0 0 0 / 6%);
-}
-.page[data-commerce-unified="plans"] .planEntrances .planEntryCard button:hover {
- border-color:var(--plans-primary);
- background:color-mix(in srgb,var(--plans-primary) 13%,var(--plans-bg));
- text-decoration:none;
+ transform:translateY(-1px);
+ border-color:color-mix(in srgb,var(--entry-accent) 36%,var(--plans-line));
+ box-shadow:0 8px 20px rgb(0 0 0 / 5%);
 }
 .page[data-commerce-unified="plans"] .planEntrances .planEntryCard:focus-within {
+ outline:2px solid var(--plans-primary);outline-offset:2px;
+}
+/* Explicit theme selectors outrank legacy generic purple button rules. */
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard button,
+:global(.light) .page[data-commerce-unified="plans"] .planEntrances .planEntryCard button,
+:global(.dark) .page[data-commerce-unified="plans"] .planEntrances .planEntryCard button {
+ border:1px solid color-mix(in srgb,var(--plans-primary) 28%,var(--plans-line));
+ background:color-mix(in srgb,var(--plans-primary) 8%,var(--plans-bg));
+ color:var(--plans-primary);
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard button:hover,
+:global(.light) .page[data-commerce-unified="plans"] .planEntrances .planEntryCard button:hover,
+:global(.dark) .page[data-commerce-unified="plans"] .planEntrances .planEntryCard button:hover {
+ border-color:var(--plans-primary);
+ background:color-mix(in srgb,var(--plans-primary) 14%,var(--plans-bg));
+ color:var(--plans-primary);text-decoration:none;
+}
+.page[data-commerce-unified="plans"] .planEntrances .planEntryCard button:focus-visible {
  outline:2px solid var(--plans-primary);outline-offset:2px;
 }
 @media(prefers-reduced-motion:reduce) {
