@@ -2,13 +2,26 @@
 import {useEffect,useState} from "react";
 
 // Shared showcase-only store register. Binding is not platform authorization or a paid subscription.
-export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string;ownerMemberId:string};
+export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"待授权";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number};
 const prefix="shuomi-store-center-demo-ten-v2";
 const eventName="shuomi-demo-store-bindings-changed";
 const mainTenant="SM-ENT-000001";
 const colleague="SIM-COLLEAGUE-01";
 const sites=["美国站","加拿大站","英国站","德国站","法国站"];
 export const demoStoreKey=(organizationId:string)=>prefix+"-"+organizationId;
+export const DEMO_STORE_PERIOD_DAYS=30;
+const periodMs=DEMO_STORE_PERIOD_DAYS*24*60*60*1000;
+export function demoStoreServiceActive(store:DemoStoreBinding,now=Date.now()):boolean{
+ return typeof store.serviceExpiresAt==="string"&&Number.isFinite(Date.parse(store.serviceExpiresAt))&&Date.parse(store.serviceExpiresAt)>now;
+}
+export function countConsumedStorePeriods(stores:readonly DemoStoreBinding[]):number{
+ return stores.reduce((total,s)=>total+(Number.isSafeInteger(s.servicePeriods)&&s.servicePeriods!>0?s.servicePeriods!:0),0);
+}
+export function startDemoStoreService(store:DemoStoreBinding,now=Date.now()):DemoStoreBinding{
+ const end=demoStoreServiceActive(store,now)?Date.parse(store.serviceExpiresAt!):now;
+ return {...store,serviceStartedAt:store.serviceStartedAt||new Date(now).toISOString(),serviceExpiresAt:new Date(end+periodMs).toISOString(),servicePeriods:(store.servicePeriods||0)+1};
+}
+
 function seeds(organizationId:string):DemoStoreBinding[]{
  if(organizationId!==mainTenant)return [];
  return ["admin",colleague].flatMap(memberId=>sites.map((region,index)=>({
