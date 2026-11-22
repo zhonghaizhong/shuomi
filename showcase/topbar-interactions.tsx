@@ -21,6 +21,8 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
 }) {
  const [panel,setPanel]=useState<"support"|"account"|null>(null);
  const [accountView,setAccountView]=useState<"menu"|"switch">("menu");
+ const [switchTab,setSwitchTab]=useState<"members"|"organizations">("members");
+ const [pendingIdentity,setPendingIdentity]=useState<DemoIdentity>(identity);
  const [organizationName,setOrganizationName]=useState("");
  const [organizationError,setOrganizationError]=useState("");
  const [profileName,setProfileName]=useState(tenant.username);
@@ -33,11 +35,11 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
  useEffect(()=>{if(previous.current!==pathname){previous.current=pathname;setPanel(null);setSafety(null)}},[pathname]);
  useEffect(()=>{
   if(!panel&&!safety)return;
-  const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape"){e.preventDefault();if(safety)setSafety(null);else setPanel(null)}};
+  const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape"){e.preventDefault();if(safety)setSafety(null);else if(accountView==="switch")setAccountView("menu");else setPanel(null)}};
   const onClick=(e:MouseEvent)=>{if(!safety&&e.target instanceof Node&&!wrapper.current?.contains(e.target))setPanel(null)};
   document.addEventListener("keydown",onKey);document.addEventListener("mousedown",onClick);
   return()=>{document.removeEventListener("keydown",onKey);document.removeEventListener("mousedown",onClick)};
- },[panel,safety]);
+ },[panel,safety,accountView]);
  const toggle=(name:"support"|"account")=>{setPanel(old=>old===name?null:name);setStep("options");setSafety(null);
   try{const profile=JSON.parse(sessionStorage.getItem("shuomi-demo-account-settings-"+tenant.id)||"null");setProfileName(typeof profile?.name==="string"&&profile.name.trim()?profile.name.trim():tenant.username)}catch{setProfileName(tenant.username)}
   try{const security=JSON.parse(localStorage.getItem("shuomi-demo-security-"+tenant.id)||"null");setProfileEmail(typeof security?.email==="string"&&security.email.trim()?security.email.trim():tenant.email)}catch{setProfileEmail(tenant.email)}
@@ -47,7 +49,8 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
  const displayName=identity.organizationId===tenant.id?(identity.memberId==="admin"?profileName:selectedMember?.name||"无效子账号"):"演示组织管理员";
  const displayEmail=identity.organizationId===tenant.id?(identity.memberId==="admin"?profileEmail:selectedMember?.email||tenant.email):"独立演示空间";
  const canSwitch=identity.memberId==="admin";
- const selectIdentity=(next:DemoIdentity)=>{onSwitchIdentity(next);setPanel(null);setAccountView("menu")};
+ const selectIdentity=()=>{if(!canSwitch)return;onSwitchIdentity(pendingIdentity);setPanel(null);setAccountView("menu")};
+ const openSwitcher=()=>{setPanel(null);setPendingIdentity(identity);setSwitchTab("members");setOrganizationError("");setAccountView("switch")};
  const createOrganization=()=>{if(onAddOrganization(organizationName)){setOrganizationName("");setOrganizationError("");return}setOrganizationError("组织名称为空、重复或已达到演示上限。")};
  const mailHref="mailto:support@shuomiai.com?subject="+encodeURIComponent("硕米智能引擎 · 客服留言")+"&body="+encodeURIComponent(message);
  return <>
@@ -73,27 +76,55 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
     <button className="showcase-account-icon" type="button" aria-label={displayName+"账户"} title={displayName} aria-expanded={panel==="account"} onClick={()=>{toggle("account");setAccountView("menu")}}><UserRound size={21}/><i/></button>
     {panel==="account"&&<section className="showcase-popover showcase-account-menu" role="dialog" aria-label="账户快捷操作">
      <header className="showcase-menu-head"><span><strong>{displayName}</strong><small>{displayEmail}</small><small>{selectedOrganization?.name||tenant.name} · {selectedMember?.role||"管理员"}（模拟）</small></span><button type="button" aria-label="关闭账户菜单" onClick={()=>setPanel(null)}><X size={16}/></button></header>
-     {accountView==="menu"?<div className="showcase-account-links">
+     <div className="showcase-account-links">
       <button type="button" onClick={()=>{setPanel(null);navigate("/workbench/account/profile")}}><UserCircle2 size={16}/>账户资料</button>
-      <button type="button" onClick={()=>{setAccountView("switch");setOrganizationError("")}}><UsersRound size={16}/>切换账户与企业组织</button>
+      <button type="button" onClick={openSwitcher}><UsersRound size={16}/>切换账户与企业组织</button>
       <button type="button" onClick={()=>setSafety("logout")}><LogOut size={16}/>退出登录</button>
       <button className="showcase-danger-link" type="button" onClick={()=>setSafety("delete")}><ShieldAlert size={16}/>注销账号</button>
-     </div>:<div className="showcase-switcher">
-      <button className="showcase-menu-back" type="button" onClick={()=>setAccountView("menu")}><ArrowLeft size={15}/>返回账户菜单</button>
-      <strong>企业组织</strong>
-      <div className="showcase-switcher-options">
-       {organizations.map(org=><button type="button" key={org.id} aria-pressed={org.id===identity.organizationId} disabled={!canSwitch&&org.id!==identity.organizationId} onClick={()=>selectIdentity({organizationId:org.id,memberId:"admin"})}><Building2 size={16}/><span>{org.name}</span>{org.id===identity.organizationId&&<Check size={15}/>}</button>)}
-      </div>
-      {canSwitch&&<div className="showcase-switcher-create"><label htmlFor="showcase-new-org">添加模拟企业组织</label><div><input id="showcase-new-org" value={organizationName} onChange={e=>{setOrganizationName(e.target.value);setOrganizationError("")}} placeholder="输入企业组织名称" maxLength={60}/><button type="button" onClick={createOrganization}>添加</button></div>{organizationError&&<small role="alert">{organizationError}</small>}</div>}
-      <strong>当前组织成员</strong>
-      <div className="showcase-switcher-options">
-       {identity.organizationId===tenant.id?members.filter(m=>m.status==="正常").map(m=><button type="button" key={m.id} aria-pressed={m.id===identity.memberId} disabled={!canSwitch&&m.id!==identity.memberId} onClick={()=>selectIdentity({organizationId:tenant.id,memberId:m.id})}><UserRound size={16}/><span>{m.name}<small>{m.role}</small></span>{m.id===identity.memberId&&<Check size={15}/>}</button>):<p>该模拟组织尚未创建成员；仅提供独立演示空间。</p>}
-      </div>
-      <p>只切换本地演示身份，不是真实登录、授权或企业数据迁移。</p>
-     </div>}
+     </div>
     </section>}
    </div>
   </div>
+  {accountView==="switch"&&<div className="showcase-identity-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setAccountView("menu")}}>
+   <section role="dialog" aria-modal="true" aria-label="切换账户与企业组织" className="showcase-identity-dialog">
+    <header className="showcase-identity-head">
+     <div><span className="showcase-identity-eyebrow">账户与组织</span><h2>切换工作身份</h2><p>选择要进入的成员或企业空间，确认后再切换。</p></div>
+     <button type="button" className="showcase-identity-close" aria-label="关闭切换窗口" onClick={()=>setAccountView("menu")}><X size={19}/></button>
+    </header>
+    <div className="showcase-identity-current"><span className="showcase-identity-avatar"><UserRound size={20}/></span><div><small>当前身份</small><strong>{displayName} <span>· {selectedMember?.role||"管理员"}</span></strong><p>{selectedOrganization?.name||tenant.name}</p></div><span className="showcase-identity-active">使用中</span></div>
+    <div className="showcase-identity-tabs" role="tablist" aria-label="切换类型">
+     <button type="button" role="tab" aria-selected={switchTab==="members"} onClick={()=>setSwitchTab("members")}><UsersRound size={16}/>切换成员</button>
+     <button type="button" role="tab" aria-selected={switchTab==="organizations"} onClick={()=>setSwitchTab("organizations")}><Building2 size={16}/>切换企业</button>
+    </div>
+    <div className="showcase-identity-body">
+     {switchTab==="members"?<>
+      <div className="showcase-identity-section-head"><h3>选择企业成员</h3><small>{pendingIdentity.organizationId===tenant.id?"已启用的企业成员":"该组织暂无成员数据"}</small></div>
+      {pendingIdentity.organizationId===tenant.id?<div className="showcase-identity-list">
+       {members.filter(m=>m.status==="正常").map(m=><button type="button" key={m.id} className="showcase-identity-option" aria-pressed={pendingIdentity.memberId===m.id} disabled={!canSwitch} onClick={()=>setPendingIdentity({organizationId:tenant.id,memberId:m.id})}>
+        <span className="showcase-identity-member-icon"><UserRound size={17}/></span><span className="showcase-identity-option-copy"><strong>{m.id==="admin"?profileName:m.name}</strong><small>{m.role} · {m.id==="admin"?profileEmail:m.email}</small></span><span className="showcase-identity-radio">{pendingIdentity.memberId===m.id&&<span/>}</span>
+       </button>)}
+      </div>:<div className="showcase-identity-empty">其他演示企业尚未创建成员。请先切换回主企业，或直接以该企业管理员进入独立空白空间。</div>}
+     </>:<>
+      <div className="showcase-identity-section-head"><h3>选择企业组织</h3><small>每家企业独立展示演示数据</small></div>
+      <div className="showcase-identity-list">
+       {organizations.map(org=><button type="button" key={org.id} className="showcase-identity-option" aria-pressed={pendingIdentity.organizationId===org.id} disabled={!canSwitch} onClick={()=>setPendingIdentity({organizationId:org.id,memberId:"admin"})}>
+        <span className="showcase-identity-member-icon"><Building2 size={17}/></span><span className="showcase-identity-option-copy"><strong>{org.name}</strong><small>{org.id===tenant.id?"已配置的主企业":"独立演示企业 · 未配置业务数据"}</small></span><span className="showcase-identity-radio">{pendingIdentity.organizationId===org.id&&<span/>}</span>
+       </button>)}
+      </div>
+      {canSwitch&&<form className="showcase-identity-create" onSubmit={e=>{e.preventDefault();createOrganization()}}>
+       <label htmlFor="showcase-new-org">新增模拟企业</label><div><input id="showcase-new-org" value={organizationName} onChange={e=>{setOrganizationName(e.target.value);setOrganizationError("")}} placeholder="输入企业组织名称" maxLength={60}/><button type="submit">添加企业</button></div>
+       {organizationError&&<small role="alert">{organizationError}</small>}
+      </form>}
+     </>}
+    </div>
+    <footer className="showcase-identity-footer">
+     <p>{canSwitch?"演示切换不会执行真实登录或组织授权。":"当前为子账号演示身份，如需重新切换，请退出模拟身份。"}</p>
+     <div><button type="button" className="showcase-identity-cancel" onClick={()=>setAccountView("menu")}>取消</button>
+      {canSwitch?<button type="button" className="showcase-identity-confirm" disabled={pendingIdentity.organizationId===identity.organizationId&&pendingIdentity.memberId===identity.memberId} onClick={selectIdentity}>确认切换</button>
+       :<button type="button" className="showcase-identity-confirm" onClick={()=>{onSwitchIdentity({organizationId:tenant.id,memberId:"admin"});setAccountView("menu")}}>退出模拟子账号</button>}</div>
+    </footer>
+   </section>
+  </div>}
   {safety&&<div className="showcase-confirm-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setSafety(null)}}>
    <section role="alertdialog" aria-modal="true" aria-labelledby="showcase-safe-title" aria-describedby="showcase-safe-desc" className="showcase-confirm">
     <ShieldAlert size={23}/><h2 id="showcase-safe-title">{safety==="logout"?"退出登录":"注销账号"}</h2>
