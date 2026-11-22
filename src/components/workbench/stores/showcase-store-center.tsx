@@ -208,7 +208,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
 
 
 
-    {fixedIp?<p className={css.hint}>正式固定 IP 需要配置可用的代理网络出口；演示页面不会伪造 IP 或验证结果。</p>:null}
+
     {codeNotice?<p className={css.warning} role="status">{codeNotice}</p>:null}
     <footer className={css.dialogActions}><button type="button" onClick={()=>{setDialog(false);setManageId(null);setAuthPassword("");setAuthCode("")}}>取消</button><button className={css.primary} type="submit">{managedStore?"保存修改":"确认绑定"}</button></footer>
   </form></section></div>:null}
