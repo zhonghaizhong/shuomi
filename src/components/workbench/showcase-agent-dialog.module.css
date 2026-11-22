@@ -187,6 +187,8 @@
 }
 /* Only the tall model-source state needs its measured 4px native offset corrected. */
 .dialog:modal:has(.modelOptions){transform:translateY(-4px)}
+/* The tall POD enter-use modal has the same 4px native viewport offset. */
+.dialog.useDialog:modal{transform:translateY(-4px)}
 @media(max-width:560px){
  .dialog:modal{max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);}
 }
