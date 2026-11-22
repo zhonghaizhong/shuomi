@@ -103,7 +103,7 @@ function titleFromPath(pathname: string) {
   return parts.at(-1)?.replaceAll("-", " ") ?? "工作台";
 }
 
-export function DemoWorkbenchPreview({ pathname, memberId="admin" }: { pathname: string; memberId?: string }) {
+export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId=accountTenant.id,organizationName=accountTenant.name }: { pathname: string; memberId?: string; organizationId?: string; organizationName?: string }) {
   const router = useRouter();
   const {state:accountSuite}=useShowcaseSuite();
   const referralBalance=availableEarnings(accountSuite);
@@ -186,7 +186,7 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin" }: { pathname:
   if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" />;
   if (pathname === "/workbench/account/profile" || pathname === "/workbench/account/profile/settings") return <AccountProfilePreview key={pathname} pathname={pathname} />;
   if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview />;
-  if (pathname.startsWith("/workbench/account/organization") || pathname.startsWith("/workbench/account/referrals")) return <ShowcaseAccountSuite key={pathname+"-"+memberId} pathname={pathname} memberId={memberId} />;
+  if (pathname.startsWith("/workbench/account/organization") || pathname.startsWith("/workbench/account/referrals")) return <ShowcaseAccountSuite key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} memberId={memberId} organizationId={organizationId} organizationName={organizationName} />;
   if (pathname === "/workbench/agents/skills" || ["/workbench/agents/skills/official", "/workbench/agents/skills/mine", "/workbench/agents/skills/team"].includes(pathname)) return <ShowcaseSkillLibrary pathname={pathname} />;
   if (["/workbench/ai/tasks","/workbench/ai/tasks/pending","/workbench/ai/tasks/running","/workbench/ai/tasks/completed","/workbench/ai/tasks/errors","/workbench/ai/tasks/scheduled"].includes(pathname)) return <ShowcaseTaskCenter pathname={pathname} navigate={router.push} />;
   if (["/workbench/store-center","/workbench/stores","/workbench/store-products","/workbench/store-orders"].includes(pathname) || pathname.startsWith("/workbench/store-orders/")) return <ShowcaseStoreCenter pathname={pathname} navigate={router.push} />;
