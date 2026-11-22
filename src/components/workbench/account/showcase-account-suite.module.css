@@ -589,3 +589,17 @@
 .resourcePageSize select{min-height:34px;font-size:13px}
 .page .resourcePageActions button{min-height:34px;padding:5px 11px}
 @media(max-width:700px){.resourceFilters{align-items:stretch}.resourceFilters label,.resourceFilters .resourceSearch{flex:1 1 100%;max-width:none}.resourceFilters select{width:100%}.resourcePagination{align-items:flex-start}.resourceTable{max-height:470px}}
+
+
+/* Enterprise landing resource table: concise two-filter toolbar, separate from heading. */
+.resourcePanel{gap:16px}
+.resourcePanel>header{display:grid;grid-template-columns:1fr;gap:5px;align-items:start;justify-content:start;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.resourcePanel>header h2{margin:0;white-space:nowrap}
+.resourcePanel>header p{margin:0;font-size:13px;line-height:1.5}
+.resourcePanel .resourceFilters{display:flex;align-items:end;justify-content:flex-start;gap:14px;flex-wrap:wrap}
+.resourcePanel .resourceFilters label{display:grid;gap:6px;flex:none;min-width:0;color:var(--muted);font-size:12px;font-weight:600}
+.resourcePanel .resourceFilters .resourceSearch{width:min(320px,100%);max-width:none;flex:none}
+.resourcePanel .resourceFilters .resourceStatus{width:155px}
+.resourcePanel .resourceFilters input,.resourcePanel .resourceFilters select{box-sizing:border-box;width:100%;height:40px;min-height:40px;padding:7px 12px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font-size:14px}
+.resourcePanel .resourceFilters input:focus,.resourcePanel .resourceFilters select:focus{border-color:var(--primary)}
+@media(max-width:520px){.resourcePanel .resourceFilters{gap:10px}.resourcePanel .resourceFilters .resourceSearch{width:100%}.resourcePanel .resourceFilters .resourceStatus{width:100%}}
