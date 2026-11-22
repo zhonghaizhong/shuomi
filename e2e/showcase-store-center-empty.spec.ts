@@ -544,7 +544,7 @@ test("historically paid colleague demo stores survive reload without debiting ne
  await page.waitForFunction(()=>localStorage.getItem("shuomi-account-fixture-reset-20261121-v2")==="done");
  await page.evaluate(()=>{
   const key="shuomi-demo-account-suite-SM-ENT-000001-v1";
-  const suite=JSON.parse(localStorage.getItem(key)||"{}");
+  const suite=JSON.parse(localStorage.getItem(key)||"null")||{members:[{id:"admin",name:"林晨",email:"admin@example.test",role:"管理员",status:"正常",joined:Date.now()}],audit:[],roles:["管理员","子账号"],referrals:[],withdrawals:[]};
   suite.storeAllocations={...(suite.storeAllocations||{}),"SIM-COLLEAGUE-01":8};
   localStorage.setItem(key,JSON.stringify(suite));
   // Historical billed fixtures must not consume the newly allocated eight periods.
