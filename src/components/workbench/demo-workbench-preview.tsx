@@ -108,7 +108,7 @@ function titleFromPath(pathname: string) {
 export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId=accountTenant.id,organizationName=accountTenant.name }: { pathname: string; memberId?: string; organizationId?: string; organizationName?: string }) {
   const router = useRouter();
   const {state:accountSuite}=useShowcaseSuite();
-  const {purchases:resourcePurchases,totals:resourceTotals}=useDemoPurchases();
+  const {purchases:resourcePurchases,totals:resourceTotals}=useDemoPurchases(organizationId);
   const bindingSummary=useDemoStoreBindings(organizationId,memberId,memberId==="admin");
   const scopedBoundCount=memberId==="admin"?bindingSummary.organizationCount:bindingSummary.visibleCount;
   const scopedBindingLabel=memberId==="admin"?"本组织":"本人";
