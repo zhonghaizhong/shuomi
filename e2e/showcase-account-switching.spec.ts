@@ -1,4 +1,12 @@
 import {expect,test} from "@playwright/test";
+async function configureDemoPayout(dialog:import("@playwright/test").Locator,identifier:string){
+ await dialog.getByRole("button",{name:"设置微信账户"}).click();
+ await dialog.getByRole("textbox",{name:"收款人姓名"}).fill("模拟收款人");
+ await dialog.getByRole("textbox",{name:"微信号"}).fill(identifier);
+ await dialog.getByRole("button",{name:"保存并验证"}).click();
+ await dialog.getByRole("button",{name:"去验证"}).first().click();
+ await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
+}
 const base="/shuomi/#/workbench";
 test("account switching confirms staged member and organization selection with isolated context",async({page})=>{
  await page.goto(base+"/account");
@@ -91,14 +99,13 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  await expect(own.getByRole("button",{name:"申请提现"})).toBeDisabled();
  await own.getByRole("button",{name:"配置账户"}).click();
  const payout=own.getByRole("dialog",{name:"配置账户"});
- await payout.getByRole("textbox",{name:"演示收款标识"}).fill("C01-ONLY-PAYOUT");
- await payout.getByRole("button",{name:"保存账户"}).click();
+ await configureDemoPayout(payout,"C01-ONLY-PAYOUT");
  await own.getByRole("button",{name:"申请提现"}).click();
  const withdraw=own.getByRole("dialog",{name:"申请提现"});
  await withdraw.getByRole("spinbutton",{name:"模拟提现金额"}).fill("20");
  await withdraw.getByRole("button",{name:"确认提现"}).click();
  await expect(own).toContainText("¥80.80");
- await expect(own).toContainText("C01-ONLY-PAYOUT");
+ await expect(own).toContainText("微信 · C0******UT");
  await expect(own).toContainText("¥20.00");
  const scopedStorage=await page.evaluate(()=>{
   const member=JSON.parse(localStorage.getItem("shuomi-demo-member-referrals-v2-SM-ENT-000001::SIM-COLLEAGUE-01")||"null");
@@ -111,7 +118,7 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  expect(scopedStorage.primary?.withdrawals ?? []).toHaveLength(0);
  await page.reload();
  await expect(own).toContainText("¥80.80");
- await expect(own).toContainText("C01-ONLY-PAYOUT");
+ await expect(own).toContainText("微信 · C0******UT");
  await page.goto(base+"/account/organization/roles");
  await expect(page.getByRole("status")).toContainText("没有该页面的访问权限");
  await page.getByRole("button",{name:"返回管理员"}).click();
@@ -120,7 +127,7 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  await expect(restored).toContainText("¥336.00");
  await expect(restored).toContainText("ADMIN-DEMO-PAYOUT");
  await expect(restored).toContainText("¥50.00");
- await expect(restored).not.toContainText("C01-ONLY-PAYOUT");
+ await expect(restored).not.toContainText("微信 · C0******UT");
  await page.goto(base+"/account/referrals/center");
  await expect(restored.getByRole("region",{name:"推广中心核心指标"})).toContainText("30");
  await expect(restored.getByRole("region",{name:"推广中心核心指标"})).toContainText("¥336.00");
@@ -138,7 +145,7 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  await expect(colleague02).not.toContainText("同事01模拟客户");
  await page.goto(base+"/account/referrals/withdrawals");
  await expect(colleague02).toContainText("暂无提现记录");
- await expect(colleague02).not.toContainText("C01-ONLY-PAYOUT");
+ await expect(colleague02).not.toContainText("微信 · C0******UT");
 });
 
 test("same colleague has separate referral wallets in main company, organization A and organization B",async({page})=>{
@@ -175,9 +182,8 @@ test("same colleague has separate referral wallets in main company, organization
  await expect(orgA).toContainText("尚未配置");
  await orgA.getByRole("button",{name:"配置账户"}).click();
  const payout=orgA.getByRole("dialog",{name:"配置账户"});
- await payout.getByRole("textbox",{name:"演示收款标识"}).fill("ORG-A-ONLY");
- await payout.getByRole("button",{name:"保存账户"}).click();
- await expect(orgA).toContainText("ORG-A-ONLY");
+ await configureDemoPayout(payout,"ORG-A-ONLY");
+ await expect(orgA).toContainText("微信 · OR******LY");
  await orgA.getByRole("button",{name:"申请提现"}).click();
  const organizationWithdrawal=orgA.getByRole("dialog",{name:"申请提现"});
  await organizationWithdrawal.getByRole("spinbutton",{name:"模拟提现金额"}).fill("20");
@@ -194,7 +200,7 @@ test("same colleague has separate referral wallets in main company, organization
  const orgB=page.locator("[data-account-suite]");
  await expect(orgB.getByRole("note")).toContainText("模拟企业B");
  await expect(orgB).toContainText("尚未配置");
- await expect(orgB).not.toContainText("ORG-A-ONLY");
+ await expect(orgB).not.toContainText("微信 · OR******LY");
  await expect(orgB).not.toContainText("ORG-A-CUSTOMER");
  await expect(orgB).toContainText("暂无提现记录");
  await page.getByRole("button",{name:"模拟同事01账户"}).click();
@@ -204,16 +210,16 @@ test("same colleague has separate referral wallets in main company, organization
  await dialog.getByRole("button",{name:/模拟企业A（运营公司）/}).click();
  await dialog.getByRole("button",{name:"确认切换"}).click();
  await page.goto(base+"/account/referrals/withdrawals");
- await expect(page.locator("[data-account-suite]")).toContainText("ORG-A-ONLY");
+ await expect(page.locator("[data-account-suite]")).toContainText("微信 · OR******LY");
  await expect(page.locator("[data-account-suite]")).toContainText("¥25.00");
- await expect(page.locator("[data-account-suite]")).not.toContainText("C01-ONLY-PAYOUT");
+ await expect(page.locator("[data-account-suite]")).not.toContainText("微信 · C0******UT");
  const storage=await page.evaluate(()=>({
   primary:localStorage.getItem("shuomi-demo-member-referrals-v2-SM-ENT-000001::SIM-COLLEAGUE-01"),
   companyA:localStorage.getItem("shuomi-demo-member-referrals-v2-SIM-ORG-COLLEAGUE-ADMIN::SIM-COLLEAGUE-01"),
   companyB:localStorage.getItem("shuomi-demo-member-referrals-v2-SIM-ORG-COLLEAGUE-MEMBER::SIM-COLLEAGUE-01")
  }));
  expect(storage.companyA).not.toBe(storage.primary);
- expect(JSON.parse(storage.companyA||"null").payoutAccount).toBe("ORG-A-ONLY");
+ expect(JSON.parse(storage.companyA||"null").payoutAccount).toBe("微信 · OR******LY");
  expect(JSON.parse(storage.companyA||"null").withdrawals).toHaveLength(1);
  expect(JSON.parse(storage.companyA||"null").referrals.reduce((n:number,item:{amount:number})=>n+item.amount,0)).toBe(45);
  expect(JSON.parse(storage.companyA||"null").audit.some((item:{actor:string})=>item.actor.includes("模拟企业A"))).toBeTruthy();
