@@ -1,5 +1,56 @@
 import {expect,test} from "@playwright/test";
 const root="/shuomi/#/workbench";
+// The legacy workflow tests intentionally begin with an empty tenant.
+test.beforeEach(async({page},info)=>{
+ if(info.title.startsWith("organization-scoped"))return;
+ await page.goto(root+"/stores");
+ await page.evaluate(()=>{
+  sessionStorage.setItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001","[]");
+  sessionStorage.setItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001-groups","[]");
+ });
+ await page.reload();
+});
+test("organization-scoped simulated bindings show ten to enterprise admin, five to colleague, and isolate other organizations",async({page})=>{
+ await page.goto(root+"/stores");
+ const area=page.locator('[data-store-center-showcase="stores"]');
+ await expect(area.getByText("店铺总数")).toBeVisible();
+ await expect(area).toContainText("共 10 家");
+ await expect(area).toContainText("管理员演示店铺01");
+ await expect(area).toContainText("同事01演示店铺01");
+ for(const site of ["美国站","加拿大站","英国站","德国站","法国站"])await expect(area).toContainText(site);
+ const openSwitch=async()=>{
+  await page.getByRole("button",{name:/账户$/}).first().click();
+  await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+  return page.getByRole("dialog",{name:"切换账户与企业组织"});
+ };
+ let switcher=await openSwitch();
+ await switcher.getByRole("button",{name:/模拟同事01/}).click();
+ await switcher.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(root+"/stores");
+ await expect(area).toContainText("共 5 家");
+ await expect(area).toContainText("同事01演示店铺01");
+ await expect(area).not.toContainText("管理员演示店铺01");
+ switcher=await openSwitch();
+ await switcher.getByRole("tab",{name:"切换企业"}).click();
+ await switcher.getByRole("button",{name:/模拟企业B（供应链公司）/}).click();
+ await switcher.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(root+"/stores");
+ await expect(area.getByRole("heading",{name:"尚未绑定店铺"})).toBeVisible();
+ await area.getByRole("button",{name:"绑定新店铺"}).first().click();
+ const dialog=page.getByRole("dialog",{name:"绑定新店铺"});
+ await dialog.getByRole("textbox",{name:"自定义名称"}).fill("企业B独立店铺");
+ await dialog.getByRole("button",{name:"提交授权"}).click();
+ await expect(area).toContainText("企业B独立店铺");
+ switcher=await openSwitch();
+ await switcher.getByRole("tab",{name:"切换企业"}).click();
+ await switcher.getByRole("button",{name:/武汉硕米电子商务有限公司/}).click();
+ await switcher.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(root+"/stores");
+ await expect(area).toContainText("同事01演示店铺01");
+ await expect(area).toContainText("共 5 家");
+ await expect(area).not.toContainText("企业B独立店铺");
+});
+
 async function createDemo(page:any,name="Figma店铺"){
  await page.goto(root+"/stores");
  const area=page.locator('[data-store-center-showcase="stores"]');
