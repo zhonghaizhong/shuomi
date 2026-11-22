@@ -1,0 +1,27 @@
+import {expect,test} from "@playwright/test";
+const route="/shuomi/#/workbench/account/referrals/withdrawals";
+test("Figma payout actions show configuration and withdrawal, with saved account and isolated records",async({page})=>{
+ await page.goto(route);
+ const suite=page.locator("[data-account-suite]");
+ const payoutSection=suite.getByRole("heading",{name:"收款账户"}).locator("..");
+ await expect(payoutSection.getByRole("button",{name:"配置账户"})).toBeVisible();
+ await expect(payoutSection.getByRole("button",{name:"申请提现"})).toBeVisible();
+ await expect(suite.getByRole("button",{name:"设置收款方式"})).toHaveCount(0);
+ await expect(suite.getByRole("button",{name:"申请模拟提现"})).toHaveCount(0);
+ await suite.getByRole("button",{name:"配置账户"}).click();
+ const account=suite.getByRole("dialog",{name:"配置账户"});
+ await account.getByRole("textbox",{name:"演示收款标识"}).fill("ADMIN-NEW-DEMO-PAYOUT");
+ await account.getByRole("button",{name:"保存账户"}).click();
+ await expect(suite).toContainText("ADMIN-NEW-DEMO-PAYOUT");
+ await suite.getByRole("button",{name:"申请提现"}).click();
+ const dialog=suite.getByRole("dialog",{name:"申请提现"});
+ await dialog.getByRole("spinbutton",{name:"模拟提现金额"}).fill("999999");
+ await dialog.getByRole("button",{name:"确认提现"}).click();
+ await expect(dialog.getByRole("alert")).toContainText("不超过可提现余额");
+ await dialog.getByRole("spinbutton",{name:"模拟提现金额"}).fill("10");
+ await dialog.getByRole("button",{name:"确认提现"}).click();
+ await expect(suite).toContainText("¥10.00");
+ await page.reload();
+ await expect(suite).toContainText("ADMIN-NEW-DEMO-PAYOUT");
+ await expect(suite).toContainText("¥10.00");
+});
