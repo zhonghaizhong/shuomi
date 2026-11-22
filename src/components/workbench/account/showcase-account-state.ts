@@ -160,9 +160,9 @@ export type SuiteState={members:Member[];audit:AccountEvent[];roles:string[];rol
 // The administrator's existing fixture stays in SuiteState for backwards compatibility.
 export type ReferralPortfolio=Pick<SuiteState,"audit"|"referredCustomers"|"trackedVisits"|"referrals"|"withdrawals"|"payoutAccount"|"referralCode">;
 export const colleague01Id="SIM-COLLEAGUE-01";
-export function initialMemberReferralPortfolio(memberId:string):ReferralPortfolio{
- const code="SM-"+memberId.replace(/[^A-Z0-9]/gi,"").toUpperCase();
- if(memberId!==colleague01Id)return {audit:[],referredCustomers:[],trackedVisits:[],referrals:[],withdrawals:[],payoutAccount:"",referralCode:code};
+export function initialMemberReferralPortfolio(memberId:string,organizationId:string=tenant.id):ReferralPortfolio{
+ const code="SM-"+organizationId.replace(/[^A-Z0-9]/gi,"").toUpperCase()+"-"+memberId.replace(/[^A-Z0-9]/gi,"").toUpperCase();
+ if(memberId!==colleague01Id||organizationId!==tenant.id)return {audit:[],referredCustomers:[],trackedVisits:[],referrals:[],withdrawals:[],payoutAccount:"",referralCode:code};
  const customers:ReferredCustomer[]=Array.from({length:6},(_,index):ReferredCustomer=>{
   const n=String(index+1).padStart(2,"0");
   return {id:"SIM-C01-CUSTOMER-"+n,name:"同事01模拟客户"+n,
@@ -183,36 +183,44 @@ export function initialMemberReferralPortfolio(memberId:string):ReferralPortfoli
  return {audit:[],referredCustomers:customers,trackedVisits:visitors,referrals,withdrawals:[],
   payoutAccount:"",referralCode:code};
 }
-const REFERRAL_PREFIX="shuomi-demo-member-referrals-v1-";
+const REFERRAL_PREFIX="shuomi-demo-member-referrals-v2-";
+const LEGACY_REFERRAL_PREFIX="shuomi-demo-member-referrals-v1-";
+const referralStorageKey=(organizationId:string,memberId:string)=>REFERRAL_PREFIX+encodeURIComponent(organizationId)+"::"+encodeURIComponent(memberId);
 function validReferralPortfolio(v:unknown):v is ReferralPortfolio{
  return !!v&&typeof v==="object"&&Array.isArray((v as ReferralPortfolio).audit)&&Array.isArray((v as ReferralPortfolio).referredCustomers)
  &&Array.isArray((v as ReferralPortfolio).trackedVisits)&&Array.isArray((v as ReferralPortfolio).referrals)
  &&Array.isArray((v as ReferralPortfolio).withdrawals)&&typeof (v as ReferralPortfolio).payoutAccount==="string"
  &&typeof (v as ReferralPortfolio).referralCode==="string";
 }
-export function readMemberReferralPortfolio(memberId:string):ReferralPortfolio{
- const initial=initialMemberReferralPortfolio(memberId);
+export function readMemberReferralPortfolio(memberId:string,organizationId:string=tenant.id):ReferralPortfolio{
+ const initial=initialMemberReferralPortfolio(memberId,organizationId);
  try{
-  const raw=localStorage.getItem(REFERRAL_PREFIX+memberId);
-  const saved=raw?JSON.parse(raw):null;
-  return validReferralPortfolio(saved)?saved:initial;
+  const key=referralStorageKey(organizationId,memberId);
+  const raw=localStorage.getItem(key);
+  if(raw){const saved=JSON.parse(raw);return validReferralPortfolio(saved)?saved:initial;}
+  // Import legacy member-only data once into the PRIMARY organization, never into another organization.
+  if(organizationId===tenant.id){const old=localStorage.getItem(LEGACY_REFERRAL_PREFIX+memberId);
+   if(old){const saved=JSON.parse(old);if(validReferralPortfolio(saved)){
+    localStorage.setItem(key,JSON.stringify(saved));return saved;
+   }} }
+  return initial;
  }catch{return initial}
 }
-export function writeMemberReferralPortfolio(memberId:string,portfolio:ReferralPortfolio):boolean{
+export function writeMemberReferralPortfolio(memberId:string,portfolio:ReferralPortfolio,organizationId:string=tenant.id):boolean{
  if(memberId==="admin"||!validReferralPortfolio(portfolio))return false;
- try{localStorage.setItem(REFERRAL_PREFIX+memberId,JSON.stringify(portfolio));
+ try{localStorage.setItem(referralStorageKey(organizationId,memberId),JSON.stringify(portfolio));
   window.dispatchEvent(new Event("shuomi-member-referrals-updated"));return true;
  }catch{return false}
 }
-export function useMemberReferralPortfolio(memberId:string){
- const [portfolio,setPortfolio]=useState<ReferralPortfolio>(()=>initialMemberReferralPortfolio(memberId));
+export function useMemberReferralPortfolio(memberId:string,organizationId:string=tenant.id){
+ const [portfolio,setPortfolio]=useState<ReferralPortfolio>(()=>initialMemberReferralPortfolio(memberId,organizationId));
  useEffect(()=>{
-  const sync=()=>setPortfolio(readMemberReferralPortfolio(memberId));sync();
+  const sync=()=>setPortfolio(readMemberReferralPortfolio(memberId,organizationId));sync();
   window.addEventListener("shuomi-member-referrals-updated",sync);
   return()=>window.removeEventListener("shuomi-member-referrals-updated",sync);
- },[memberId]);
+ },[memberId,organizationId]);
  const commitPortfolio=(next:ReferralPortfolio)=>{
-  if(!writeMemberReferralPortfolio(memberId,next))return false;
+  if(!writeMemberReferralPortfolio(memberId,next,organizationId))return false;
   setPortfolio(next);return true;
  };
  return {portfolio,commitPortfolio};
