@@ -117,4 +117,17 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  await expect(restored.getByRole("region",{name:"推广中心核心指标"})).toContainText("¥336.00");
  await expect(restored.getByRole("region",{name:"推广明细"})).toContainText("共 30 条");
  await expect(restored).not.toContainText("SIM-C01-CUSTOMER-");
+ await page.getByRole("button",{name:"linchen_demo账户"}).click();
+ await page.getByRole("dialog",{name:"账户快捷操作"}).getByRole("button",{name:"切换账户与企业组织"}).click();
+ const second=page.getByRole("dialog",{name:"切换账户与企业组织"});
+ await second.getByRole("button",{name:/模拟同事02/}).click();
+ await second.getByRole("button",{name:"确认切换"}).click();
+ await page.goto(base+"/account/referrals/center");
+ const colleague02=page.locator("[data-account-suite]");
+ await expect(colleague02.getByRole("note")).toContainText("colleague02@example.test");
+ await expect(colleague02.getByRole("region",{name:"推广明细"})).toContainText("共 0 条");
+ await expect(colleague02).not.toContainText("同事01模拟客户");
+ await page.goto(base+"/account/referrals/withdrawals");
+ await expect(colleague02).toContainText("暂无提现记录");
+ await expect(colleague02).not.toContainText("C01-ONLY-PAYOUT");
 });
