@@ -165,7 +165,7 @@ function LedgerPagination({name,total,page,size,onPage,onSize}:{name:string;tota
 }
 function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filters, setFilter, resetFilters, router, organizationId,memberId }: DetailState & { pathname: string; router: ReturnType<typeof useRouter>;organizationId:string;memberId:string }) {
   const [purchaseAmounts,setPurchaseAmounts]=useState<Record<string,string>>({});
-  const {purchases:demoPurchases,setPurchases:setDemoPurchases,totals:demoTotals}=useDemoPurchases();
+  const {purchases:demoPurchases,setPurchases:setDemoPurchases,totals:demoTotals}=useDemoPurchases(organizationId);
   const {state:enterpriseSuite}=useShowcaseSuite();
   const bindingSummary=useDemoStoreBindings(organizationId,memberId,memberId==="admin");
   const memberVisibleStores=memberId==="admin"?bindingSummary.organizationCount:bindingSummary.visibleCount;
@@ -197,7 +197,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
    const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();setRequestReview(null)}};
    window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
   },[requestReview]);
-  const currentWallet=demoPurchases.length?demoPurchases[0].balanceAfter:plansDemoFacts.walletBalanceCny;
+  const currentWallet=demoPurchases.length?demoPurchases[0].balanceAfter:(organizationId==="SM-ENT-000001"?plansDemoFacts.walletBalanceCny:0);
   const extraFor=(type:string)=>demoPurchases.filter(p=>p.type===type).reduce((sum,p)=>sum+p.quantity,0);
   const additionalSpent=demoPurchases.filter(p=>p.type!=="账户充值").reduce((sum,p)=>sum+p.amountCny,0);
   const additionalTopups=demoPurchases.filter(p=>p.type==="账户充值").reduce((sum,p)=>sum+p.amountCny,0);
@@ -213,14 +213,14 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
    if(!requestReview||purchaseSubmitting.current)return;
    const {type,quantity}=requestReview;
    const amount=priceOf(type,quantity);
-   const fresh=readDemoPurchases();
-   const freshBalance=fresh.length?fresh[0].balanceAfter:plansDemoFacts.walletBalanceCny;
+   const fresh=readDemoPurchases(organizationId);
+   const freshBalance=fresh.length?fresh[0].balanceAfter:(organizationId==="SM-ENT-000001"?plansDemoFacts.walletBalanceCny:0);
    if(type!=="账户充值"&&amount>freshBalance){setRequestNotice("钱包余额不足，未执行购买。");setRequestReview(null);return}
    const detail=type==="店铺服务"?quantity+" 期（每期 30 天）":type==="token 积分"?Math.round(quantity*plansDemoRates.aiPointsPerCny).toLocaleString("zh-CN")+" 积分":type==="数据资源"?Math.round(quantity/plansDemoRates.dataCnyPerRow).toLocaleString("zh-CN")+" 条":type==="企业存储"?quantity+" GiB / 30 天":"模拟钱包充值";
    const entry:DemoPurchase={id:crypto.randomUUID(),at:new Date().toLocaleString("zh-CN",{hour12:false}),type,quantity,amountCny:amount,detail,balanceAfter:Math.round((freshBalance+(type==="账户充值"?amount:-amount))*100)/100,status:type==="账户充值"?"模拟充值成功":"模拟购买成功"};
    const next=[entry,...fresh].slice(0,200);
    purchaseSubmitting.current=true;
-   if(!writeDemoPurchases(next)){purchaseSubmitting.current=false;setRequestNotice("当前浏览器无法保存交易，未扣款。");return}
+   if(!writeDemoPurchases(next,organizationId)){purchaseSubmitting.current=false;setRequestNotice("当前浏览器无法保存交易，未扣款。");return}
    setDemoPurchases(next);setRequestReview(null);setRequestNotice(type==="账户充值"?"模拟充值已到账（非真实付款）。":"模拟购买成功，权益已更新（非真实付款）。");
    setPurchaseAmounts(v=>({...v,[type]:""}));if(type==="账户充值")setWalletAmount("");
   };
