@@ -221,7 +221,7 @@ test("plans empty usage and orders retain aligned headers without fabricating tr
  await expect(orders).toContainText("模拟已到账");
  await expect(orders).toContainText("¥10,000.00");
  await orders.getByRole("button",{name:"详情",exact:true}).first().click();
- await expect(page.getByRole("dialog",{name:"订单详情"})).toContainText("非真实支付订单");
+ await expect(page.getByRole("dialog",{name:"订单详情"})).toContainText("模拟充值或服务购买记录");
  await page.getByRole("dialog",{name:"订单详情"}).getByRole("button",{name:"关闭",exact:true}).click();
  await expect(orders.getByRole("button",{name:"导出账单"})).toBeEnabled();
 });
