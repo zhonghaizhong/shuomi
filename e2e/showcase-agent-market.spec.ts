@@ -125,6 +125,13 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await dialog.getByRole("button",{name:"保存为模板"}).click();
  await expect(dialog).toHaveCount(0);
  await expect(page.getByRole("status")).toContainText("已保存为模板");
+ await page.getByRole("button",{name:"进入使用"}).first().click();
+ const reopened=page.getByRole("dialog",{name:"商品优化智能体"});
+ await expect(reopened.getByRole("checkbox",{name:"标题优化"})).toBeChecked();
+ await expect(reopened.getByRole("checkbox",{name:"平台规则"})).toBeChecked();
+ await reopened.getByRole("button",{name:"查看模板"}).click();
+ await expect(reopened.getByRole("status")).toContainText("标题优化");
+ await page.keyboard.press("Escape");
  await page.getByRole("button",{name:"进入使用"}).last().click();
  const pod=page.getByRole("dialog",{name:"POD刊登智能体"});
  await expect(pod).toContainText("步骤 4 · 贴图素材");
