@@ -136,3 +136,59 @@ test("configured payout method buttons use Vuexy primary tokens in both themes",
  const lightColors=await Promise.all([dialog.getByRole("button",{name:"微信",exact:true}),dialog.getByRole("button",{name:"保存并验证"})].map(x=>x.evaluate(el=>({bg:getComputedStyle(el).backgroundColor,text:getComputedStyle(el).color}))));
  for(const style of lightColors){expect(style.bg).toBe("rgb(115, 103, 240)");expect(style.text).toBe("rgb(255, 255, 255)");}
 });
+
+test("simulate editing Alipay and bank collection methods without losing separate accounts",async({page})=>{
+ await page.goto(route);
+ const suite=page.locator("[data-account-suite]");
+ const openConfig=async()=>{
+  await suite.getByRole("button",{name:"配置账户"}).click();
+  return suite.getByRole("dialog",{name:"配置收款账户"});
+ };
+ const save=async(dialog:import("@playwright/test").Locator)=>{
+  await dialog.getByRole("button",{name:"保存并验证"}).click();
+  await dialog.getByRole("button",{name:"去验证"}).first().click();
+  await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
+ };
+ let d=await openConfig();
+ await d.getByRole("button",{name:/支付宝账户/}).last().click();
+ await d.getByRole("textbox",{name:"收款人姓名"}).fill("模拟支付宝账户");
+ await d.getByRole("textbox",{name:"支付宝账号"}).fill("alipay-new-0044");
+ await save(d);
+ await expect(suite).toContainText("支付宝 · al******44");
+
+ d=await openConfig();
+ await d.getByRole("button",{name:"设置银行卡账户"}).click();
+ await d.getByRole("textbox",{name:"持卡人姓名"}).fill("模拟银行卡账户");
+ await d.getByRole("textbox",{name:"银行卡号"}).fill("6222000000006688");
+ await d.getByRole("textbox",{name:"开户银行"}).fill("模拟开户行");
+ await d.getByRole("checkbox").uncheck();
+ await save(d);
+ await expect(suite).toContainText("支付宝 · al******44");
+
+ d=await openConfig();
+ const alipay=d.locator("section").filter({hasText:"支付宝"});
+ await expect(alipay).toContainText("支付宝 · al******44");
+ await alipay.getByRole("button",{name:"修改"}).last().click();
+ await d.getByRole("textbox",{name:"收款人姓名"}).fill("修改后支付宝账户");
+ await d.getByRole("textbox",{name:"支付宝账号"}).fill("alipay-updated-0055");
+ await save(d);
+ await expect(suite).toContainText("支付宝 · al******55");
+
+ d=await openConfig();
+ const bank=d.locator("section").filter({hasText:"银行卡"});
+ await bank.getByRole("button",{name:"修改"}).click();
+ await d.getByRole("textbox",{name:"持卡人姓名"}).fill("修改后银行卡账户");
+ await d.getByRole("textbox",{name:"银行卡号"}).fill("6222000000007799");
+ await d.getByRole("textbox",{name:"开户银行"}).fill("模拟新开户行");
+ await d.getByRole("checkbox").check();
+ await save(d);
+ await expect(suite).toContainText("银行卡 · 62******99");
+
+ await page.reload();
+ d=await openConfig();
+ await expect(d).toContainText("支付宝 · al******55");
+ await expect(d).not.toContainText("支付宝 · al******44");
+ await expect(d).toContainText("银行卡 · 62******99");
+ await expect(d).not.toContainText("银行卡 · 62******88");
+ await expect(d.locator("section").filter({hasText:"银行卡"})).toContainText("默认收款");
+});
