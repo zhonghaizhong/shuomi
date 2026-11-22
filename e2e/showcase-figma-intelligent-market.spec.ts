@@ -108,7 +108,10 @@ test("My Agents model settings dialog retains demo selection across submenu navi
  let dialog=page.getByRole("dialog",{name:"模型设置"});
  await expect(dialog).toBeVisible();
  await dialog.getByRole("button",{name:/自定义模型/}).click();
- await dialog.getByRole("button",{name:"保存设置"}).click();
+ await dialog.getByRole("textbox",{name:"模型服务商"}).fill("本地演示服务商");
+ await dialog.getByRole("textbox",{name:"模型名称"}).fill("demo-only");
+ await dialog.getByLabel("API Key").fill("not-a-real-key");
+ await dialog.getByRole("button",{name:"保存并启用"}).click();
  await root.getByRole("button",{name:"前往智能体市场"}).click();
  await page.locator("[data-intelligent-market='agentMarket']").getByRole("button",{name:"我的智能体"}).click();
  await page.locator("[data-intelligent-market='agentMine']").getByRole("button",{name:"模型设置"}).first().click();
