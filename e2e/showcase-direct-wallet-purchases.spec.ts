@@ -14,7 +14,7 @@ test("demo wallet directly purchases resources without local application drafts"
  await expect(page.getByRole("region",{name:"本地充值申请草稿"})).toHaveCount(0);
  await expect(page.getByRole("region",{name:"模拟钱包充值流水"})).toContainText("模拟购买成功");
  await page.goto(rights);
- await expect(page.getByText("待分配期数")).toBeVisible();
+ await expect(page.getByText("剩余可分配期数")).toBeVisible();
  await expect(page.locator("[class*=planEntitlementStoreSplit]")).toContainText("3");
  await page.reload();
  await expect(page.locator("[class*=planEntitlementStoreSplit]")).toContainText("3");
