@@ -17,7 +17,7 @@ const screens:Record<string,[string,string]>={
  "/organization/resources":["资源与额度","查看店铺、积分、数据与存储资源，资源不足时不可分配。"],
  "/organization/audit":["操作记录","查询当前企业的演示操作记录，支持筛选与查看。"],
  "/referrals":["推广与收益","创建推广入口，查看邀请、收益、结算与提现记录。"],
- "/referrals/center":["推广中心","分享专属推广链接，跟进模拟邀请及推广转化。"],
+ "/referrals/center":["推广中心","分享专属推广入口，查看访问、注册与消费转化。"],
  "/referrals/earnings":["收益明细","查看模拟收益来源、时间与结算状态。"],
  "/referrals/withdrawals":["提现管理","模拟登记收款方式并提交提现，审核自动通过。"],
  "/referrals/rules":["推广规则","当前有效的推广、收益、结算与提现规则统一在本页说明。"]
@@ -143,7 +143,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
     ] as [string,string,string][]).map(([label,value,hint],i)=><article key={label} data-tone={i}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}</div>
     <div className={s.referralDesignGrid}>
      <section className={s.panel} aria-label="我的推广">
-      <header><h2>我的推广</h2><p>好友通过推广链接或推广码完成注册及有效付费后，可获得相应推广收益。</p></header>
+      <header><h2>我的推广</h2><p>分享专属链接、推广码或二维码，关联注册与消费转化。</p></header>
       <div className={s.referralShareLayout}>
        <div className={s.referralShareFields}>
         <div><span>推广链接</span><div className={s.referralCopyField}><span title={referralLink()}>{referralLink()}</span><button type="button" onClick={copyReferral}>复制</button></div></div>
@@ -153,17 +153,14 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
       </div>
      </section>
      <section className={s.panel} aria-label="近30天推广转化">
-      <header><h2>近30天推广转化</h2><p>30 个模拟访客的转化示意；真实访问埋点尚未接入。</p></header>
+      <header><h2>近30天推广转化</h2><p>近30天模拟访问、注册、付费与收益；未接入真实流量追踪。</p></header>
       <div className={s.referralFunnel}>
        {([["访问",String(promotionRows.filter(x=>x.visitedAt>=recent30Day).length),"模拟归因访客；真实访问埋点未接入"],["注册",String(recentRegistrations),"已记录模拟注册"],["付费",String(recentPaidCustomers),"已产生店铺服务扣款"],["收益",money(recentEarned),"模拟佣金收益"]] as const).map(([label,value,hint])=><div className={s.referralFunnelStep} key={label}><span>{label}</span><strong>{value}</strong><small>{hint}</small></div>)}
       </div>
      </section>
     </div>
     <section className={s.panel} aria-label="推广明细">
-     <header><h2>推广明细</h2><p>按模拟推广访问记录查看注册与消费转化；未注册只显示匿名访客编号。已注册与已验证为累计筛选；未消费只统计已注册未消费。尚未接入真实访客追踪。</p></header>
-     <div className={s.promotionMetrics} aria-label="推广转化概览">
-      {([["推广访问用户",promotionRows.length],["已注册",knownRegistered],["已消费",knownPaid],["未消费",knownRegistered-knownPaid]] as const).map(([label,value])=><div key={label}><span>{label}</span><strong>{value}</strong></div>)}
-     </div>
+     <header><h2>推广明细</h2><p>按访问状态筛选记录，点击查看详情了解注册、验证、消费进度。匿名访客仅显示编号，数据为模拟示例。</p></header>
      <div className={s.promotionFilters}>
       <div className={s.promotionTabs} role="group" aria-label="推广访客状态筛选">
        {([["all","全部"],["pending","访问未注册"],["registered","已注册"],["verified","已验证"],["unpaid","未消费"],["paid","已消费"]] as const).map(([id,label])=><button key={id} type="button" aria-pressed={promotionStatus===id} onClick={()=>{setPromotionStatus(id);setPromotionPage(1)}}>{label}</button>)}
@@ -176,7 +173,7 @@ export function ShowcaseAccountSuite({pathname}:{pathname:string}){
        <td><span className={s.promotionStatus} data-status={x.status}>{promotionStateText(x.status)}</span></td>
        <td>{x.spent?money(x.spent):"—"}</td><td>{x.commission?money(x.commission):"—"}</td>
        <td><button type="button" onClick={()=>setPromotionDetail(x.id)}>查看详情</button></td>
-      </tr>)}</tbody></table>{!filteredPromotions.length&&<div className={s.empty}>当前条件下没有邀请记录，请调整状态或搜索关键词。</div>}</div>
+      </tr>)}</tbody></table>{!filteredPromotions.length&&<div className={s.empty}>当前筛选下暂无记录，可调整筛选条件或关键词。</div>}</div>
      <div className={s.recordPager} role="navigation" aria-label="推广明细分页">
       <span>共 {filteredPromotions.length} 条 · 每页 10 条 · 第 {selectedPromotionPage} / {promotionPages} 页</span>
       <div><button type="button" disabled={selectedPromotionPage<=1} onClick={()=>setPromotionPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={selectedPromotionPage>=promotionPages} onClick={()=>setPromotionPage(x=>Math.min(promotionPages,x+1))}>下一页</button></div>
