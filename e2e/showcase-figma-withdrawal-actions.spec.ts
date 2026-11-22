@@ -32,3 +32,35 @@ test("Figma payout actions show configuration and withdrawal, with saved account
  await expect(suite).toContainText("微信 · AD******UT");
  await expect(suite).toContainText("¥10.00");
 });
+
+test("Figma account configuration supports bank, Alipay and default account switching",async({page})=>{
+ await page.goto(route);
+ const suite=page.locator("[data-account-suite]");
+ await suite.getByRole("button",{name:"配置账户"}).click();
+ let dialog=suite.getByRole("dialog",{name:"配置收款账户"});
+ await dialog.getByRole("button",{name:"设置银行卡账户"}).click();
+ await dialog.getByRole("textbox",{name:"持卡人姓名"}).fill("模拟持卡人");
+ await dialog.getByRole("textbox",{name:"银行卡号"}).fill("1234567890123456");
+ await dialog.getByRole("textbox",{name:"开户银行"}).fill("模拟银行");
+ await dialog.getByRole("button",{name:"保存并验证"}).click();
+ await dialog.getByRole("button",{name:"去验证"}).last().click();
+ await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
+ await expect(suite).toContainText("银行卡 · 12******56");
+ await suite.getByRole("button",{name:"配置账户"}).click();
+ dialog=suite.getByRole("dialog",{name:"配置收款账户"});
+ await dialog.getByRole("button",{name:"添加其他支付宝账户"}).click();
+ await dialog.getByRole("textbox",{name:"收款人姓名"}).fill("模拟账户");
+ await dialog.getByRole("textbox",{name:"支付宝账号"}).fill("pay-demo-123456");
+ await dialog.getByRole("checkbox").uncheck();
+ await dialog.getByRole("button",{name:"保存并验证"}).click();
+ await dialog.getByRole("button",{name:"去验证"}).first().click();
+ await dialog.getByRole("button",{name:"确认模拟验证并保存"}).click();
+ await expect(suite).toContainText("银行卡 · 12******56");
+ await suite.getByRole("button",{name:"配置账户"}).click();
+ dialog=suite.getByRole("dialog",{name:"配置收款账户"});
+ await expect(dialog).toContainText("支付宝 · pa******56");
+ await dialog.getByRole("button",{name:"设为默认"}).last().click();
+ await expect(suite).toContainText("支付宝 · pa******56");
+ await page.reload();
+ await expect(suite).toContainText("支付宝 · pa******56");
+});
