@@ -2,7 +2,7 @@ import {expect,test} from "@playwright/test";
 const root="/shuomi/#/workbench";
 // The legacy workflow tests intentionally begin with an empty tenant.
 test.beforeEach(async({page},info)=>{
- if(info.title.startsWith("organization-scoped")||info.title.startsWith("My Stores Figma optimized asset layout"))return;
+ if(info.title.startsWith("organization-scoped")||info.title.startsWith("My Stores Figma optimized asset layout")||info.title.startsWith("expired 30-day store service"))return;
  await page.goto(root+"/stores");
  await page.evaluate(()=>{
   sessionStorage.setItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001","[]");
@@ -174,7 +174,7 @@ test("Figma Manage opens store settings; Reauthorize opens binding, without fake
  await authorization.getByRole("button",{name:"保存修改"}).click();
  await area.getByRole("button",{name:"进入店铺",exact:true}).click();
  await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"服务信息",exact:true}).click();
- await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("待授权");
+ await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("已绑定");
 });
 test("Figma binding group and owner affordances preserve draft and follow company member flow",async({page})=>{
  await page.goto(root+"/stores");
@@ -197,7 +197,7 @@ test("Figma binding group and owner affordances preserve draft and follow compan
  await form.getByLabel("负责人").selectOption("林晨");
  await form.getByRole("button",{name:"确认绑定"}).click();
  const area=page.locator('[data-store-center-showcase="stores"]');
- await expect(area.locator("article").filter({hasText:"分组绑定草稿"}).getByText("店铺运营组",{exact:true})).toBeVisible();
+ await expect(area.locator("article").filter({hasText:"分组绑定草稿"}).getByText("店铺运营组",{exact:true}).first()).toBeVisible();
  await expect(area.getByText("林晨",{exact:true})).toBeVisible();
 });
 test("Figma more-operation menu wires rename, reauthorization and safe unlink",async({page})=>{
@@ -223,7 +223,7 @@ test("enter-store is a full five-tab Figma detail view rather than a generic wor
  await expect(page.getByRole("dialog",{name:"店铺工作台"})).toHaveCount(0);
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await expect(details).toBeVisible();
- for(const tab of ["店铺概览","授权信息","数据同步","网络环境","店铺设置"]){
+ for(const tab of ["店铺概览","服务信息","数据同步","网络环境","店铺设置"]){
   await details.getByRole("button",{name:tab,exact:true}).click();
   await expect(details.getByRole("button",{name:tab,exact:true})).toHaveAttribute("aria-current","page");
  }
@@ -338,28 +338,28 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
 test("organization-scoped store bindings activate 30-day plans and synchronize with enterprise resources",async({page})=>{
  await page.goto(root+"/stores");
  const stores=page.locator('[data-store-center-showcase="stores"]');
- await expect(stores).toContainText("共 10 家");
+ await expect(stores).toContainText("共 12 家");
  await page.goto(root+"/account");
- await expect(page.locator('[class*="accountBottom"]')).toContainText("已绑定 10 家 · 待授权 10 家");
+ await expect(page.locator('[class*="accountBottom"]')).toContainText("已绑定 12 家");
  await page.goto(root+"/plans");
- await expect(page.locator('[class*="planOverview"]')).toContainText("本组织已绑定 10 家");
- await expect(page.locator('[class*="planOverview"]')).toContainText("已使用 0 期");
+ await expect(page.locator('[class*="planOverview"]')).toContainText("本组织已绑定 12 家");
+ await expect(page.locator('[class*="planOverview"]')).toContainText("已使用 2 期");
  await page.goto(root+"/plans/entitlements");
  const card=page.locator('[class*="planEntitlementCards"]').getByRole("heading",{name:"店铺服务"}).locator("..");
- await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("10");
+ await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("12");
  await expect(card).toContainText("剩余可分配");
  await page.goto(root+"/account/organization");
- await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("10");
- await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("待授权 10 家");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("12");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("12 家");
  await page.goto(root+"/account/profile");
  await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("系统登记店铺");
- await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("10 家 · 待授权");
+ await expect(page.locator('[data-account-profile-page="overview"]')).toContainText("12 家");
  await page.goto(root+"/stores");
  await stores.getByRole("button",{name:"绑定新店铺"}).first().click();
  const binding=page.getByRole("dialog",{name:"绑定新店铺"});
  await binding.getByRole("textbox",{name:"自定义名称"}).fill("联动校验管理员店铺");
  await binding.getByRole("button",{name:"确认绑定"}).click();
- await expect(stores).toContainText("共 11 家");
+ await expect(stores).toContainText("共 13 家");
  const service=await page.evaluate(()=>{
   const stores=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
   const added=stores.find((s:{name:string})=>s.name==="联动校验管理员店铺");
@@ -367,8 +367,8 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  });
  expect(service).toEqual({periods:1,duration:30*24*60*60*1000});
  await page.goto(root+"/plans/entitlements");
- await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("11");
- await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：1 期");
+ await expect(page.locator('[class*="planEntitlementStoreSplit"]')).toContainText("13");
+ await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：3 期");
  await page.goto(root+"/stores");
  const activeCard=stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"});
  await expect(activeCard).toContainText("服务中");
@@ -381,12 +381,12 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  expect(renewed).toEqual({periods:2,duration:60*24*60*60*1000});
  await expect(activeCard).toContainText("服务中");
  await page.goto(root+"/plans/entitlements");
- await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：2 期");
+ await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：4 期");
  await page.goto(root+"/stores");
  await expect(stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"})).toContainText("服务中");
 
  await page.goto(root+"/account/organization");
- await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("待授权 11 家");
+ await expect(page.getByRole("region",{name:"企业空间概览"})).toContainText("13 家");
 });
 
 
