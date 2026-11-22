@@ -88,7 +88,22 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   change(addAudit({...state,members:[...state.members,member]},"成员与权限","创建模拟邀请："+label+"（"+role+"）"),"邀请已记录，等待成员接受（演示模式未发送真实短信或邮件）。");
  };
  const updateMember=()=>{if(!currentMember||currentMember.id==="admin")return;change(addAudit({...state,members:state.members.map(m=>m.id===currentMember.id?{...m,role}:m)},"成员与权限","调整成员 "+currentMember.name+" 角色为 "+role),"成员角色已更新。")};
- const toggleMember=(m:Member)=>{if(m.id==="admin"||m.status==="邀请中")return;const target=m.status==="正常"?"已停用":"正常";change(addAudit({...state,members:state.members.map(x=>x.id===m.id?{...x,status:target}:x)},"成员与权限",m.name+" 已"+target),"成员状态已更新。")};
+ const toggleMember=(m:Member)=>{
+  if(m.id==="admin"||m.status==="邀请中")return;
+  const suspending=m.status==="正常",target=suspending?"已停用":"正常";
+  const reclaim={renewal:state.storeAllocations[m.id]||0,points:state.pointAllocations[m.id]||0,data:state.dataAllocations[m.id]||0,storage:state.allocations[m.id]||0};
+  const next:SuiteState={...state,members:state.members.map(x=>x.id===m.id?{...x,status:target as Member["status"]}:x)};
+  if(suspending){
+   // Synthetic resource usage is always zero in this showcase. Reclaim only its
+   // remaining grants, never the organization's purchased quota or other members' grants.
+   next.storeAllocations={...state.storeAllocations,[m.id]:0};
+   next.pointAllocations={...state.pointAllocations,[m.id]:0};
+   next.dataAllocations={...state.dataAllocations,[m.id]:0};
+   next.allocations={...state.allocations,[m.id]:0};
+  }
+  const detail=suspending?"；已回收未使用额度：续费 "+reclaim.renewal+" 期、AI 积分 "+reclaim.points+"、数据 "+reclaim.data+" 条、存储 "+reclaim.storage.toFixed(1)+" GiB":"；原配额保持 0，管理员可重新分配";
+  change(addAudit(next,"成员与权限",m.name+" 已"+target+detail),suspending?"子账号已停用，未使用的四项资源已归还组织，可再次分配。":"成员已重新启用，资源不会自动恢复，请按需重新分配。");
+ };
  const acceptInvitation=(m:Member)=>{if(m.status!=="邀请中")return;change(addAudit({...state,members:state.members.map(x=>x.id===m.id?{...x,status:"正常" as const,joined:Date.now()}:x)},"成员与权限","模拟接受成员邀请："+m.name),"邀请已在演示模式中接受，成员现在已启用。")};
  const cancelInvitation=(m:Member)=>{if(m.status!=="邀请中")return;change(addAudit({...state,members:state.members.filter(x=>x.id!==m.id)},"成员与权限","取消模拟邀请："+m.name),"邀请已取消。")};
  const addRole=()=>{const value=name.trim();if(!value||state.roles.includes(value)){setError("请输入未使用的角色名称。");return}change(addAudit({...state,roles:[...state.roles,value],rolePermissions:{...state.rolePermissions,[value]:[]}},"角色权限","新建角色："+value),"新角色已加入企业角色列表。")};
