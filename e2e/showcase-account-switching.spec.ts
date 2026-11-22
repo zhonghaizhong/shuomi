@@ -98,7 +98,7 @@ test("colleague01 ten referrals own commission and withdrawal never leak to ente
  await expect(own).toContainText("暂无提现记录");
  await expect(own.getByRole("button",{name:"申请提现"})).toBeDisabled();
  await own.getByRole("button",{name:"配置账户"}).click();
- const payout=own.getByRole("dialog",{name:"配置账户"});
+ const payout=own.getByRole("dialog",{name:"配置收款账户"});
  await configureDemoPayout(payout,"C01-ONLY-PAYOUT");
  await own.getByRole("button",{name:"申请提现"}).click();
  const withdraw=own.getByRole("dialog",{name:"申请提现"});
@@ -181,7 +181,7 @@ test("same colleague has separate referral wallets in main company, organization
  await page.goto(base+"/account/referrals/withdrawals");
  await expect(orgA).toContainText("尚未配置");
  await orgA.getByRole("button",{name:"配置账户"}).click();
- const payout=orgA.getByRole("dialog",{name:"配置账户"});
+ const payout=orgA.getByRole("dialog",{name:"配置收款账户"});
  await configureDemoPayout(payout,"ORG-A-ONLY");
  await expect(orgA).toContainText("微信 · OR******LY");
  await orgA.getByRole("button",{name:"申请提现"}).click();
