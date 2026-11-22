@@ -45,24 +45,30 @@ test("synthetic enterprise uses one tenant across account home, members, roles a
  await expect(suite).toContainText("武汉硕米电子商务有限公司");
  await expect(suite).toContainText("企业成员");
  await expect(suite.locator('[class*="metrics"]')).toContainText("0");
+ await page.goto(base+"/organization/roles");
+ await suite.getByRole("button",{name:"新建角色"}).click();
+ const newRole=suite.getByRole("dialog",{name:"新建角色"});
+ await newRole.getByRole("textbox",{name:"角色名称"}).fill("临时运营角色");
+ await newRole.getByRole("button",{name:"确认并模拟通过"}).click();
+ await expect(suite.getByRole("row").filter({hasText:"临时运营角色"})).toBeVisible();
  await page.goto(base+"/organization/members");
  await expect(suite.getByRole("row")).toHaveCount(2);
  await suite.getByRole("button",{name:"邀请成员"}).click();
  const invite=suite.getByRole("dialog",{name:"邀请成员"});
  await invite.getByRole("textbox",{name:"成员姓名"}).fill("模拟运营人员");
  await invite.getByRole("textbox",{name:"成员邮箱"}).fill("operator@example.com");
- await invite.getByRole("combobox",{name:"业务角色"}).selectOption("商品运营");
+ await invite.getByRole("combobox",{name:"业务角色"}).selectOption("子账号");
  await invite.getByRole("button",{name:"确认并模拟通过"}).click();
  await expect(suite.getByRole("row").filter({hasText:"模拟运营人员"})).toBeVisible();
  await page.reload();
  await expect(suite.getByRole("row").filter({hasText:"模拟运营人员"})).toBeVisible();
  await suite.getByRole("row").filter({hasText:"模拟运营人员"}).getByRole("button",{name:"查看 / 调整"}).click();
  const manage=suite.getByRole("dialog",{name:"管理成员"});
- await manage.getByRole("combobox",{name:"业务角色"}).selectOption("运营负责人");
+ await manage.getByRole("combobox",{name:"业务角色"}).selectOption("临时运营角色");
  await manage.getByRole("button",{name:"确认并模拟通过"}).click();
- await expect(suite.getByRole("row").filter({hasText:"模拟运营人员"})).toContainText("运营负责人");
+ await expect(suite.getByRole("row").filter({hasText:"模拟运营人员"})).toContainText("临时运营角色");
  await page.goto(base+"/organization/roles");
- await expect(suite.getByRole("row").filter({hasText:"运营负责人"})).toContainText("1 人");
+ await expect(suite.getByRole("row").filter({hasText:"临时运营角色"})).toContainText("1 人");
  await page.goto(base+"/organization/audit");
  await expect(suite).toContainText("邀请并模拟审核通过");
  await expect(suite).toContainText("调整成员");
@@ -143,10 +149,31 @@ test("account submenus navigate without dead ends and preserve navigation state"
   await expect(page.locator("[data-account-profile-page]").getByRole("navigation",{name:"账户资料二级导航"}).getByRole("button",{name})).toHaveAttribute("aria-current","page");
  }
 });
+test("legacy default business roles disappear while the subaccount preset stays limited and editable",async({page})=>{
+ await page.goto(base+"/organization/roles");
+ const suite=page.locator("[data-account-suite]");
+ await expect(suite.getByRole("row")).toHaveCount(3);
+ await expect(suite.getByRole("row").filter({hasText:"管理员"})).toHaveCount(1);
+ const role=suite.getByRole("row").filter({hasText:"子账号"});
+ await expect(role).toHaveCount(1);
+ for(const retired of ["运营负责人","商品运营","订单客服"])await expect(suite.getByRole("row").filter({hasText:retired})).toHaveCount(0);
+ await role.getByRole("button",{name:"配置权限"}).click();
+ const dialog=suite.getByRole("dialog",{name:"配置角色权限"});
+ await expect(dialog.getByRole("checkbox",{name:"硕米Chat 操作"})).toBeChecked();
+ await expect(dialog.getByRole("checkbox",{name:"待上传 操作"})).toBeChecked();
+ await expect(dialog.getByRole("checkbox",{name:"我的店铺 操作"})).toBeChecked();
+ await expect(dialog.getByRole("checkbox",{name:"套餐与权益 操作"})).not.toBeChecked();
+ await expect(dialog.getByRole("checkbox",{name:"系统设置 操作"})).not.toBeChecked();
+ await expect(dialog.getByRole("checkbox",{name:"推广与收益 操作"})).not.toBeChecked();
+ await dialog.getByRole("button",{name:"取消",exact:true}).click();
+ await page.reload();
+ await expect(suite.getByRole("row")).toHaveCount(3);
+ await expect(role).toContainText("店铺中心");
+});
 test("role permission editing persists and affects linked role rows",async({page})=>{
  await page.goto(base+"/organization/roles");
  const suite=page.locator("[data-account-suite]");
- const role=suite.getByRole("row").filter({hasText:"商品运营"});
+ const role=suite.getByRole("row").filter({hasText:"子账号"});
  await role.getByRole("button",{name:"配置权限"}).click();
  const dialog=suite.getByRole("dialog",{name:"配置角色权限"});
  await dialog.getByRole("checkbox",{name:"数据服务"}).check();
@@ -155,14 +182,14 @@ test("role permission editing persists and affects linked role rows",async({page
  await expect(role).toContainText("数据服务");
  await expect(role).not.toContainText("供应市场");
  await page.reload();
- await expect(suite.getByRole("row").filter({hasText:"商品运营"})).toContainText("数据服务");
+ await expect(suite.getByRole("row").filter({hasText:"子账号"})).toContainText("数据服务");
  await page.goto(base+"/organization/audit");
- await expect(suite).toContainText("更新角色 商品运营 权限");
+ await expect(suite).toContainText("更新角色 子账号 权限");
 });
 test("role permission tree follows actual first, second and third-level sidebar and saves view/action grants",async({page})=>{
  await page.goto(base+"/organization/roles");
  const suite=page.locator("[data-account-suite]");
- const role=suite.getByRole("row").filter({hasText:"订单客服"});
+ const role=suite.getByRole("row").filter({hasText:"子账号"});
  await role.getByRole("button",{name:"配置权限"}).click();
  const dialog=suite.getByRole("dialog",{name:"配置角色权限"});
  for(const label of ["运营驾驶舱","AI工作台","供应市场","智能市场","工具市场","生态服务","数据服务","店铺中心","订单管理","套餐与权益","系统设置","我的账户"])
@@ -179,7 +206,7 @@ test("role permission tree follows actual first, second and third-level sidebar 
  await dialog.getByRole("button",{name:"确认并模拟通过"}).click();
  await expect(role).toContainText("工具市场");
  await page.reload();
- await suite.getByRole("row").filter({hasText:"订单客服"}).getByRole("button",{name:"配置权限"}).click();
+ await suite.getByRole("row").filter({hasText:"子账号"}).getByRole("button",{name:"配置权限"}).click();
  await expect(suite.getByRole("dialog",{name:"配置角色权限"}).getByRole("checkbox",{name:"工具定制 操作"})).toBeChecked();
 });
 test("per member storage allocation is bounded by enterprise capacity and logged",async({page})=>{
