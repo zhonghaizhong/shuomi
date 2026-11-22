@@ -179,15 +179,16 @@ test("plans usage flow filters and top-up estimates work without issuing real ch
  const rootEl=page.locator('[data-commerce-unified="plans"]');
  await expect(rootEl.getByRole("button",{name:"全部流水"})).toBeVisible();
  await expect(rootEl.getByRole("button",{name:"店铺费用"})).toBeVisible();
- await expect(rootEl.getByRole("combobox",{name:"变动类型"})).toBeVisible();
- await expect(rootEl.getByRole("combobox",{name:"关联店铺"})).toBeVisible();
- await rootEl.getByRole("combobox",{name:"变动类型"}).selectOption("扣减");
+ await rootEl.getByRole("button",{name:"用量筛选条件"}).click();
+ await expect(rootEl.getByRole("group",{name:"用量高级筛选"})).toBeVisible();
+ await expect(rootEl.getByRole("group",{name:"关联店铺选项"})).toContainText("全部店铺");
+ await rootEl.getByRole("group",{name:"用量变动类型"}).getByRole("button",{name:"扣减",exact:true}).click();
  await rootEl.getByRole("textbox",{name:"搜索流水"}).fill("商品优化");
  await expect(rootEl.locator('[class*="serviceRow"]')).toHaveCount(0);
  await rootEl.getByRole("button",{name:"确定",exact:true}).click();
  await expect(rootEl.locator('[class*="serviceRow"]')).toHaveCount(0);
  await rootEl.getByRole("button",{name:"重置"}).click();
- await expect(rootEl.getByRole("combobox",{name:"变动类型"})).toHaveValue("全部变动");
+ await expect(rootEl.getByRole("button",{name:"用量筛选条件"})).toHaveAttribute("aria-expanded","false");
  await expect(rootEl.getByRole("textbox",{name:"搜索流水"})).toHaveValue("");
  await page.goto(root+"/plans/top-up");
  const cards=page.locator('[data-commerce-unified="plans"] [class*="planPurchaseCards"] article');
@@ -242,7 +243,9 @@ test("empty billing filters remain functional without inventing paid records",as
  const plans=page.locator('[data-commerce-unified="plans"]');
  const rows=plans.locator('[class*="planTableScroll"] [class*="planOrderColumns"][class*="serviceRow"]');
  await expect(rows).toHaveCount(5);
- await plans.getByRole("combobox",{name:"全部状态"}).selectOption("已支付");
+ await plans.getByRole("button",{name:/筛选条件/}).click();
+ await expect(plans.getByRole("group",{name:"高级筛选条件"})).toBeVisible();
+ await expect(plans.getByRole("group",{name:"费用类型选项"})).toBeVisible();
  await plans.getByRole("textbox",{name:"搜索账单"}).fill("不存在的订单");
  // Filters are staged until the user confirms them.
  await expect(rows).toHaveCount(5);
@@ -250,7 +253,7 @@ test("empty billing filters remain functional without inventing paid records",as
  await expect(rows).toHaveCount(0);
  await plans.getByRole("button",{name:"重置",exact:true}).click();
  await expect(rows).toHaveCount(5);
- await expect(plans.getByRole("combobox",{name:"全部状态"})).toHaveValue("全部状态");
+ await expect(plans.getByRole("button",{name:/筛选条件/})).toHaveAttribute("aria-expanded","false");
  await expect(plans.getByRole("textbox",{name:"搜索账单"})).toHaveValue("");
  await expect(plans.getByRole("button",{name:"导出账单"})).toBeEnabled();
 });
