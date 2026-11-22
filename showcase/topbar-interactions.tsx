@@ -17,17 +17,12 @@ export const demoNotices:Notice[] = [
 export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read, identity, organizations, members, onSwitchIdentity, onAddOrganization }: {
  navigate:(path:string)=>void; pathname:string; light:boolean; onTheme:()=>void; read:number[];
  identity:DemoIdentity; organizations:DemoOrganization[]; members:Member[];
- onSwitchIdentity:(next:DemoIdentity)=>void; onAddOrganization:(name:string)=>boolean;
- identity:DemoIdentity; organizations:DemoOrganization[]; members:Member[];
  onSwitchIdentity:(next:DemoIdentity)=>void; onAddOrganization:(name:string)=>boolean
 }) {
  const [panel,setPanel]=useState<"support"|"account"|null>(null);
  const [accountView,setAccountView]=useState<"menu"|"switch">("menu");
  const [organizationName,setOrganizationName]=useState("");
  const [organizationError,setOrganizationError]=useState("");
- const [accountStep,setAccountStep]=useState<"menu"|"switch">("menu");
- const [organizationDraft,setOrganizationDraft]=useState("");
- const [switchError,setSwitchError]=useState("");
  const [profileName,setProfileName]=useState(tenant.username);
  const [profileEmail,setProfileEmail]=useState(tenant.email);
  const [step,setStep]=useState<"options"|"online"|"message">("options");
@@ -43,19 +38,14 @@ export function ShowcaseTopbarActions({ navigate, pathname, light, onTheme, read
   document.addEventListener("keydown",onKey);document.addEventListener("mousedown",onClick);
   return()=>{document.removeEventListener("keydown",onKey);document.removeEventListener("mousedown",onClick)};
  },[panel,safety]);
- const toggle=(name:"support"|"account")=>{setPanel(old=>old===name?null:name);setStep("options");setAccountStep("menu");setSafety(null);setSwitchError("");
+ const toggle=(name:"support"|"account")=>{setPanel(old=>old===name?null:name);setStep("options");setSafety(null);
   try{const profile=JSON.parse(sessionStorage.getItem("shuomi-demo-account-settings-"+tenant.id)||"null");setProfileName(typeof profile?.name==="string"&&profile.name.trim()?profile.name.trim():tenant.username)}catch{setProfileName(tenant.username)}
   try{const security=JSON.parse(localStorage.getItem("shuomi-demo-security-"+tenant.id)||"null");setProfileEmail(typeof security?.email==="string"&&security.email.trim()?security.email.trim():tenant.email)}catch{setProfileEmail(tenant.email)}
  };
- const member=identity.organizationId===tenant.id?members.find(m=>m.id===identity.memberId):null;
- const displayName=identity.organizationId!==tenant.id?tenant.username:identity.memberId==="admin"?profileName:(member?.name||"无效子账号");
- const displayEmail=identity.organizationId!==tenant.id?profileEmail:(identity.memberId==="admin"?profileEmail:(member?.email||tenant.email));
- const currentOrganization=organizations.find(o=>o.id===identity.organizationId)?.name||tenant.name;
- const addDemoOrganization=()=>{const name=organizationDraft.trim();if(!onAddOrganization(name)){setSwitchError("请输入新的组织名称（最多 8 个模拟组织，名称不能重复）。");return}setOrganizationDraft("");setSwitchError("")};
  const selectedOrganization=organizations.find(o=>o.id===identity.organizationId);
  const selectedMember=identity.organizationId===tenant.id?members.find(m=>m.id===identity.memberId):null;
- const displayName=selectedMember?.name||(identity.organizationId===tenant.id?tenant.admin:"演示组织管理员");
- const displayEmail=selectedMember?.email||(identity.organizationId===tenant.id?tenant.email:"独立演示空间");
+ const displayName=identity.organizationId===tenant.id?(identity.memberId==="admin"?profileName:selectedMember?.name||"无效子账号"):"演示组织管理员";
+ const displayEmail=identity.organizationId===tenant.id?(identity.memberId==="admin"?profileEmail:selectedMember?.email||tenant.email):"独立演示空间";
  const canSwitch=identity.memberId==="admin";
  const selectIdentity=(next:DemoIdentity)=>{onSwitchIdentity(next);setPanel(null);setAccountView("menu")};
  const createOrganization=()=>{if(onAddOrganization(organizationName)){setOrganizationName("");setOrganizationError("");return}setOrganizationError("组织名称为空、重复或已达到演示上限。")};
