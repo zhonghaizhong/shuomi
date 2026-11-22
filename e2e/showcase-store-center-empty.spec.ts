@@ -381,7 +381,11 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await page.goto(root+"/stores");
  const activeCard=stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"});
  await expect(activeCard).toContainText("服务中");
- await activeCard.getByRole("button",{name:"续费30天"}).click();
+ await activeCard.getByRole("button",{name:"进入店铺",exact:true}).click();
+ const detail=page.getByRole("region",{name:"店铺详情页面"});
+ await detail.getByRole("button",{name:"服务信息",exact:true}).click();
+ await detail.getByRole("button",{name:"续费30天",exact:true}).click();
+ await page.getByRole("button",{name:"返回我的店铺"}).click();
  const renewed=await page.evaluate(()=>{
   const raw=JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]");
   const store=raw.find((s:{name:string})=>s.name==="联动校验管理员店铺");
