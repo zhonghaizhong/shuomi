@@ -6,6 +6,7 @@ import styles from "./route-detail-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit, plansDemoPurchases, plansDemoRates } from "./plans-demo-facts";
 import {readDemoPurchases,writeDemoPurchases,useDemoPurchases,type DemoPurchase} from "./showcase-purchases";
 import {useShowcaseSuite} from "./account/showcase-account-state";
+import {useDemoStoreBindings} from "./store-binding-demo";
 import { ChatNewPreview } from "./chat-new-preview";
 import { ShowcaseChatCollections } from "./showcase-chat-collections";
 import { PreferredApplicationPreview } from "./preferred-application-preview";
@@ -88,12 +89,12 @@ const services = [
 ];
 const products = ["复古水洗牛仔外套", "便携式户外折叠收纳箱", "北欧风陶瓷餐具套装", "女士轻奢链条单肩包", "无线蓝牙头戴式耳机", "大容量运动保温水壶"];
 
-export function RouteDetailPreview({ pathname }: { pathname: string }) {
+export function RouteDetailPreview({ pathname, organizationId="SM-ENT-000001", memberId="admin" }: { pathname: string;organizationId?:string;memberId?:string }) {
   const page = routes[pathname];
   if (!page) return null;
   if (pathname === "/workbench/supply/applications" || pathname.startsWith("/workbench/supply/applications/")) return <PreferredApplicationPreview key={pathname} pathname={pathname} />;
   if (pathname === "/workbench/account/profile/business" || pathname === "/workbench/account/profile/verification") return <AccountProfilePreview key={pathname} pathname={pathname} />;
-  return <RoutePage key={pathname} page={page} pathname={pathname} />;
+  return <RoutePage key={pathname+"-"+organizationId+"-"+memberId} page={page} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
 }
 
 type DetailState = {
@@ -162,10 +163,11 @@ function LedgerPagination({name,total,page,size,onPage,onSize}:{name:string;tota
   <div className={styles.ledgerPageActions}><span aria-live="polite">第 {current} / {count} 页</span><button type="button" aria-label={name+"上一页"} disabled={current<=1} onClick={()=>onPage(current-1)}>上一页</button><button type="button" aria-label={name+"下一页"} disabled={current>=count} onClick={()=>onPage(current+1)}>下一页</button></div>
  </div>;
 }
-function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filters, setFilter, resetFilters, router }: DetailState & { pathname: string; router: ReturnType<typeof useRouter> }) {
+function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filters, setFilter, resetFilters, router, organizationId,memberId }: DetailState & { pathname: string; router: ReturnType<typeof useRouter>;organizationId:string;memberId:string }) {
   const [purchaseAmounts,setPurchaseAmounts]=useState<Record<string,string>>({});
   const {purchases:demoPurchases,setPurchases:setDemoPurchases,totals:demoTotals}=useDemoPurchases();
   const {state:enterpriseSuite}=useShowcaseSuite();
+  const bindingSummary=useDemoStoreBindings(organizationId,memberId,memberId==="admin");
   const assignedStorePeriods=Object.values(enterpriseSuite.storeAllocations).reduce((sum,value)=>sum+(Number(value)||0),0);
   const availableStorePeriods=Math.max(0,demoTotals.renewalPeriods-assignedStorePeriods);
   // Consumption is intentionally zero until the corresponding business modules are connected.
@@ -264,10 +266,10 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
     <article className={styles.card} data-tone={0}>
       <div className={styles.cardTitle}><h3>店铺服务</h3><span>剩余可分配</span></div>
       <div className={styles.planEntitlementStoreSplit}>
-        <div><small>已绑定店铺</small><strong>{plansDemoFacts.activeStores}<em>家</em></strong></div>
+        <div><small>已绑定店铺</small><strong>{bindingSummary.organizationCount}<em>家</em></strong></div>
         <div><small>剩余可分配期数</small><strong>{availableStorePeriods}<em>期</em></strong></div>
       </div>
-      <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>已使用：0 期 · 剩余：{availableStorePeriods} 期</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
+      <div className={styles.planEntitlementNotes}><span>企业总期数：{demoTotals.renewalPeriods} 期 · 已分配：{assignedStorePeriods} 期</span><span>已授权：0 家 · 待授权：{bindingSummary.pendingCount} 家 · 已使用：0 期</span><span>剩余可分配：{availableStorePeriods} 期 · 绑定店铺不自动消耗续费期数</span><span>可在企业空间 → 资源与额度分配给成员</span></div>
     </article>
     <article className={styles.card} data-tone={1}>
       <div className={styles.cardTitle}><h3>token 积分</h3><span>剩余可分配</span></div>
@@ -361,7 +363,7 @@ function ReferralDetail({ pathname, query, setQuery, submit, filters, setFilter,
 
 export function hasRouteDetailPreview(pathname: string) { return pathname in routes; }
 
-function RoutePage({ page, pathname }: { page: { section: string; title: string; description: string }; pathname: string }) {
+function RoutePage({ page, pathname,organizationId,memberId }: { page: { section: string; title: string; description: string }; pathname: string;organizationId:string;memberId:string }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState("全部");
@@ -406,7 +408,7 @@ function RoutePage({ page, pathname }: { page: { section: string; title: string;
     {pathname === "/workbench/stores" && <><section className={styles.metrics}>{[["已绑定店铺", "2 家", "当前账户"], ["正常店铺", "2 家", "授权连接正常"], ["即将到期", "0 家", "未来7天"], ["已到期", "2 家", "使用期限已过"], ["待处理", "2 家", "续期或异常"]].map(([a,b,c])=><article key={a}><span>{a}</span><strong>{b}</strong><small>{c}</small></article>)}</section><section className={styles.productFilters}><div className={styles.commerceFilterSelects}>{["全部站点","全部类型","全部分组","全部状态"].map(x=><FilterSelect key={x} label={x} filters={filters} setFilter={setFilter}/>)}</div><div className={styles.commerceFilterActions}><input aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={e=>setQuery(e.target.value)}/><button onClick={()=>{setQuery("");resetFilters()}}>重置</button><button className={styles.primary} onClick={()=>submit("确认筛选")}>确认</button></div></section><section className={styles.table}><header><h2>店铺列表 <small>共 2 家店铺</small></h2><button onClick={()=>submit("绑定新店铺")}>＋ 绑定新店铺</button></header><div className={styles.serviceRow}><span>店铺与平台</span><span>站点 / 类型</span><span>授权与网络</span><span>使用期限</span><span>管理操作</span></div>{[["一号店", "SHEIN · 美国站 · 半托管", "授权正常 · 网络正常", "月付 · 至 2026-09-30"], ["二号店", "SHEIN · 加拿大站 · 全托管", "授权正常 · 网络正常", "月付 · 至 2026-09-18"]].filter(row=>row.join(" ").includes(query)&&containsFilter(row,filters,"全部站点")&&containsFilter(row,filters,"全部类型")&&containsFilter(row,filters,"全部状态")&&(!filters["全部分组"]||filters["全部分组"]==="全部分组"||(filters["全部分组"]==="核心店铺"&&row[0]==="一号店")||(filters["全部分组"]==="加拿大市场"&&row[0]==="二号店"))).map((row,i)=><div className={styles.serviceRow} key={row[0]}><span><b>{row[0]}</b><small>店铺ID：SHEIN-{i?"CA-002":"US-001"}　·　{ i?"加拿大市场":"核心店铺"}</small></span><span>{row[1]}</span><span>{row[2]}</span><span>{row[3]}</span><span><button onClick={()=>submit("续费店铺")}>续费</button> <button onClick={()=>submit("管理店铺")}>管理</button></span></div>)}</section></>}
     {pathname === "/workbench/store-products" && <StoreProductsPage active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters}/>}
     {pathname === "/workbench/store-orders" && <OrderFulfillmentPage active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters}/>}
-    {pathname.startsWith("/workbench/plans/") && <PlanDetail pathname={pathname} active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters} router={router}/>}
+    {pathname.startsWith("/workbench/plans/") && <PlanDetail organizationId={organizationId} memberId={memberId} pathname={pathname} active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters} router={router}/>}
     {pathname === "/workbench/account/organization" && <><section className={styles.accountOrgIdentity}><div className={styles.accountOrgAvatar}>硕</div><div><h2>硕米智能科技</h2><p>空间编号：SUMI-ENT-20260812 · 管理员：钟海忠</p></div><span>已企业认证 · 演示</span></section><section className={styles.metrics}>{[["企业成员","6","当前空间成员"],["已绑定店铺","2","当前授权店铺"],["待处理邀请","1","等待接受"]].map(([a,b,c])=><article key={a}><span>{a}</span><strong>{b}</strong><small>{c}</small></article>)}</section><section className={styles.accountOrgManagement}><header><h2>企业管理</h2><p>分工协作与资源管理，各入口分别负责明确的业务范围。</p></header><div>{[["01","成员管理","邀请和管理企业成员，查看账户状态与成员归属。","/workbench/account/organization/members"],["02","角色权限","配置业务角色和访问权限，控制页面与数据访问范围。","/workbench/account/organization/roles"],["03","资源与额度","分配店铺、积分与数据额度，设置成员存储使用上限。","/workbench/account/organization/resources"],["04","操作记录","查询成员的重要操作，追溯权限及资源变更记录。","/workbench/account/organization/audit"]].map(([num,name,detail,href])=><article key={name}><b>{num}</b><h3>{name}</h3><p>{detail}</p><button type="button" onClick={()=>router.push(href+"?preview=1")}>{name==="成员管理"?"管理成员":name==="角色权限"?"管理权限":name==="资源与额度"?"管理资源":"查看记录"}</button></article>)}</div></section><section className={styles.metrics}>{[["店铺","2 家","当前已绑定"],["AI 积分","8,650","按实际余额"],["数据额度","300,000 条","可用数据"],["企业存储","5 GiB","企业共享容量"]].map(([a,b,c])=><article key={a}><span>{a}</span><strong>{b}</strong><small>{c}</small></article>)}</section><section className={styles.table}><header><h2>成员资源分配</h2><small>积分与数据额度不按月清零；存储为企业共享容量</small></header><div className={styles.tableHead}>成员 / 角色　　AI 积分余额　　数据额度（条）　　存储上限（GiB）</div>{[["张琳 · 运营负责人","100","50,000","2 GiB"],["李明 · 商品运营","30","—","1 GiB"],["陈佳 · 订单客服","20","—","—"]].map(row=><div className={styles.serviceRow} key={row[0]}>{row.map(x=><span key={x}>{x}</span>)}</div>)}</section></>}
     {pathname.startsWith("/workbench/account/organization/") && <AccountDetail pathname={pathname} active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters}/>}
     {pathname.startsWith("/workbench/account/referrals") && <ReferralDetail pathname={pathname} active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters}/>}
