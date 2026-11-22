@@ -36,7 +36,7 @@ function seeds(organizationId:string):DemoStoreBinding[]{
   platform:"SHEIN" as const,region,type:["全托管","半托管","自营","全托管","半托管"][index],
   status:"已绑定" as const,createdAt:"2026-11-22 15:19",group:"未分组",
   owner:memberId==="admin"?"管理员":"模拟同事01",ownerMemberId:memberId,
-  ...(memberId===colleague?index===4?{platformIdStatus:"获取失败" as const}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index+1).padStart(2,"0")}:{})
+  ...(memberId===colleague?index===4?{platformIdStatus:"获取失败" as const,archived:true}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index+1).padStart(2,"0")}:{})
  }))),...expiredDemoStores];
 }
 export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
@@ -49,10 +49,12 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
   // Only update the five known synthetic colleague fixtures; never invent platform IDs for real bindings.
   // A preexisting explicit activation state (including retry success) must be preserved.
   const migrated=organizationId===mainTenant?valid.map(store=>{
+   // A failed ID lookup is a failed binding attempt, never an active bound store.
+   if(store.id==="SIM-C01-05"&&store.platformIdStatus==="获取失败")return {...store,archived:true};
    const match=/^SIM-C01-0([1-5])$/.exec(store.id);
    if(!match||store.platformIdStatus)return store;
    const index=Number(match[1]);
-   return index===5?{...store,platformIdStatus:"获取失败" as const}:{...store,platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index).padStart(2,"0")};
+   return index===5?{...store,platformIdStatus:"获取失败" as const,archived:true}:{...store,platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index).padStart(2,"0")};
   }):valid;
   // One-time additive migration for existing browser sessions; never recreate stores after a user removes them.
   const migrationKey=demoStoreKey(organizationId)+"-expired-fixture-v1";
