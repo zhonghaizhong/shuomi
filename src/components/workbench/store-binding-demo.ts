@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 
 // Shared showcase-only store register. Binding is not platform authorization or a paid subscription.
-export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;platformStoreId?:string;platformIdStatus?:"已激活"|"获取失败";connectionIssue?:"授权失效"|"连接失败"|"平台接口异常";archived?:boolean};
+export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;platformStoreId?:string;bindingAccount?:string;authorizationMethod?:string;fixedIpPreference?:boolean;platformIdStatus?:"已激活"|"获取失败";connectionIssue?:"授权失效"|"连接失败"|"平台接口异常";archived?:boolean};
 const prefix="shuomi-store-center-demo-ten-v2";
 const eventName="shuomi-demo-store-bindings-changed";
 const mainTenant="SM-ENT-000001";
