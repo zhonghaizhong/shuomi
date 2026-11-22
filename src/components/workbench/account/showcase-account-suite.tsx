@@ -77,6 +77,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
   const pointRemaining=Math.max(0,enterpriseTotals.aiPoints-usedPoints);
   const dataRemaining=Math.max(0,enterpriseTotals.dataRows-usedData);
   const storeDialogStores=boundStores.all.filter(store=>!store.archived&&(storeListOwner==="admin"?(memberId==="admin"||store.ownerMemberId===memberId):store.ownerMemberId===storeListOwner));
+  const storeFailedAttempts=boundStores.all.filter(store=>store.archived&&store.platformIdStatus==="获取失败"&&(storeListOwner==="admin"?memberId==="admin":store.ownerMemberId===storeListOwner));
   const storeDialogFiltered=storeDialogStores.filter(store=>[store.name,store.id,state.members.find(m=>m.id===store.ownerMemberId)?.name||""].join(" ").toLowerCase().includes(storeListSearch.trim().toLowerCase()));
   const renewableStore=boundStores.all.find(store=>store.id===renewStoreId&&!store.archived);
   const renewableOwner=renewableStore?.ownerMemberId||"";
@@ -354,6 +355,7 @@ export function ShowcaseAccountSuite({pathname,memberId="admin",organizationId=t
     <p className={s.dialogHint}>成功获取平台店铺 ID 后才算绑定完成，绑定成功即开始30天服务；本页只提供续费，不设激活操作。</p>
     <input aria-label="搜索店铺名称" placeholder={storeListOwner==="admin"?"搜索店铺名称 / 归属成员":"搜索店铺名称"} value={storeListSearch} onChange={e=>setStoreListSearch(e.target.value)}/>
     <div className={s.storeListScroll}><table><thead><tr><th>店铺</th><th>状态</th><th>绑定时间</th><th>到期时间</th>{storeListOwner==="admin"&&<th>归属成员</th>}<th>操作</th></tr></thead><tbody>{storeDialogFiltered.map(store=>{const status=storeServiceLabel(store);return <tr key={store.id}><td><strong>{store.name}</strong></td><td><span className={status==="已到期"?s.storeExpired:status==="即将到期"?s.storeSoon:s.storeActive}>{status}</span></td><td>{storeDate(store.serviceStartedAt||store.createdAt)}</td><td>{storeDate(store.serviceExpiresAt)}</td>{storeListOwner==="admin"&&<td>{state.members.find(m=>m.id===store.ownerMemberId)?.name||store.owner||"—"}</td>}<td>{status==="使用中"?"—":<button type="button" className={s.storeViewButton} onClick={()=>{setRenewStoreId(store.id);setRenewCount("1");setStoreDialogError("")}}>续费</button>}</td></tr>})}</tbody></table>{!storeDialogFiltered.length&&<p className={s.dialogHint}>暂无符合条件的店铺。</p>}</div>
+    {storeFailedAttempts.length>0&&<p className={s.dialogHint}>另有 {storeFailedAttempts.length} 条模拟绑定失败记录：{storeFailedAttempts.map(x=>x.name).join("、")}（未获取平台 ID，不计入已绑定店铺，不扣服务期；请在店铺中心重新绑定）。</p>}
     <p className={s.dialogHint}>{storeListOwner==="admin"?"管理员可查看企业全部店铺；续费统一使用企业资源池剩余期数，不扣成员已分配余额。":"成员自行续费扣本人已分配期数；管理员代续费使用企业资源池，不扣成员余额。"}</p>
     <footer><button type="button" onClick={closeStoreDialogs}>关闭</button></footer>
   </section></div>}
