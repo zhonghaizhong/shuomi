@@ -254,7 +254,9 @@ test("every bound card always presents four aligned actions; moving group and un
  await expect(move).toHaveCount(0);
  await card.getByRole("button",{name:"删除店铺"}).click();
  const confirmation=page.getByRole("alertdialog",{name:"确认移除演示店铺"});
- await expect(confirmation).toContainText("不涉及真实商品或订单");
+ await expect(confirmation).toContainText("已删除");
+ await expect(confirmation).toContainText("可随时恢复");
+ await expect(confirmation).toContainText("已使用服务期不退回");
  await confirmation.getByRole("button",{name:"取消"}).click();
  await expect(card).toBeVisible();
 });
@@ -357,11 +359,11 @@ test("Figma binding group and owner affordances preserve draft and follow compan
  await expect(owner).toContainText("成员与权限");
  await owner.getByRole("button",{name:"暂不添加"}).click();
  await expect(form).toBeVisible();
- await form.getByLabel("负责人").selectOption("林晨");
+ await form.getByLabel("负责人").selectOption({label:"模拟同事01"});
  await form.getByRole("button",{name:"确认绑定"}).click();
  const area=page.locator('[data-store-center-showcase="stores"]');
  await expect(area.locator("article").filter({hasText:"分组绑定草稿"})).toContainText("店铺运营组");
- await expect(area).toContainText("林晨");
+ await expect(area).toContainText("模拟同事01");
 });
 test("store detail retains rename, edit and unlink without card menu",async({page})=>{
  const area=await createDemo(page,"待操作店铺");
@@ -408,9 +410,12 @@ test("store settings are staged until Save, and returning discards uncommitted e
   await page.getByRole("dialog",{name:"连接检测结果"}).getByRole("button",{name:"进入店铺详情"}).click();
  const details=page.getByRole("region",{name:"店铺详情页面"});
  await details.getByRole("button",{name:"店铺设置",exact:true}).click();
- await details.getByLabel("店铺负责人").selectOption("林晨");
+ const before=await page.evaluate(()=>JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]").find((s:{name:string})=>s.name==="待保存设置"));
+ await details.getByLabel("店铺负责人").selectOption({label:"模拟同事01"});
  await page.getByRole("button",{name:"返回我的店铺"}).click();
- await expect(area).not.toContainText("林晨");
+ const after=await page.evaluate(()=>JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]").find((s:{name:string})=>s.name==="待保存设置"));
+ expect(after.ownerMemberId).toBe(before.ownerMemberId);
+ expect(after.owner).toBe(before.owner);
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
   await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"检测连接"}).click();
   await expect(page.getByRole("dialog",{name:"连接检测结果"})).toContainText("未接入 SHEIN 官方验证接口");
