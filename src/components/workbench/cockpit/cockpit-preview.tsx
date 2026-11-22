@@ -6,22 +6,10 @@ import { useRouter } from "next/navigation";
 import styles from "./cockpit-preview.module.css";
 import { SeamlessEarthGlobe } from "./seamless-earth-globe";
 
-const stores = [
-  { name: "一号店", platform: "SHEIN", site: "美国站", type: "自营店", gmv: "¥41,320", profit: "¥7,354", trend: "+12.8%", status: "正常" },
-  { name: "二号店", platform: "SHEIN", site: "美国站", type: "合作店", gmv: "¥28,600", profit: "¥3,920", trend: "-6.2%", status: "需关注" },
-  { name: "三号店", platform: "SHEIN", site: "加拿大站", type: "自营店", gmv: "¥19,850", profit: "¥1,760", trend: "-15.4%", status: "异常" },
-  { name: "四号店", platform: "Amazon", site: "美国站", type: "自营店", gmv: "¥36,480", profit: "¥6,210", trend: "+9.6%", status: "正常" },
-  { name: "五号店", platform: "Amazon", site: "加拿大站", type: "合作店", gmv: "¥24,760", profit: "¥3,145", trend: "+4.3%", status: "正常" },
-  { name: "六号店", platform: "TikTok Shop", site: "美国站", type: "自营店", gmv: "¥18,920", profit: "¥2,680", trend: "+16.2%", status: "正常" },
-  { name: "七号店", platform: "SHEIN", site: "美国站", type: "合作店", gmv: "¥15,340", profit: "¥1,420", trend: "-3.8%", status: "需关注" },
-  { name: "八号店", platform: "Amazon", site: "美国站", type: "自营店", gmv: "¥31,680", profit: "¥5,270", trend: "+7.1%", status: "正常" },
-];
-
-const alerts = [
-  { title: "库存不足", detail: "一号店 · 6 个 SKU 低于安全库存", level: "高风险", tone: "high" },
-  { title: "店铺转化下降", detail: "二号店 · 近 7 日转化率下降 18%", level: "中风险", tone: "medium" },
-  { title: "商品详情待优化", detail: "一号店 · 4 个商品待优化", level: "中风险", tone: "medium" },
-] as const;
+type StoreSummary={name:string;platform:string;site:string;type:string;gmv:string;profit:string;trend:string;status:string};
+const stores:StoreSummary[]=[];
+type AlertSummary={title:string;detail:string;level:string;tone:string};
+const alerts:AlertSummary[]=[];
 
 export function CockpitPreview() {
   const router = useRouter();
@@ -53,7 +41,7 @@ export function CockpitPreview() {
             <div className={styles.heroEyebrow}><span className={styles.heroPulse} aria-hidden="true" />运营总览 <span className={styles.heroEnglish}>OPERATIONS OVERVIEW</span></div>
             <h1>经营全局 · 一屏掌握</h1>
             <p className={styles.heroIntro}>汇聚多店铺经营表现、核心指标与风险动态，让每一次决策都有清晰依据。</p>
-            <div className={styles.heroScope}>当前：全部 {visibleStores.length} 家店铺 <i aria-hidden="true" /> 全部时间 <i aria-hidden="true" /> 演示数据</div>
+            <div className={styles.heroScope}>当前：全部 {visibleStores.length} 家店铺 <i aria-hidden="true" /> 全部时间 <i aria-hidden="true" /> 业务数据待接入</div>
             <div className={styles.heroHighlights} aria-label="经营总览能力"><span>多店数据统一查看</span><span>经营风险快速识别</span><span>AI 执行与待办追踪</span></div>
           </div>
           <div className={styles.overviewAside}>
@@ -64,12 +52,8 @@ export function CockpitPreview() {
         </div>
       </article>
       <article className={styles.aiTasksCard}>
-        <header><h2>AI 执行与待办</h2><span>3 项重点待办</span></header>
-        <div className={styles.aiTasksList}>
-          <div data-tone="running"><i/><span><strong>AI 正在执行</strong><small>春季广告投放优化</small></span><button type="button" onClick={() => router.push("/workbench/ai/tasks/running")}>查看进度</button></div>
-          <div data-tone="pending"><i/><span><strong>等待你确认</strong><small>当前项目待确认任务</small></span><button type="button" onClick={() => router.push("/workbench/ai/tasks/pending")}>去确认</button></div>
-          <div data-tone="risk"><i/><span><strong>建议立即处理</strong><small>一号店库存补货风险</small></span><button type="button" onClick={() => router.push("/workbench/overview/alerts")}>去处理</button></div>
-        </div>
+        <header><h2>AI 执行与待办</h2><span>0 项待办</span></header>
+        <div className={styles.aiTasksList}><p>暂无已关联的 AI 任务和经营待办，后续接入业务再展示。</p></div>
       </article>
     </section>
     <div className={styles.overviewFilters}>
@@ -94,12 +78,12 @@ export function CockpitPreview() {
     <section className={styles.metricsDigest} aria-label="核心经营指标">
       <header className={styles.digestHeader}><div><h2>经营表现</h2><span>核心指标 · 按当前筛选汇总</span></div><button aria-label="更多经营表现选项">···</button></header>
       <div className={styles.digestMain}>
-        <div className={styles.digestLead}><span>总 GMV</span><div><strong>{formatAmount(totalGmv)}</strong><small>演示汇总</small></div><p>{visibleStores.length} 家店铺 · 未配置 GMV 目标</p></div>
-        <div className={styles.digestBars} role="img" aria-label="近一周 GMV 走势示意图">{[42, 57, 48, 68, 55, 88, 73].map((height, index) => <div key={index}><i style={{ height: `${height}%` }} /><span>{["周一", "周二", "周三", "周四", "周五", "周六", "周日"][index]}</span></div>)}</div>
+        <div className={styles.digestLead}><span>总 GMV</span><div><strong>{formatAmount(totalGmv)}</strong><small>暂未接入经营数据</small></div><p>{visibleStores.length} 家店铺 · 未配置 GMV 目标</p></div>
+        <div className={styles.digestBars} role="img" aria-label="近一周 GMV 暂无数据">{[0, 0, 0, 0, 0, 0, 0].map((height, index) => <div key={index}><i style={{ height: `${height}%` }} /><span>{["周一", "周二", "周三", "周四", "周五", "周六", "周日"][index]}</span></div>)}</div>
       </div>
       <div className={styles.digestDetails}>
         <article><span className={styles.digestLabel}><ShoppingCart size={15}/>订单量</span><strong>—</strong><small>多店订单汇总待接入</small><div className={styles.digestProgress}><i data-tone="purple"/></div></article>
-        <article><span className={styles.digestLabel}><Activity size={15}/>净利润</span><strong>{formatAmount(totalProfit)}</strong><small>演示净利率 14.5%</small><div className={styles.digestProgress}><i data-tone="cyan"/></div></article>
+        <article><span className={styles.digestLabel}><Activity size={15}/>净利润</span><strong>{formatAmount(totalProfit)}</strong><small>净利率待业务接入</small><div className={styles.digestProgress}><i data-tone="cyan"/></div></article>
         <article><span className={styles.digestLabel}><Activity size={15}/>经营健康度</span><strong>—</strong><small>多店评分口径待接入</small><div className={styles.digestProgress}><i data-tone="red"/></div></article>
       </div>
     </section>
@@ -108,16 +92,16 @@ export function CockpitPreview() {
       <div className={styles.supportTrackerBody}>
         <div className={styles.supportAlertSummary}>
           <div className={styles.alertCountSummary}><strong>{alerts.length}</strong><small>项</small><span>待处理预警</span></div>
-          <ul>{alerts.map(item => <li key={item.title} data-tone={item.tone}><i><TriangleAlert size={16}/></i><span><b>{item.title}</b><small>{item.detail}</small></span><em>{item.level}</em></li>)}</ul>
+          <ul>{alerts.length===0?<li>暂无经营预警，接入店铺与订单后再生成。</li>:null}{alerts.map(item => <li key={item.title} data-tone={item.tone}><i><TriangleAlert size={16}/></i><span><b>{item.title}</b><small>{item.detail}</small></span><em>{item.level}</em></li>)}</ul>
         </div>
-        <div className={styles.supportGauge} role="img" aria-label="高风险预警占比 33%">
+        <div className={styles.supportGauge} role="img" aria-label="高风险预警占比暂无数据">
           <svg viewBox="0 0 200 200" aria-hidden="true">
             {Array.from({ length: 28 }, (_, index) => {
               const angle = -135 + index * (270 / 27);
-              return <line key={index} x1="100" y1="19" x2="100" y2="34" transform={`rotate(${angle} 100 100)`} data-active={index < 9 ? "true" : "false"}/>;
+              return <line key={index} x1="100" y1="19" x2="100" y2="34" transform={`rotate(${angle} 100 100)`} data-active={false ? "true" : "false"}/>;
             })}
           </svg>
-          <span><small>高风险占比</small><strong>33%</strong></span>
+          <span><small>高风险占比</small><strong>—</strong></span>
         </div>
       </div>
     </article>
@@ -138,7 +122,7 @@ export function CockpitPreview() {
             <span className={styles.matrixProgress}><i><b style={{ width: `${share}%` }}/></i><small>{share}%</small></span>
           </div>;
         })}
-        {visibleStores.length === 0 ? <p className={styles.empty}>没有匹配的店铺</p> : null}
+        {visibleStores.length === 0 ? <p className={styles.empty}>暂无已接入的店铺经营数据</p> : null}
       </div>
       <footer className={styles.matrixFooter}>
         <span>显示 {visibleStores.length ? (tablePage - 1) * pageSize + 1 : 0} 至 {Math.min(tablePage * pageSize, visibleStores.length)} 条，共 {visibleStores.length} 条</span>
