@@ -265,7 +265,7 @@ test("plans zero-value balances and free 5 GiB storage agree across all pages",a
  plans=page.locator('[data-commerce-unified="plans"]');
  await expect(plans).toContainText("默认容量 5.00 GiB");
  await expect(plans).toContainText("已用 0.00 GiB");
- await expect(plans).toContainText("暂无已购买或额外开通的付费能力");
+ await expect(plans.getByRole("button",{name:"前往资源与额度"})).toBeVisible();
  await page.goto(root+"/plans/usage");
  plans=page.locator('[data-commerce-unified="plans"]');
  await expect(plans).toContainText("本月使用 0 条数据");
