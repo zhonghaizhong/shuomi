@@ -419,3 +419,36 @@
 .page .moveGroupLabel select{width:100%;min-height:42px;background:var(--st-control);color:var(--st-text);border:1px solid var(--st-line);border-radius:8px;padding:8px 12px}
 @media(max-width:1250px){.page .storeRow{grid-template-columns:repeat(2,minmax(0,1fr))}.page .storeRowButtons{width:240px;min-width:0;justify-self:end}}
 @media(max-width:680px){.page .storeRow{grid-template-columns:minmax(0,1fr)}.page .storeRowButtons{width:min(100%,320px);justify-self:stretch;grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Six-card overview, including reversible soft deletions. */
+.page .storeMetrics{grid-template-columns:repeat(6,minmax(0,1fr))}
+.page .storeMetrics button[data-tone="deleted"]{border-color:var(--st-line)}
+.page .storeMetrics button[data-tone="deleted"] strong{color:var(--st-muted)}
+.page .storeRowState strong[data-state="expiring"]{color:#e5a441}
+.page .ipBackdrop{z-index:1000}
+.page .ipConfigurationDialog{width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:24px 28px;border-radius:10px;overflow-y:auto}
+.page .ipConfigurationDialog>header{align-items:start}
+.page .ipConfigForm{display:grid;gap:15px}
+.page .ipExplainer{background:var(--st-surface);border:1px solid var(--st-line);border-radius:9px;padding:13px 16px}
+.page .ipExplainer strong{font-size:13px;color:var(--st-text)}
+.page .ipExplainer p{margin:6px 0 0;color:var(--st-muted);font-size:12px;line-height:1.6}
+.page .ipFormGrid{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(0,1fr);gap:16px 14px}
+.page .ipFormGrid>label{display:grid;gap:7px;min-width:0;font-size:13px;color:var(--st-text);font-weight:600}
+.page .ipFormGrid>label:nth-child(n+3){grid-column:span 1}
+.page .ipFormGrid input{width:100%;height:42px;min-width:0;padding:9px 12px;border-radius:8px;border:1px solid var(--st-line);background:var(--st-control);color:var(--st-text)}
+.page .ipFormGrid input::placeholder{color:var(--st-muted)}
+.page .ipSecretField{display:flex;align-items:center;gap:6px;min-width:0}
+.page .ipSecretField input{flex:1}
+.page .ipSecretField button{flex:none;min-height:38px;padding:6px 10px}
+.page .ipConfigurationDialog .dialogActions{margin-top:5px;padding-top:14px;border-top:1px solid var(--st-line)}
+.page .connectionCheckDialog{width:min(540px,calc(100vw - 32px))}
+.page .connectionChecks{display:grid;gap:9px;background:var(--st-surface);border-radius:9px;border:1px solid var(--st-line);padding:13px 16px}
+.page .connectionChecks>div{display:flex;align-items:start;justify-content:space-between;gap:14px}
+.page .connectionChecks span{color:var(--st-muted);font-size:13px}
+.page .connectionChecks strong{text-align:right;color:var(--st-text);font-size:13px;overflow-wrap:anywhere}
+.page .authDialog .fixedIp{margin-top:8px}
+.page .authDialog .fixedIp .inlineLink{flex:none}
+@media(max-width:1450px){.page .storeMetrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.page .storeMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.page .ipFormGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.page .storeMetrics{grid-template-columns:minmax(0,1fr)}.page .ipFormGrid{grid-template-columns:minmax(0,1fr)}.page .ipConfigurationDialog{padding:18px}}
