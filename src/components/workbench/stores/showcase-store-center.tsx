@@ -4,7 +4,7 @@ import {Building2,Package,Truck,Plus,Search,ShieldCheck,ClipboardList} from "luc
 import css from "./showcase-store-center.module.css";
 import {useShowcaseSuite} from "../account/showcase-account-state";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
-import {demoStoreKey,readDemoStoreBindings,saveDemoStoreBindings,startDemoStoreService,demoStoreServiceActive,countConsumedStorePeriods,type DemoStoreBinding} from "../store-binding-demo";
+import {demoStoreKey,readDemoStoreBindings,saveDemoStoreBindings,startDemoStoreService,demoStoreServiceActive,countConsumedStorePeriods,countPoolConsumedStorePeriods,type DemoStoreBinding} from "../store-binding-demo";
 import {useDemoPurchases} from "../showcase-purchases";
 
 type Store=DemoStoreBinding;
@@ -48,7 +48,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [allStores,setAllStores]=useState<Store[]>(()=>read(organizationId));
  const stores=administrator?allStores.filter(s=>!s.archived):allStores.filter(s=>s.ownerMemberId===memberId&&!s.archived);
  const isMainTenant=organizationId===demoTenant;
- const consumedPeriods=countConsumedStorePeriods(allStores);
+ const consumedPeriods=countPoolConsumedStorePeriods(allStores);
  const allocatedPeriods=Object.values(enterpriseState.storeAllocations).reduce((total,v)=>total+(Number(v)||0),0);
  const ownAssignedPeriods=enterpriseState.storeAllocations[memberId]||0;
  const availablePeriods=administrator?(isMainTenant?Math.max(0,resourceTotals.renewalPeriods-consumedPeriods-allocatedPeriods):Math.max(0,resourceTotals.renewalPeriods-consumedPeriods)):(isMainTenant?Math.max(0,ownAssignedPeriods):0);
