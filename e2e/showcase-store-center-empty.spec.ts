@@ -225,7 +225,7 @@ test("Figma filters apply only on confirm and reset together",async({page})=>{
  // An active store is excluded by the service-attention filter.
  await expect(area.getByText("筛选店铺",{exact:true})).toHaveCount(0);
 });
-test("Figma Manage opens store settings; Reauthorize opens binding, without fake authorization",async({page})=>{
+test("Figma Manage opens modal and retains settings under store-detail tabs, without fake authorization",async({page})=>{
  const area=await createDemo(page,"待修改店铺");
  await area.getByRole("button",{name:"管理店铺",exact:true}).click();
   await page.getByRole("dialog",{name:"管理店铺"}).getByRole("button",{name:"查看店铺详情"}).click();
@@ -481,6 +481,8 @@ test("organization-scoped store bindings activate 30-day plans and synchronize w
  await page.goto(root+"/plans/entitlements");
  await expect(page.locator('[class*="planEntitlementNotes"]').first()).toContainText("已使用：4 期");
  await page.goto(root+"/stores");
+ await stores.getByLabel("搜索店铺").fill("联动校验管理员店铺");
+ await stores.getByRole("button",{name:"确认",exact:true}).click();
  await expect(stores.locator('article[class*="storeCard"]').filter({hasText:"联动校验管理员店铺"})).toContainText("服务有效");
 
  await page.goto(root+"/account/organization");
