@@ -452,3 +452,11 @@
 @media(max-width:1450px){.page .storeMetrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.page .storeMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.page .ipFormGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.page .storeMetrics{grid-template-columns:minmax(0,1fr)}.page .ipFormGrid{grid-template-columns:minmax(0,1fr)}.page .ipConfigurationDialog{padding:18px}}
+
+/* Search-first centered filter axis: preserve existing store theme tokens and button styling. */
+.page .filters[data-shuomi-filter="balanced"]{align-items:center;min-height:64px;padding:10px 12px}
+.page .filters[data-shuomi-filter="balanced"] [data-shuomi-filter-left] .storeSearchField{display:block;width:100%;height:42px;padding:0;margin:0;border:0;background:transparent}
+.page .filters[data-shuomi-filter="balanced"] [data-shuomi-filter-left] .searchControl{display:flex;align-items:center;width:100%;height:42px;box-sizing:border-box;padding:0 12px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-control)}
+.page .filters[data-shuomi-filter="balanced"] [data-shuomi-filter-left] input{width:100%;height:40px;min-width:0;background:transparent;border:0;outline:none}
+.page .filters[data-shuomi-filter="balanced"] [data-shuomi-filter-right] button{height:42px;min-height:42px;padding:0 12px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-control);color:var(--st-text)}
+.page .filters[data-shuomi-filter="balanced"] [data-shuomi-filter-right] button.primary{background:#7367f0;border-color:#7367f0;color:#fff}
