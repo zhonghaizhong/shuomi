@@ -343,3 +343,29 @@ test("batch product dialog matches provided layout, supports item archive and pa
  await dialog.getByRole("button",{name:"当前商品"}).click();
  await expect(dialog.locator("tbody tr")).toHaveCount(4);
 });
+
+test("1688 demo products provide realistic sample photos, simulated prices, variants and split detail gallery",async({page})=>{
+ await page.goto("/shuomi/#/workbench/data/mine");
+ const batch=page.getByRole("region",{name:"采集批次",exact:true});
+ await batch.getByRole("button",{name:"更多"}).click();
+ await batch.getByRole("button",{name:"查看商品"}).click();
+ const modal=page.getByRole("dialog",{name:"批次商品"});
+ await expect(modal).toContainText("¥19.80 起");
+ await expect(modal).toContainText("多变体 · 8 规格");
+ const thumb=modal.getByRole("button",{name:/放大商品图片 纯棉圆领短袖T恤/});
+ await expect(thumb.locator("img")).toHaveAttribute("src",/images.unsplash.com/);
+ await thumb.click();
+ const detail=page.getByRole("dialog",{name:"商品详情"});
+ await expect(detail).toContainText("纯棉圆领短袖T恤");
+ await expect(detail).toContainText("模拟参考价格，非真实供应商报价");
+ await expect(detail).toContainText("白色 / S");
+ await expect(page.getByRole("img",{name:"纯棉圆领短袖T恤的放大演示参考图"})).toBeVisible();
+ await page.getByRole("button",{name:"查看第2张图片"}).click();
+ await expect(page.getByRole("button",{name:"查看第2张图片"})).toHaveAttribute("aria-pressed","true");
+ await expect(detail.getByRole("button",{name:"下载商品数据"})).toBeVisible();
+ await detail.getByRole("button",{name:"关闭商品详情"}).click();
+ await expect(detail).toHaveCount(0);
+ await modal.getByRole("button",{name:"更多"}).first().click();
+ await modal.getByRole("button",{name:"查看",exact:true}).click();
+ await expect(page.getByRole("dialog",{name:"商品详情"})).toBeVisible();
+});
