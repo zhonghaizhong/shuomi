@@ -795,3 +795,20 @@
 .page[data-tool-market-page] > header.header{
  border-radius:6px;
 }
+
+
+/* Tool-market surface consistency (all second-level routes).
+   Follow page theme tokens rather than legacy hard-coded purple-grey panels. */
+.page :is(.toolbar[data-shuomi-filter="balanced"],.mineBar[data-shuomi-filter="balanced"],.notice,.empty,.mineGuide){
+ background:var(--tm-bg);
+ border-color:var(--tm-line);
+ color:var(--tm-text);
+}
+.page :is(.toolCard,.mineCard){background:var(--tm-card);border-color:var(--tm-line)}
+.page .mineGuide>div,.page .toolCard .tags span{background:var(--tm-bg);border-color:var(--tm-line)}
+.page :is(.searchTools input,.mineBar input){background:var(--tm-bg);color:var(--tm-text);border-color:var(--tm-line)}
+.page :is(.toolbar[data-shuomi-filter="balanced"],.mineBar[data-shuomi-filter="balanced"]) :is(input,select,button):focus-visible{
+ outline:2px solid #7367f0;
+ outline-offset:2px;
+}
+:global(.light) .page :is(.toolCard,.mineCard){background:var(--tm-card)}
