@@ -41,6 +41,12 @@ const bundledAgentExamples = {
       `${here}/dist-pages/assets/agent-image-examples`,
       { recursive: true }
     );
+    // New POD inspiration gallery artwork lives in the root public folder too.
+    await cp(
+      `${here}/public/assets/pod-inspiration`,
+      `${here}/dist-pages/assets/pod-inspiration`,
+      { recursive: true }
+    );
   },
 };
 
