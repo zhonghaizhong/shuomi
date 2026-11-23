@@ -189,6 +189,9 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await pod.getByRole("button",{name:/图片裂变模式/}).click();
  const split=page.getByRole("dialog",{name:"图片裂变模式"});
  await split.getByRole("button",{name:"大胆裂变"}).click();
+ await split.getByRole("button",{name:/上传图片 \/ 从素材库选择/}).click();
+ await page.getByRole("dialog",{name:"选择参考素材"}).getByRole("button",{name:/本地上传/}).click();
+ await split.locator('input[type="file"]').setInputFiles({name:"pod-reference.png",mimeType:"image/png",buffer:Buffer.from("reference")});
  await split.getByRole("button",{name:"保存配置"}).click();
  await expect(split).toHaveCount(0);
  await pod.getByRole("button",{name:"增加生成数量"}).click();
