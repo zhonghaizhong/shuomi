@@ -262,3 +262,23 @@
 
 /* Top-layer :modal rules must override older native inset:0 / transform:none. */
 .dialog:modal,.dialog:modal:has(.modelOptions),.dialog.useDialog:modal{position:fixed;inset:auto;top:calc(50% - 2px);left:50%;right:auto;bottom:auto;margin:0;transform:translate(-50%,-50%);}
+
+
+/* POD Figma interaction layout, retaining the established theme colors. */
+.dialog.useDialog:has(.podHelpChat){--pod-flow-line:var(--agent-dialog-border);--pod-flow-surface:var(--agent-dialog-raised)}
+.dialog.useDialog .useSteps .productConfigRow{min-height:82px;padding:12px 16px;gap:12px}
+.dialog.useDialog .useSteps .productConfigRow>.productStatus{min-width:96px;text-align:center;box-sizing:border-box}
+.dialog.useDialog .useSteps .productConfigRow>.primary{min-width:124px;white-space:nowrap}
+.dialog .podHelpChat{display:grid;gap:12px;margin-top:12px;min-width:0}
+.dialog .podHelpChat>p{margin:0;font-size:12px;line-height:1.55;color:var(--agent-dialog-muted)}
+.dialog .podHelpChat label:not(.secondary){display:grid;gap:7px;font-size:13px;font-weight:600;color:var(--agent-dialog-text)}
+.dialog .podHelpChat textarea{box-sizing:border-box;width:100%;min-width:0;min-height:92px;max-height:180px;resize:vertical;padding:10px 11px;border:1px solid var(--agent-dialog-border);border-radius:8px;background:var(--agent-dialog-surface);color:var(--agent-dialog-text);font:inherit;font-size:13px;line-height:1.55}
+.dialog .podHelpActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dialog .podHelpActions label.secondary{display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;min-height:38px;padding:0 12px;border:1px solid var(--agent-dialog-border);border-radius:7px;box-sizing:border-box;background:var(--agent-dialog-raised);color:var(--agent-dialog-text);font-size:12px;white-space:nowrap}
+.dialog .podHelpActions label.secondary input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.dialog .podHelpActions .primary{min-height:38px;padding:0 12px;font-size:12px}
+.dialog .podHelpResult{display:grid;gap:9px;padding:12px;border:1px solid var(--agent-dialog-border);border-radius:8px;background:var(--agent-dialog-surface);min-width:0}
+.dialog .podHelpResult strong{font-size:13px;color:var(--agent-dialog-text)}
+.dialog .podHelpResult p{font-size:12px;line-height:1.6;color:var(--agent-dialog-text);white-space:pre-wrap;overflow-wrap:anywhere}
+.dialog .podHelpResult button{width:100%;min-height:36px;border:1px solid var(--agent-dialog-border);background:var(--agent-dialog-raised);color:var(--agent-dialog-text);border-radius:7px;cursor:pointer;font-size:12px}
+@media(max-width:760px){.dialog.useDialog .useSteps .productConfigRow{flex-wrap:wrap}.dialog.useDialog .useSteps .productRowText{flex-basis:100%}.dialog.useDialog .useSteps .productConfigRow>.primary{flex:1}}
