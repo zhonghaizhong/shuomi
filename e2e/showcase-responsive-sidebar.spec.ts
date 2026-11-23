@@ -182,7 +182,7 @@ test("listing four-stage Figma flow has distinct functional screens",async({page
  await expect(waiting.getByRole("heading",{name:"选择商品"})).toBeVisible();
  await expect(waiting.getByRole("heading",{name:"目标平台与店铺"})).toBeVisible();
  await expect(waiting.getByRole("heading",{name:"启用规则"})).toBeVisible();
- await expect(waiting.getByRole("heading",{name:"启用智能体"})).toBeVisible();
+ await expect(waiting.getByRole("heading",{name:"智能体（按需）"})).toBeVisible();
  await expect(waiting.getByRole("button",{name:"确认提交"})).toBeDisabled();
  await expect(waiting.getByLabel("本次批次 / 产品集")).toHaveValue("");
  await expect(waiting.getByLabel("本次目标店铺")).toHaveValue("");
