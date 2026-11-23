@@ -28,3 +28,4 @@
 @media(max-width:900px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar .search{flex-basis:100%}.productPanel>header{flex-wrap:wrap}}
 @media(max-width:540px){.dialog{padding:14px}.summary{grid-template-columns:1fr 1fr}.summary aside{grid-column:1/-1}.bottom{flex-wrap:wrap}.bottom button{width:100%}.productPanel nav button{min-width:0}}
 \n@media(max-width:920px){.scroll{overflow-x:auto}}\n
+.detailFields{display:grid;gap:10px;margin:14px 0}.detailFields p{display:flex;align-items:flex-start;gap:16px;margin:0;padding:10px;border:1px solid var(--bp-line);border-radius:7px}.detailFields strong{min-width:76px;font-size:13px;color:var(--bp-muted)}.detailFields span{flex:1;font-size:13px;overflow-wrap:anywhere}
