@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import styles from "./showcase-tool-market.module.css";
+import {PodManagementWorkspace} from "./showcase-pod-management-dialog";
 import {addDemoCollectionBatch} from "./showcase-collection-batches";
 
 type Tool = { name: string; description: string; category: string; tags: [string,string]; status: "ready" | "development"; color: string };
@@ -303,6 +304,7 @@ function ToolModal({info,onClose,onConfirm,organizationId,memberId}:{info:Dialog
   const title=info.type==="download"?"下载商品采集插件":info.type==="disable"?"确认停用工具":info.type==="launch"?info.name:info.name;
   if(isAcquisition&&info.type==="download")return <AcquisitionSimulator mode="local" onClose={onClose} organizationId={organizationId} memberId={memberId}/>;
   if(isAcquisition&&info.type==="launch")return <FigmaOnlineCollection onClose={onClose} organizationId={organizationId} memberId={memberId}/>;
+  if(info.type==="launch"&&info.name==="POD素材管理工具")return <PodManagementWorkspace onClose={onClose}/>;
   return <dialog ref={ref} className={`${styles.dialog} ${info.type==="launch"?styles.launchDialog:""} ${info.type==="launch"&&(info.name==="POD素材管理工具"||info.name==="自有商品刊登工具")?styles.figmaToolDialog:""}`} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><h2 id={id}>{title}</h2><button type="button" onClick={onClose} aria-label="关闭弹窗">×</button></header>
     {info.type==="download"?<>
