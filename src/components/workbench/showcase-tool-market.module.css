@@ -546,7 +546,9 @@
 /* Figma 1905:389 — online collection source picker, then 1897:380 / 1905:359. */
 .dialog.figmaAcquisitionDialog { width:min(920px,calc(100vw - 32px)); padding:0;max-height:min(88dvh,750px); }
 .figmaSource,.figmaConfigure,.figmaDone { display:grid;gap:14px;padding:20px 24px; }
-.figmaSource { min-height:330px;box-sizing:border-box;align-content:start;gap:12px; }
+.figmaSource { min-height:min(460px,78dvh);box-sizing:border-box;align-content:start;gap:16px; }
+.figmaSource footer {align-self:end;margin-top:auto}
+
 .figmaSourceTitle {display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
 .figmaAcquisitionDialog .figmaSourceTitle h2 {font-size:20px;line-height:28px;margin:0;min-width:0}
 .figmaSourceTitle>span {flex:none;border:1px solid #6655b6;border-radius:16px;background:#34314f;color:#c8beff;font-size:13px;padding:3px 9px}
@@ -561,13 +563,14 @@
 .figmaAcquisitionDialog footer {display:flex;justify-content:flex-end;gap:9px;margin-top:2px;padding:12px 0 0;border-top:1px solid #555a73}
 .figmaSource footer {border:0;padding:0;margin:0}
 .figmaAcquisitionDialog footer button {min-width:94px;min-height:40px;border-radius:8px}
-.figmaConfigure {gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:start}
+.figmaConfigure {min-height:min(610px,80dvh);box-sizing:border-box;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:start;align-content:space-between}
 .figmaConfigure > .figmaSourceTitle,.figmaConfigure > p,.figmaConfigure > .figmaBill,.figmaConfigure > .figmaDemoCaption,.figmaConfigure > .acquisitionError,.figmaConfigure > footer {grid-column:1 / -1}
 .figmaConfigure > .figmaConfigGroup,.figmaConfigure > .figmaInputGroup {min-width:0;height:100%;box-sizing:border-box}
 .figmaConfigure > .figmaAfter,.figmaConfigure > .figmaRules {min-width:0;align-self:stretch}
 .figmaConfigure > .figmaRules {align-items:center;margin-top:0;padding:12px 14px;border:1px solid #555a73;border-radius:9px}
 @media(max-width:800px) {
-  .figmaConfigure {grid-template-columns:minmax(0,1fr)}
+  .figmaConfigure {min-height:0;grid-template-columns:minmax(0,1fr);align-content:start}
+  .figmaSource {min-height:0}
   .figmaConfigure > .figmaSourceTitle,.figmaConfigure > p,.figmaConfigure > .figmaBill,.figmaConfigure > .figmaDemoCaption,.figmaConfigure > .acquisitionError,.figmaConfigure > footer {grid-column:auto}
   .figmaConfigure > .figmaConfigGroup,.figmaConfigure > .figmaInputGroup {height:auto}
 }
