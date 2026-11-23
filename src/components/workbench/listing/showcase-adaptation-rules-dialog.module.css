@@ -66,3 +66,30 @@
 .footer .primary{background:#7367f0;border-color:#7367f0;color:#fff;font-weight:600}
 @media(max-width:760px){.dialog{max-height:calc(100dvh - 16px);width:calc(100vw - 16px)}.workspace{grid-template-columns:1fr;overflow-y:auto}.sidebar{border-right:0;border-bottom:1px solid var(--rule-line);min-height:220px;max-height:290px}.editor{overflow:visible}.header{padding:13px 14px}.scope{padding:9px 14px}.footer{padding:12px 14px}.footer span{display:none}}
 @media(max-width:480px){.options{grid-template-columns:1fr}.pair{grid-template-columns:1fr}.editor{padding:12px}.panelTitle button{white-space:normal}}
+
+/* Figma adaptation popup: three SKU modes, four price modes, inline AI scope, brand controls. */
+.dialog{width:min(1060px,calc(100vw - 24px));max-height:min(94dvh,880px)}
+.workspace{grid-template-columns:minmax(240px,300px) minmax(0,1fr)}
+.editor{gap:10px}
+.block{gap:9px;padding:12px 13px}
+.block:has(.priceInput) .options{grid-template-columns:repeat(4,minmax(0,1fr))}
+.block:has(.pair) .options,.block:first-of-type .options{grid-template-columns:repeat(3,minmax(0,1fr))}
+.options label{justify-content:center;text-align:center;min-width:0;gap:5px;padding:7px 6px;font-size:12px}
+.options label:has(input:checked){color:#85c4ff;border-color:#2690df;background:color-mix(in srgb,#1876ce 18%,var(--rule-panel))}
+.inlineSetting{display:flex;align-items:center;flex-wrap:wrap;gap:9px;min-height:38px;padding:7px 0;border-bottom:1px solid var(--rule-line)}
+.inlineSetting>strong{font-size:13px;white-space:nowrap}
+.inlineSetting>span{color:var(--rule-muted);font-size:12px;flex:1;min-width:180px}
+.inlineSetting>button:last-child{margin-left:auto;min-width:75px;border-color:#2688cc;color:#8dcaff}
+.scopeChoices{display:flex;align-items:center;gap:5px;flex:1;min-width:0;flex-wrap:wrap}
+.scopeChoices button{font-size:12px;min-height:32px;white-space:nowrap;padding:6px 8px}
+.scopeChoices button.chosen,.brandActions button.chosen,.inlineSetting button.onButton{border-color:#2688cc;color:#88c7ff;background:color-mix(in srgb,#1876ce 16%,var(--rule-panel))}
+.brandRow{display:grid;grid-template-columns:minmax(130px,1fr) auto;align-items:center;gap:9px}
+.brandRow>div:first-child{display:grid;gap:3px}
+.brandRow strong{font-size:13px}
+.brandRow small{font-size:11px;color:var(--rule-muted)}
+.brandActions{display:flex;gap:6px;flex-wrap:wrap}
+.brandActions button{min-height:34px;font-size:12px;padding:6px 10px}
+.brandRow>input{grid-column:1/-1;min-height:38px;border:1px solid var(--rule-line);background:var(--rule-bg);border-radius:7px;padding:8px;color:var(--rule-text)}
+.inlineRename{border:0!important;padding:0!important;background:transparent!important;color:#79bfff!important;min-height:22px}
+@media(max-width:900px){.block:has(.priceInput) .options{grid-template-columns:repeat(2,minmax(0,1fr))}.brandRow{grid-template-columns:1fr}}
+@media(max-width:600px){.block:first-of-type .options,.block:has(.pair) .options{grid-template-columns:1fr}.block:has(.priceInput) .options{grid-template-columns:1fr}.scopeChoices{flex-basis:100%}.inlineSetting>button:last-child{margin-left:0}}
