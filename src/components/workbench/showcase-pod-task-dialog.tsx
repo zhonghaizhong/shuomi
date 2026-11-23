@@ -7,10 +7,10 @@ type Source="我的选品"|"自有商品";
 type TaskStore={id:string;name:string;region:string;platformStoreId?:string;serviceExpiresAt?:string};
 // Figma sample rows: preview-only, not actual product data or connected inventory.
 const figmaExamples=[{id:"POD-T001",name:"女士基础款圆领T恤",category:"服饰"},{id:"POD-H008",name:"女士宽松连帽卫衣",category:"服饰"},{id:"POD-B016",name:"纯棉帆布购物袋",category:"配件"},{id:"POD-T023",name:"女士短款休闲上衣",category:"服饰"}];
-export function ShowcasePODTaskDialog({onClose,onTemplate}:{onClose:()=>void;onTemplate:()=>void}){
+export function ShowcasePODTaskDialog({onClose,onTemplate,organizationId,memberId,administrator}:{onClose:()=>void;onTemplate:()=>void;organizationId:string;memberId:string;administrator:boolean}){
  const ref=useRef<HTMLDialogElement>(null);
  const id=useId();
- const [stores]=useState<TaskStore[]>(()=>typeof window==="undefined"?[]:readDemoStoreBindings("SM-ENT-000001").filter(s=>!s.archived&&!!s.platformStoreId&&demoStoreServiceActive(s)).map(s=>({id:s.id,name:s.name,region:s.region,platformStoreId:s.platformStoreId,serviceExpiresAt:s.serviceExpiresAt})));
+ const [stores]=useState<TaskStore[]>(()=>typeof window==="undefined"?[]:readDemoStoreBindings(organizationId).filter(s=>!s.archived&&!!s.platformStoreId&&demoStoreServiceActive(s)&&(administrator||s.ownerMemberId===memberId)).map(s=>({id:s.id,name:s.name,region:s.region,platformStoreId:s.platformStoreId,serviceExpiresAt:s.serviceExpiresAt})));
  const [region,setRegion]=useState("");
  const [storeId,setStoreId]=useState("");
  const [source,setSource]=useState<Source>("我的选品");
