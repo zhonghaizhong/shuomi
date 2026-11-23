@@ -4,7 +4,7 @@
 export type OwnProductSku={id:number;name:string;description:string;images:string[]};
 export type OwnProductRecord={
  id:string;batchId:string;name:string;source:"上传资料"|"导入表格"|"商品链接"|"API 接入";
- createdAt:string;checkedAt:string;status:"待补全"|"待上传";
+ createdAt:string;checkedAt:string;status:"入库待完善"|"已入库";
  missing:string[];skus:OwnProductSku[];agent:string;template:string;
 };
 export type OwnProductBatch={id:string;name:string;createdAt:string;productCount:number};
@@ -16,7 +16,7 @@ export function readOwnProductBatches(org:string,member:string):OwnProductBatch[
  return readArray(batchKey(org,member)).filter((p):p is OwnProductBatch=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"name"in p&&typeof p.name==="string"&&"createdAt"in p&&typeof p.createdAt==="string")).map(p=>({...p,productCount:readOwnProducts(org,member).filter(x=>x.batchId===p.id).length}));
 }
 export function readOwnProducts(org:string,member:string):OwnProductRecord[]{
- return readArray(productKey(org,member)).filter((p):p is OwnProductRecord=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"batchId"in p&&typeof p.batchId==="string"&&"skus"in p&&Array.isArray(p.skus)));
+ return readArray(productKey(org,member)).filter((p):p is OwnProductRecord=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"batchId"in p&&typeof p.batchId==="string"&&"skus"in p&&Array.isArray(p.skus))).map(p=>({...p,status:p.status==="入库待完善"?"入库待完善":p.status==="已入库"?"已入库":p.status}));
 }
 function notify(org:string,member:string){window.dispatchEvent(new CustomEvent(ownProductUpdated,{detail:{organizationId:org,memberId:member}}))}
 export function createOwnProductBatch(org:string,member:string,name:string):OwnProductBatch{
@@ -41,7 +41,7 @@ export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omi
  notify(org,member);return product;
 }
 
-/** Review intake without exposing incomplete products to the usable library. */
+/** First-stage Shuomi intake: incomplete drafts stay inside the tool, never in third-party listing 待补全. */
 export function listOwnPendingProducts(org:string,member:string):OwnProductRecord[]{
  return readOwnProducts(org,member).filter(p=>p.status==="待补全");
 }
@@ -66,7 +66,7 @@ export function updateOwnProductAfterReview(org:string,member:string,id:string,s
  if(!skus.length)throw Error("至少需要一个 SKU");
  const missing=checkOwnProductSkus(skus);
  const checkedAt=new Date().toLocaleString("zh-CN",{hour12:false});
- const updated:OwnProductRecord={...existing,skus,missing,checkedAt,status:missing.length?"待补全":"待上传",name:skus[0].name.trim()||existing.name};
+ const updated:OwnProductRecord={...existing,skus,missing,checkedAt,status:missing.length?"入库待完善":"已入库",name:skus[0].name.trim()||existing.name};
  sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===id?updated:p)));
  notify(org,member);
  return updated;
