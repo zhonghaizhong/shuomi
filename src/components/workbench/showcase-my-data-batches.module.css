@@ -320,3 +320,38 @@
 .wrapper .rowMenu button{min-height:34px;padding:9px 12px;white-space:nowrap;color:var(--md-ink)}
 .wrapper .rowMenu button:hover{background:color-mix(in srgb,#7367f0 12%,var(--md-panel))}
 .wrapper .rowMenu .deleteAction{color:#ea5455}
+
+/* Version expansion sits directly below the source batch row; unchanged table columns. */
+.batchRowActions{display:flex;align-items:center;gap:7px;justify-content:flex-start;white-space:nowrap}
+.batchRowActions>.expandVersions{min-height:32px;padding:6px 10px;border:1px solid var(--md-line);background:var(--md-input);border-radius:7px;font-size:12px;white-space:nowrap;color:var(--md-primary)}
+.batchRowActions>.expandVersions[aria-expanded=true]{border-color:var(--md-primary);background:color-mix(in srgb,var(--md-primary) 10%,var(--md-bg));font-weight:700}
+.versionExpandedRow>td{padding:0!important;background:var(--md-inner)!important;border-bottom:1px solid var(--md-line)!important}
+.versionExpanded{display:grid;gap:10px;margin:12px 15px 14px;padding:13px 15px;border:1px solid var(--md-line);border-radius:9px;background:var(--md-bg)}
+.versionExpandedHeader{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.versionExpandedHeader strong{font-size:14px;color:var(--md-ink);padding-left:10px;border-left:3px solid var(--md-primary)}
+.versionExpandedHeader span{font-size:12px;color:var(--md-muted)}
+.versionItems{display:grid;gap:7px}
+.versionItem{display:grid;grid-template-columns:minmax(220px,1fr) 100px minmax(235px,auto);align-items:center;gap:15px;min-height:58px;padding:10px 13px;border:1px solid var(--md-line);border-radius:8px;background:var(--md-panel)}
+.versionItem[data-version-archived=true]{opacity:.73}
+.versionInfo{display:grid;gap:4px;min-width:0}
+.versionInfo strong{font-size:13px;color:var(--md-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.versionInfo small{font-size:12px;color:var(--md-muted)}
+.versionTag{justify-self:start;border:1px solid var(--md-line);background:var(--md-inner);border-radius:5px;font-size:11px;color:var(--md-muted);padding:5px 8px;white-space:nowrap}
+.versionActions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.versionActions button{background:var(--md-input);border:1px solid var(--md-line);border-radius:7px;min-height:32px;padding:6px 10px;font-size:12px;color:var(--md-ink);cursor:pointer;white-space:nowrap}
+.versionActions button:hover{border-color:var(--md-primary)}
+.versionProductDialog{--vp-bg:var(--md-bg);width:min(1050px,calc(100vw - 32px));max-height:min(88dvh,850px);min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--vp-bg);color:var(--md-ink);border:1px solid var(--md-line);border-radius:12px;box-shadow:0 20px 60px #0005}
+.versionProductDialog header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid var(--md-line)}
+.versionProductDialog header h2{font-size:18px;margin:0 0 5px;border-left:3px solid var(--md-primary);padding-left:10px}
+.versionProductDialog header p,.versionHint{font-size:12px;line-height:1.5;color:var(--md-muted);margin:0}
+.versionProductDialog header button,.versionProductDialog footer button{min-height:37px;padding:8px 14px;white-space:nowrap;border:1px solid var(--md-line);border-radius:7px;background:var(--md-input);color:var(--md-ink);cursor:pointer}
+.versionProductDialog>.versionHint{padding:12px 20px}
+.versionProductScroll{min-height:0;overflow:auto;flex:1;padding:0 20px 12px}
+.versionProductScroll table{width:100%;border-collapse:collapse;min-width:760px}
+.versionProductScroll th{background:var(--md-inner);padding:12px;text-align:left;font-size:12px;color:var(--md-muted);border:1px solid var(--md-line)}
+.versionProductScroll td{padding:12px;font-size:12px;vertical-align:top;border-bottom:1px solid var(--md-line);max-width:280px;overflow-wrap:anywhere}
+.versionProductScroll td a{color:var(--md-primary);margin:0 5px 5px 0;display:inline-block}
+.versionProductDialog footer{display:flex;justify-content:flex-end;align-items:center;gap:9px;padding:12px 20px;border-top:1px solid var(--md-line)}
+.versionProductDialog footer span{margin-right:auto;font-size:12px;color:var(--md-muted)}
+@media(max-width:960px){.versionItem{grid-template-columns:minmax(150px,1fr) 95px}.versionActions{grid-column:1/-1;justify-content:flex-start}}
+@media(max-width:600px){.versionExpanded{padding:10px;margin:8px}.versionItem{grid-template-columns:1fr;gap:8px}.versionActions{grid-column:auto}.versionProductDialog header,.versionProductDialog footer{padding:12px}.versionProductDialog footer span{display:none}}
