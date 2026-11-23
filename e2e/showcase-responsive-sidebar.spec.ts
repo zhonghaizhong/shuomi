@@ -184,7 +184,10 @@ test("listing four-stage Figma flow has distinct functional screens",async({page
  await expect(waiting.getByRole("heading",{name:"启用规则"})).toBeVisible();
  await expect(waiting.getByRole("heading",{name:"智能体（按需）"})).toBeVisible();
  await expect(waiting.getByRole("button",{name:"直接上传到平台"})).toBeDisabled();
- await expect(waiting.getByLabel("本次批次 / 产品集")).toHaveValue("");
+ await expect(waiting.getByRole("combobox",{name:"商品来源"})).toHaveValue("采集批次");
+ await waiting.getByRole("button",{name:"选择商品批次与版本"}).click();
+ await expect(page.getByRole("dialog",{name:"选择商品批次与版本"})).toBeVisible();
+ await page.getByRole("button",{name:"关闭批次选择"}).click();
  await expect(waiting.getByRole("button",{name:"确认目标店铺"})).toBeVisible();
  await expect(waiting.getByRole("button",{name:"直接上传到平台"})).toBeDisabled();
  // The waiting screen deliberately keeps stage navigation hidden until a task exists.
