@@ -456,3 +456,88 @@
 :global(.light) .acquisitionDialog .acquisitionSuccess {background:#e2f6e9;color:#14764d}
 :global(.light) .acquisitionDialog .acquisitionError {color:#a6263c}
 @media(max-width:560px) {.acquisitionFields{grid-template-columns:1fr}.acquisitionInstall{align-items:stretch;flex-direction:column}}
+
+
+/* Center top-layer native dialogs with inset/margin, not transformed page coordinates. */
+.dialog.launchDialog,
+.dialog.acquisitionDialog {
+  position: fixed;
+  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: auto;
+  transform: none;
+  width: min(650px, calc(100vw - 32px));
+  max-height: min(85dvh, 740px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 24px;
+}
+.dialog.acquisitionDialog {
+  max-width: 650px;
+}
+.acquisitionFigmaSummary {
+  display: grid;
+  gap: 11px;
+  margin-top: 16px;
+  padding: 15px 16px;
+  border: 1px solid #555a73;
+  border-radius: 8px;
+  background: #393d55;
+}
+.acquisitionDialog .acquisitionFigmaSummary p {
+  color: #e3dfef;
+  font-size: 14px;
+  line-height: 22px;
+  margin: 0;
+}
+.acquisitionFigmaSummary > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 0;
+  border-top: 1px solid #555a73;
+  border-bottom: 1px solid #555a73;
+  font-size: 14px;
+}
+.acquisitionFigmaSummary span {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid #7367f0;
+  color: #c7bdff;
+  font-size: 13px;
+}
+.acquisitionFigmaSummary strong { color: #d2caff; }
+.acquisitionFormTitle {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 24px;
+}
+.acquisitionFormTitle span {
+  border: 1px solid #7367f0;
+  border-radius: 5px;
+  padding: 1px 7px;
+  color: #c7bdff;
+  font-size: 12px;
+  font-weight: 500;
+}
+:global(.light) .acquisitionFigmaSummary {
+  background: #f8f7fa;
+  border-color: #dedbea;
+}
+:global(.light) .acquisitionDialog .acquisitionFigmaSummary p { color: #444050; }
+:global(.light) .acquisitionFigmaSummary > div { border-color: #dedbea; }
+:global(.light) .acquisitionFigmaSummary span,
+:global(.light) .acquisitionFigmaSummary strong,
+:global(.light) .acquisitionFormTitle span { color: #6556d3; }
+@media (max-width: 560px) {
+ .dialog.launchDialog,.dialog.acquisitionDialog { padding: 18px; }
+}
