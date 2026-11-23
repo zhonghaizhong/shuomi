@@ -59,7 +59,8 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const selectableProducts=selectedOwnBatch?ownProducts.filter(p=>p.batchId===selectedOwnBatch.id):[];
  const selectedProductIds=selectedCollectedBatch?selectedCollectedBatch.products.map(p=>p.id):selectableProducts.map(p=>p.id);
  const selectedCount=selectedProductIds.length;
- const missingCount=selectableProducts.filter(p=>p.status==="待补全"||p.missing.length>0).length;
+ // First-stage intake is already complete; third-party missing fields are evaluated separately by the platform adapter.
+ const missingCount=0;
  const savedTasks=useMemo(()=>readShowcaseUploadTasks(organizationId,memberId),[organizationId,memberId,taskVersion]);
  const taskItems:Item[]=savedTasks.filter(task=>stage==="missing"?task.status==="待补全":task.status==="待审核").flatMap(task=>task.productIds.map((id,i)=>({sku:id+" · "+task.id.slice(-8),name:task.batchName+(task.productCount>1?` · 商品 ${i+1}`:""),source:task.source,store:task.storeName,status:task.status,missing:task.status==="待补全"?["商品必填资料"]:[],ai:Boolean(task.agentId)})));
  const [reviewChecked,setReviewChecked]=useState(false),[reviewMode,setReviewMode]=useState<"compare"|"edit">("compare");
