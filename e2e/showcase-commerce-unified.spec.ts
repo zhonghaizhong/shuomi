@@ -47,7 +47,9 @@ test("store filtering and member invitations are operational",async({page})=>{
  const stores=page.locator("[data-store-center-showcase]");
  await expect(stores).toBeVisible();
  await expect(stores.getByLabel("平台筛选")).toBeVisible();
- await expect(stores.getByLabel("店铺分组筛选")).toBeVisible();
+ await expect(stores.getByLabel("站点筛选")).toBeVisible();
+ await expect(stores.getByLabel("店铺类型筛选")).toBeVisible();
+ await expect(stores.getByLabel("店铺分组筛选")).toHaveCount(0);
  await page.goto(root+"/account/organization/members");
  const suite=page.locator("[data-account-suite]");
  await suite.getByRole("button",{name:"邀请成员"}).click();
