@@ -160,3 +160,13 @@
 .root .stats>button[data-task-metric]>.statIcon{width:52px;height:52px;border-radius:9px}
 @container(max-width:1050px){.root .stats>button[data-task-metric]{padding:14px 12px;gap:8px;min-height:100px}.root .stats>button[data-task-metric]>.statInfo{gap:8px}.root .stats>button[data-task-metric]>.statInfo>strong{font-size:14px}.root .stats>button[data-task-metric]>.statInfo>.statValue,:global(.light) .root .stats>button[data-task-metric]>.statInfo>.statValue{font-size:30px}.root .stats>button[data-task-metric]>.statIcon{width:40px;height:40px}.root .stats>button[data-task-metric]>.statIcon svg{width:22px;height:22px}}
 @container(max-width:380px){.root .stats>button[data-task-metric]{padding:10px;gap:5px}.root .stats>button[data-task-metric]>.statIcon{width:32px;height:32px}.root .stats>button[data-task-metric]>.statIcon svg{width:18px;height:18px}}
+
+/* Task-center semantic dark/light surfaces; do not alter task actions or status colors. */
+.root{--task-surface:#142237;--task-raised:#18283c;--task-line:#31465e;--task-text:#edf4ff;--task-muted:#b5c6d8;--task-link:#a99dff;--task-row-alt:#18283c}
+:global(.light) .root{--task-surface:#fff;--task-raised:#f7fafd;--task-line:#dfe7ef;--task-text:#263648;--task-muted:#64768a;--task-link:#7367f0;--task-row-alt:#f7fafd}
+.root :is(.metrics>div,.notice,.empty,.modal){background:var(--task-surface);border-color:var(--task-line);color:var(--task-text)}
+.root :is(.modal .summary,.modal button:not(.primary),.searchInput select){background:var(--task-raised);border-color:var(--task-line);color:var(--task-text)}
+.root .taskRow:nth-of-type(odd){background:var(--task-surface)}
+.root .taskRow:nth-of-type(even){background:var(--task-row-alt)}
+.root .stats>button[data-task-metric]{background:var(--task-surface);border-color:var(--task-line)}
+:global(.light) .root .stats>button[data-task-metric]{background:var(--task-surface);border-color:var(--task-line)}
