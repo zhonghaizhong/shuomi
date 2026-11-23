@@ -580,3 +580,24 @@ it("loads earlier progress without losing current detail or its write revision",
   await screen.findByText("当前身份没有操作权限。");
   expect(screen.queryByText("进度记录 100")).not.toBeInTheDocument();
 });
+
+
+it("renders product acquisition content and both collection paths as specified by Figma 1168:375", async () => {
+  const activation = {
+    toolId: tool.id, enabled: true, revision: "2", updatedAt: "2026-10-09T00:00:00Z",
+  };
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json({
+    tools: [{ ...tool, activation }], canManage: true, canCustomize: true,
+  })));
+  mount("mine");
+  await screen.findByRole("heading", { name: "商品采集插件" });
+  expect(screen.getByText("采集商品的标题、主图、规格与价格等信息；结果统一保存到「数据服务 / 我的数据」。")).toBeInTheDocument();
+  expect(screen.getByText("安装在客户电脑本地运行，浏览商品时通过浏览器插件直接采集。")).toBeInTheDocument();
+  expect(screen.getByText("由平台云端执行，无需客户电脑持续运行即可完成在线采集。")).toBeInTheDocument();
+  expect(screen.getByText("采集结果统一保存至「数据服务 / 我的数据」")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "下载插件" })).toBeEnabled();
+  expect(screen.getByRole("link", { name: "在线采集" })).toHaveAttribute("href", "/workbench/supply/acquisition");
+  expect(screen.getByRole("heading", { name: "采集方式说明" })).toBeInTheDocument();
+  expect(screen.getByText("费用：免费，不消耗数据额度")).toBeInTheDocument();
+  expect(screen.getByText("费用：按实际采集数据条数扣除额度")).toBeInTheDocument();
+});
