@@ -274,3 +274,22 @@
     max-height: calc(100svh - 24px);
   }
 }
+
+
+/* Unified Vuexy store-product presentation, light and dark via shared tokens. */
+.metrics{gap:16px}
+.metric,.table,.progress,.notice,.sku{border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:0 6px 24px var(--shadow-color)}
+.metric{min-height:116px;align-content:center}
+.metric strong{font-weight:700;font-variant-numeric:tabular-nums}
+.table{border-radius:12px}
+.table thead th{background:var(--secondary);color:var(--foreground);font-weight:650}
+.table tbody tr:nth-child(even){background:color-mix(in srgb,var(--secondary) 45%,var(--card))}
+.table tbody tr:hover{background:color-mix(in srgb,var(--primary) 6%,var(--card))}
+.table th,.table td{border-color:var(--border)}
+.search :is(input,select){min-height:42px;border-radius:8px;color:var(--foreground);background:var(--card)}
+.pagination{min-height:46px}
+.pagination button{min-height:36px;border-radius:8px}
+.dialog{border-radius:14px;box-shadow:0 22px 70px var(--shadow-color)}
+.dialog h2,.progress h2{border-left:3px solid #7367f0;padding-left:12px}
+.dialog :is(input,button,select):focus-visible{outline:2px solid #7367f0;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.table tbody tr{transition:none}}
