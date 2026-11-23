@@ -312,3 +312,29 @@ test("account left sidebar only shows three second-level entries while right-sid
  await expect(page).toHaveURL(/account\/referrals\/earnings/);
  await expect(sidebar.getByRole("link",{name:"推广与收益",exact:true})).toHaveAttribute("aria-current","page");
 });
+
+
+test("data API call log retains seven aligned columns in both themes",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(entry+"/data/api");
+ const table=page.getByRole("table",{name:"最近 API 调用记录"});
+ await expect(table).toBeVisible();
+ await expect(table.locator("thead th")).toHaveCount(7);
+ await expect(table.locator("tbody tr")).toHaveCount(3);
+ const alignments=await table.locator("tbody tr:first-child td").evaluateAll(cells=>cells.map(c=>getComputedStyle(c).textAlign));
+ expect(alignments.slice(3,6)).toEqual(["right","right","right"]);
+ const firstHeader=table.locator("thead th").first();
+ const firstCell=table.locator("tbody tr").first().locator("td").first();
+ const lefts=await Promise.all([firstHeader,firstCell].map(el=>el.evaluate(node=>node.getBoundingClientRect().left)));
+ expect(Math.abs(lefts[0]-lefts[1])).toBeLessThan(2);
+ const lightToggle=page.getByRole("button",{name:"切换浅色主题"});
+ if(await lightToggle.isVisible())await lightToggle.click();
+ await expect(table).toBeVisible();
+ const lightBackground=await table.locator("tbody tr").first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ expect(lightBackground).not.toBe("rgb(24, 40, 60)");
+ await page.setViewportSize({width:390,height:844});
+ await expect(table).toBeVisible();
+ const scroller=page.locator('[data-commerce-unified="data"]').locator('[class*="apiLogScroll"]');
+ const scrollable=await scroller.evaluate(el=>el.scrollWidth>el.clientWidth);
+ expect(scrollable).toBe(true);
+});
