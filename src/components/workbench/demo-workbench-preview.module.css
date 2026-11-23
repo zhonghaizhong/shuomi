@@ -3867,3 +3867,51 @@
 :global(.light) .page[data-commerce-unified="account"] .accountModules>div>article[data-step="0"] footer b{
  color:#168548;
 }
+
+
+/* Data Services showcase home — consistent premium Vuexy dark/light surfaces. */
+.page[data-commerce-unified="data"]{
+ --ds-surface:#18283c;--ds-raised:#142237;--ds-line:#344960;
+ --ds-text:#edf4ff;--ds-muted:#b3c3d5;--ds-purple:#7367f0;
+}
+:global(.light) .page[data-commerce-unified="data"]{
+ --ds-surface:#fff;--ds-raised:#f7fafd;--ds-line:#e0e7f0;
+ --ds-text:#303546;--ds-muted:#657184;--ds-purple:#7367f0;
+}
+.page[data-commerce-unified="data"]>.header{
+ background:var(--ds-surface);border:1px solid var(--ds-line);
+ border-radius:6px;box-shadow:0 5px 20px rgba(6,20,42,.07);
+}
+.page[data-commerce-unified="data"]>.header h1{
+ color:var(--ds-text);border-left:3px solid var(--ds-purple);
+ padding-left:12px;
+}
+.page[data-commerce-unified="data"]>.header :is(.breadcrumb,p){color:var(--ds-muted)}
+.page[data-commerce-unified="data"] .dataCard,
+.page[data-commerce-unified="data"] .dataSteps article,
+.page[data-commerce-unified="data"] .dataDetails article{
+ border:1px solid var(--ds-line);background:var(--ds-surface);
+ border-radius:11px;box-shadow:0 7px 22px rgba(7,22,41,.08);
+}
+.page[data-commerce-unified="data"] .dataCard{box-shadow:inset 3px 0 0 var(--accent),0 7px 22px rgba(7,22,41,.08)}
+.page[data-commerce-unified="data"] .dataCard h2{color:var(--ds-text)}
+.page[data-commerce-unified="data"] .dataCard p,
+.page[data-commerce-unified="data"] .dataCard div span,
+.page[data-commerce-unified="data"] .dataSteps article p,
+.page[data-commerce-unified="data"] .dataSteps>header p,
+.page[data-commerce-unified="data"] .dataDetails article p{color:var(--ds-muted)}
+.page[data-commerce-unified="data"] .dataSteps h2,
+.page[data-commerce-unified="data"] .dataDetails h3{
+ color:var(--ds-text);border-left:3px solid var(--ds-purple);padding-left:11px
+}
+.page[data-commerce-unified="data"] .dataSteps article strong{color:var(--ds-text)}
+.page[data-commerce-unified="data"] .dataCard button{
+ min-height:38px;border:1px solid var(--ds-line);border-radius:9px;
+ background:var(--ds-raised);color:var(--ds-text)
+}
+.page[data-commerce-unified="data"] .dataCard button:hover{border-color:var(--ds-purple);background:color-mix(in srgb,var(--ds-purple) 9%,var(--ds-raised))}
+.page[data-commerce-unified="data"] :is(button,a):focus-visible{outline:2px solid var(--ds-purple);outline-offset:2px}
+@media(hover:hover){
+ .page[data-commerce-unified="data"] .dataCard:hover{border-color:color-mix(in srgb,var(--ds-purple) 35%,var(--ds-line));box-shadow:inset 3px 0 var(--accent),0 12px 30px rgba(7,22,41,.14)}
+}
+@media(max-width:720px){.page[data-commerce-unified="data"]>.header h1{white-space:normal}}
