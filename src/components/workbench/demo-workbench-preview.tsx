@@ -202,7 +202,7 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
 
   if (pathname.startsWith("/workbench/agents/custom")) return <ShowcaseAgentCustomization pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/tools") return <ShowcaseToolHome navigate={router.push} />;
-  if (pathname === "/workbench/tools/official" || pathname === "/workbench/tools/mine") return <ShowcaseToolMarket pathname={pathname} navigate={router.push} />;
+  if (pathname === "/workbench/tools/official" || pathname === "/workbench/tools/mine") return <ShowcaseToolMarket key={organizationId+"::"+memberId+"::"+pathname} pathname={pathname} navigate={router.push} organizationId={organizationId} memberId={memberId} />;
   if (pathname.startsWith("/workbench/tools/custom")) return <ShowcaseToolCustomization pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/services" || pathname === "/workbench/services/market" || pathname === "/workbench/services/mine" || pathname === "/workbench/services/join") return <ShowcaseEcologyServices pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/listing") return <ListingOverview navigate={href=>router.push(`${href}?preview=1`)} />;
