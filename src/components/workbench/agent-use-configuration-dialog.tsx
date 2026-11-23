@@ -186,7 +186,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
      <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>3</span><div><strong>配置对象</strong><small>选择主图 / 详情图</small></div></div><div className={css.optimizerChoices}>
       {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={sharedVisual||productTarget===name} onClick={()=>{set("imageTarget",name);setMessage("");}}><strong>{name}</strong><small>配置{name}优化任务</small></button>)}
      </div></section>
-     {(form.imageUse??"共用视觉素材")==="共用视觉素材"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>4</span><div><strong>共用来源</strong><small>选择复用来源</small></div></div><div className={css.optimizerChoices}>
+     {sharedVisual&&optimizationSource!=="自定义指令"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>4</span><div><strong>共用来源</strong><small>选择复用来源</small></div></div><div className={css.optimizerChoices}>
       {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={(form.sharedImageSource??"主图")===name} onClick={()=>{const selected=name==="主图"?mainImgs:detailImgs;setMainImgs(selected);setDetailImgs(selected);set("sharedImageSource",name);}}><strong>以{name}为准</strong><small>主图、详情图复用{name}侧配置</small></button>)}
      </div></section>:null}
      {optimizationSource==="引用技能"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><div className={css.optimizerNoNumber}><strong>图片处理范围</strong><small>选择处理范围</small></div></div><div className={css.optimizerChoices}>
