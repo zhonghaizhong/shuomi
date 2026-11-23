@@ -88,3 +88,26 @@
 :global(.light) .subDialog header small,:global(.light) .modalBody p{color:#777285}
 @media(max-width:980px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.filters{gap:8px}.filters select{flex-basis:160px;width:160px!important;min-width:160px}}
 @media(max-width:700px){.dialog{width:calc(100vw - 16px);max-height:94dvh}.header,.tabs,.content,.foot{padding-left:12px;padding-right:12px}.tabs{gap:6px}.tabs button{padding:10px 8px}.tabs button strong{font-size:12px}.tabs button small{font-size:10px}.content{min-height:0}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.filters{gap:7px;padding:8px}.filters input{min-width:170px}.filters select{flex-basis:140px;width:140px!important;min-width:140px}.filters button{min-width:65px}.topline{align-items:flex-start}.foot span{max-width:70%}}
+
+/* POD assets: explicit dark/light tokens for top-layer and sub-dialogs. */
+.dialog,.subDialog{
+ --podassets-bg:#142237;--podassets-card:#18283c;--podassets-line:#31465e;
+ --podassets-ink:#edf4ff;--podassets-muted:#b5c6d8;
+ background:var(--podassets-bg);color:var(--podassets-ink);border-color:var(--podassets-line);
+}
+:global(.light) .dialog,:global(.light) .subDialog{
+ --podassets-bg:#fff;--podassets-card:#f7fafd;--podassets-line:#dfe7ef;
+ --podassets-ink:#263648;--podassets-muted:#64768a;
+ background:var(--podassets-bg);color:var(--podassets-ink);border-color:var(--podassets-line);
+}
+.dialog :is(.header,.tabs,.filters,.foot),.subDialog>header{background:var(--podassets-bg);border-color:var(--podassets-line)}
+.dialog :is(.tabs button,.assetCard,.filters input,.notice,.empty),.subDialog :is(.categoryList>div,.modalBody input,.modalBody select,.modalBody textarea){
+ background:var(--podassets-card);border-color:var(--podassets-line);color:var(--podassets-ink);
+}
+.dialog :is(input,select,textarea){background:var(--podassets-card);color:var(--podassets-ink);border-color:var(--podassets-line)}
+.dialog :is(.header p,.header small,.tabs button small,.topline small,.libraryHint,.assetCard>small),.subDialog :is(header small,.modalBody p){color:var(--podassets-muted)}
+.dialog :is(.close,.topactions button,.filters button,.pagination button,.cardActions button,.foot button),.subDialog button:not(.primary){
+ background:var(--podassets-card);border-color:var(--podassets-line);color:var(--podassets-ink);
+}
+.dialog .tabs .active{border-color:#7367f0;background:color-mix(in srgb,#7367f0 14%,var(--podassets-card))}
+.dialog :is(button,input,select,textarea):focus-visible,.subDialog :is(button,input,select,textarea):focus-visible{outline:2px solid #7367f0;outline-offset:2px}
