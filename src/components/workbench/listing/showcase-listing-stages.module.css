@@ -364,3 +364,39 @@
 .page[data-listing-stage="waiting"] .selectedProductVersion{display:grid;align-content:start;gap:5px;padding:11px 12px;background:var(--surface-alt);border:1px solid var(--stroke);border-radius:8px;min-width:0}
 .page[data-listing-stage="waiting"] .selectedProductVersion strong{font-size:13px;color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .page[data-listing-stage="waiting"] .selectedProductVersion span{font-size:12px;color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+
+
+/* Unified listing-management surfaces: Vuexy dark/light, without layout changes.
+   Keep local semantic status colors and the accepted primary actions. */
+.page{
+ --surface:#142237;
+ --surface-alt:#18283c;
+ --ink:#edf4ff;
+ --muted:#b5c6d8;
+ --stroke:#31465e;
+ --focus:#7367f0;
+}
+:global(.light) .page{
+ --surface:#fff;
+ --surface-alt:#f7fafd;
+ --ink:#263648;
+ --muted:#64768a;
+ --stroke:#dfe7ef;
+ --focus:#7367f0;
+}
+.page :is(.heading,.flowHeader,.configuration article,.submit,.summary article,.listPanel,.explanation){
+ background:var(--surface);
+ border-color:var(--stroke);
+ color:var(--ink);
+}
+.page :is(.configuration input:not([type=checkbox]),.configuration select,.submit select,.filters input,.filters select){
+ background:var(--surface-alt);
+ border-color:var(--stroke);
+ color:var(--ink);
+}
+.page[data-listing-stage="waiting"] :is(.flowSteps span,.uploadFact,.agentStatusRow,.ruleSelectedRow,.selectedProductVersion){
+ border-color:var(--stroke);
+}
+.page[data-listing-stage="waiting"] .configuration article p,
+.page[data-listing-stage="waiting"] .configuration article small,
+.page[data-listing-stage="waiting"] .flowHeader p{color:var(--muted)}
