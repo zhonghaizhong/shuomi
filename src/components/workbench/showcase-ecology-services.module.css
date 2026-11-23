@@ -279,3 +279,183 @@
 :global(.light) .page .homeNotes small,
 :global(.light) .page .homeNotes article:nth-child(2) small {color:#6254c8;}
 :global(.light) .page .segmentRow small {color:#625d70;}
+
+
+/* Ecology service premium dual-theme unification 2026-11-23 */
+/* All four ecology views share the same Vuexy rhythm, without altering navigation or service logic. */
+.page{
+  --eco-bg:#142237;
+  --eco-surface:#18283c;
+  --eco-raised:#1c3047;
+  --eco-line:#30465e;
+  --eco-text:#eff6ff;
+  --eco-muted:#adc1d4;
+  --eco-accent:#7367f0;
+  --eco-shadow:0 8px 26px rgba(4,12,26,.14);
+  --eco-hover-shadow:0 14px 34px rgba(4,12,26,.23);
+  color:var(--eco-text);
+  gap:18px;
+}
+:global(.light) .page{
+  --eco-bg:#fff;
+  --eco-surface:#f7fafd;
+  --eco-raised:#edf3f8;
+  --eco-line:#dce5ee;
+  --eco-text:#263747;
+  --eco-muted:#607183;
+  --eco-shadow:0 6px 24px rgba(31,52,83,.055);
+  --eco-hover-shadow:0 12px 28px rgba(31,52,83,.11);
+  color:var(--eco-text);
+}
+.page :is(.head,.segmentRow,.marketControls,.recordsPanel,.homeCard,.howto,.homeNotes article,.marketNotes article,.joinHero,.joinFlow,.joinAside,.serviceCard){
+  background:var(--eco-bg);
+  border:1px solid var(--eco-line);
+  border-radius:12px;
+  box-shadow:var(--eco-shadow);
+}
+.page>.head{
+  background:var(--eco-bg);
+  border-color:var(--eco-line);
+  border-radius:12px;
+  min-height:130px;
+  padding:20px 26px;
+}
+.page>.head h1{
+  border-left:3px solid var(--eco-accent);
+  color:var(--eco-text);
+  white-space:nowrap;
+}
+.page>.head :is(small,p),.page :is(.segmentRow small,.howto header p,.marketNotes article p,.homeNotes p,.joinStep small,.joinStep em){
+  color:var(--eco-muted);
+}
+.page :is(.howto h2,.marketNotes h2,.homeNotes h3,.segmentRow strong,.recordsPanel h2,.joinHero h2,.joinFlow h2,.joinAside h2){
+  color:var(--eco-text);
+}
+.page :is(.howto h2,.recordsPanel h2,.joinFlow h2,.joinAside h2,.marketNotes h2){
+  padding-left:11px;
+  border-left:3px solid var(--eco-accent);
+}
+.page :is(.homeCard,.serviceCard,.howtoGrid article,.joinStep,.joinInfo,.recordRow){
+  transition:box-shadow .18s ease,border-color .18s ease,background-color .18s ease;
+}
+.page :is(.howtoGrid article,.joinStep,.joinInfo,.points ul,.marketNotes span,.joinHero aside,.joinNotice){
+  background:var(--eco-surface);
+  border-color:var(--eco-line);
+  border-radius:9px;
+}
+.page .homeCard{box-shadow:inset 3px 0 var(--accent),var(--eco-shadow);min-height:190px}
+.page .serviceCard{box-shadow:inset 3px 0 var(--accent),var(--eco-shadow);min-height:276px}
+.page :is(.homeCard p,.serviceCard>p,.howtoGrid p,.homeNotes p,.joinHero p,.joinInfo p,.joinNotice p,.points li){color:var(--eco-muted)}
+.page :is(.howtoGrid h3,.joinStep strong,.joinInfo strong,.joinNotice strong,.recordRow strong){color:var(--eco-text)}
+.page :is(.cardHead span,.points ul,.marketNotes span){border-color:var(--eco-line)}
+.page .cardHead span{color:var(--eco-muted);background:var(--eco-surface);border-radius:8px}
+.page .points{border-color:var(--eco-line)}
+.page :is(.filterBar,.marketControls){border-color:var(--eco-line)}
+.page>.filterBar{background:var(--eco-bg);border-color:var(--eco-line);border-radius:12px;box-shadow:var(--eco-shadow)}
+.page .marketControls .segmentRow{box-shadow:none}
+.page .filterBar{gap:12px}
+.page .searchBox{
+  min-height:42px;
+  border-color:var(--eco-line);
+  border-radius:9px;
+  background:var(--eco-surface);
+  color:var(--eco-muted);
+}
+.page .searchBox input{color:var(--eco-text);height:42px}
+.page .searchBox input::placeholder{color:var(--eco-muted);opacity:1}
+.page .filterBar select{
+  height:44px;
+  border-color:var(--eco-line);
+  border-radius:9px;
+  background:var(--eco-surface);
+  color:var(--eco-text);
+}
+.page button:not(.primary){
+  background:var(--eco-surface);
+  border-color:var(--eco-line);
+  color:var(--eco-text);
+  border-radius:9px;
+}
+.page button:not(.primary):hover{border-color:var(--eco-accent);background:var(--eco-raised)}
+.page :is(.segments button[aria-pressed="true"]){
+  background:color-mix(in srgb,var(--eco-accent) 17%,var(--eco-bg));
+  border-color:var(--eco-accent);
+  color:var(--eco-text);
+}
+.page :is(.primary){
+  background:#7367f0;
+  border-color:#7367f0;
+  color:#fff;
+  border-radius:9px;
+  box-shadow:0 3px 12px rgba(115,103,240,.2);
+}
+.page .primary:hover{background:#685dd8;border-color:#685dd8}
+.page .serviceCard>button{color:var(--eco-text);background:color-mix(in srgb,var(--accent) 13%,var(--eco-surface));border-color:color-mix(in srgb,var(--accent) 36%,var(--eco-line))}
+.page .homeCard>button{color:var(--eco-text);border-color:color-mix(in srgb,var(--accent) 38%,var(--eco-line))}
+.page .recordsPanel{overflow:hidden}
+.page .records{gap:0}
+.page .tableHeader{
+  border-color:var(--eco-line);
+  background:var(--eco-raised);
+  color:var(--eco-text);
+  border-radius:9px 9px 0 0;
+  min-height:44px;
+}
+.page .recordRow{
+  border-color:var(--eco-line);
+  border-radius:0;
+  background:var(--eco-bg);
+  color:var(--eco-text);
+  min-height:66px;
+}
+.page .recordRow:nth-child(odd){background:var(--eco-surface)}
+.page .recordRow:hover{background:color-mix(in srgb,var(--eco-accent) 7%,var(--eco-bg))}
+.page .recordRow :is(time,small){color:var(--eco-muted)}
+.page .recordsPanel header small{color:var(--eco-muted)}
+.page .joinHero aside{background:var(--eco-surface)}
+.page .joinHero aside :is(span,small){color:var(--eco-muted)}
+@media(hover:hover){
+  .page :is(.homeCard,.serviceCard):hover{
+    border-color:color-mix(in srgb,var(--eco-accent) 40%,var(--eco-line));
+    box-shadow:inset 3px 0 var(--accent),var(--eco-hover-shadow);
+  }
+}
+/* Native modal dialogs render in the document top layer, so define theme colors locally too. */
+.dialog,.drawer{
+  --eco-bg:#142237;--eco-surface:#18283c;--eco-raised:#1c3047;
+  --eco-line:#30465e;--eco-text:#eff6ff;--eco-muted:#adc1d4;
+  background:var(--eco-bg);
+  color:var(--eco-text);
+  border:1px solid var(--eco-line);
+  border-radius:14px;
+  box-shadow:0 26px 80px rgba(0,0,0,.35);
+}
+:global(.light) .dialog,:global(.light) .drawer{
+  --eco-bg:#fff;--eco-surface:#f7fafd;--eco-raised:#edf3f8;
+  --eco-line:#dce5ee;--eco-text:#263747;--eco-muted:#607183;
+  background:var(--eco-bg);color:var(--eco-text);
+  border-color:var(--eco-line);
+  box-shadow:0 24px 68px rgba(30,53,82,.18);
+}
+.dialog::backdrop,.drawer::backdrop{background:rgba(7,14,29,.65);backdrop-filter:blur(5px)}
+.dialogHead{background:var(--eco-bg);border-color:var(--eco-line)}
+.dialogHead h2{padding-left:12px;border-left:3px solid #7367f0;color:var(--eco-text)}
+.dialogBody :is(h3,.progressSteps strong,.dialogList li,.dialogHighlights>div){color:var(--eco-text)}
+.dialogBody :is(p,.progressSteps small,.drawerSummary small){color:var(--eco-muted)}
+.dialogBody :is(.dialogList li,.dialogHighlights>div,.drawerSummary,.progressSteps>div,.serviceCategory,.disclaimer){
+  background:var(--eco-surface);
+  border-color:var(--eco-line);
+  border-radius:9px;
+}
+.dialogActions{border-color:var(--eco-line)}
+.dialog button:not(.primary),.drawer button:not(.primary){
+  background:var(--eco-surface);color:var(--eco-text);border-color:var(--eco-line);border-radius:9px;
+}
+.dialog .primary,.drawer .primary{background:#7367f0;color:#fff;border-color:#7367f0;border-radius:9px}
+.dialog .primary:hover,.drawer .primary:hover{background:#685dd8;border-color:#685dd8}
+.drawerTabs button[aria-pressed="true"]{background:color-mix(in srgb,#7367f0 17%,var(--eco-bg));color:var(--eco-text);border-color:#7367f0}
+.page :is(button,input,select):focus-visible,.dialog button:focus-visible,.drawer button:focus-visible{
+  outline:2px solid #7367f0;outline-offset:2px;
+}
+@media(max-width:700px){.page>.head h1{white-space:normal}.page>.head{padding:17px}.page .recordRow{min-width:850px}}
+@media(prefers-reduced-motion:reduce){.page :is(.homeCard,.serviceCard,.howtoGrid article,.joinStep,.joinInfo,.recordRow){transition:none}}
