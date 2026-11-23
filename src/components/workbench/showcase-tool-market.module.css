@@ -708,3 +708,17 @@
 .figmaTemplateName {flex-wrap:wrap}
 .figmaTemplateName label {flex-basis:100%}
 }
+
+/* Shared filter-axis refinements for Official Tools / My Tools. */
+.page .toolbar[data-shuomi-filter="balanced"]{min-height:62px;padding:10px 12px;border:1px solid #555a73;border-radius:8px;background:#2f3349}
+.page .toolbar[data-shuomi-filter="balanced"] .searchTools{min-width:0;flex:1 1 auto;width:100%;max-width:none}
+.page .toolbar[data-shuomi-filter="balanced"] .searchTools input{min-width:0;flex:1;width:100%}
+.page [data-shuomi-filter-right] .categories{flex:1 1 auto;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.page [data-shuomi-filter-right] .categories button{min-width:50px;padding:0 9px}
+.page .mineBar[data-shuomi-filter="balanced"]{min-height:62px;padding:10px 12px;border:1px solid #555a73;border-radius:8px;background:#2f3349}
+.page .mineBar[data-shuomi-filter="balanced"] input{width:100%;min-width:0;max-width:none;flex:1 1 auto}
+.mineFilterLabel{font-size:13px;color:#acabc1;margin-right:auto;white-space:nowrap}
+:global(.light) .page .toolbar[data-shuomi-filter="balanced"],
+:global(.light) .page .mineBar[data-shuomi-filter="balanced"]{background:#fff;border-color:#dbdade}
+:global(.light) .mineFilterLabel{color:#6f6b7d}
+@media(max-width:1160px){.page [data-shuomi-filter-right] .categories{justify-content:flex-start}}
