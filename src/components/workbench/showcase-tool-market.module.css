@@ -643,3 +643,53 @@
 .figmaToolProcess {flex-wrap:wrap}
 .figmaListingCards {grid-template-columns:1fr}
 }
+
+
+/* Figma 3772:405 / 3772:475 — collection rule modal (same native overlay). */
+.dialog.figmaAcquisitionDialog:has(.figmaRulePage){width:min(760px,calc(100vw - 32px));max-height:min(88dvh,650px)}
+.dialog.figmaAcquisitionDialog:has(.figma1688Rules){width:min(560px,calc(100vw - 32px))}
+.figmaRulePage {display:grid;gap:14px;padding:20px 24px;min-width:0}
+.figmaRuleHeader h2 {margin:0;font-size:20px;line-height:29px}
+.figmaRuleHeader p {margin:5px 0 0;color:#c6c0d9;font-size:14px;line-height:21px}
+.figmaRuleColumns {display:grid;grid-template-columns:176px minmax(0,1fr);gap:16px;min-width:0}
+.figmaTemplateList {border:1px solid #555a73;border-radius:10px;background:#393d55;padding:10px;display:grid;align-content:start;gap:8px}
+.figmaTemplateList>strong {font-size:14px}
+.figmaAcquisitionDialog .figmaTemplateList button {display:grid;text-align:left;gap:3px;padding:8px 9px;border:1px solid #555a73;border-radius:7px;min-height:48px;font-size:13px}
+.figmaTemplateList button[aria-pressed="true"] {border-color:#7367f0!important;background:#4f4a73}
+.figmaTemplateList button small {color:#c1bacd;font-size:12px}
+.figmaTemplateSettings {display:grid;gap:12px;min-width:0}
+.figmaTemplateName {display:flex;align-items:center;gap:7px}
+.figmaTemplateName label {display:flex;align-items:center;gap:6px;flex:1;min-width:0;font-size:13px}
+.figmaTemplateName input {flex:1;min-width:0}
+.figmaAcquisitionDialog .figmaTemplateName button {font-size:12px;padding:7px;white-space:nowrap;min-height:36px}
+.figmaRulePage input {box-sizing:border-box;background:#30334a;color:#f0edf8;border:1px solid #555a73;border-radius:8px;min-height:35px;padding:6px 8px;font-size:13px;max-width:100%}
+.figmaRuleHelp {display:grid;gap:5px;padding:12px 13px;border:1px solid #69619b;border-radius:9px;background:#3a3857}
+.figmaRuleHelp strong {font-size:14px;color:#c0b6ff}
+.figmaRuleHelp p {margin:0;font-size:13px;line-height:19px}
+.figmaRuleConditions {display:grid;gap:10px;min-width:0}
+.figmaRuleConditions>div:first-child {display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px}
+.figmaRuleConditions>div:first-child span {border:1px solid #555a73;border-radius:7px;padding:6px 8px;font-size:13px}
+.figmaRuleConditions>label {display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid #555a73;border-radius:8px;background:#393d55;min-width:0;font-size:13px}
+.figmaRuleConditions>label>div {display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+.figmaRuleConditions label input {flex:1;min-width:0;width:100%}
+.figmaRuleConditions label>span {font-size:13px;white-space:nowrap}
+.figmaRuleConditions>p {font-size:13px;color:#c1bacd;margin:0}
+.figma1688Rules {display:grid;gap:15px}
+.figma1688Rules .figmaRuleConditions>button {justify-self:start;padding:7px 12px;color:#c5bbff;border-color:#7367f0}
+.figmaRuleFooter {display:flex;gap:10px;justify-content:flex-end;padding-top:10px;border-top:1px solid #555a73}
+.figmaRuleFooter button {min-height:40px;min-width:94px}
+:global(.light) .figmaRuleHeader p,:global(.light) .figmaRuleConditions>p {color:#6f6b7d}
+:global(.light) .figmaAcquisitionDialog :is(.figmaTemplateList,.figmaRuleConditions>label){background:#f8f7fa;border-color:#dedbea;color:#444050}
+:global(.light) .figmaAcquisitionDialog .figmaTemplateList button[aria-pressed="true"] {background:#f2efff;border-color:#7367f0}
+:global(.light) .figmaAcquisitionDialog .figmaTemplateList small {color:#6f6b7d}
+:global(.light) .figmaAcquisitionDialog .figmaRuleHelp {background:#f2efff;border-color:#ded7ff;color:#444050}
+:global(.light) .figmaAcquisitionDialog .figmaRuleHelp strong {color:#6556d3}
+:global(.light) .figmaAcquisitionDialog .figmaRulePage input {background:#fff;color:#444050;border-color:#dedbea}
+@media(max-width:700px){
+.figmaRuleColumns {grid-template-columns:1fr}
+.figmaTemplateList {grid-template-columns:repeat(2,minmax(0,1fr))}
+.figmaTemplateList>strong {grid-column:1/-1}
+.figmaRulePage {padding:17px}
+.figmaTemplateName {flex-wrap:wrap}
+.figmaTemplateName label {flex-basis:100%}
+}
