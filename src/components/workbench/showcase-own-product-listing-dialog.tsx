@@ -2,7 +2,7 @@
 
 import {useEffect,useId,useRef,useState,type ChangeEvent} from "react";
 import styles from "./showcase-own-product-listing-dialog.module.css";
-import {readOwnProductBatches,createOwnProductBatch,saveOwnProduct,type OwnProductBatch} from "./showcase-own-product-data";
+import {readOwnProductBatches,createOwnProductBatch,saveOwnProduct,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,type OwnProductBatch,type OwnProductRecord} from "./showcase-own-product-data";
 
 type Source="img"|"sheet"|"link"|"api";
 type Sku={id:number;name:string;draft:string;description:string;images:string[]};
@@ -21,6 +21,8 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
  const [activeImage,setActiveImage]=useState<string|null>(null),[agent,setAgent]=useState(""),[template,setTemplate]=useState("");
  const [link,setLink]=useState(""),[sheetName,setSheetName]=useState(""),[status,setStatus]=useState("");
  const [loadingImages,setLoadingImages]=useState(false);
+ const [reviewProduct,setReviewProduct]=useState<OwnProductRecord|null>(null),[reviewSkus,setReviewSkus]=useState<OwnProductRecord["skus"]>([]),[reviewSkuId,setReviewSkuId]=useState(1);
+ const [reviewUploadId,setReviewUploadId]=useState<number|null>(null);
  const [enabledAgents,setEnabledAgents]=useState<string[]>(availableAgents);
  const [templates,setTemplates]=useState<string[]>([]);
  useEffect(()=>{setEnabledAgents(availableAgents())},[]);
@@ -54,26 +56,56 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
   if(!currentBatch){setStatus("请先创建或选择自有商品批次，再提交检测。");return;}
   if(source!=="img"){setStatus(source==="sheet"?(sheetName?"表格已选择；字段映射未接入，不能保存伪造商品。":"请先选择商品表格。"):source==="link"?(link.trim()?"商品链接解析尚未接入，不能保存伪造商品。":"请填写商品链接。"):"API 授权和商品读取尚未接入，不能保存伪造商品。");return;}
   const entries=skuType==="multi"?skus:[skus[0]];
-  if(skuType==="multi"&&entries.some(x=>!x.name.trim())){setStatus("请先保存每个 SKU 的名称与规格。");return;}
-  if(entries.every(x=>x.images.length===0)){setStatus("请至少上传 1 张商品图片。");return;}
-  const missing:string[]=[];
-  entries.forEach((x,i)=>{if(!x.images.length)missing.push("SKU "+(i+1)+" 商品图片");if(!x.description.trim())missing.push("SKU "+(i+1)+" 基础资料");});
-  const status=missing.length?"待补全":"待上传";
+  const normalized=entries.map(x=>({id:x.id,name:x.name||x.draft.trim(),description:x.description,images:x.images}));
+  if(normalized.every(x=>!x.images.length&&!x.description.trim()&&!x.name.trim())){setStatus("请先填写商品资料或上传商品图片。");return;}
+  const missing=checkOwnProductSkus(normalized);
   try{
    const item=saveOwnProduct(organizationId,memberId,currentBatch.id,{
-    name:entries[0].name||entries[0].draft.trim()||"自有商品 · "+new Date().toLocaleDateString("zh-CN"),
-    source:"上传资料",status,missing,agent,template,
-    skus:entries.map(x=>({id:x.id,name:x.name||x.draft.trim()||"单 SKU",description:x.description,images:x.images}))
+    name:normalized[0]?.name||"自有商品 · "+new Date().toLocaleDateString("zh-CN"),
+    source:"上传资料",status:missing.length?"待补全":"待上传",missing,agent,template,skus:normalized
    });
+   setReviewProduct(item);setReviewSkus(item.skus);setReviewSkuId(item.skus[0].id);
    setBatches(readOwnProductBatches(organizationId,memberId));
-   setStatus("商品已保存到「我的数据 → 自有商品库 → "+currentBatch.name+"」，记录 "+item.id.slice(-8)+" · "+status+"。可到自有商品库按批次查看；未向第三方平台刊登。");
-   setSkus([newSku(1),newSku(2)]);setCurrentId(1);
-  }catch(e){setStatus(e instanceof Error?"保存失败："+e.message:"保存失败，请检查浏览器演示存储容量。");}
+   setStatus(missing.length?"检测完成：请在下方承接区逐项补齐资料，通过统一检查后才进入自有商品库。":"检测通过：商品已进入自有商品库，可从承接区查看本次结果。");
+  }catch(e){setStatus(e instanceof Error?"保存失败："+e.message:"保存失败，请检查浏览器会话存储容量。");}
+ };
+ const currentReviewSku=reviewSkus.find(s=>s.id===reviewSkuId)||reviewSkus[0];
+ const reviewMissing=checkOwnProductSkus(reviewSkus);
+ const completeReview=()=>{
+  if(!reviewProduct)return;
+  try{
+   const updated=updateOwnProductAfterReview(organizationId,memberId,reviewProduct.id,reviewSkus);
+   setReviewProduct(updated);setReviewSkus(updated.skus);setBatches(readOwnProductBatches(organizationId,memberId));
+   setStatus(updated.status==="待上传"?"统一检查通过，商品现已进入「我的数据 → 自有商品库」，后续可在刊登管理选择。":"仍有 "+updated.missing.length+" 项缺失，请继续补全，数据已保存在待补全区。");
+  }catch(e){setStatus(e instanceof Error?e.message:"检查失败");}
+ };
+ const reviewUpload=async(e:ChangeEvent<HTMLInputElement>)=>{
+  const files=Array.from(e.target.files||[]).filter(file=>file.type.startsWith("image/"));
+  const id=reviewUploadId;
+  if(id===null||!files.length)return;
+  try{
+   const images=await Promise.all(files.slice(0,8).map(file=>new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(new Error("图片读取失败"));reader.readAsDataURL(file)})));
+   setReviewSkus(prev=>prev.map(x=>x.id===id?{...x,images:[...x.images,...images].slice(0,8)}:x));
+  }catch{setStatus("图片读取失败，请重试");}
+  finally{e.target.value="";}
  };
  const btnText=(id:number)=>skus.find(x=>x.id===id)?.name||`SKU ${id}`;
  return <dialog ref={ref} className={styles.dialog} aria-labelledby={headingId} onCancel={e=>{e.preventDefault();if(activeImage)setActiveImage(null);else onClose()}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
   <header className={styles.header}><div><h2 id={headingId}>自有商品一键刊登</h2><p>上传商品资料，按 SKU 整理图片及基础信息，提交后统一检测。</p></div><button type="button" onClick={onClose}>关闭</button></header>
   <div className={styles.content}>
+   {reviewProduct?<section className={styles.reviewPanel} aria-label="商品检测承接区">
+    <div className={styles.reviewHead}><div><h3>商品检测 · 待补全承接区</h3><p>本次批次：{batches.find(b=>b.id===reviewProduct.batchId)?.name} · {reviewProduct.status==="待上传"?"已通过统一检查":"需补全 "+reviewMissing.length+" 项"}</p></div><button type="button" onClick={()=>{setReviewProduct(null);setReviewSkus([]);setStatus("")}}>继续导入商品</button></div>
+    {reviewProduct.status==="待补全"?<>
+     <div className={styles.reviewList}>{reviewSkus.map(x=><button type="button" key={x.id} className={reviewSkuId===x.id?styles.reviewActive:""} onClick={()=>setReviewSkuId(x.id)}>{x.name||"SKU "+x.id}<small>{checkOwnProductSkus([x]).length?checkOwnProductSkus([x]).length+" 项待补全":"资料齐全"}</small></button>)}</div>
+     {currentReviewSku?<div className={styles.reviewEditor}>
+      <label>SKU 名称<input aria-label="补全 SKU 名称" value={currentReviewSku.name} onChange={e=>setReviewSkus(old=>old.map(x=>x.id===currentReviewSku.id?{...x,name:e.target.value}:x))}/></label>
+      <label>基础资料<textarea aria-label="补全 SKU 基础资料" rows={3} value={currentReviewSku.description} placeholder="填写材质、规格、售价、商品卖点等必填资料" onChange={e=>setReviewSkus(old=>old.map(x=>x.id===currentReviewSku.id?{...x,description:e.target.value}:x))}/></label>
+      <div className={styles.reviewImages}><strong>商品图片 {currentReviewSku.images.length}/8</strong><div>{currentReviewSku.images.map((src,i)=><img key={i} src={src} alt={"商品图片 "+(i+1)}/>)}</div><button type="button" disabled={currentReviewSku.images.length>=8} onClick={()=>{setReviewUploadId(currentReviewSku.id);document.getElementById("own-review-images-"+headingId)?.click()}}>补充图片</button><input id={"own-review-images-"+headingId} type="file" accept="image/*" multiple onChange={e=>void reviewUpload(e)} className={styles.visuallyHidden}/></div>
+     </div>:null}
+     <p className={styles.reviewMissing}>待补全：{reviewMissing.length?reviewMissing.join("、"):"资料齐全，可以统一检查"}</p>
+     <button type="button" className={styles.reviewCheck} onClick={completeReview}>统一检查并保存</button>
+    </>:<p className={styles.reviewSuccess}>全部必填资料已通过检查。商品已加入「我的数据 → 自有商品库」，可从刊登管理选择。</p>}
+   </section>:null}
    <section className={styles.panel}><div className={styles.heading}><h3>01&nbsp; 选择导入方式</h3></div>
     <div className={styles.sources} role="radiogroup" aria-label="选择导入方式">{sourceOptions.map(x=><button type="button" key={x.value} role="radio" aria-checked={source===x.value} onClick={()=>onSource(x.value)}>{x.label}<span className={styles.selectDot}/></button>)}</div>
    </section>
@@ -119,7 +151,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
     {batchMode==="create"?<div className={styles.batchEditor}><label>新批次名称<input aria-label="新建自有商品批次名称" maxLength={60} placeholder="输入批次名称" value={batchName} onChange={e=>setBatchName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveBatch()}}}/></label><button type="button" onClick={saveBatch}>创建并选择</button><button type="button" onClick={()=>setBatchMode(null)}>取消</button></div>:null}
     {batchMode==="select"?<div className={styles.batchEditor}><label>已有自有商品批次<select aria-label="选择已有自有商品批次" value={batchId} onChange={e=>{setBatchId(e.target.value);setBatchMode(null);setStatus("")}}><option value="">请选择批次</option>{batches.map(batch=><option key={batch.id} value={batch.id}>{batch.name} · {batch.createdAt}</option>)}</select></label>{!batches.length?<span>暂无批次，请先创建自有商品批次。</span>:null}<button type="button" onClick={()=>setBatchMode(null)}>关闭</button></div>:null}
     {currentBatch?<p className={styles.batchSelected}>当前批次：<strong>{currentBatch.name}</strong><span>已保存 {currentBatch.productCount} 个商品 · 当前企业成员专属演示数据</span></p>:null}
-    <p className={styles.footerHint}>点击检查后自动判断缺项；可批量添加商品并统一检查。</p>
+    <p className={styles.footerHint}>提交后进入检测承接区；资料不完整的商品需补全并通过统一检查后才进入自有商品库。</p>
     {status?<p role="status" className={styles.feedback}>{status}</p>:null}
    </section>
   </div>
