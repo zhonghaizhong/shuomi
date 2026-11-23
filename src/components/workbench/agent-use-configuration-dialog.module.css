@@ -62,3 +62,22 @@
 .imageChoice span strong{font-size:14px;color:var(--ink);}
 .imageChoice span small{font-size:12px;line-height:1.5;color:var(--muted);}
 .body input[aria-label="搜索素材名称或关键词"]{width:100%;min-height:40px;border:1px solid var(--line);border-radius:7px;padding:9px 12px;background:var(--raised);color:var(--ink);}
+
+/* Only the product-optimization image settings popup is enlarged; other agent dialogs stay unchanged. */
+.modal.productImageModal{
+ width:min(1040px,calc(100vw - 40px));
+ max-width:calc(100vw - 40px);
+ min-height:min(750px,calc(100dvh - 40px));
+ max-height:calc(100dvh - 40px);
+}
+.productImageModal .body{gap:16px;padding:20px 26px}
+.productImageModal .head{padding:22px 26px 16px}
+.productImageModal .footer{padding:16px 26px 22px}
+.productImageModal .optionGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.productImageModal .imageChoice{min-height:46px;box-sizing:border-box}
+@media(max-width:860px){
+ .modal.productImageModal{width:calc(100vw - 24px);max-width:calc(100vw - 24px);min-height:0;max-height:calc(100dvh - 24px)}
+ .productImageModal .optionGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .productImageModal .body,.productImageModal .head,.productImageModal .footer{padding-left:16px;padding-right:16px}
+}
+@media(max-width:480px){.productImageModal .optionGrid{grid-template-columns:1fr}}
