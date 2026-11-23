@@ -232,8 +232,10 @@ test("existing binding preserves immutable platform store identity and previousl
  await expect(dlg.getByTestId("locked-platform-store-id")).toHaveText(originalId!);
  await expect(dlg.getByLabel("站点",{exact:true})).toBeDisabled();
  await expect(dlg.getByLabel("店铺类型")).toBeDisabled();
- await expect(dlg.getByLabel("子账户账号")).toBeDisabled();
- await expect(dlg.getByLabel("子账户密码")).toHaveValue("");
+ await expect(dlg.getByLabel("子账户账号")).toBeEnabled();
+ await expect(dlg.getByLabel("子账户密码")).toBeEnabled();
+ await dlg.getByLabel("子账户账号").fill("demo_changed_account");
+ await dlg.getByLabel("子账户密码").fill("DEMO_ONLY_changed");
  await dlg.getByLabel("自定义名称").fill("变更显示名而不换店");
  await dlg.getByRole("button",{name:"保存修改"}).click();
  const renamed=area.locator('article[class*="storeCard"]').filter({hasText:"变更显示名而不换店"});
@@ -241,6 +243,8 @@ test("existing binding preserves immutable platform store identity and previousl
  const record=await page.evaluate(()=>JSON.parse(sessionStorage.getItem("shuomi-store-center-demo-ten-v2-SM-ENT-000001")||"[]").find((s:{name:string})=>s.name==="变更显示名而不换店"));
  expect(record.platformStoreId).toBe(originalId);
  expect(record.servicePeriods).toBe(1);
+ expect(record.bindingAccount).toBe("demo_changed_account");
+ expect(record.demoPassword).toBe("DEMO_ONLY_changed");
 });
 
 test("every bound card always presents four aligned actions; moving group and unlinking never reassign service",async({page})=>{
@@ -308,9 +312,9 @@ test("Figma filters apply only on confirm and reset together",async({page})=>{
  await expect(area.getByText("筛选店铺",{exact:true})).toHaveCount(0);
  await area.getByRole("button",{name:"重置"}).click();
  await expect(area.getByText("筛选店铺",{exact:true})).toBeVisible();
- await area.getByLabel("店铺状态筛选").selectOption("需要处理");
- await area.getByRole("button",{name:"确认",exact:true}).click();
- // An active store is excluded by the service-attention filter.
+ await expect(area.getByLabel("店铺状态筛选")).toHaveCount(0);
+ await expect(area.getByLabel("店铺分组筛选")).toHaveCount(0);
+ await area.getByRole("region",{name:"店铺运营概览"}).getByRole("button",{name:/待处理/}).click();
  await expect(area.getByText("筛选店铺",{exact:true})).toHaveCount(0);
 });
 test("Figma Manage opens modal and retains settings under store-detail tabs, without fake authorization",async({page})=>{
@@ -504,14 +508,14 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  const filter=area.getByRole("form",{name:"店铺筛选"});
  const criteria=filter.locator('[aria-label="条件筛选"]');
  const actions=filter.locator('[aria-label="搜索与操作"]');
- for(const field of ["平台筛选","站点筛选","店铺类型筛选","店铺分组筛选","店铺状态筛选"])await expect(criteria.getByLabel(field)).toBeVisible();
+ for(const field of ["平台筛选","站点筛选","店铺类型筛选"])await expect(criteria.getByLabel(field)).toBeVisible();
  await expect(actions.getByLabel("搜索店铺")).toBeVisible();
  await expect(actions.getByRole("button",{name:"重置"})).toBeVisible();
  await expect(actions.getByRole("button",{name:"确认"})).toBeVisible();
  const cards=area.locator("article[class*=\"storeCard\"]").filter({hasText:"管理员演示店铺01"});
  await expect(cards.first()).toContainText("店铺 ID：");
  await expect(cards.first()).toContainText("服务期限：");
- await expect(cards.first()).toContainText("管理员");
+ await expect(cards.first()).toContainText("林晨");
  await expect(cards.first()).not.toContainText("平台授权");
  await expect(cards.first()).not.toContainText("网络环境");
  await expect(cards.first().getByRole("button",{name:"管理店铺",exact:true})).toBeVisible();
