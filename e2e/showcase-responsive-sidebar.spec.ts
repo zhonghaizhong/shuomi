@@ -381,3 +381,30 @@ test("goals filter search reset and confirm share one desktop row in both themes
  await page.setViewportSize({width:1920,height:1080});
  await assertOneRow();
 });
+
+
+test("my data collection filters stay aligned and readable in both themes",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(entry+"/data/mine");
+ const filters=page.getByRole("region",{name:"数据筛选"});
+ await expect(filters).toBeVisible();
+ const controls=filters.locator("input,select,button");
+ await expect(controls).toHaveCount(5);
+ const check=async()=>{
+  const metrics=await controls.evaluateAll(els=>els.map(el=>{
+   const b=el.getBoundingClientRect();
+   return {top:b.top,height:b.height,width:b.width};
+  }));
+  expect(metrics.every(m=>m.width>=40&&m.height>=39&&m.height<=41)).toBe(true);
+  expect(Math.max(...metrics.map(m=>m.top))-Math.min(...metrics.map(m=>m.top))).toBeLessThan(2);
+ };
+ await check();
+ const theme=page.getByRole("button",{name:"切换浅色主题"});
+ if(await theme.isVisible())await theme.click();
+ await check();
+ await page.setViewportSize({width:1920,height:1080});
+ await check();
+ await page.setViewportSize({width:390,height:844});
+ await expect(filters.getByRole("textbox",{name:"搜索采集批次"})).toBeVisible();
+ await expect(filters.getByRole("button",{name:"确认"})).toBeVisible();
+});
