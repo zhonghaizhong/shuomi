@@ -97,6 +97,14 @@ jobs:
         run: pnpm exec playwright install chromium
       - name: Verify showcase action dialogs and cross-module flows
         run: pnpm exec playwright test --config playwright.showcase-interactions.config.ts --shard=1/2
+      - name: Upload theme audit and interaction failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-interactions-shard-1
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
   verify-interactions-2:
     name: Verify showcase interactions (shard 2/2)
@@ -127,6 +135,14 @@ jobs:
         run: pnpm exec playwright install chromium
       - name: Verify showcase action dialogs and cross-module flows
         run: pnpm exec playwright test --config playwright.showcase-interactions.config.ts --shard=2/2
+      - name: Upload theme audit and interaction failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-interactions-shard-2
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
   deploy:
     if: github.ref == 'refs/heads/main'
