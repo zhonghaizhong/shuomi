@@ -347,3 +347,76 @@
 @media(max-width:1100px){.productGrid{grid-template-columns:185px minmax(0,1fr) minmax(240px,.8fr)}.aiRow{grid-template-columns:minmax(0,1.5fr) minmax(160px,.7fr) minmax(160px,.7fr)}}
 @media(max-width:900px){.productGrid{grid-template-columns:185px minmax(0,1fr)}.details{min-height:190px}.otherInput{height:300px;min-height:300px}}
 @media(max-width:760px){.aiRow{grid-template-columns:1fr 1fr}.aiOptions{grid-column:1/-1}.intakeActions{grid-template-columns:1fr}.intakeActions button{min-height:56px}.productGrid,.productGrid:not(:has(.skuList)){grid-template-columns:1fr}.skuList,.images,.details{min-height:0}.imageGrid button{max-height:110px}}
+
+
+/* Approved compact full-dialog layout (desktop): preserve all functions and both themes. */
+@media(min-width:1100px) and (min-height:720px){
+ .dialog{width:min(1500px,calc(100vw - 22px));height:calc(100dvh - 22px);max-height:calc(100dvh - 22px);border-radius:11px}
+ .header{min-height:58px;padding:9px 18px}
+ .header h2{font-size:18px}.header p{margin-top:3px;font-size:11px}
+ .header>button{padding:7px 13px}
+ .content{padding:10px 12px 12px;gap:9px;overflow-y:auto;scrollbar-gutter:stable}
+ .panel{padding:11px 15px;border-radius:9px}
+ .heading{margin-bottom:9px;min-height:20px;gap:10px}
+ .heading h3{font-size:15px}
+ .heading>span{font-size:11px}
+ .sources{gap:9px}
+ .sources button{min-height:39px;padding:7px 11px;font-size:13px}
+ .skuSwitch{gap:8px}
+ .skuSwitch button{height:29px;min-width:88px}
+ .productGrid{grid-template-columns:minmax(250px,.88fr) minmax(360px,1.65fr) minmax(290px,1.22fr);gap:11px;min-height:0}
+ .skuList,.images,.details{height:clamp(300px,calc(100dvh - 401px),390px);min-height:300px;max-height:390px;padding:12px}
+ .skuList{gap:6px}
+ .skuItems{gap:6px;scrollbar-gutter:auto}
+ .skuItem{padding:7px 8px;gap:4px}
+ .skuItemRow{gap:6px}
+ .dialog .skuItemRow .skuSelect,.dialog .skuItemRow input,.dialog .skuItemRow .skuSave{height:31px;min-height:31px}
+ .skuItem .skuItemStatus{font-size:10px;min-height:14px;line-height:14px}
+ .dialog .addSku{height:34px;min-height:34px;max-height:34px}
+ .images{gap:6px}
+ .imageGrid{gap:8px;margin-top:8px}
+ .imageGrid button{border-radius:7px}
+ .imageHint{font-size:10px}
+ .details{gap:8px}
+ .details textarea{padding:10px}
+ .details small{font-size:11px}
+ .aiRow{gap:10px}
+ .aiOptions{flex:1 1 0;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .aiOptions label{height:53px;min-height:53px;max-height:53px;padding:7px 10px;font-size:12px}
+ .batchControls{flex:0 0 240px;max-width:240px;grid-template-rows:24px 24px;gap:5px}
+ .dialog .batchControls button{height:24px;min-height:24px;max-height:24px;font-size:11px}
+ .dialog .submit{flex:0 0 205px;width:205px;min-width:205px;max-width:205px;height:53px;min-height:53px;max-height:53px;margin-left:0}
+ .intakeActions{margin-top:9px;gap:10px}
+ .intakeActions button{min-height:58px;padding:10px 15px}
+ .intakeActions button strong{font-size:14px}
+ .intakeActions button small{font-size:11px}
+ .footerHint{margin-top:8px;font-size:11px}
+ .batchEditor{margin-top:8px;padding:8px}
+ .batchSelected{margin:7px 0 0}
+}
+@media(min-width:1100px) and (min-height:720px) and (max-height:840px){
+ .skuList,.images,.details{height:clamp(278px,calc(100dvh - 390px),340px);min-height:278px;max-height:340px}
+ .imageGrid{gap:6px}
+ .panel{padding:9px 13px}
+ .heading{margin-bottom:7px}
+ .sources button{min-height:34px}
+ .intakeActions button{min-height:52px}
+}
+/* Compact status cards, with business-neutral surfaces consistent with the theme. */
+.intakeActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-width:0}
+.intakeActions button{box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0;text-align:left;padding:12px 17px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);transition:border-color .15s,background .15s}
+.intakeActions button strong{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px}
+.intakeActions button b{display:grid;place-items:center;min-width:30px;height:25px;padding:0 7px;border-radius:15px;background:color-mix(in srgb,var(--accent) 17%,var(--bg));color:var(--accent);font-size:14px}
+.intakeActions button small{font-size:11px;color:var(--muted);line-height:1.35}
+.intakeActions .intakePending{border-color:color-mix(in srgb,#9469da 40%,var(--line))}
+.intakeActions .intakeReview{border-color:color-mix(in srgb,#16ad83 42%,var(--line))}
+.intakeActions .intakeReview b{background:color-mix(in srgb,#16ad83 14%,var(--bg));color:#12a87b}
+.intakeActions button[aria-expanded="true"]{background:color-mix(in srgb,var(--accent) 7%,var(--panel));border-color:var(--accent)}
+.intakeRecords{border:1px solid var(--line);border-radius:8px;margin-top:9px;padding:10px 12px;background:var(--panel);display:grid;gap:8px;max-height:220px;overflow:auto}
+.intakeRecords header,.intakeRecords>div{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.intakeRecords>div{border-top:1px solid var(--line);padding-top:8px}
+.intakeRecords>div>span{display:grid;gap:3px;flex:1;min-width:150px}
+.intakeRecords>div small{color:var(--muted);font-size:11px}
+.intakeRecords button{background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:7px 11px}
+.intakeRecords .intakeConfirm{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+@media(max-width:680px){.intakeActions{grid-template-columns:1fr}.intakeActions button{min-height:60px}}
