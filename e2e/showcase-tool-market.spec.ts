@@ -265,7 +265,7 @@ test("listing use dialog follows the original Figma introduction instead of inve
 
 test("1688 online collection creates ten demo products and shows only owned batches in My Data",async({page})=>{
  await page.goto("/shuomi/#/workbench/data/mine");
- const mine=page.getByRole("region",{name:"采集批次"});
+ const mine=page.getByRole("region",{name:"采集批次",exact:true});
  await expect(mine).toContainText("1688 在线采集 · 10个产品（模拟）");
  await expect(mine).toContainText("1 批");
  await mine.getByRole("button",{name:"更多"}).click();
@@ -286,9 +286,9 @@ test("1688 online collection creates ten demo products and shows only owned batc
  await expect(modal).toContainText("已记录 10 条1688演示数据");
  await modal.getByRole("button",{name:"知道了"}).click();
  await page.goto("/shuomi/#/workbench/data/mine");
- await expect(page.getByRole("region",{name:"采集批次"})).toContainText("2 批");
- await page.getByRole("region",{name:"采集批次"}).getByRole("button",{name:"更多"}).first().click();
- await page.getByRole("region",{name:"采集批次"}).getByRole("button",{name:"查看商品"}).click();
+ await expect(page.getByRole("region",{name:"采集批次",exact:true})).toContainText("2 批");
+ await page.getByRole("region",{name:"采集批次",exact:true}).getByRole("button",{name:"更多"}).first().click();
+ await page.getByRole("region",{name:"采集批次",exact:true}).getByRole("button",{name:"查看商品"}).click();
  await expect(page.getByRole("region",{name:"批次产品明细"}).locator("tbody tr")).toHaveCount(10);
 });
 
@@ -296,7 +296,7 @@ test("My Data follows Figma batch screen and archives only selected demo batches
  await page.goto("/shuomi/#/workbench/data/mine");
  await expect(page.getByRole("region",{name:"采集批次流程说明"})).toContainText("原始商品数据");
  await expect(page.getByRole("region",{name:"数据筛选"})).toBeVisible();
- const region=page.getByRole("region",{name:"采集批次"});
+ const region=page.getByRole("region",{name:"采集批次",exact:true});
  await expect(region.getByRole("columnheader",{name:/批次名称/})).toBeVisible();
  for(const name of ["产品来源","总量","符合","过滤","创建时间","上传状态","操作"]){await expect(region.getByRole("columnheader",{name})).toBeVisible()}
  await region.getByRole("button",{name:"更多"}).click();
