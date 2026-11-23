@@ -3024,3 +3024,34 @@
  .page[data-commerce-unified="data"] .apiConnectionMeta{padding:0;border:0}
  .page[data-commerce-unified="data"] .apiQuotaCards{grid-template-columns:1fr}
 }
+
+
+/* Data Services accessibility pass: consistent readable labels and safe
+   flex/grid wrapping for the API dashboard in both existing themes. */
+.page[data-commerce-unified="data"] .apiDashboard {
+  font-size:14px;
+  line-height:1.55;
+}
+.page[data-commerce-unified="data"] :is(
+  .apiSectionHead p,.apiConnection small,.apiMetricText small,
+  .apiKeyTable,.apiKeyTable th,.apiSecurityNote,.apiSafetyNote,
+  .apiQuotaCards small,.apiEmptyState p
+) {font-size:13px;line-height:1.6}
+.page[data-commerce-unified="data"] .apiOverviewColumns > *,
+.page[data-commerce-unified="data"] .apiMetrics > *,
+.page[data-commerce-unified="data"] .apiConnection > * {min-width:0}
+.page[data-commerce-unified="data"] .apiNavigation {flex-wrap:wrap}
+.page[data-commerce-unified="data"] .apiConnectionMeta {overflow-wrap:anywhere;white-space:normal}
+.page[data-commerce-unified="data"] .apiSectionHead h2 {white-space:normal}
+.page[data-commerce-unified="data"] :is(.apiKeyScroll,.apiLogScroll) {
+  max-width:100%;overflow-x:auto;
+}
+@media(max-width:950px) {
+  .page[data-commerce-unified="data"] .apiOverviewColumns {grid-template-columns:minmax(0,1fr)}
+  .page[data-commerce-unified="data"] .apiMetrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px) {
+  .page[data-commerce-unified="data"] .apiMetrics {grid-template-columns:minmax(0,1fr)}
+  .page[data-commerce-unified="data"] .apiConnection {grid-template-columns:minmax(0,1fr)}
+  .page[data-commerce-unified="data"] .apiConnectionMeta {border-left:0;padding-left:0}
+}
