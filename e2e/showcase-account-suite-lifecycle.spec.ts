@@ -288,7 +288,7 @@ test("enterprise and referral subpages preserve approved dark/light surfaces and
   expect(bg).toBe("rgb(255, 255, 255)");
   const dark=page.getByRole("button",{name:"切换深色主题"});if(await dark.isVisible())await dark.click();
   const darkBg=await suite.locator(":scope > header").evaluate(x=>getComputedStyle(x).backgroundColor);
-  expect(darkBg).toBe("rgb(47, 51, 73)");
+  expect(darkBg).toBe("rgb(20, 34, 55)");
   await expect(suite).toContainText("武汉硕米电子商务有限公司");
  }
 });
@@ -506,7 +506,7 @@ test("enterprise Vuexy landing layout respects stats, spacing and preserved tabs
   await expect(panels).toHaveCount(1);
   await expect(root.getByRole("region",{name:"成员资源分配"})).toHaveCount(0);
   await expect(root.locator('section[aria-label="企业管理"]')).toHaveCount(0);
-  const surface=mode==="light"?"rgb(255, 255, 255)":"rgb(47, 51, 73)";
+  const surface=mode==="light"?"rgb(255, 255, 255)":"rgb(20, 34, 55)";
   for(const p of await panels.all())expect(await p.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(surface);
   const stats=root.locator('[aria-label="企业空间概览"] article');
   await expect(stats).toHaveCount(3);
