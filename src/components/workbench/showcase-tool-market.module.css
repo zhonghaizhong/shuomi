@@ -340,3 +340,65 @@
   background: var(--mine-inset); color: var(--mine-text); border-color: var(--mine-border);
 }
 :global(.light) .figmaMine .mineSearchControls button.primary { color: #fff; }
+
+
+/* Center every use entry in the viewport, independent of scroll, sidebar or cards. */
+.dialog.launchDialog {
+  position: fixed;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  margin: 0;
+  transform: translate(-50%,-50%);
+  width: min(580px,calc(100vw - 32px));
+  max-height: min(84vh,720px);
+  padding: 24px;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid #555a73;
+  background: #2f3349;
+  color: #ece9fa;
+  box-shadow: 0 24px 80px rgba(4,8,18,.55);
+}
+.launchDialog::backdrop { background: rgba(9,12,25,.72); }
+.launchDialog h2 { font-size: 21px; line-height: 30px; color: inherit; }
+.launchDialog .launchBody { display: grid; gap: 14px; margin-top: 14px; }
+.launchDialog .launchBody > p { margin: 0; }
+.launchChoices { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.launchDialog .launchChoices button {
+  min-height: 42px; height: auto; padding: 8px 10px;
+  font-size: 14px; border-radius: 7px; white-space: normal;
+}
+.launchDialog .launchChoices button[aria-pressed="true"] {
+  border-color: #7367f0; color: #fff; background: #7367f0;
+}
+.launchFeature,.launchCharge {
+  display: grid; gap: 8px; padding: 16px; border: 1px solid #555a73;
+  border-radius: 8px; background: #393d55;
+  font-size: 14px; line-height: 22px;
+}
+.launchCharge strong { color: #a99dff; }
+.launchCharge span { color: #d2cfe4; }
+.launchFeature strong { color: #eae7f6; font-size: 16px; }
+.launchDialog .launchFeature p { margin: 0; line-height: 22px; }
+.launchDialog .launchAvailability {
+  font-size: 13px; line-height: 20px; color: #b5b2ca; margin: 0;
+}
+.launchDialog footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid #555a73; }
+.launchDialog footer button { min-width: 88px; min-height: 40px; border-radius: 7px; }
+:global(.light) .dialog.launchDialog {
+  background: #fff; border-color: #dedbea; color: #444050;
+}
+:global(.light) .launchDialog .launchFeature,
+:global(.light) .launchDialog .launchCharge { background: #f8f7fa; border-color: #dedbea; color: #444050; }
+:global(.light) .launchDialog .launchFeature strong { color: #444050; }
+:global(.light) .launchDialog .launchCharge strong { color: #7367f0; }
+:global(.light) .launchDialog .launchCharge span { color: #6f6b7d; }
+:global(.light) .launchDialog .launchAvailability { color: #6f6b7d; }
+:global(.light) .launchDialog .launchChoices button[aria-pressed="true"] { color: #fff; background: #7367f0; border-color: #7367f0; }
+@media(max-width:560px) {
+  .dialog.launchDialog { padding: 18px; }
+  .launchChoices { grid-template-columns: 1fr; }
+}
