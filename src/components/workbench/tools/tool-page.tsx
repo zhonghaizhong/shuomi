@@ -518,8 +518,8 @@ function ScopedPage({
               market.data.tools
                 .filter((t) => [t.name, t.description].join(" ").toLowerCase().includes(mineAppliedSearch.toLowerCase()))
                 .map((t) => (
-                  <div className={styles.mineGrid} key={t.id}>
-                    <Card className={styles.mineCard}>
+                  <div className={`${styles.mineGrid} ${t.id === "product-acquisition" ? styles.acquisitionRow : ""}`} key={t.id}>
+                    <Card className={`${styles.mineCard} ${t.id === "product-acquisition" ? styles.acquisitionCard : ""}`}>
                       <div className={styles.cardHeading}>
                         <h2>{t.name}</h2>
                         {market.data.canManage ? (
@@ -534,23 +534,23 @@ function ScopedPage({
                       </div>
                       {t.id === "product-acquisition" ? (
                         <>
-                          <p>采集1688商品的标题、主图、规格与价格等信息；结果统一保存到「数据服务 / 我的数据」。</p>
+                          <p>采集商品的标题、主图、规格与价格等信息；结果统一保存到「数据服务 / 我的数据」。</p>
                           <h3 className={styles.channelTitle}>选择采集方式</h3>
                           <div className={styles.channels}>
                             <div>
                               <div className={styles.channelHeading}><h3>本地插件采集</h3><span className={styles.free}>免费</span></div>
-                              <p>安装在电脑本地运行，通过 Edge 或 Chrome 插件采集当前1688商品。</p>
+                              <p>安装在客户电脑本地运行，浏览商品时通过浏览器插件直接采集。</p>
                               <strong className={styles.freeCopy}>免费 · 不消耗数据额度</strong>
                               {t.localCapture ? <DownloadButton scope={scope} enabled={t.download} /> : <p role="status">本地插件采集尚未开放</p>}
                             </div>
                             <div>
                               <div className={styles.channelHeading}><h3>在线采集</h3><span className={styles.paid}>按数据收费</span></div>
-                              <p>由平台执行1688采集；支持范围、计价与额度在采集页面确认。</p>
-                              <strong className={styles.paidCopy}>按实际成功采集数据条数扣除额度</strong>
+                              <p>由平台云端执行，无需客户电脑持续运行即可完成在线采集。</p>
+                              <strong className={styles.paidCopy}>按实际采集数据条数扣除额度</strong>
                               {t.onlineCapture ? <Link className={styles.primaryLink} href="/workbench/supply/acquisition">在线采集</Link> : <Button disabled>当前安装未开放在线采集</Button>}
                             </div>
                           </div>
-                          <Link className={styles.resultLink} href="/workbench/data/mine">采集结果统一保存至「数据服务 / 我的数据」</Link>
+                          <div className={styles.resultLink}>采集结果统一保存至「数据服务 / 我的数据」</div>
                         </>
                       ) : t.name === "POD素材管理工具" ? (
                         <>
@@ -574,7 +574,7 @@ function ScopedPage({
                       )}
                       {t.status !== "AVAILABLE" ? <p role="status">{t.reason}</p> : null}
                     </Card>
-                    <Card className={styles.side}>
+                    <Card className={`${styles.side} ${t.id === "product-acquisition" ? styles.acquisitionGuide : ""}`}>
                       {t.name === "POD素材管理工具" ? (
                         <>
                           <h2>功能介绍</h2>
@@ -584,10 +584,10 @@ function ScopedPage({
                         </>
                       ) : t.id === "product-acquisition" ? (
                         <>
-                          <h2>使用流程</h2>
+                          <h2>采集方式说明</h2>
                           <p>根据运行环境选择采集方式，两种方式的结果都会进入「我的数据」。</p>
-                          <div className={styles.explanation}><h3>本地插件采集</h3><p>适合：电脑本地运行，通过浏览器插件采集商品</p></div>
-                          <div className={styles.explanation}><h3>在线采集</h3><p>适合：由平台执行商品采集</p></div>
+                          <div className={styles.explanation}><h3>本地插件采集</h3><p>适合：客户电脑本地运行，通过浏览器插件采集商品</p><p>费用：免费，不消耗数据额度</p></div>
+                          <div className={styles.explanation}><h3>在线采集</h3><p>适合：平台云端执行，无需客户电脑持续运行</p><p>费用：按实际采集数据条数扣除额度</p></div>
                           <p className={styles.tip}>本地插件免费；在线采集按实际数据量计费</p>
                         </>
                       ) : (
