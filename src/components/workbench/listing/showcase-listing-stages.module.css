@@ -301,7 +301,7 @@
 .page[data-listing-stage="waiting"] .configuration article header h2{font-size:16px;color:inherit}
 .page[data-listing-stage="waiting"] .configuration article p{font-size:12px;line-height:1.5}
 .page[data-listing-stage="waiting"] .configuration label{font-size:12px}
-.page[data-listing-stage="waiting"] .configuration :is(select,button){min-height:39px;font-size:12px}
+.page[data-listing-stage="waiting"] .configuration :is(select,button){min-height:40px;font-size:12px}
 .page[data-listing-stage="waiting"] .configuration article small{font-size:11px;line-height:1.45}
 .page[data-listing-stage="waiting"] .submit{display:flex;gap:16px;align-items:stretch;padding:16px 19px;min-height:143px}
 .page[data-listing-stage="waiting"] .uploadSummary{display:flex;flex-direction:column;gap:11px;min-width:0;flex:1}
