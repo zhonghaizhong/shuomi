@@ -119,3 +119,27 @@ test("ultrawide tool pages have centered content with no horizontal overflow",as
   expect(doc.scroll,route).toBeLessThanOrEqual(doc.client+2);
  }
 });
+
+
+test("my tools respects Figma 1168:359 visible content and shows native acquisition details when enabled", async({page})=>{
+ await page.goto(base+"/mine");
+ const pod=page.locator('[data-figma-tool="POD素材管理工具"]');
+ await expect(pod).toBeVisible();
+ await expect(page.locator('[data-figma-tool="商品采集插件"]')).toHaveCount(0);
+ await expect(pod.getByRole("heading",{name:"功能介绍"})).toBeVisible();
+ await expect(pod.getByText("贴图审核与打印")).toBeVisible();
+ await expect(pod.getByText("我的素材",{exact:true})).toBeVisible();
+ await expect(pod.getByText("灵感市场",{exact:true})).toBeVisible();
+ await expect(page.getByRole("button",{name:"前往官方工具"})).toBeVisible();
+ await page.getByRole("button",{name:"前往官方工具"}).click();
+ await page.locator('[class*="toolCard"]').filter({hasText:"商品采集插件"}).getByRole("button",{name:"启用",exact:true}).click();
+ await page.getByRole("button",{name:"我的工具",exact:true}).click();
+ const acquisition=page.locator('[data-figma-tool="商品采集插件"]');
+ await expect(acquisition).toBeVisible();
+ await expect(acquisition).toContainText("采集商品的标题、主图、规格与价格等信息");
+ await expect(acquisition).toContainText("安装在客户电脑本地运行");
+ await expect(acquisition).toContainText("由平台云端执行");
+ await expect(acquisition).toContainText("采集结果统一保存至「数据服务 / 我的数据」");
+ await expect(acquisition.getByRole("button",{name:"下载插件"})).toBeVisible();
+ await expect(acquisition.getByRole("button",{name:"在线采集"})).toBeVisible();
+});
