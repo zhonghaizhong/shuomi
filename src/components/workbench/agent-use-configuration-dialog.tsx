@@ -129,7 +129,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const isImage=mode==="product-image"||mode==="pod-ai";
  const isProductImage=mode==="product-image";
  const optimizationSource=form.optimizationSource??(form.generationRule==="自定义指令"?"自定义指令":"引用技能");
- const processingScope=form.imageProcessingScope??"手动选择";
+ const processingScope=optimizationSource==="官方方案"?"手动选择":form.imageProcessingScope??"手动选择";
  const productTarget=form.imageTarget??"主图";
  const sharedVisual=(form.imageUse??"共用视觉素材")==="共用视觉素材";
  const currentImages=sharedVisual?((form.sharedImageSource??"主图")==="主图"?mainImgs:detailImgs):(productTarget==="主图"?mainImgs:detailImgs);
@@ -187,17 +187,17 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
      {(form.imageUse??"共用视觉素材")==="共用视觉素材"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>4</span><div><strong>共用来源</strong><small>选择复用来源</small></div></div><div className={css.optimizerChoices}>
       {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={(form.sharedImageSource??"主图")===name} onClick={()=>{const selected=name==="主图"?mainImgs:detailImgs;setMainImgs(selected);setDetailImgs(selected);set("sharedImageSource",name);}}><strong>以{name}为准</strong><small>主图、详情图复用{name}侧配置</small></button>)}
      </div></section>:null}
-     <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><div className={css.optimizerNoNumber}><strong>图片处理范围</strong><small>选择处理范围</small></div></div><div className={css.optimizerChoices}>
+     {optimizationSource!=="官方方案"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><div className={css.optimizerNoNumber}><strong>图片处理范围</strong><small>选择处理范围</small></div></div><div className={css.optimizerChoices}>
       {(["手动选择","按技能设定"] as const).map(name=><button type="button" key={name} aria-pressed={processingScope===name} onClick={()=>{set("imageProcessingScope",name);setMessage("");}}>{name}</button>)}
-     </div></section>
+     </div></section>:null}
     </div>
     {optimizationSource==="自定义指令"?<section className={css.optimizerTasks}><h3>自定义优化指令 · {productTarget}</h3><p>每张图片可使用独立的任务指令。</p>{tasks.map((task,i)=><div className={css.optimizerTaskRow} key={task.id}><input aria-label={"图片任务名称 "+(i+1)} value={task.name} onChange={e=>setTasks(old=>old.map(t=>t.id===task.id?{...t,name:e.target.value}:t))}/><textarea aria-label={"图片任务指令 "+(i+1)} value={task.prompt} onChange={e=>setTasks(old=>old.map(t=>t.id===task.id?{...t,prompt:e.target.value}:t))} placeholder="填写本张图片的优化要求"/><button type="button" disabled={tasks.length===1} onClick={()=>setTasks(old=>old.filter(t=>t.id!==task.id))}>删除</button></div>)}<button type="button" onClick={()=>setTasks(old=>[...old,{id:Math.max(0,...old.map(t=>t.id))+1,name:"自定义图片 "+(old.length+1),prompt:""}])}>＋ 新增任务</button></section>:null}
     <section className={css.optimizerImages}>
-     <div className={css.optimizerImagesHeader}><strong>{productTarget} · {processingScope==="手动选择"?"勾选需要处理的图片":"按技能设定范围"}</strong>{processingScope==="手动选择"?<div><button type="button" onClick={()=>updateCurrentImages([1,2,3,4,5,6,7,8])}>全选</button><button type="button" onClick={()=>updateCurrentImages([])}>清空</button></div>:null}</div>
-     {processingScope==="手动选择"?<div className={css.optimizerImageGrid}>{Array.from({length:8},(_,i)=>i+1).map(n=><label className={css.optimizerImageChoice} key={n}><span>第 {n} 张</span><input type="checkbox" aria-label={productTarget+"第"+n+"张"} checked={currentImages.includes(n)} onChange={()=>toggleProductImage(n)}/></label>)}</div>:<p className={css.optimizerSkillNotice}>运行时根据已启用的图片优化技能判断处理位置，不强制使用手动勾选结果。未启用技能时请先返回上一级选择技能。</p>}
-     <p className={css.optimizerImageHint}>勾选的图片会按技能中对应位置的方案生成，未勾选的保持不变。<br/>例如：选中主图第 2 张，将采用技能预设的第 2 张主图方案；详情图同理。</p>
+     <div className={css.optimizerImagesHeader}><strong>{optimizationSource==="官方方案"?"选择优化图片 · 可多选":productTarget+" · "+(processingScope==="手动选择"?"勾选需要处理的图片":"按技能设定范围")}</strong>{processingScope==="手动选择"?<div><button type="button" onClick={()=>updateCurrentImages([1,2,3,4,5,6,7,8])}>全选</button><button type="button" onClick={()=>updateCurrentImages([])}>清空</button></div>:null}</div>
+     {processingScope==="手动选择"?<div className={css.optimizerImageGrid}>{Array.from({length:8},(_,i)=>i+1).map(n=><label className={css.optimizerImageChoice} key={n}><span>第 {n} 张</span>{optimizationSource==="官方方案"?<small className={css.optimizerImageTaskName}>{(productTarget==="主图"?initialOfficial:officialDetail)[n-1]}</small>:null}<input type="checkbox" aria-label={productTarget+"第"+n+"张"} checked={currentImages.includes(n)} onChange={()=>toggleProductImage(n)}/></label>)}</div>:<p className={css.optimizerSkillNotice}>运行时根据已启用的图片优化技能判断处理位置，不强制使用手动勾选结果。未启用技能时请先返回上一级选择技能。</p>}
+     <p className={css.optimizerImageHint}>{optimizationSource==="官方方案"?"勾选需要优化的图片；未勾选保留原图。":"勾选的图片会按技能中对应位置的方案生成，未勾选的保持不变。例如：选中主图第 2 张，将采用技能预设的第 2 张主图方案；详情图同理。"}</p>
     </section>
-    <p className={css.optimizerBilling}>计费说明：仅对实际模型生成的新图片按实际消耗的 AI 积分计费；原型演示不扣积分。</p>
+    <p className={css.optimizerBilling}>{optimizationSource==="官方方案"?"计费说明：仅对已勾选图片执行 AI 重构并计费；选择图片越多，预计消耗积分越高。":"计费说明：仅对实际模型生成的新图片按实际消耗的 AI 积分计费；原型演示不扣积分。"}</p>
    </div>
    :isImage?<div className={css.stack}>
     <p className={css.tip}>计费说明：仅对实际生成图片按 AI 积分计费。当前演示不生成图片、不扣除积分。</p>
