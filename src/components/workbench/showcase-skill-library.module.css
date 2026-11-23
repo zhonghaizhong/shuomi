@@ -89,3 +89,31 @@
 :global(.light) .shell{--s-bg:#fff;--s-line:#dfe7ef;--s-txt:#263747;--s-muted:#607183;--s-title:#263747;--s-accent:#7367f0;--s-shadow:0 6px 22px rgba(32,55,87,.06)}
 :global(.light) .shell>.hero{border-color:#ddd9e9;background:var(--s-bg);border-radius:12px}
 @media(max-width:700px){.shell>.hero{padding-left:18px}}
+
+/* Skill library: nested cards and native dialog must share the same theme.
+   Native dialogs may be portaled outside .shell, so give them local tokens. */
+.shell{
+ --s-bg:#142237;--s-panel:#18283c;--s-txt:#edf4ff;
+ --s-muted:#b5c6d8;--s-line:#31465e;
+ --s-border-control:#31465e;--s-control-text:#edf4ff;
+ --s-control-bg:#18283c;
+}
+:global(.light) .shell{
+ --s-bg:#fff;--s-panel:#f7fafd;--s-txt:#263648;
+ --s-muted:#64768a;--s-line:#dfe7ef;
+ --s-border-control:#dfe7ef;--s-control-text:#263648;
+ --s-control-bg:#f7fafd;
+}
+.introDialog{
+ --s-bg:#142237;--s-panel:#18283c;--s-txt:#edf4ff;
+ --s-muted:#b5c6d8;--s-line:#31465e;--s-accent:#7367f0;
+ --s-card-title:#b5c6ff;
+ background:var(--s-bg);color:var(--s-txt);border-color:var(--s-line);
+}
+:global(.light) .introDialog{
+ --s-bg:#fff;--s-panel:#f7fafd;--s-txt:#263648;
+ --s-muted:#64768a;--s-line:#dfe7ef;--s-accent:#7367f0;
+ --s-card-title:#6254c8;
+ background:var(--s-bg);color:var(--s-txt);border-color:var(--s-line);
+}
+.introDialog dl{background:var(--s-panel);border-color:var(--s-line)}
