@@ -303,3 +303,20 @@
  .wrapper .headingActions{width:100%}
  .wrapper .headingActions button{flex:1 1 auto}
 }
+
+/* Keep batch actions above the horizontally scrollable table, including last row. */
+.wrapper .rowMenu{
+ position:fixed;
+ top:auto;right:auto;
+ z-index:1200;
+ width:max-content;min-width:188px;max-width:min(240px,calc(100vw - 20px));
+ padding:6px;
+ overflow:visible;
+ background:var(--md-bg);
+ color:var(--md-ink);
+ border:1px solid var(--md-line);border-radius:10px;
+ box-shadow:0 16px 42px rgba(2,12,30,.30);
+}
+.wrapper .rowMenu button{min-height:34px;padding:9px 12px;white-space:nowrap;color:var(--md-ink)}
+.wrapper .rowMenu button:hover{background:color-mix(in srgb,#7367f0 12%,var(--md-panel))}
+.wrapper .rowMenu .deleteAction{color:#ea5455}
