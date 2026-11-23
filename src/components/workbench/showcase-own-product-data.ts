@@ -1,0 +1,42 @@
+"use client";
+
+/** Browser-session showcase only. This is not a production inventory API. */
+export type OwnProductSku={id:number;name:string;description:string;images:string[]};
+export type OwnProductRecord={
+ id:string;batchId:string;name:string;source:"上传资料"|"导入表格"|"商品链接"|"API 接入";
+ createdAt:string;checkedAt:string;status:"待补全"|"待上传";
+ missing:string[];skus:OwnProductSku[];agent:string;template:string;
+};
+export type OwnProductBatch={id:string;name:string;createdAt:string;productCount:number};
+const batchKey=(org:string,member:string)=>"shuomi:own-product-batches-v1:"+org+":"+member;
+const productKey=(org:string,member:string)=>"shuomi:own-product-records-v1:"+org+":"+member;
+export const ownProductUpdated="shuomi:own-products-updated";
+const readArray=(key:string):unknown[]=>{if(typeof window==="undefined")return [];try{const p:unknown=JSON.parse(sessionStorage.getItem(key)||"[]");return Array.isArray(p)?p:[]}catch{return []}};
+export function readOwnProductBatches(org:string,member:string):OwnProductBatch[]{
+ return readArray(batchKey(org,member)).filter((p):p is OwnProductBatch=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"name"in p&&typeof p.name==="string"&&"createdAt"in p&&typeof p.createdAt==="string")).map(p=>({...p,productCount:readOwnProducts(org,member).filter(x=>x.batchId===p.id).length}));
+}
+export function readOwnProducts(org:string,member:string):OwnProductRecord[]{
+ return readArray(productKey(org,member)).filter((p):p is OwnProductRecord=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"batchId"in p&&typeof p.batchId==="string"&&"skus"in p&&Array.isArray(p.skus)));
+}
+function notify(org:string,member:string){window.dispatchEvent(new CustomEvent(ownProductUpdated,{detail:{organizationId:org,memberId:member}}))}
+export function createOwnProductBatch(org:string,member:string,name:string):OwnProductBatch{
+ if(typeof window==="undefined")throw Error("只能在浏览器演示中创建批次");
+ const value=name.trim();
+ if(!value)throw Error("请输入批次名称");
+ const list=readOwnProductBatches(org,member);
+ if(list.some(b=>b.name===value))throw Error("该批次名称已经存在");
+ const batch={id:"OWN-"+crypto.randomUUID(),name:value,createdAt:new Date().toLocaleString("zh-CN",{hour12:false}),productCount:0};
+ sessionStorage.setItem(batchKey(org,member),JSON.stringify([batch,...list]));
+ notify(org,member);return batch;
+}
+export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omit<OwnProductRecord,"id"|"batchId"|"createdAt"|"checkedAt">):OwnProductRecord{
+ if(typeof window==="undefined")throw Error("演示存储不可用");
+ if(!readOwnProductBatches(org,member).some(b=>b.id===batchId))throw Error("该批次不属于当前账号或已不存在");
+ if(!entry.skus.length)throw Error("请至少添加一个 SKU");
+ const time=new Date().toLocaleString("zh-CN",{hour12:false});
+ const product:OwnProductRecord={...entry,id:"OWN-P-"+crypto.randomUUID(),batchId,createdAt:time,checkedAt:time};
+ const current=readOwnProducts(org,member);
+ // Keep prior products intact if session storage is full; no success without the actual data.
+ sessionStorage.setItem(productKey(org,member),JSON.stringify([product,...current]));
+ notify(org,member);return product;
+}
