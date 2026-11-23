@@ -722,3 +722,36 @@
 :global(.light) .page .mineBar[data-shuomi-filter="balanced"]{background:#fff;border-color:#dbdade}
 :global(.light) .mineFilterLabel{color:#6f6b7d}
 @media(max-width:1160px){.page [data-shuomi-filter-right] .categories{justify-content:flex-start}}
+
+
+/* Figma-aligned own product listing launch dialog */
+.figmaToolDialog:has(.figmaListingWorkspace){width:min(850px,calc(100vw - 32px))!important;max-height:min(88vh,820px);overflow:auto}
+.figmaListingWorkspace{display:grid;gap:13px;min-width:0;padding:2px 0}
+.listingSection{display:grid;gap:10px;padding:13px;border:1px solid #555a73;border-radius:9px;background:#34384e}
+.listingSectionHeading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.listingSectionHeading strong{color:#c7bcff;font-size:14px;font-weight:700;white-space:nowrap}
+.listingSectionHeading>span{font-size:12px;color:#bcb8ce;line-height:1.5}
+.listingSourceGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.listingSourceGrid button,.listingAiGrid button{display:grid;align-content:start;justify-items:start;gap:5px;text-align:left;position:relative;min-width:0;border:1px solid #555a73;border-radius:8px;background:#393d55;color:#cfcde4;padding:12px;cursor:pointer}
+.listingSourceGrid button strong,.listingAiGrid button strong{font-size:13px;white-space:nowrap}
+.listingSourceGrid button small,.listingAiGrid button small{font-size:12px;color:#bcb8ce;line-height:1.4}
+.listingSourceGrid .listingSelected,.listingSourceGrid button[aria-checked="true"],.listingAiGrid button[aria-pressed="true"]{border-color:#7367f0;background:rgba(115,103,240,.13)}
+.listingRadio{display:inline-block;width:16px;height:16px;box-sizing:border-box;border:2px solid #88839e;border-radius:50%;position:relative}
+[aria-checked="true"]>.listingRadio,[aria-pressed="true"]>.listingRadio{border-color:#7367f0}
+[aria-checked="true"]>.listingRadio:after,[aria-pressed="true"]>.listingRadio:after{content:"";width:7px;height:7px;position:absolute;inset:2.5px;border-radius:50%;background:#7367f0}
+.listingFields{display:grid;gap:11px}
+.listingSkuOptions{display:flex;align-items:center;gap:9px}
+.listingSkuOptions button{display:flex;align-items:center;gap:9px;min-height:38px;background:#393d55;color:#cfcde4;border:1px solid #555a73;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer}
+.listingSkuOptions button[aria-checked="true"]{border-color:#7367f0}
+.listingUpload,.listingNotes{display:grid;gap:8px;min-width:0;font-size:13px;font-weight:600;color:#cfcde4}
+.listingUpload input,.listingNotes input,.listingNotes textarea{min-width:0;width:100%;box-sizing:border-box;background:#393d55;color:#cfcde4;border:1px solid #555a73;border-radius:8px;padding:10px;font:inherit}
+.listingUpload small,.listingNotes small{font-size:12px;font-weight:400;color:#bcb8ce}
+.listingHint{margin:0!important;padding:9px 11px;border:1px solid #555a73;border-radius:8px;font-size:12px!important;color:#bcb8ce;line-height:1.6}
+.listingAiGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.listingFeedback{margin:0!important;border:1px solid #7367f0;border-radius:8px;padding:10px 12px;color:#c9c2ff;font-size:13px!important;line-height:1.5}
+:global(.light) .figmaToolDialog :is(.listingSection,.listingSourceGrid button,.listingAiGrid button,.listingSkuOptions button,.listingUpload input,.listingNotes input,.listingNotes textarea){background:#f8f7fa;color:#444050;border-color:#dedbea}
+:global(.light) .figmaToolDialog .listingSectionHeading strong{color:#7367f0}
+:global(.light) .figmaToolDialog :is(.listingSectionHeading>span,.listingSourceGrid button small,.listingAiGrid button small,.listingUpload small,.listingNotes small,.listingHint){color:#6f6b7d}
+:global(.light) .figmaToolDialog :is(.listingSourceGrid button[aria-checked="true"],.listingAiGrid button[aria-pressed="true"],.listingSkuOptions button[aria-checked="true"]){border-color:#7367f0;background:#f1efff}
+:global(.light) .figmaToolDialog .listingFeedback{color:#6152bf;background:#f7f5ff}
+@media(max-width:640px){.listingSourceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.listingAiGrid{grid-template-columns:1fr}.figmaToolDialog:has(.figmaListingWorkspace){max-height:calc(100vh - 30px)}}
