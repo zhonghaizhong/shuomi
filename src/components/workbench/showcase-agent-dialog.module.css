@@ -192,3 +192,23 @@
 @media(max-width:560px){
  .dialog:modal{max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);}
 }
+
+/* Figma multi-level template dialogs, retaining the approved Vuexy theme. */
+.dialog .nestedOverlay{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:18px;background:rgba(8,10,20,.68)}
+.dialog .nestedDialog{box-sizing:border-box;width:min(640px,100%);max-height:calc(100dvh - 36px);overflow:auto;display:grid;gap:16px;padding:22px;border:1px solid var(--agent-dialog-border);border-radius:12px;background:var(--agent-dialog-surface);color:var(--agent-dialog-text);box-shadow:0 24px 70px #0007}
+.dialog .nestedDialog>header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:12px;border-bottom:1px solid var(--agent-dialog-border)}
+.dialog .nestedDialog h2{font-size:19px;margin:0 0 5px;color:var(--agent-dialog-text)}
+.dialog .nestedDialog p,.dialog .nestedDialog small{font-size:13px;color:var(--agent-dialog-muted);line-height:1.6;margin:0}
+.dialog .nestedDialog button{cursor:pointer;min-height:38px;padding:8px 12px;border:1px solid var(--agent-dialog-border);border-radius:8px;background:var(--agent-dialog-raised);color:var(--agent-dialog-text)}
+.dialog .nestedDialog .primary{border-color:var(--agent-dialog-primary);background:var(--agent-dialog-primary);color:white}
+.dialog .nestedDialog form{display:grid;gap:14px}
+.dialog .nestedDialog label{display:grid;gap:7px;font-size:13px}
+.dialog .nestedDialog input{width:100%;min-height:40px;box-sizing:border-box;border:1px solid var(--agent-dialog-border);border-radius:7px;padding:8px 12px;background:var(--agent-dialog-raised);color:var(--agent-dialog-text)}
+.dialog .nestedDialog footer{display:flex;justify-content:flex-end;gap:10px}
+.dialog .templateList{display:grid;gap:10px}
+.dialog .templateList article{display:grid;gap:10px;padding:14px;border:1px solid var(--agent-dialog-border);border-radius:8px;background:var(--agent-dialog-raised)}
+.dialog .templateList article>strong{font-size:14px;color:var(--agent-dialog-text)}
+.dialog .templateInline{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.dialog .templateInline input{flex:1;min-width:120px}
+.dialog .templateConfig{max-height:200px;overflow:auto;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid var(--agent-dialog-border);border-radius:7px;background:var(--agent-dialog-surface);color:var(--agent-dialog-text);font-size:12px}
+@media(max-width:600px){.dialog .nestedDialog{padding:16px}.dialog .nestedOverlay{padding:10px}}
