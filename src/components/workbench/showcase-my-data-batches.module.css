@@ -446,3 +446,69 @@
   .wrapper .versionExpanded{padding:12px}
   .wrapper .versionProductDialog header,.wrapper .versionProductDialog footer{padding:14px}
 }
+
+
+/* My Data filter layout correction: the markup contains two groups, not five
+   direct grid items. Reserve flexible space for search and fit four controls
+   into the right group without splitting each into extra rows. */
+.wrapper .filterBar[data-shuomi-filter="balanced"] {
+  display:grid;
+  grid-template-columns:minmax(180px,1fr) minmax(0,auto);
+  align-items:center;
+  gap:14px;
+}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-left] {
+  min-width:0;
+  width:100%;
+}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-left] .searchBox {
+  width:100%;
+  min-width:0;
+  margin:0;
+}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] {
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(110px,155px) minmax(110px,155px) 74px 74px;
+  align-items:center;
+  gap:10px;
+}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] :is(select,button) {
+  box-sizing:border-box;
+  min-width:0;
+  width:100%;
+  height:40px;
+  min-height:40px;
+  margin:0;
+  white-space:nowrap;
+}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] button.primary {
+  color:#fff;
+  background:var(--md-primary);
+  border-color:var(--md-primary);
+}
+@media (max-width:1100px) {
+  .wrapper .filterBar[data-shuomi-filter="balanced"] {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] {
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) 74px 74px;
+  }
+}
+@media (max-width:540px) {
+  .wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+/* Prevent card titles and modal actions from becoming unreadable when the
+   workbench sidebar reduces available content width. */
+.wrapper .heading > div:first-child {flex-wrap:wrap;row-gap:6px}
+.wrapper .headingActions {min-width:0}
+.wrapper .manageHeaderActions {flex-wrap:wrap;justify-content:flex-end}
+.wrapper .manageHeaderActions button {white-space:nowrap}
+.wrapper .versionProductDialog {min-width:0;max-width:calc(100vw - 32px)}
+.wrapper .versionExpanded, .wrapper .versionItem {min-width:0}
+@media (max-width:760px) {
+  .wrapper .manageHeaderActions {justify-content:stretch}
+  .wrapper .manageHeaderActions button {flex:1 1 auto}
+}
