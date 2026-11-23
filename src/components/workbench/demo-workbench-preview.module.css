@@ -4103,3 +4103,34 @@
  .goalsPreview .goalFilters.goalFilterSingleRow{grid-template-columns:repeat(2,minmax(0,1fr))}
  .goalsPreview .goalFilters.goalFilterSingleRow > select:nth-child(3){grid-column:1 / -1}
 }
+
+
+/* CI sidebar regression: the goals screen has six direct filter controls.
+   Desktop must not inherit narrow-grid stacking from legacy cockpit styles. */
+@media (min-width: 1101px) {
+ .goalsPreview .goalFilters.goalFilterSingleRow {
+   display:flex;
+   flex-flow:row nowrap;
+   align-items:center;
+   justify-content:stretch;
+   gap:8px;
+   min-width:0;
+ }
+ .goalsPreview .goalFilters.goalFilterSingleRow > select {
+   flex:1 1 0;
+   width:0;
+   min-width:0;
+   height:40px;
+ }
+ .goalsPreview .goalFilters.goalFilterSingleRow > input {
+   flex:1.5 1 0;
+   width:0;
+   min-width:0;
+   height:40px;
+ }
+ .goalsPreview .goalFilters.goalFilterSingleRow > button {
+   flex:0 0 78px;
+   width:78px;
+   height:40px;
+ }
+}
