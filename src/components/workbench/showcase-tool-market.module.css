@@ -402,3 +402,57 @@
   .dialog.launchDialog { padding: 18px; }
   .launchChoices { grid-template-columns: 1fr; }
 }
+
+
+/* Product acquisition: simulated operational workflow, scoped to use-entry dialog. */
+.dialog.acquisitionDialog { width:min(650px,calc(100vw - 28px)); }
+.acquisitionDialog .acquisitionDemoNotice {
+  margin:16px 0 12px; padding:9px 12px; border-radius:7px;
+  border:1px solid #62598e; background:#373450; color:#d4cdec;
+  font-size:13px; line-height:20px;
+}
+.acquisitionTabs { display:flex;gap:8px;border-bottom:1px solid #555a73;padding-bottom:12px; }
+.acquisitionDialog .acquisitionTabs button {
+  flex:1;min-height:38px; padding:6px 12px; border-radius:7px;
+}
+.acquisitionDialog .acquisitionTabs button[aria-pressed="true"] {
+  background:#7367f0;color:#fff;border-color:#7367f0;
+}
+.acquisitionBody { display:grid;gap:12px;margin-top:14px;min-width:0; }
+.acquisitionDialog .acquisitionBody>p { margin:0;font-size:14px;line-height:22px; }
+.acquisitionDialog .acquisitionPricing {color:#a99dff;font-weight:700}
+.acquisitionInstall {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #555a73;border-radius:8px;background:#393d55}
+.acquisitionInstall div {display:grid;gap:4px}
+.acquisitionInstall strong {font-size:14px}
+.acquisitionInstall span {font-size:13px;color:#b9b5cc}
+.acquisitionDialog .acquisitionInstall button {min-height:36px;white-space:nowrap}
+.acquisitionForm {display:grid;gap:13px}
+.acquisitionForm label {display:grid;gap:6px;font-size:14px;font-weight:600;min-width:0}
+.acquisitionForm input {
+  width:100%;box-sizing:border-box;min-width:0;min-height:40px;
+  padding:9px 12px;border:1px solid #555a73;border-radius:7px;
+  background:#393d55;color:#f0edf8;font-size:14px;
+}
+.acquisitionForm input::placeholder {color:#b1acc5}
+.acquisitionFields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.acquisitionDialog .acquisitionForm button {min-height:42px;font-weight:700}
+.acquisitionDialog .acquisitionError {color:#ff8e98;font-size:13px}
+.acquisitionDialog .acquisitionSuccess {padding:12px;border:1px solid #2a8160;border-radius:7px;background:#22453c;color:#75e7af;font-size:14px}
+.acquisitionDialog .acquisitionDestination {font-size:13px;color:#b9b5cc}
+.acquisitionRecords {display:grid;gap:9px;max-height:290px;overflow:auto}
+.acquisitionRecord {padding:12px;border:1px solid #555a73;border-radius:8px;background:#393d55;min-width:0}
+.acquisitionRecord>div {display:flex;justify-content:space-between;gap:9px;align-items:center;flex-wrap:wrap}
+.acquisitionRecord strong {font-size:15px}
+.acquisitionRecord span {color:#b1acc5;font-size:12px}
+.acquisitionDialog .acquisitionRecord p {margin:6px 0 0;font-size:13px}
+.acquisitionDialog .acquisitionUrl {overflow-wrap:anywhere;color:#a99dff}
+:global(.light) .acquisitionDialog .acquisitionDemoNotice {background:#f2efff;color:#5c518f;border-color:#ded7ff}
+:global(.light) .acquisitionDialog .acquisitionTabs button[aria-pressed="true"] {background:#7367f0;color:#fff}
+:global(.light) .acquisitionDialog .acquisitionPricing {color:#7367f0}
+:global(.light) .acquisitionDialog :is(.acquisitionInstall,.acquisitionRecord) {background:#f8f7fa;border-color:#dedbea;color:#444050}
+:global(.light) .acquisitionDialog :is(.acquisitionInstall span,.acquisitionRecord span,.acquisitionDestination) {color:#6f6b7d}
+:global(.light) .acquisitionDialog .acquisitionForm input {background:#fff;border-color:#dedbea;color:#444050}
+:global(.light) .acquisitionDialog .acquisitionForm input::placeholder {color:#777285}
+:global(.light) .acquisitionDialog .acquisitionSuccess {background:#e2f6e9;color:#14764d}
+:global(.light) .acquisitionDialog .acquisitionError {color:#a6263c}
+@media(max-width:560px) {.acquisitionFields{grid-template-columns:1fr}.acquisitionInstall{align-items:stretch;flex-direction:column}}
