@@ -195,3 +195,9 @@ select {
  flex-basis:100%;
  }
 }
+
+.light [data-shuomi-filter="balanced"] [data-shuomi-filter-right] select{
+ background:var(--st-control,var(--md-input,var(--bp-bg,#fff)));
+ color:var(--st-text,var(--md-ink,var(--bp-ink,#444050)));
+ border-color:var(--st-line,var(--md-line,var(--bp-line,#dbdade)));
+}
