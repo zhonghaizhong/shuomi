@@ -2935,11 +2935,11 @@
 .page[data-commerce-unified="data"] .apiGoodStatus{
  display:inline-flex;align-items:center;justify-content:center;
  padding:5px 10px;border-radius:7px;white-space:nowrap;
- font-size:12px;font-weight:700;color:#087f54;
- background:#e5f7ed;border:1px solid #c7edd7;
+ font-size:12px;font-weight:700;color:#66ecb0;
+ background:rgba(20,146,100,.16);border:1px solid rgba(58,206,149,.25);
 }
-:global(:not(.light)) .page[data-commerce-unified="data"] .apiGoodStatus{
- color:#66ecb0;background:rgba(20,146,100,.16);border-color:rgba(58,206,149,.25);
+:global(.light) .page[data-commerce-unified="data"] .apiGoodStatus{
+ color:#087f54;background:#e5f7ed;border-color:#c7edd7;
 }
 .page[data-commerce-unified="data"] .apiKeyScroll{
  width:100%;max-width:100%;overflow-x:auto;margin-top:12px;
