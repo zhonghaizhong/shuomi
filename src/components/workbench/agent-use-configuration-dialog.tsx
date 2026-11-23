@@ -83,7 +83,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
   "knowledge":"仅引用实际勾选的知识资料，不会自动读取整个知识库。"
  } as Record<ConfigurationMode,string>)[mode];
  const commit=(next:AgentUseConfiguration=form)=>onSave({...next,
-  ...(mode==="product-image"||mode==="pod-ai"?{imageTasks:tasks,selectedImages:selectedImgs}:{}),
+  ...(mode==="product-image"?{imageTasks:tasks}:mode==="pod-ai"?{imageTasks:tasks,selectedImages:selectedImgs}:{}),
   ...(mode==="pod-hybrid"?{hybridSlots:slots}:{}),
   ...(mode==="skills"?{selectedSkills:selectedItems}:{}),
   ...(mode==="knowledge"?{selectedKnowledge:selectedItems}:{})
