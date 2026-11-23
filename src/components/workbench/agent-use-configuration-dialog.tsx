@@ -34,7 +34,7 @@ const initialOfficial=["商品识别主图","核心购买理由","核心需求�
 const officialDetail=["核心购买理由","核心需求解决","核心使用场景","细节证据","功能卖点确认","使用体验延展","规格购买确认","购买理由总结"];
 function officialImageExampleUrl(target:"主图"|"详情图",index:number,extension:"png"|"svg"="png"){
  const base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
- return `${base}/assets/agent-image-examples/${target==="主图"?"main":"detail"}-${index+1}.${target==="主图"?extension:"svg"}`;
+ return `${base}/assets/agent-image-examples/${target==="主图"?"main":"detail"}-${index+1}.${extension}`;
 }
 
 const officialExampleNotes={
