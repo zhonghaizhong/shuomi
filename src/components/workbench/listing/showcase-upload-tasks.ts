@@ -6,7 +6,7 @@ export type ShowcaseUploadTask={
  source:"采集批次"|"自有商品库";batchId:string;batchName:string;
  productIds:string[];productCount:number;missingCount:number;
  storeId:string;storeName:string;platform:"SHEIN";region:string;storeType:string;
- rule:"标准适配规则";ruleChecks?:{images:boolean;price:boolean;variants:boolean};agentId:string|null;agentName:string|null;
+ rule:string;ruleConfig?:{id:string;name:string;skuMode:string;prefix:string;suffix:string;priceMode:string;priceValue:string;currencyConversion:boolean;aiFill:boolean};agentId:string|null;agentName:string|null;
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
  status:"待补全"|"待执行智能体"|"待审核"|"待平台提交";
  createdAt:string;demo:true;
