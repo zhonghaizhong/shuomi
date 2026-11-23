@@ -167,3 +167,27 @@
 .wrapper .deleteConfirm>div{display:flex;justify-content:flex-end;gap:10px}
 .wrapper .deleteConfirm button{border:1px solid var(--md-line);background:var(--md-panel);border-radius:7px;color:var(--md-ink);padding:10px 18px;font-size:13px}
 .wrapper .deleteConfirm .deleteConfirmButton{background:#ea5455;border-color:#ea5455;color:#fff}
+
+
+/* My Data & batch dialogs use the same Vuexy tokens as Data Services. */
+.wrapper{--md-bg:#142237;--md-panel:#18283c;--md-inner:#1c3047;--md-line:#30465e;--md-ink:#eff6ff;--md-muted:#adc1d4;--md-primary:#7367f0;--md-input:#142237;gap:16px}
+:global(.light) .wrapper{--md-bg:#fff;--md-panel:#f7fafd;--md-inner:#edf3f8;--md-line:#dfe7ef;--md-ink:#263747;--md-muted:#607183;--md-primary:#7367f0;--md-input:#fff}
+.wrapper :is(.flow,.filterBar,.panel){background:var(--md-bg);border-color:var(--md-line);border-radius:12px;box-shadow:0 5px 22px rgba(7,21,39,.09)}
+:global(.light) .wrapper :is(.flow,.filterBar,.panel){box-shadow:0 5px 20px rgba(32,55,87,.055)}
+.wrapper .flowSteps{border-color:var(--md-line)}
+.wrapper .tabs{background:var(--md-panel);border-color:var(--md-line);border-radius:10px}
+.wrapper .tabs button[aria-current="page"]{background:color-mix(in srgb,var(--md-primary) 12%,var(--md-bg));color:var(--md-primary)}
+.wrapper .filterBar :is(input,select),.wrapper .searchBox{background:var(--md-input);border-color:var(--md-line);color:var(--md-ink);border-radius:9px}
+.wrapper :is(input,select)::placeholder{color:var(--md-muted);opacity:1}
+.wrapper :is(button,input,select):focus-visible{outline:2px solid var(--md-primary);outline-offset:2px}
+.wrapper .heading{border-color:var(--md-line)}
+.wrapper .filterBar .primary,.wrapper .manageDialog footer .primary{background:#7367f0;color:#fff;border-color:#7367f0;border-radius:9px}
+.wrapper .tableScroll{max-width:100%;overflow-x:auto}
+.wrapper .tableScroll table{border-collapse:separate;border-spacing:0;min-width:1060px}
+.wrapper .tableScroll thead{background:var(--md-panel);color:var(--md-ink)}
+.wrapper .tableScroll tbody tr:nth-child(even){background:var(--md-panel)}
+.wrapper .tableScroll tbody tr:hover{background:color-mix(in srgb,var(--md-primary) 7%,var(--md-bg))}
+.wrapper :is(.manageDialog,.deleteConfirm){background:var(--md-bg);border-color:var(--md-line);color:var(--md-ink);border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.28)}
+.wrapper :is(.manageDialog,.deleteConfirm) :is(input,select){color:var(--md-ink);background:var(--md-input);border-color:var(--md-line)}
+.wrapper .manageActions button{background:var(--md-panel);border-color:var(--md-line);border-radius:8px}
+@media(max-width:760px){.wrapper .filterBar{flex-wrap:wrap}.wrapper .filterBar .searchBox{flex:1 1 100%}}
