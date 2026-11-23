@@ -224,7 +224,9 @@ test("online collection matches Figma source chooser and Amazon/1688 settings",a
  await modal.getByRole("textbox",{name:"ASIN"}).fill("B012345678");
  await modal.getByRole("checkbox",{name:"采集后自动转入待上传"}).check();
  await modal.getByRole("button",{name:"设置规则"}).click();
- await modal.getByRole("button",{name:"保存规则"}).click();
+ await expect(modal.getByRole("heading",{name:"亚马逊采集规则"})).toBeVisible();
+ await expect(modal).toContainText("不符合规则的商品仍保留在「我的数据」中。");
+ await modal.getByRole("button",{name:"保存模板"}).click();
  await modal.getByRole("button",{name:"开始采集"}).click();
  await expect(modal).toContainText("采集任务已模拟完成");
  await expect(modal).toContainText("1 条亚马逊演示数据");
@@ -234,6 +236,10 @@ test("online collection matches Figma source chooser and Amazon/1688 settings",a
  await modal.getByRole("button",{name:"进入1688采集"}).click();
  await expect(modal.getByRole("heading",{name:"1688在线采集"})).toBeVisible();
  await modal.getByRole("textbox",{name:"商品链接"}).fill("https://detail.1688.com/offer/123456789.html");
+ await modal.getByRole("button",{name:"设置规则"}).click();
+ await expect(modal.getByRole("heading",{name:"1688采集规则"})).toBeVisible();
+ await expect(modal).toContainText("规则只影响后续处理，不影响采集范围。");
+ await modal.getByRole("button",{name:"保存设置"}).click();
  await modal.getByRole("button",{name:"开始采集"}).click();
  await expect(modal).toContainText("1 条1688演示数据");
 });
