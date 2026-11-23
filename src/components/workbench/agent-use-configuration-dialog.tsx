@@ -63,8 +63,8 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const [fileName,setFileName]=useState("");
  const [tasks,setTasks]=useState<ImageTask[]>(initial.imageTasks?.length?initial.imageTasks:mode==="product-image"?[{id:1,name:"",prompt:"",target:"主图"},{id:2,name:"",prompt:"",target:"主图"}]:[{id:1,name:"自定义图片 1",prompt:""}]);
  const [selectedImgs,setSelectedImgs]=useState<number[]>(initial.selectedImages??[]);
- const [mainImgs,setMainImgs]=useState<number[]>(initial.selectedMainImages??(mode==="product-image"?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
- const [detailImgs,setDetailImgs]=useState<number[]>(initial.selectedDetailImages??(mode==="product-image"?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
+ const [mainImgs,setMainImgs]=useState<number[]>(initial.selectedMainImages??((mode==="product-image"||mode==="pod-ai")?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
+ const [detailImgs,setDetailImgs]=useState<number[]>(initial.selectedDetailImages??((mode==="product-image"||mode==="pod-ai")?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
  const [slots,setSlots]=useState<(string|null)[]>(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));
  const [selectedItems,setSelectedItems]=useState<string[]>(mode==="knowledge"?initial.selectedKnowledge??[]:initial.selectedSkills??[]);
  const [skillTab,setSkillTab]=useState<"我的技能"|"团队技能">("我的技能");
