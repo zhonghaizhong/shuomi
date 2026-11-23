@@ -159,3 +159,23 @@
   .market .serviceBadges { gap: 8px; }
   .market .sectionTitle h2 { min-width: 0; }
 }
+
+
+/* Premium data market / API management shared panels, controls and responsive titles. */
+.page{--ds-accent:#7367f0;--ds-surface:var(--card);--ds-nested:var(--secondary);--ds-line:var(--border);--ds-ink:var(--foreground);--ds-muted:var(--muted-foreground);color:var(--ds-ink)}
+.page .header{min-height:116px;align-items:center;padding:20px 24px;border:1px solid var(--ds-line);border-radius:12px;background:var(--ds-surface)}
+.page .header h1{padding-left:12px;border-left:3px solid var(--ds-accent);color:var(--ds-ink);line-height:1.3}
+.page .header p,.page .breadcrumb,.page .sectionTitle p{color:var(--ds-muted)}
+.page :is(.card,.service,.platform,.process){border:1px solid var(--ds-line);border-radius:12px;background:var(--ds-surface);box-shadow:0 5px 22px var(--shadow-color)}
+.page :is(.service,.card){transition:box-shadow .18s ease,border-color .18s ease}
+@media(hover:hover){.page :is(.service,.card):hover{border-color:color-mix(in srgb,var(--ds-accent) 30%,var(--ds-line));box-shadow:0 10px 28px var(--shadow-color)}}
+.page .sectionTitle h2{padding-left:11px;border-left:3px solid var(--ds-accent);color:var(--ds-ink)}
+.page :is(.platform h2,.service h3,.cardHeading h2){color:var(--ds-ink)}
+.page :is(.service>p,.platform p,.bullets li,.platformTags,.platformFacts dt){color:var(--ds-muted)}
+.page :is(input,select,textarea){border-color:var(--ds-line);border-radius:8px;background:var(--ds-surface);color:var(--ds-ink)}
+.page :is(input,select,textarea)::placeholder{color:var(--ds-muted);opacity:1}
+.page :is(button,input,select,textarea):focus-visible{outline:2px solid var(--ds-accent);outline-offset:2px}
+.page :is(.tabs button[aria-selected="true"],.tabs button[aria-pressed="true"]){border-color:var(--ds-accent);color:var(--ds-accent);background:color-mix(in srgb,var(--ds-accent) 11%,var(--ds-surface))}
+.page .actions :is(button,a){border-radius:9px}
+@media(max-width:700px){.page .header{align-items:flex-start;min-height:112px;padding:17px}.page .header h1{font-size:23px}}
+@media(prefers-reduced-motion:reduce){.page :is(.service,.card){transition:none}}
