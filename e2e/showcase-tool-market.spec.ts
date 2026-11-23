@@ -143,3 +143,36 @@ test("my tools respects Figma 1168:359 visible content and shows native acquisit
  await expect(acquisition.getByRole("button",{name:"下载插件"})).toBeVisible();
  await expect(acquisition.getByRole("button",{name:"在线采集"})).toBeVisible();
 });
+
+
+test("my tools adopts Vuexy dark/light surfaces and title indicator without constraining widescreen content",async({page})=>{
+ await page.setViewportSize({width:1920,height:1080});
+ await page.goto(base+"/mine");
+ const region=page.locator('[class*="figmaMine"]');
+ const header=region.getByRole("banner");
+ const title=header.getByRole("heading",{name:"我的工具"});
+ await expect(title).toBeVisible();
+ const dark=await page.evaluate(()=>{
+   const area=document.querySelector('[class*="figmaMine"]') as HTMLElement;
+   const heading=area.querySelector("h1") as HTMLElement;
+   const card=area.querySelector('[class*="mineCard"]') as HTMLElement;
+   return {width:area.getBoundingClientRect().width,bar:getComputedStyle(heading).borderLeftWidth,
+     header:getComputedStyle(area.querySelector("header") as HTMLElement).backgroundColor,
+     card:getComputedStyle(card).backgroundColor};
+ });
+ expect(dark.width).toBeGreaterThan(1136);
+ expect(dark.bar).toBe("3px");
+ expect(dark.header).toBe("rgb(47, 51, 73)");
+ expect(dark.card).toBe("rgb(47, 51, 73)");
+ await page.evaluate(()=>document.documentElement.classList.add("light"));
+ const light=await page.evaluate(()=>{
+   const area=document.querySelector('[class*="figmaMine"]') as HTMLElement;
+   const heading=area.querySelector("h1") as HTMLElement;
+   const card=area.querySelector('[class*="mineCard"]') as HTMLElement;
+   return {header:getComputedStyle(area.querySelector("header") as HTMLElement).backgroundColor,
+     card:getComputedStyle(card).backgroundColor,bar:getComputedStyle(heading).borderLeftColor};
+ });
+ expect(light.header).toBe("rgb(255, 255, 255)");
+ expect(light.card).toBe("rgb(255, 255, 255)");
+ expect(light.bar).toBe("rgb(115, 103, 240)");
+});
