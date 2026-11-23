@@ -274,3 +274,55 @@
 .ruleFoot{flex:none;display:flex;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid var(--stroke)}
 .ruleFoot button{min-height:40px}
 @media(max-width:600px){.ruleDialog{max-height:calc(100dvh - 20px)}.ruleHeading,.ruleMain,.ruleFoot{padding-left:15px;padding-right:15px}.ruleScope{grid-template-columns:1fr;padding:12px 15px}.ruleHelp{padding-left:15px;padding-right:15px}.ruleFoot button{flex:1}}
+
+/* Figma "待上传" reference: four restrained premium cards and a compact task summary. */
+.page[data-listing-stage="waiting"]{--listing-primary:#2788d7}
+.page[data-listing-stage="waiting"] .heading{min-height:105px;padding:14px 20px}
+.page[data-listing-stage="waiting"] .heading h1{margin:5px 0;font-size:26px}
+.page[data-listing-stage="waiting"] .heading p{font-size:13px}
+.page[data-listing-stage="waiting"] .flowHeader{padding:16px 20px;min-height:88px}
+.page[data-listing-stage="waiting"] .flowHeader>div:first-child{min-width:175px;max-width:230px}
+.page[data-listing-stage="waiting"] .flowHeader h2{font-size:17px;white-space:nowrap}
+.page[data-listing-stage="waiting"] .flowHeader p{font-size:12px;line-height:1.45}
+.page[data-listing-stage="waiting"] .flowSteps{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;align-items:stretch;flex:1;min-width:0}
+.page[data-listing-stage="waiting"] .flowSteps span{min-width:0;min-height:54px;border:1px solid var(--stroke);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:7px;background:var(--surface);font-size:12px}
+.page[data-listing-stage="waiting"] .flowSteps span:first-child{border-color:#2788d7;background:color-mix(in srgb,#2788d7 8%,var(--surface))}
+.page[data-listing-stage="waiting"] .flowSteps b{width:29px;height:29px;min-width:29px;border-radius:50%;border:0;background:var(--surface-alt);color:var(--muted);font-size:13px}
+.page[data-listing-stage="waiting"] .flowSteps span:first-child b{background:#2788d7;color:#fff}
+.page[data-listing-stage="waiting"] .flowSteps strong{color:var(--ink);font-size:12px;white-space:nowrap}
+.page[data-listing-stage="waiting"] .flowSteps small{margin-left:auto;font-size:11px;white-space:nowrap;color:var(--muted);background:var(--surface-alt);padding:4px 7px;border-radius:12px}
+.page[data-listing-stage="waiting"] .configuration{gap:18px}
+.page[data-listing-stage="waiting"] .configuration article{min-height:290px;padding:16px 18px;gap:11px}
+.page[data-listing-stage="waiting"] .configuration article:nth-child(1) header{color:#75baff}
+.page[data-listing-stage="waiting"] .configuration article:nth-child(2) header{color:#f9ae46}
+.page[data-listing-stage="waiting"] .configuration article:nth-child(3) header{color:#b4a1ff}
+.page[data-listing-stage="waiting"] .configuration article:nth-child(4) header{color:#53d6b5}
+.page[data-listing-stage="waiting"] .configuration article header>b{width:31px;min-width:31px;height:31px;background:transparent;border:1px solid currentColor;color:inherit}
+.page[data-listing-stage="waiting"] .configuration article header h2{font-size:16px;color:inherit}
+.page[data-listing-stage="waiting"] .configuration article p{font-size:12px;line-height:1.5}
+.page[data-listing-stage="waiting"] .configuration label{font-size:12px}
+.page[data-listing-stage="waiting"] .configuration :is(select,button){min-height:39px;font-size:12px}
+.page[data-listing-stage="waiting"] .configuration article small{font-size:11px;line-height:1.45}
+.page[data-listing-stage="waiting"] .submit{display:flex;gap:16px;align-items:stretch;padding:16px 19px;min-height:143px}
+.page[data-listing-stage="waiting"] .uploadSummary{display:flex;flex-direction:column;gap:11px;min-width:0;flex:1}
+.page[data-listing-stage="waiting"] .uploadSummary header h2{margin:0;border-left:3px solid #2788d7;padding-left:10px;font-size:17px}
+.page[data-listing-stage="waiting"] .uploadSummary header p{margin:5px 0 0;font-size:12px}
+.page[data-listing-stage="waiting"] .uploadFacts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.page[data-listing-stage="waiting"] .uploadFact{display:grid;align-content:center;gap:5px;min-width:0;padding:10px;border:1px solid var(--stroke);background:var(--surface-alt);border-radius:8px}
+.page[data-listing-stage="waiting"] .uploadFact strong{font-size:12px;color:var(--muted);padding-left:6px;border-left:3px solid #2788d7;white-space:nowrap}
+.page[data-listing-stage="waiting"] .uploadFact[data-kind="1"] strong{border-color:#40c69d}
+.page[data-listing-stage="waiting"] .uploadFact[data-kind="2"] strong{border-color:#f9ae46}
+.page[data-listing-stage="waiting"] .uploadFact[data-kind="3"] strong{border-color:#c4a2fc}
+.page[data-listing-stage="waiting"] .uploadFact[data-kind="4"] strong{border-color:#b998e7}
+.page[data-listing-stage="waiting"] .uploadFact span{font-size:12px;color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.page[data-listing-stage="waiting"] .uploadActions{display:flex;flex-direction:column;justify-content:end;gap:10px;min-width:250px;max-width:310px}
+.page[data-listing-stage="waiting"] .scheduleRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.page[data-listing-stage="waiting"] .scheduleRow label{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border:1px solid var(--stroke);border-radius:8px;background:var(--surface-alt);color:var(--ink);font-size:12px;min-width:0}
+.page[data-listing-stage="waiting"] .scheduleRow input{accent-color:#2788d7;width:17px;height:17px}
+.page[data-listing-stage="waiting"] .scheduleRow button{min-width:0}
+.page[data-listing-stage="waiting"] .uploadActionButtons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.page[data-listing-stage="waiting"] .uploadActions button{min-width:0;padding:8px 10px;font-size:12px}
+.page[data-listing-stage="waiting"] .uploadActions>small{font-size:11px;color:var(--muted)}
+@media(max-width:1360px){.page[data-listing-stage="waiting"] .flowHeader{flex-wrap:wrap}.page[data-listing-stage="waiting"] .flowHeader>div:first-child{max-width:none}.page[data-listing-stage="waiting"] .flowSteps{width:100%}}
+@media(max-width:1160px){.page[data-listing-stage="waiting"] .configuration{grid-template-columns:repeat(2,minmax(0,1fr))}.page[data-listing-stage="waiting"] .submit{flex-wrap:wrap}.page[data-listing-stage="waiting"] .uploadActions{max-width:none;width:100%}}
+@media(max-width:730px){.page[data-listing-stage="waiting"] .configuration{grid-template-columns:1fr}.page[data-listing-stage="waiting"] .flowSteps{grid-template-columns:repeat(2,minmax(0,1fr))}.page[data-listing-stage="waiting"] .uploadFacts{grid-template-columns:repeat(2,minmax(0,1fr))}.page[data-listing-stage="waiting"] .uploadActions{min-width:0}}
