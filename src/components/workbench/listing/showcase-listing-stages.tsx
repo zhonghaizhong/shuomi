@@ -23,7 +23,7 @@ const descriptions:Record<Stage,string>={
 const menu=[["waiting","待上传"],["missing","待补全"],["review","待审核"],["uploaded","已上传"]] as const;
 export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stage;organizationId:string;memberId:string}){
  const router=useRouter();
- const [source,setSource]=useState("采集批次"),[batch,setBatch]=useState(""),[store,setStore]=useState(""),[agent,setAgent]=useState(false),[agentId,setAgentId]=useState(""),[templateId,setTemplateId]=useState(""),[rules,setRules]=useState(true),[mode,setMode]=useState<"平台草稿"|"直接上传到平台"|"定时上传">("平台草稿");
+ const [source,setSource]=useState("采集批次"),[batch,setBatch]=useState(""),[batchQuery,setBatchQuery]=useState(""),[store,setStore]=useState(""),[agent,setAgent]=useState(false),[agentId,setAgentId]=useState(""),[templateId,setTemplateId]=useState(""),[rules,setRules]=useState(true),[mode,setMode]=useState<"平台草稿"|"直接上传到平台"|"定时上传">("平台草稿");
  const [scheduledDate,setScheduledDate]=useState(""),[scheduledTime,setScheduledTime]=useState("");
  const [scheduleEnabled,setScheduleEnabled]=useState(false),[showTimeSettings,setShowTimeSettings]=useState(false);
  const [platformSite,setPlatformSite]=useState("");
@@ -61,7 +61,12 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const ownProducts=useMemo(()=>listOwnReadyProducts(organizationId,memberId),[organizationId,memberId,dataVersion]);
  const collectedBatches=useMemo(()=>readDemoCollectionBatches(organizationId,memberId),[organizationId,memberId,dataVersion]);
  const availableBatches=source==="数据集"?optimizedSets:source==="自有商品库"?ownBatches:collectedBatches;
- const selectedOwnBatch=source==="自有商品库"?ownBatches.find(x=>x.id===batch):undefined;
+ const visibleBatchOptions=availableBatches.filter(b=>{
+  if(!batchQuery.trim()||b.id===batch)return true;
+  const terms=("language" in b?b.name+" "+b.platform+" "+b.site+" "+b.language+" "+b.sourceBatchName:b.name).toLowerCase();
+  return terms.includes(batchQuery.trim().toLowerCase());
+ });
+  const selectedOwnBatch=source==="自有商品库"?ownBatches.find(x=>x.id===batch):undefined;
  const selectedCollectedBatch=source==="采集批次"?collectedBatches.find(x=>x.id===batch):undefined;
  const selectedOptimizedSet=source==="数据集"?optimizedSets.find(x=>x.id===batch):undefined;
  const selectableProducts=selectedOwnBatch?ownProducts.filter(p=>p.batchId===selectedOwnBatch.id):[];
@@ -100,9 +105,10 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
    <section className={styles.flowHeader}><div><h2>商品上传流程</h2><p>商品 · 规则必选 · 智能体按需 · 平台上传</p></div><div className={styles.flowSteps}>{[["选择商品","待选择"],["平台与店铺","当前"],["启用智能体","按需"],["启用规则","必选"]].map(([name,state],i)=><span key={name}><b>{i+1}</b><strong>{name}</strong><small>{state}</small></span>)}</div></section>
    <section className={styles.configuration}>
     <article><header><b>01</b><h2>选择商品</h2></header><p>先确认数据类型，再选择批次，避免混用原始资料和优化版本。</p>
-     <label>商品来源<select value={source} onChange={e=>{setSource(e.target.value);setBatch("")}}><option value="采集批次">采集批次 · 原始采集</option><option value="自有商品库">自有商品库 · 自有原始</option><option value="数据集">数据集 · 已优化版本</option></select></label>
+     <label>商品来源<select value={source} onChange={e=>{setSource(e.target.value);setBatch("");setBatchQuery("")}}><option value="采集批次">采集批次 · 原始采集</option><option value="自有商品库">自有商品库 · 自有原始</option><option value="数据集">数据集 · 已优化版本</option></select></label>
      <p className={styles.sourceGuide}>{source==="采集批次"?"原始采集资料：首次适配目标平台。":source==="自有商品库"?"原始自有商品：已通过硕米入库检查，待做目标平台适配。":"已优化版本：可以复用图片和文案，但更换平台或站点仍需重新检查。"}</p>
-     <label>本次批次 / 产品集<select value={batch} onChange={e=>setBatch(e.target.value)}><option value="">{source==="数据集"?"请选择优化版本":"请选择原始批次"}</option>{availableBatches.map(b=><option key={b.id} value={b.id} disabled={source==="自有商品库"&&!ownProducts.some(p=>p.batchId===b.id)}>{source==="数据集"&&"language" in b?b.name+" · "+b.platform+" / "+b.site+" / "+b.language+" · V"+b.version:b.name+" · "+("products" in b?b.products.length:ownProducts.filter(p=>p.batchId===b.id).length)+" 个商品"}</option>)}</select></label>
+     {availableBatches.length>8?<label className={styles.batchLookup}>搜索当前分类的批次<input aria-label="搜索可选批次" value={batchQuery} onChange={e=>setBatchQuery(e.target.value)} placeholder="批次名称 / 平台 / 站点 / 语言"/></label>:null}
+     <label>本次批次 / 产品集<select value={batch} onChange={e=>setBatch(e.target.value)}><option value="">{source==="数据集"?"请选择优化版本":"请选择原始批次"}</option>{visibleBatchOptions.map(b=><option key={b.id} value={b.id} disabled={source==="自有商品库"&&!ownProducts.some(p=>p.batchId===b.id)}>{source==="数据集"&&"language" in b?b.name+" · "+b.platform+" / "+b.site+" / "+b.language+" · V"+b.version:b.name+" · "+("products" in b?b.products.length:ownProducts.filter(p=>p.batchId===b.id).length)+" 个商品"}</option>)}</select></label>
      {selectedOptimizedSet?<div className={styles.datasetSelection} role="status"><strong>已选优化版本 · V{selectedOptimizedSet.version}</strong><span>来源：{selectedOptimizedSet.sourceKind} / {selectedOptimizedSet.sourceBatchName}</span><span>历史适配：{selectedOptimizedSet.platform} · {selectedOptimizedSet.site} · {selectedOptimizedSet.language}</span><span>商品：{selectedOptimizedSet.products.length} 件</span><em>此版本仅作为复用起点；目标店铺适配与原始价格、库存保持独立。</em></div>:selectedOwnBatch?<div className={styles.datasetSelection} role="status"><strong>自有原始批次</strong><span>{selectedOwnBatch.name} · 可用 {selectableProducts.length} 件</span><span>本批尚无目标平台适配版本</span></div>:selectedCollectedBatch?<div className={styles.datasetSelection} role="status"><strong>采集原始批次</strong><span>{selectedCollectedBatch.source} · {selectedCollectedBatch.products.length} 件商品</span><span>本批尚无目标平台适配版本</span></div>:null}
      <small>{selectedCount>0?`已选择 ${selectedCount} 个商品；原始资料保持不变`:availableBatches.length?"请先选择批次并确认来源信息。":source==="数据集"?"暂无成功上传后沉淀的优化版本，可先选择原始批次。":"当前账号无可用批次，请先在我的数据中采集或上传。"}</small>
      <button type="button" onClick={()=>router.push("/workbench/data/mine?preview=1")}>查看我的数据</button></article>
