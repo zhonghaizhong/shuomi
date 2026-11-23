@@ -54,7 +54,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const selectedCount=selectedProductIds.length;
  const missingCount=selectableProducts.filter(p=>p.status==="待补全"||p.missing.length>0).length;
  const savedTasks=useMemo(()=>readShowcaseUploadTasks(organizationId,memberId),[organizationId,memberId,taskVersion]);
- const taskItems:Item[]=savedTasks.flatMap(task=>task.productIds.map((id,i)=>({sku:id,name:task.batchName+(task.productCount>1?` · 商品 ${i+1}`:""),source:task.source,store:task.storeName,status:task.status,missing:task.status==="待补全"?["商品必填资料"]:[],ai:Boolean(task.agentId)})));
+ const taskItems:Item[]=savedTasks.filter(task=>stage==="missing"?task.status==="待补全":task.status==="待审核").flatMap(task=>task.productIds.map((id,i)=>({sku:id+" · "+task.id.slice(-8),name:task.batchName+(task.productCount>1?` · 商品 ${i+1}`:""),source:task.source,store:task.storeName,status:task.status,missing:task.status==="待补全"?["商品必填资料"]:[],ai:Boolean(task.agentId)})));
  const [reviewChecked,setReviewChecked]=useState(false),[reviewMode,setReviewMode]=useState<"compare"|"edit">("compare");
  const go=(s:string)=>router.push("/workbench/listing/"+s+"?preview=1");
  const filtered=useMemo(()=>(items.length?items:taskItems).filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status).toLowerCase().includes(applied.toLowerCase())&&(appliedSource==="全部来源"||x.source===appliedSource)&&(appliedStore==="全部店铺"||x.store===appliedStore)),[items,taskItems,applied,appliedSource,appliedStore]);
