@@ -7,7 +7,7 @@ import css from "./showcase-own-product-intake-page.module.css";
 
 export function ShowcaseOwnProductIntakePage({stage}:{stage:OwnIntakeStage}){
  const router=useRouter();
- const [context,setContext]=useState(()=>readOwnIntakeNavigation(stage));
+ const [context,setContext]=useState<ReturnType<typeof readOwnIntakeNavigation>>(null);
  const [version,setVersion]=useState(0),[query,setQuery]=useState(""),[selectedId,setSelectedId]=useState<string|null>(null);
  const [draft,setDraft]=useState<OwnProductRecord["skus"]>([]),[skuId,setSkuId]=useState(1),[notice,setNotice]=useState("");
  const fileRef=useRef<HTMLInputElement>(null);
