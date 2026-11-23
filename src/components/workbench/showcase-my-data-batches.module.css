@@ -28,7 +28,7 @@
 .heading>div:first-child>span{font-size:12px;color:var(--md-muted);white-space:nowrap}
 .headingActions{display:flex;gap:10px}.headingActions button{min-width:102px}
 .headingActions button[aria-pressed="true"]{background:color-mix(in srgb,var(--md-primary) 12%,var(--md-bg));color:var(--md-primary)}
-.tableScroll{min-width:0;max-width:100%;overflow-x:auto}
+.tableScroll{min-width:0;max-width:100%;overflow:visible}
 .tableScroll table{width:100%;min-width:950px;border-spacing:0;border-collapse:separate;font-size:13px;text-align:left}
 .tableScroll thead{background:var(--md-panel)}
 .tableScroll th{padding:11px 16px;color:var(--md-muted);font-weight:600;white-space:nowrap;border-top:1px solid var(--md-line);border-bottom:1px solid var(--md-line)}
@@ -70,3 +70,4 @@
 :global(.light) .wrapper{--md-bg:#fff;--md-panel:#f8f7fa;--md-inner:#fff;--md-line:#e5e1ed;--md-ink:#444050;--md-muted:#6f6b7d;--md-input:#fff}
 @media(max-width:1050px){.flowSteps{flex-wrap:wrap}.flow>p{min-width:150px}.filterBar select{flex-basis:160px}}
 @media(max-width:760px){.flow{align-items:flex-start;flex-wrap:wrap}.flowSteps{flex-basis:100%;justify-content:flex-start;flex-wrap:wrap;border-left:0;border-right:0;padding:0}.filterBar{flex-wrap:wrap}.filterBar .searchBox{flex-basis:100%}.filterBar select{flex:1}.heading{flex-wrap:wrap}.headingActions{margin-left:auto}}
+\n@media(max-width:1050px){.tableScroll{overflow-x:auto}}\n
