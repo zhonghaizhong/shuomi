@@ -125,3 +125,41 @@ input,
 select {
   font: inherit;
 }
+
+/* Unified workbench search/filter axis. Opt-in only to avoid changing dialogs without a search field. */
+[data-shuomi-filter="balanced"]{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+ align-items:center!important;
+ column-gap:14px!important;
+ row-gap:10px!important;
+ min-width:0;
+}
+[data-shuomi-filter="balanced"] [data-shuomi-filter-left]{
+ min-width:0;width:100%;display:flex;align-items:center;
+}
+[data-shuomi-filter="balanced"] [data-shuomi-filter-left] :is(input,select),
+[data-shuomi-filter="balanced"] [data-shuomi-filter-left] > label{
+ width:100%;min-width:0;max-width:none;box-sizing:border-box;
+}
+[data-shuomi-filter="balanced"] [data-shuomi-filter-right]{
+ min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:8px;
+}
+[data-shuomi-filter="balanced"] [data-shuomi-filter-right] :is(select,button){
+ min-width:0;height:42px;min-height:42px;box-sizing:border-box;
+}
+[data-shuomi-filter="balanced"] [data-shuomi-filter-right] select{flex:1 1 0;max-width:210px}
+[data-shuomi-filter="balanced"] [data-shuomi-filter-right] button{flex:0 0 auto;white-space:nowrap}
+[data-shuomi-filter="balanced"] [data-shuomi-filter-right] :is(button,input,select):focus-visible,
+[data-shuomi-filter="balanced"] [data-shuomi-filter-left] :is(button,input,select):focus-visible{
+ outline:2px solid #7367f0;outline-offset:2px;
+}
+@media(max-width:1160px){
+ [data-shuomi-filter="balanced"]{grid-template-columns:minmax(0,1fr)!important}
+ [data-shuomi-filter="balanced"] [data-shuomi-filter-right]{justify-content:flex-end;flex-wrap:wrap}
+}
+@media(max-width:640px){
+ [data-shuomi-filter="balanced"] [data-shuomi-filter-right]{justify-content:stretch}
+ [data-shuomi-filter="balanced"] [data-shuomi-filter-right] select{flex:1 1 43%}
+ [data-shuomi-filter="balanced"] [data-shuomi-filter-right] button{flex:1 1 auto}
+}
