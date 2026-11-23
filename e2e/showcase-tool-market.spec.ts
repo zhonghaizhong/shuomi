@@ -369,3 +369,31 @@ test("1688 demo products provide realistic sample photos, simulated prices, vari
  await modal.getByRole("button",{name:"查看",exact:true}).click();
  await expect(page.getByRole("dialog",{name:"商品详情"})).toBeVisible();
 });
+
+test("batch product image viewer stays compact and price sliders filter by a selected range",async({page})=>{
+ await page.goto("/shuomi/#/workbench/data/mine");
+ const batch=page.getByRole("region",{name:"采集批次",exact:true});
+ await batch.getByRole("button",{name:"更多"}).click();
+ await batch.getByRole("button",{name:"查看商品"}).click();
+ const modal=page.getByRole("dialog",{name:"批次商品"});
+ await modal.getByRole("button",{name:"价格区间"}).click();
+ const slider=modal.getByRole("group",{name:"滑动筛选价格"});
+ await expect(slider).toBeVisible();
+ await slider.getByRole("slider",{name:"最高价格滑块"}).fill("20");
+ await expect(modal).toContainText("¥19.80 起");
+ await expect(modal).not.toContainText("¥42.50 起");
+ await slider.getByRole("button",{name:"确定"}).click();
+ await modal.getByRole("button",{name:/放大商品图片 纯棉圆领短袖T恤/}).click();
+ const viewer=page.getByRole("dialog",{name:"商品详情"});
+ await expect(viewer).toBeVisible();
+ const rect=await page.locator('[class*="detailOverlay"]').boundingBox();
+ const viewport=page.viewportSize();
+ expect(rect).not.toBeNull();
+ expect(viewport).not.toBeNull();
+ expect(rect!.width).toBeLessThan(viewport!.width);
+ expect(rect!.height).toBeLessThan(viewport!.height);
+ await viewer.getByRole("button",{name:"关闭商品详情"}).click();
+ await modal.getByRole("button",{name:/¥0 – ¥20/}).click();
+ await modal.getByRole("group",{name:"滑动筛选价格"}).getByRole("button",{name:"重置"}).click();
+ await expect(modal).toContainText("¥42.50 起");
+});
