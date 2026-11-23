@@ -120,7 +120,7 @@
 .optimizerTasksHeader h3{margin:0;font-size:15px;color:var(--ink)}
 .optimizerTasksHeader p{margin:6px 0 0;font-size:13px;color:var(--muted)}
 .optimizerTasksHeader>button{flex:none;min-height:34px}
-.optimizerTaskList{display:grid;align-content:start;gap:9px}
+.optimizerTaskList{display:grid;align-content:start;gap:9px;max-height:calc(8 * 49px + 7 * 9px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:5px;min-height:0}
 .optimizerTaskRow{display:grid;grid-template-columns:26px minmax(130px,142px) minmax(0,1fr) 64px;align-items:center;gap:9px;padding:6px 10px;border:1px solid var(--line);border-radius:8px}
 .optimizerTaskNumber{font-weight:700;font-size:13px;color:#21caaa}
 .optimizerTaskRow select,.optimizerTaskRow input{box-sizing:border-box;width:100%;min-width:0;min-height:34px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);padding:6px 9px;font:inherit;font-size:13px}
