@@ -53,7 +53,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  useEffect(()=>{
   if(info.kind!=="use")return;
   try{
-   const raw=sessionStorage.getItem("shuomi-demo-agent-template-"+info.title);
+   const raw=sessionStorage.getItem("shuomi:demo-agent-template-v2:"+organizationId+":"+memberId+":"+info.title)??(organizationId==="SM-ENT-000001"&&memberId==="admin"?sessionStorage.getItem("shuomi-demo-agent-template-"+info.title):null);
    if(!raw)return;
    const data=JSON.parse(raw);
    if(Array.isArray(data.skills))setSkills(data.skills.filter((v:unknown)=>typeof v==="string"));
@@ -66,7 +66,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    if(typeof data.podTransparent==="boolean")setPodTransparent(data.podTransparent);
    if(data.useConfig&&typeof data.useConfig==="object")setUseConfig(data.useConfig);
   }catch{/* A missing or malformed browser draft never prevents opening the dialog. */}
- },[info]);
+ },[info,organizationId,memberId]);
  const isModel=info.kind==="model",isUse=info.kind==="use",isPod=info.title.includes("POD");
  const toggle=(items:string[],set:(value:string[])=>void,item:string)=>set(items.includes(item)?items.filter(v=>v!==item):[...items,item]);
  const validCustom=custom.provider.trim()&&custom.model.trim()&&custom.apiKey.trim();
