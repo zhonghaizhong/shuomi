@@ -87,5 +87,5 @@
 .shell>.hero{border-color:var(--s-line);border-radius:12px;background:var(--s-bg);box-shadow:var(--s-shadow);padding-left:24px}
 .shell>.hero h1{color:var(--s-title);font-weight:700;border-left-color:#7367f0}
 :global(.light) .shell{--s-bg:#fff;--s-line:#dfe7ef;--s-txt:#263747;--s-muted:#607183;--s-title:#263747;--s-accent:#7367f0;--s-shadow:0 6px 22px rgba(32,55,87,.06)}
-:global(.light) .shell>.hero{border-color:var(--s-line);background:var(--s-bg);border-radius:12px}
+:global(.light) .shell>.hero{border-color:#ddd9e9;background:var(--s-bg);border-radius:12px}
 @media(max-width:700px){.shell>.hero{padding-left:18px}}
