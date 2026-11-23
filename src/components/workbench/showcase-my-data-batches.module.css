@@ -355,3 +355,10 @@
 .versionProductDialog footer span{margin-right:auto;font-size:12px;color:var(--md-muted)}
 @media(max-width:960px){.versionItem{grid-template-columns:minmax(150px,1fr) 95px}.versionActions{grid-column:1/-1;justify-content:flex-start}}
 @media(max-width:600px){.versionExpanded{padding:10px;margin:8px}.versionItem{grid-template-columns:1fr;gap:8px}.versionActions{grid-column:auto}.versionProductDialog header,.versionProductDialog footer{padding:12px}.versionProductDialog footer span{display:none}}
+
+/* Source revision belongs to the batch's main row; expanded area shows only later versions. */
+.batchName .originalVersionInRow{display:grid;gap:5px;min-width:120px;margin-left:auto;padding-left:14px;border-left:1px solid var(--md-line);text-align:left}
+.batchName .originalVersionInRow strong{font-size:12px;font-weight:650;white-space:nowrap;color:var(--md-primary)}
+.batchName .originalVersionInRow small{font-size:11px;color:var(--md-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.noNextVersion{margin:0;padding:14px 12px;border:1px dashed var(--md-line);border-radius:8px;font-size:12px;line-height:1.6;color:var(--md-muted);background:var(--md-panel)}
+@media(max-width:1100px){.batchName .originalVersionInRow{min-width:105px;padding-left:9px}.batchName .originalVersionInRow small{font-size:10px}}
