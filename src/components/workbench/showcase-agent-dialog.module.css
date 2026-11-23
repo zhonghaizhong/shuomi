@@ -255,3 +255,7 @@
 @media(max-width:560px){.dialog .productConfigRow{flex-wrap:wrap}.dialog .productRowText{flex-basis:100%}.dialog .productConfigRow>.primary{flex:1}.dialog .productFinalActions{width:100%}.dialog .productFinalActions button{flex:1}.dialog .productHeading{padding-right:30px}.dialog .productHeading .productViewTemplate{min-width:0}}
 /* Product optimizer dialog expands on wide desktops while remaining inside the viewport. */
 @media(max-width:900px){.dialog.useDialog:has(.productLayout){width:calc(100vw - 24px);padding:18px;min-height:0;max-height:calc(100dvh - 24px)}}
+
+/* Fixed viewport centering prevents native dialog auto-margin drift after form expands. */
+.dialog{position:fixed;inset:auto;top:50%;left:50%;margin:0;transform:translate(-50%,-50%);max-height:min(86dvh,calc(100dvh - 24px));}
+.dialog.useDialog{max-height:min(90dvh,calc(100dvh - 24px));}
