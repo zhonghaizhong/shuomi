@@ -224,7 +224,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
    :<div className={css.stack}><p>按需勾选，可多选，不选择也可以保存模板。</p><div className={css.optionGrid}>{availableKnowledge.map(x=><label className={css.imageChoice} key={x}><input type="checkbox" checked={selectedItems.includes(x)} onChange={()=>flip(selectedItems,x,setSelectedItems)}/>{x}</label>)}</div></div>}
    {maybeNotice}
   </main>
-  <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child?"返回":"取消"}</button><button type="button" className={css.primary} onClick={()=>{
+  <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={isProductImage&&!child&&!productImageReady} onClick={()=>{
    if(child==="restore"){setSlots(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));setChild("");return;}
    if(child==="ai-images"){addManyAi();return;}
    if(child==="library"){
