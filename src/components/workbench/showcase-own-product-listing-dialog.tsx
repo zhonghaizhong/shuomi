@@ -6,18 +6,25 @@ import styles from "./showcase-own-product-listing-dialog.module.css";
 type Source="img"|"sheet"|"link"|"api";
 type Sku={id:number;name:string;draft:string;description:string;images:string[]};
 const newSku=(id:number):Sku=>({id,name:"",draft:"",description:"",images:[]});
+type OwnBatch={id:string;name:string;createdAt:string;productCount:number};
+const ownBatchKey=(org:string,member:string)=>"shuomi:own-product-batches-v1:"+org+":"+member;
+const readOwnBatches=(org:string,member:string):OwnBatch[]=>{if(typeof window==="undefined")return [];try{const raw:unknown=JSON.parse(sessionStorage.getItem(ownBatchKey(org,member))||"[]");return Array.isArray(raw)?raw.filter((x):x is OwnBatch=>Boolean(x&&typeof x==="object"&&"id"in x&&"name"in x&&typeof x.name==="string"&&"createdAt"in x&&"productCount"in x)):[]}catch{return []}};
 const sourceOptions:{value:Source;label:string}[]=[
  {value:"img",label:"上传资料"},{value:"sheet",label:"导入表格"},
  {value:"link",label:"商品链接"},{value:"api",label:"API 接入"}
 ];
 
-export function ShowcaseOwnProductListingDialog({onClose}:{onClose:()=>void}){
+export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId}:{onClose:()=>void;organizationId:string;memberId:string}){
  const ref=useRef<HTMLDialogElement>(null),fileRef=useRef<HTMLInputElement>(null),headingId=useId();
  const [source,setSource]=useState<Source>("img"),[skuType,setSkuType]=useState<"single"|"multi">("multi");
  const [skus,setSkus]=useState<Sku[]>([newSku(1),newSku(2)]),[currentId,setCurrentId]=useState(1);
  const [activeImage,setActiveImage]=useState<string|null>(null),[agent,setAgent]=useState(""),[template,setTemplate]=useState("");
  const [link,setLink]=useState(""),[sheetName,setSheetName]=useState(""),[status,setStatus]=useState("");
  const [loadingImages,setLoadingImages]=useState(false);
+ const [batches,setBatches]=useState<OwnBatch[]>(()=>readOwnBatches(organizationId,memberId));
+ const [batchId,setBatchId]=useState(""),[batchMode,setBatchMode]=useState<"create"|"select"|null>(null),[batchName,setBatchName]=useState("");
+ const currentBatch=batches.find(b=>b.id===batchId);
+ const saveBatch=()=>{const name=batchName.trim();if(!name){setStatus("请先输入自有商品批次名称。");return}if(batches.some(b=>b.name===name)){setStatus("批次名称已存在，请选择已有批次或更换名称。");return}const next:OwnBatch={id:"OWN-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7),name,createdAt:new Date().toLocaleString("zh-CN",{hour12:false}),productCount:0};const updated=[next,...batches];try{sessionStorage.setItem(ownBatchKey(organizationId,memberId),JSON.stringify(updated));setBatches(updated);setBatchId(next.id);setBatchMode(null);setBatchName("");setStatus("已创建演示自有商品批次「"+next.name+"」。")}catch{setStatus("无法保存批次，请确认浏览器允许会话存储。")}};
  useEffect(()=>{const el=ref.current,previous=document.activeElement;el?.showModal();return()=>{el?.close();if(previous instanceof HTMLElement&&previous.isConnected)previous.focus()}},[]);
  const active=skus.find(x=>x.id===currentId)||skus[0];
  const patch=(id:number,fields:Partial<Sku>)=>setSkus(prev=>prev.map(x=>x.id===id?{...x,...fields}:x));
@@ -39,12 +46,13 @@ export function ShowcaseOwnProductListingDialog({onClose}:{onClose:()=>void}){
   finally{setLoadingImages(false);if(fileRef.current)fileRef.current.value="";}
  };
  const validate=()=>{
+  if(!currentBatch){setStatus("请先创建或选择自有商品批次，再提交检测。");return}
   if(source==="img"){
    const entries=skuType==="multi"?skus:[skus[0]];
    if(skuType==="multi"&&entries.some(x=>!x.name.trim())){setStatus("请先保存每个 SKU 的名称与规格。");return}
    if(entries.some(x=>x.images.length===0)){setStatus("有 SKU 尚未上传图片，请为每个 SKU 至少上传 1 张图片。");return}
    if(entries.some(x=>!x.description.trim())){setStatus("发现商品基础资料缺项。请在商品管理中统一补全并检查。");return}
-   setStatus("前端检测通过：图片与资料已填写。当前为演示环境，不会实际创建或刊登商品。");return;
+   setStatus("批次「"+currentBatch.name+"」前端检测通过：图片与资料已填写。当前为演示环境，尚未写入正式商品库或刊登。");return;
   }
   if(source==="sheet"){setStatus(sheetName?"已选择表格；字段映射和数据检测需由正式业务接口完成。":"请先选择 Excel 或 CSV 商品表格。");return}
   if(source==="link"){setStatus(link.trim()?"当前演示尚未接入商品链接解析，不会伪造采集结果。":"请填写已接入货盘的商品链接。");return}
@@ -88,7 +96,15 @@ export function ShowcaseOwnProductListingDialog({onClose}:{onClose:()=>void}){
     <div className={styles.aiRow}><div className={styles.aiOptions}>
      <label>智能体<select aria-label="智能体" value={agent} onChange={e=>{setAgent(e.target.value);setTemplate("")}}><option value="">未选择 · 点击选择</option><option value="商品优化智能体">商品优化智能体</option><option value="POD刊登智能体">POD刊登智能体</option><option value="平台适配智能体">平台适配智能体</option></select></label>
      <label>智能体模板<select aria-label="智能体模板" disabled={!agent} value={template} onChange={e=>setTemplate(e.target.value)}><option value="">请选择智能体模板</option><option value="标准商品优化">标准商品优化</option><option value="基础资料补全">基础资料补全</option></select></label>
-    </div><button type="button" className={styles.submit} onClick={validate}>提交检测</button></div>
+    </div>
+    <div className={styles.batchControls}>
+      <button type="button" aria-expanded={batchMode==="create"} onClick={()=>{setBatchMode(batchMode==="create"?null:"create");setStatus("")}}>＋ 创建自有商品批次</button>
+      <button type="button" aria-expanded={batchMode==="select"} onClick={()=>{setBatchMode(batchMode==="select"?null:"select");setStatus("")}}>选择自有商品批次</button>
+    </div>
+    <button type="button" className={styles.submit} onClick={validate}>提交检测</button></div>
+    {batchMode==="create"?<div className={styles.batchEditor}><label>新批次名称<input aria-label="新建自有商品批次名称" maxLength={60} placeholder="输入批次名称" value={batchName} onChange={e=>setBatchName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveBatch()}}}/></label><button type="button" onClick={saveBatch}>创建并选择</button><button type="button" onClick={()=>setBatchMode(null)}>取消</button></div>:null}
+    {batchMode==="select"?<div className={styles.batchEditor}><label>已有自有商品批次<select aria-label="选择已有自有商品批次" value={batchId} onChange={e=>{setBatchId(e.target.value);setBatchMode(null);setStatus("")}}><option value="">请选择批次</option>{batches.map(batch=><option key={batch.id} value={batch.id}>{batch.name} · {batch.createdAt}</option>)}</select></label>{!batches.length?<span>暂无批次，请先创建自有商品批次。</span>:null}<button type="button" onClick={()=>setBatchMode(null)}>关闭</button></div>:null}
+    {currentBatch?<p className={styles.batchSelected}>当前批次：<strong>{currentBatch.name}</strong><span>仅当前企业及成员可见 · 演示数据</span></p>:null}
     <p className={styles.footerHint}>点击检查后自动判断缺项；可批量添加商品并统一检查。</p>
     {status?<p role="status" className={styles.feedback}>{status}</p>:null}
    </section>
