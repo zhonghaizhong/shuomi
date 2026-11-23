@@ -4048,3 +4048,31 @@
  .page[data-commerce-unified="data"] .dataDetails article{padding:19px}
 }
 @media(prefers-reduced-motion:reduce){.page[data-commerce-unified="data"] .dataCard{transition:none}}
+
+/* Goals filters: keep platform/site/type, search, reset and confirm on a single desktop row. */
+.goalsPreview .goalFilters.cockpitFilterRow{
+ display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);
+ align-items:center;gap:12px;min-width:0;padding:10px 12px;
+}
+.goalsPreview .goalFilters .cockpitFilterSelects{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ align-items:center;gap:8px;min-width:0;
+}
+.goalsPreview .goalFilters .cockpitFilterActions{
+ display:grid;grid-template-columns:minmax(0,1fr) 74px 74px;
+ align-items:center;gap:8px;min-width:0;
+}
+.goalsPreview .goalFilters .cockpitFilterActions :is(input,button){
+ grid-column:auto;grid-row:auto;width:100%;min-width:0;height:40px;max-height:40px;
+ margin:0;box-sizing:border-box;white-space:nowrap;
+}
+.goalsPreview .goalFilters .cockpitFilterSelects select{
+ width:100%;min-width:0;height:40px;box-sizing:border-box;
+}
+@media(max-width:1000px){
+ .goalsPreview .goalFilters.cockpitFilterRow{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+ .goalsPreview .goalFilters .cockpitFilterSelects{grid-template-columns:1fr}
+ .goalsPreview .goalFilters .cockpitFilterActions{grid-template-columns:minmax(0,1fr) 68px 68px}
+}
