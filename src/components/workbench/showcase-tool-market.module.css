@@ -165,60 +165,178 @@
 :global(.light) .page .toolCard p {color:#625d70;}
 
 
-/* Figma 430:5511 > 1168:359: my tools only.
-   Keep the official tool catalog and its dialogs unchanged. */
-.figmaMine{width:100%;max-width:1136px;margin-inline:auto;display:grid;gap:18px;min-width:0}
-.figmaMine .header{min-height:112px;box-sizing:border-box;padding:12px 18px 12px 24px;border-radius:12px;gap:16px}
-.figmaMine .header h1{border:0;padding:0;margin:4px 0;font-size:24px;line-height:36px;letter-spacing:0}
-.figmaMine .header small{font-size:14px;line-height:20px}
-.figmaMine .header p{font-size:14px;line-height:21px}
-.figmaMine .headerActions button{height:42px;min-width:154px;border-radius:10px}
-.figmaMine .mineBar{display:flex;justify-content:space-between;min-height:42px;gap:16px;margin:0}
-.figmaMine .mineBar strong{font-size:14px;line-height:20px}
-.mineSearchControls{display:flex;gap:12px;align-items:center;width:min(464px,100%)}
-.figmaMine .mineSearchControls input{width:264px;flex:1 1 264px;min-width:0;height:42px;border-radius:10px;font-size:14px}
-.figmaMine .mineSearchControls button{min-width:88px;height:42px;padding:0 12px;border-radius:10px}
-.figmaMine .mineGrid{display:grid;gap:16px}
-.figmaMine .mineRow{display:grid;grid-template-columns:minmax(0,740fr) minmax(0,376fr);gap:20px;align-items:stretch}
-.figmaMine .mineCard,.figmaMine .mineGuide{box-sizing:border-box;min-width:0;min-height:235px;border-radius:14px;box-shadow:none;background:var(--card,#2f3349);border:1px solid var(--border,#44485e)}
-.figmaMine .mineCard{position:relative;display:flex;flex-direction:column;padding:18px 20px 22px;gap:0}
-.figmaMine .mineCard:before,.figmaMine .mineGuide:before{position:absolute;top:18px;left:-1px;width:3px;height:36px;content:"";background:#74ddcb;border-radius:2px}
-.figmaMine .mineCard header{min-height:31px;align-items:center}
-.figmaMine .mineCard h2{font-size:17.2px;line-height:26px;color:#74ddcb;font-weight:700;margin:0}
-.figmaMine .mineCard header button{min-width:104px;height:38px;min-height:38px;border-radius:10px;font-size:14px;color:var(--foreground,#cfcde4)}
-.figmaMine .mineDescription{display:grid;gap:6px;margin-top:10px}
-.figmaMine .mineDescription p,.figmaMine .mineCard>p{font-size:14px;line-height:25px;margin:0;color:var(--foreground,#cfcde4)}
-.figmaMine .mineCard footer{margin-top:auto;padding-top:13px;border-top:1px solid var(--border,#44485e);min-height:53px}
-.figmaMine .mineCard footer button{min-width:140px;height:38px;min-height:38px;padding:0 10px;border-radius:10px}
-.figmaMine .mineCard .enabled{font-size:14px;line-height:21px;min-width:88px;min-height:32px;border-radius:8px;background:var(--accent,#143b32);color:#42d2b0}
-.figmaMine .mineGuide{position:relative;padding:18px 20px 15px}
-.figmaMine .mineGuide h3{font-size:16.6px;line-height:29px;margin:0 0 8px;color:#74ddcb}
-.figmaMine .mineGuide>div{min-height:49px;box-sizing:border-box;padding:4px 10px;margin-top:4px;border-radius:8px;border:1px solid var(--border,#44485e);background:var(--secondary,#393d55)}
-.figmaMine .mineGuide strong,.figmaMine .mineGuide p{font-size:14px;line-height:21px}
-.figmaMine .mineGuide p{margin:0;color:var(--foreground,#cfcde4)}
-.figmaMine .mineGuide>div:nth-of-type(2){background:var(--card,#2f3349)}
-.figmaMine [data-figma-tool="商品采集插件"] .mineCard,
-.figmaMine [data-figma-tool="商品采集插件"] .mineGuide{min-height:362px;border-radius:12px}
-.figmaMine [data-figma-tool="商品采集插件"] .mineCard:before{background:#8ebbff;height:57px}
-.figmaMine [data-figma-tool="商品采集插件"] .mineCard h2{font-size:18px;color:#8ebbff}
-.figmaMine [data-figma-tool="商品采集插件"] .mineCard>p{font-size:14px;line-height:20px;margin-top:6px}
-.figmaMine [data-figma-tool="商品采集插件"] .mineGuide:before{display:none}
-.figmaMine [data-figma-tool="商品采集插件"] .mineGuide h3{font-size:16px;color:#8ebbff;line-height:24px}
-.figmaMine .acquisitionLabel{margin:10px 0 14px;font-size:14px;line-height:20px}
-.acquisitionChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.figmaMine .acquisitionChoices section{display:flex;flex-direction:column;gap:4px;box-sizing:border-box;padding:13px 15px 1px;min-width:0;min-height:150px;border:1px solid var(--border,#334d6e);border-radius:9px;background:var(--secondary,#1c3047)}
-.choiceHeading{display:flex;align-items:center;justify-content:space-between;gap:5px}
-.choiceHeading strong{font-size:16px;line-height:22px;white-space:nowrap}
-.choiceHeading span{display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:0 8px;border-radius:12px;font-size:13px;white-space:nowrap;color:#42d2b0;border:1px solid #176a5e}
-.acquisitionChoices section+section .choiceHeading span{color:#77aeff;border-color:var(--border,#30465c)}
-.figmaMine .acquisitionChoices p{font-size:14px;line-height:20px;margin:0;color:var(--muted-foreground,#b5c8da)}
-.acquisitionChoices b{font-size:14px;line-height:20px;color:#42d2b0}
-.acquisitionChoices section+section b{color:#77aeff}
-.figmaMine .acquisitionChoices button{width:100%;min-height:38px;border-radius:10px;font-size:14px;margin-top:auto}
-.acquisitionResult{min-height:40px;box-sizing:border-box;display:flex;align-items:center;padding:9px 13px;margin-top:18px;border-radius:10px;border:1px solid var(--border,#293c5e);background:var(--secondary,#1c3047);font-size:14px}
-.figmaMine .mineGuide .guideIntro{font-size:14px;line-height:20px;margin-bottom:12px}
-.figmaMine .mineGuide .guideTip{font-size:14px;line-height:20px;margin-top:14px;padding:7px 12px;background:var(--secondary,#1c3047);color:#42d2b0;border-radius:8px;font-weight:700}
-@media(max-width:850px){.figmaMine .mineRow{grid-template-columns:1fr}.figmaMine .mineBar{align-items:flex-start;flex-direction:column}.mineSearchControls{width:100%}.acquisitionChoices{grid-template-columns:1fr}.figmaMine .header{flex-wrap:wrap}}
-:global(.light) .figmaMine .mineCard,:global(.light) .figmaMine .mineGuide{background:var(--card,#fff);border-color:var(--border,#ddd9ec)}
-:global(.light) .figmaMine .mineGuide>div,:global(.light) .figmaMine .acquisitionChoices section,:global(.light) .figmaMine .acquisitionResult{background:var(--secondary,#f7fafd);border-color:var(--border,#ddd9ec)}
-:global(.light) .figmaMine .mineDescription p,:global(.light) .figmaMine .mineGuide p,:global(.light) .figmaMine .acquisitionResult{color:var(--foreground,#444050)}
+/* My Tools / Vuexy unified visual standard.
+   Figma supplies business content and card hierarchy, not the visual theme.
+   Scoped so official tools, sidebar and other confirmed pages are untouched. */
+.figmaMine {
+  --mine-surface: #2f3349;
+  --mine-inset: #393d55;
+  --mine-border: #484c65;
+  --mine-text: #e6e4f1;
+  --mine-muted: #b4b2c9;
+  --mine-primary: #a99dff;
+  --mine-primary-solid: #7367f0;
+  --mine-success: #55d99b;
+  --mine-success-bg: #22453c;
+  display: grid;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin-inline: auto;
+  gap: 16px;
+  color: var(--mine-text);
+}
+.figmaMine .header {
+  box-sizing: border-box;
+  min-height: 124px;
+  padding: 20px 24px;
+  border: 1px solid var(--mine-border);
+  border-radius: 8px;
+  background: var(--mine-surface);
+  gap: 20px;
+  box-shadow: 0 2px 8px #090d1d13;
+}
+.figmaMine .header small { display: block; margin-bottom: 6px; color: var(--mine-muted); font-size: 14px; line-height: 20px; }
+.figmaMine .header h1 {
+  margin: 0 0 6px;
+  padding-left: 12px;
+  border-left: 3px solid var(--mine-primary);
+  color: var(--mine-primary);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 34px;
+  white-space: nowrap;
+}
+.figmaMine .header p { margin: 0; color: var(--mine-muted); font-size: 14px; line-height: 22px; }
+.figmaMine .headerActions button { height: 42px; min-width: 154px; border-radius: 7px; font-size: 14px; font-weight: 600; }
+.figmaMine .mineBar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; margin: 0; }
+.figmaMine .mineBar strong { font-size: 15px; line-height: 22px; color: var(--mine-text); font-weight: 650; white-space: nowrap; }
+.mineSearchControls { display: flex; align-items: center; gap: 10px; width: min(464px,100%); min-width: 0; }
+.figmaMine .mineSearchControls input {
+  flex: 1 1 264px; width: 264px; min-width: 0; height: 42px;
+  padding: 0 14px; border: 1px solid var(--mine-border);
+  border-radius: 7px; background: var(--mine-surface); color: var(--mine-text);
+  font-size: 14px;
+}
+.figmaMine .mineSearchControls input::placeholder { color: var(--mine-muted); opacity: 1; }
+.figmaMine .mineSearchControls button { flex: 0 0 88px; height: 42px; min-width: 88px; padding: 0 10px; border-radius: 7px; font-weight: 600; }
+.figmaMine :is(button,input):focus-visible { outline: 2px solid var(--mine-primary-solid); outline-offset: 2px; }
+.figmaMine button:not(.primary) {
+  color: var(--mine-text); border-color: var(--mine-border); background: var(--mine-inset);
+}
+.figmaMine button:not(.primary):hover { background: color-mix(in srgb,var(--mine-primary-solid) 14%,var(--mine-inset)); border-color: var(--mine-primary-solid); }
+.figmaMine button.primary {
+  background: var(--mine-primary-solid); border-color: var(--mine-primary-solid); color: #fff;
+}
+.figmaMine .mineGrid { display: grid; gap: 16px; }
+.figmaMine .mineRow { display: grid; grid-template-columns: minmax(0,740fr) minmax(0,376fr); align-items: stretch; gap: 16px; }
+.figmaMine .mineCard,.figmaMine .mineGuide {
+  box-sizing: border-box; min-width: 0; min-height: 235px;
+  border: 1px solid var(--mine-border); border-radius: 8px;
+  background: var(--mine-surface); box-shadow: 0 2px 8px #090d1d13;
+}
+.figmaMine .mineCard { position: relative; display: flex; flex-direction: column; gap: 0; padding: 18px 20px 20px; }
+.figmaMine .mineCard::before,.figmaMine .mineGuide::before {
+  content:""; position: absolute; top: 18px; left: 0; width: 3px; height: 34px;
+  border-radius: 0 3px 3px 0; background: var(--mine-primary);
+}
+.figmaMine .mineCard header { min-height: 38px; align-items: center; gap: 16px; }
+.figmaMine .mineCard h2 { margin: 0; color: var(--mine-primary); font-size: 18px; font-weight: 700; line-height: 26px; white-space: nowrap; }
+.figmaMine .mineCard header button { min-width: 104px; min-height: 38px; height: 38px; border-radius: 7px; font-size: 14px; }
+.figmaMine .mineDescription { display: grid; gap: 6px; margin-top: 12px; }
+.figmaMine .mineDescription p,.figmaMine .mineCard > p {
+  margin: 0; color: var(--mine-text); font-size: 14px; line-height: 24px;
+}
+.figmaMine .mineCard footer {
+  min-height: 52px; padding-top: 12px; margin-top: auto;
+  border-top: 1px solid var(--mine-border);
+}
+.figmaMine .mineCard footer button { min-width: 140px; height: 38px; min-height: 38px; border-radius: 7px; font-size: 14px; }
+.figmaMine .mineCard .enabled {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 88px; min-height: 32px; padding: 5px 12px;
+  border-radius: 6px; background: var(--mine-success-bg); color: var(--mine-success);
+  font-size: 14px; line-height: 20px;
+}
+.figmaMine .mineGuide { position: relative; padding: 18px 20px 16px; }
+.figmaMine .mineGuide h3 { margin: 0 0 10px; color: var(--mine-primary); font-size: 17px; font-weight: 700; line-height: 26px; white-space: nowrap; }
+.figmaMine .mineGuide > div {
+  box-sizing: border-box; min-height: 49px;
+  padding: 6px 12px; margin-top: 8px;
+  border: 1px solid var(--mine-border); border-radius: 7px; background: var(--mine-inset);
+}
+.figmaMine .mineGuide > div:nth-of-type(2) { background: color-mix(in srgb,var(--mine-inset) 70%,var(--mine-surface)); }
+.figmaMine .mineGuide strong { color: var(--mine-text); font-size: 14px; line-height: 20px; font-weight: 700; }
+.figmaMine .mineGuide p { margin: 2px 0 0; color: var(--mine-muted); font-size: 14px; line-height: 20px; }
+.figmaMine [data-figma-tool="商品采集插件"] .mineCard,.figmaMine [data-figma-tool="商品采集插件"] .mineGuide { min-height: 362px; }
+.figmaMine [data-figma-tool="商品采集插件"] .mineCard::before { height: 55px; }
+.figmaMine [data-figma-tool="商品采集插件"] .mineCard > p { margin-top: 5px; line-height: 20px; color: var(--mine-muted); }
+.figmaMine .acquisitionLabel { margin: 10px 0 12px; font-size: 14px; line-height: 20px; color: var(--mine-text); font-weight: 700; }
+.acquisitionChoices { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.figmaMine .acquisitionChoices section {
+  display: flex; flex-direction: column; box-sizing: border-box; min-width: 0; min-height: 150px;
+  padding: 12px 14px 10px; gap: 5px;
+  border: 1px solid var(--mine-border); border-radius: 7px; background: var(--mine-inset);
+}
+.choiceHeading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.choiceHeading strong { font-size: 15px; font-weight: 700; line-height: 22px; white-space: nowrap; color: var(--mine-text); }
+.choiceHeading span {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 24px; padding: 0 8px; border: 1px solid var(--mine-border);
+  border-radius: 12px; color: var(--mine-success); white-space: nowrap; font-size: 12px;
+}
+.acquisitionChoices section+section .choiceHeading span { color: var(--mine-primary); }
+.figmaMine .acquisitionChoices p { margin: 0; color: var(--mine-muted); font-size: 14px; line-height: 20px; }
+.acquisitionChoices b { color: var(--mine-success); font-size: 14px; line-height: 20px; font-weight: 700; }
+.acquisitionChoices section+section b { color: var(--mine-primary); }
+.figmaMine .acquisitionChoices button { width: 100%; min-height: 38px; margin-top: auto; border-radius: 7px; font-size: 14px; }
+.acquisitionResult {
+  display: flex; align-items: center; min-height: 40px;
+  box-sizing: border-box; padding: 9px 13px; margin-top: 16px;
+  border: 1px solid var(--mine-border); border-radius: 7px;
+  background: var(--mine-inset); color: var(--mine-muted); font-size: 14px; line-height: 20px;
+}
+.figmaMine .mineGuide .guideIntro { margin-bottom: 10px; color: var(--mine-muted); }
+.figmaMine .mineGuide .guideTip {
+  margin-top: 14px; padding: 8px 12px;
+  border-radius: 7px; background: var(--mine-success-bg);
+  color: var(--mine-success); font-size: 14px; line-height: 20px; font-weight: 700;
+}
+.figmaMine .empty { border-color: var(--mine-border); background: var(--mine-surface); color: var(--mine-muted); }
+@media (max-width: 950px) {
+  .figmaMine .mineRow { grid-template-columns: 1fr; }
+  .figmaMine .mineBar { align-items: flex-start; flex-direction: column; }
+  .mineSearchControls { width: 100%; max-width: 464px; }
+}
+@media (max-width: 650px) {
+  .figmaMine .header { align-items: flex-start; flex-wrap: wrap; padding: 16px 18px; }
+  .figmaMine .header h1 { font-size: 23px; }
+  .acquisitionChoices { grid-template-columns: 1fr; }
+}
+@media (min-width: 2400px) {
+  .figmaMine .header { min-height: 152px; padding: 26px 30px; }
+  .figmaMine .header h1 { font-size: 30px; line-height: 40px; }
+}
+:global(.light) .figmaMine {
+  --mine-surface: #fff;
+  --mine-inset: #f8f7fa;
+  --mine-border: #dedbea;
+  --mine-text: #444050;
+  --mine-muted: #6f6b7d;
+  --mine-primary: #7367f0;
+  --mine-primary-solid: #7367f0;
+  --mine-success: #14764d;
+  --mine-success-bg: #e2f6e9;
+}
+:global(.light) .figmaMine :is(.header,.mineCard,.mineGuide,.mineSearchControls input) {
+  background: var(--mine-surface); border-color: var(--mine-border); color: var(--mine-text);
+}
+:global(.light) .figmaMine :is(.mineGuide>div,.acquisitionChoices section,.acquisitionResult) {
+  background: var(--mine-inset); border-color: var(--mine-border);
+}
+:global(.light) .figmaMine .mineGuide>div:nth-of-type(2) { background: #fff; }
+:global(.light) .figmaMine .mineSearchControls button:not(.primary),
+:global(.light) .figmaMine .mineCard button:not(.primary) {
+  background: var(--mine-inset); color: var(--mine-text); border-color: var(--mine-border);
+}
+:global(.light) .figmaMine .mineSearchControls button.primary { color: #fff; }
