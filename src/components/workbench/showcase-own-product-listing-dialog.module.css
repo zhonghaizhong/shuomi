@@ -294,3 +294,56 @@
 @media(min-width:681px) and (max-width:1050px){.batchControls{flex:0 0 170px;max-width:170px}}
 @media(max-width:680px){.batchControls{flex:unset;max-width:none;grid-template-rows:40px}.dialog .batchControls button{height:40px;min-height:40px;max-height:40px;font-size:11px}.reviewEditor{grid-template-columns:1fr}.pendingBanner select{width:100%;margin-left:0}}
 @media(max-width:420px){.batchControls{grid-template-rows:repeat(2,40px)}}
+
+
+/* Full-page compact intake layout: preserve all existing upload/SKU workflows. */
+.dialog{width:min(1480px,calc(100vw - 22px));height:min(880px,calc(100dvh - 16px));max-height:calc(100dvh - 16px)}
+.header{min-height:56px;padding:10px 20px}
+.header h2{font-size:18px}
+.header p{margin-top:4px;font-size:12px}
+.content{padding:10px 14px 12px;gap:9px}
+.panel{padding:11px 16px;border-radius:9px}
+.heading{margin-bottom:9px}
+.heading h3{font-size:16px}
+.sources{gap:10px}
+.sources button{min-height:38px;padding:7px 12px}
+.productGrid{min-height:0;grid-template-columns:minmax(220px,.83fr) minmax(390px,1.8fr) minmax(300px,1.25fr);gap:11px}
+.productGrid:not(:has(.skuList)){grid-template-columns:minmax(390px,1.7fr) minmax(300px,1.2fr)}
+.skuList,.images,.details{min-height:300px;padding:12px;gap:8px}
+.skuItems{max-height:225px;gap:6px}
+.skuItem{padding:6px 7px;gap:5px}
+.skuItem input{height:30px}
+.addSku{min-height:34px}
+.imageGrid{gap:8px;margin-top:9px}
+.imageGrid button{max-height:96px}
+.details textarea{min-height:175px}
+.otherInput{height:305px;min-height:305px}
+.aiRow{grid-template-columns:minmax(340px,1.3fr) minmax(185px,.65fr) minmax(175px,.55fr);gap:10px}
+.aiOptions{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.aiOptions label{min-height:49px;padding:7px 10px}
+.batchControls{gap:5px}
+.batchControls button{min-height:22px;padding:5px 7px}
+.submit{min-height:49px;background:#7367f0;border-color:#7367f0}
+.batchSelected{margin:6px 0 0}
+.footerHint{margin:8px 0 0;font-size:11px}
+.intakeActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.intakeActions button{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;padding:10px 15px;border-radius:9px;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.intakeActions strong{font-size:14px;display:flex;align-items:center;gap:9px}
+.intakeActions b{display:inline-grid;place-items:center;min-width:25px;height:22px;padding:0 6px;border-radius:15px;background:color-mix(in srgb,var(--accent) 12%,var(--panel));color:var(--accent);font-size:12px}
+.intakeActions small{color:var(--muted);font-size:11px}
+.intakeActions button[aria-expanded="true"]{border-color:var(--accent)}
+.intakePending{border-left:3px solid #8d67ef!important}
+.intakeReview{border-left:3px solid #10a883!important}
+.intakeReview b{background:color-mix(in srgb,#10a883 12%,var(--panel));color:#10a883}
+.intakeRecords{border:1px solid var(--line);background:var(--panel);border-radius:9px;margin-top:9px;padding:10px;display:grid;gap:7px;max-height:190px;overflow:auto}
+.intakeRecords header,.intakeRecords>div{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.intakeRecords>div{padding:8px;border:1px solid var(--line);border-radius:7px}
+.intakeRecords>div span{display:grid;gap:3px;flex:1;min-width:0}
+.intakeRecords>div small{color:var(--muted);font-size:11px}
+.intakeRecords button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:7px 10px;font-size:12px;white-space:nowrap}
+.intakeRecords .intakeConfirm{border-color:#10a883;color:#10a883}
+.intakeRecords p{margin:4px;color:var(--muted);font-size:12px}
+.reviewSuccess button{margin-top:10px}
+@media(max-width:1100px){.productGrid{grid-template-columns:185px minmax(0,1fr) minmax(240px,.8fr)}.aiRow{grid-template-columns:minmax(0,1.5fr) minmax(160px,.7fr) minmax(160px,.7fr)}}
+@media(max-width:900px){.productGrid{grid-template-columns:185px minmax(0,1fr)}.details{min-height:190px}.otherInput{height:300px;min-height:300px}}
+@media(max-width:760px){.aiRow{grid-template-columns:1fr 1fr}.aiOptions{grid-column:1/-1}.intakeActions{grid-template-columns:1fr}.intakeActions button{min-height:56px}.productGrid,.productGrid:not(:has(.skuList)){grid-template-columns:1fr}.skuList,.images,.details{min-height:0}.imageGrid button{max-height:110px}}
