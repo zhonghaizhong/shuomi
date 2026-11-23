@@ -29,21 +29,21 @@ type AcquisitionRecord = {
   id: string; mode: "local" | "online"; url: string;
   title: string; price: string; sku: string; createdAt: string;
 };
-const demoAcquisitionKey="shuomi:showcase-acquisition-records-v1";
-function restoreAcquisitions():AcquisitionRecord[] {
+const demoAcquisitionKey=(organizationId:string,memberId:string)=>"shuomi:showcase-acquisition-records-v2:"+organizationId+":"+memberId;
+function restoreAcquisitions(organizationId:string,memberId:string):AcquisitionRecord[] {
   try {
-    const value=JSON.parse(sessionStorage.getItem(demoAcquisitionKey)||"[]") as unknown;
+    const value=JSON.parse(sessionStorage.getItem(demoAcquisitionKey(organizationId,memberId))||"[]") as unknown;
     return Array.isArray(value)?value.filter((x):x is AcquisitionRecord=>Boolean(x&&typeof x==="object"&&"id" in x&&"url" in x&&"mode" in x)).slice(0,30):[];
   }catch{return [];}
 }
-function AcquisitionSimulator({mode,onClose}:{mode:"local"|"online";onClose:()=>void}) {
+function AcquisitionSimulator({mode,onClose,organizationId,memberId}:{mode:"local"|"online";onClose:()=>void;organizationId:string;memberId:string}) {
   const ref=useRef<HTMLDialogElement>(null),id=useId();
   const [installed,setInstalled]=useState(false);
   const [url,setUrl]=useState("");
   const [title,setTitle]=useState("");
   const [price,setPrice]=useState("");
   const [sku,setSku]=useState("");
-  const [records,setRecords]=useState<AcquisitionRecord[]>(restoreAcquisitions);
+  const [records,setRecords]=useState<AcquisitionRecord[]>(()=>restoreAcquisitions(organizationId,memberId));
   const [view,setView]=useState<"capture"|"records">("capture");
   const [error,setError]=useState("");
   const [created,setCreated]=useState("");
@@ -68,7 +68,7 @@ function AcquisitionSimulator({mode,onClose}:{mode:"local"|"online";onClose:()=>
     };
     const next=[record,...records].slice(0,30);
     setRecords(next);
-    try{sessionStorage.setItem(demoAcquisitionKey,JSON.stringify(next));}catch{setError("采集已模拟完成，但浏览器禁止保存会话记录。");}
+    try{sessionStorage.setItem(demoAcquisitionKey(organizationId,memberId),JSON.stringify(next));}catch{setError("采集已模拟完成，但浏览器禁止保存会话记录。");}
     setCreated(record.id);
     setView("records");
   };
@@ -174,7 +174,7 @@ function FigmaOnlineCollection({onClose,organizationId,memberId}:{onClose:()=>vo
       if(values.some(value=>{try{const u=new URL(value);return !["http:","https:"].includes(u.protocol)}catch{return true}})){setError("请输入完整的商品链接，每行一条。");return;}
     }
     if(values.length>30){setError("演示模式一次最多输入 30 条。");return;}
-    const previous=restoreAcquisitions();
+    const previous=restoreAcquisitions(organizationId,memberId);
     const now=Date.now();
     const next=values.map((value,index):AcquisitionRecord=>({
       id:"MOCK-"+(now+index).toString(36),mode:"online",url:value,
@@ -184,7 +184,7 @@ function FigmaOnlineCollection({onClose,organizationId,memberId}:{onClose:()=>vo
     }));
     const batch=addDemoCollectionBatch(organizationId,memberId,source==="1688"?"1688":"Amazon",mode,values);
     if(!batch){setError("保存到我的数据失败，请检查浏览器会话存储权限。");return;}
-    try{sessionStorage.setItem(demoAcquisitionKey,JSON.stringify([...next,...previous].slice(0,30)));}catch{}
+    try{sessionStorage.setItem(demoAcquisitionKey(organizationId,memberId),JSON.stringify([...next,...previous].slice(0,30)));}catch{}
     setSaved(batch.products.length);setStep("done");setError("");
   };
   return <dialog ref={ref} className={`${styles.dialog} ${styles.launchDialog} ${styles.figmaAcquisitionDialog}`}
@@ -301,7 +301,7 @@ function ToolModal({info,onClose,onConfirm,organizationId,memberId}:{info:Dialog
     ["在线采集","由平台云端执行，无需客户电脑持续运行即可完成在线采集。"]
   ]:[["功能说明",tool?.description??"请选择工具功能"]];
   const title=info.type==="download"?"下载商品采集插件":info.type==="disable"?"确认停用工具":info.type==="launch"?info.name:info.name;
-  if(isAcquisition&&info.type==="download")return <AcquisitionSimulator mode="local" onClose={onClose}/>;
+  if(isAcquisition&&info.type==="download")return <AcquisitionSimulator mode="local" onClose={onClose} organizationId={organizationId} memberId={memberId}/>;
   if(isAcquisition&&info.type==="launch")return <FigmaOnlineCollection onClose={onClose} organizationId={organizationId} memberId={memberId}/>;
   return <dialog ref={ref} className={`${styles.dialog} ${info.type==="launch"?styles.launchDialog:""} ${info.type==="launch"&&(info.name==="POD素材管理工具"||info.name==="自有商品刊登工具")?styles.figmaToolDialog:""}`} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><h2 id={id}>{title}</h2><button type="button" onClick={onClose} aria-label="关闭弹窗">×</button></header>
