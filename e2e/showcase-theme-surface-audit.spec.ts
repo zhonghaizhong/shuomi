@@ -6,6 +6,13 @@ test("all navigable showcase pages keep readable dark/light panels, nested cards
  test.setTimeout(360000);
  await page.setViewportSize({width:1440,height:900});
  await page.goto(start);
+ // Expand the full menu tree so second- and third-level routes are included.
+ const nav=page.getByRole("navigation",{name:"工作台导航"});
+ for(let i=0;i<90;i++){
+  const closed=nav.locator('button[aria-expanded="false"]:visible').first();
+  if(!await closed.count())break;
+  await closed.click();
+ }
  const routes=await page.getByRole("navigation",{name:"工作台导航"}).locator('a[href*="#/workbench"]').evaluateAll(links=>
   [...new Set(links.map(a=>(a as HTMLAnchorElement).href.split("#")[1]).filter(Boolean))]
     .filter(p=>p.startsWith("/workbench"))
@@ -61,6 +68,24 @@ test("all navigable showcase pages keep readable dark/light panels, nested cards
     }
     return {issues:issues.slice(0,25),panels:checked,dialogs:[...document.querySelectorAll('[role="dialog"],dialog[open]')].filter(shown).length,contrastSamples:samples};
    },theme);
+   // Explicitly exercise real dialogs: closed dialogs cannot be audited by a passive scan.
+   if(route==="/workbench/agents/skills/official"){
+    const first=page.locator('[data-skill-name]').first();
+    if(await first.isVisible()){
+     await first.getByRole("button",{name:"介绍"}).click();
+     const dlg=page.getByRole("dialog",{name:"官方技能介绍"});
+     await expect(dlg).toBeVisible();
+     const dialogBg=await dlg.evaluate(el=>getComputedStyle(el).backgroundColor);
+     const matched=dialogBg.match(/\\d+/g)?.slice(0,3).map(Number)??[];
+     if(matched.length===3){
+      const avg=matched.reduce((a,b)=>a+b,0)/3;
+      if(theme==="light"&&avg<200)failures.push(theme+" "+route+": modal retains dark background "+dialogBg);
+      if(theme==="dark"&&avg>160)failures.push(theme+" "+route+": modal retains light background "+dialogBg);
+     }
+     result.dialogs++;
+     await dlg.getByRole("button",{name:"关闭",exact:true}).click();
+    }
+   }
    coverage.push({route,theme,panels:result.panels,dialogs:result.dialogs,contrastSamples:result.contrastSamples});
    failures.push(...result.issues.map(x=>theme+" "+route+": "+x));
   }
