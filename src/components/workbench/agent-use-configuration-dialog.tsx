@@ -32,6 +32,11 @@ export type AgentUseConfiguration={
 
 const initialOfficial=["商品识别主图","核心购买理由","核心需求解决","产品结构确认","核心细节证据","核心使用场景","卖点选择理由","规格购买确认"];
 const officialDetail=["核心购买理由","核心需求解决","核心使用场景","细节证据","功能卖点确认","使用体验延展","规格购买确认","购买理由总结"];
+const officialExampleNotes={
+ "主图":[["完整展示奶油色保温杯的杯身、杯盖、提手与整体轮廓。","主体完整、背景简洁、光线柔和"],["突出通勤便携与日常饮水的核心价值。","购买理由明确、产品保持主角"],["表现不同生活场景下随时饮水的需求。","场景真实、需求清晰"],["说明杯盖、密封结构、杯口与杯身的关系。","组件清晰、结构可辨"],["突出杯口边缘、杯盖接缝和表面质感。","细节聚焦、避免虚构材料规格"],["在工作或出行环境中展示产品。","使用场景自然、主体醒目"],["概括提手、宽口、外观等选择理由。","卖点精炼、避免未经核实的性能承诺"],["帮助购买者确认外观与需要核对的规格。","尺寸容量以实际商品资料为准"]],
+ "详情图":[["从实用性和美观度解释购买价值。","围绕产品用途呈现购买理由"],["以办公和通勤说明日常饮水痛点。","场景与需求一一对应"],["通过桌面、休闲和出行场景展示用途。","让使用环境更具体"],["放大杯口、提手和杯盖的关键细节。","细节真实、重点突出"],["展示杯盖、提手和宽口的使用方式。","功能展示清楚，不虚构参数"],["表现轻松提拿和多场景携带体验。","动作自然、商品一致"],["提示核对容量、尺寸及材质等资料。","不展示未经确认的精确参数"],["总结外观、便携和日常使用价值。","收束信息，帮助购买判断"]]
+} as const;
+
 const availableSkills=["商品标题规范优化（示例）","商品图片优化（示例）"];
 const availableKnowledge=["平台规则","运营方法","合规参考"];
 const languages=["不设置（默认关闭）","英语","中文","西班牙语","法语","德语","日语"];
@@ -47,6 +52,8 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const [slotIndex,setSlotIndex]=useState(0);
  const [selectedFromPicker,setSelectedFromPicker]=useState<string[]>([]);
  const [message,setMessage]=useState("");
+ const [example,setExample]=useState<{target:"主图"|"详情图";index:number}|null>(null);
+ const [exampleZoom,setExampleZoom]=useState(false);
  const [assetName,setAssetName]=useState("");
  const [fileName,setFileName]=useState("");
  const [tasks,setTasks]=useState<ImageTask[]>(initial.imageTasks?.length?initial.imageTasks:mode==="product-image"?[{id:1,name:"",prompt:"",target:"主图"},{id:2,name:"",prompt:"",target:"主图"}]:[{id:1,name:"自定义图片 1",prompt:""}]);
@@ -143,7 +150,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const saveProductImage=()=>{if(optimizationSource==="引用技能"&&!(form.selectedSkills?.length)){setMessage("请先在上一级选择至少一项技能，或改用官方方案。");return;}if(processingScope==="手动选择"&&!currentImages.length){setMessage("请至少勾选一张要处理的"+productTarget+"。");return;}if(optimizationSource==="自定义指令"&&!customTasksReady){setMessage("请为每条自定义任务选择不同图片位置，并填写独立优化要求。");return;}commit({...form,optimizationSource,imageProcessingScope:processingScope,sharedImageSource:form.sharedImageSource??"主图",selectedImages:currentImages,selectedMainImages:sharedVisual?currentImages:mainImgs,selectedDetailImages:sharedVisual?currentImages:detailImgs,imageTasks:tasks});};
  const choice=(items:string[],value:string,change:(v:string)=>void)=><div className={css.segment}>{items.map(v=><button key={v} type="button" aria-pressed={value===v} onClick={()=>change(v)}>{v}</button>)}</div>;
  const maybeNotice=message?<p role="status" className={css.notice}>{message}</p>:null;
- return <dialog ref={dialogRef} className={`${css.modal} ${mode==="product-image"&&!child?css.productImageModal:""}`} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
+ return <dialog ref={dialogRef} className={`${css.modal} ${mode==="product-image"&&!child?css.productImageModal:""}`} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(exampleZoom){setExampleZoom(false);}else if(example){setExample(null);}else if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
   <header className={css.head}><div><h2 id={id}>{title}</h2><p>{desc}</p></div>{isProductImage&&!child?<div className={css.optimizerHeaderActions}><button type="button" onClick={()=>setChild("language")}>语言：{form.imageLanguage&&form.imageLanguage!==languages[0]?form.imageLanguage:"已关闭"}</button><button type="button" onClick={()=>setChild("background")}>背景：{form.imageBackground&&form.imageBackground!=="不设置"?form.imageBackground:"已关闭"}</button></div>:null}<button type="button" className={css.close} aria-label="关闭配置弹窗" onClick={()=>child?setChild(""):onClose()}>×</button></header>
   <main className={css.body}>
    {child==="language"?<div className={css.optionGrid}>{languages.map(x=><button key={x} aria-pressed={(form.imageLanguage??languages[0])===x} onClick={()=>{set("imageLanguage",x);setChild("");}}>{x}</button>)}</div>
@@ -200,7 +207,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
     </section>:null}
     {optimizationSource!=="自定义指令"?<section className={css.optimizerImages}>
      <div className={css.optimizerImagesHeader}><strong>{optimizationSource==="官方方案"?"选择优化图片 · 可多选":productTarget+" · "+(processingScope==="手动选择"?"勾选需要处理的图片":"按技能设定范围")}</strong>{processingScope==="手动选择"?<div><button type="button" onClick={()=>updateCurrentImages([1,2,3,4,5,6,7,8])}>全选</button><button type="button" onClick={()=>updateCurrentImages([])}>清空</button></div>:null}</div>
-     {processingScope==="手动选择"?<div className={css.optimizerImageGrid}>{Array.from({length:8},(_,i)=>i+1).map(n=><label className={css.optimizerImageChoice} key={n}><span>第 {n} 张</span>{optimizationSource==="官方方案"?<small className={css.optimizerImageTaskName}>{(productTarget==="主图"?initialOfficial:officialDetail)[n-1]}</small>:null}<input type="checkbox" aria-label={productTarget+"第"+n+"张"} checked={currentImages.includes(n)} onChange={()=>toggleProductImage(n)}/></label>)}</div>:<p className={css.optimizerSkillNotice}>运行时根据已启用的图片优化技能判断处理位置，不强制使用手动勾选结果。未启用技能时请先返回上一级选择技能。</p>}
+     {processingScope==="手动选择"?<div className={css.optimizerImageGrid}>{Array.from({length:8},(_,i)=>i+1).map(n=><div className={css.optimizerImageChoice} key={n}><label className={css.optimizerImageCheck}><span>第 {n} 张</span><input type="checkbox" aria-label={productTarget+"第"+n+"张"} checked={currentImages.includes(n)} onChange={()=>toggleProductImage(n)}/></label>{optimizationSource==="官方方案"?<button type="button" className={css.optimizerExampleOpen} onClick={()=>{setExample({target:productTarget,index:n-1});setExampleZoom(false);}} aria-label={"查看"+productTarget+"第"+n+"张示例"}>{(productTarget==="主图"?initialOfficial:officialDetail)[n-1]} · 查看示例</button>:null}</div>)}</div>:<p className={css.optimizerSkillNotice}>运行时根据已启用的图片优化技能判断处理位置，不强制使用手动勾选结果。未启用技能时请先返回上一级选择技能。</p>}
      <p className={css.optimizerImageHint}>{optimizationSource==="官方方案"?"勾选需要优化的图片；未勾选保留原图。":"勾选的图片会按技能中对应位置的方案生成，未勾选的保持不变。例如：选中主图第 2 张，将采用技能预设的第 2 张主图方案；详情图同理。"}</p>
     </section>:null}
     <p className={css.optimizerBilling}>{optimizationSource==="自定义指令"?"费用说明：只有已添加并完成配置的自定义任务会创建 AI 优化任务，并按实际积分计费。":optimizationSource==="官方方案"?"计费说明：仅对已勾选图片执行 AI 重构并计费；选择图片越多，预计消耗积分越高。":"计费说明：仅对实际模型生成的新图片按实际消耗的 AI 积分计费；原型演示不扣积分。"}</p>
@@ -232,6 +239,16 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
    :<div className={css.stack}><p>按需勾选，可多选，不选择也可以保存模板。</p><div className={css.optionGrid}>{availableKnowledge.map(x=><label className={css.imageChoice} key={x}><input type="checkbox" checked={selectedItems.includes(x)} onChange={()=>flip(selectedItems,x,setSelectedItems)}/>{x}</label>)}</div></div>}
    {maybeNotice}
   </main>
+  {example?<div className={css.optimizerExampleOverlay} role="dialog" aria-modal="true" aria-label="优化任务示例说明">
+   <div className={css.optimizerExampleWindow}>
+    <header className={css.optimizerExampleHead}><div><strong>示例说明 · {example.target}第 {example.index+1} 张</strong><small>{(example.target==="主图"?initialOfficial:officialDetail)[example.index]} · 保温杯演示素材</small></div><button type="button" onClick={()=>{setExample(null);setExampleZoom(false);}} aria-label="关闭示例">×</button></header>
+    <div className={css.optimizerExampleLayout}>
+     <div className={css.optimizerExampleVisual}><button type="button" aria-label="点击放大示例图片" onClick={()=>setExampleZoom(true)}><img src={`${typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":""}/assets/agent-image-examples/${example.target==="主图"?"main":"detail"}-${example.index+1}.svg`} alt={(example.target==="主图"?initialOfficial:officialDetail)[example.index]+"中文保温杯1:1示例"}/></button><small>1:1 中文演示图 · 点击图片放大查看</small></div>
+     <aside className={css.optimizerExampleNotes}><h3>表达目标</h3><p>{officialExampleNotes[example.target][example.index][0]}</p><h3>示例重点</h3><p>{officialExampleNotes[example.target][example.index][1]}</p><p className={css.optimizerExampleCaution}>说明：此为演示保温杯示意图；材质、容量、保温时长等真实参数需依据实际商品资料核对。</p></aside>
+    </div>
+   </div>
+   {exampleZoom?<div className={css.optimizerExampleZoom} role="dialog" aria-modal="true" aria-label="放大示例图片"><button type="button" onClick={()=>setExampleZoom(false)} aria-label="关闭放大图片">关闭放大</button><img src={`${typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":""}/assets/agent-image-examples/${example.target==="主图"?"main":"detail"}-${example.index+1}.svg`} alt="放大后的1比1中文保温杯示例"/></div>:null}
+  </div>:null}
   <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={isProductImage&&!child&&!productImageReady} onClick={()=>{
    if(child==="restore"){setSlots(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));setChild("");return;}
    if(child==="ai-images"){addManyAi();return;}
