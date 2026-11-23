@@ -130,7 +130,7 @@ function AcquisitionSimulator({mode,onClose}:{mode:"local"|"online";onClose:()=>
 
 
 type OnlineSource = "amazon"|"1688";
-type OnlineEntry = "source"|"configure"|"done";
+type OnlineEntry = "source"|"configure"|"rules"|"done";
 const amazonSites=["美国站","英国站","德国站","法国站","意大利站","西班牙站","日本站","加拿大站"];
 function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
   const ref=useRef<HTMLDialogElement>(null),id=useId();
@@ -141,7 +141,16 @@ function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
   const [inputMode,setInputMode]=useState<"商品链接"|"ASIN">("商品链接");
   const [entries,setEntries]=useState("");
   const [rule,setRule]=useState("");
-  const [rulesOpen,setRulesOpen]=useState(false);
+  const [templates,setTemplates]=useState(source==="amazon"?["标准规则","低价高评分","高库存商品"]:["标准规则","低采购价","低起批量"]);
+  const [activeTemplate,setActiveTemplate]=useState("标准规则");
+  const [ruleName,setRuleName]=useState("标准规则");
+  const [minPrice,setMinPrice]=useState("");
+  const [maxPrice,setMaxPrice]=useState("");
+  const [minStock,setMinStock]=useState("");
+  const [minRating,setMinRating]=useState("");
+  const [purchaseRange,setPurchaseRange]=useState("");
+  const [batchQuantity,setBatchQuantity]=useState("");
+  const [moreCondition,setMoreCondition]=useState(false);
   const [autoUpload,setAutoUpload]=useState(false);
   const [error,setError]=useState("");
   const [saved,setSaved]=useState(0);
@@ -152,6 +161,8 @@ function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
   },[]);
   const choose=(next:OnlineSource)=>{
     setSource(next);setMode("指定商品");setInputMode("商品链接");setEntries("");setError("");
+    setTemplates(next==="amazon"?["标准规则","低价高评分","高库存商品"]:["标准规则","低采购价","低起批量"]);
+    setActiveTemplate("标准规则");setRuleName("标准规则");setRule("");
     setStep("configure");
   };
   const submit=(e:React.FormEvent<HTMLFormElement>)=>{
@@ -212,13 +223,55 @@ function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
         <label>采集规则<select aria-label="采集规则" value={rule} onChange={e=>setRule(e.target.value)}>
           <option value="">选择采集规则（可选）</option><option>默认采集规则</option><option>仅采集商品基本资料</option>
         </select></label>
-        <button type="button" onClick={()=>setRulesOpen(!rulesOpen)}>设置规则</button>
+        <button type="button" onClick={()=>setStep("rules")}>设置规则</button>
       </div>
-      {rulesOpen?<div className={styles.figmaRuleSettings}><strong>采集规则设置（演示）</strong><p>选择采集规则后返回本页，采集计费仍按实际成功条数。</p><button type="button" onClick={()=>{setRule("默认采集规则");setRulesOpen(false);}}>保存规则</button></div>:null}
       <p className={styles.figmaDemoCaption}>演示模式：仅保存当前浏览器模拟记录，不调用真实采集接口或扣除额度；自动转入待上传不会写入正式业务数据。</p>
       {error?<p role="alert" className={styles.acquisitionError}>{error}</p>:null}
       <footer><button type="button" onClick={()=>{setError("");setStep("source");}}>取消</button><button type="submit" className={styles.primary}>开始采集</button></footer>
-    </form>:<div className={styles.figmaDone}>
+    </form>:step==="rules"?<div className={styles.figmaRulePage}>
+      <div className={styles.figmaRuleHeader}>
+        <h2 id={id}>{source==="amazon"?"亚马逊采集规则":"1688采集规则"}</h2>
+        <p>{source==="amazon"?"管理并复用采集规则模板。":"设置1688采集后的筛选条件；规则只影响后续处理，不影响采集范围。"}</p>
+      </div>
+      {source==="amazon"?<div className={styles.figmaRuleColumns}>
+        <aside className={styles.figmaTemplateList}>
+          <strong>规则模板</strong>
+          {templates.map(name=><button key={name} type="button" aria-pressed={activeTemplate===name} onClick={()=>{
+            setActiveTemplate(name);setRuleName(name);
+            if(name==="低价高评分"){setMinPrice("");setMaxPrice("20");setMinRating("4.5");setMinStock("");}
+            else if(name==="高库存商品"){setMinPrice("");setMaxPrice("");setMinRating("");setMinStock("50");}
+          }}><strong>{name}</strong><small>{name==="标准规则"?"价格 / 库存 / 评分":name==="低价高评分"?"价格≤20 · 评分≥4.5":name==="高库存商品"?"库存≥50":"自定义模板"}</small></button>)}
+          <button type="button" onClick={()=>{const name="新建模板"+(templates.length+1);setTemplates([...templates,name]);setActiveTemplate(name);setRuleName(name);setMinPrice("");setMaxPrice("");setMinStock("");setMinRating("");}}>＋ 新建模板</button>
+        </aside>
+        <div className={styles.figmaTemplateSettings}>
+          <div className={styles.figmaTemplateName}><label>模板名称<input value={ruleName} onChange={e=>setRuleName(e.target.value)} maxLength={30}/></label>
+            <button type="button" onClick={()=>{if(!ruleName.trim())return;setTemplates(templates.map(x=>x===activeTemplate?ruleName.trim():x));setActiveTemplate(ruleName.trim());}}>保存名称</button>
+            <button type="button" onClick={()=>{if(templates.length<=1)return;const list=templates.filter(x=>x!==activeTemplate);setTemplates(list);setActiveTemplate(list[0]);setRuleName(list[0]);}}>删除模板</button>
+          </div>
+          <div className={styles.figmaRuleHelp}><strong>规则说明</strong><p>在线采集先完整采集并正常计费，再按当前规则筛选进入后续处理。</p><p>不符合规则的商品仍保留在「我的数据」中。</p></div>
+          <div className={styles.figmaRuleConditions}><div><strong>筛选条件</strong><span>同时满足</span></div>
+            <label>价格<div><input aria-label="最低价" type="number" min="0" placeholder="最低价" value={minPrice} onChange={e=>setMinPrice(e.target.value)}/><span>—</span><input aria-label="最高价" type="number" min="0" placeholder="最高价" value={maxPrice} onChange={e=>setMaxPrice(e.target.value)}/></div></label>
+            <label>库存<input aria-label="最低库存" type="number" min="0" placeholder="请输入最低库存" value={minStock} onChange={e=>setMinStock(e.target.value)}/></label>
+            <label>评分<input aria-label="最低评分" type="number" min="0" max="5" step="0.1" placeholder="最低评分，如 4.0" value={minRating} onChange={e=>setMinRating(e.target.value)}/></label>
+            <p>未填写的条件不参与筛选。</p>
+          </div>
+        </div>
+      </div>:<div className={styles.figma1688Rules}>
+        <div className={styles.figmaRuleHelp}><strong>重要说明</strong><p>1688在线采集会先采集本次提交范围内的全部商品，并按实际采集数据正常计费。</p><p>采集完成后，再按以下规则筛选进入后续处理的商品。</p><p>不符合规则的商品仍会保留在「我的数据」中，可随时查看或再次使用。</p></div>
+        <div className={styles.figmaRuleConditions}>
+          <div><strong>筛选条件</strong><span>满足全部条件</span></div>
+          <p>1688货源支持按采购价、起批量筛选。</p>
+          <label>采购价 <span>介于</span><input aria-label="采购价范围" value={purchaseRange} onChange={e=>setPurchaseRange(e.target.value)} placeholder="10 - 100 RMB"/></label>
+          <label>起批量 <span>小于等于</span><input aria-label="起批量" type="number" min="0" value={batchQuantity} onChange={e=>setBatchQuantity(e.target.value)} placeholder="5"/></label>
+          {moreCondition?<label>采购价 <span>小于等于</span><input aria-label="附加采购价" placeholder="请输入采购价"/></label>:null}
+          <button type="button" onClick={()=>setMoreCondition(!moreCondition)}>{moreCondition?"移除附加条件":"＋ 添加筛选条件"}</button>
+          <p>未设置筛选条件时，采集结果将全部进入后续流程。</p>
+        </div>
+      </div>}
+      <div className={styles.figmaRuleFooter}><button type="button" onClick={()=>setStep("configure")}>取消</button><button type="button" className={styles.primary} onClick={()=>{
+        setRule(source==="amazon"?activeTemplate:"标准规则");setStep("configure");
+      }}>{source==="amazon"?"保存模板":"保存设置"}</button></div>
+    </div>:<div className={styles.figmaDone}>
       <h2 id={id}>采集任务已模拟完成</h2>
       <p role="status">已记录 {saved} 条{source==="amazon"?"亚马逊":"1688"}演示数据。</p>
       <p>模拟记录保存在当前浏览器会话。正式采集成功后才会写入「数据服务 / 我的数据」。</p>
