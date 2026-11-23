@@ -237,16 +237,13 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       ["deleted","已删除",deletedStores.length,"可恢复"]
     ] as const).map(([key,title,value,subtitle])=><button type="button" key={key} className={css.storeMetric} data-tone={key} aria-pressed={metricFilter===key} onClick={()=>chooseMetric(key)}><span>{title}</span><small>{subtitle}</small><strong>{value} <em>家</em></strong></button>)}</section>
     {connectionIssueStores>0?<section className={css.attention}><span>有 {connectionIssueStores} 家已绑定且服务有效的店铺连接异常，需检查授权或平台接口。</span><button onClick={()=>chooseMetric("attention")}>查看待处理</button></section>:null}
-   <form className={css.filters} aria-label="店铺筛选" onSubmit={e=>{e.preventDefault();commitFilters()}}>
-    <div className={css.filterCriteria} aria-label="条件筛选">
-      <select aria-label="平台筛选" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option>全部平台</option><option>SHEIN</option></select>
-      <select aria-label="站点筛选" value={regionFilter} onChange={e=>setRegionFilter(e.target.value)}><option>全部站点</option>{demoSites.map(site=><option key={site}>{site}</option>)}<option>其他站点</option></select>
-      <select aria-label="店铺类型筛选" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option>全部类型</option><option>半托管</option><option>全托管</option><option>自营</option></select>
-    </div>
-    <div className={css.filterSearchActions} aria-label="搜索与操作">
-      <label className={css.storeSearchField}><span className={css.searchControl}><Search size={16}/><input aria-label="搜索店铺" value={query} onChange={e=>setQuery(e.target.value)} placeholder="输入店铺名称或 ID"/></span></label>
-      <button type="button" onClick={resetFilters}>重置</button>
-      <button className={css.primary} type="submit">确认</button>
+   <form className={css.filters} data-shuomi-filter="balanced" aria-label="店铺筛选" onSubmit={e=>{e.preventDefault();commitFilters()}}>
+    <div data-shuomi-filter-left><label className={css.storeSearchField}><span className={css.searchControl}><Search size={16}/><input aria-label="搜索店铺" value={query} onChange={e=>setQuery(e.target.value)} placeholder="输入店铺名称或 ID"/></span></label></div>
+    <div data-shuomi-filter-right aria-label="筛选条件、重置与确认">
+     <select aria-label="平台筛选" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option>全部平台</option><option>SHEIN</option></select>
+     <select aria-label="站点筛选" value={regionFilter} onChange={e=>setRegionFilter(e.target.value)}><option>全部站点</option>{demoSites.map(site=><option key={site}>{site}</option>)}<option>其他站点</option></select>
+     <select aria-label="店铺类型筛选" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option>全部类型</option><option>半托管</option><option>全托管</option><option>自营</option></select>
+     <button type="button" onClick={resetFilters}>重置</button><button className={css.primary} type="submit">确认</button>
     </div>
    </form>
    <section className={css.panel}>
