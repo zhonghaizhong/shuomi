@@ -131,12 +131,14 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const optimizationSource=form.optimizationSource??(form.generationRule==="自定义指令"?"自定义指令":"引用技能");
  const processingScope=form.imageProcessingScope??"手动选择";
  const productTarget=form.imageTarget??"主图";
- const currentImages=productTarget==="主图"?mainImgs:detailImgs;
- const updateCurrentImages=(next:number[])=>productTarget==="主图"?setMainImgs(next):setDetailImgs(next);
+ const sharedVisual=(form.imageUse??"共用视觉素材")==="共用视觉素材";
+ const currentImages=sharedVisual?((form.sharedImageSource??"主图")==="主图"?mainImgs:detailImgs):(productTarget==="主图"?mainImgs:detailImgs);
+ const updateCurrentImages=(next:number[])=>{if(sharedVisual){setMainImgs(next);setDetailImgs(next);}else if(productTarget==="主图"){setMainImgs(next);}else{setDetailImgs(next);}};
+ const selectVisualStrategy=(next:"共用视觉素材"|"分别优化")=>{if(next==="共用视觉素材"){const images=(form.sharedImageSource??"主图")==="主图"?mainImgs:detailImgs;setMainImgs(images);setDetailImgs(images);}set("imageUse",next);setMessage("");};
  const toggleProductImage=(number:number)=>updateCurrentImages(currentImages.includes(number)?currentImages.filter(x=>x!==number):[...currentImages,number].sort((a,b)=>a-b));
  const selectProductSource=(source:"引用技能"|"官方方案"|"自定义指令")=>setForm(v=>({...v,optimizationSource:source,generationRule:source==="自定义指令"?"自定义指令":"官方方案"}));
  const productImageReady=(optimizationSource!=="引用技能"&&processingScope!=="按技能设定"||Boolean(form.selectedSkills?.length))&&(processingScope!=="手动选择"||currentImages.length>0)&&(optimizationSource!=="自定义指令"||tasks.some(t=>t.prompt.trim()));
- const saveProductImage=()=>{if(optimizationSource==="引用技能"&&!(form.selectedSkills?.length)){setMessage("请先在上一级选择至少一项技能，或改用官方方案。");return;}if(processingScope==="手动选择"&&!currentImages.length){setMessage("请至少勾选一张要处理的"+productTarget+"。");return;}if(optimizationSource==="自定义指令"&&!tasks.some(t=>t.prompt.trim())){setMessage("请至少填写一条独立生成指令。");return;}commit({...form,optimizationSource,imageProcessingScope:processingScope,sharedImageSource:form.sharedImageSource??"主图",selectedImages:currentImages,selectedMainImages:mainImgs,selectedDetailImages:detailImgs,imageTasks:tasks});};
+ const saveProductImage=()=>{if(optimizationSource==="引用技能"&&!(form.selectedSkills?.length)){setMessage("请先在上一级选择至少一项技能，或改用官方方案。");return;}if(processingScope==="手动选择"&&!currentImages.length){setMessage("请至少勾选一张要处理的"+productTarget+"。");return;}if(optimizationSource==="自定义指令"&&!tasks.some(t=>t.prompt.trim())){setMessage("请至少填写一条独立生成指令。");return;}commit({...form,optimizationSource,imageProcessingScope:processingScope,sharedImageSource:form.sharedImageSource??"主图",selectedImages:currentImages,selectedMainImages:sharedVisual?currentImages:mainImgs,selectedDetailImages:sharedVisual?currentImages:detailImgs,imageTasks:tasks});};
  const choice=(items:string[],value:string,change:(v:string)=>void)=><div className={css.segment}>{items.map(v=><button key={v} type="button" aria-pressed={value===v} onClick={()=>change(v)}>{v}</button>)}</div>;
  const maybeNotice=message?<p role="status" className={css.notice}>{message}</p>:null;
  return <dialog ref={dialogRef} className={`${css.modal} ${mode==="product-image"&&!child?css.productImageModal:""}`} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
@@ -177,13 +179,13 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
       {([["引用技能","使用已选图片优化技能"],["官方方案","标准 8+8 优化任务模板"],["自定义指令","按需新增 · 单图独立要求"]] as const).map(([name,description])=><button type="button" key={name} aria-pressed={optimizationSource===name} onClick={()=>{selectProductSource(name);setMessage("");}}><strong>{name}</strong><small>{description}</small></button>)}
      </div></section>
      <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>2</span><div><strong>图片策略</strong><small>决定是否复用素材</small></div></div><div className={css.optimizerChoices}>
-      {([["共用视觉素材","减少重复优化"],["分别优化","主图详情图独立优化"]] as const).map(([name,description])=><button type="button" key={name} aria-pressed={(form.imageUse??"共用视觉素材")===name} onClick={()=>set("imageUse",name)}><strong>{name}</strong><small>{description}</small></button>)}
+      {([["共用视觉素材","减少重复优化"],["分别优化","主图详情图独立优化"]] as const).map(([name,description])=><button type="button" key={name} aria-pressed={(form.imageUse??"共用视觉素材")===name} onClick={()=>selectVisualStrategy(name)}><strong>{name}</strong><small>{description}</small></button>)}
      </div></section>
      <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>3</span><div><strong>配置对象</strong><small>选择主图 / 详情图</small></div></div><div className={css.optimizerChoices}>
-      {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={productTarget===name} onClick={()=>{set("imageTarget",name);setMessage("");}}><strong>{name}</strong><small>配置{name}优化任务</small></button>)}
+      {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={sharedVisual||productTarget===name} onClick={()=>{set("imageTarget",name);setMessage("");}}><strong>{name}</strong><small>配置{name}优化任务</small></button>)}
      </div></section>
      {(form.imageUse??"共用视觉素材")==="共用视觉素材"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>4</span><div><strong>共用来源</strong><small>选择复用来源</small></div></div><div className={css.optimizerChoices}>
-      {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={(form.sharedImageSource??"主图")===name} onClick={()=>set("sharedImageSource",name)}><strong>以{name}为准</strong><small>主图、详情图复用{name}侧配置</small></button>)}
+      {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={(form.sharedImageSource??"主图")===name} onClick={()=>{const selected=name==="主图"?mainImgs:detailImgs;setMainImgs(selected);setDetailImgs(selected);set("sharedImageSource",name);}}><strong>以{name}为准</strong><small>主图、详情图复用{name}侧配置</small></button>)}
      </div></section>:null}
      <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><div className={css.optimizerNoNumber}><strong>图片处理范围</strong><small>选择处理范围</small></div></div><div className={css.optimizerChoices}>
       {(["手动选择","按技能设定"] as const).map(name=><button type="button" key={name} aria-pressed={processingScope===name} onClick={()=>{set("imageProcessingScope",name);setMessage("");}}>{name}</button>)}
