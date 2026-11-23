@@ -2788,3 +2788,18 @@
 @media(prefers-reduced-motion:reduce){
  .page[data-commerce-unified="data"] :is(.card,.split>article){transition:none}
 }
+
+/* Data API call log: column alignment, responsive overflow and both Vuexy themes. */
+.page[data-commerce-unified="data"] .apiLogScroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;border:1px solid var(--ds-line);border-radius:9px;margin-top:14px}
+.page[data-commerce-unified="data"] .apiLogTable{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;text-align:left;font-size:13px;line-height:1.5;color:var(--ds-ink);font-variant-numeric:tabular-nums}
+.page[data-commerce-unified="data"] .apiLogTable thead{background:var(--ds-raised)}
+.page[data-commerce-unified="data"] .apiLogTable th{padding:13px 15px;color:var(--ds-sub);font-size:12px;font-weight:650;white-space:nowrap;border-bottom:1px solid var(--ds-line)}
+.page[data-commerce-unified="data"] .apiLogTable td{padding:14px 15px;color:var(--ds-ink);border-bottom:1px solid var(--ds-line);white-space:nowrap}
+.page[data-commerce-unified="data"] .apiLogTable tbody tr:last-child td{border-bottom:0}
+.page[data-commerce-unified="data"] .apiLogTable tbody tr:nth-child(even){background:var(--ds-quiet)}
+.page[data-commerce-unified="data"] .apiLogTable tbody tr:hover{background:color-mix(in srgb,#7367f0 7%,var(--ds-surface))}
+.page[data-commerce-unified="data"] .apiLogTable :is(th,td):nth-child(4),
+.page[data-commerce-unified="data"] .apiLogTable :is(th,td):nth-child(5),
+.page[data-commerce-unified="data"] .apiLogTable :is(th,td):nth-child(6){text-align:right}
+.page[data-commerce-unified="data"] .apiLogStatus{display:inline-flex;align-items:center;min-height:26px;padding:2px 9px;border:1px solid color-mix(in srgb,#28c76f 28%,var(--ds-line));background:color-mix(in srgb,#28c76f 9%,var(--ds-surface));border-radius:7px;color:var(--ds-ink)}
+.page[data-commerce-unified="data"] .apiLogStatus[data-state="partial"]{border-color:color-mix(in srgb,#ff9f43 35%,var(--ds-line));background:color-mix(in srgb,#ff9f43 12%,var(--ds-surface))}
