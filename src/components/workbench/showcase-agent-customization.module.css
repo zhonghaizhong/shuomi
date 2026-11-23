@@ -400,3 +400,11 @@
 .page.page > .header p{
  margin:0;font-size:14px;line-height:22px;
 }
+
+/* Agent customization: keep Figma content and interactions; harmonize surfaces. */
+.page{--custom-surface:#142237;--custom-raised:#18283c;--custom-border:#31465e;--custom-text:#edf4ff;--custom-muted:#b5c6d8;--custom-primary:#7367f0;--custom-focus:#a99dff;color:var(--custom-text)}
+:global(.light) .page{--custom-surface:#fff;--custom-raised:#f7fafd;--custom-border:#dfe7ef;--custom-text:#263648;--custom-muted:#64768a;--custom-primary:#7367f0;--custom-focus:#7367f0;color:var(--custom-text)}
+.page.page :is(.header,.hero,.card,.featureGrid article){background:var(--custom-surface);border-color:var(--custom-border);color:var(--custom-text)}
+.page.page :is(.header p,.header small,.hero p,.card>p,.featureGrid p){color:var(--custom-muted)}
+.page.page button:not(.primary){background:var(--custom-raised);color:var(--custom-text);border-color:var(--custom-border)}
+.page.page button.primary{background:var(--custom-primary);color:#fff;border-color:var(--custom-primary)}
