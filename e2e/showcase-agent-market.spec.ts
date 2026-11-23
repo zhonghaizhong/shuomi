@@ -138,6 +138,15 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(reopened.getByRole("checkbox",{name:"标题优化"})).toBeChecked();
  await expect(reopened.getByRole("checkbox",{name:"平台规则"})).toBeChecked();
  await reopened.getByRole("button",{name:"查看模板"}).click();
+ const templates=page.getByRole("dialog",{name:"模板管理"});
+ await expect(templates).toContainText("商品优化示例模板");
+ await templates.getByRole("button",{name:"重命名"}).click();
+ await templates.getByRole("textbox",{name:"重命名模板"}).fill("已修改商品优化模板");
+ await templates.getByRole("button",{name:"保存",exact:true}).click();
+ await expect(templates).toContainText("已修改商品优化模板");
+ await templates.getByRole("button",{name:"查看配置"}).click();
+ await expect(templates).toContainText("标题优化");
+ await templates.getByRole("button",{name:"关闭",exact:true}).click();
  await expect(reopened.getByRole("status")).toContainText("标题优化");
  await page.keyboard.press("Escape");
  await page.getByRole("button",{name:"进入使用"}).last().click();
