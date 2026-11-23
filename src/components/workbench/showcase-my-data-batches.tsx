@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import {readDemoCollectionBatches,type DemoCollectionBatch} from "./showcase-collection-batches";
+import {readDemoCollectionBatches,createDemoCollectionBatch,renameDemoCollectionBatch,type DemoCollectionBatch} from "./showcase-collection-batches";
 import css from "./showcase-my-data-batches.module.css";
 import {ShowcaseBatchProductsDialog} from "./showcase-batch-products-dialog";
 const archiveKey=(org:string,member:string)=>"shuomi:my-data-archived-v1:"+org+":"+member;
@@ -12,11 +12,16 @@ export function ShowcaseMyDataBatches({organizationId,memberId}:{organizationId:
  const [archivedIds,setArchivedIds]=useState<string[]>(()=>typeof window==="undefined"?[]:readArchived(organizationId,memberId));
  const [archivedOnly,setArchivedOnly]=useState(false),[selected,setSelected]=useState<string|null>(null),[menu,setMenu]=useState<string|null>(null),[manage,setManage]=useState(false);
  const [chosen,setChosen]=useState<string[]>([]),[page,setPage]=useState(1);
+ const [manageQuery,setManageQuery]=useState(""),[manageSource,setManageSource]=useState("全部来源"),[manageStatus,setManageStatus]=useState("全部状态");
+ const [manageApplied,setManageApplied]=useState({query:"",source:"全部来源",status:"全部状态"}),[managePage,setManagePage]=useState(1);
+ const [createOpen,setCreateOpen]=useState(false),[newBatchName,setNewBatchName]=useState(""),[renaming,setRenaming]=useState<string|null>(null),[renameName,setRenameName]=useState(""),[manageError,setManageError]=useState("");
  const [batches,setBatches]=useState<DemoCollectionBatch[]>(()=>readDemoCollectionBatches(organizationId,memberId));
  useEffect(()=>{const refresh=()=>{setBatches(readDemoCollectionBatches(organizationId,memberId));setArchivedIds(readArchived(organizationId,memberId));setSelected(null);setChosen([]);setMenu(null)};refresh();const onChange=(e:Event)=>{const detail=(e as CustomEvent<{organizationId:string}>).detail;if(detail?.organizationId===organizationId)refresh()};window.addEventListener("shuomi:demo-batches-updated",onChange);return()=>window.removeEventListener("shuomi:demo-batches-updated",onChange)},[organizationId,memberId]);
  const archived=new Set(archivedIds);
  const visible=useMemo(()=>batches.filter(b=>archived.has(b.id)===archivedOnly&&(appliedSource==="全部来源"||b.source===appliedSource)&&(appliedStatus==="全部状态"||(appliedStatus==="未上传"?b.status.includes("待上传"):b.status.includes("已上传")))&&(b.name+" "+b.id+" "+b.source+" "+b.products.map(p=>p.name).join(" ")).toLowerCase().includes(search.toLowerCase())),[batches,archivedIds,archivedOnly,appliedSource,appliedStatus,search]);
  const archivedCount=batches.filter(b=>archived.has(b.id)).length;
+ const managedRows=batches.filter(b=>(manageApplied.source==="全部来源"||b.source===manageApplied.source)&&(manageApplied.status==="全部状态"||(manageApplied.status==="已归档"?archived.has(b.id):manageApplied.status==="未上传"?!archived.has(b.id)&&!b.status.includes("已上传"):!archived.has(b.id)&&b.status.includes("已上传")))&&b.name.toLowerCase().includes(manageApplied.query.toLowerCase()));
+ const managePageCount=Math.max(1,Math.ceil(managedRows.length/6)),managedPage=Math.min(managePage,managePageCount),managedPagedRows=managedRows.slice((managedPage-1)*6,managedPage*6);
  const pageCount=Math.max(1,Math.ceil(visible.length/10)),currentPage=Math.min(page,pageCount),rows=visible.slice((currentPage-1)*10,currentPage*10);
  const picked=batches.find(b=>b.id===selected&&archived.has(b.id)===archivedOnly);
  const checkAll=rows.length>0&&rows.every(b=>chosen.includes(b.id));
@@ -35,6 +40,37 @@ export function ShowcaseMyDataBatches({organizationId,memberId}:{organizationId:
    <footer className={css.pagination}><span>显示 {rows.length} / {visible.length} 批 · 第 {currentPage} / {pageCount} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setPage(v=>v-1)}>上一页</button><button type="button" disabled={currentPage===pageCount} onClick={()=>setPage(v=>v+1)}>下一页</button></div></footer>
   </>:<p role="status" className={css.empty}>暂无{tab}数据。采集批次不会自动写入此分类。</p>}</section>
   {picked?<ShowcaseBatchProductsDialog key={picked.id} batch={picked} organizationId={organizationId} memberId={memberId} otherBatches={batches.filter(x=>x.id!==picked.id&&!archived.has(x.id))} onClose={()=>setSelected(null)}/>:null}
-  {manage?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setManage(false)}}><section className={css.manageDialog} role="dialog" aria-modal="true" aria-label="管理采集批次"><header><div><h2>管理批次</h2><p>只管理当前账号及当前企业的演示批次。</p></div><button type="button" aria-label="关闭管理批次弹窗" onClick={()=>setManage(false)}>×</button></header><div className={css.manageList}><p>未归档 {batches.length-archivedCount} 批 · 已归档 {archivedCount} 批</p>{batches.map(b=><div key={b.id}><strong>{b.name}</strong><span>{b.products.length} 个产品 · {archived.has(b.id)?"已归档":"未归档"}</span><button type="button" onClick={()=>toggleArchive([b.id],!archived.has(b.id))}>{archived.has(b.id)?"恢复":"归档"}</button></div>)}</div><footer><button type="button" className={css.primary} onClick={()=>setManage(false)}>完成</button></footer></section></div>:null}
+  {manage?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setManage(false)}}>
+   <section className={css.manageDialog} role="dialog" aria-modal="true" aria-label="管理采集批次" onKeyDown={e=>{if(e.key==="Escape")setManage(false)}}>
+    <header className={css.manageHeader}><div><h2>批次管理</h2><p>统一管理批次名称、产品来源和上传状态，支持新建、重命名与归档。</p></div>
+     <div className={css.manageHeaderActions}><button type="button" className={css.primary} onClick={()=>{setCreateOpen(v=>!v);setManageError("");setRenaming(null)}}>新建批次</button><button type="button" onClick={()=>setManage(false)}>关闭</button></div>
+    </header>
+    {createOpen?<form className={css.manageInlineForm} onSubmit={e=>{e.preventDefault();if(createDemoCollectionBatch(organizationId,memberId,newBatchName)){setNewBatchName("");setCreateOpen(false);setManagePage(1);setManageError("")}else setManageError("新建失败，请填写名称后重试")}}>
+      <label htmlFor="manage-new-name">新批次名称</label><input id="manage-new-name" maxLength={60} required placeholder="请输入批次名称" value={newBatchName} onChange={e=>setNewBatchName(e.target.value)}/><button type="submit" className={css.primary}>保存</button><button type="button" onClick={()=>setCreateOpen(false)}>取消</button>
+     </form>:null}
+    <form className={css.manageFilters} onSubmit={e=>{e.preventDefault();setManageApplied({query:manageQuery.trim(),source:manageSource,status:manageStatus});setManagePage(1)}}>
+      <label className={css.manageSearch}><span aria-hidden="true">⌕</span><input aria-label="搜索批次名称" placeholder="搜索批次名称" value={manageQuery} onChange={e=>setManageQuery(e.target.value)}/></label>
+      <select aria-label="管理批次产品来源" value={manageSource} onChange={e=>setManageSource(e.target.value)}><option>全部来源</option><option>Amazon</option><option>1688</option></select>
+      <select aria-label="管理批次上传状态" value={manageStatus} onChange={e=>setManageStatus(e.target.value)}><option>全部状态</option><option>未上传</option><option>已上传</option><option>已归档</option></select>
+      <button type="button" onClick={()=>{setManageQuery("");setManageSource("全部来源");setManageStatus("全部状态");setManageApplied({query:"",source:"全部来源",status:"全部状态"});setManagePage(1)}}>重置</button>
+      <button type="submit" className={css.primary}>确认</button>
+    </form>
+    {manageError?<p className={css.manageError} role="alert">{manageError}</p>:null}
+    <div className={css.manageTableScroll}><table className={css.manageTable}><thead><tr><th>批次名称</th><th>产品来源</th><th>总量</th><th>符合</th><th>过滤</th><th>创建时间</th><th>上传状态</th><th>操作</th></tr></thead>
+     <tbody>{managedPagedRows.map(b=><tr key={b.id}>
+      <td className={css.manageNameCell}>{renaming===b.id?<form className={css.manageRenameForm} onSubmit={e=>{e.preventDefault();if(renameDemoCollectionBatch(organizationId,memberId,b.id,renameName)){setRenaming(null);setManageError("")}else setManageError("重命名失败，请重试")}}><input aria-label={"重命名 "+b.name} maxLength={60} required value={renameName} onChange={e=>setRenameName(e.target.value)}/><button type="submit">保存</button><button type="button" onClick={()=>setRenaming(null)}>取消</button></form>:<strong title={b.name}>{b.name}</strong>}</td>
+      <td><span className={css.manageSourcePill}>{b.source}</span></td>
+      <td><span className={css.manageMetric}>{b.products.length.toLocaleString()}</span></td>
+      <td><span className={css.manageMatch}>{b.products.length.toLocaleString()}</span></td>
+      <td><span className={css.manageFiltered}>0</span></td>
+      <td className={css.manageDate}>{b.createdAt}</td>
+      <td><div className={css.manageStatusCell}><span className={b.status.includes("已上传")?css.isUploaded:css.isPending}><i/>{archived.has(b.id)?"已归档":b.status.includes("已上传")?"已上传":"未上传"}</span>{b.status.includes("已上传")&&!archived.has(b.id)?<small>SHEIN · 美国站</small>:null}</div></td>
+      <td><div className={css.manageActions}><button type="button" disabled={renaming===b.id} onClick={()=>{setRenaming(b.id);setRenameName(b.name);setCreateOpen(false);setManageError("")}}>重命名</button><button type="button" className={css.archiveAction} onClick={()=>{toggleArchive([b.id],!archived.has(b.id));setManagePage(1)}}>{archived.has(b.id)?"恢复":"归档"}</button></div></td>
+     </tr>)}</tbody></table>
+     {!managedRows.length?<p className={css.empty} role="status">暂无符合条件的批次</p>:null}
+    </div>
+    <footer className={css.manageFooter}><span>共 {managedRows.length} 批 · 第 {managedPage} / {managePageCount} 页</span><div><button type="button" disabled={managedPage===1} onClick={()=>setManagePage(v=>v-1)}>上一页</button><button type="button" disabled={managedPage===managePageCount} onClick={()=>setManagePage(v=>v+1)}>下一页</button></div></footer>
+   </section>
+  </div>:null}
  </div>;
 }
