@@ -10,8 +10,8 @@ export type AgentPreviewDialog =
  | {kind:"model";title:string;model:"official"|"custom"}
  | {kind:"use";title:string};
 type CustomForm={provider:string;model:string;apiKey:string;endpoint:string};
-export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTemplate}:{
- dialog:AgentPreviewDialog;onClose:()=>void;
+export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTemplate,organizationId="SM-ENT-000001",memberId="admin",administrator=true}:{
+ dialog:AgentPreviewDialog;onClose:()=>void;organizationId?:string;memberId?:string;administrator?:boolean;
  onSaveModel:(title:string,model:"official"|"custom")=>void;
  onSaveTemplate?:(title:string,configuration:{skills:string[];knowledge:string[];imageOptimization:boolean;imageInstructions:string;podImageMode?:string;podPatternMode?:string;podQuantity?:number;podTransparent?:boolean;useConfig?:AgentUseConfiguration})=>void;
 }){
@@ -97,7 +97,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  return <dialog ref={ref} className={`${styles.dialog} ${isUse?styles.useDialog:""}`} aria-labelledby={id}
    onCancel={event=>{event.preventDefault();if(saveNameOpen){setSaveNameOpen(false);return;}if(templateManagerOpen){setTemplateManagerOpen(false);return;}onClose();}}
    onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
-  {podTaskOpen?<ShowcasePODTaskDialog onClose={()=>setPodTaskOpen(false)} onTemplate={()=>setPodTaskOpen(false)}/>:null}
+  {podTaskOpen?<ShowcasePODTaskDialog organizationId={organizationId} memberId={memberId} administrator={administrator} onClose={()=>setPodTaskOpen(false)} onTemplate={()=>setPodTaskOpen(false)}/>:null}
   {configMode?<AgentUseConfigurationDialog mode={configMode} initial={{...useConfig,selectedSkills:skills,selectedKnowledge:knowledge}} onClose={()=>setConfigMode(null)} onSave={value=>{
    setUseConfig(prev=>({...prev,...value}));
    if(value.selectedSkills)setSkills(value.selectedSkills);
