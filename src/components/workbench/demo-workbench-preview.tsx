@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./demo-workbench-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts } from "./plans-demo-facts";
