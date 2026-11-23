@@ -400,3 +400,30 @@ test("batch product image viewer stays compact and price sliders filter by a sel
  await modal.getByRole("group",{name:"滑动筛选价格"}).getByRole("button",{name:"重置"}).click();
  await expect(modal).toContainText("¥42.50 起");
 });
+
+test("search/filter bars use unified left/right centered axis on tool and data pages",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ for(const entry of [
+  {route:base+"/official",label:"官方工具筛选"},
+  {route:base+"/mine",label:"我的工具筛选"},
+  {route:"/shuomi/#/workbench/data/mine",label:"数据筛选"}
+ ]){
+  await page.goto(entry.route);
+  const bar=page.locator('[data-shuomi-filter="balanced"]').filter({has:page.getByRole("textbox")}).first();
+  await expect(bar).toBeVisible();
+  const left=bar.locator('[data-shuomi-filter-left]');
+  const right=bar.locator('[data-shuomi-filter-right]');
+  await expect(left.getByRole("textbox")).toBeVisible();
+  const leftBox=await left.boundingBox(),rightBox=await right.boundingBox(),barBox=await bar.boundingBox();
+  expect(leftBox&&rightBox&&barBox).toBeTruthy();
+  expect(leftBox!.x+leftBox!.width).toBeLessThanOrEqual(rightBox!.x+4);
+  expect(Math.abs(leftBox!.width-rightBox!.width)).toBeLessThan(50);
+  expect(Math.abs((leftBox!.x+leftBox!.width/2+rightBox!.x+rightBox!.width/2)/2-(barBox!.x+barBox!.width/2))).toBeLessThan(20);
+ }
+ await page.setViewportSize({width:768,height:900});
+ await page.goto("/shuomi/#/workbench/data/mine");
+ const small=page.getByRole("region",{name:"数据筛选"});
+ await expect(small.locator('[data-shuomi-filter-left] input')).toBeVisible();
+ await expect(small.locator('[data-shuomi-filter-right] button')).toHaveCount(2);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2)).toBe(true);
+});
