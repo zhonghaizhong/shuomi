@@ -81,3 +81,11 @@
 @media(min-width:2400px){.hero{min-height:152px;padding:26px 30px}.hero h1{font-size:30px;line-height:40px}.hero p{font-size:15px;line-height:24px}}
 @media(max-width:1050px){.grid,.fourGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.shell{width:calc(100% - 24px);padding:14px 0 28px}.hero{min-height:112px;padding:16px 18px}.hero h1{font-size:23px;line-height:30px}.hero p,.breadcrumb{font-size:13px;line-height:20px}.grid,.fourGrid{grid-template-columns:1fr}.toolbar{padding:16px 18px}.searchForm{width:100%}.searchForm input{flex:1;min-width:0;width:auto}.feature{min-height:174px}}
+
+/* Match the approved Tool Market header across skill pages in both themes. */
+.shell{--s-bg:#142237;--s-line:#30465e;--s-txt:#eff6ff;--s-muted:#adc1d4;--s-title:#eff6ff;--s-accent:#7367f0;--s-shadow:0 7px 24px rgba(3,12,27,.15)}
+.shell>.hero{border-color:var(--s-line);border-radius:12px;background:var(--s-bg);box-shadow:var(--s-shadow);padding-left:24px}
+.shell>.hero h1{color:var(--s-title);font-weight:700;border-left-color:#7367f0}
+:global(.light) .shell{--s-bg:#fff;--s-line:#dfe7ef;--s-txt:#263747;--s-muted:#607183;--s-title:#263747;--s-accent:#7367f0;--s-shadow:0 6px 22px rgba(32,55,87,.06)}
+:global(.light) .shell>.hero{border-color:var(--s-line);background:var(--s-bg);border-radius:12px}
+@media(max-width:700px){.shell>.hero{padding-left:18px}}
