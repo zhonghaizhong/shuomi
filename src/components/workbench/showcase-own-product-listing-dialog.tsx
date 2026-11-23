@@ -63,11 +63,11 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
   try{
    const item=saveOwnProduct(organizationId,memberId,currentBatch.id,{
     name:normalized[0]?.name||"自有商品 · "+new Date().toLocaleDateString("zh-CN"),
-    source:"上传资料",status:missing.length?"待补全":"待上传",missing,agent,template,skus:normalized
+    source:"上传资料",status:missing.length?"入库待完善":"已入库",missing,agent,template,skus:normalized
    });
    setReviewProduct(item);setReviewSkus(item.skus);setReviewSkuId(item.skus[0].id);
    setBatches(readOwnProductBatches(organizationId,memberId));
-   setStatus(missing.length?"检测完成：请在下方承接区逐项补齐资料，通过统一检查后才进入自有商品库。":"检测通过：商品已进入自有商品库，可从承接区查看本次结果。");
+   setStatus(missing.length?"首次入库适配发现资料缺失：请直接在当前弹窗补齐，通过硕米平台入库检查后进入自有商品库。":"首次入库适配通过：商品已进入自有商品库，可在刊登管理中选择目标店铺进行第二次适配。");
   }catch(e){setStatus(e instanceof Error?"保存失败："+e.message:"保存失败，请检查浏览器会话存储容量。");}
  };
  useEffect(()=>{if(reviewProduct){reviewPanelRef.current?.scrollIntoView({block:"start",behavior:"instant"});}},[reviewProduct?.id]);
@@ -78,7 +78,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
   try{
    const updated=updateOwnProductAfterReview(organizationId,memberId,reviewProduct.id,reviewSkus);
    setReviewProduct(updated);setReviewSkus(updated.skus);setBatches(readOwnProductBatches(organizationId,memberId));
-   setStatus(updated.status==="待上传"?"统一检查通过，商品现已进入「我的数据 → 自有商品库」，后续可在刊登管理选择。":"仍有 "+updated.missing.length+" 项缺失，请继续补全，数据已保存在待补全区。");
+   setStatus(updated.status==="已入库"?"硕米平台入库检查通过，商品已进入「我的数据 → 自有商品库」，之后由刊登管理执行第三方适配。":"仍有 "+updated.missing.length+" 项缺失，请继续补全，草稿仍保存在本工具内，不会进入刊登管理的待补全。");
   }catch(e){setStatus(e instanceof Error?e.message:"检查失败");}
  };
  const reviewUpload=async(e:ChangeEvent<HTMLInputElement>)=>{
@@ -95,20 +95,20 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
  return <dialog ref={ref} className={styles.dialog} aria-labelledby={headingId} onCancel={e=>{e.preventDefault();if(activeImage)setActiveImage(null);else onClose()}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
   <header className={styles.header}><div><h2 id={headingId}>自有商品一键刊登</h2><p>上传商品资料，按 SKU 整理图片及基础信息，提交后统一检测。</p></div><button type="button" onClick={onClose}>关闭</button></header>
   <div className={styles.content}>
-   {!reviewProduct&&readOwnProducts(organizationId,memberId).some(p=>p.status==="待补全")?<div className={styles.pendingBanner}><strong>待补全商品</strong><span>已保存的待补全记录可继续编辑，检查通过后才进入自有商品库。</span><select aria-label="继续补全已有商品" value="" onChange={e=>{const item=readOwnProducts(organizationId,memberId).find(p=>p.id===e.target.value&&p.status==="待补全");if(item){setReviewProduct(item);setReviewSkus(item.skus);setReviewSkuId(item.skus[0]?.id||1);setStatus("已恢复待补全商品："+item.name)}}}><option value="">选择待补全商品</option>{readOwnProducts(organizationId,memberId).filter(p=>p.status==="待补全").map(p=><option key={p.id} value={p.id}>{p.name} · {p.missing.length} 项待补全</option>)}</select></div>:null}
+   {!reviewProduct&&readOwnProducts(organizationId,memberId).some(p=>p.status==="入库待完善")?<div className={styles.pendingBanner}><strong>入库待完善草稿</strong><span>草稿仅保存在本工具内，补齐后才会进入自有商品库。</span><select aria-label="继续完善入库草稿" value="" onChange={e=>{const item=readOwnProducts(organizationId,memberId).find(p=>p.id===e.target.value&&p.status==="入库待完善");if(item){setReviewProduct(item);setReviewSkus(item.skus);setReviewSkuId(item.skus[0]?.id||1);setStatus("已恢复待补全商品："+item.name)}}}><option value="">选择待完善草稿</option>{readOwnProducts(organizationId,memberId).filter(p=>p.status==="入库待完善").map(p=><option key={p.id} value={p.id}>{p.name} · {p.missing.length} 项缺失</option>)}</select></div>:null}
    {reviewProduct?<section ref={reviewPanelRef} className={styles.reviewPanel} aria-label="商品检测承接区">
-    <div className={styles.reviewHead}><div><h3>商品检测 · 待补全承接区</h3><p>本次批次：{batches.find(b=>b.id===reviewProduct.batchId)?.name} · {reviewProduct.status==="待上传"?"已通过统一检查":"需补全 "+reviewMissing.length+" 项"}</p></div><button type="button" onClick={()=>{setReviewProduct(null);setReviewSkus([]);setStatus("")}}>继续导入商品</button></div>
+    <div className={styles.reviewHead}><div><h3>首次适配 · 硕米商品入库检查</h3><p>本次批次：{batches.find(b=>b.id===reviewProduct.batchId)?.name} · {reviewProduct.status==="已入库"?"已通过统一检查":"需完善 "+reviewMissing.length+" 项"}</p></div><button type="button" onClick={()=>{setReviewProduct(null);setReviewSkus([]);setStatus("")}}>继续导入商品</button></div>
     {status?<p role="status" className={styles.feedback}>{status}</p>:null}
-    {reviewProduct.status==="待补全"?<>
+    {reviewProduct.status==="入库待完善"?<>
      <div className={styles.reviewList}>{reviewSkus.map(x=><button type="button" key={x.id} className={reviewSkuId===x.id?styles.reviewActive:""} onClick={()=>setReviewSkuId(x.id)}>{x.name||"SKU "+x.id}<small>{checkOwnProductSkus([x]).length?checkOwnProductSkus([x]).length+" 项待补全":"资料齐全"}</small></button>)}</div>
      {currentReviewSku?<div className={styles.reviewEditor}>
       <label>SKU 名称<input aria-label="补全 SKU 名称" value={currentReviewSku.name} onChange={e=>setReviewSkus(old=>old.map(x=>x.id===currentReviewSku.id?{...x,name:e.target.value}:x))}/></label>
       <label>基础资料<textarea aria-label="补全 SKU 基础资料" rows={3} value={currentReviewSku.description} placeholder="填写材质、规格、售价、商品卖点等必填资料" onChange={e=>setReviewSkus(old=>old.map(x=>x.id===currentReviewSku.id?{...x,description:e.target.value}:x))}/></label>
       <div className={styles.reviewImages}><strong>商品图片 {currentReviewSku.images.length}/8</strong><div>{currentReviewSku.images.map((src,i)=><img key={i} src={src} alt={"商品图片 "+(i+1)}/>)}</div><button type="button" disabled={currentReviewSku.images.length>=8} onClick={()=>{setReviewUploadId(currentReviewSku.id);document.getElementById("own-review-images-"+headingId)?.click()}}>补充图片</button><input id={"own-review-images-"+headingId} type="file" accept="image/*" multiple onChange={e=>void reviewUpload(e)} className={styles.visuallyHidden}/></div>
      </div>:null}
-     <p className={styles.reviewMissing}>待补全：{reviewMissing.length?reviewMissing.join("、"):"资料齐全，可以统一检查"}</p>
-     <button type="button" className={styles.reviewCheck} onClick={completeReview}>统一检查并保存</button>
-    </>:<p className={styles.reviewSuccess}>全部必填资料已通过检查。商品已加入「我的数据 → 自有商品库」，可从刊登管理选择。</p>}
+     <p className={styles.reviewMissing}>本次硕米入库检查缺项：{reviewMissing.length?reviewMissing.join("、"):"资料齐全，可以统一检查"}</p>
+     <button type="button" className={styles.reviewCheck} onClick={completeReview}>完成硕米入库检查</button>
+    </>:<p className={styles.reviewSuccess}>硕米平台入库检查通过，商品已进入「我的数据 → 自有商品库」。后续选择店铺进行第三方平台适配；第三方规则缺项才进入「刊登管理 → 待补全」。</p>}
    </section>:null}
    {!reviewProduct?<><section className={styles.panel}><div className={styles.heading}><h3>01&nbsp; 选择导入方式</h3></div>
     <div className={styles.sources} role="radiogroup" aria-label="选择导入方式">{sourceOptions.map(x=><button type="button" key={x.value} role="radio" aria-checked={source===x.value} onClick={()=>onSource(x.value)}>{x.label}<span className={styles.selectDot}/></button>)}</div>
@@ -155,7 +155,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
     {batchMode==="create"?<div className={styles.batchEditor}><label>新批次名称<input aria-label="新建自有商品批次名称" maxLength={60} placeholder="输入批次名称" value={batchName} onChange={e=>setBatchName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveBatch()}}}/></label><button type="button" onClick={saveBatch}>创建并选择</button><button type="button" onClick={()=>setBatchMode(null)}>取消</button></div>:null}
     {batchMode==="select"?<div className={styles.batchEditor}><label>已有自有商品批次<select aria-label="选择已有自有商品批次" value={batchId} onChange={e=>{setBatchId(e.target.value);setBatchMode(null);setStatus("")}}><option value="">请选择批次</option>{batches.map(batch=><option key={batch.id} value={batch.id}>{batch.name} · {batch.createdAt}</option>)}</select></label>{!batches.length?<span>暂无批次，请先创建自有商品批次。</span>:null}<button type="button" onClick={()=>setBatchMode(null)}>关闭</button></div>:null}
     {currentBatch?<p className={styles.batchSelected}>当前批次：<strong>{currentBatch.name}</strong><span>已保存 {currentBatch.productCount} 个商品 · 当前企业成员专属演示数据</span></p>:null}
-    <p className={styles.footerHint}>提交后进入检测承接区；资料不完整的商品需补全并通过统一检查后才进入自有商品库。</p>
+    <p className={styles.footerHint}>首次适配在本弹窗内完成；通过后进入自有商品库。第三方平台适配缺项才进入刊登管理 → 待补全。</p>
     {status?<p role="status" className={styles.feedback}>{status}</p>:null}
    </section></>:null}
   </div>
