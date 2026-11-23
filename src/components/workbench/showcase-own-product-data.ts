@@ -115,10 +115,9 @@ export function applyConfirmedSourceOptimization(
  if(typeof window==="undefined")throw Error("演示存储不可用");
  const all=readOwnProducts(org,member),existing=all.find(p=>p.id===productId&&p.status==="已入库");
  if(!existing)throw Error("没有权限或原始商品尚未完成入库");
- const merged=mergeOptimizedOwnProduct(existing,candidate);
- if(JSON.stringify(merged)===JSON.stringify(existing))return {product:existing,updated:false,reason:"无需更新"};
- // Do not change batch ownership, record id, intake status, inventory or price.
- sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===existing.id?merged:p)));
- notify(org,member);
- return {product:merged,updated:true,reason:"已将平台成功上传后的安全优化字段回写原始商品"};
+ // Deprecated legacy path. Cross-site optimized content must be saved separately
+ // through saveVerifiedOptimizedDataset; original product fields are immutable here.
+ void candidate;
+ return {product:existing,updated:false,reason:"原始资料保留不覆盖；请将优化结果保存到独立的数据集版本"};
+
 }
