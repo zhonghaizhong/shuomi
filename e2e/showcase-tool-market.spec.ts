@@ -64,7 +64,16 @@ test("my tools search and reset work and launch shows a truthful dialog",async({
  await page.getByRole("button",{name:"重置",exact:true}).click();
  await expect(page.locator('[class*="mineCard"]')).toHaveCount(1);
  await page.getByRole("button",{name:"前往POD素材管理"}).click();
- await expect(page.getByRole("dialog")).toContainText("公开原型不提供真实工具运行");
+ const modal=page.getByRole("dialog");
+ await expect(modal).toContainText("POD素材管理工具 · 进入使用");
+ await expect(modal).not.toContainText("公开原型不提供真实工具运行");
+ await modal.getByRole("button",{name:"产品图审核"}).click();
+ await expect(modal.getByRole("button",{name:"产品图审核"})).toHaveAttribute("aria-pressed","true");
+ const geometry=await modal.boundingBox();
+ const viewport=page.viewportSize()!;
+ expect(geometry).not.toBeNull();
+ expect(Math.abs(geometry!.x+geometry!.width/2-viewport.width/2)).toBeLessThan(3);
+ expect(Math.abs(geometry!.y+geometry!.height/2-viewport.height/2)).toBeLessThan(3);
  await page.keyboard.press("Escape");
  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
@@ -175,4 +184,18 @@ test("my tools adopts Vuexy dark/light surfaces and title indicator without cons
  expect(light.header).toBe("rgb(255, 255, 255)");
  expect(light.card).toBe("rgb(255, 255, 255)");
  expect(light.bar).toBe("rgb(115, 103, 240)");
+});
+
+
+test("online acquisition has a centered tool-specific modal, not a generic execution warning",async({page})=>{
+ await page.goto(base+"/official");
+ await page.locator('[class*="toolCard"]').filter({hasText:"商品采集插件"}).getByRole("button",{name:"启用",exact:true}).click();
+ await page.getByRole("button",{name:"我的工具",exact:true}).click();
+ await page.locator('[data-figma-tool="商品采集插件"]').getByRole("button",{name:"在线采集"}).click();
+ const modal=page.getByRole("dialog");
+ await expect(modal).toContainText("按实际采集数据条数扣除额度");
+ await expect(modal).not.toContainText("公开原型不提供真实工具运行");
+ await expect(modal).not.toContainText("工具使用入口");
+ await modal.getByRole("button",{name:"确定"}).click();
+ await expect(modal).toHaveCount(0);
 });
