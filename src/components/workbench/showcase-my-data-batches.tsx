@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from "react";
 import {readDemoCollectionBatches,createDemoCollectionBatch,renameDemoCollectionBatch,deleteDemoCollectionBatch,type DemoCollectionBatch} from "./showcase-collection-batches";
 import css from "./showcase-my-data-batches.module.css";
 import {ShowcaseBatchProductsDialog} from "./showcase-batch-products-dialog";
+import {ShowcaseOwnProductLibrary} from "./showcase-own-product-library";
 const csvCell=(value:string|number)=>'"'+String(value).replace(/"/g,'""')+'"';
 const downloadBatch=(batch:DemoCollectionBatch)=>{
  const columns=["批次名称","产品来源","采集时间","商品编号","商品名称","SKU","价格","规格","来源说明"];
@@ -40,6 +41,7 @@ export function ShowcaseMyDataBatches({organizationId,memberId}:{organizationId:
  return <div className={css.wrapper} data-my-data-owner={memberId} data-my-data-organization={organizationId}>
   <section className={css.flow} aria-label="采集批次流程说明"><strong>采集数据怎么用?</strong><div className={css.flowSteps}>{[["1","原始商品数据"],["2","转入待上传"],["3","整理商品资料"],["4","上架其他平台"]].map(([n,label],i)=><span key={n}><i data-step={i}>{n}</i>{label}</span>)}</div><p><b>也可直接下载</b><small>原始数据用于分析或其他业务</small></p></section>
   <nav className={css.tabs} aria-label="我的数据分类">{["采集批次","自有商品库","数据集"].map(name=><button type="button" key={name} aria-current={tab===name?"page":undefined} onClick={()=>{setTab(name);setPage(1);setSelected(null);setMenu(null)}}>{name}</button>)}</nav>
+  {tab==="采集批次"?<>
   <section className={css.filterBar} data-shuomi-filter="balanced" aria-label="数据筛选"><div data-shuomi-filter-left><label className={css.searchBox}><span aria-hidden="true">⌕</span><input aria-label="搜索采集批次" placeholder="搜索批次名称 / 商品关键词" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")apply()}}/></label></div><div data-shuomi-filter-right><select aria-label="采集来源" value={source} onChange={e=>setSource(e.target.value)}>{["全部来源","1688","Amazon"].map(x=><option key={x}>{x}</option>)}</select><select aria-label="上传状态" value={status} onChange={e=>setStatus(e.target.value)}>{["全部状态","未上传","已上传"].map(x=><option key={x}>{x}</option>)}</select><button type="button" onClick={reset}>重置</button><button type="button" className={css.primary} onClick={apply}>确认</button></div></section>
   <section className={css.panel} aria-label={tab}><header className={css.heading}><div><h2>{tab==="采集批次"?"数据批次":tab}</h2><span>共 {tab==="采集批次"?(archivedOnly?archivedCount:batches.length-archivedCount):0} {tab==="采集批次"?"批":"条"}</span></div>{tab==="采集批次"?<div className={css.headingActions}><button type="button" aria-pressed={archivedOnly} onClick={()=>{setArchivedOnly(x=>!x);setPage(1);setSelected(null);setChosen([]);setMenu(null)}}>{archivedOnly?"返回批次":"已归档"}</button><button type="button" onClick={()=>setManage(true)}>管理批次</button></div>:null}</header>
   {tab==="采集批次"?<>
@@ -48,6 +50,8 @@ export function ShowcaseMyDataBatches({organizationId,memberId}:{organizationId:
    {chosen.length?<div className={css.bulkBar}><span>已选择 {chosen.length} 批</span><button type="button" onClick={()=>toggleArchive(chosen,!archivedOnly)}>{archivedOnly?"批量恢复":"批量归档"}</button><button type="button" onClick={()=>setChosen([])}>取消选择</button></div>:null}
    <footer className={css.pagination}><span>显示 {rows.length} / {visible.length} 批 · 第 {currentPage} / {pageCount} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setPage(v=>v-1)}>上一页</button><button type="button" disabled={currentPage===pageCount} onClick={()=>setPage(v=>v+1)}>下一页</button></div></footer>
   </>:<p role="status" className={css.empty}>暂无{tab}数据。采集批次不会自动写入此分类。</p>}</section>
+  </>:tab==="自有商品库"?<ShowcaseOwnProductLibrary organizationId={organizationId} memberId={memberId}/>:<p role="status" className={css.empty}>暂无数据集。</p>}
+
   {picked?<ShowcaseBatchProductsDialog key={picked.id} batch={picked} organizationId={organizationId} memberId={memberId} otherBatches={batches.filter(x=>x.id!==picked.id&&!archived.has(x.id))} onClose={()=>setSelected(null)}/>:null}
   {manage?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setManage(false)}}>
    <section className={css.manageDialog} role="dialog" aria-modal="true" aria-label="管理采集批次" onKeyDown={e=>{if(e.key==="Escape")setManage(false)}}>
