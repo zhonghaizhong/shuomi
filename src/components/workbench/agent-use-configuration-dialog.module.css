@@ -126,3 +126,9 @@
 .optimizerFooterHint{margin-right:auto;color:var(--muted);font-size:13px}
 .optimizerFooterValidation{color:var(--primary);font-size:12px;margin-right:10px}
 @media(max-width:660px){.optimizerFooterHint{width:100%}.optimizerFooterValidation{margin-right:auto}}
+
+/* Official 8+8 plan: task name stays readable beneath the image number. */
+.optimizerImageChoice:has(.optimizerImageTaskName){display:grid!important;grid-template-columns:minmax(0,1fr) 20px;grid-template-rows:auto auto;gap:8px 6px;min-height:80px;align-content:center}
+.optimizerImageChoice:has(.optimizerImageTaskName)>span{grid-column:1;grid-row:1}
+.optimizerImageChoice:has(.optimizerImageTaskName)>input{grid-column:2;grid-row:1;justify-self:end}
+.optimizerImageTaskName{grid-column:1/-1;grid-row:2;display:block;min-width:0;padding:5px 8px;border:1px solid var(--line);border-radius:6px;color:var(--muted);font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
