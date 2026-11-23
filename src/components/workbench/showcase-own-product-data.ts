@@ -40,3 +40,34 @@ export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omi
  sessionStorage.setItem(productKey(org,member),JSON.stringify([product,...current]));
  notify(org,member);return product;
 }
+
+/** Review intake without exposing incomplete products to the usable library. */
+export function listOwnPendingProducts(org:string,member:string):OwnProductRecord[]{
+ return readOwnProducts(org,member).filter(p=>p.status==="待补全");
+}
+export function listOwnReadyProducts(org:string,member:string):OwnProductRecord[]{
+ return readOwnProducts(org,member).filter(p=>p.status==="待上传");
+}
+export function checkOwnProductSkus(skus:OwnProductSku[]):string[]{
+ const missing:string[]=[];
+ skus.forEach((sku,i)=>{
+  const label=sku.name.trim()||"SKU "+(i+1);
+  if(!sku.name.trim())missing.push("SKU "+(i+1)+" 名称");
+  if(!sku.images.length)missing.push(label+" 商品图片");
+  if(!sku.description.trim())missing.push(label+" 基础资料");
+ });
+ return missing;
+}
+export function updateOwnProductAfterReview(org:string,member:string,id:string,skus:OwnProductSku[]):OwnProductRecord{
+ if(typeof window==="undefined")throw Error("演示存储不可用");
+ const all=readOwnProducts(org,member);
+ const existing=all.find(p=>p.id===id);
+ if(!existing)throw Error("无权修改或找不到该商品");
+ if(!skus.length)throw Error("至少需要一个 SKU");
+ const missing=checkOwnProductSkus(skus);
+ const checkedAt=new Date().toLocaleString("zh-CN",{hour12:false});
+ const updated:OwnProductRecord={...existing,skus,missing,checkedAt,status:missing.length?"待补全":"待上传",name:skus[0].name.trim()||existing.name};
+ sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===id?updated:p)));
+ notify(org,member);
+ return updated;
+}
