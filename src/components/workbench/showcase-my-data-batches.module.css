@@ -70,4 +70,5 @@
 :global(.light) .wrapper{--md-bg:#fff;--md-panel:#f8f7fa;--md-inner:#fff;--md-line:#e5e1ed;--md-ink:#444050;--md-muted:#6f6b7d;--md-input:#fff}
 @media(max-width:1050px){.flowSteps{flex-wrap:wrap}.flow>p{min-width:150px}.filterBar select{flex-basis:160px}}
 @media(max-width:760px){.flow{align-items:flex-start;flex-wrap:wrap}.flowSteps{flex-basis:100%;justify-content:flex-start;flex-wrap:wrap;border-left:0;border-right:0;padding:0}.filterBar{flex-wrap:wrap}.filterBar .searchBox{flex-basis:100%}.filterBar select{flex:1}.heading{flex-wrap:wrap}.headingActions{margin-left:auto}}
-\n@media(max-width:1050px){.tableScroll{overflow-x:auto}}\n
+
+@media(max-width:1050px){.tableScroll{overflow-x:auto}}
