@@ -147,7 +147,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const currentImages=sharedVisual?((form.sharedImageSource??"主图")==="主图"?mainImgs:detailImgs):(productTarget==="主图"?mainImgs:detailImgs);
  const updateCurrentImages=(next:number[])=>{if(sharedVisual){setMainImgs(next);setDetailImgs(next);}else if(productTarget==="主图"){setMainImgs(next);}else{setDetailImgs(next);}};
  const selectVisualStrategy=(next:"共用视觉素材"|"分别优化")=>{if(next==="共用视觉素材"){const images=(form.sharedImageSource??"主图")==="主图"?mainImgs:detailImgs;setMainImgs(images);setDetailImgs(images);}set("imageUse",next);setMessage("");};
- const toggleProductImage=(number:number)=>updateCurrentImages(currentImages.includes(number)?currentImages.filter(x=>x!==number):[...currentImages,number].sort((a,b)=>a-b));
+ const toggleProductImage=(number:number)=>{const next=currentImages.includes(number)?currentImages.filter(x=>x!==number):[...currentImages,number].sort((a,b)=>a-b);if(sharedVisual&&productTarget==="详情图"){setDetailImgs(next);set("imageUse","分别优化");return;}updateCurrentImages(next);};
  const selectProductSource=(source:"引用技能"|"官方方案"|"自定义指令")=>setForm(v=>({...v,optimizationSource:source,generationRule:source==="自定义指令"?"自定义指令":"官方方案"}));
  const visibleCustomTasks=tasks.filter(t=>(t.target??"主图")===productTarget);
  const customTasksReady=visibleCustomTasks.length>0&&visibleCustomTasks.every(t=>Boolean(t.position)&&Boolean(t.prompt.trim()))&&new Set(visibleCustomTasks.map(t=>t.position)).size===visibleCustomTasks.length;
