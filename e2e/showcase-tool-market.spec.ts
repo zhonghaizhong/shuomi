@@ -262,3 +262,30 @@ test("listing use dialog follows the original Figma introduction instead of inve
  await modal.getByRole("button",{name:"知道了"}).click();
  await expect(modal).toHaveCount(0);
 });
+
+test("1688 online collection creates ten demo products and shows only owned batches in My Data",async({page})=>{
+ await page.goto("/shuomi/#/workbench/data/mine");
+ const mine=page.getByRole("region",{name:"采集批次"});
+ await expect(mine).toContainText("1688 在线采集 · 10个产品（模拟）");
+ await expect(mine).toContainText("1 批");
+ await mine.getByRole("button",{name:"查看产品"}).click();
+ const details=page.getByRole("region",{name:"批次产品明细"});
+ await expect(details.locator("tbody tr")).toHaveCount(10);
+ await expect(details).toContainText("纯棉圆领短袖T恤");
+ await expect(details).toContainText("旅行便携洗漱包");
+ await page.goto(base+"/official");
+ await page.locator('[class*="toolCard"]').filter({hasText:"商品采集插件"}).getByRole("button",{name:"启用",exact:true}).click();
+ await page.getByRole("button",{name:"我的工具",exact:true}).click();
+ await page.locator('[data-figma-tool="商品采集插件"]').getByRole("button",{name:"在线采集"}).click();
+ const modal=page.getByRole("dialog");
+ await modal.getByRole("button",{name:"进入1688采集"}).click();
+ const links=Array.from({length:10},(_,i)=>"https://detail.1688.com/offer/"+(980000000+i)+".html").join("\n");
+ await modal.getByRole("textbox",{name:"商品链接"}).fill(links);
+ await modal.getByRole("button",{name:"开始采集"}).click();
+ await expect(modal).toContainText("已记录 10 条1688演示数据");
+ await modal.getByRole("button",{name:"知道了"}).click();
+ await page.goto("/shuomi/#/workbench/data/mine");
+ await expect(page.getByRole("region",{name:"采集批次"})).toContainText("2 批");
+ await page.getByRole("region",{name:"采集批次"}).getByRole("button",{name:"查看产品"}).first().click();
+ await expect(page.getByRole("region",{name:"批次产品明细"}).locator("tbody tr")).toHaveCount(10);
+});
