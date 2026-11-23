@@ -77,3 +77,9 @@
 .root .titleArea strong{color:var(--collections-text)}
 .root button.primary{background:var(--collections-primary);border-color:var(--collections-primary);color:#fff}
 .root :is(button,input):focus-visible,.modal input:focus-visible{outline:2px solid var(--collections-primary);outline-offset:2px}
+
+
+/* Search field surface must be opaque in both themes; a transparent label
+   inherited the dark shell under the light UI and failed visual contrast. */
+.root .filters label {background:var(--collections-bg)}
+.root .filters input {background:var(--collections-card)}
