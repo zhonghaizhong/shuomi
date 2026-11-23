@@ -241,3 +241,26 @@
  .dialog .submit{height:55px;min-height:55px;max-height:55px}
 }
 @media(max-width:400px){.aiOptions{grid-template-columns:1fr}.batchControls{grid-template-columns:1fr;grid-template-rows:44px 44px}}
+
+
+/* Compact AI controls: preserve empty space instead of stretching selectors across the dialog. */
+.aiRow{display:flex;align-items:center;justify-content:flex-start;gap:12px;min-width:0;flex-wrap:nowrap}
+.aiOptions{display:grid;grid-template-columns:repeat(2,minmax(0,240px));flex:0 1 492px;min-width:0;gap:12px}
+.aiOptions label{height:64px;min-height:64px;max-height:64px;padding:9px 12px}
+.batchControls{flex:0 0 205px;min-width:0;max-width:205px;grid-template-columns:1fr;grid-template-rows:29px 29px;gap:6px}
+.dialog .batchControls button{min-height:29px;max-height:29px;height:29px;padding:3px 8px}
+.dialog .submit{flex:0 0 184px;width:184px;min-width:184px;max-width:184px;height:64px;min-height:64px;max-height:64px;margin-left:auto}
+@media(max-width:1050px){
+ .aiRow{flex-wrap:wrap;align-items:stretch}
+ .aiOptions{flex:1 1 440px;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .batchControls{flex:0 0 205px;max-width:205px}
+ .dialog .submit{margin-left:auto}
+}
+@media(max-width:680px){
+ .aiRow{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
+ .aiOptions{grid-column:auto;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+ .batchControls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:40px;max-width:none;width:100%}
+ .dialog .batchControls button{height:40px;min-height:40px;max-height:40px;white-space:normal}
+ .dialog .submit{width:100%;min-width:0;max-width:none;height:48px;min-height:48px;max-height:48px;margin-left:0}
+}
+@media(max-width:420px){.aiOptions,.batchControls{grid-template-columns:1fr}.batchControls{grid-template-rows:repeat(2,40px)}}
