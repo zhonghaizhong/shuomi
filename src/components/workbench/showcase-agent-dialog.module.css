@@ -282,3 +282,32 @@
 .dialog .podHelpResult p{font-size:12px;line-height:1.6;color:var(--agent-dialog-text);white-space:pre-wrap;overflow-wrap:anywhere}
 .dialog .podHelpResult button{width:100%;min-height:36px;border:1px solid var(--agent-dialog-border);background:var(--agent-dialog-raised);color:var(--agent-dialog-text);border-radius:7px;cursor:pointer;font-size:12px}
 @media(max-width:760px){.dialog.useDialog .useSteps .productConfigRow{flex-wrap:wrap}.dialog.useDialog .useSteps .productRowText{flex-basis:100%}.dialog.useDialog .useSteps .productConfigRow>.primary{flex:1}}
+
+/* Final approved Vuexy palettes for agent configuration/use dialogs.
+   Scope to dialog chrome; retain prototype-specific layout and selection states. */
+.dialog{
+ --agent-dialog-surface:#142237;
+ --agent-dialog-raised:#18283c;
+ --agent-dialog-border:#31465e;
+ --agent-dialog-text:#edf4ff;
+ --agent-dialog-muted:#b5c6d8;
+ --agent-dialog-primary:#7367f0;
+ background:var(--agent-dialog-surface);
+ color:var(--agent-dialog-text);
+ border-color:var(--agent-dialog-border);
+}
+:global(.light) .dialog{
+ --agent-dialog-surface:#fff;
+ --agent-dialog-raised:#f7fafd;
+ --agent-dialog-border:#dfe7ef;
+ --agent-dialog-text:#263648;
+ --agent-dialog-muted:#64768a;
+ --agent-dialog-primary:#7367f0;
+ background:var(--agent-dialog-surface);
+ color:var(--agent-dialog-text);
+ border-color:var(--agent-dialog-border);
+}
+.dialog :is(.close,.modelOption,.demoNote){border-color:var(--agent-dialog-border)}
+.dialog :is(.close,.modelOption){background:var(--agent-dialog-raised);color:var(--agent-dialog-text)}
+.dialog :is(.heading p,.info p,.current p,.modelOption small){color:var(--agent-dialog-muted)}
+.dialog .modelOption[aria-pressed="true"]{border-color:var(--agent-dialog-primary);background:color-mix(in srgb,var(--agent-dialog-primary) 13%,var(--agent-dialog-raised))}
