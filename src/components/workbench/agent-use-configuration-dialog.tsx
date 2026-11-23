@@ -139,7 +139,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const choice=(items:string[],value:string,change:(v:string)=>void)=><div className={css.segment}>{items.map(v=><button key={v} type="button" aria-pressed={value===v} onClick={()=>change(v)}>{v}</button>)}</div>;
  const maybeNotice=message?<p role="status" className={css.notice}>{message}</p>:null;
  return <dialog ref={dialogRef} className={`${css.modal} ${mode==="product-image"&&!child?css.productImageModal:""}`} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
-  <header className={css.head}><div><h2 id={id}>{title}</h2><p>{desc}</p></div><button type="button" className={css.close} aria-label="关闭配置弹窗" onClick={()=>child?setChild(""):onClose()}>×</button></header>
+  <header className={css.head}><div><h2 id={id}>{title}</h2><p>{desc}</p></div>{isProductImage&&!child?<div className={css.optimizerHeaderActions}><button type="button" onClick={()=>setChild("language")}>语言：{form.imageLanguage&&form.imageLanguage!==languages[0]?form.imageLanguage:"已关闭"}</button><button type="button" onClick={()=>setChild("background")}>背景：{form.imageBackground&&form.imageBackground!=="不设置"?form.imageBackground:"已关闭"}</button></div>:null}<button type="button" className={css.close} aria-label="关闭配置弹窗" onClick={()=>child?setChild(""):onClose()}>×</button></header>
   <main className={css.body}>
    {child==="language"?<div className={css.optionGrid}>{languages.map(x=><button key={x} aria-pressed={(form.imageLanguage??languages[0])===x} onClick={()=>{set("imageLanguage",x);setChild("");}}>{x}</button>)}</div>
    :child==="background"?<div className={css.stack}><h3>背景指令</h3>{choice(["不设置","白色背景","自定义背景要求"],form.imageBackground??"不设置",x=>set("imageBackground",x))}{form.imageBackground==="自定义背景要求"?<label>自定义背景要求<textarea aria-label="自定义背景要求" value={form.imageBackgroundCustom??""} onChange={e=>set("imageBackgroundCustom",e.target.value)} placeholder="例如：浅灰摄影棚背景、柔和自然光、保持商品主体不变……" /></label>:null}<p>所有主图和详情图都会遵循此配置。</p></div>
@@ -170,6 +170,32 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
      :<><label>自定义图片指令<textarea value={assetName} onChange={e=>setAssetName(e.target.value)} placeholder="例如：服装产品主体、面料质感、英文卖点、1:1 构图"/></label><button type="button" disabled={!assetName.trim()} onClick={()=>addSlot("AI·自定义指令")}>应用当前指令</button></>}
     </section>
    </>
+   :isProductImage?<div className={css.optimizer}>
+    <div className={css.optimizerRows}>
+     <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>1</span><div><strong>优化方式</strong><small>选择规则来源</small></div></div><div className={css.optimizerChoicesThree}>
+      {([["引用技能","使用已选图片优化技能"],["官方方案","标准 8+8 优化任务模板"],["自定义指令","按需新增 · 单图独立要求"]] as const).map(([name,description])=><button type="button" key={name} aria-pressed={optimizationSource===name} onClick={()=>{selectProductSource(name);setMessage("");}}><strong>{name}</strong><small>{description}</small></button>)}
+     </div></section>
+     <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>2</span><div><strong>图片策略</strong><small>决定是否复用素材</small></div></div><div className={css.optimizerChoices}>
+      {([["共用视觉素材","减少重复优化"],["分别优化","主图详情图独立优化"]] as const).map(([name,description])=><button type="button" key={name} aria-pressed={(form.imageUse??"共用视觉素材")===name} onClick={()=>set("imageUse",name)}><strong>{name}</strong><small>{description}</small></button>)}
+     </div></section>
+     <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>3</span><div><strong>配置对象</strong><small>选择主图 / 详情图</small></div></div><div className={css.optimizerChoices}>
+      {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={productTarget===name} onClick={()=>{set("imageTarget",name);setMessage("");}}><strong>{name}</strong><small>配置{name}优化任务</small></button>)}
+     </div></section>
+     {(form.imageUse??"共用视觉素材")==="共用视觉素材"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>4</span><div><strong>共用来源</strong><small>选择复用来源</small></div></div><div className={css.optimizerChoices}>
+      {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={(form.sharedImageSource??"主图")===name} onClick={()=>set("sharedImageSource",name)}><strong>以{name}为准</strong><small>主图、详情图复用{name}侧配置</small></button>)}
+     </div></section>:null}
+     <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><div className={css.optimizerNoNumber}><strong>图片处理范围</strong><small>选择处理范围</small></div></div><div className={css.optimizerChoices}>
+      {(["手动选择","按技能设定"] as const).map(name=><button type="button" key={name} aria-pressed={processingScope===name} onClick={()=>{set("imageProcessingScope",name);setMessage("");}}>{name}</button>)}
+     </div></section>
+    </div>
+    {optimizationSource==="自定义指令"?<section className={css.optimizerTasks}><h3>自定义优化指令 · {productTarget}</h3><p>每张图片可使用独立的任务指令。</p>{tasks.map((task,i)=><div className={css.optimizerTaskRow} key={task.id}><input aria-label={"图片任务名称 "+(i+1)} value={task.name} onChange={e=>setTasks(old=>old.map(t=>t.id===task.id?{...t,name:e.target.value}:t))}/><textarea aria-label={"图片任务指令 "+(i+1)} value={task.prompt} onChange={e=>setTasks(old=>old.map(t=>t.id===task.id?{...t,prompt:e.target.value}:t))} placeholder="填写本张图片的优化要求"/><button type="button" disabled={tasks.length===1} onClick={()=>setTasks(old=>old.filter(t=>t.id!==task.id))}>删除</button></div>)}<button type="button" onClick={()=>setTasks(old=>[...old,{id:Math.max(0,...old.map(t=>t.id))+1,name:"自定义图片 "+(old.length+1),prompt:""}])}>＋ 新增任务</button></section>:null}
+    <section className={css.optimizerImages}>
+     <div className={css.optimizerImagesHeader}><strong>{productTarget} · {processingScope==="手动选择"?"勾选需要处理的图片":"按技能设定范围"}</strong>{processingScope==="手动选择"?<div><button type="button" onClick={()=>updateCurrentImages([1,2,3,4,5,6,7,8])}>全选</button><button type="button" onClick={()=>updateCurrentImages([])}>清空</button></div>:null}</div>
+     {processingScope==="手动选择"?<div className={css.optimizerImageGrid}>{Array.from({length:8},(_,i)=>i+1).map(n=><label className={css.optimizerImageChoice} key={n}><span>第 {n} 张</span><input type="checkbox" aria-label={productTarget+"第"+n+"张"} checked={currentImages.includes(n)} onChange={()=>toggleProductImage(n)}/></label>)}</div>:<p className={css.optimizerSkillNotice}>运行时根据已启用的图片优化技能判断处理位置，不强制使用手动勾选结果。未启用技能时请先返回上一级选择技能。</p>}
+     <p className={css.optimizerImageHint}>勾选的图片会按技能中对应位置的方案生成，未勾选的保持不变。<br/>例如：选中主图第 2 张，将采用技能预设的第 2 张主图方案；详情图同理。</p>
+    </section>
+    <p className={css.optimizerBilling}>计费说明：仅对实际模型生成的新图片按实际消耗的 AI 积分计费；原型演示不扣积分。</p>
+   </div>
    :isImage?<div className={css.stack}>
     <p className={css.tip}>计费说明：仅对实际生成图片按 AI 积分计费。当前演示不生成图片、不扣除积分。</p>
     <section className={css.panel}><h3>图片使用</h3><p>共用时不重复生成主图；分别优化时，两套图片独立生成。</p>{choice(["共用视觉素材","分别优化"],form.imageUse??"共用视觉素材",x=>set("imageUse",x as AgentUseConfiguration["imageUse"]))}</section>
@@ -206,6 +232,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
    }
    if(child==="language"||child==="background"){setChild("");return;}
    if(child){setChild("");return;}
+   if(isProductImage){saveProductImage();return;}
    if(mode==="pod-pattern-custom"&&!form.patternPrompt?.trim()){setMessage("请填写生成指令后保存配置。");return;}
    if(isImage&&form.generationRule==="自定义指令"&&!tasks.some(t=>t.prompt.trim())){setMessage("请至少填写一条独立生成指令。");return;}
    commit();
