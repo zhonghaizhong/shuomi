@@ -25,17 +25,37 @@ function restoreEnabled():string[] {
 }
 function ToolModal({info,onClose,onConfirm}:{info:Dialog;onClose:()=>void;onConfirm:()=>void}) {
   const ref=useRef<HTMLDialogElement>(null), id=useId();
+  const [selectedFeature,setSelectedFeature]=useState(0);
   const tool=tools.find(x=>x.name===info.name);
   useEffect(()=>{const el=ref.current,prev=document.activeElement;el?.showModal();return ()=>{el?.close();if(prev instanceof HTMLElement&&prev.isConnected)prev.focus();};},[]);
-  const title=info.type==="download"?"下载商品采集插件":info.type==="disable"?"确认停用工具":info.type==="launch"?"工具使用入口":info.name;
-  return <dialog ref={ref} className={styles.dialog} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+  const isAcquisition=info.name==="商品采集插件";
+  const features=info.name==="POD素材管理工具"?[
+    ["我的素材","上传、分类管理个人素材，支持图片裂变"],
+    ["产品图审核","审核通过后贴到商品；下单可检索原图"],
+    ["灵感市场","官方维护示例图片及生成指令"]
+  ]:info.name==="自有商品刊登工具"?[
+    ["自有商品导入","导入自有商品资料"],
+    ["商品信息适配","核对并完善商品信息"],
+    ["批量刊登","批量处理商品刊登"]
+  ]:isAcquisition?[
+    ["本地插件采集","安装在客户电脑本地运行，浏览商品时通过浏览器插件直接采集。"],
+    ["在线采集","由平台云端执行，无需客户电脑持续运行即可完成在线采集。"]
+  ]:[["功能说明",tool?.description??"请选择工具功能"]];
+  const title=info.type==="download"?"下载商品采集插件":info.type==="disable"?"确认停用工具":info.type==="launch"?(isAcquisition?"在线采集":info.name+" · 进入使用"):info.name;
+  return <dialog ref={ref} className={`${styles.dialog} ${info.type==="launch"?styles.launchDialog:""}`} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><h2 id={id}>{title}</h2><button type="button" onClick={onClose} aria-label="关闭弹窗">×</button></header>
     {info.type==="download"?<>
       <p>下载安装到自己的电脑，在商品页面直接使用。</p>
       <dl className={styles.downloadDetails}><div><dt>使用方式</dt><dd>电脑端安装插件</dd></div><div><dt>费用</dt><dd>免费 · 不消耗数据额度</dd></div><div><dt>采集方式</dt><dd>打开目标商品页后点击插件采集</dd></div><div><dt>结果去向</dt><dd>数据服务 — 我的数据</dd></div></dl>
       <p>下载后按安装提示完成浏览器插件安装。</p><p className={styles.demoNote}>当前公开展示未提供可验证的安装包，不能模拟下载成功。实际下载需在正式工具入口获取。</p>
     </>: info.type==="disable"?<><p>停用后，该工具将从当前演示的「我的工具」列表中移除，可在官方工具中重新启用。</p><p className={styles.demoNote}>只改变当前浏览器的演示状态，不影响正式账户。</p></>
-    :info.type==="launch"?<><p>你选择了「{info.name}」。正式使用需在工作台完成授权、配置和相关业务操作。</p><p className={styles.demoNote}>公开原型不提供真实工具运行、附件处理或接口调用，不会假装执行成功。</p></>
+    :info.type==="launch"?<div className={styles.launchBody}>
+      <p>{isAcquisition?"由平台云端执行，无需客户电脑持续运行即可完成在线采集。":"选择需要了解的功能，查看对应的使用说明。"}</p>
+      {isAcquisition?<div className={styles.launchCharge}><strong>按数据收费</strong><span>按实际采集数据条数扣除额度</span><span>采集结果统一保存至「数据服务 / 我的数据」</span></div>
+      :<><div className={styles.launchChoices} role="group" aria-label="选择工具功能">{features.map(([name],index)=><button type="button" key={name} aria-pressed={selectedFeature===index} onClick={()=>setSelectedFeature(index)}>{name}</button>)}</div>
+      <div className={styles.launchFeature}><strong>{features[selectedFeature]?.[0]}</strong><p>{features[selectedFeature]?.[1]}</p></div></>}
+      <p className={styles.launchAvailability}>当前展示页仅提供功能介绍，实际操作请在正式工作台使用。</p>
+    </div>
     :<><p>{tool?.description}</p><div className={styles.tags}>{tool?.tags.map(tag=><span key={tag}>{tag}</span>)}</div><p>适用分类：{tool?.category} · 当前状态：{tool?.status==="development"?"开发中":"可按需启用"}</p><p className={styles.demoNote}>实际功能、授权和费用以正式工作台为准。</p></>}
     <footer><button type="button" onClick={onClose}>取消</button>{info.type==="disable"?<button type="button" className={styles.primary} onClick={onConfirm}>确认停用</button>:info.type==="download"?<button type="button" disabled title="当前演示未提供实际安装文件">暂无可下载文件</button>:<button type="button" className={styles.primary} onClick={onClose}>确定</button>}</footer>
   </dialog>;
