@@ -171,10 +171,36 @@ function Matrix({ scope, capabilities, commands, linked }: { scope: CockpitScope
  const query = new URLSearchParams({ ...period, page: String(page), search, state, platform, region, sort: "profit" });
  (compare ? selected : linkedStores).forEach(id => query.append("storeId", id));
  const matrix = useQuery({ queryKey: ["operations-cockpit", scope.userId, scope.organizationId, "matrix", query.toString()], queryFn: ({ signal }) => cockpitRequest(scope, "stores?" + query, cockpitMatrix, { signal }), retry: false });
- function changePeriod(p: Period) { setPeriod(p); setPage(1); setCompare(false); setSelected([]); }
- function filter(action:()=>void) { action();setPage(1);setCompare(false);setSelected([]);setLinkedStores([]);setStoreId(""); }
- return <>
-  <PeriodToolbar today={capabilities.today} period={period} setPeriod={changePeriod}><label>平台<select value={platform} onChange={e=>filter(()=>setPlatform(e.target.value))}><option value="">全部平台</option>{[...new Set(capabilities.stores.map(s=>s.platform))].sort().map(v=><option value={v} key={v}>{v.toUpperCase()}</option>)}</select></label><label>站点<select value={region} onChange={e=>filter(()=>setRegion(e.target.value))}><option value="">全部站点</option>{[...new Set(capabilities.stores.map(s=>s.region))].sort().map(v=><option value={v} key={v}>{v}</option>)}</select></label><label>经营数据状态<select value={state} onChange={e => filter(()=>setState(e.target.value))}>{["", "loss", "break_even", "recorded_complete", "data_incomplete"].map(v => <option key={v} value={v}>{stateNames[v] ?? "全部状态"}</option>)}</select></label><label className={styles.search}>搜索店铺<Input value={search} onChange={e => filter(()=>setSearch(e.target.value))} maxLength={100} placeholder="搜索店铺名称" /></label><Button variant="outline" onClick={()=>filter(()=>{setPlatform("");setRegion("");setState("");setSearch("");})}>重置</Button></PeriodToolbar>
+  const presets=[
+   {value:"7",period:lastPeriod(capabilities.today)},
+   {value:"30",period:{startDate:addDays(capabilities.today,-30),endDate:addDays(capabilities.today,-1)}},
+   {value:"month",period:{startDate:capabilities.today.slice(0,7)+"-01",endDate:addDays(capabilities.today,-1)}}
+  ];
+  const [draft,setDraft]=useState(()=>({period,search,platform,region,state}));
+  const [periodOption,setPeriodOption]=useState(()=>presets.find(p=>p.period.startDate===period.startDate&&p.period.endDate===period.endDate)?.value??"custom");
+  const applyFilters=()=>{
+   if(!draft.period.startDate||!draft.period.endDate||draft.period.startDate>draft.period.endDate||draft.period.endDate>=capabilities.today)return;
+   setPeriod(draft.period);setSearch(draft.search.trim());setPlatform(draft.platform);setRegion(draft.region);setState(draft.state);
+   setPage(1);setCompare(false);setSelected([]);setLinkedStores([]);setStoreId("");
+  };
+  const resetFilters=()=>{
+   const period=lastPeriod(capabilities.today);setDraft({period,search:"",platform:"",region:"",state:""});setPeriodOption("7");
+   setPeriod(period);setSearch("");setPlatform("");setRegion("");setState("");
+   setPage(1);setCompare(false);setSelected([]);setLinkedStores([]);setStoreId("");
+  };
+  return <>
+   <form className={styles.matrixFilterShell} onSubmit={e=>{e.preventDefault();applyFilters();}}>
+    <div className={styles.matrixFilterBar}>
+     <label className={styles.matrixFilterSearch}><span className="sr-only">搜索店铺名称</span><Input aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={draft.search} maxLength={100} onChange={e=>setDraft(v=>({...v,search:e.target.value}))}/></label>
+     <label><span className="sr-only">统计时间</span><select aria-label="统计时间" value={periodOption} onChange={e=>{const option=e.target.value;setPeriodOption(option);const next=presets.find(p=>p.value===option);if(next)setDraft(v=>({...v,period:next.period}));}}><option value="7">近7天</option><option value="30">近30天</option><option value="month">本月至昨日</option><option value="custom">自定义日期</option></select></label>
+     <label><span className="sr-only">平台</span><select aria-label="平台" value={draft.platform} onChange={e=>setDraft(v=>({...v,platform:e.target.value,region:""}))}><option value="">全部平台</option>{[...new Set(capabilities.stores.map(s=>s.platform))].sort().map(v=><option value={v} key={v}>{v.toUpperCase()}</option>)}</select></label>
+     <label><span className="sr-only">站点</span><select aria-label="站点" value={draft.region} onChange={e=>setDraft(v=>({...v,region:e.target.value}))}><option value="">全部站点</option>{[...new Set(capabilities.stores.filter(s=>!draft.platform||s.platform===draft.platform).map(s=>s.region))].sort().map(v=><option value={v} key={v}>{v}</option>)}</select></label>
+     <label><span className="sr-only">经营数据状态</span><select aria-label="经营数据状态" value={draft.state} onChange={e=>setDraft(v=>({...v,state:e.target.value}))}>{["","loss","break_even","recorded_complete","data_incomplete"].map(v=><option value={v} key={v}>{stateNames[v]??"全部状态"}</option>)}</select></label>
+     <Button type="button" variant="outline" onClick={resetFilters}>重置</Button>
+     <Button type="submit">确认</Button>
+    </div>
+    {periodOption==="custom"&&<div className={styles.matrixCustomDates}><label>开始日期<Input type="date" value={draft.period.startDate} max={draft.period.endDate} onChange={e=>setDraft(v=>({...v,period:{...v.period,startDate:e.target.value}}))}/></label><label>结束日期<Input type="date" value={draft.period.endDate} min={draft.period.startDate} max={addDays(capabilities.today,-1)} onChange={e=>setDraft(v=>({...v,period:{...v.period,endDate:e.target.value}}))}/></label><small>自定义日期最多查询至昨日，点击确认后生效。</small></div>}
+   </form>
   {matrix.isPending ? <ConsoleState kind="loading" title="正在读取同周期经营事实" /> : matrix.error ? <ConsoleState kind="error" title={cockpitErrorText(matrix.error)} /> : matrix.data ? <>
    <div className={styles.fourStats}>{[ ["当前授权店铺", Object.values(matrix.data.states).reduce((a, b) => a + b, 0),"当前平台与站点范围"], ["录入完整", matrix.data.states.loss + matrix.data.states.break_even + matrix.data.states.recorded_complete,"完整覆盖所选期间"], ["本期亏损", matrix.data.states.loss,"完整数据下净利润为负"], ["数据不完整", matrix.data.states.data_incomplete,"补齐期间后再评判"] ].map(([label,value,note],i) => <Card data-stat key={label} className={styles.stat}><span><i className={styles.statDot} data-tone={i}/>{label}</span><div><strong>{value}</strong><small>{note}</small></div></Card>)}</div><p className={styles.scopeNote}>统计覆盖当前店铺、平台与站点范围；名称和数据状态筛选只影响下方列表。</p>
    <Panel title={compare ? "已选店铺同周期比较" : "店铺经营对比"}><p>{matrix.data.summaryComplete ? "完整覆盖的所选店铺合计净利润" : "完整录入店铺部分的合计净利润"}：{moneyText(matrix.data.summary.netProfit)}。单店状态仅依据人工经营数据。</p><div className={`${styles.tableScroll} ${styles.matrixTable}`}><table><thead><tr><th>选择</th><th>店铺</th><th>平台 · 站点</th><th>净收入</th><th>净利润</th><th>利润率</th><th>较前一等长期间</th><th>经营数据状态</th><th>操作</th></tr></thead><tbody>{matrix.data.rows.map(row => <tr key={row.store.id}><td><input type="checkbox" aria-label={`选择${row.store.name}`} checked={selected.includes(row.store.id)} disabled={!selected.includes(row.store.id) && selected.length >= 5} onChange={e => { setCompare(false); setSelected(e.target.checked ? [...selected, row.store.id] : selected.filter(id => id !== row.store.id)); }} /></td><td><strong>{row.store.name}</strong><small>{row.store.status === "active" ? "店铺记录启用" : "店铺记录停用"}</small></td><td>{row.store.platform.toUpperCase()} · {row.store.region}</td><td>{row.complete ? moneyText(row.totals.netRevenue) : "已录入部分 " + moneyText(row.totals.netRevenue)}</td><td>{row.complete ? moneyText(row.totals.netProfit) : "待完整数据"}</td><td>{row.complete ? ratioText(row.totals.margin) : "—"}</td><td>{ratioText(row.growth)}</td><td><Badge state={row.state} /></td><td><Button variant="outline" onClick={() => setStoreId(row.store.id)}>查看 / 录入</Button></td></tr>)}</tbody></table></div>{!matrix.data.rows.length && <p>所选范围暂无店铺。</p>}<div className={styles.pagination}><span>共{matrix.data.total}家 · 第{page}页</span><Button variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>上一页</Button><Button variant="outline" disabled={page * 50 >= matrix.data.total} onClick={() => setPage(page + 1)}>下一页</Button></div></Panel>
