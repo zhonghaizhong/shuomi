@@ -2810,3 +2810,24 @@
  padding:0;border-bottom:1px solid var(--ds-line);
  background:var(--ds-surface);
 }
+
+/* Data market section label: override the legacy dark universal panel in both themes. */
+.page[data-commerce-unified="data"] > .sectionTitle{
+ display:flex;align-items:center;min-height:54px;
+ padding:13px 18px;
+ background:var(--ds-surface);border:1px solid var(--ds-line);
+ border-radius:9px;box-shadow:var(--ds-shadow);
+ color:var(--ds-ink);
+}
+.page[data-commerce-unified="data"] > .sectionTitle h2{
+ color:var(--ds-ink);border-left:3px solid var(--ds-accent);
+ padding-left:11px;margin:0 0 3px;font-size:17px;line-height:24px;
+}
+.page[data-commerce-unified="data"] > .sectionTitle p{
+ color:var(--ds-sub);font-size:13px;line-height:21px;margin:0;
+}
+:global(.light) .page[data-commerce-unified="data"] > .sectionTitle{
+ background:#fff;border-color:#e0e6ee;color:#263648;
+}
+:global(.light) .page[data-commerce-unified="data"] > .sectionTitle h2{color:#263648}
+:global(.light) .page[data-commerce-unified="data"] > .sectionTitle p{color:#657486}
