@@ -60,3 +60,21 @@
 @media(max-width:1050px){.productGrid{grid-template-columns:175px minmax(0,1fr) minmax(220px,.7fr)}.imageGrid{gap:7px}.aiOptions{grid-template-columns:repeat(2,minmax(150px,1fr))}}
 @media(max-width:760px){.header{flex-wrap:wrap}.sources{grid-template-columns:repeat(2,minmax(0,1fr))}.productGrid,.productGrid:not(:has(.skuList)){grid-template-columns:1fr}.skuList{min-height:200px}.skuItems{grid-template-columns:repeat(2,minmax(0,1fr))}.images,.details{min-height:260px}.aiRow{flex-direction:column}.aiOptions{grid-template-columns:repeat(2,minmax(0,1fr))}.submit{min-width:0}.heading{align-items:flex-start;flex-wrap:wrap}.skuSwitch{flex-wrap:wrap;gap:7px}.skuSwitch button{min-width:88px}}
 @media(max-width:460px){.sources{gap:7px}.sources button{font-size:12px;padding:8px}.imageGrid{grid-template-columns:repeat(4,minmax(0,1fr))}.skuItems{grid-template-columns:1fr}.aiOptions{grid-template-columns:1fr}}
+
+
+/* Two batch actions occupy the original reserved area between AI selection and submit. */
+.aiRow{align-items:stretch}
+.batchControls{display:grid;grid-template-columns:1fr;gap:7px;min-width:204px;max-width:232px;flex:1 1 204px}
+.batchControls button{display:flex;align-items:center;justify-content:center;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);padding:7px 9px;min-height:25px;font-size:12px;font-weight:600;white-space:nowrap}
+.batchControls button[aria-expanded="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.batchEditor{display:flex;align-items:end;flex-wrap:wrap;gap:9px;margin-top:12px;border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px}
+.batchEditor label{display:grid;gap:6px;flex:1 1 260px;font-size:12px;font-weight:600;color:var(--ink)}
+.batchEditor :is(input,select){box-sizing:border-box;min-height:36px;width:100%;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:7px 10px;font-size:12px}
+.batchEditor button{border:1px solid var(--line);border-radius:7px;padding:9px 12px;background:var(--bg);color:var(--ink);white-space:nowrap;font-size:12px}
+.batchEditor button:first-of-type:not(:last-child){border-color:var(--accent);color:var(--accent)}
+.batchEditor span{color:var(--muted);font-size:12px}
+.batchSelected{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:9px 0 0;padding:7px 10px;border-radius:7px;background:color-mix(in srgb,var(--accent) 8%,var(--bg));color:var(--muted);font-size:12px}
+.batchSelected strong{color:var(--accent)}
+.batchSelected span{margin-left:auto;font-size:11px}
+@media(max-width:1100px){.aiRow{flex-wrap:wrap}.aiOptions{flex:1 1 420px}.batchControls{flex:1 1 210px;max-width:none}.submit{min-width:190px;flex:1 1 210px}}
+@media(max-width:760px){.batchControls{max-width:none;min-width:0}.batchSelected span{margin-left:0}}
