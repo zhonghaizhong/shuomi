@@ -122,7 +122,7 @@ export function ShowcaseToolMarket({pathname,navigate}:{pathname:string;navigate
           </div>
         )}</div>
         :<div className={styles.empty}>当前没有匹配的已启用工具。你可以前往官方工具启用。</div>}
-      </div>    </>:null}
+      </div>:null}
     {dialog?<ToolModal key={dialog.type+dialog.name} info={dialog} onClose={()=>setDialog(null)} onConfirm={()=>{persist(enabled.filter(x=>x!==dialog.name));setDialog(null);setNotice(dialog.name+"：已在当前演示中停用。");}}/>:null}
   </div>;
 }
