@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
-import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import { cp, copyFile, mkdir, writeFile } from "node:fs/promises";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 
@@ -31,6 +31,19 @@ const blueMarbleTexture = {
   },
 };
 
+const bundledAgentExamples = {
+  name: "bundle-agent-image-examples",
+  async writeBundle() {
+    // Vite's root is showcase/, so the main Next public/ folder is not copied by default.
+    // Publish the 16 official-plan examples without changing showcase/public logo handling.
+    await cp(
+      `${here}/public/assets/agent-image-examples`,
+      `${here}/dist-pages/assets/agent-image-examples`,
+      { recursive: true }
+    );
+  },
+};
+
 const pagesFallback = {
   name: "github-pages-history-fallback",
   // writeBundle runs after the HTML asset is emitted. closeBundle can execute
@@ -43,7 +56,7 @@ const pagesFallback = {
 export default defineConfig({
   root: `${here}/showcase`,
   base: "/shuomi/",
-  plugins: [pagesFallback, blueMarbleTexture],
+  plugins: [pagesFallback, bundledAgentExamples, blueMarbleTexture],
   resolve: {
     alias: [
       { find: "@", replacement: `${here}/src` },
