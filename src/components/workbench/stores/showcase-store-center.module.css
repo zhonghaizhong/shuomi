@@ -262,7 +262,7 @@
 
 /* Shared center-axis filter convention: criteria left, keyword and actions right. */
 .page .filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:12px;padding:10px 12px;min-height:62px}
-.page .filters .filterCriteria{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;gap:8px;min-width:0}
+.page .filters .filterCriteria{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:8px;min-width:0}
 .page .filters .filterSearchActions{display:grid;grid-template-columns:minmax(0,1fr) 74px 74px;align-items:center;gap:8px;min-width:0}
 .page .filters .filterCriteria select{width:100%;height:42px;min-width:0;padding:0 8px;border:1px solid var(--st-line);border-radius:8px;background:var(--st-control);color:var(--st-text);font-size:13px}
 .page .filters .filterSearchActions .storeSearchField{display:block;min-width:0;height:42px;padding:0;margin:0;border:1px solid var(--st-line);background:var(--st-control);border-radius:8px}
