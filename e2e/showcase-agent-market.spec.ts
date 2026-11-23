@@ -128,6 +128,9 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await dialog.getByRole("button",{name:"预览优化范围"}).click();
  await expect(dialog.getByRole("status")).toContainText("标题优化");
  await dialog.getByRole("button",{name:"保存为模板"}).click();
+ const saveName=page.getByRole("dialog",{name:"保存智能体模板"});
+ await saveName.getByRole("textbox",{name:"模板名称"}).fill("商品优化示例模板");
+ await saveName.getByRole("button",{name:"保存模板"}).click();
  await expect(dialog).toHaveCount(0);
  await expect(page.getByRole("status")).toContainText("已保存为模板");
  await page.getByRole("button",{name:"进入使用"}).first().click();
@@ -220,6 +223,9 @@ test("POD image, material and language subdialogs match Figma and preserve confi
  await custom.getByRole("textbox",{name:"生成指令"}).fill("透明背景的简洁印花，适合胸前印刷");
  await custom.getByRole("button",{name:"保存配置"}).click();
  await pod.getByRole("button",{name:"保存为模板"}).click();
+ const podName=page.getByRole("dialog",{name:"保存智能体模板"});
+ await podName.getByRole("textbox",{name:"模板名称"}).fill("POD演示模板");
+ await podName.getByRole("button",{name:"保存模板"}).click();
  await expect(pod).toHaveCount(0);
  await page.getByRole("button",{name:"进入使用"}).last().click();
  await expect(page.getByRole("dialog",{name:"POD刊登智能体"})).toContainText("自定义指令已填写");
