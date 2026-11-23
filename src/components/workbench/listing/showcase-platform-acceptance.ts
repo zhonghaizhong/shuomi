@@ -30,6 +30,8 @@ export function recordVerifiedPlatformAcceptance(
  if(!callback.externalReceiptId.trim()||!language.trim())throw Error("回执编号或适配语言缺失");
  if(!acceptedProducts.length||acceptedProducts.some(p=>!p.sourceProductId||!p.name.trim()||!p.images.length))
   throw Error("实际接收商品资料不完整");
+ const inherited=task.source==="数据集"?readOptimizedDatasets(org,member).find(d=>d.id===task.sourceVersionId):null;
+ if(task.source==="数据集"&&!inherited)throw Error("复用的源优化版本不存在");
  const ids=new Set(task.productIds);
  if(acceptedProducts.some(p=>!ids.has(p.sourceProductId)))throw Error("平台接收的商品不属于原任务");
  if(new Set(acceptedProducts.map(p=>p.sourceProductId)).size!==acceptedProducts.length)throw Error("同一回执不能重复关联商品");
@@ -41,8 +43,8 @@ export function recordVerifiedPlatformAcceptance(
  }));
  return saveVerifiedOptimizedDataset(org,member,{
   name:task.batchName+" · "+task.platform+" "+task.region+"优化版",
-  sourceKind:task.source==="数据集"?"采集批次":task.source, // Legacy demos use original source for each task.
-  sourceBatchId:task.batchId,sourceBatchName:task.batchName,
+  sourceKind:inherited?inherited.sourceKind:task.source as "采集批次"|"自有商品库",
+  sourceBatchId:inherited?inherited.sourceBatchId:task.batchId,sourceBatchName:inherited?inherited.sourceBatchName:task.batchName,
   platform:task.platform,site:task.region,language,storeName:task.storeName,
   uploadTaskId:task.id,externalReceiptId:callback.externalReceiptId,products
  },callback);
