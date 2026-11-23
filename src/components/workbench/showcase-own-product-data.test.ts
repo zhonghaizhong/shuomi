@@ -62,8 +62,10 @@ describe("own product intake and batch visibility",()=>{
   const verified={taskId:"TASK",externalProductId:"SHEIN-PRODUCT",acceptedAt:new Date().toISOString(),platform:"SHEIN" as const,verifiedBy:"platform-callback" as const};
   expect(()=>applyConfirmedSourceOptimization("org-A","user-2",p.id,proposed,verified)).toThrow();
   const result=applyConfirmedSourceOptimization("org-A","user-1",p.id,proposed,verified);
-  expect(result.updated).toBe(true);
-  expect(readOwnProducts("org-A","user-1")[0].skus[0]).toMatchObject({price:"99",stock:4,description:"99元",images:["optimized"]});
+  expect(result.updated).toBe(false);
+  expect(result.reason).toContain("独立的数据集版本");
+  expect(readOwnProducts("org-A","user-1")[0].name).toBe("原标题");
+  expect(readOwnProducts("org-A","user-1")[0].skus[0]).toMatchObject({price:"99",stock:4,description:"99元",images:["original"]});
  });
 
 });
