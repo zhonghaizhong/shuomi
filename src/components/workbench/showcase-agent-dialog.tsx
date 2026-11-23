@@ -3,6 +3,7 @@
 import {useEffect,useId,useRef,useState} from "react";
 import styles from "./showcase-agent-dialog.module.css";
 import {AgentUseConfigurationDialog,type AgentUseConfiguration,type ConfigurationMode} from "./agent-use-configuration-dialog";
+import {ShowcasePODTaskDialog} from "./showcase-pod-task-dialog";
 
 export type AgentPreviewDialog =
  | {kind:"introduction";title:string;description:string;tags:readonly string[];status:string}
@@ -26,6 +27,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  const [imageInstructions,setImageInstructions]=useState("");
  const [imageConfigured,setImageConfigured]=useState(false);
  const [showPreview,setShowPreview]=useState(false);
+ const [podTaskOpen,setPodTaskOpen]=useState(false);
  const [podImageMode,setPodImageMode]=useState("AI重构模式");
  const [podPatternMode,setPodPatternMode]=useState("AI自动模式");
  const [podQuantity,setPodQuantity]=useState(3);
@@ -82,6 +84,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  return <dialog ref={ref} className={`${styles.dialog} ${isUse?styles.useDialog:""}`} aria-labelledby={id}
    onCancel={event=>{event.preventDefault();onClose();}}
    onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
+  {podTaskOpen?<ShowcasePODTaskDialog onClose={()=>setPodTaskOpen(false)} onTemplate={()=>setPodTaskOpen(false)}/>:null}
   {configMode?<AgentUseConfigurationDialog mode={configMode} initial={{...useConfig,selectedSkills:skills,selectedKnowledge:knowledge}} onClose={()=>setConfigMode(null)} onSave={value=>{
    setUseConfig(prev=>({...prev,...value}));
    if(value.selectedSkills)setSkills(value.selectedSkills);
@@ -124,7 +127,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    </section>
    <footer className={styles.footer}><button type="button" className={styles.secondary} onClick={onClose}>取消</button><button type="button" className={styles.primary} onClick={()=>selected==="custom"?chooseCustom():onSaveModel(info.title,"official")}>保存设置</button></footer>
   </>
-  :isPod?<><div className={styles.savedTemplate}><button className={styles.secondary} type="button" onClick={()=>setShowPreview(v=>!v)}>查看模板</button><small>当前配置仅用于本地演示，真实执行请进入已适配业务流程。</small></div><div className={styles.useLayout}>
+  :isPod?<><div className={styles.savedTemplate}><button className={styles.secondary} type="button" onClick={()=>setShowPreview(v=>!v)}>查看模板</button><button className={styles.primary} type="button" onClick={()=>setPodTaskOpen(true)}>创建POD刊登任务</button><small>模板配置与刊登任务分别管理；任务需选择店铺和商品。</small></div><div className={styles.useLayout}>
    <div className={styles.useSteps}>
     <section className={styles.useStep}><h3>步骤 1 · 图片生成方式</h3><p>选择本次 POD 商品图片的生成方式，可在生成刊登方案前调整。</p><div className={styles.podModes}>{[["AI重构模式","引用技能 · 官方方案 · 自定义指令"],["混合模式","支持固定图片 + AI 生成，灵活组合主图与详情图"]].map(([name,desc])=><button key={name} type="button" aria-pressed={podImageMode===name} onClick={()=>{setPodImageMode(name);setConfigMode(name==="混合模式"?"pod-hybrid":"pod-ai");}}><strong>{name}</strong><small>{desc}</small></button>)}</div><p>AI 相关能力按积分计费（实际计费未接入）。</p></section>
     <section className={styles.useStep}><h3>步骤 2 · 是否启用知识库</h3><p>按需选择要引用的知识；未选择时，AI 不读取任何知识库。</p><div className={styles.picks}>{["平台规则","运营方法","合规参考"].map(item=><label key={item}><input type="checkbox" checked={knowledge.includes(item)} onChange={()=>toggle(knowledge,setKnowledge,item)}/>{item}</label>)}<button type="button" className={styles.secondary} onClick={()=>setConfigMode("knowledge")}>选择知识库</button></div></section>
@@ -137,7 +140,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    <div className={styles.useLayout}>
     <div className={styles.useSteps}>
      <section className={styles.useStep}><h3>步骤 1 · 选择技能（可选）</h3><p>技能为可选项，可不选择；只运行实际启用的优化配置。</p><div className={styles.choiceRow}><div><strong>启用执行技能</strong><small>按需选择技能；未选择也可以保存模板。</small></div><span>{skills.length?`已启用 ${skills.length} 项`:"未启用"}</span></div><div className={styles.picks}>{["标题优化","商品描述优化","图片优化"].map(item=><label key={item}><input type="checkbox" checked={skills.includes(item)} onChange={()=>toggle(skills,setSkills,item)}/>{item}</label>)}<button type="button" className={styles.secondary} onClick={()=>setConfigMode("skills")}>选择技能</button></div></section>
-     <section className={styles.useStep}><h3>步骤 2 · 选择知识库（可选）</h3><p>按需引用平台规则、品牌规范和商品资料。</p><div className={styles.choiceRow}><div><strong>使用知识库</strong><small>仅使用已选知识，不会自动引用整个知识库。</small></div><span>{knowledge.length?`已启用 ${knowledge.length} 项`:"未启用"}</span></div><div className={styles.picks}>{["平台规则","运营方法","合规参考"].map(item=><label key={item}><input type="checkbox" checked={knowledge.includes(item)} onChange={()=>toggle(knowledge,setKnowledge,item)}/>{item}</label>)}</div></section>
+     <section className={styles.useStep}><h3>步骤 2 · 选择知识库（可选）</h3><p>按需引用平台规则、品牌规范和商品资料。</p><div className={styles.choiceRow}><div><strong>使用知识库</strong><small>仅使用已选知识，不会自动引用整个知识库。</small></div><span>{knowledge.length?`已启用 ${knowledge.length} 项`:"未启用"}</span></div><div className={styles.picks}>{["平台规则","运营方法","合规参考"].map(item=><label key={item}><input type="checkbox" checked={knowledge.includes(item)} onChange={()=>toggle(knowledge,setKnowledge,item)}/>{item}</label>)}<button type="button" className={styles.secondary} onClick={()=>setConfigMode("knowledge")}>选择知识库</button></div></section>
      <section className={styles.useStep}><h3>步骤 3 · 配置图片优化（按需）</h3><p>按需开启图片优化；关闭时不会修改图片。</p><div className={styles.choiceRow}><div><strong>AI 图片优化设置</strong><small>开启后可设置图片策略，以及主图 / 详情图的具体位置。</small></div><div className={styles.toggleButtons}><button className={imageOptimization?styles.activeToggle:""} type="button" onClick={()=>setImageOptimization(true)}>开启</button><button className={!imageOptimization?styles.activeToggle:""} type="button" onClick={()=>{setImageOptimization(false);setImageConfigured(false);}}>关闭</button></div></div>{imageOptimization?<div className={styles.imageInstructions}><p>{imageConfigured?"图片优化设置已保存，可以重新调整主图／详情图配置。":"图片选择、主图／详情图切换、共用／分别优化及自定义指令均在设置中完成。"}</p><button type="button" className={styles.secondary} onClick={()=>setConfigMode("product-image")}>设置图片优化</button></div>:null}</section>
      <section className={styles.useStep}><h3>步骤 4 · 保存模板</h3><p>按需配置后保存模板；执行结果进入「待审核」。</p><div className={styles.actionsRow}><button className={styles.secondary} type="button" onClick={()=>setShowPreview(v=>!v)}>预览优化范围</button><button className={styles.primary} type="button" onClick={saveTemplate}>保存为模板</button></div>{showPreview?<p role="status" className={styles.inlineNotice}>技能：{skills.join("、")||"未启用"}；知识库：{knowledge.join("、")||"未启用"}；图片优化：{imageOptimization?"开启":"关闭"}。此处仅保存演示配置，不会自动执行任务。</p>:null}</section>
      {message?<p role="status" className={styles.inlineNotice}>{message}</p>:null}
