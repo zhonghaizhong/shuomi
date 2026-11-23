@@ -253,5 +253,5 @@
 :global(.light) .dialog .productHelp .productResult{color:#7367f0}
 @media(max-width:850px){.dialog .productLayout{grid-template-columns:1fr}.dialog .productFinalRow{flex-wrap:wrap}}
 @media(max-width:560px){.dialog .productConfigRow{flex-wrap:wrap}.dialog .productRowText{flex-basis:100%}.dialog .productConfigRow>.primary{flex:1}.dialog .productFinalActions{width:100%}.dialog .productFinalActions button{flex:1}.dialog .productHeading{padding-right:30px}.dialog .productHeading .productViewTemplate{min-width:0}}
-\n/* Product optimizer dialog expands on wide desktops while remaining inside the viewport. */
+/* Product optimizer dialog expands on wide desktops while remaining inside the viewport. */
 @media(max-width:900px){.dialog.useDialog:has(.productLayout){width:calc(100vw - 24px);padding:18px;min-height:0;max-height:calc(100dvh - 24px)}}
