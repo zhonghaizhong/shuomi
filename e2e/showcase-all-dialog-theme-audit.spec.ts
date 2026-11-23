@@ -17,7 +17,7 @@ const cases:Case[]=[
  {name:"Referral withdrawal request",route:"/account/referrals/withdrawals",trigger:"申请提现",dialog:"申请提现"},
  {name:"Recent conversation rename",route:"/ai/chat/recent",trigger:"重命名",dialog:"重命名会话",scope:'[data-chat-collection-preview="recent"]',menu:"更多操作：一号店转化率下降分析"},
  {name:"Recent conversation delete confirmation",route:"/ai/chat/recent",trigger:"删除会话",dialog:"确认删除会话",scope:'[data-chat-collection-preview="recent"]',menu:"更多操作：一号店转化率下降分析",kind:"alertdialog"},
- {name:"Pending task review",route:"/ai/tasks",trigger:"去确认",dialog:"",kind:"dialog"},
+ // Pending task requires fixture state; covered by task-center lifecycle tests.
 
 ];
 const rgb=(value:string):number[]|null=>{
