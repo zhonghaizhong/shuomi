@@ -662,3 +662,12 @@
 .storeRenewSummary{display:grid;gap:8px;padding:13px;border:1px solid var(--line);background:var(--inset);border-radius:7px;font-size:13px}
 .storeRenewDialog .error{padding:10px 12px;background:#ea545515;border:1px solid #ea545555;color:#e45454;border-radius:6px}
 @media(max-width:650px){.storeListDialog,.storeRenewDialog{padding:14px}.storeListScroll{max-height:45dvh}}
+
+/* Account suite theme audit: preserve structure and Vuexy purple actions. */
+.page{--surface:#142237;--inset:#18283c;--line:#31465e;--ink:#edf4ff;--muted:#b5c6d8}
+:global(.light) .page{--surface:#fff;--inset:#f7fafd;--line:#dfe7ef;--ink:#263648;--muted:#64768a}
+.page :is(.hero,.identity,.panel,.metrics article){background:var(--surface);border-color:var(--line);color:var(--ink)}
+.page :is(input,select,.storeListScroll th,.storeRenewSummary){background:var(--inset);border-color:var(--line);color:var(--ink)}
+.page :is(.storeListDialog,.storeRenewDialog){background:var(--surface);color:var(--ink);border-color:var(--line)}
+.page .storeListScroll tbody tr:nth-child(even){background:var(--inset)}
+.page .storeListScroll tbody tr:nth-child(odd){background:var(--surface)}
