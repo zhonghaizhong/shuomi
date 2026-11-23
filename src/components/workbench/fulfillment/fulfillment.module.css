@@ -115,3 +115,19 @@
     padding: 0.5rem;
   }
 }
+
+
+/* Store-order and fulfillment subpages: consistent enterprise panels and tables. */
+.panel{border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:0 6px 24px var(--shadow-color)}
+.panel h2{border-left:3px solid #7367f0;padding-left:12px;font-weight:700;color:var(--foreground)}
+.panel h3{color:var(--foreground)}
+.panel :is(input,select,textarea){min-height:42px;border-radius:8px;background:var(--card);color:var(--foreground)}
+.panel :is(input,select,textarea,button):focus-visible{outline:2px solid #7367f0;outline-offset:2px}
+.tableWrap{border:1px solid var(--border);border-radius:10px;background:var(--card)}
+.tableWrap th{background:var(--secondary);color:var(--foreground);font-weight:650}
+.tableWrap tbody tr:nth-child(even){background:color-mix(in srgb,var(--secondary) 45%,var(--card))}
+.tableWrap tbody tr:hover{background:color-mix(in srgb,var(--primary) 6%,var(--card))}
+.tableWrap th,.tableWrap td{padding:12px 14px}
+.facts dd{color:var(--foreground);font-weight:600;font-variant-numeric:tabular-nums}
+.tabs button,.pagination button{min-height:36px;border-radius:8px}
+@media(max-width:600px){.tableWrap th,.tableWrap td{padding:9px}}
