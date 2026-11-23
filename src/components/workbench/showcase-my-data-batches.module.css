@@ -512,3 +512,32 @@
   .wrapper .manageHeaderActions {justify-content:stretch}
   .wrapper .manageHeaderActions button {flex:1 1 auto}
 }
+
+
+/* My Data follows the shared filter standard regardless of how many dropdowns
+   are present. Override the earlier five-column grid implementation. */
+.wrapper .filterBar[data-shuomi-filter="balanced"] {
+  display:flex!important;
+  flex-wrap:nowrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-left] {
+  flex:1 1 280px;max-width:480px;min-width:180px;width:auto;
+}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] {
+  display:flex;flex:0 0 auto;flex-wrap:nowrap;gap:10px;
+  justify-content:flex-end;align-items:center;margin-left:auto;width:auto;
+}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] select {
+  width:clamp(128px,10vw,156px);max-width:176px;min-width:0;flex:0 0 auto;
+}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] button {
+  flex:0 0 76px;min-width:76px;width:76px;
+}
+@media(max-width:1150px){
+ .wrapper .filterBar[data-shuomi-filter="balanced"] {flex-wrap:wrap}
+ .wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-left] {flex:1 1 100%;max-width:none}
+ .wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] {flex:1 1 100%;flex-wrap:wrap}
+}
