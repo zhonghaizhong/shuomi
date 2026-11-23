@@ -108,7 +108,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    ["知识库",labels(c.knowledge)||"未启用"],
    ["执行技能",labels(c.skills)||"未启用"],
    ["贴图素材",typeof c.podPatternMode==="string"?c.podPatternMode:"AI自动模式"],
-   ["生成数量",Number.isFinite(c.podQuantity)?String(c.podQuantity)+" / 商品":"按模板配置"],
+   ["生成数量",typeof c.podQuantity==="number"&&Number.isFinite(c.podQuantity)?String(c.podQuantity)+" / 商品":"按模板配置"],
    ["透明背景",c.podTransparent===true?"启用":"关闭"],
    ["生图语言",typeof extra.imageLanguage==="string"?extra.imageLanguage:"未设置"],
    ["图片底色",typeof extra.imageBackground==="string"?extra.imageBackground:"未设置"]
