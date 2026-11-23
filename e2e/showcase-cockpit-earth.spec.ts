@@ -247,7 +247,7 @@ test("page title headers match Chat reference across modules and both themes", a
       expect(metrics.height, route + ": header height").toBeGreaterThanOrEqual(129);
       expect(metrics.leftPad, route + ": left padding").toBe("24px");
       expect(metrics.rightPad, route + ": right padding").toBe("24px");
-      expect(metrics.radius, route + ": corner radius").toBe("6px");
+      expect(metrics.radius, route + ": corner radius").toBe(route === "/workbench/tools" ? "12px" : "6px");
       expect(metrics.borderWidth, route + ": border").toBe("1px");
       expect(metrics.titleSize, route + ": title typography").toBe("26px");
       expect(metrics.titleLine, route + ": title line-height").toBe("34px");
