@@ -44,9 +44,19 @@ const officialExampleNotes={
 
 const availableSkills=["商品标题规范优化（示例）","商品图片优化（示例）"];
 const availableKnowledge=["平台规则","运营方法","合规参考"];
+const podSkillSamples=[
+ {name:"POD图案生成规范（示例）",description:"用于演示内容与规则的规范化，实际版本以技能库为准"},
+ {name:"POD图片优化（示例）",description:"可用于规范图片生成与优化，实际配置在图片设置中调整"}
+];
+const podKnowledgeSamples=[
+ {name:"跨境平台规则",description:"已添加的站点政策、店铺规则与运营限制"},
+ {name:"商品运营方法",description:"已添加的商品刊登、定价及运营指引"},
+ {name:"跨境合规资料",description:"已添加的知识产权、税务与合规内容"}
+];
 const languages=["不设置（默认关闭）","英语","中文","西班牙语","法语","德语","日语"];
 
-export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
+export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKind="product"}:{
+ agentKind?:"pod"|"product";
  mode:ConfigurationMode;initial:AgentUseConfiguration;onClose:()=>void;onSave:(value:AgentUseConfiguration)=>void;
 }){
  const dialogRef=useRef<HTMLDialogElement>(null);
@@ -68,6 +78,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const [slots,setSlots]=useState<(string|null)[]>(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));
  const [selectedItems,setSelectedItems]=useState<string[]>(mode==="knowledge"?initial.selectedKnowledge??[]:initial.selectedSkills??[]);
  const [skillTab,setSkillTab]=useState<"我的技能"|"团队技能">("我的技能");
+ const [knowledgeTab,setKnowledgeTab]=useState<"我的知识库"|"团队知识库">("我的知识库");
  const [librarySelected,setLibrarySelected]=useState("");
  const [libraryQuery,setLibraryQuery]=useState("");
  const [multiSelected,setMultiSelected]=useState<number[]>([]);
@@ -83,7 +94,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const set=<K extends keyof AgentUseConfiguration>(key:K,value:AgentUseConfiguration[K])=>setForm(old=>({...old,[key]:value}));
  const flip=(array:string[],value:string,callback:(next:string[])=>void)=>callback(array.includes(value)?array.filter(x=>x!==value):[...array,value]);
  const title=child==="add-image"?"添加图片":child==="language"?"选择生图语言":child==="background"?"统一图片底色":child==="source"?"选择参考素材":child==="library"?"从我的素材库引用":child==="sort"?"智能排序":child==="slot-actions"?"图片快捷调整":child==="official-images"?"添加官方图片":child==="ai-images"?"选择 AI 渲染图片":child==="multi-adjust"?"多选调整":child==="restore"?"恢复上次顺序？":({
-  "product-image":"AI图片优化设置","pod-ai":"AI重构图片设置","pod-hybrid":"混合模式设置","pod-pattern-split":"图片裂变模式","pod-pattern-custom":"自定义指令模式","skills":"选择技能","knowledge":"选择知识库"
+  "product-image":"AI图片优化设置","pod-ai":"AI重构图片设置","pod-hybrid":"混合模式设置","pod-pattern-split":"图片裂变模式","pod-pattern-custom":"自定义指令模式","skills":agentKind==="pod"?"选择执行技能":"选择技能","knowledge":agentKind==="pod"?"选择引用知识":"选择知识库"
  } as Record<ConfigurationMode,string>)[mode];
  const desc=child==="add-image"?"选择图片来源，再将图片加入当前编排位置。":child==="language"?"不设置时不指定生图语言；选择后生效。":child==="background"?"不设置时不限制背景；选择后生效。":child==="source"?"请选择参考图片的来源，再选定具体图片。":child==="library"?"来源：POD素材管理工具 / 我的素材库 · 图片裂变仅引用 1 张参考图。":child==="sort"?"选择一个排序策略，应用后仍可继续手动调整。":child==="slot-actions"?"不拖拽也能完成微调。":child==="official-images"?"从官方渲染结果中继续加入最终图片序列（原型示例）。":child==="ai-images"?"支持多选；AI 自动补全可与已选渲染结果同时使用。":child==="multi-adjust"?"选择多张图片后可一次性移动或移除。":child==="restore"?"将恢复到最近一次保存的图片组合与顺序。":({
   "product-image":"选择优化方式，再配置主图或详情图。",
@@ -238,10 +249,16 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
    :mode==="pod-pattern-custom"?<div className={css.stack}><label>生成指令<textarea aria-label="生成指令" rows={5} placeholder="例如：黑色底，朋克风，加入不同样式的闪电和英文短句，适合腰部印刷……" value={form.patternPrompt??""} onChange={e=>set("patternPrompt",e.target.value)}/></label><p>AI 会优先遵循你的指令，同时自动做印刷适配与合规检查（实际能力待接入）。</p></div>
    :mode==="skills"?<div className={css.stack}>
     <div className={css.segment}>{(["我的技能","团队技能"] as const).map(tab=><button key={tab} type="button" aria-pressed={skillTab===tab} onClick={()=>setSkillTab(tab)}>{tab}</button>)}</div>
-    {skillTab==="我的技能"?<section className={css.panel}><h3>已启用的个人技能</h3>{availableSkills.map((name,i)=><label className={css.imageChoice} key={name}><input type="checkbox" checked={selectedItems.includes(name)} onChange={()=>flip(selectedItems,name,setSelectedItems)}/><span><strong>{name}</strong><small>v1 · 已启用 · 私有 · {i?"选择后可设置图片优化范围和方式":"演示商品标题格式规范化"}</small></span></label>)}<p>以上仅为原型示例技能；正式调用以技能库权限和可用版本为准。</p></section>:<section className={css.panel}><h3>可用团队技能</h3><p>当前原型没有配置可选择的团队技能。可在技能库核实团队技能审核状态和可用版本。</p></section>}
+    {skillTab==="我的技能"?<section className={css.panel}><h3>已启用的个人技能</h3>{(agentKind==="pod"?podSkillSamples:availableSkills.map((name,i)=>({name,description:i?"选择后可设置图片优化范围和方式":"演示商品标题格式规范化"}))).map(item=><label className={css.imageChoice} key={item.name}><input type="checkbox" checked={selectedItems.includes(item.name)} onChange={()=>flip(selectedItems,item.name,setSelectedItems)}/><span><strong>{item.name}</strong><small>v1 · 已启用 · 私有</small><small>{item.description}</small></span></label>)}<p>以上仅为原型示例技能；正式调用以技能库权限和可用版本为准。</p></section>:<section className={css.panel}><h3>可用团队技能</h3><p>当前原型没有配置可选择的团队技能。可在技能库核实团队技能审核状态和可用版本。</p></section>}
     <div className={css.inline}><strong>已选 {selectedItems.length} 项</strong><button type="button" onClick={()=>setSelectedItems([])}>清空</button></div>
    </div>
-   :<div className={css.stack}><p>按需勾选，可多选，不选择也可以保存模板。</p><div className={css.optionGrid}>{availableKnowledge.map(x=><label className={css.imageChoice} key={x}><input type="checkbox" checked={selectedItems.includes(x)} onChange={()=>flip(selectedItems,x,setSelectedItems)}/>{x}</label>)}</div></div>}
+   :<div className={css.stack}>
+    <p>仅引用已添加到我的知识库或团队知识库的内容，支持多选；不选择时不引用知识。</p>
+    {agentKind==="pod"?<div className={css.segment}>{(["我的知识库","团队知识库"] as const).map(tab=><button type="button" key={tab} aria-pressed={knowledgeTab===tab} onClick={()=>setKnowledgeTab(tab)}>{tab}</button>)}</div>:null}
+    {agentKind==="pod"&&knowledgeTab==="团队知识库"?<section className={css.panel}><h3>团队知识库</h3><p>当前演示没有可用的团队知识条目。正式使用需要按成员权限读取知识库。</p></section>:<section className={css.panel}><h3>{agentKind==="pod"?"我的知识库（示例）":"可用知识资料"}</h3>{(agentKind==="pod"?podKnowledgeSamples:availableKnowledge.map(name=>({name,description:"按需引用知识资料"}))).map(item=><label key={item.name} className={css.imageChoice}><input type="checkbox" checked={selectedItems.includes(item.name)} onChange={()=>flip(selectedItems,item.name,setSelectedItems)}/><span><strong>{item.name}</strong><small>{item.description}</small></span></label>)}</section>}
+    <div className={css.inline}><strong>已选 {selectedItems.length} 项</strong><button type="button" onClick={()=>setSelectedItems([])}>清空</button></div>
+    <p>示例仅供原型交互校验；正式引用以当前账号实际授权的知识库内容为准。</p>
+   </div>}
    {maybeNotice}
   </main>
   {example?<div className={css.optimizerExampleOverlay} role="dialog" aria-modal="true" aria-label="优化任务示例说明">
