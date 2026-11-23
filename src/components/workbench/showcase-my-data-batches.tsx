@@ -2,38 +2,37 @@
 import {useEffect,useMemo,useState} from "react";
 import {readDemoCollectionBatches,type DemoCollectionBatch} from "./showcase-collection-batches";
 import css from "./showcase-my-data-batches.module.css";
-
+const archiveKey=(org:string,member:string)=>"shuomi:my-data-archived-v1:"+org+":"+member;
+const readArchived=(org:string,member:string):string[]=>{try{const v:unknown=JSON.parse(sessionStorage.getItem(archiveKey(org,member))||"[]");return Array.isArray(v)?v.filter((x):x is string=>typeof x==="string"):[]}catch{return []}};
 export function ShowcaseMyDataBatches({organizationId,memberId}:{organizationId:string;memberId:string}){
- const [tab,setTab]=useState("采集批次");
- const [query,setQuery]=useState("");
- const [source,setSource]=useState("全部来源");
- const [selected,setSelected]=useState<string|null>(null);
+ const [tab,setTab]=useState("采集批次"),[query,setQuery]=useState(""),[search,setSearch]=useState("");
+ const [source,setSource]=useState("全部来源"),[status,setStatus]=useState("全部状态");
+ const [appliedSource,setAppliedSource]=useState("全部来源"),[appliedStatus,setAppliedStatus]=useState("全部状态");
+ const [archivedIds,setArchivedIds]=useState<string[]>(()=>typeof window==="undefined"?[]:readArchived(organizationId,memberId));
+ const [archivedOnly,setArchivedOnly]=useState(false),[selected,setSelected]=useState<string|null>(null),[menu,setMenu]=useState<string|null>(null),[manage,setManage]=useState(false);
+ const [chosen,setChosen]=useState<string[]>([]),[page,setPage]=useState(1);
  const [batches,setBatches]=useState<DemoCollectionBatch[]>(()=>readDemoCollectionBatches(organizationId,memberId));
- const [page,setPage]=useState(1);
- useEffect(()=>{
-  const refresh=()=>setBatches(readDemoCollectionBatches(organizationId,memberId));
-  refresh();
-  const onUpdate=(event:Event)=>{const detail=(event as CustomEvent<{organizationId:string}>).detail;if(detail?.organizationId===organizationId)refresh();};
-  window.addEventListener("shuomi:demo-batches-updated",onUpdate);
-  return()=>window.removeEventListener("shuomi:demo-batches-updated",onUpdate);
- },[organizationId,memberId]);
- const visible=useMemo(()=>batches.filter(b=>(source==="全部来源"||b.source===source)&&(b.name+" "+b.id+" "+b.source+" "+b.products.map(p=>p.name).join(" ")).toLowerCase().includes(query.toLowerCase())),[batches,source,query]);
- const chosen=visible.find(b=>b.id===selected);
- const pageSize=10;
- const pageCount=Math.max(1,Math.ceil(visible.length/pageSize));
- const currentPage=Math.min(page,pageCount);
- const rows=visible.slice((currentPage-1)*pageSize,currentPage*pageSize);
+ useEffect(()=>{const refresh=()=>{setBatches(readDemoCollectionBatches(organizationId,memberId));setArchivedIds(readArchived(organizationId,memberId));setSelected(null);setChosen([]);setMenu(null)};refresh();const onChange=(e:Event)=>{const detail=(e as CustomEvent<{organizationId:string}>).detail;if(detail?.organizationId===organizationId)refresh()};window.addEventListener("shuomi:demo-batches-updated",onChange);return()=>window.removeEventListener("shuomi:demo-batches-updated",onChange)},[organizationId,memberId]);
+ const archived=new Set(archivedIds);
+ const visible=useMemo(()=>batches.filter(b=>archived.has(b.id)===archivedOnly&&(appliedSource==="全部来源"||b.source===appliedSource)&&(appliedStatus==="全部状态"||(appliedStatus==="未上传"?b.status.includes("待上传"):b.status.includes("已上传")))&&(b.name+" "+b.id+" "+b.source+" "+b.products.map(p=>p.name).join(" ")).toLowerCase().includes(search.toLowerCase())),[batches,archivedIds,archivedOnly,appliedSource,appliedStatus,search]);
+ const archivedCount=batches.filter(b=>archived.has(b.id)).length;
+ const pageCount=Math.max(1,Math.ceil(visible.length/10)),currentPage=Math.min(page,pageCount),rows=visible.slice((currentPage-1)*10,currentPage*10);
+ const picked=batches.find(b=>b.id===selected&&archived.has(b.id)===archivedOnly);
+ const checkAll=rows.length>0&&rows.every(b=>chosen.includes(b.id));
+ const apply=()=>{setSearch(query.trim());setAppliedSource(source);setAppliedStatus(status);setPage(1);setMenu(null)};
+ const reset=()=>{setQuery("");setSearch("");setSource("全部来源");setAppliedSource("全部来源");setStatus("全部状态");setAppliedStatus("全部状态");setPage(1);setMenu(null)};
+ const toggleArchive=(ids:string[],toArchive:boolean)=>{const next=new Set(archivedIds);ids.forEach(id=>toArchive?next.add(id):next.delete(id));const values=[...next];setArchivedIds(values);setChosen([]);setSelected(null);setMenu(null);setPage(1);try{sessionStorage.setItem(archiveKey(organizationId,memberId),JSON.stringify(values))}catch{}};
  return <div className={css.wrapper} data-my-data-owner={memberId} data-my-data-organization={organizationId}>
-  <section className={css.flow}><strong>采集批次怎么用？</strong><div><span>原始商品数据</span><span>转入待上传</span><span>整理商品资料</span><span>上架其他平台</span></div><small>演示数据可查看，不会写入真实商品库</small></section>
-  <nav className={css.tabs} aria-label="我的数据分类">{["采集批次","自有商品库","数据集"].map(name=><button type="button" key={name} aria-current={tab===name?"page":undefined} onClick={()=>{setTab(name);setSelected(null);setPage(1);}}>{name}</button>)}</nav>
-  <section className={css.panel} aria-label={tab}>
-   <header className={css.heading}><div><h2>{tab==="采集批次"?"采集批次":tab}<span>{tab==="采集批次"?batches.length:0} {tab==="采集批次"?"批":"条"}</span></h2><p>仅显示当前登录账号在当前企业下采集的记录，企业管理员也不查看他人采集的数据。</p></div></header>
-   {tab==="采集批次"?<>
-    <div className={css.filters}><select aria-label="采集来源" value={source} onChange={e=>{setSource(e.target.value);setSelected(null);setPage(1);}}>{["全部来源","1688","Amazon"].map(item=><option key={item}>{item}</option>)}</select><input aria-label="搜索采集批次" value={query} onChange={e=>{setQuery(e.target.value);setSelected(null);setPage(1);}} placeholder="搜索批次、商品或编号"/><button type="button" onClick={()=>{setSource("全部来源");setQuery("");setSelected(null);setPage(1);}}>重置</button></div>
-    <div className={css.tableScroll}><table><thead><tr><th>批次名称</th><th>来源</th><th>产品数</th><th>创建时间</th><th>上传状态</th><th>操作</th></tr></thead><tbody>{rows.map(b=><tr key={b.id}><td><strong>{b.name}</strong><small>{b.id}</small></td><td>{b.source} · {b.method}</td><td>{b.products.length} 个</td><td>{b.createdAt}</td><td><span className={css.status}>{b.status}</span></td><td><button type="button" onClick={()=>setSelected(old=>old===b.id?null:b.id)}>{selected===b.id?"收起":"查看产品"}</button></td></tr>)}</tbody></table>{!rows.length?<p className={css.empty} role="status">暂无采集批次。前往「我的工具 → 商品采集插件 → 在线采集」创建本账号的采集任务。</p>:null}</div>
-    {chosen?<section className={css.details} aria-label="批次产品明细"><header><div><h3>{chosen.name}</h3><p>采集人：当前账号 · {chosen.products.length} 个模拟商品 · 不代表真实1688数据</p></div><button type="button" onClick={()=>setSelected(null)}>关闭明细</button></header><div className={css.tableScroll}><table><thead><tr><th>序号</th><th>商品名称</th><th>演示 SKU</th><th>来源</th><th>参考价格</th><th>数据标记</th></tr></thead><tbody>{chosen.products.map((item,i)=><tr key={item.id}><td>{i+1}</td><td>{item.name}</td><td>{item.sku}</td><td>{item.source}</td><td>{item.price}</td><td>{item.status}</td></tr>)}</tbody></table></div></section>:null}
-    <footer className={css.pagination}><span>共 {visible.length} 个批次 · 第 {currentPage}/{pageCount} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setPage(p=>p-1)}>上一页</button><button type="button" disabled={currentPage===pageCount} onClick={()=>setPage(p=>p+1)}>下一页</button></div></footer>
-   </>:<p className={css.empty} role="status">暂无{tab}数据。采集批次不会自动写入此分类。</p>}
-  </section>
+  <section className={css.flow} aria-label="采集批次流程说明"><strong>采集数据怎么用?</strong><div className={css.flowSteps}>{[["1","原始商品数据"],["2","转入待上传"],["3","整理商品资料"],["4","上架其他平台"]].map(([n,label],i)=><span key={n}><i data-step={i}>{n}</i>{label}</span>)}</div><p><b>也可直接下载</b><small>原始数据用于分析或其他业务</small></p></section>
+  <nav className={css.tabs} aria-label="我的数据分类">{["采集批次","自有商品库","数据集"].map(name=><button type="button" key={name} aria-current={tab===name?"page":undefined} onClick={()=>{setTab(name);setPage(1);setSelected(null);setMenu(null)}}>{name}</button>)}</nav>
+  <section className={css.filterBar} aria-label="数据筛选"><label className={css.searchBox}><span aria-hidden="true">⌕</span><input aria-label="搜索采集批次" placeholder="搜索批次名称 / 商品关键词" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")apply()}}/></label><select aria-label="采集来源" value={source} onChange={e=>setSource(e.target.value)}>{["全部来源","1688","Amazon"].map(x=><option key={x}>{x}</option>)}</select><select aria-label="上传状态" value={status} onChange={e=>setStatus(e.target.value)}>{["全部状态","未上传","已上传"].map(x=><option key={x}>{x}</option>)}</select><button type="button" onClick={reset}>重置</button><button type="button" className={css.primary} onClick={apply}>确认</button></section>
+  <section className={css.panel} aria-label={tab}><header className={css.heading}><div><h2>{tab==="采集批次"?"数据批次":tab}</h2><span>共 {tab==="采集批次"?(archivedOnly?archivedCount:batches.length-archivedCount):0} {tab==="采集批次"?"批":"条"}</span></div>{tab==="采集批次"?<div className={css.headingActions}><button type="button" aria-pressed={archivedOnly} onClick={()=>{setArchivedOnly(x=>!x);setPage(1);setSelected(null);setChosen([]);setMenu(null)}}>{archivedOnly?"返回批次":"已归档"}</button><button type="button" onClick={()=>setManage(true)}>管理批次</button></div>:null}</header>
+  {tab==="采集批次"?<>
+   <div className={css.tableScroll}><table className={css.batchTable}><thead><tr><th><label className={css.batchTitle}><input type="checkbox" aria-label="选择当前页所有批次" disabled={!rows.length} checked={checkAll} onChange={e=>setChosen(old=>e.target.checked?[...new Set([...old,...rows.map(b=>b.id)])]:old.filter(id=>!rows.some(b=>b.id===id)))}/>批次名称</label></th><th>产品来源</th><th>总量</th><th>符合</th><th>过滤</th><th>创建时间</th><th>上传状态</th><th>操作</th></tr></thead><tbody>{rows.map(b=><tr key={b.id}><td><div className={css.batchName}><input type="checkbox" aria-label={"选择批次 "+b.name} checked={chosen.includes(b.id)} onChange={e=>setChosen(old=>e.target.checked?[...old,b.id]:old.filter(id=>id!==b.id))}/><div><strong>{b.name}</strong><small>{b.method} · 演示批次</small></div></div></td><td><span className={css.sourcePill}>{b.source}</span></td><td><b className={css.metric}>{b.products.length}</b></td><td><b className={css.matchCount}>{b.products.length}</b></td><td><b className={css.filterCount}>0</b></td><td>{b.createdAt}</td><td><span className={css.uploadStatus}><i/>未上传<small>未转入刊登</small></span></td><td><div className={css.menuHost}><button type="button" aria-expanded={menu===b.id} onClick={()=>setMenu(v=>v===b.id?null:b.id)}>更多</button>{menu===b.id?<div className={css.rowMenu} role="group" aria-label={"批次操作 "+b.name}><button type="button" onClick={()=>{setSelected(old=>old===b.id?null:b.id);setMenu(null)}}>查看商品</button><button type="button" onClick={()=>toggleArchive([b.id],!archivedOnly)}>{archivedOnly?"恢复批次":"归档批次"}</button></div>:null}</div></td></tr>)}</tbody></table>{!rows.length?<p className={css.empty} role="status">{archivedOnly?"暂无已归档批次":search||appliedSource!=="全部来源"||appliedStatus!=="全部状态"?"没有符合筛选条件的批次":"暂无采集批次。请前往「我的工具 → 在线采集」创建。"}</p>:null}</div>
+   {picked?<section className={css.details} aria-label="批次产品明细"><header><div><h3>{picked.name}</h3><p>当前账号 · {picked.products.length} 个模拟产品 · 非真实 1688 商品资料</p></div><button type="button" onClick={()=>setSelected(null)}>关闭明细</button></header><div className={css.tableScroll}><table><thead><tr><th>序号</th><th>商品名称</th><th>模拟 SKU</th><th>来源</th><th>价格</th><th>数据标记</th></tr></thead><tbody>{picked.products.map((item,i)=><tr key={item.id}><td>{i+1}</td><td>{item.name}</td><td>{item.sku}</td><td>{item.source}</td><td>{item.price}</td><td>{item.status}</td></tr>)}</tbody></table></div></section>:null}
+   {chosen.length?<div className={css.bulkBar}><span>已选择 {chosen.length} 批</span><button type="button" onClick={()=>toggleArchive(chosen,!archivedOnly)}>{archivedOnly?"批量恢复":"批量归档"}</button><button type="button" onClick={()=>setChosen([])}>取消选择</button></div>:null}
+   <footer className={css.pagination}><span>显示 {rows.length} / {visible.length} 批 · 第 {currentPage} / {pageCount} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setPage(v=>v-1)}>上一页</button><button type="button" disabled={currentPage===pageCount} onClick={()=>setPage(v=>v+1)}>下一页</button></div></footer>
+  </>:<p role="status" className={css.empty}>暂无{tab}数据。采集批次不会自动写入此分类。</p>}</section>
+  {manage?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setManage(false)}}><section className={css.manageDialog} role="dialog" aria-modal="true" aria-label="管理采集批次"><header><div><h2>管理批次</h2><p>只管理当前账号及当前企业的演示批次。</p></div><button type="button" aria-label="关闭管理批次弹窗" onClick={()=>setManage(false)}>×</button></header><div className={css.manageList}><p>未归档 {batches.length-archivedCount} 批 · 已归档 {archivedCount} 批</p>{batches.map(b=><div key={b.id}><strong>{b.name}</strong><span>{b.products.length} 个产品 · {archived.has(b.id)?"已归档":"未归档"}</span><button type="button" onClick={()=>toggleArchive([b.id],!archived.has(b.id))}>{archived.has(b.id)?"恢复":"归档"}</button></div>)}</div><footer><button type="button" className={css.primary} onClick={()=>setManage(false)}>完成</button></footer></section></div>:null}
  </div>;
 }
