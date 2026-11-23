@@ -46,3 +46,35 @@ export function addDemoCollectionBatch(organizationId:string,memberId:string,sou
  const batch:DemoCollectionBatch={id,organizationId,ownerMemberId:memberId,source,method,name:source+" 在线采集 · "+products.length+"个产品（模拟）",createdAt:now.toLocaleString("zh-CN",{hour12:false}),products,status:"已采集 · 待上传",demo:true};
  try{const stored=sessionStorage.getItem(key(organizationId));const parsed:unknown=stored===null?(organizationId==="SM-ENT-000001"?[initialBatch(organizationId)]:[]):JSON.parse(stored);const current=Array.isArray(parsed)?parsed.filter(valid):[];sessionStorage.setItem(key(organizationId),JSON.stringify([batch,...current].slice(0,30)));window.dispatchEvent(new CustomEvent("shuomi:demo-batches-updated",{detail:{organizationId}}));return batch;}catch{return null;}
 }
+
+
+/** Manage only the active member's demo batches; never mutate another tenant's records. */
+export function createDemoCollectionBatch(organizationId:string,memberId:string,name:string):boolean{
+ if(typeof window==="undefined"||!name.trim())return false;
+ try{
+  const stored=sessionStorage.getItem(key(organizationId));
+  const raw:unknown=stored===null?(organizationId==="SM-ENT-000001"?[initialBatch(organizationId)]:[]):JSON.parse(stored);
+  const current=Array.isArray(raw)?raw.filter(valid):[];
+  const batch:DemoCollectionBatch={id:"SIM-MANUAL-"+Date.now().toString(36),organizationId,ownerMemberId:memberId,source:"1688",method:"手动新建",name:name.trim(),createdAt:new Date().toLocaleString("zh-CN",{hour12:false}),products:[],status:"已采集 · 待上传",demo:true};
+  sessionStorage.setItem(key(organizationId),JSON.stringify([batch,...current]));
+  window.dispatchEvent(new CustomEvent("shuomi:demo-batches-updated",{detail:{organizationId}}));
+  return true;
+ }catch{return false;}
+}
+export function renameDemoCollectionBatch(organizationId:string,memberId:string,batchId:string,name:string):boolean{
+ if(typeof window==="undefined"||!name.trim())return false;
+ try{
+  const stored=sessionStorage.getItem(key(organizationId));
+  const raw:unknown=stored===null?(organizationId==="SM-ENT-000001"?[initialBatch(organizationId)]:[]):JSON.parse(stored);
+  const current=Array.isArray(raw)?raw.filter(valid):[];
+  let found=false;
+  const updated=current.map(b=>{
+   if(b.id!==batchId||b.organizationId!==organizationId||b.ownerMemberId!==memberId)return b;
+   found=true;return {...b,name:name.trim()};
+  });
+  if(!found)return false;
+  sessionStorage.setItem(key(organizationId),JSON.stringify(updated));
+  window.dispatchEvent(new CustomEvent("shuomi:demo-batches-updated",{detail:{organizationId}}));
+  return true;
+ }catch{return false;}
+}
