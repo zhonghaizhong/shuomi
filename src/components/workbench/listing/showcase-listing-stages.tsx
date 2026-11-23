@@ -1,6 +1,12 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import {readOwnProductBatches,readOwnProducts,ownProductUpdated} from "../showcase-own-product-data";
+import {readDemoCollectionBatches} from "../showcase-collection-batches";
+import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
+import {useWorkbenchContext} from "@/components/providers/workbench-context-provider";
+import {useConfigurationRead} from "../agents/agent-configuration-hooks";
+import {catalogPageSchema,templatesPageSchema} from "@/lib/contracts/agent-configuration";
+import {addShowcaseUploadTask,readShowcaseUploadTasks,showcaseUploadTasksEvent,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 import {useRouter} from "next/navigation";
 import styles from "./showcase-listing-stages.module.css";
 
@@ -16,18 +22,42 @@ const descriptions:Record<Stage,string>={
 const menu=[["waiting","待上传"],["missing","待补全"],["review","待审核"],["uploaded","已上传"]] as const;
 export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stage;organizationId:string;memberId:string}){
  const router=useRouter();
- const [source,setSource]=useState("采集批次"),[batch,setBatch]=useState(""),[store,setStore]=useState(""),[agent,setAgent]=useState(false),[rules,setRules]=useState(true),[mode,setMode]=useState("平台草稿");
+ const [source,setSource]=useState("采集批次"),[batch,setBatch]=useState(""),[store,setStore]=useState(""),[agent,setAgent]=useState(false),[agentId,setAgentId]=useState(""),[templateId,setTemplateId]=useState(""),[rules,setRules]=useState(true),[mode,setMode]=useState<"平台草稿"|"直接上传到平台"|"定时上传">("平台草稿");
+ const [scheduledDate,setScheduledDate]=useState(""),[scheduledTime,setScheduledTime]=useState("");
+ const context=useWorkbenchContext();
+ const {visible:availableStoreBindings}=useDemoStoreBindings(organizationId,memberId,memberId==="admin");
+ const boundStores=availableStoreBindings.filter(s=>s.platformStoreId&&!s.archived&&!s.connectionIssue&&s.platformIdStatus!=="获取失败"&&demoStoreServiceActive(s));
+ const chosenStore=boundStores.find(s=>s.id===store);
+ const scope={userId:context.user?.id??"",organizationId:context.effectiveOrganization?.id??""};
+ const agentResults=useConfigurationRead(scope,"mine?pageSize=100",catalogPageSchema,0,Boolean(scope.userId&&scope.organizationId===organizationId));
+ const enabledAgents=(agentResults.data?.items??[]).filter(e=>e.agent.activation==="ENABLED"&&e.canUse);
+ const chosenAgent=enabledAgents.find(e=>e.agent.agentId===agentId);
+ const templatesResult=useConfigurationRead(scope,`${agentId}/templates?pageSize=100`,templatesPageSchema,0,Boolean(agent&&chosenAgent));
+ const availableTemplates=(templatesResult.data?.items??[]).filter(t=>t.lifecycle==="ACTIVE");
+ const chosenTemplate=availableTemplates.find(t=>t.templateId===templateId);
  const [filter,setFilter]=useState(""),[applied,setApplied]=useState(""),[sourceFilter,setSourceFilter]=useState("全部来源"),[appliedSource,setAppliedSource]=useState("全部来源"),[storeFilter,setStoreFilter]=useState("全部店铺"),[appliedStore,setAppliedStore]=useState("全部店铺"),[items,setItems]=useState(seed),[selected,setSelected]=useState<Item|null>(null),[notice,setNotice]=useState(""),[ruleDialog,setRuleDialog]=useState(false),[submitted,setSubmitted]=useState(false);
  const [form,setForm]=useState<Record<string,string>>({});
  const [dataVersion,setDataVersion]=useState(0);
+ const [taskVersion,setTaskVersion]=useState(0);
+ useEffect(()=>{const refresh=(event:Event)=>{const d=(event as CustomEvent<{organizationId:string}>).detail;if(!d||d.organizationId===organizationId)setDataVersion(v=>v+1)};window.addEventListener("shuomi:demo-batches-updated",refresh);window.addEventListener("focus",refresh);return()=>{window.removeEventListener("shuomi:demo-batches-updated",refresh);window.removeEventListener("focus",refresh)}},[organizationId]);
+ useEffect(()=>{const onChange=(event:Event)=>{const d=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setTaskVersion(v=>v+1)};window.addEventListener(showcaseUploadTasksEvent,onChange);return()=>window.removeEventListener(showcaseUploadTasksEvent,onChange)},[organizationId,memberId]);
  useEffect(()=>{const handle=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d?.memberId===memberId)setDataVersion(n=>n+1)};window.addEventListener(ownProductUpdated,handle);return()=>window.removeEventListener(ownProductUpdated,handle)},[organizationId,memberId]);
  const ownBatches=useMemo(()=>readOwnProductBatches(organizationId,memberId),[organizationId,memberId,dataVersion]);
  const ownProducts=useMemo(()=>readOwnProducts(organizationId,memberId),[organizationId,memberId,dataVersion]);
- const selectedBatch=source==="自有商品库"?ownBatches.find(x=>x.id===batch):undefined;
- const selectableProducts=selectedBatch?ownProducts.filter(p=>p.batchId===selectedBatch.id):[];
+ const collectedBatches=useMemo(()=>readDemoCollectionBatches(organizationId,memberId),[organizationId,memberId,dataVersion]);
+ const availableBatches=source==="自有商品库"?ownBatches:collectedBatches;
+ const selectedOwnBatch=source==="自有商品库"?ownBatches.find(x=>x.id===batch):undefined;
+ const selectedCollectedBatch=source==="采集批次"?collectedBatches.find(x=>x.id===batch):undefined;
+ const selectedBatch=selectedOwnBatch;
+ const selectableProducts=selectedOwnBatch?ownProducts.filter(p=>p.batchId===selectedOwnBatch.id):[];
+ const selectedProductIds=selectedCollectedBatch?selectedCollectedBatch.products.map(p=>p.id):selectableProducts.map(p=>p.id);
+ const selectedCount=selectedProductIds.length;
+ const missingCount=selectableProducts.filter(p=>p.status==="待补全"||p.missing.length>0).length;
+ const savedTasks=useMemo(()=>readShowcaseUploadTasks(organizationId,memberId),[organizationId,memberId,taskVersion]);
+ const taskItems:Item[]=savedTasks.flatMap(task=>task.productIds.map((id,i)=>({sku:id,name:task.batchName+(task.productCount>1?` · 商品 ${i+1}`:""),source:task.source,store:task.storeName,status:task.status,missing:task.status==="待补全"?["商品必填资料"]:[],ai:Boolean(task.agentId)})));
  const [reviewChecked,setReviewChecked]=useState(false),[reviewMode,setReviewMode]=useState<"compare"|"edit">("compare");
  const go=(s:string)=>router.push("/workbench/listing/"+s+"?preview=1");
- const filtered=useMemo(()=>items.filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status).toLowerCase().includes(applied.toLowerCase())&&(appliedSource==="全部来源"||x.source===appliedSource)&&(appliedStore==="全部店铺"||x.store===appliedStore)),[items,applied,appliedSource,appliedStore]);
+ const filtered=useMemo(()=>(items.length?items:taskItems).filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status).toLowerCase().includes(applied.toLowerCase())&&(appliedSource==="全部来源"||x.source===appliedSource)&&(appliedStore==="全部店铺"||x.store===appliedStore)),[items,taskItems,applied,appliedSource,appliedStore]);
  const selectedItem=selected?items.find(x=>x.sku===selected.sku)??selected:null;
  const action=(next:string)=>{setNotice(next);setSubmitted(true)};
  const save=()=>{
@@ -44,13 +74,20 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   {stage==="waiting"?<>
    <section className={styles.flowHeader}><div><h2>商品上传流程</h2><p>商品 · 规则必选 · 智能体按需 · 平台上传</p></div><div className={styles.flowSteps}>{["选择商品","平台与店铺","启用规则","启用智能体"].map((name,i)=><span key={name}><b>{i+1}</b>{name}</span>)}</div></section>
    <section className={styles.configuration}>
-    <article><header><b>01</b><h2>选择商品</h2></header><p>从采集批次或自有商品库选取</p><label>商品来源<select value={source} onChange={e=>{setSource(e.target.value);setBatch("")}}><option>采集批次</option><option>自有商品库</option></select></label><label>本次批次 / 产品集<select value={batch} onChange={e=>setBatch(e.target.value)}><option value="">请选择商品</option>{source==="自有商品库"?ownBatches.map(b=><option key={b.id} value={b.id}>{b.name} · {b.productCount} 个商品</option>):null}</select></label>{selectedBatch?<small>已选择 {selectableProducts.length} 个商品，待补全 {selectableProducts.filter(p=>p.status==="待补全").length} 个；原始商品资料保持独立。</small>:null}<button type="button" onClick={()=>router.push("/workbench/data/mine?preview=1")}>进入我的数据</button></article>
-    <article><header><b>02</b><h2>目标平台与店铺</h2></header><p>先确定平台、站点及经营模式</p><label>平台 / 站点<select disabled value="SHEIN · 美国站"><option>SHEIN · 美国站</option></select></label><label>本次目标店铺<select value={store} onChange={e=>setStore(e.target.value)}><option value="">请选择店铺</option></select></label><small>按目标平台校验资料：缺失先补全，启用智能体需审核</small></article>
-    <article><header><b>03</b><h2>启用规则</h2></header><p>规则必须启用才能上传</p><label className={styles.switch}><input type="checkbox" checked={rules} onChange={e=>setRules(e.target.checked)}/> 标准适配规则（必选）</label><button type="button" onClick={()=>setRuleDialog(true)}>适配规则设置</button><small>本次规则生效，原始资料不变</small></article>
-    <article><header><b>04</b><h2>启用智能体</h2></header><p>按需重构商品后进入审核</p><label className={styles.switch}><input type="checkbox" checked={agent} onChange={e=>setAgent(e.target.checked)}/> 智能体（按需）</label><label>执行模板<select disabled={!agent}><option>{agent?"商品内容优化模板":"未启用，无需选择"}</option></select></label><small>{agent?"AI 处理结果进入待审核，由你确认应用":"未启用智能体 · 校验后直接上传"}</small></article>
+    <article><header><b>01</b><h2>选择商品</h2></header><p>从我的数据中选择采集批次或自有商品批次</p><label>商品来源<select value={source} onChange={e=>{setSource(e.target.value);setBatch("")}}><option>采集批次</option><option>自有商品库</option></select></label><label>本次批次 / 产品集<select value={batch} onChange={e=>setBatch(e.target.value)}><option value="">请选择商品</option>{availableBatches.map(b=><option key={b.id} value={b.id}>{b.name} · {"products" in b?b.products.length:b.productCount} 个商品</option>)}</select></label><small>{selectedCount>0?`已选择 ${selectedCount} 个商品${missingCount?`，其中 ${missingCount} 个需要补全`:""}；原始商品数据不修改`:availableBatches.length?"请选择本次商品批次":"当前账号没有可选批次，请先在我的数据中采集或上传。"}</small><button type="button" onClick={()=>router.push("/workbench/data/mine?preview=1")}>进入我的数据</button></article>
+    <article><header><b>02</b><h2>目标平台与店铺</h2></header><p>平台、站点与经营模式以绑定店铺为准</p><label>平台 / 站点<select value={chosenStore?`${chosenStore.platform} · ${chosenStore.region}`:""} disabled><option value="">{boundStores.length?"请先选择目标店铺":"暂无可用店铺"}</option>{chosenStore?<option value={`${chosenStore.platform} · ${chosenStore.region}`}>{chosenStore.platform} · {chosenStore.region}</option>:null}</select></label><label>本次目标店铺<select value={store} onChange={e=>setStore(e.target.value)}><option value="">请选择店铺</option>{boundStores.map(s=><option key={s.id} value={s.id}>{s.name} · {s.region} · {s.type}</option>)}</select></label><small>{chosenStore?`已绑定 · ${chosenStore.type} · 服务有效`:"只显示当前账户可管理、连接正常且服务有效的店铺"}</small><button type="button" onClick={()=>router.push("/workbench/stores?preview=1")}>进入我的店铺</button></article>
+    <article><header><b>03</b><h2>启用规则</h2></header><p>规则必须启用才能上传</p><label className={styles.switch}><input type="checkbox" checked={rules} onChange={e=>setRules(e.target.checked)}/> 标准适配规则（必选）</label><button type="button" onClick={()=>setRuleDialog(true)}>适配规则设置</button><small>按所选店铺平台 / 站点校验商品字段，原始资料保持不变</small></article>
+    <article><header><b>04</b><h2>启用智能体</h2></header><p>从本企业「我的智能体」选择已启用能力</p><label className={styles.switch}><input type="checkbox" checked={agent} onChange={e=>{setAgent(e.target.checked);setAgentId("");setTemplateId("")}}/> 智能体（按需）</label><label>选择智能体<select disabled={!agent} value={agentId} onChange={e=>{setAgentId(e.target.value);setTemplateId("")}}><option value="">{agent?"请选择智能体":"未启用，无需选择"}</option>{enabledAgents.map(e=><option key={e.agent.agentId} value={e.agent.agentId}>{e.name}</option>)}</select></label><label>执行模板<select disabled={!agent||!chosenAgent} value={templateId} onChange={e=>setTemplateId(e.target.value)}><option value="">{!agent?"未启用，无需选择":!chosenAgent?"请先选择智能体":availableTemplates.length?"请选择模板":"无可用模板"}</option>{availableTemplates.map(t=><option key={t.templateId} value={t.templateId}>{t.name}</option>)}</select></label><small>{agentResults.error?"暂时无法读取智能体配置，请到我的智能体检查授权。":agent&&!enabledAgents.length?"当前没有已启用且可使用的智能体。":chosenAgent?.agent.agentId==="pod.design.agent"?"POD 成品图生成后须进入 POD 素材管理进行人工审核":agent?"AI 处理结果需审核后继续原任务":"未启用智能体 · 资料校验后进入平台提交"}</small><button type="button" onClick={()=>router.push("/workbench/agents/mine?preview=1")}>前往我的智能体</button></article>
    </section>
-   <section className={styles.submit}><div><h2>本次上传</h2><p>资料缺失先补全；完整商品启用智能体后待审核，未启用则直接提交平台。</p></div><label>提交方式<select value={mode} onChange={e=>setMode(e.target.value)}><option>平台草稿</option><option>直接上传到平台</option></select></label><button type="button" disabled={!batch||!store||!rules||(source==="自有商品库"&&selectableProducts.length===0)} onClick={()=>action(`演示任务已配置：${selectedBatch?.name||batch} · ${store} · ${mode}。其中 ${selectableProducts.filter(p=>p.status==="待补全").length} 件自有商品有待补全资料；尚未执行真实平台上传${agent?"，智能体须授权与审核":""}。`)}>确认提交</button></section>
-   <p className={styles.hint}>平台原生定时上架按真实能力开放；系统定时发送目前未开放。仅演示配置，不会向平台实际上传。</p>
+   <section className={styles.submit}><div><h2>本次上传</h2><p>资料缺失先进入待补全；启用智能体后等待执行，POD 成品图审核通过后才能继续原任务。</p></div><label>提交方式<select value={mode} onChange={e=>setMode(e.target.value as typeof mode)}><option>平台草稿</option><option>直接上传到平台</option><option>定时上传</option></select></label>{mode==="定时上传"?<div className={styles.scheduleFields}><label>日期<input aria-label="定时上传日期" type="date" value={scheduledDate} onChange={e=>setScheduledDate(e.target.value)}/></label><label>时间<input aria-label="定时上传时间" type="time" value={scheduledTime} onChange={e=>setScheduledTime(e.target.value)}/></label></div>:null}<button type="button" disabled={!selectedCount||!chosenStore||!rules||(agent&&(!chosenAgent||!chosenTemplate))||(mode==="定时上传"&&(!scheduledDate||!scheduledTime))} onClick={()=>{
+    if(!selectedCount||!chosenStore||!rules)return;
+    if(agent&&(!chosenAgent||!chosenTemplate)){setNotice("请先选择当前企业已启用的智能体及执行模板。");return}
+    if(mode==="定时上传"){setNotice("定时上传需要平台授权及可用的调度服务，当前演示未执行预约。");return}
+    const status:ShowcaseUploadTask["status"]=missingCount?"待补全":agent?"待执行智能体":"待平台提交";
+    const record:ShowcaseUploadTask={id:"LIST-"+crypto.randomUUID(),organizationId,memberId,source:source as ShowcaseUploadTask["source"],batchId:batch,batchName:availableBatches.find(b=>b.id===batch)?.name??batch,productIds:selectedProductIds,productCount:selectedCount,missingCount,storeId:chosenStore.id,storeName:chosenStore.name,platform:"SHEIN",region:chosenStore.region,storeType:chosenStore.type,rule:"标准适配规则",agentId:agent?agentId:null,agentName:agent?chosenAgent?.name??null:null,templateId:agent?templateId:null,mode,status,createdAt:new Date().toISOString(),demo:true};
+    if(addShowcaseUploadTask(record)){setSubmitted(true);setNotice(`已保存本次演示刊登任务（${selectedCount} 件，${chosenStore.name}，${status}）。配置与原批次已关联；未执行真实 AI、POD 图片生成或平台上传。`)}else setNotice("本次配置保存失败，请检查会话存储并重试。");
+   }}>确认提交</button></section>
+   <p className={styles.hint}>按照 Figma 保留平台草稿、直接上传和定时上传配置入口；当前展示只创建本账号任务记录，不模拟真实平台提交或智能体执行。</p>
   </>:<>
    <section className={styles.summary}>{(stage==="missing"?[["0","全部商品"],["0","待补全"],["0","AI已补全"],["0","手动已补全"]]:[["0","待审核"],["0","AI建议待确认"],["0","已应用待继续"],["0","异常"]]).map(([n,label])=><article key={label}><b>{n}</b><span>{label}</span></article>)}</section>
    <section className={styles.listPanel}><div className={styles.filters}><div className={styles.filterChoices}><label>来源<select aria-label="商品来源" value={sourceFilter} onChange={e=>setSourceFilter(e.target.value)}><option>全部来源</option><option>采集批次</option><option>自有商品库</option></select></label><label>目标店铺<select aria-label="目标店铺筛选" value={storeFilter} onChange={e=>setStoreFilter(e.target.value)}><option>全部店铺</option></select></label></div><div className={styles.filterSearch}><input placeholder="搜索商品名称 / SKU / 批次名称" aria-label="搜索商品" value={filter} onChange={e=>setFilter(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){setApplied(filter);setAppliedSource(sourceFilter);setAppliedStore(storeFilter)}}}/><button type="button" onClick={()=>{setFilter("");setApplied("");setSourceFilter("全部来源");setAppliedSource("全部来源");setStoreFilter("全部店铺");setAppliedStore("全部店铺")}}>重置</button><button type="button" className={styles.primary} onClick={()=>{setApplied(filter);setAppliedSource(sourceFilter);setAppliedStore(storeFilter)}}>确认</button></div></div>
