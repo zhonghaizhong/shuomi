@@ -362,3 +362,87 @@
 .batchName .originalVersionInRow small{font-size:11px;color:var(--md-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .noNextVersion{margin:0;padding:14px 12px;border:1px dashed var(--md-line);border-radius:8px;font-size:12px;line-height:1.6;color:var(--md-muted);background:var(--md-panel)}
 @media(max-width:1100px){.batchName .originalVersionInRow{min-width:105px;padding-left:9px}.batchName .originalVersionInRow small{font-size:10px}}
+
+
+/* My Data typography and breathing-room pilot (scoped; no global overrides).
+   Main content and controls stay legible without changing the business layout. */
+.wrapper{
+  --md-type-body:14px;
+  --md-type-caption:13px;
+  --md-type-heading:17px;
+  font-size:var(--md-type-body);
+  line-height:1.55;
+  gap:16px;
+}
+.wrapper .flow{padding:14px 20px;gap:18px}
+.wrapper .flow>strong{font-size:14px;line-height:1.5}
+.wrapper .flowSteps{gap:12px;padding-inline:18px}
+.wrapper .flowSteps span,.wrapper .flow>p b,.wrapper .flow>p small{font-size:var(--md-type-caption);line-height:1.5}
+.wrapper .flowSteps i{font-size:13px;flex:none}
+.wrapper .tabs button{font-size:14px;min-height:38px;padding:9px 18px}
+.wrapper .filterBar{padding:12px 18px;gap:12px}
+.wrapper .filterBar :is(input,select),.wrapper .filterBar .searchBox input,
+.wrapper .filterBar>button,.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] button{
+  font-size:14px;
+}
+.wrapper .heading{padding:16px 20px;gap:16px}
+.wrapper .heading h2{font-size:var(--md-type-heading);line-height:1.45}
+.wrapper .heading>div:first-child{gap:14px;min-width:0}
+.wrapper .heading>div:first-child>span{font-size:var(--md-type-caption);line-height:1.5}
+.wrapper .headingActions button{font-size:14px;min-height:40px}
+.wrapper .tableScroll table{font-size:14px}
+.wrapper .tableScroll th{font-size:13px;padding:13px 16px;line-height:1.5}
+.wrapper .tableScroll td{font-size:14px;padding:15px 16px;line-height:1.55}
+.wrapper .batchName>div{gap:6px}
+.wrapper .batchName strong{font-size:14px}
+.wrapper .batchName small,.wrapper .batchName .originalVersionInRow small,
+.wrapper .batchName .originalVersionInRow strong{font-size:13px}
+.wrapper .sourcePill,.wrapper .collectionTime,.wrapper .uploadStatus small{font-size:13px}
+.wrapper .uploadStatus{font-size:14px}
+.wrapper .rowMenu button,.wrapper .menuHost>button{font-size:14px}
+.wrapper .pagination,.wrapper .bulkBar{font-size:13px}
+.wrapper .pagination{padding:14px 20px 4px}
+.wrapper .pagination button,.wrapper .bulkBar button{font-size:14px;min-height:38px}
+.wrapper .details{margin:14px 16px 6px}
+.wrapper .details header{padding:14px 18px}
+.wrapper .details h3{font-size:16px}
+.wrapper .details p{font-size:13px;line-height:1.6}
+.wrapper .manageDialog{gap:18px}
+.wrapper .manageHeader p,.wrapper .manageList p,.wrapper .manageList span,
+.wrapper .manageHeaderActions button,.wrapper .manageFilters :is(input,select,button),
+.wrapper .manageSearch input,.wrapper .manageInlineForm :is(label,input,button),
+.wrapper .manageRenameForm :is(input,button),.wrapper .manageFooter,
+.wrapper .manageFooter button{font-size:13px}
+.wrapper .manageTable,.wrapper .manageTable tbody td,.wrapper .manageNameCell>strong,
+.wrapper .manageStatusCell,.wrapper .manageList strong{font-size:14px}
+.wrapper .manageTable thead th,.wrapper .manageDate,.wrapper .manageStatusCell small{font-size:13px}
+.wrapper .manageTable thead th{padding:12px 15px}
+.wrapper .manageTable tbody td{padding:12px 15px;height:auto;min-height:56px}
+.wrapper .manageActions button{font-size:13px;min-height:36px;padding:8px 12px}
+.wrapper .manageList>div{padding:14px;gap:12px}
+.wrapper .manageSourcePill{font-size:13px}
+.wrapper .deleteConfirm p,.wrapper .deleteConfirm button{font-size:14px}
+.wrapper .batchRowActions>.expandVersions,.wrapper .versionInfo small,
+.wrapper .versionExpandedHeader span,.wrapper .versionTag,
+.wrapper .versionProductDialog header p,.wrapper .versionHint,
+.wrapper .versionProductDialog footer span,.wrapper .noNextVersion{font-size:13px}
+.wrapper .versionExpanded{padding:16px 18px;gap:14px}
+.wrapper .versionItems{gap:10px}
+.wrapper .versionItem{min-height:64px;padding:13px 16px;gap:16px}
+.wrapper .versionInfo strong,.wrapper .versionActions button{font-size:14px}
+.wrapper .versionInfo{gap:6px}
+.wrapper .versionActions button{min-height:38px;padding:8px 13px}
+.wrapper .versionProductDialog header p,.wrapper .versionHint{line-height:1.6}
+.wrapper .versionProductScroll th{font-size:13px;padding:13px 15px}
+.wrapper .versionProductScroll td{font-size:14px;padding:14px 15px;line-height:1.6}
+.wrapper .versionProductDialog header{padding:20px 22px}
+.wrapper .versionProductDialog>.versionHint{padding:14px 22px}
+.wrapper .versionProductScroll{padding:0 22px 16px}
+.wrapper .versionProductDialog footer{padding:14px 22px}
+@media(max-width:760px){
+  .wrapper .flow{padding:14px 16px}
+  .wrapper .filterBar{padding:12px 14px}
+  .wrapper .heading{padding:14px 16px}
+  .wrapper .versionExpanded{padding:12px}
+  .wrapper .versionProductDialog header,.wrapper .versionProductDialog footer{padding:14px}
+}
