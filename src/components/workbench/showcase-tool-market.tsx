@@ -309,7 +309,7 @@ function ToolModal({info,onClose,onConfirm,organizationId,memberId}:{info:Dialog
   if(isAcquisition&&info.type==="download")return <AcquisitionSimulator mode="local" onClose={onClose} organizationId={organizationId} memberId={memberId}/>;
   if(isAcquisition&&info.type==="launch")return <FigmaOnlineCollection onClose={onClose} organizationId={organizationId} memberId={memberId}/>;
   if(info.type==="launch"&&info.name==="POD素材管理工具")return <PodManagementWorkspace onClose={onClose}/>;
-  if(info.type==="launch"&&info.name==="自有商品刊登工具")return <ShowcaseOwnProductListingDialog onClose={onClose}/>;
+  if(info.type==="launch"&&info.name==="自有商品刊登工具")return <ShowcaseOwnProductListingDialog onClose={onClose} organizationId={organizationId} memberId={memberId}/>;
   return <dialog ref={ref} className={`${styles.dialog} ${info.type==="launch"?styles.launchDialog:""} ${info.type==="launch"&&(info.name==="POD素材管理工具"||info.name==="自有商品刊登工具")?styles.figmaToolDialog:""}`} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><h2 id={id}>{title}</h2><button type="button" onClick={onClose} aria-label="关闭弹窗">×</button></header>
     {info.type==="download"?<>
