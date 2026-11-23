@@ -55,7 +55,7 @@ export function ShowcaseUploadedPreview(){
    {!filtered.length?<div className={styles.empty}>暂无已上传商品记录。完成实际商品上传后，才会在这里显示记录。</div>:null}
    <footer className={styles.pagination}><span>第 {page} / {pages} 页 · 每页最多 4 条</span><div><button type="button" disabled={page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={page>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}>下一页</button></div></footer>
   </section>
-  <p className={styles.disclaimer}>当前暂无已上传商品。平台受理、审核中、平台草稿、已上架必须分别核实；未产生真实记录时保持空白。</p>
+  <p className={styles.disclaimer}>规则：只有第三方平台确认上传成功后，才允许将优化后的商品名称与图片回写自有商品原始数据；价格、库存和 SKU 标识保持原值。未核验、草稿、审核中、失败和取消均不触发回写。当前演示尚未连接真实成功回执，不会自动覆盖原始商品。</p>
   {selected&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null);}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看商品详情"><header><div><small>已上传 / 查看商品</small><h2>{selected.name}</h2></div><button type="button" ref={closeDetail} aria-label="关闭商品详情" onClick={()=>setSelected(null)}>×</button></header><dl>{[["SKU",selected.sku],["批次",selected.batch],["平台与站点",selected.platform+" · "+selected.site],["平台商品ID",selected.productId],["上传时间",selected.time],["发布方式",selected.method],["平台状态",selected.method==="发布到草稿箱"?"平台草稿 · 未上架":"提交平台 · 审核中（演示）"]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><p>原提交版本与上传记录只读。演示数据未核验真实平台受理、审核或上架状态；后续上架请进入店铺商品。</p><footer><button type="button" onClick={()=>setSelected(null)}>返回商品列表</button></footer></section></div>}
  </div>;
 }
