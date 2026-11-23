@@ -318,7 +318,8 @@
   border-color:var(--eco-line);
   border-radius:12px;
   min-height:130px;
-  padding:20px 26px;
+  padding:20px 24px;
+  border-radius:6px;
 }
 .page>.head h1{
   border-left:3px solid var(--eco-accent);
