@@ -29,3 +29,5 @@
 .picker footer{display:flex;justify-content:flex-end;gap:10px}
 @media(max-width:800px){.columns{grid-template-columns:1fr}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:540px){.dialog{padding:14px}.fields,.choice,.pickerFilters{grid-template-columns:1fr}.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.actions{flex-wrap:wrap}}
+
+.productRows{display:grid;gap:8px;max-height:330px;overflow:auto}.productRows label{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--pod-line);border-radius:8px;background:var(--pod-raise);cursor:pointer}.productRows label input{width:18px;height:18px;accent-color:var(--pod-primary)}.productRows label span{display:grid;gap:5px;min-width:0}.productRows label strong{font-size:14px}.productRows label small{color:var(--pod-muted);font-size:12px}
