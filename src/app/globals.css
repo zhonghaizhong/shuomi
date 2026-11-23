@@ -181,3 +181,20 @@ select {
 [data-shuomi-filter="balanced"] [data-shuomi-filter-left] > div{
  width:100%;min-width:0;max-width:none;flex:1 1 auto;
 }
+
+/* Compatibility coverage for older workbench search strips that still render direct children.
+   Scope to search strips only; do not restyle pagination, bulk toolbars or filterless controls. */
+:where(section,form,div):is([class*="filter"],[class*="Filter"],[class*="toolbar"],[class*="searchRow"])
+:not([data-shuomi-filter]):has(> input:not([type="checkbox"])):has(> button){
+ display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+:where(section,form,div):is([class*="filter"],[class*="Filter"],[class*="toolbar"],[class*="searchRow"])
+:not([data-shuomi-filter]):has(> input:not([type="checkbox"])):has(> button)>input:not([type="checkbox"]){
+ order:-1;flex:1 1 50%;min-width:160px;max-width:none;box-sizing:border-box;
+}
+@media(max-width:720px){
+ :where(section,form,div):is([class*="filter"],[class*="Filter"],[class*="toolbar"],[class*="searchRow"])
+ :not([data-shuomi-filter]):has(> input:not([type="checkbox"])):has(> button)>input:not([type="checkbox"]){
+ flex-basis:100%;
+ }
+}
