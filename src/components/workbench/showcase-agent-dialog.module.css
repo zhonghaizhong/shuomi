@@ -311,3 +311,14 @@
 .dialog :is(.close,.modelOption){background:var(--agent-dialog-raised);color:var(--agent-dialog-text)}
 .dialog :is(.heading p,.info p,.current p,.modelOption small){color:var(--agent-dialog-muted)}
 .dialog .modelOption[aria-pressed="true"]{border-color:var(--agent-dialog-primary);background:color-mix(in srgb,var(--agent-dialog-primary) 13%,var(--agent-dialog-raised))}
+
+
+/* POD template preview: readable Figma-style rows, system theme surfaces. */
+.dialog .templateSummary{margin-top:12px;padding:12px;border:1px solid var(--agent-dialog-border);border-radius:9px;background:var(--agent-dialog-surface);min-width:0}
+.dialog .templateSummary h3{margin:0 0 11px;font-size:15px;line-height:1.4;color:var(--agent-dialog-text)}
+.dialog .templateSummary dl{display:grid;gap:7px;margin:0}
+.dialog .templateSummary dl div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;align-items:start;border:1px solid var(--agent-dialog-border);border-radius:7px;background:var(--agent-dialog-raised);padding:9px 12px;min-width:0}
+.dialog .templateSummary dt{font-size:12px;font-weight:600;color:var(--agent-dialog-text)}
+.dialog .templateSummary dd{margin:0;font-size:12px;color:var(--agent-dialog-muted);min-width:0;overflow-wrap:anywhere;text-align:right}
+.dialog .templateSummary>small{display:block;margin-top:11px;font-size:11px;color:var(--agent-dialog-muted);line-height:1.5}
+@media(max-width:580px){.dialog .templateSummary dl div{grid-template-columns:90px minmax(0,1fr);gap:8px}}
