@@ -43,10 +43,10 @@ export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omi
 
 /** First-stage Shuomi intake: incomplete drafts stay inside the tool, never in third-party listing 待补全. */
 export function listOwnPendingProducts(org:string,member:string):OwnProductRecord[]{
- return readOwnProducts(org,member).filter(p=>p.status==="待补全");
+ return readOwnProducts(org,member).filter(p=>p.status==="入库待完善");
 }
 export function listOwnReadyProducts(org:string,member:string):OwnProductRecord[]{
- return readOwnProducts(org,member).filter(p=>p.status==="待上传");
+ return readOwnProducts(org,member).filter(p=>p.status==="已入库");
 }
 export function checkOwnProductSkus(skus:OwnProductSku[]):string[]{
  const missing:string[]=[];
