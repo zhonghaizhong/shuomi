@@ -341,3 +341,24 @@ test("data API call log retains seven aligned columns in both themes",async({pag
  const scrollable=await scroller.evaluate(el=>el.scrollWidth>el.clientWidth);
  expect(scrollable).toBe(true);
 });
+
+
+test("data market section heading remains readable in both themes",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(entry+"/data/market");
+ const section=page.locator('[data-commerce-unified="data"]').locator('section[class*="sectionTitle"]');
+ await expect(section.getByRole("heading",{name:"选择数据类型"})).toBeVisible();
+ const colors=()=>section.evaluate(el=>{
+  const heading=el.querySelector("h2");
+  const summary=el.querySelector("p");
+  return {background:getComputedStyle(el).backgroundColor,heading:heading?getComputedStyle(heading).color:"",summary:summary?getComputedStyle(summary).color:""};
+ });
+ const dark=await colors();
+ expect(dark.heading).not.toBe(dark.background);
+ const toggle=page.getByRole("button",{name:"切换浅色主题"});
+ if(await toggle.isVisible())await toggle.click();
+ const light=await colors();
+ expect(light.background).toBe("rgb(255, 255, 255)");
+ expect(light.heading).toBe("rgb(38, 54, 72)");
+ expect(light.summary).toBe("rgb(101, 116, 134)");
+});
