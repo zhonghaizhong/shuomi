@@ -234,3 +234,6 @@
 @media(hover:hover){.page .features article:hover{border-color:color-mix(in srgb,#7367f0 35%,var(--tm-line));box-shadow:0 12px 28px rgba(23,32,62,.14)}}
 .confirmDialog{border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.32)}
 @media(prefers-reduced-motion:reduce){.page .features article{transition:none}}
+
+/* Tool customization page title matches the shared 6px header standard. */
+.page > .header{border-radius:6px}
