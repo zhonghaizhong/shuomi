@@ -396,7 +396,7 @@ test("batch product image viewer stays compact and price sliders filter by a sel
  expect(rect!.width).toBeLessThan(viewport!.width);
  expect(rect!.height).toBeLessThan(viewport!.height);
  await viewer.getByRole("button",{name:"关闭商品详情"}).click();
- await modal.getByRole("button",{name:/¥0 – ¥20/}).click();
+ await modal.getByRole("button",{name:"价格区间"}).click();
  await modal.getByRole("group",{name:"滑动筛选价格"}).getByRole("button",{name:"重置"}).click();
  await expect(modal).toContainText("¥42.50 起");
 });
