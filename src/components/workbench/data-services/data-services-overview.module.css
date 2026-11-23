@@ -104,3 +104,37 @@
 .page :is(a,button):focus-visible{outline:2px solid var(--ds-accent);outline-offset:3px}
 @media(max-width:760px){.page .header{min-height:112px;padding:18px}.page .header h1{overflow-wrap:anywhere}}
 @media(prefers-reduced-motion:reduce){.page .entry{transition:none}}
+
+
+/* Keep data-service cards legible inside the workbench sidebar layout.
+   Responsive columns follow the available content width, not only the viewport. */
+.page .entries {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  gap: 16px;
+}
+.page .steps {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+}
+.page .notes {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+}
+.page :is(.entry, .step, .note) {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.page :is(.entry h2, .step h3, .note h2) {
+  line-height: 1.4;
+}
+.page :is(.description, .audience, .step p, .noteFooter, .subtitle) {
+  font-size: max(14px, var(--body-text-size));
+  line-height: 1.6;
+}
+.page .action {
+  margin-top: auto;
+  min-height: 22px;
+  white-space: normal;
+}
+@media (max-width: 760px) {
+  .page .entries, .page .notes { grid-template-columns: minmax(0, 1fr); }
+}
