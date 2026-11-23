@@ -48,7 +48,7 @@ export function AdaptationRulesDialog({organizationId,memberId,site,storeName,on
   }
   if(rename===id)setRename(null);
  };
- const validate=():string|null=>{const names=collection.rules.map(r=>r.name.trim());if(names.some(n=>!n))return "规则名称不能为空。";if(new Set(names).size!==names.length)return "规则名称不能重复。";for(const r of collection.rules){if(r.priceMode==="使用定价工具")return `「${r.name}」选择的定价工具尚未开发，请改用其他定价方式。`;if(r.priceMode!=="使用定价工具"){const n=Number(r.priceValue);if(!r.priceValue.trim()||!Number.isFinite(n)||n<0||(r.priceMode==="成本 × 倍数"&&n<=0))return `「${r.name}」的定价数值无效，请填写有效数字。`}}return null};
+ const validate=():string|null=>{const names=collection.rules.map(r=>r.name.trim());if(names.some(n=>!n))return "规则名称不能为空。";if(new Set(names).size!==names.length)return "规则名称不能重复。";for(const r of collection.rules){if(r.priceMode==="使用定价工具")return `「${r.name}」选择的定价工具尚未开发，请改用其他定价方式。`;const n=Number(r.priceValue);if(!r.priceValue.trim()||!Number.isFinite(n)||n<0||(r.priceMode==="成本 × 倍数"&&n<=0))return `「${r.name}」的定价数值无效，请填写有效数字。`}return null};
  const save=()=>{if(rename){setMessage("请先保存或取消规则重命名。");return}const error=validate();if(error){setMessage(error);return}if(!saveAdaptationRules(organizationId,memberId,collection)){setMessage("规则未能保存，请检查浏览器会话存储。");return}onSave(current)};
  return <div className={s.overlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
   <section ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label="适配规则设置" className={s.dialog}>
