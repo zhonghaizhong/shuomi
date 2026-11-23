@@ -379,7 +379,10 @@ test("batch product image viewer stays compact and price sliders filter by a sel
  await modal.getByRole("button",{name:"价格区间"}).click();
  const slider=modal.getByRole("group",{name:"滑动筛选价格"});
  await expect(slider).toBeVisible();
- await slider.getByRole("slider",{name:"最高价格滑块"}).fill("20");
+ const maxSlider=slider.getByRole("slider",{name:"最高价格滑块"});
+ await maxSlider.focus();
+ await maxSlider.press("Home");
+ for(let i=0;i<20;i++)await maxSlider.press("ArrowRight");
  await expect(modal).toContainText("¥19.80 起");
  await expect(modal).not.toContainText("¥42.50 起");
  await slider.getByRole("button",{name:"确定"}).click();
