@@ -78,3 +78,19 @@ export function renameDemoCollectionBatch(organizationId:string,memberId:string,
   return true;
  }catch{return false;}
 }
+
+
+/** Permanently remove an owned demo batch from this browser session. */
+export function deleteDemoCollectionBatch(organizationId:string,memberId:string,batchId:string):boolean{
+ if(typeof window==="undefined")return false;
+ try{
+  const stored=sessionStorage.getItem(key(organizationId));
+  const raw:unknown=stored===null?(organizationId==="SM-ENT-000001"?[initialBatch(organizationId)]:[]):JSON.parse(stored);
+  const current=Array.isArray(raw)?raw.filter(valid):[];
+  const target=current.find(b=>b.id===batchId&&b.organizationId===organizationId&&b.ownerMemberId===memberId);
+  if(!target)return false;
+  sessionStorage.setItem(key(organizationId),JSON.stringify(current.filter(b=>b!==target)));
+  window.dispatchEvent(new CustomEvent("shuomi:demo-batches-updated",{detail:{organizationId}}));
+  return true;
+ }catch{return false;}
+}
