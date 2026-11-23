@@ -1,7 +1,7 @@
 "use client";
 
 /** Browser-session showcase only. This is not a production inventory API. */
-export type OwnProductSku={id:number;name:string;description:string;images:string[]};
+export type OwnProductSku={id:number;name:string;description:string;images:string[];price?:string;stock?:number;skuCode?:string};
 export type OwnProductRecord={
  id:string;batchId:string;name:string;source:"上传资料"|"导入表格"|"商品链接"|"API 接入";
  createdAt:string;checkedAt:string;status:"入库待完善"|"已入库";
@@ -70,4 +70,55 @@ export function updateOwnProductAfterReview(org:string,member:string,id:string,s
  sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===id?updated:p)));
  notify(org,member);
  return updated;
+}
+
+/** Third-party publishing success is required before source optimization can be applied.
+ * No UI demo or queued task is allowed to provide this proof.
+ */
+export type ConfirmedPlatformUpload={
+ taskId:string;
+ externalProductId:string;
+ platform:"SHEIN";
+ acceptedAt:string;
+ verifiedBy:"platform-callback";
+};
+export type OptimizedOwnSku={id:number;name?:string;images?:string[];description?:string;price?:string;stock?:number;skuCode?:string};
+export type OptimizedOwnProduct={name?:string;skus:OptimizedOwnSku[]};
+export type SourceOptimizationResult={product:OwnProductRecord;updated:boolean;reason:string};
+/** Whitelist source-data fields. Protected fields never come from the uploaded candidate.
+ * Free-text description may contain prices, so it is not rewritten until structured splitting is available.
+ */
+export function mergeOptimizedOwnProduct(original:OwnProductRecord,candidate:OptimizedOwnProduct):OwnProductRecord{
+ const byId=new Map(candidate.skus.map(s=>[s.id,s]));
+ return {...original,name:candidate.name?.trim()||original.name,
+  skus:original.skus.map(s=>{
+   const update=byId.get(s.id);if(!update)return s;
+   return {...s,
+    name:update.name?.trim()||s.name,
+    images:Array.isArray(update.images)&&update.images.length>0?update.images.slice(0,8):s.images,
+    // original description may contain pricing/inventory text: preserve it.
+    description:s.description,
+    price:s.price,stock:s.stock,skuCode:s.skuCode
+   };
+  })
+ };
+}
+/** Server integration must call this only after an authenticated platform response.
+ * Browser-only showcase never calls this automatically.
+ */
+export function applyConfirmedSourceOptimization(
+ org:string,member:string,productId:string,
+ candidate:OptimizedOwnProduct,proof:ConfirmedPlatformUpload|null
+):SourceOptimizationResult{
+ if(!proof||proof.verifiedBy!=="platform-callback"||proof.platform!=="SHEIN"||!proof.taskId.trim()||!proof.externalProductId.trim()||!Number.isFinite(Date.parse(proof.acceptedAt)))
+  throw Error("没有经平台核实的上传成功回执，禁止覆盖原始商品");
+ if(typeof window==="undefined")throw Error("演示存储不可用");
+ const all=readOwnProducts(org,member),existing=all.find(p=>p.id===productId&&p.status==="已入库");
+ if(!existing)throw Error("没有权限或原始商品尚未完成入库");
+ const merged=mergeOptimizedOwnProduct(existing,candidate);
+ if(JSON.stringify(merged)===JSON.stringify(existing))return {product:existing,updated:false,reason:"无需更新"};
+ // Do not change batch ownership, record id, intake status, inventory or price.
+ sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===existing.id?merged:p)));
+ notify(org,member);
+ return {product:merged,updated:true,reason:"已将平台成功上传后的安全优化字段回写原始商品"};
 }
