@@ -3,15 +3,20 @@ import {useEffect,useMemo,useRef,useState} from "react";
 import css from "./showcase-pod-management-dialog.module.css";
 
 type Tab="我的素材库"|"产品图审核"|"灵感市场";
-type Asset={id:number;name:string;category:string;style:number;prompt:string;status?:string};
+type Asset={id:number;name:string;category:string;style:number;prompt:string;image?:string;status?:string};
+const inspirationCategories=["复古花卉","趣味动物","Y2K潮流"] as const;
 const ideas:Asset[]=[
- {id:21,name:"复古花卉",category:"复古风格",style:0,prompt:"复古花朵与字母结合，柔和奶油色背景，精致花瓣与装饰性衬线字体，适合POD贴图。"},
- {id:22,name:"缎带蝴蝶结",category:"甜美风格",style:1,prompt:"浅紫色缎带蝴蝶结，缎面高光，甜美复古，独立主体居中，透明背景。"},
- {id:23,name:"海洋浪花",category:"自然元素",style:2,prompt:"蓝色层叠波浪与白色浪花，清爽夏日抽象装饰，简洁线条，透明背景。"},
- {id:24,name:"星月童话",category:"梦幻风格",style:3,prompt:"弯月与闪亮星星，淡紫云朵，梦幻渐变，温柔童趣的独立插画。"},
- {id:25,name:"落日山峦",category:"复古风格",style:4,prompt:"太阳与层叠山丘，温暖复古配色，扁平图形，完整独立主体。"},
- {id:26,name:"水果派对",category:"趣味插画",style:5,prompt:"新鲜柠檬橙子与樱桃组成的趣味图案，清晰配色，年轻俏皮的POD素材。"}
+ {id:21,name:"复古笑脸雏菊",category:"复古花卉",style:0,image:"retro-floral-1",prompt:"独立矢量贴图，一朵70年代复古雏菊，柔和奶油粉与蜜桃色花瓣，金黄笑脸花心，弧形绿叶，暖调复古花艺，清晰边缘，居中构图，透明背景，无文字无水印。"},
+ {id:22,name:"野花植物手绘",category:"复古花卉",style:1,image:"retro-floral-2",prompt:"浪漫手绘野花植物印花，奶白色雏菊、粉色小花与鼠尾草绿色叶片，柔和复古配色，自然不对称花束构图，独立POD图案，透明背景，无水印。"},
+ {id:23,name:"70年代撞色花朵",category:"复古花卉",style:2,image:"retro-floral-3",prompt:"70年代复古groovy花卉图案，超大橙粉撞色花朵、圆润花瓣和波浪叶片，奶油黄与赤陶红配色，复古俏皮，居中图形，透明背景。"},
+ {id:24,name:"呆萌水豚",category:"趣味动物",style:3,image:"fun-animal-1",prompt:"原创可爱水豚卡通头像，暖棕色圆润造型，轻松表情，柔和米色背景配色，精致线条与轻微复古质感，单独主体，适合T恤贴图，透明背景。"},
+ {id:25,name:"治愈系小青蛙",category:"趣味动物",style:4,image:"fun-animal-2",prompt:"原创治愈系青蛙表情贴图，鼠尾草绿与奶油白配色，圆润大眼睛、腮红、微笑，配少量雏菊装饰，年轻俏皮手绘风格，透明背景，无文字。"},
+ {id:26,name:"暗黑甜酷猫咪",category:"趣味动物",style:5,image:"fun-animal-3",prompt:"原创黑猫卡通图案，圆脸尖耳、粉色鼻尖、明亮双眼，淡紫色与暗黑甜酷风格融合，精细描边，星形小装饰，独立主体，透明背景。"},
+ {id:27,name:"千禧笑脸",category:"Y2K潮流",style:0,image:"y2k-1",prompt:"Y2K千禧潮流笑脸图案，亮黄色笑脸、粉色渐变、蓝色和紫色星星，粗圆描边、复古贴纸质感、夸张俏皮，高清独立印花，透明背景。"},
+ {id:28,name:"千禧粉色蝴蝶",category:"Y2K潮流",style:1,image:"y2k-2",prompt:"Y2K复古粉色蝴蝶贴图，柔和紫蓝渐变、粗细层次线条、星星点缀、对称翅膀与高饱和千禧配色，独立居中图案，透明背景。"},
+ {id:29,name:"复古爆闪星芒",category:"Y2K潮流",style:2,image:"y2k-3",prompt:"Y2K潮流几何星芒印花，珊瑚粉、亮金黄、紫色多层爆闪尖角，复古唱片封面气质，强烈视觉中心，简洁干净、可独立用于POD，透明背景。"}
 ];
+const inspirationImageSrc=(asset:Asset)=>asset.image?`${typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":""}/assets/pod-inspiration/${asset.image}.svg`:"";
 const perPage=10;
 export function PodManagementWorkspace({onClose}:{onClose:()=>void}){
  const ref=useRef<HTMLDialogElement>(null);
@@ -47,13 +52,13 @@ export function PodManagementWorkspace({onClose}:{onClose:()=>void}){
     <div className={css.topline}><div><h3>{tab}</h3><small>{tab==="我的素材库"?"上传、分类、复用个人素材":tab==="产品图审核"?"待审核 / 审核通过 / 退回重做 / 驳回":"官方创意参考与可复制生图提示词"}</small></div>{tab==="我的素材库"?<div className={css.topactions}><button type="button" onClick={()=>open("分类管理")}>分类管理</button><button type="button" className={css.primary} onClick={()=>open("上传素材")}>上传素材</button></div>:null}</div>
     <form className={css.filters} onSubmit={e=>{e.preventDefault();setApplied(search.trim());setPage(1)}}>
       <input aria-label="搜索素材" placeholder={tab==="灵感市场"?"搜索风格 / 主题 / 元素":tab==="产品图审核"?"搜索图片名称":"搜索素材名称或分类"} value={search} onChange={e=>setSearch(e.target.value)}/>
-      {tab==="产品图审核"?<select aria-label="审核状态" value={status} onChange={e=>{setStatus(e.target.value);setPage(1)}}>{["全部状态","待审核","审核通过","退回重做","驳回"].map(s=><option key={s}>{s}</option>)}</select>:<select aria-label="素材分类" value={category} onChange={e=>{setCategory(e.target.value);setPage(1)}}><option>全部分类</option>{(tab==="我的素材库"?["未分类",...categories]:["复古风格","甜美风格","自然元素","梦幻风格","趣味插画"]).map(s=><option key={s}>{s}</option>)}</select>}
+      {tab==="产品图审核"?<select aria-label="审核状态" value={status} onChange={e=>{setStatus(e.target.value);setPage(1)}}>{["全部状态","待审核","审核通过","退回重做","驳回"].map(s=><option key={s}>{s}</option>)}</select>:<select aria-label="素材分类" value={category} onChange={e=>{setCategory(e.target.value);setPage(1)}}><option>全部分类</option>{(tab==="我的素材库"?["未分类",...categories]:[...inspirationCategories]).map(s=><option key={s}>{s}</option>)}</select>}
       <button type="button" onClick={reset}>重置</button><button type="submit" className={css.primary}>确认</button>
     </form>
     {notice?<p className={css.notice} role="status">{notice}</p>:null}
     <div className={css.libraryHint}>{tab==="我的素材库"?"我的素材库 · 暂无素材，上传后将在这里显示":tab==="产品图审核"?"产品图审核 · 共"+filtered.length+"张":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
     {displayed.length?<div className={css.grid}>{displayed.map(asset=><article className={css.assetCard} key={asset.id}>
-       <button type="button" className={css.imageButton} onClick={()=>open("预览图片",asset)} aria-label={"预览"+asset.name}><div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div></button>
+       <button type="button" className={css.imageButton} onClick={()=>open("预览图片",asset)} aria-label={"预览"+asset.name}>{asset.image?<img className={css.patternImage} src={inspirationImageSrc(asset)} alt={asset.name+"原创图案"} loading="lazy"/>:<div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div>}</button>
        <strong title={asset.name}>{asset.name}</strong><small>{asset.status??asset.category}</small>
        {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>{setNotice("演示入口：请在正式POD刊登工具中引用此素材。")}}>用于POD</button><button type="button" onClick={()=>removeAsset(asset.id)}>删除</button></div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无审核记录，请重置筛选。":"暂无产品图审核记录，待 POD 刊登生成图片后将在此显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
@@ -65,7 +70,7 @@ export function PodManagementWorkspace({onClose}:{onClose:()=>void}){
       :panel==="分类管理"?<div className={css.modalBody}><div className={css.categoryList}>{categories.map(c=><div key={c}><span>{c}</span><button type="button" onClick={()=>{setCategories(v=>v.filter(x=>x!==c));setAssets(v=>v.map(a=>a.category===c?{...a,category:"未分类"}:a))}}>删除</button></div>)}</div><label>新增分类<input placeholder="输入分类名称" value={newCategory} onChange={e=>setNewCategory(e.target.value)}/></label><button type="button" className={css.primary} onClick={()=>{const s=newCategory.trim();if(s&&!categories.includes(s)){setCategories(v=>[...v,s]);setNewCategory("")}}}>保存分类</button></div>
       :panel==="素材提示词"?<div className={css.modalBody}><p>提示词为创作参考，使用时可根据商品和图案进行调整。</p><textarea readOnly value={chosen?.prompt??""} rows={5}/><button type="button" className={css.primary} onClick={()=>{if(chosen?.prompt)void navigator.clipboard?.writeText(chosen.prompt);setNotice("提示词已请求复制到剪贴板。")}}>复制示例提示词</button></div>
       :panel==="加入素材"?<div className={css.modalBody}><p>先选择保存分类，再点击「保存到素材库」。</p><select value={chosenCategory} onChange={e=>setChosenCategory(e.target.value)}><option value="">选择分类</option><option value="未分类">未分类</option>{categories.map(c=><option key={c}>{c}</option>)}</select><button type="button" className={css.primary} disabled={!chosenCategory} onClick={()=>{if(chosen){setAssets(v=>[{...chosen,id:Date.now(),category:chosenCategory},...v]);setNotice("已保存到我的素材库（当前演示会话）。");setPanel(null)}}}>保存到素材库</button></div>
-      :<div className={css.modalBody}><div className={css.largeArtwork} data-variant={chosen?.style??0}><span>{["✿","🎀","≈","☾","◒","✦"][chosen?.style??0]}</span></div><p>{chosen?.name} · 完整比例预览</p></div>}
+      :<div className={css.modalBody}>{chosen?.image?<img className={css.patternLarge} src={inspirationImageSrc(chosen)} alt={chosen.name+"完整图案预览"}/>:<div className={css.largeArtwork} data-variant={chosen?.style??0}><span>{["✿","🎀","≈","☾","◒","✦"][chosen?.style??0]}</span></div>}<p>{chosen?.name} · 完整比例预览</p></div>}
     </section></div>:null}
    <footer className={css.foot}><span>演示工作台 · 当前操作仅在此弹窗会话中生效</span><button type="button" onClick={onClose}>关闭</button></footer>
   </dialog>;
