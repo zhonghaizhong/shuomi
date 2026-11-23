@@ -288,3 +288,9 @@ select {
 :where(.showcase-shell,.console-theme) :is(section,div)[class*="filter" i]:not([data-shuomi-filter]):has(> input:not([type="checkbox"])):has(> select):has(> button) > select {
   flex:0 0 auto;width:clamp(128px,10vw,156px);max-width:176px;
 }
+
+
+/* Content-width resilience: at intermediate sidebar widths, allow groups to
+   move together rather than overflow or stretch dropdowns. */
+[data-shuomi-filter="balanced"] {flex-wrap:wrap}
+[data-shuomi-filter="balanced"] [data-shuomi-filter-right] {flex-wrap:wrap}
