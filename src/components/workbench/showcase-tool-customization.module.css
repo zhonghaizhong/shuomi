@@ -237,3 +237,7 @@
 
 /* Tool customization page title matches the shared 6px header standard. */
 .page > .header{border-radius:6px}
+
+/* Keep tool customization title aligned with the 6px shared-page header. */
+.page[data-tool-custom-page] > .header,
+.page[data-tool-custom-page] > header.header{border-radius:6px}
