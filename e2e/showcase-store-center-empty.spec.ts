@@ -180,6 +180,9 @@ test("compact store rows show batch actions only after selection and preserve lo
  await area.getByRole("checkbox",{name:"选择批量店铺"}).check();
  const bulk=area.getByRole("region",{name:"批量操作"});
  await expect(bulk).toContainText("已选择 1 家店铺");
+ await expect(bulk.getByRole("button",{name:"批量刷新状态"})).toBeVisible();
+ await bulk.getByRole("button",{name:"批量刷新状态"}).click();
+ await expect(area.getByRole("status").filter({hasText:"已重新读取 1 家店铺的已保存状态"})).toContainText("未接入 SHEIN 实时状态接口");
  await bulk.getByRole("button",{name:"加入分组"}).click();
  const groupDialog=page.getByRole("dialog",{name:"批量加入分组"});
  await expect(groupDialog).toContainText("已选择 1 家店铺");
