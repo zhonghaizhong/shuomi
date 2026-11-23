@@ -90,3 +90,10 @@
 .priceActions button:last-child{background:var(--bp-primary);border-color:var(--bp-primary);color:white}
 @media(max-width:900px){.priceRangeHost{flex:1 1 135px}}
 @media(max-width:540px){.pricePopover{right:auto;left:0;width:min(280px,calc(100vw - 55px))}}
+
+/* Batch product detail and nested price popover: approved Vuexy surfaces. */
+.dialog{--bp-bg:#142237;--bp-card:#18283c;--bp-row:#142237;--bp-line:#31465e;--bp-ink:#edf4ff;--bp-muted:#b5c6d8;--bp-primary:#7367f0;background:var(--bp-bg);color:var(--bp-ink);border-color:var(--bp-line)}
+:global(.light) .dialog{--bp-bg:#fff;--bp-card:#f7fafd;--bp-row:#fff;--bp-line:#dfe7ef;--bp-ink:#263648;--bp-muted:#64768a;--bp-primary:#7367f0;background:var(--bp-bg);color:var(--bp-ink);border-color:var(--bp-line)}
+.dialog :is(.summary,.toolbar,.pricePopover){background:var(--bp-card);border-color:var(--bp-line);color:var(--bp-ink)}
+.dialog :is(.productPanel,.priceRangeHost>button){border-color:var(--bp-line)}
+.dialog .pricePopover :is(strong,label){color:var(--bp-ink)}
