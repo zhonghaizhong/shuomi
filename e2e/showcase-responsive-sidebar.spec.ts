@@ -360,3 +360,24 @@ test("data market section heading remains readable in both themes",async({page})
  expect(light.heading).toBe("rgb(38, 54, 72)");
  expect(light.summary).toBe("rgb(101, 116, 134)");
 });
+
+
+test("goals filter search reset and confirm share one desktop row in both themes",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(entry+"/overview/goals");
+ const filters=page.locator('[class*="goalFilterSingleRow"]');
+ await expect(filters).toBeVisible();
+ const controls=filters.locator("select,input,button");
+ await expect(controls).toHaveCount(6);
+ const assertOneRow=async()=>{
+  const bounds=await controls.evaluateAll(els=>els.map(el=>({top:el.getBoundingClientRect().top,height:el.getBoundingClientRect().height})));
+  expect(Math.max(...bounds.map(b=>b.top))-Math.min(...bounds.map(b=>b.top))).toBeLessThan(2);
+  expect(bounds.every(b=>b.height>=39&&b.height<=41)).toBe(true);
+ };
+ await assertOneRow();
+ const lightToggle=page.getByRole("button",{name:"切换浅色主题"});
+ if(await lightToggle.isVisible())await lightToggle.click();
+ await assertOneRow();
+ await page.setViewportSize({width:1920,height:1080});
+ await assertOneRow();
+});
