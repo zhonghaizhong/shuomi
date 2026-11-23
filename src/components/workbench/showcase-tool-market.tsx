@@ -364,14 +364,11 @@ export function ShowcaseToolMarket({pathname,navigate,organizationId,memberId}:{
       {visible.length?<div className={styles.toolGrid}>{visible.map(x=><article key={x.name} style={{"--accent":x.color} as React.CSSProperties} className={styles.toolCard}><h3>{x.name}</h3><p>{x.description}</p><div className={styles.tags}>{x.tags.map(tag=><span key={tag}>{tag}</span>)}</div><footer>{x.status==="development"?<span className={styles.developing}>开发中</span>:<><span className={enabled.includes(x.name)?styles.enabled:styles.disabled}>{enabled.includes(x.name)?"已启用":"未启用"}</span><button type="button" className={styles.primary} onClick={()=>enabled.includes(x.name)?goto("/mine"):enable(x.name)}>{enabled.includes(x.name)?"管理":"启用"}</button><button type="button" onClick={()=>setDialog({type:x.name==="商品采集插件"?"download":"intro",name:x.name})}>介绍</button></>}</footer></article>)}</div>:<div className={styles.empty}>没有匹配的官方工具，请修改关键词或重置条件。</div>}
     </>:pathname.endsWith("/mine")?<div className={styles.figmaMine}>
       {header("我的工具","管理已启用工具，选择本地插件或在线服务快速使用。",<button type="button" className={styles.primary} onClick={()=>goto("/official")}>前往官方工具</button>)}
-      <div className={styles.mineBar}>
-        <strong>已启用工具</strong>
-        <div className={styles.mineSearchControls}>
-          <input aria-label="搜索我的工具" placeholder="输入工具名称或关键词…" value={search}
-            onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")setApplied(search.trim())}} />
-          <button type="button" onClick={()=>{setSearch("");setApplied("")}}>重置</button>
-          <button type="button" className={styles.primary} onClick={()=>setApplied(search.trim())}>确认</button>
-        </div>
+      <div className={styles.mineBar} data-shuomi-filter="balanced" aria-label="我的工具筛选">
+        <div data-shuomi-filter-left><input aria-label="搜索我的工具" placeholder="输入工具名称或关键词…" value={search}
+          onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")setApplied(search.trim())}} /></div>
+        <div data-shuomi-filter-right><span className={styles.mineFilterLabel}>已启用工具</span><button type="button" onClick={()=>{setSearch("");setApplied("")}}>重置</button>
+          <button type="button" className={styles.primary} onClick={()=>setApplied(search.trim())}>确认</button></div>
       </div>
       {myTools.filter(x=>[x.name,x.description].join(" ").toLowerCase().includes(applied.toLowerCase())).length?
         <div className={styles.mineGrid}>{myTools.filter(x=>[x.name,x.description].join(" ").toLowerCase().includes(applied.toLowerCase())).map(x=>
