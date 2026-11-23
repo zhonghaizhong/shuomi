@@ -789,5 +789,9 @@
 :global(.light) .dialog{box-shadow:0 20px 65px rgba(30,53,82,.18)}
 @media(prefers-reduced-motion:reduce){.page :is(.toolCard,.mineCard){transition:none}}
 
-/* The official-tools page title keeps the approved 6px cross-module header rhythm. */
-.page > .header{border-radius:6px}
+/* Tool-market title across all second-level routes: fixed 6px standard.
+   Scoped with the page data attribute to supersede generic 12px card rules. */
+.page[data-tool-market-page] > .header,
+.page[data-tool-market-page] > header.header{
+ border-radius:6px;
+}
