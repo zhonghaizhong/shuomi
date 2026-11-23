@@ -95,7 +95,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
   "knowledge":"仅引用实际勾选的知识资料，不会自动读取整个知识库。"
  } as Record<ConfigurationMode,string>)[mode];
  const commit=(next:AgentUseConfiguration=form)=>onSave({...next,
-  ...(mode==="product-image"?{imageTasks:tasks}:mode==="pod-ai"?{imageTasks:tasks,selectedImages:selectedImgs}:{}),
+  ...((mode==="product-image"||mode==="pod-ai")?{imageTasks:tasks}:{}),
   ...(mode==="pod-hybrid"?{hybridSlots:slots}:{}),
   ...(mode==="skills"?{selectedSkills:selectedItems}:{}),
   ...(mode==="knowledge"?{selectedKnowledge:selectedItems}:{})
@@ -139,8 +139,8 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  };
 
  const isImage=mode==="product-image"||mode==="pod-ai";
- const isProductImage=mode==="product-image";
- const optimizationSource=form.optimizationSource??(form.generationRule==="自定义指令"?"自定义指令":"引用技能");
+ const isProductImage=mode==="product-image"||mode==="pod-ai";
+ const optimizationSource=form.optimizationSource??(form.generationRule==="自定义指令"?"自定义指令":mode==="pod-ai"?"官方方案":"引用技能");
  const processingScope=optimizationSource==="官方方案"?"手动选择":form.imageProcessingScope??"手动选择";
  const productTarget=form.imageTarget??"主图";
  const sharedVisual=(form.imageUse??"共用视觉素材")==="共用视觉素材";
