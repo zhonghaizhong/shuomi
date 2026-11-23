@@ -543,3 +543,57 @@
 @media(prefers-reduced-motion:reduce){
   .page :is(.entries article,.storeMetrics button,.storeCard,.storeRow){transition:none}
 }
+
+
+/* Store-center dark/light surface audit: match the agreed two-layer Vuexy palette.
+   Do not alter layout, status semantics or primary action colors. */
+.page{
+  --st-card-1:#18283c;
+  --st-card-2:#142237;
+  --st-surface:#18283c;
+  --st-bg:#142237;
+  --st-control:#101d30;
+}
+:global(.light) .page{
+  --st-card-1:#f7fafd;
+  --st-card-2:#fff;
+  --st-surface:#f7fafd;
+  --st-bg:#fff;
+  --st-control:#fff;
+}
+.page :is(.header,.homeIntro,.panel,.filters,.notice,.dialog){
+  background:var(--st-bg);
+  border-color:var(--st-line);
+  color:var(--st-text);
+}
+.page :is(.storeList article.storeCard,.storeRow,.storeMetrics button.storeMetric,.storeBulk,.empty){
+  background:var(--st-card-1);
+  border-color:var(--st-line);
+  color:var(--st-text);
+}
+.page .notice{
+  min-height:60px;
+  padding:13px 18px;
+  border-radius:10px;
+  box-shadow:none;
+}
+.page .notice :is(span,p,strong){color:var(--st-text)}
+.page .notice button{
+  min-height:38px;
+  padding:7px 14px;
+  border:1px solid var(--st-line);
+  border-radius:8px;
+  background:var(--st-card-1);
+  color:var(--st-text);
+}
+.page .storeRowTags span{
+  background:var(--st-card-2);
+  border-color:var(--st-line);
+}
+.page .storeRowButtons button:not(.renewAction):not(.dangerAction){
+  background:var(--st-card-2);
+  color:var(--st-text);
+  border-color:var(--st-line);
+}
+.page .storeMetrics button.storeMetric:focus-visible,
+.page .storeRowButtons button:focus-visible{outline:2px solid var(--st-accent);outline-offset:2px}
