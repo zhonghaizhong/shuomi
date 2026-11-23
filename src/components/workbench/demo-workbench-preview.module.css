@@ -4151,3 +4151,23 @@
   }
   .goalsPreview .goalFilters.goalFilterSingleRow > button:nth-last-child(2) {margin-left:auto}
 }
+
+
+/* 2026-11-24: unify intelligent-agent surfaces with the approved dark/light Vuexy palette.
+   Preserve the existing Figma layout and purple primary actions. */
+.agentsPreview.agentsPreview{
+ --agent-surface:#142237;
+ --agent-raised:#18283c;
+ --agent-border:#31465e;
+ --agent-text:#edf4ff;
+ --agent-muted:#b5c6d8;
+ --agent-primary:#7367f0;
+}
+:global(.light) .agentsPreview.agentsPreview{
+ --agent-surface:#fff;
+ --agent-raised:#f7fafd;
+ --agent-border:#dfe7ef;
+ --agent-text:#263648;
+ --agent-muted:#64768a;
+ --agent-primary:#7367f0;
+}
