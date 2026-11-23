@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import {readOwnProductBatches,readOwnProducts,ownProductUpdated} from "../showcase-own-product-data";
+import {readOwnProductBatches,listOwnReadyProducts,ownProductUpdated} from "../showcase-own-product-data";
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import {readShowcaseEnabledAgents,readShowcaseAgentTemplates,showcaseAgentId,showcaseAgentStateChanged} from "../showcase-agent-demo-state";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
@@ -50,7 +50,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  useEffect(()=>{const onChange=(event:Event)=>{const d=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setTaskVersion(v=>v+1)};window.addEventListener(showcaseUploadTasksEvent,onChange);return()=>window.removeEventListener(showcaseUploadTasksEvent,onChange)},[organizationId,memberId]);
  useEffect(()=>{const handle=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d?.memberId===memberId)setDataVersion(n=>n+1)};window.addEventListener(ownProductUpdated,handle);return()=>window.removeEventListener(ownProductUpdated,handle)},[organizationId,memberId]);
  const ownBatches=useMemo(()=>readOwnProductBatches(organizationId,memberId),[organizationId,memberId,dataVersion]);
- const ownProducts=useMemo(()=>readOwnProducts(organizationId,memberId),[organizationId,memberId,dataVersion]);
+ const ownProducts=useMemo(()=>listOwnReadyProducts(organizationId,memberId),[organizationId,memberId,dataVersion]);
  const collectedBatches=useMemo(()=>readDemoCollectionBatches(organizationId,memberId),[organizationId,memberId,dataVersion]);
  const availableBatches=source==="自有商品库"?ownBatches:collectedBatches;
  const selectedOwnBatch=source==="自有商品库"?ownBatches.find(x=>x.id===batch):undefined;
