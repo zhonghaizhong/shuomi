@@ -2639,3 +2639,54 @@
  .page[data-commerce-unified="plans"] .billingFilterSection:first-child{grid-column:auto}
  .page[data-commerce-unified="plans"] .billingFilterHelp{grid-column:auto}
 }
+
+
+/* Data market / API / My Data showcase: scoped palette, preserving Figma interactions. */
+.page[data-commerce-unified="data"]{
+ --ds-surface:#18283c;--ds-raised:#142237;--ds-panel:#20334a;
+ --ds-line:#344960;--ds-text:#edf4ff;--ds-muted:#b3c3d5;--ds-purple:#7367f0;
+}
+:global(.light) .page[data-commerce-unified="data"]{
+ --ds-surface:#fff;--ds-raised:#f7fafd;--ds-panel:#edf3f8;
+ --ds-line:#e0e7f0;--ds-text:#303546;--ds-muted:#657184;--ds-purple:#7367f0;
+}
+.page[data-commerce-unified="data"]>.header{
+ background:var(--ds-surface);border:1px solid var(--ds-line);
+ border-radius:6px;box-shadow:0 5px 20px rgba(6,20,42,.07);
+}
+.page[data-commerce-unified="data"]>.header h1{
+ color:var(--ds-text);border-left:3px solid var(--ds-purple);padding-left:12px
+}
+.page[data-commerce-unified="data"]>.header p,
+.page[data-commerce-unified="data"]>.header>div>div:first-child{color:var(--ds-muted)}
+.page[data-commerce-unified="data"] :is(.card,.table,.split>article,.twoCards>article,.metrics>article){
+ background:var(--ds-surface);border:1px solid var(--ds-line);
+ border-radius:11px;box-shadow:0 7px 22px rgba(7,22,41,.08)
+}
+.page[data-commerce-unified="data"] :is(.card h2,.card h3,.sectionTitle h2,.table h2,.split h2,.split h3){color:var(--ds-text)}
+.page[data-commerce-unified="data"] :is(.sectionTitle h2,.table h2,.split h2){border-left:3px solid var(--ds-purple);padding-left:11px}
+.page[data-commerce-unified="data"] :is(.card p,.sectionTitle p,.split p,.table p,.card small,.split small,.metrics span,.metrics small){color:var(--ds-muted)}
+.page[data-commerce-unified="data"] :is(.toolbar,.tabs,.tableHead,.keyRow,.serviceLine){
+ border-color:var(--ds-line);
+}
+.page[data-commerce-unified="data"] :is(.toolbar input,.toolbar select,.filterSelect){
+ background:var(--ds-raised);color:var(--ds-text);border-color:var(--ds-line);border-radius:9px;
+}
+.page[data-commerce-unified="data"] :is(input,select)::placeholder{color:var(--ds-muted);opacity:1}
+.page[data-commerce-unified="data"] :is(.tags small,.serviceLine,.keyRow,.tableHead){
+ background:var(--ds-raised);border-color:var(--ds-line);color:var(--ds-muted)
+}
+.page[data-commerce-unified="data"] :is(.card button,.tabs button,.toolbar button,.headerActions button,.split button,.table button):not(.primary):not(.selected){
+ border-color:var(--ds-line);background:var(--ds-raised);color:var(--ds-text);border-radius:9px;
+}
+.page[data-commerce-unified="data"] :is(.card button,.tabs button,.toolbar button,.headerActions button,.split button,.table button):not(.primary):hover{
+ border-color:var(--ds-purple)
+}
+.page[data-commerce-unified="data"] :is(.primary,.selected){
+ background:#7367f0;color:#fff;border-color:#7367f0;border-radius:9px;
+}
+.page[data-commerce-unified="data"] :is(.tabs .selected,.toolbar .selected){background:color-mix(in srgb,var(--ds-purple) 14%,var(--ds-surface));color:var(--ds-text);border-color:var(--ds-purple)}
+.page[data-commerce-unified="data"] :is(.card,.split>article,.metrics>article){transition:border-color .18s ease,box-shadow .18s ease}
+.page[data-commerce-unified="data"] :is(button,input,select,a):focus-visible{outline:2px solid var(--ds-purple);outline-offset:2px}
+@media(hover:hover){.page[data-commerce-unified="data"] :is(.card,.split>article):hover{border-color:color-mix(in srgb,var(--ds-purple) 32%,var(--ds-line));box-shadow:0 12px 28px rgba(7,22,41,.13)}}
+@media(prefers-reduced-motion:reduce){.page[data-commerce-unified="data"] :is(.card,.split>article,.metrics>article){transition:none}}
