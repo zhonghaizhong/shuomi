@@ -21,7 +21,7 @@ const cases:Case[]=[
 
 ];
 const rgb=(value:string):number[]|null=>{
- const nums=value.match(/^rgba?\\(([^)]+)\\)$/)?.[1].split(/[,\\s/]+/).map(Number);
+ const nums=value.match(/^rgba?\(([^)]+)\)$/)?.[1].split(/[,\s/]+/).map(Number);
  return nums&&nums.length>=3&&nums.slice(0,3).every(Number.isFinite)?nums.slice(0,3):null;
 };
 const luminance=(color:number[])=>{
