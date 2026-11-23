@@ -212,3 +212,44 @@
 .dialog .templateInline input{flex:1;min-width:120px}
 .dialog .templateConfig{max-height:200px;overflow:auto;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid var(--agent-dialog-border);border-radius:7px;background:var(--agent-dialog-surface);color:var(--agent-dialog-text);font-size:12px}
 @media(max-width:600px){.dialog .nestedDialog{padding:16px}.dialog .nestedOverlay{padding:10px}}
+
+/* Product optimizer: user-approved four-step composition; Vuexy themes only. */
+.dialog.useDialog:has(.productLayout){width:min(1130px,calc(100vw - 32px));padding:18px;--product-line:var(--agent-dialog-border);--product-card:var(--agent-dialog-raised);--product-muted:var(--agent-dialog-muted);--product-ink:var(--agent-dialog-text)}
+.dialog .productHeading{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;align-items:center;gap:5px 14px;padding:4px 0 14px;padding-right:35px;border-bottom:1px solid var(--product-line)}
+.dialog .productHeading .productBreadcrumb{grid-column:1;grid-row:1;color:var(--product-muted);font-size:12px}
+.dialog .productHeading h2{grid-column:1;grid-row:2;margin:0;min-width:0;white-space:nowrap}
+.dialog .productHeading h2:before{content:"";display:inline-block;vertical-align:middle;width:4px;height:24px;border-radius:3px;background:#7367f0;margin-right:10px}
+.dialog .productHeading>p{grid-column:1 / -1;grid-row:3;max-width:850px;font-size:13px}
+.dialog .productHeading .productViewTemplate{grid-column:2;grid-row:2;justify-self:end;white-space:nowrap;min-width:100px}
+.dialog .productHeading .close{right:0;top:0}
+.dialog .productLayout{display:grid;grid-template-columns:minmax(0,2.72fr) minmax(250px,1fr);gap:16px;margin-top:14px;align-items:stretch}
+.dialog .productSteps,.dialog .productHelp{border:1px solid var(--product-line);border-radius:9px;background:var(--product-card);min-width:0}
+.dialog .productSteps{display:grid;align-content:start;padding:0 14px}
+.dialog .productStep{padding:20px 0 14px;border-bottom:1px solid var(--product-line)}
+.dialog .productStep:last-of-type{border-bottom:0}
+.dialog .productStep h3{font-size:15px;line-height:1.45;font-weight:700;color:var(--product-ink);margin:0 0 5px}
+.dialog .productStep>p{color:var(--product-muted);font-size:13px;line-height:1.5;margin:0 0 8px}
+.dialog .productConfigRow{min-height:56px;display:flex;align-items:center;gap:10px;border:1px solid var(--product-line);border-radius:8px;padding:10px 12px;box-sizing:border-box;background:var(--agent-dialog-surface)}
+.dialog .productRowText{display:grid;gap:4px;min-width:0;flex:1}
+.dialog .productRowText strong{color:var(--product-ink);font-size:14px;font-weight:600}
+.dialog .productRowText small{color:var(--product-muted);font-size:12px;line-height:1.45}
+.dialog .productStatus{font-size:12px;padding:10px 12px;border-radius:7px;background:var(--product-card);color:var(--product-muted);white-space:nowrap}
+.dialog .productConfigRow>.primary{min-width:112px;flex-shrink:0}
+.dialog .productConfigRow>.productToggle,.dialog .productConfigRow>.productEnabled,.dialog .productConfigRow>.productSettings{min-width:74px;padding:9px 14px;border:1px solid var(--product-line);border-radius:7px;background:var(--agent-dialog-surface);color:var(--product-ink);cursor:pointer}
+.dialog .productConfigRow>.productEnabled{background:#7367f0;color:#fff;border-color:#7367f0}
+.dialog .productInlineHint{margin:8px 0 0;font-size:12px;color:var(--product-muted)}
+.dialog .productFinalRow{display:flex;align-items:center;gap:12px;margin-top:10px}
+.dialog .productFinalRow>p{margin:0;padding:12px 14px;flex:1;border:1px solid var(--product-line);border-radius:7px;color:var(--product-muted);font-size:12px;min-width:0}
+.dialog .productFinalActions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.dialog .productFinalActions button{white-space:nowrap}
+.dialog .productHelp{padding:16px;display:grid;align-content:start;gap:8px}
+.dialog .productHelp h3{font-size:16px;margin:0;color:var(--product-ink)}
+.dialog .productHelp>p{margin:0;color:var(--product-muted);line-height:1.5;font-size:13px}
+.dialog .productHelp h4{margin:6px 0 0;color:var(--product-ink);font-size:13px}
+.dialog .productHelpCard{border:1px solid var(--product-line);border-radius:8px;padding:10px 12px;background:var(--agent-dialog-surface)}
+.dialog .productHelpCard strong{display:block;margin-bottom:5px;color:var(--product-ink);font-size:13px}
+.dialog .productHelpCard p{margin:0;font-size:12px;line-height:1.5;color:var(--product-muted)}
+.dialog .productHelp .productResult{font-size:12px;color:#b6aaff;text-align:center}
+:global(.light) .dialog .productHelp .productResult{color:#7367f0}
+@media(max-width:850px){.dialog .productLayout{grid-template-columns:1fr}.dialog .productFinalRow{flex-wrap:wrap}}
+@media(max-width:560px){.dialog .productConfigRow{flex-wrap:wrap}.dialog .productRowText{flex-basis:100%}.dialog .productConfigRow>.primary{flex:1}.dialog .productFinalActions{width:100%}.dialog .productFinalActions button{flex:1}.dialog .productHeading{padding-right:30px}.dialog .productHeading .productViewTemplate{min-width:0}}
