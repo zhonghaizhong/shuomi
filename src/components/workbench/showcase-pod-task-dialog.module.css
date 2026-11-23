@@ -31,3 +31,11 @@
 @media(max-width:540px){.dialog{padding:14px}.fields,.choice,.pickerFilters{grid-template-columns:1fr}.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.actions{flex-wrap:wrap}}
 
 .productRows{display:grid;gap:8px;max-height:330px;overflow:auto}.productRows label{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--pod-line);border-radius:8px;background:var(--pod-raise);cursor:pointer}.productRows label input{width:18px;height:18px;accent-color:var(--pod-primary)}.productRows label span{display:grid;gap:5px;min-width:0}.productRows label strong{font-size:14px}.productRows label small{color:var(--pod-muted);font-size:12px}
+
+/* POD task dialogs and nested panels: consistent light/dark semantic surfaces. */
+.dialog{--pod-bg:#142237;--pod-raise:#18283c;--pod-line:#31465e;--pod-text:#edf4ff;--pod-muted:#b5c6d8;--pod-primary:#7367f0;background:var(--pod-bg);color:var(--pod-text);border-color:var(--pod-line)}
+:global(.light) .dialog{--pod-bg:#fff;--pod-raise:#f7fafd;--pod-line:#dfe7ef;--pod-text:#263648;--pod-muted:#64768a;--pod-primary:#7367f0;background:var(--pod-bg);color:var(--pod-text);border-color:var(--pod-line)}
+.dialog :is(.sections section,.assistant,.productRows label){background:var(--pod-raise);border-color:var(--pod-line)}
+.dialog :is(input,select,textarea,button:not(.primary)){color:var(--pod-text);border-color:var(--pod-line)}
+.dialog button:not(.primary){background:var(--pod-raise)}
+.dialog .primary{background:var(--pod-primary);border-color:var(--pod-primary);color:#fff}
