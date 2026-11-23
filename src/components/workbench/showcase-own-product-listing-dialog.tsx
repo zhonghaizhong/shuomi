@@ -1,6 +1,8 @@
 "use client";
 
 import {useEffect,useId,useRef,useState,type ChangeEvent} from "react";
+import {useRouter} from "next/navigation";
+import {saveOwnIntakeNavigation,type OwnIntakeStage} from "./showcase-own-product-intake-navigation";
 import styles from "./showcase-own-product-listing-dialog.module.css";
 import {readOwnProductBatches,createOwnProductBatch,saveOwnProduct,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,type OwnProductBatch,type OwnProductRecord} from "./showcase-own-product-data";
 
@@ -15,7 +17,9 @@ const sourceOptions:{value:Source;label:string}[]=[
 ];
 
 export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId}:{onClose:()=>void;organizationId:string;memberId:string}){
+ const router=useRouter();
  const ref=useRef<HTMLDialogElement>(null),fileRef=useRef<HTMLInputElement>(null),headingId=useId();
+ const openStage=(stage:OwnIntakeStage,itemId?:string)=>{saveOwnIntakeNavigation({organizationId,memberId,stage,itemId});onClose();router.push("/workbench/tools/mine/own-intake/"+stage+"?preview=1")};
  const reviewPanelRef=useRef<HTMLElement>(null);
  const [source,setSource]=useState<Source>("img"),[skuType,setSkuType]=useState<"single"|"multi">("multi");
  const [skus,setSkus]=useState<Sku[]>([newSku(1),newSku(2)]),[currentId,setCurrentId]=useState(1);
@@ -70,9 +74,8 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
     name:normalized[0]?.name||"自有商品 · "+new Date().toLocaleDateString("zh-CN"),
     source:"上传资料",status:missing.length?"入库待完善":"待审核",missing,agent,template,skus:normalized
    });
-   setReviewProduct(item);setReviewSkus(item.skus);setReviewSkuId(item.skus[0].id);
    setBatches(readOwnProductBatches(organizationId,memberId));setIntakeRefresh(v=>v+1);
-   setStatus(missing.length?"首次入库适配发现资料缺失：请直接在当前弹窗补齐，通过硕米平台入库检查后进入自有商品库。":"首次入库检测通过：商品进入本工具「待审核」，确认后才写入自有商品库。");
+   openStage(missing.length?"pending":"review",item.id);
   }catch(e){setStatus(e instanceof Error?"保存失败："+e.message:"保存失败，请检查浏览器会话存储容量。");}
  };
  useEffect(()=>{if(reviewProduct){reviewPanelRef.current?.scrollIntoView({block:"start",behavior:"instant"});}},[reviewProduct?.id]);
@@ -163,9 +166,11 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
     {batchMode==="create"?<div className={styles.batchEditor}><label>新批次名称<input aria-label="新建自有商品批次名称" maxLength={60} placeholder="输入批次名称" value={batchName} onChange={e=>setBatchName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveBatch()}}}/></label><button type="button" onClick={saveBatch}>创建并选择</button><button type="button" onClick={()=>setBatchMode(null)}>取消</button></div>:null}
     {batchMode==="select"?<div className={styles.batchEditor}><label>已有自有商品批次<select aria-label="选择已有自有商品批次" value={batchId} onChange={e=>{setBatchId(e.target.value);setBatchMode(null);setStatus("")}}><option value="">请选择批次</option>{batches.map(batch=><option key={batch.id} value={batch.id}>{batch.name} · {batch.createdAt}</option>)}</select></label>{!batches.length?<span>暂无批次，请先创建自有商品批次。</span>:null}<button type="button" onClick={()=>setBatchMode(null)}>关闭</button></div>:null}
     {currentBatch?<p className={styles.batchSelected}>当前批次：<strong>{currentBatch.name}</strong><span>已保存 {currentBatch.productCount} 个商品 · 当前企业成员专属演示数据</span></p>:null}
-    <div className={styles.intakeActions}><button type="button" className={styles.intakePending} onClick={()=>setIntakeTab(v=>v==="pending"?null:"pending")} aria-expanded={intakeTab==="pending"}><strong>待完善 <b>{pendingRecords.length}</b></strong><small>首次入库缺少资料，继续补齐</small></button><button type="button" className={styles.intakeReview} onClick={()=>setIntakeTab(v=>v==="review"?null:"review")} aria-expanded={intakeTab==="review"}><strong>待审核 <b>{awaitingRecords.length}</b></strong><small>资料检查已通过，确认后入库</small></button></div>
-    {intakeTab?<div className={styles.intakeRecords} aria-label={intakeTab==="pending"?"待完善商品":"待审核商品"}><header><strong>{intakeTab==="pending"?"待完善 · 首次入库":"待审核 · 首次入库"}</strong><button type="button" onClick={()=>setIntakeTab(null)}>收起</button></header>{(intakeTab==="pending"?pendingRecords:awaitingRecords).map(item=><div key={item.id}><span><strong>{item.name}</strong><small>{intakeTab==="pending"?item.missing.length+" 项缺失":"资料已齐 · 等待确认入库"}</small></span><button type="button" onClick={()=>openIntake(item)}>{intakeTab==="pending"?"继续完善":"查看审核"}</button>{intakeTab==="review"?<button type="button" className={styles.intakeConfirm} onClick={()=>confirmIntake(item.id)}>确认入库</button>:null}</div>)}{(intakeTab==="pending"?pendingRecords:awaitingRecords).length===0?<p>暂无{intakeTab==="pending"?"待完善":"待审核"}商品</p>:null}</div>:null}
-    <p className={styles.footerHint}>首次适配在本弹窗内完成；确认入库后进入「我的数据 → 自有商品库」。第三方平台缺项才进入「刊登管理 → 待补全」。</p>
+    <div className={styles.intakeActions}>
+     <button type="button" className={styles.intakePending} onClick={()=>openStage("pending")}><strong>待完善 <b>{pendingRecords.length}</b></strong><small>首次入库缺少资料 · 去处理</small></button>
+     <button type="button" className={styles.intakeReview} onClick={()=>openStage("review")}><strong>待审核 <b>{awaitingRecords.length}</b></strong><small>资料检测通过 · 去确认入库</small></button>
+    </div>
+    <p className={styles.footerHint}>首次入库检测后进入独立的「待完善」或「待审核」页面；确认入库后进入「我的数据 → 自有商品库」。第三方缺项才进入「刊登管理 → 待补全」。</p>
     {status?<p role="status" className={styles.feedback}>{status}</p>:null}
    </section></>:null}
   </div>
