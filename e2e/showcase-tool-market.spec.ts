@@ -420,8 +420,17 @@ test("search/filter bars use unified left/right centered axis on tool and data p
   const leftBox=await left.boundingBox(),rightBox=await right.boundingBox(),barBox=await bar.boundingBox();
   expect(leftBox&&rightBox&&barBox).toBeTruthy();
   expect(leftBox!.x+leftBox!.width).toBeLessThanOrEqual(rightBox!.x+4);
-  expect(Math.abs(leftBox!.width-rightBox!.width)).toBeLessThan(50);
-  expect(Math.abs((leftBox!.x+leftBox!.width/2+rightBox!.x+rightBox!.width/2)/2-(barBox!.x+barBox!.width/2))).toBeLessThan(20);
+  // Search width is capped and select widths stay compact on wide canvases.
+  // The former 50/50 split assertion conflicts with the approved filter standard.
+  expect(leftBox!.width).toBeLessThanOrEqual(484);
+  expect(leftBox!.width).toBeGreaterThanOrEqual(180);
+  const selects=right.locator("select");
+  for(const select of await selects.all()){
+   const width=await select.evaluate(el=>el.getBoundingClientRect().width);
+   expect(width).toBeLessThanOrEqual(180);
+   expect(width).toBeGreaterThanOrEqual(90);
+  }
+  expect(rightBox!.x+rightBox!.width).toBeLessThanOrEqual(barBox!.x+barBox!.width+4);
  }
  await page.setViewportSize({width:768,height:900});
  await page.goto("/shuomi/#/workbench/data/mine");
