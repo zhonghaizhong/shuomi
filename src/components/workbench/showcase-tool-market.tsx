@@ -57,10 +57,72 @@ export function ShowcaseToolMarket({pathname,navigate}:{pathname:string;navigate
       <section className={styles.sectionHeading}><h2>官方工具列表</h2><p>按分类查找所需工具，查看详情后按需启用。</p></section>
       <div className={styles.toolbar}><div className={styles.categories}>{["全部","采集","图片","环境","数据","流程","其他"].map(x=><button type="button" key={x} aria-pressed={category===x} onClick={()=>setCategory(x)}>{x}</button>)}</div><div className={styles.searchTools}><input aria-label="搜索官方工具" placeholder="输入工具名称或关键词…" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")setApplied(search)}}/><button type="button" onClick={()=>{setSearch("");setApplied("");setCategory("全部");}}>重置</button><button type="button" className={styles.primary} onClick={()=>setApplied(search)}>确认</button></div></div>
       {visible.length?<div className={styles.toolGrid}>{visible.map(x=><article key={x.name} style={{"--accent":x.color} as React.CSSProperties} className={styles.toolCard}><h3>{x.name}</h3><p>{x.description}</p><div className={styles.tags}>{x.tags.map(tag=><span key={tag}>{tag}</span>)}</div><footer>{x.status==="development"?<span className={styles.developing}>开发中</span>:<><span className={enabled.includes(x.name)?styles.enabled:styles.disabled}>{enabled.includes(x.name)?"已启用":"未启用"}</span><button type="button" className={styles.primary} onClick={()=>enabled.includes(x.name)?goto("/mine"):enable(x.name)}>{enabled.includes(x.name)?"管理":"启用"}</button><button type="button" onClick={()=>setDialog({type:x.name==="商品采集插件"?"download":"intro",name:x.name})}>介绍</button></>}</footer></article>)}</div>:<div className={styles.empty}>没有匹配的官方工具，请修改关键词或重置条件。</div>}
-    </>:pathname.endsWith("/mine")?<>{header("我的工具","管理已启用工具，选择本地插件或在线服务快速使用。",<button className={styles.primary} onClick={()=>goto("/official")}>前往官方工具</button>)}
-      <div className={styles.mineBar}><strong>已启用工具</strong><input aria-label="搜索我的工具" placeholder="输入工具名称或关键词…" value={search} onChange={e=>setSearch(e.target.value)}/><button type="button" onClick={()=>{setSearch("");setApplied("")}}>重置</button><button type="button" className={styles.primary} onClick={()=>setApplied(search)}>确认</button></div>
-      {myTools.filter(x=>[x.name,x.description].join(" ").includes(applied)).length?<div className={styles.mineGrid}>{myTools.filter(x=>[x.name,x.description].join(" ").includes(applied)).map(x=><div className={styles.mineRow} key={x.name}><article className={styles.mineCard}><header><h2>{x.name}</h2><button type="button" onClick={()=>setDialog({type:"disable",name:x.name})}>停用</button></header>{x.name==="POD素材管理工具"?<><p>从贴图生成、审核应用到订单打印，统一管理 POD 设计素材。</p><p>贴图审核通过后才能用于商品，订单产生后可按订单号或 SKU 找回原图。</p><p>支持个人素材上传与图片裂变复用，官方灵感市场提供图片和生成指令。</p></>:<p>{x.description}</p>}<footer><span className={styles.enabled}>已启用</span><button type="button" onClick={()=>setDialog({type:"launch",name:x.name})}>{x.name==="POD素材管理工具"?"前往POD素材管理":"进入使用"}</button></footer></article><aside className={styles.mineGuide}><h3>功能介绍</h3>{(x.name==="POD素材管理工具"?[["贴图审核与打印","审核通过后贴到商品；下单可检索原图"],["我的素材","上传、分类管理个人素材，支持图片裂变"],["灵感市场","官方维护示例图片及生成指令"]]:[["功能说明",x.description],["使用范围",x.tags.join(" · ")]]).map(([title,body])=><div key={title}><strong>{title}</strong><p>{body}</p></div>)}</aside></div>)}</div>:<div className={styles.empty}>当前没有匹配的已启用工具。你可以前往官方工具启用。</div>}
-    </>:null}
+    </>:pathname.endsWith("/mine")?<div className={styles.figmaMine}>
+      {header("我的工具","管理已启用工具，选择本地插件或在线服务快速使用。",<button type="button" className={styles.primary} onClick={()=>goto("/official")}>前往官方工具</button>)}
+      <div className={styles.mineBar}>
+        <strong>已启用工具</strong>
+        <div className={styles.mineSearchControls}>
+          <input aria-label="搜索我的工具" placeholder="输入工具名称或关键词…" value={search}
+            onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")setApplied(search.trim())}} />
+          <button type="button" onClick={()=>{setSearch("");setApplied("")}}>重置</button>
+          <button type="button" className={styles.primary} onClick={()=>setApplied(search.trim())}>确认</button>
+        </div>
+      </div>
+      {myTools.filter(x=>[x.name,x.description].join(" ").toLowerCase().includes(applied.toLowerCase())).length?
+        <div className={styles.mineGrid}>{myTools.filter(x=>[x.name,x.description].join(" ").toLowerCase().includes(applied.toLowerCase())).map(x=>
+          <div className={styles.mineRow} key={x.name} data-figma-tool={x.name}>
+            {x.name==="商品采集插件"?<>
+              <article className={styles.mineCard}>
+                <header><h2>{x.name}</h2><button type="button" onClick={()=>setDialog({type:"disable",name:x.name})}>停用</button></header>
+                <p>采集商品的标题、主图、规格与价格等信息；结果统一保存到「数据服务 / 我的数据」。</p>
+                <h3 className={styles.acquisitionLabel}>选择采集方式</h3>
+                <div className={styles.acquisitionChoices}>
+                  <section><div className={styles.choiceHeading}><strong>本地插件采集</strong><span>免费</span></div>
+                    <p>安装在客户电脑本地运行，浏览商品时通过浏览器插件直接采集。</p>
+                    <b>免费 · 不消耗数据额度</b>
+                    <button type="button" onClick={()=>setDialog({type:"download",name:x.name})}>下载插件</button>
+                  </section>
+                  <section><div className={styles.choiceHeading}><strong>在线采集</strong><span>按数据收费</span></div>
+                    <p>由平台云端执行，无需客户电脑持续运行即可完成在线采集。</p>
+                    <b>按实际采集数据条数扣除额度</b>
+                    <button type="button" onClick={()=>setDialog({type:"launch",name:x.name})}>在线采集</button>
+                  </section>
+                </div>
+                <div className={styles.acquisitionResult}>采集结果统一保存至「数据服务 / 我的数据」</div>
+              </article>
+              <aside className={styles.mineGuide}>
+                <h3>采集方式说明</h3>
+                <p className={styles.guideIntro}>根据运行环境选择采集方式，两种方式的结果都会进入「我的数据」。</p>
+                <div><strong>本地插件采集</strong><p>适合：客户电脑本地运行，通过浏览器插件采集商品</p><p>费用：免费，不消耗数据额度</p></div>
+                <div><strong>在线采集</strong><p>适合：平台云端执行，无需客户电脑持续运行</p><p>费用：按实际采集数据条数扣除额度</p></div>
+                <p className={styles.guideTip}>本地插件免费；在线采集按实际数据量计费</p>
+              </aside>
+            </>:<>
+              <article className={styles.mineCard}>
+                <header><h2>{x.name}</h2><button type="button" onClick={()=>setDialog({type:"disable",name:x.name})}>停用</button></header>
+                {x.name==="POD素材管理工具"?<div className={styles.mineDescription}>
+                  <p>从贴图生成、审核应用到订单打印，统一管理 POD 设计素材。</p>
+                  <p>贴图审核通过后才能用于商品，订单产生后可按订单号或 SKU 找回原图。</p>
+                  <p>支持个人素材上传与图片裂变复用，官方灵感市场提供图片和生成指令。</p>
+                </div>:x.name==="自有商品刊登工具"?<div className={styles.mineDescription}>
+                  <p>导入并管理自有商品资料，检查必填信息后进行适配。</p>
+                  <p>支持自有商品导入、商品信息适配和批量刊登。</p>
+                </div>:<p>{x.description}</p>}
+                <footer><span className={styles.enabled}>已启用</span><button type="button" onClick={()=>setDialog({type:"launch",name:x.name})}>{x.name==="POD素材管理工具"?"前往POD素材管理":x.name==="自有商品刊登工具"?"进入自有商品刊登":"进入使用"}</button></footer>
+              </article>
+              <aside className={styles.mineGuide}><h3>功能介绍</h3>
+                {(x.name==="POD素材管理工具"?
+                  [["贴图审核与打印","审核通过后贴到商品；下单可检索原图"],["我的素材","上传、分类管理个人素材，支持图片裂变"],["灵感市场","官方维护示例图片及生成指令"]]:
+                  x.name==="自有商品刊登工具"?
+                  [["自有商品导入","导入自有商品资料"],["商品信息适配","核对并完善商品信息"],["批量刊登","批量处理商品刊登"]]:
+                  [["功能说明",x.description],["使用范围",x.tags.join(" · ")]]
+                ).map(([title,body])=><div key={title}><strong>{title}</strong><p>{body}</p></div>)}
+              </aside>
+            </>}
+          </div>
+        )}</div>
+        :<div className={styles.empty}>当前没有匹配的已启用工具。你可以前往官方工具启用。</div>}
+      </div>    </>:null}
     {dialog?<ToolModal key={dialog.type+dialog.name} info={dialog} onClose={()=>setDialog(null)} onConfirm={()=>{persist(enabled.filter(x=>x!==dialog.name));setDialog(null);setNotice(dialog.name+"：已在当前演示中停用。");}}/>:null}
   </div>;
 }
