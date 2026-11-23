@@ -4134,3 +4134,20 @@
    height:40px;
  }
 }
+
+
+/* Align the goal-management legacy toolbar to the shared bounded-width
+   search / compact criteria / right-actions standard. */
+@media(min-width:1101px) {
+  .goalsPreview .goalFilters.goalFilterSingleRow {gap:10px;justify-content:flex-start}
+  .goalsPreview .goalFilters.goalFilterSingleRow > input {
+    order:-1;flex:1 1 280px;width:auto;max-width:480px;min-width:180px;
+  }
+  .goalsPreview .goalFilters.goalFilterSingleRow > select {
+    order:0;flex:0 0 140px;width:140px;max-width:160px;
+  }
+  .goalsPreview .goalFilters.goalFilterSingleRow > button {
+    order:1;flex:0 0 76px;width:76px;
+  }
+  .goalsPreview .goalFilters.goalFilterSingleRow > button:nth-last-child(2) {margin-left:auto}
+}
