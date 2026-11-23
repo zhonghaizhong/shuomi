@@ -286,6 +286,9 @@ function FigmaOnlineCollection({onClose,organizationId,memberId}:{onClose:()=>vo
 function ToolModal({info,onClose,onConfirm,organizationId,memberId}:{info:Dialog;onClose:()=>void;onConfirm:()=>void;organizationId:string;memberId:string}) {
   const ref=useRef<HTMLDialogElement>(null), id=useId();
   const [selectedFeature,setSelectedFeature]=useState(0);
+  const [listingSource,setListingSource]=useState("img"),[listingSku,setListingSku]=useState(""),[listingLink,setListingLink]=useState(""),[listingFile,setListingFile]=useState(""),[listingNotes,setListingNotes]=useState(""),[listingAi,setListingAi]=useState<string[]>([]),[listingMessage,setListingMessage]=useState("");
+  const listingChoice=[["img","上传资料","图片、文字等资料"],["link","商品链接","仅限已接入货盘"],["api","API 接入","通过 API 接入"],["sheet","导入表格","Excel / CSV 批量导入"]];
+  const validateListing=()=>{const missing=listingSource==="img"?!listingSku?"请先选择 SKU 类型":!listingFile?"请先上传至少 1 张商品图片":listingSku==="multi"?"多 SKU 需逐项填写规格及上传对应图片；请进入完整工作区操作。":"":listingSource==="link"?!listingLink.trim()?"请填写已接入货盘的商品链接":"当前演示未接入货盘解析，请在正式工作台继续。":listingSource==="sheet"?!listingFile?"请先选择商品表格":"已选择表格，请在正式工作台完成字段映射和检测。":"当前演示未接入授权 API，请在正式工作台选择连接。";setListingMessage(missing||"资料已选择。演示版不写入业务商品，请在正式工作台提交检测。");};
   const tool=tools.find(x=>x.name===info.name);
   useEffect(()=>{const el=ref.current,prev=document.activeElement;el?.showModal();return ()=>{el?.close();if(prev instanceof HTMLElement&&prev.isConnected)prev.focus();};},[]);
   const isAcquisition=info.name==="商品采集插件";
@@ -324,15 +327,24 @@ function ToolModal({info,onClose,onConfirm,organizationId,memberId}:{info:Dialog
       </div>
       <div className={styles.figmaToolBottom}><span>功能介绍原型，实际业务功能以开发接入为准</span></div>
     </div>
-    :info.type==="launch"&&info.name==="自有商品刊登工具"?<div className={styles.figmaToolIntro}>
-      <p className={styles.figmaToolSubtitle}>自有商品导入 · 平台适配 · 快速刊登</p>
-      <div className={styles.figmaListingDescription}><p>支持自有商品信息导入、校验与批量整理。</p><p>沿用现有商品适配流程，无需重复录入。</p></div>
-      <div className={styles.figmaListingCards}>
-        <section><strong>本地商品</strong><p>导入自有商品信息</p></section>
-        <section><strong>信息校验</strong><p>检查字段与图片</p></section>
-        <section><strong>平台适配</strong><p>进入刊登工作流</p></section>
-      </div>
-      <p className={styles.figmaListingHint}>启用后在「我的工具」进入自有商品待上传流程。</p>
+    :info.type==="launch"&&info.name==="自有商品刊登工具"?<div className={styles.figmaListingWorkspace}>
+      <p className={styles.figmaToolSubtitle}>自有商品一键刊登 · 按原型选择数据来源与 AI 能力</p>
+      <section className={styles.listingSection}><div className={styles.listingSectionHeading}><strong>01　选择导入方式</strong><span>先选择一种商品资料来源</span></div>
+        <div className={styles.listingSourceGrid} role="radiogroup" aria-label="选择导入方式">{listingChoice.map(([key,name,hint])=><button type="button" role="radio" aria-checked={listingSource===key} className={listingSource===key?styles.listingSelected:""} key={key} onClick={()=>{setListingSource(key);setListingMessage("");setListingFile("");}}><span className={styles.listingRadio}/><strong>{name}</strong><small>{hint}</small></button>)}</div>
+      </section>
+      <section className={styles.listingSection}><div className={styles.listingSectionHeading}><strong>02　{listingSource==="link"?"商品链接":listingSource==="api"?"API 导入":listingSource==="sheet"?"导入表格":"商品资料"}</strong><span>{listingSource==="img"?"多 SKU 先补全各个规格，完成后切换 SKU，分别上传图片。":listingSource==="link"?"系统识别链接中的商品图片、SKU 与基础资料，识别后可补充。":listingSource==="api"?"选择已经授权的 API 数据源，校验商品与 SKU 信息后再生成。":"上传 Excel / CSV 并确认字段规则。"}</span></div>
+        {listingSource==="img"?<div className={styles.listingFields}>
+          <div className={styles.listingSkuOptions} role="radiogroup" aria-label="SKU 类型">{[["single","单 SKU"],["multi","多 SKU"]].map(([value,name])=><button type="button" key={value} role="radio" aria-checked={listingSku===value} onClick={()=>setListingSku(value)}><span className={styles.listingRadio}/>{name}</button>)}</div>
+          {listingSku==="multi"?<p className={styles.listingHint}>多 SKU：先填写每个规格，再在左侧选择 SKU，逐项上传图片，每项至少 1 张。</p>:null}
+          <label className={styles.listingUpload}>商品图片 / 资料 <input type="file" accept="image/*" multiple onChange={e=>setListingFile(Array.from(e.target.files||[]).map(f=>f.name).join("、"))}/><small>{listingFile||"最多 8 张方图；单 SKU 上传图片与基础资料"}</small></label>
+          <label className={styles.listingNotes}>商品基础资料<textarea rows={2} value={listingNotes} onChange={e=>setListingNotes(e.target.value)} placeholder="描述商品名称、材质、规格等已知信息（可选）"/></label>
+        </div>:listingSource==="link"?<label className={styles.listingNotes}>商品链接<input type="url" placeholder="粘贴已接入货盘的商品链接" value={listingLink} onChange={e=>setListingLink(e.target.value)}/><small>只支持已接入货盘，当前演示不模拟实际解析。</small></label>:listingSource==="sheet"?<label className={styles.listingUpload}>选择商品表格<input type="file" accept=".xlsx,.xls,.csv" onChange={e=>setListingFile(e.target.files?.[0]?.name||"")}/><small>{listingFile||"Excel / CSV 批量导入；正式工作区支持字段映射与预览"}</small></label>:<div className={styles.listingHint}>请在正式工作台选择已经授权的 API 连接。当前演示不使用虚构连接或数据。</div>}
+      </section>
+      <section className={styles.listingSection}><div className={styles.listingSectionHeading}><strong>03　AI 能力与生成</strong><span>选择所需能力，提交商品校验；缺失必填信息统一在商品管理补全。</span></div>
+        <div className={styles.listingAiGrid}>{[["知识库","引用产品与类目知识"],["技能库","应用图片与文案技能"],["智能体","自动执行生成任务"]].map(([name,hint])=><button key={name} type="button" aria-pressed={listingAi.includes(name)} onClick={()=>setListingAi(old=>old.includes(name)?old.filter(x=>x!==name):[...old,name])}><span className={styles.listingRadio}/><strong>{name}</strong><small>{hint}</small></button>)}</div>
+        <p className={styles.listingHint}>点击检查后自动判断缺项；可批量添加商品并统一检查。当前为界面演示，不会假装提交业务数据。</p>
+      </section>
+      {listingMessage?<p className={styles.listingFeedback} role="status">{listingMessage}</p>:null}
     </div>
     :info.type==="launch"?<div className={styles.launchBody}>
       <p>选择需要了解的功能，查看对应的使用说明。</p>
@@ -341,7 +353,7 @@ function ToolModal({info,onClose,onConfirm,organizationId,memberId}:{info:Dialog
       <p className={styles.launchAvailability}>当前展示页仅提供功能介绍，实际操作请在正式工作台使用。</p>
     </div>
     :<><p>{tool?.description}</p><div className={styles.tags}>{tool?.tags.map(tag=><span key={tag}>{tag}</span>)}</div><p>适用分类：{tool?.category} · 当前状态：{tool?.status==="development"?"开发中":"可按需启用"}</p><p className={styles.demoNote}>实际功能、授权和费用以正式工作台为准。</p></>}
-    <footer>{info.type!=="launch"?<button type="button" onClick={onClose}>取消</button>:null}{info.type==="disable"?<button type="button" className={styles.primary} onClick={onConfirm}>确认停用</button>:info.type==="download"?<button type="button" disabled title="当前演示未提供实际安装文件">暂无可下载文件</button>:<button type="button" className={styles.primary} onClick={onClose}>{info.type==="launch"&&(info.name==="POD素材管理工具"||info.name==="自有商品刊登工具")?"知道了":"确定"}</button>}</footer>
+    <footer>{info.type!=="launch"?<button type="button" onClick={onClose}>取消</button>:null}{info.type==="disable"?<button type="button" className={styles.primary} onClick={onConfirm}>确认停用</button>:info.type==="download"?<button type="button" disabled title="当前演示未提供实际安装文件">暂无可下载文件</button>:<button type="button" className={styles.primary} onClick={info.type==="launch"&&info.name==="自有商品刊登工具"?validateListing:onClose}>{info.type==="launch"&&(info.name==="POD素材管理工具")?"知道了":info.type==="launch"&&info.name==="自有商品刊登工具"?"提交检测":"确定"}</button>}</footer>
   </dialog>;
 }
 
