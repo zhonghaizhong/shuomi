@@ -12,7 +12,7 @@ export function MarketFiltersForm({subject,onApply}:{subject:string;onApply:(cri
  const locations=useShippingLocations(subject);
  const [draft,setDraft]=useState(empty),[error,setError]=useState("");
  const update=(key:keyof typeof draft,value:string)=>{setDraft(previous=>({...previous,[key]:value}));setError("")};
- return <form className={styles.form} onSubmit={e=>{
+ return <form className={styles.form} data-shuomi-filter="balanced" onSubmit={e=>{
   e.preventDefault();
   if((draft.province||draft.city)&&!isShippingLocation(locations.data?.country,draft,false)){setError("请重新选择发货地，或清除筛选");return}
   if(draft.minPrice!==""&&draft.maxPrice!==""&&Number(draft.minPrice)>Number(draft.maxPrice)){setError("最低价格不能高于最高价格");return}
@@ -25,8 +25,8 @@ export function MarketFiltersForm({subject,onApply}:{subject:string;onApply:(cri
   if(!parsed.success){setError("请检查价格、起订量和供货周期");return}
   setError("");onApply({...parsed.data,keyword:draft.keyword.trim()});
  }}>
-  <div className={styles.search}><Input aria-label="商品关键词" maxLength={80} value={draft.keyword} onChange={e=>update("keyword",e.target.value)} placeholder="搜索商品名称"/><Button type="submit">搜索</Button><Button type="button" variant="ghost" onClick={()=>{setDraft(empty());setError("");onApply({keyword:""})}}>清除筛选</Button></div>
-  <div className={styles.fields}>
+  <div className={styles.search} data-shuomi-filter-left><Input aria-label="商品关键词" maxLength={80} value={draft.keyword} onChange={e=>update("keyword",e.target.value)} placeholder="搜索商品名称"/></div>
+  <div className={styles.filterRight} data-shuomi-filter-right><div className={styles.fields}>
    <SupplyLocationFields locations={locations} province={draft.province} city={draft.city} required={false} filter onChange={location=>{setDraft(previous=>({...previous,...location}));setError("")}}/>
    <fieldset className={styles.price}><legend>价格</legend><div className={styles.priceInputs}>
     <Select aria-label="价格币种" value={draft.priceCurrency} onChange={e=>update("priceCurrency",e.target.value)}>{[["CNY","人民币"],["USD","美元"],["EUR","欧元"],["GBP","英镑"],["JPY","日元"]].map(([code,name])=><option key={code} value={code}>{name}</option>)}</Select>
@@ -34,7 +34,7 @@ export function MarketFiltersForm({subject,onApply}:{subject:string;onApply:(cri
    </div></fieldset>
    <label>起订量不超过（件）<Input type="number" min={1} max={1e9} value={draft.maxMOQ} onChange={e=>update("maxMOQ",e.target.value)} placeholder="不限"/></label>
    <label>供货周期不超过（天）<Input type="number" min={0} max={3650} value={draft.maxLeadDays} onChange={e=>update("maxLeadDays",e.target.value)} placeholder="不限"/></label>
-  </div>
+  </div><div className={styles.actions}><Button type="button" variant="ghost" onClick={()=>{setDraft(empty());setError("");onApply({keyword:""})}}>重置</Button><Button type="submit">确认</Button></div></div>
   {error?<p role="alert" className={styles.error}>{error}</p>:null}
  </form>;
 }
