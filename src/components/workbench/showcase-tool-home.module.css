@@ -139,3 +139,25 @@
 :global(.light) .page :is(.note>span,.step h3,.capability h3,.entryTitle) {color:#444050;}
 :global(.light) .page :is(.step p,.note p,.capability p,.entryDescription) {color:#625d70;}
 :global(.light) .page .number {color:#6254c8;border-color:#7367f0;}
+
+
+/* Premium Vuexy tool-market landing, shared dark/light surface system. */
+.page{--tm-bg:#142237;--tm-card:#18283c;--tm-nested:#1d3148;--tm-border:#30465e;--tm-text:#eff6ff;--tm-muted:#adc1d4;--tm-shadow:0 7px 24px rgba(3,12,27,.15);color:var(--tm-text);gap:18px}
+:global(.light) .page{--tm-bg:#fff;--tm-card:#f7fafd;--tm-nested:#edf3f8;--tm-border:#dfe7ef;--tm-text:#263747;--tm-muted:#607183;--tm-shadow:0 6px 22px rgba(32,55,87,.06)}
+.page :is(.hero,.entry,.capability,.process,.note){border-color:var(--tm-border);border-radius:12px;background:var(--tm-bg);box-shadow:var(--tm-shadow)}
+.page>.hero{border-color:var(--tm-border);border-radius:12px;background:var(--tm-bg);box-shadow:var(--tm-shadow)}
+.page>.hero h1{border-left-color:#7367f0;color:var(--tm-text);font-weight:700}
+.page :is(.hero .eyebrow,.hero p,.sectionHeading p,.entryDescription,.capability p,.step p,.note p){color:var(--tm-muted)}
+.page :is(.sectionHeading h2,.note h2){color:var(--tm-text)}
+.page .sectionHeading h2{border-left:3px solid #7367f0;padding-left:11px}
+.page .entry{min-height:176px}
+.page .entryTitle,.page .capability h3{color:var(--tm-text)}
+.page .entryAction{border-color:var(--tm-border);border-radius:9px;background:var(--tm-card);color:var(--tm-text)}
+.page .entryAction:hover{background:var(--tm-nested);border-color:#7367f0}
+.page .step{background:var(--tm-card);border-color:var(--tm-border);border-radius:9px}
+.page .step h3{color:var(--tm-text)}
+.page .entry[data-selected="true"]{border-color:#7367f0;background:color-mix(in srgb,#7367f0 5%,var(--tm-bg))}
+.page :is(.entry,.capability){transition:border-color .18s ease,box-shadow .18s ease}
+@media(hover:hover){.page :is(.entry,.capability):hover{border-color:color-mix(in srgb,#7367f0 36%,var(--tm-border));box-shadow:0 12px 28px rgba(23,32,62,.13)}}
+.page :is(.selectCard,.entryAction):focus-visible{outline:2px solid #7367f0;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.page :is(.entry,.capability){transition:none}}
