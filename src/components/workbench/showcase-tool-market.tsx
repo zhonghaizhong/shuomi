@@ -221,7 +221,7 @@ function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
       </div>
       <div className={styles.figmaRules}>
         <label>采集规则<select aria-label="采集规则" value={rule} onChange={e=>setRule(e.target.value)}>
-          <option value="">选择采集规则（可选）</option><option>默认采集规则</option><option>仅采集商品基本资料</option>
+          <option value="">选择采集规则（可选）</option>{templates.map(name=><option key={name} value={name}>{name}</option>)}
         </select></label>
         <button type="button" onClick={()=>setStep("rules")}>设置规则</button>
       </div>
