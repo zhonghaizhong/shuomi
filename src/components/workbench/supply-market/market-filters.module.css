@@ -21,3 +21,26 @@
 .form[data-shuomi-filter="balanced"] .error{grid-column:1/-1}
 @media(max-width:1160px){.form[data-shuomi-filter="balanced"]{grid-template-columns:1fr}}
 @media(max-width:540px){.form[data-shuomi-filter="balanced"] .fields{grid-template-columns:1fr}.form[data-shuomi-filter="balanced"] .priceInputs{grid-template-columns:80px minmax(0,1fr) auto minmax(0,1fr)}}
+
+
+/* The supply market has dependent location and price fields, so keep its
+   structured two-column advanced form instead of flattening them into a bar. */
+.form[data-shuomi-filter="balanced"] {
+ display:grid!important;
+ grid-template-columns:minmax(220px, min(40%,480px)) minmax(0,1fr)!important;
+ gap:16px!important;
+ align-items:start!important;
+}
+.form[data-shuomi-filter="balanced"] .search {max-width:480px;min-width:0}
+.form[data-shuomi-filter="balanced"] .filterRight {
+ display:grid!important;grid-template-columns:minmax(0,1fr);
+ width:100%;min-width:0;max-width:none;margin-left:0;
+}
+.form[data-shuomi-filter="balanced"] .fields {grid-template-columns:repeat(2,minmax(0,1fr))}
+.form[data-shuomi-filter="balanced"] .fields :is(select,input) {max-width:100%;min-width:0}
+.form[data-shuomi-filter="balanced"] .actions {justify-content:flex-end}
+.form[data-shuomi-filter="balanced"] .actions button {height:40px;min-height:40px;min-width:76px}
+@media(max-width:1150px) {
+ .form[data-shuomi-filter="balanced"] {grid-template-columns:minmax(0,1fr)!important}
+ .form[data-shuomi-filter="balanced"] .search {max-width:none}
+}
