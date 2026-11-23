@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import {readOwnProductBatches,listOwnReadyProducts,ownProductUpdated} from "../showcase-own-product-data";
+import {readOptimizedDatasets,optimizedDatasetsChanged} from "../showcase-optimized-datasets";
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import {readShowcaseEnabledAgents,readShowcaseAgentTemplates,showcaseAgentId,showcaseAgentStateChanged} from "../showcase-agent-demo-state";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
@@ -49,15 +50,22 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  useEffect(()=>{const refresh=(event:Event)=>{const d=(event as CustomEvent<{organizationId:string}>).detail;if(!d||d.organizationId===organizationId)setDataVersion(v=>v+1)};window.addEventListener("shuomi:demo-batches-updated",refresh);window.addEventListener("focus",refresh);return()=>{window.removeEventListener("shuomi:demo-batches-updated",refresh);window.removeEventListener("focus",refresh)}},[organizationId]);
  useEffect(()=>{const onChange=(event:Event)=>{const d=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setTaskVersion(v=>v+1)};window.addEventListener(showcaseUploadTasksEvent,onChange);return()=>window.removeEventListener(showcaseUploadTasksEvent,onChange)},[organizationId,memberId]);
  useEffect(()=>{const handle=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d?.memberId===memberId)setDataVersion(n=>n+1)};window.addEventListener(ownProductUpdated,handle);return()=>window.removeEventListener(ownProductUpdated,handle)},[organizationId,memberId]);
+ useEffect(()=>{const handle=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setDataVersion(v=>v+1)};window.addEventListener(optimizedDatasetsChanged,handle);return()=>window.removeEventListener(optimizedDatasetsChanged,handle)},[organizationId,memberId]);
+ const optimizedSets=useMemo(()=>readOptimizedDatasets(organizationId,memberId),[organizationId,memberId,dataVersion]);
+ useEffect(()=>{
+  const key="shuomi:listing-dataset-prefill:"+organizationId+":"+memberId;
+  const id=sessionStorage.getItem(key);
+  if(id&&optimizedSets.some(d=>d.id===id)){setSource("数据集");setBatch(id);sessionStorage.removeItem(key)}
+ },[organizationId,memberId,optimizedSets]);
  const ownBatches=useMemo(()=>readOwnProductBatches(organizationId,memberId),[organizationId,memberId,dataVersion]);
  const ownProducts=useMemo(()=>listOwnReadyProducts(organizationId,memberId),[organizationId,memberId,dataVersion]);
  const collectedBatches=useMemo(()=>readDemoCollectionBatches(organizationId,memberId),[organizationId,memberId,dataVersion]);
- const availableBatches=source==="自有商品库"?ownBatches:collectedBatches;
+ const availableBatches=source==="数据集"?optimizedSets:source==="自有商品库"?ownBatches:collectedBatches;
  const selectedOwnBatch=source==="自有商品库"?ownBatches.find(x=>x.id===batch):undefined;
  const selectedCollectedBatch=source==="采集批次"?collectedBatches.find(x=>x.id===batch):undefined;
- const selectedBatch=selectedOwnBatch;
+ const selectedOptimizedSet=source==="数据集"?optimizedSets.find(x=>x.id===batch):undefined;
  const selectableProducts=selectedOwnBatch?ownProducts.filter(p=>p.batchId===selectedOwnBatch.id):[];
- const selectedProductIds=selectedCollectedBatch?selectedCollectedBatch.products.map(p=>p.id):selectableProducts.map(p=>p.id);
+ const selectedProductIds=selectedOptimizedSet?selectedOptimizedSet.products.map(p=>p.sourceProductId):selectedCollectedBatch?selectedCollectedBatch.products.map(p=>p.id):selectableProducts.map(p=>p.id);
  const selectedCount=selectedProductIds.length;
  // First-stage intake is already complete; third-party missing fields are evaluated separately by the platform adapter.
  const missingCount=0;
@@ -72,6 +80,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   if(!selectedCount||!chosenStore||!rules){setNotice("请先选择商品、有效目标店铺及适配规则。");return}
   if(agent&&(!chosenAgent||!chosenTemplate)){setNotice("请先选择当前企业已启用的智能体及执行模板。");return}
   if(uploadMode==="定时上传"){setNotice("定时上传尚未连接正式调度服务，已保留时间配置，但未创建自动执行任务。");return}
+  if(selectedOptimizedSet&&selectedOptimizedSet.platform!==chosenStore.platform){setNotice("提示：优化版本源自 "+selectedOptimizedSet.platform+"，目标店铺为 "+chosenStore.platform+"。本演示未接入跨平台字段映射，不能把旧版内容直接提交为新平台数据。");return}
   const status:ShowcaseUploadTask["status"]=missingCount?"待补全":agent?"待执行智能体":"待平台提交";
   const record:ShowcaseUploadTask={id:"LIST-"+crypto.randomUUID(),organizationId,memberId,source:source as ShowcaseUploadTask["source"],batchId:batch,batchName:availableBatches.find(b=>b.id===batch)?.name??batch,productIds:selectedProductIds,productCount:selectedCount,missingCount,storeId:chosenStore.id,storeName:chosenStore.name,platform:"SHEIN",region:chosenStore.region,storeType:chosenStore.type,rule:currentRule.name,ruleConfig:{...currentRule},agentId:agent?agentId:null,agentName:agent?chosenAgent?.name??null:null,templateId:agent?templateId:null,mode:uploadMode,status,createdAt:new Date().toISOString(),demo:true};
   if(addShowcaseUploadTask(record)){setSubmitted(true);setNotice("已保存本次演示刊登任务（"+selectedCount+" 件，"+chosenStore.name+"，"+status+"）。原商品、店铺与规则保持关联，未执行真实平台上传。")}else setNotice("演示任务保存失败，请检查会话存储。");
@@ -90,7 +99,13 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   {stage==="waiting"?<>
    <section className={styles.flowHeader}><div><h2>商品上传流程</h2><p>商品 · 规则必选 · 智能体按需 · 平台上传</p></div><div className={styles.flowSteps}>{[["选择商品","待选择"],["平台与店铺","当前"],["启用智能体","按需"],["启用规则","必选"]].map(([name,state],i)=><span key={name}><b>{i+1}</b><strong>{name}</strong><small>{state}</small></span>)}</div></section>
    <section className={styles.configuration}>
-    <article><header><b>01</b><h2>选择商品</h2></header><p>从采集批次或自有商品库选取</p><label>商品来源<select value={source} onChange={e=>{setSource(e.target.value);setBatch("")}}><option>采集批次</option><option>自有商品库</option></select></label><label>本次批次 / 产品集<select value={batch} onChange={e=>setBatch(e.target.value)}><option value="">请选择商品</option>{availableBatches.map(b=><option key={b.id} value={b.id}>{b.name} · {"products" in b?b.products.length:b.productCount} 个商品</option>)}</select></label><small>{selectedCount>0?`已选择 ${selectedCount} 个商品${missingCount?`，其中 ${missingCount} 个需要补全`:""}；原始商品数据不修改`:availableBatches.length?"请选择本次商品批次":"当前账号没有可选批次，请先在我的数据中采集或上传。"}</small><button type="button" onClick={()=>router.push("/workbench/data/mine?preview=1")}>资料管理</button></article>
+    <article><header><b>01</b><h2>选择商品</h2></header><p>先确认数据类型，再选择批次，避免混用原始资料和优化版本。</p>
+     <label>商品来源<select value={source} onChange={e=>{setSource(e.target.value);setBatch("")}}><option value="采集批次">采集批次 · 原始采集</option><option value="自有商品库">自有商品库 · 自有原始</option><option value="数据集">数据集 · 已优化版本</option></select></label>
+     <p className={styles.sourceGuide}>{source==="采集批次"?"原始采集资料：首次适配目标平台。":source==="自有商品库"?"原始自有商品：已通过硕米入库检查，待做目标平台适配。":"已优化版本：可以复用图片和文案，但更换平台或站点仍需重新检查。"}</p>
+     <label>本次批次 / 产品集<select value={batch} onChange={e=>setBatch(e.target.value)}><option value="">{source==="数据集"?"请选择优化版本":"请选择原始批次"}</option>{availableBatches.map(b=><option key={b.id} value={b.id} disabled={source==="自有商品库"&&!ownProducts.some(p=>p.batchId===b.id)}>{source==="数据集"&&"language" in b?b.name+" · "+b.platform+" / "+b.site+" / "+b.language+" · V"+b.version:b.name+" · "+("products" in b?b.products.length:ownProducts.filter(p=>p.batchId===b.id).length)+" 个商品"}</option>)}</select></label>
+     {selectedOptimizedSet?<div className={styles.datasetSelection} role="status"><strong>已选优化版本 · V{selectedOptimizedSet.version}</strong><span>来源：{selectedOptimizedSet.sourceKind} / {selectedOptimizedSet.sourceBatchName}</span><span>历史适配：{selectedOptimizedSet.platform} · {selectedOptimizedSet.site} · {selectedOptimizedSet.language}</span><span>商品：{selectedOptimizedSet.products.length} 件</span><em>此版本仅作为复用起点；目标店铺适配与原始价格、库存保持独立。</em></div>:selectedOwnBatch?<div className={styles.datasetSelection} role="status"><strong>自有原始批次</strong><span>{selectedOwnBatch.name} · 可用 {selectableProducts.length} 件</span><span>本批尚无目标平台适配版本</span></div>:selectedCollectedBatch?<div className={styles.datasetSelection} role="status"><strong>采集原始批次</strong><span>{selectedCollectedBatch.source} · {selectedCollectedBatch.products.length} 件商品</span><span>本批尚无目标平台适配版本</span></div>:null}
+     <small>{selectedCount>0?`已选择 ${selectedCount} 个商品；原始资料保持不变`:availableBatches.length?"请先选择批次并确认来源信息。":source==="数据集"?"暂无成功上传后沉淀的优化版本，可先选择原始批次。":"当前账号无可用批次，请先在我的数据中采集或上传。"}</small>
+     <button type="button" onClick={()=>router.push("/workbench/data/mine?preview=1")}>查看我的数据</button></article>
     <article><header><b>02</b><h2>目标平台与店铺</h2></header><p>选择平台站点及目标店铺</p><button type="button" onClick={()=>{setDraftSite(platformSite);setDraftStore(store);setTargetDialog(true)}}>{platformSite||"请选择店铺"}</button><button type="button" onClick={()=>{if(chosenStore){setNotice("已确认目标店铺："+chosenStore.name+"（"+chosenStore.region+"）")}else{setDraftSite(platformSite);setDraftStore(store);setTargetDialog(true)}}}>{chosenStore?"已确认："+chosenStore.name:"确认目标店铺"}</button><small>{chosenStore?`提交后将按 ${chosenStore.platform} · ${chosenStore.region} 的要求校验，目标店铺：${chosenStore.name}`:"提交后　资料完整后自动分流"}</small></article>
     <article><header><b>03</b><h2>智能体（按需）</h2></header><p>按需重构商品后进入审核</p>
      <label className={styles.agentToggleRow}><span>启用智能体</span><input aria-label="启用智能体" type="checkbox" checked={agent} onChange={e=>{setAgent(e.target.checked);setAgentId("");setTemplateId("")}}/></label>
@@ -108,7 +123,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
    <section className={styles.submit}>
      <div className={styles.uploadSummary}><header><h2>本次上传</h2><p>按目标平台校验资料：缺失先补全，启用智能体需审核</p></header>
       <div className={styles.uploadFacts}>{[
-       ["商品来源","我的数据"],["已选商品",selectedCount?selectedCount+" 个商品":"请选择商品"],["目标平台与店铺",chosenStore?.name??"请选择店铺"],
+       ["商品来源",source==="数据集"?"优化数据集 · 复用版":source==="自有商品库"?"自有原始商品":"原始采集批次"],["已选商品",selectedCount?selectedCount+" 个商品":"请选择商品"],["目标平台与店铺",chosenStore?.name??"请选择店铺"],
        ["智能体",agent?chosenAgent?.name??"请选择智能体":"未启用"],["适配规则",rules?currentRule.name:"必须启用"]
       ].map(([label,value],i)=><div key={label} className={styles.uploadFact} data-kind={i}><strong>{label}</strong><span>{value}</span></div>)}</div>
      </div>
