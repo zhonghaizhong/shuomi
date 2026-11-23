@@ -213,3 +213,24 @@
 :global(.light) .page .hero aside p {color:#6f6b7d;}
 :global(.light) .confirmDialog :is(h2,strong) {color:#444050;}
 :global(.light) .confirmDialog p {color:#6f6b7d;}
+
+
+/* Premium Vuexy tool customization, including request and progress views. */
+.page{--tm-bg:#142237;--tm-card:#18283c;--tm-nested:#1d3148;--tm-line:#30465e;--tm-text:#eff6ff;--tm-muted:#adc1d4;--tm-shadow:0 7px 24px rgba(3,12,27,.15);color:var(--tm-text);gap:18px}
+:global(.light) .page{--tm-bg:#fff;--tm-card:#f7fafd;--tm-nested:#edf3f8;--tm-line:#dfe7ef;--tm-text:#263747;--tm-muted:#607183;--tm-shadow:0 6px 22px rgba(32,55,87,.06)}
+.page :is(.header,.hero,.card,.features article,.sideStep,.progressSteps>div){border:1px solid var(--tm-line);border-radius:12px;background:var(--tm-bg);box-shadow:var(--tm-shadow)}
+.page>.header{background:var(--tm-bg);border-color:var(--tm-line)}
+.page>.header h1{border-left-color:#7367f0;color:var(--tm-text)}
+.page :is(.header small,.header p,.hero p,.features p,.formHead span,.progressTop p,.progressSteps em){color:var(--tm-muted)}
+.page :is(.features h3,.hero h2,.card h2,.formHead h2,.progressTop h2,.progressSteps strong){color:var(--tm-text)}
+.page :is(.card h2,.sectionTitle){border-left:3px solid #7367f0;padding-left:11px}
+.page :is(.steps>div,.sideStep,.progressSteps>div,.formLayout form .disclaimer){background:var(--tm-card);border-color:var(--tm-line);border-radius:9px}
+.page .formLayout label:not(.consent):not(.upload){color:var(--tm-text)}
+.page .formLayout :is(input:not([type="checkbox"]):not([type="file"]),textarea){border-color:var(--tm-line);border-radius:9px;background:var(--tm-card);color:var(--tm-text)}
+.page .formLayout :is(input,textarea)::placeholder{color:var(--tm-muted);opacity:1}
+.page :is(.kinds button[aria-pressed="true"],.progressTop button[aria-pressed="true"]){border-color:#7367f0;background:color-mix(in srgb,#7367f0 16%,var(--tm-bg));color:var(--tm-text)}
+.page :is(button,input,textarea):focus-visible{outline:2px solid #7367f0;outline-offset:2px}
+.page .features article{transition:box-shadow .18s ease,border-color .18s ease}
+@media(hover:hover){.page .features article:hover{border-color:color-mix(in srgb,#7367f0 35%,var(--tm-line));box-shadow:0 12px 28px rgba(23,32,62,.14)}}
+.confirmDialog{border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.32)}
+@media(prefers-reduced-motion:reduce){.page .features article{transition:none}}
