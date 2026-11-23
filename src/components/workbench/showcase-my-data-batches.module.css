@@ -86,3 +86,9 @@
 @media(max-width:1050px){.wrapper .filterBar{grid-template-columns:minmax(220px,1fr) minmax(130px,.33fr) minmax(130px,.33fr) 70px 75px;gap:8px}}
 @media(max-width:780px){.wrapper .filterBar{grid-template-columns:repeat(2,minmax(0,1fr))}.wrapper .filterBar .searchBox{grid-column:1 / -1}.wrapper .filterBar>button{width:auto}}
 @media(max-width:420px){.wrapper .filterBar{grid-template-columns:1fr 1fr}.wrapper .filterBar select{grid-column:span 1}}
+
+/* My Data: button styling for shared right-side filter group. */
+.wrapper .filterBar[data-shuomi-filter="balanced"]{min-height:62px}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] button{min-width:66px;padding:0 12px;border:1px solid var(--md-line);border-radius:7px;background:var(--md-input);color:var(--md-ink);font-size:13px}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] button.primary{background:var(--md-primary);border-color:var(--md-primary);color:#fff}
+.wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] select{min-width:96px}
