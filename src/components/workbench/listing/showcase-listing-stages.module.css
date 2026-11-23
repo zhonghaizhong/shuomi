@@ -400,3 +400,8 @@
 .page[data-listing-stage="waiting"] .configuration article p,
 .page[data-listing-stage="waiting"] .configuration article small,
 .page[data-listing-stage="waiting"] .flowHeader p{color:var(--muted)}
+
+
+/* Keep listing page titles legible across the four listing stages. */
+.page .heading h1{font-size:27px;line-height:1.35}
+@media(max-width:700px){.page .heading h1{font-size:26px}}
