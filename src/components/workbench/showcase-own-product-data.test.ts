@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {beforeEach,describe,expect,it} from "vitest";
-import {createOwnProductBatch,readOwnProductBatches,readOwnProducts,saveOwnProduct,listOwnPendingProducts,listOwnReadyProducts,updateOwnProductAfterReview,mergeOptimizedOwnProduct,applyConfirmedSourceOptimization} from "./showcase-own-product-data";
+import {createOwnProductBatch,readOwnProductBatches,readOwnProducts,saveOwnProduct,listOwnPendingProducts,listOwnReadyProducts,updateOwnProductAfterReview,approveOwnProductIntake,mergeOptimizedOwnProduct,applyConfirmedSourceOptimization} from "./showcase-own-product-data";
 describe("own product intake and batch visibility",()=>{
  beforeEach(()=>sessionStorage.clear());
  it("creates a batch, saves a multi-SKU product, and reads it through the same store",()=>{
@@ -38,11 +38,23 @@ describe("own product intake and batch visibility",()=>{
   const stillPending=updateOwnProductAfterReview("org-A","user-1",item.id,[{id:1,name:"500ml",description:"",images:["data:mock"]}]);
   expect(stillPending.status).toBe("入库待完善");
   const ready=updateOwnProductAfterReview("org-A","user-1",item.id,[{id:1,name:"500ml",description:"不锈钢 500ml，售价99元",images:["data:mock"]}]);
-  expect(ready.status).toBe("已入库");
+  expect(ready.status).toBe("待审核");
+  expect(listOwnReadyProducts("org-A","user-1")).toHaveLength(0);
+  const approved=approveOwnProductIntake("org-A","user-1",item.id);
+  expect(approved.status).toBe("已入库");
   expect(listOwnReadyProducts("org-A","user-1").map(x=>x.id)).toContain(item.id);
   expect(listOwnPendingProducts("org-A","user-1")).toHaveLength(0);
  });
 
+ it("requires review approval after complete first-stage intake and isolates account permissions",()=>{
+  const batch=createOwnProductBatch("org-A","user-1","待审核新款");
+  const draft=saveOwnProduct("org-A","user-1",batch.id,{name:"白色T恤",source:"上传资料",status:"待审核",missing:[],skus:[{id:1,name:"白色M",description:"纯棉",images:["image"]}],agent:"",template:""});
+  expect(()=>approveOwnProductIntake("org-A","user-2",draft.id)).toThrow();
+  expect(listOwnReadyProducts("org-A","user-1")).toEqual([]);
+  expect(approveOwnProductIntake("org-A","user-1",draft.id).status).toBe("已入库");
+  expect(()=>approveOwnProductIntake("org-A","user-1",draft.id)).toThrow();
+  expect(listOwnReadyProducts("org-A","user-1")).toHaveLength(1);
+ });
  it("protects price, stock, SKU identity, mixed price text, and intake metadata during optimization",()=>{
   const b=createOwnProductBatch("org-A","user-1","迭代商品");
   const p=saveOwnProduct("org-A","user-1",b.id,{name:"原商品",source:"上传资料",status:"已入库",missing:[],agent:"",template:"",skus:[
