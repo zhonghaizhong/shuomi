@@ -78,3 +78,79 @@
 .batchSelected span{margin-left:auto;font-size:11px}
 @media(max-width:1100px){.aiRow{flex-wrap:wrap}.aiOptions{flex:1 1 420px}.batchControls{flex:1 1 210px;max-width:none}.submit{min-width:190px;flex:1 1 210px}}
 @media(max-width:760px){.batchControls{max-width:none;min-width:0}.batchSelected span{margin-left:0}}
+
+
+/* Stable full-size workspace: section 02 retains its footprint while switching import modes. */
+.dialog{width:min(1480px,calc(100vw - 40px));height:min(900px,calc(100dvh - 36px));max-height:calc(100dvh - 36px);display:flex;flex-direction:column;overflow:hidden;border-radius:12px}
+.header{flex:0 0 auto;min-height:70px;box-sizing:border-box;background:var(--bg);padding:16px 24px}
+.header h2{font-size:20px}
+.content{display:flex;flex-direction:column;min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;gap:12px;padding:14px 18px 18px;scrollbar-gutter:stable}
+.panel{flex:0 0 auto;padding:18px 22px;border-radius:11px}
+.heading{margin-bottom:16px;min-height:22px;flex-wrap:wrap;align-items:center}
+.heading h3{font-size:17px}
+.sources{gap:14px}
+.sources button{min-height:48px}
+.productGrid{grid-template-columns:minmax(210px,.8fr) minmax(410px,2fr) minmax(320px,1.35fr);gap:15px;min-height:430px;align-items:stretch}
+.productGrid:not(:has(.skuList)){grid-template-columns:minmax(460px,2fr) minmax(330px,1.25fr)}
+.skuList,.images,.details{padding:16px;border-radius:10px;min-height:430px}
+.skuList{overflow:hidden}
+.skuItems{flex:1;align-content:start;overflow-y:auto;min-height:0;max-height:310px;scrollbar-gutter:stable}
+.skuItem{grid-template-columns:26px minmax(0,1fr) 42px;min-width:0;gap:6px;padding:10px 8px}
+.skuItem input{font-size:12px;min-width:0;height:32px}
+.imageGrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:14px}
+.imageGrid button{width:100%;aspect-ratio:1/1;min-height:0}
+.images{gap:12px}
+.details textarea{min-height:265px}
+.otherInput{height:430px;min-height:430px;box-sizing:border-box;align-content:start}
+.aiRow{display:grid;grid-template-columns:minmax(380px,1fr) minmax(216px,260px) minmax(210px,270px);gap:16px;align-items:stretch}
+.aiOptions{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0;gap:13px}
+.aiOptions label{min-width:0;min-height:61px;box-sizing:border-box}
+.aiOptions select{width:100%;text-overflow:ellipsis;white-space:nowrap}
+.batchControls{max-width:none;min-width:0;display:grid;grid-template-columns:1fr;gap:7px}
+.batchControls button{min-height:28px;padding:6px 8px;white-space:normal;line-height:1.25}
+.submit{min-width:0;width:100%;min-height:61px}
+.batchEditor{margin-top:12px}
+.footerHint{margin-top:12px}
+@media(max-width:1150px){
+ .dialog{width:calc(100vw - 26px)}
+ .productGrid{grid-template-columns:minmax(170px,.8fr) minmax(320px,1.7fr) minmax(250px,1.1fr);gap:10px}
+ .productGrid:not(:has(.skuList)){grid-template-columns:minmax(320px,1.7fr) minmax(270px,1.1fr)}
+ .skuList,.images,.details{padding:12px}
+ .imageGrid{gap:7px}
+ .aiRow{grid-template-columns:minmax(320px,1fr) minmax(190px,220px) minmax(180px,220px);gap:10px}
+ .aiOptions{flex:unset}
+ .batchControls{flex:unset}
+ .submit{flex:unset;min-width:0}
+}
+@media(max-width:900px){
+ .dialog{height:calc(100dvh - 24px);max-height:calc(100dvh - 24px);width:calc(100vw - 20px)}
+ .productGrid{grid-template-columns:185px minmax(0,1fr)}
+ .productGrid:not(:has(.skuList)){grid-template-columns:1fr}
+ .details{grid-column:1/-1;min-height:245px}
+ .details textarea{min-height:160px}
+ .otherInput{height:510px;min-height:510px}
+ .aiRow{grid-template-columns:1fr 1fr}
+ .aiOptions{grid-column:1/-1}
+ .submit{min-height:60px}
+}
+@media(max-width:600px){
+ .content{padding:10px}
+ .panel{padding:12px}
+ .header{padding:12px}
+ .productGrid,.productGrid:not(:has(.skuList)){display:flex;flex-direction:column}
+ .skuList{min-height:185px;max-height:270px}
+ .skuItems{max-height:160px}
+ .images{min-height:280px}
+ .details{min-height:200px}
+ .imageGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+ .sources{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .aiRow{grid-template-columns:1fr}
+ .aiOptions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .aiOptions label{min-height:68px}
+ .batchControls{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .batchControls button{min-height:40px}
+ .otherInput{height:410px;min-height:410px}
+ .heading h3{font-size:15px}
+ .heading>span{line-height:1.5}
+}
+@media(max-width:400px){.aiOptions,.batchControls{grid-template-columns:1fr}.skuItems{grid-template-columns:1fr}}
