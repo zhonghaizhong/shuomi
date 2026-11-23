@@ -4,6 +4,7 @@ import {useEffect,useId,useRef,useState} from "react";
 import styles from "./showcase-agent-dialog.module.css";
 import {AgentUseConfigurationDialog,type AgentUseConfiguration,type ConfigurationMode} from "./agent-use-configuration-dialog";
 import {ShowcasePODTaskDialog} from "./showcase-pod-task-dialog";
+import {PodManagementWorkspace} from "./showcase-pod-management-dialog";
 
 export type AgentPreviewDialog =
  | {kind:"introduction";title:string;description:string;tags:readonly string[];status:string}
@@ -36,10 +37,11 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  const [templateDetails,setTemplateDetails]=useState<string|null>(null);
  const [templateItems,setTemplateItems]=useState<Array<{id:string;name:string;createdAt:string;config:unknown}>>([]);
  const [podTaskOpen,setPodTaskOpen]=useState(false);
+ const [podMaterialsOpen,setPodMaterialsOpen]=useState(false);
  const [podImageMode,setPodImageMode]=useState("AI重构模式");
  const [podPatternMode,setPodPatternMode]=useState("AI自动模式");
  const [podQuantity,setPodQuantity]=useState(3);
- const [podTransparent,setPodTransparent]=useState(true);
+ const [podTransparent,setPodTransparent]=useState(false);
  const [podChatDraft,setPodChatDraft]=useState("");
  const [podChatPrompt,setPodChatPrompt]=useState("");
  const [podChatImage,setPodChatImage]=useState("");
@@ -104,6 +106,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    onCancel={event=>{event.preventDefault();if(saveNameOpen){setSaveNameOpen(false);return;}if(templateManagerOpen){setTemplateManagerOpen(false);return;}onClose();}}
    onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
   {podTaskOpen?<ShowcasePODTaskDialog organizationId={organizationId} memberId={memberId} administrator={administrator} onClose={()=>setPodTaskOpen(false)} onTemplate={()=>setPodTaskOpen(false)}/>:null}
+  {podMaterialsOpen?<PodManagementWorkspace onClose={()=>setPodMaterialsOpen(false)}/>:null}
   {configMode?<AgentUseConfigurationDialog mode={configMode} initial={{...useConfig,selectedSkills:skills,selectedKnowledge:knowledge}} onClose={()=>setConfigMode(null)} onSave={value=>{
    setUseConfig(prev=>({...prev,...value}));
    if(value.selectedSkills)setSkills(value.selectedSkills);
@@ -149,12 +152,12 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    </section>
    <footer className={styles.footer}><button type="button" className={styles.secondary} onClick={onClose}>取消</button><button type="button" className={styles.primary} onClick={()=>selected==="custom"?chooseCustom():onSaveModel(info.title,"official")}>保存设置</button></footer>
   </>
-  :isPod?<><div className={styles.savedTemplate}><button className={styles.secondary} type="button" onClick={showTemplates}>查看模板</button><button className={styles.primary} type="button" onClick={()=>setPodTaskOpen(true)}>创建POD刊登任务</button><small>模板配置与刊登任务分别管理；任务需选择店铺和商品。</small></div><div className={styles.useLayout}>
+  :isPod?<><div className={styles.savedTemplate}><button className={styles.secondary} type="button" onClick={()=>setPodMaterialsOpen(true)}>POD素材管理工具</button><button className={styles.secondary} type="button" onClick={showTemplates}>查看模板</button><button className={styles.primary} type="button" onClick={()=>setPodTaskOpen(true)}>创建POD刊登任务</button><small>素材、模板与刊登任务分别管理，创建刊登任务需要选择店铺和真实商品。</small></div><div className={styles.useLayout}>
    <div className={styles.useSteps}>
     <section className={styles.useStep}><h3>步骤 1 · 图片生成方式</h3><p>选择本次 POD 商品图片的生成方式，可在生成刊登方案前调整。</p><div className={styles.podModes}>{[["AI重构模式","引用技能 · 官方方案 · 自定义指令"],["混合模式","支持固定图片 + AI 生成，灵活组合主图与详情图"]].map(([name,desc])=><button key={name} type="button" aria-pressed={podImageMode===name} onClick={()=>{setPodImageMode(name);setConfigMode(name==="混合模式"?"pod-hybrid":"pod-ai");}}><strong>{name}</strong><small>{desc}</small></button>)}</div><p>AI 相关能力按积分计费（实际计费未接入）。</p></section>
     <section className={styles.useStep}><h3>步骤 2 · 是否启用知识库</h3><div className={styles.productConfigRow}><div className={styles.productRowText}><strong>使用知识库</strong><small>按需引用已选择的知识资料；未选择时 AI 不读取知识库。</small></div><span className={styles.productStatus}>● {knowledge.length?"已选 "+knowledge.length+" 项":"未启用"}</span><button type="button" className={styles.primary} onClick={()=>setConfigMode("knowledge")}>选择知识库</button></div></section>
     <section className={styles.useStep}><h3>步骤 3 · 启用技能</h3><div className={styles.productConfigRow}><div className={styles.productRowText}><strong>启用执行技能</strong><small>只应用实际选择的我的技能或团队技能，未选择时不自动运行。</small></div><span className={styles.productStatus}>● {skills.length?"已选 "+skills.length+" 项":"未启用"}</span><button type="button" className={styles.primary} onClick={()=>setConfigMode("skills")}>选择技能</button></div></section>
-    <section className={styles.useStep}><h3>步骤 4 · 贴图素材</h3><p>选择本次贴图素材的生成方式，点击模式卡进入配置。</p><div className={styles.podModes}>{[["AI自动模式","AI自动确定主题、风格、元素与排版"],["图片裂变模式","根据参考图片裂变多套新贴图"],["自定义指令模式","依据创作指令生成个性化贴图"]].map(([name,desc])=><button type="button" key={name} aria-pressed={podPatternMode===name} onClick={()=>{setPodPatternMode(name);if(name==="图片裂变模式")setConfigMode("pod-pattern-split");else if(name==="自定义指令模式")setConfigMode("pod-pattern-custom");}}><strong>{name}</strong><small>{desc}</small></button>)}</div><div className={styles.imageInstructions}><p>当前配置：{podPatternMode}{useConfig.splitStrength?" · "+useConfig.splitStrength:""}{useConfig.patternPrompt?" · 自定义指令已填写":""}</p><button className={styles.secondary} type="button" onClick={()=>setConfigMode(podPatternMode==="图片裂变模式"?"pod-pattern-split":podPatternMode==="自定义指令模式"?"pod-pattern-custom":"pod-ai")}>配置当前模式</button></div><label className={styles.podCheck}><input type="checkbox" checked={podTransparent} onChange={e=>setPodTransparent(e.target.checked)}/>生成透明背景</label></section>
+    <section className={styles.useStep}><h3>步骤 4 · 贴图素材</h3><p>选择本次贴图素材的生成方式，点击模式卡进入配置。</p><div className={styles.podModes}>{[["AI自动模式","AI自动确定主题、风格、元素与排版"],["图片裂变模式","根据参考图片裂变多套新贴图"],["自定义指令模式","依据创作指令生成个性化贴图"]].map(([name,desc])=><button type="button" key={name} aria-pressed={podPatternMode===name} onClick={()=>{setPodPatternMode(name);if(name==="图片裂变模式")setConfigMode("pod-pattern-split");else if(name==="自定义指令模式")setConfigMode("pod-pattern-custom");}}><strong>{name}</strong><small>{desc}</small></button>)}</div><div className={styles.imageInstructions}><p>当前配置：{podPatternMode}{useConfig.splitStrength&&podPatternMode==="图片裂变模式"?" · "+useConfig.splitStrength:""}{useConfig.patternPrompt&&podPatternMode==="自定义指令模式"?" · 自定义指令已填写":""}</p>{podPatternMode!=="AI自动模式"?<button className={styles.secondary} type="button" onClick={()=>setConfigMode(podPatternMode==="图片裂变模式"?"pod-pattern-split":"pod-pattern-custom")}>配置当前模式</button>:null}</div><label className={styles.podCheck}><input type="checkbox" checked={podTransparent} onChange={e=>setPodTransparent(e.target.checked)}/>生成透明背景</label></section>
     <section className={styles.useStep}><h3>步骤 5 · 生成数量</h3><p>执行时按批次商品数量自动计算。</p><div className={styles.podCount}><span>每个商品生成</span><button aria-label="减少生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.max(1,v-1))}>−</button><strong>{podQuantity}</strong><button aria-label="增加生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.min(20,v+1))}>+</button><span>个</span></div><div className={styles.actionsRow}><button type="button" className={styles.secondary} onClick={()=>setShowPreview(v=>!v)}>预览配置</button><button type="button" className={styles.primary} onClick={saveTemplate}>保存为模板</button></div>{showPreview?<p role="status" className={styles.inlineNotice}>{podImageMode} · {podPatternMode} · {podQuantity} 个 · {podTransparent?"透明 PNG":"普通背景"} · 已选技能 {skills.length} 项 · 已选知识 {knowledge.length} 项</p>:null}</section>
    </div><aside className={styles.useHelp}><h3>硕米POD助手</h3><p>上传印花图后可整理生成指令；当前演示不调用 AI 识图，不会虚构识别结果。</p>
      <div className={styles.podHelpChat}>
