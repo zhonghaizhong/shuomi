@@ -281,6 +281,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    if(child==="language"||child==="background"){setChild("");return;}
    if(child){setChild("");return;}
    if(isProductImage){saveProductImage();return;}
+   if(mode==="pod-pattern-split"&&!form.splitReference?.trim()){setMessage("图片裂变需要先选择一张参考图片，不能空白保存。");return;}
    if(mode==="pod-pattern-custom"&&!form.patternPrompt?.trim()){setMessage("请填写生成指令后保存配置。");return;}
    if(isImage&&form.generationRule==="自定义指令"&&!tasks.some(t=>t.prompt.trim())){setMessage("请至少填写一条独立生成指令。");return;}
    commit();
