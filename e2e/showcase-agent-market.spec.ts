@@ -268,3 +268,32 @@ test("POD hybrid editing includes Figma image source, reorder, multi-select and 
  await expect(hybrid).toHaveCount(0);
  await expect(pod).toBeVisible();
 });
+
+test("POD Figma listing workflow uses store selection, nested product picker and honest execution guard",async({page})=>{
+ await page.goto(base+"/mine");
+ await page.getByRole("button",{name:"进入使用"}).last().click();
+ const pod=page.getByRole("dialog",{name:"POD刊登智能体"});
+ await pod.getByRole("button",{name:"创建POD刊登任务"}).click();
+ const task=page.getByRole("dialog",{name:"创建 POD 刊登任务"});
+ await expect(task).toContainText("步骤 1 · 选择刊登店铺");
+ await expect(task).toContainText("步骤 2 · 选择商品");
+ await task.getByRole("button",{name:/从我的选品选择/}).click();
+ const picker=page.getByRole("dialog",{name:"选择POD商品"});
+ await expect(picker).toContainText("暂无可选商品");
+ await picker.getByRole("button",{name:"取消"}).click();
+ await expect(picker).toHaveCount(0);
+ await task.getByRole("button",{name:"突出POD设计"}).click();
+ await expect(task.getByRole("textbox",{name:"刊登补充要求"})).toHaveValue("突出POD设计");
+ await task.getByRole("button",{name:"生成刊登方案"}).click();
+ await expect(task.getByRole("status")).toContainText("请先选择有有效服务期");
+ await task.getByRole("button",{name:"查看 POD 模板配置"}).click();
+ await expect(task).toHaveCount(0);
+ await expect(pod.getByRole("button",{name:"保存为模板"})).toBeVisible();
+});
+test("product optimizer knowledge picker opens its Figma second-level selector",async({page})=>{
+ await page.goto(base+"/mine");
+ await page.getByRole("button",{name:"进入使用"}).first().click();
+ const product=page.getByRole("dialog",{name:"商品优化智能体"});
+ await product.getByRole("button",{name:"选择知识库"}).click();
+ await expect(page.getByRole("dialog",{name:"选择知识库"})).toBeVisible();
+});
