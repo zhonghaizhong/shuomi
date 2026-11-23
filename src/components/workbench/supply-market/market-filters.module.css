@@ -8,3 +8,16 @@
 .error { color:var(--destructive); font-size:14px; line-height:20px; }
 @media (min-width:768px) { .fields { grid-template-columns:repeat(2,minmax(0,1fr)); } .price { grid-column:span 2; } }
 @media (min-width:1280px) { .fields { grid-template-columns:repeat(6,minmax(0,1fr)); } }
+
+/* Same search-left / criteria-right visual axis used across the workbench. */
+.form[data-shuomi-filter="balanced"]{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+.form[data-shuomi-filter="balanced"] .search{display:flex;min-width:0;align-items:center;min-height:44px}
+.form[data-shuomi-filter="balanced"] .search input{width:100%;max-width:none;flex:1 1 auto;min-width:0;min-height:42px}
+.form[data-shuomi-filter="balanced"] .filterRight{display:grid!important;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
+.form[data-shuomi-filter="balanced"] .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+.form[data-shuomi-filter="balanced"] .fields .price{grid-column:1/-1}
+.form[data-shuomi-filter="balanced"] .actions{display:flex;justify-content:flex-end;gap:8px}
+.form[data-shuomi-filter="balanced"] .actions button{min-height:42px;min-width:80px}
+.form[data-shuomi-filter="balanced"] .error{grid-column:1/-1}
+@media(max-width:1160px){.form[data-shuomi-filter="balanced"]{grid-template-columns:1fr}}
+@media(max-width:540px){.form[data-shuomi-filter="balanced"] .fields{grid-template-columns:1fr}.form[data-shuomi-filter="balanced"] .priceInputs{grid-template-columns:80px minmax(0,1fr) auto minmax(0,1fr)}}
