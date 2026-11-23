@@ -81,3 +81,43 @@
  .productImageModal .body,.productImageModal .head,.productImageModal .footer{padding-left:16px;padding-right:16px}
 }
 @media(max-width:480px){.productImageModal .optionGrid{grid-template-columns:1fr}}
+
+/* Screenshot-approved product image optimization structure, styled using Vuexy tokens. */
+.productImageModal{width:min(1080px,calc(100vw - 40px))}
+.productImageModal .head{align-items:center}
+.optimizerHeaderActions{display:flex;gap:9px;margin-left:auto;align-items:center}
+.optimizerHeaderActions button{min-width:145px;min-height:36px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--raised);cursor:pointer;padding:7px 12px;white-space:nowrap;font:inherit;font-size:13px}
+.optimizer{display:grid;gap:16px}
+.optimizerRows{display:grid;gap:10px}
+.optimizerRow{display:grid;grid-template-columns:200px minmax(0,1fr);gap:12px;align-items:center}
+.optimizerRowTitle{display:flex;align-items:center;gap:12px;min-width:0}
+.optimizerRowTitle>span{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;color:var(--primary);background:color-mix(in srgb,var(--primary) 10%,var(--surface));font-weight:700;font-size:13px}
+.optimizerRowTitle>div,.optimizerNoNumber{display:grid;gap:4px}
+.optimizerRowTitle strong{color:var(--ink);font-size:14px}
+.optimizerRowTitle small{color:var(--muted);font-size:12px}
+.optimizerNoNumber{padding-left:38px}
+.optimizerChoices,.optimizerChoicesThree{display:grid;gap:9px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.optimizerChoicesThree{grid-template-columns:repeat(3,minmax(0,1fr))}
+.optimizerChoices button,.optimizerChoicesThree button{display:grid;align-content:center;justify-items:start;min-width:0;min-height:58px;padding:8px 12px;gap:3px;text-align:left;border:1px solid var(--line);background:var(--raised);border-radius:8px;cursor:pointer}
+.optimizerChoices button[aria-pressed="true"],.optimizerChoicesThree button[aria-pressed="true"]{border-color:var(--primary);box-shadow:inset 3px 0 var(--primary);background:color-mix(in srgb,var(--primary) 8%,var(--raised))}
+.optimizerChoices button strong,.optimizerChoicesThree button strong{color:var(--ink);font-size:14px}
+.optimizerChoices button small,.optimizerChoicesThree button small{color:var(--muted);font-size:12px;line-height:1.35}
+.optimizerRow:last-child .optimizerChoices button{justify-items:center;min-height:46px}
+.optimizerImages{display:grid;gap:10px}
+.optimizerImagesHeader{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.optimizerImagesHeader>strong{font-size:14px;color:var(--ink)}
+.optimizerImagesHeader>div{display:flex;gap:8px}
+.optimizerImagesHeader button{min-width:68px;padding:6px 10px}
+.optimizerImageGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.optimizerImageChoice{display:flex!important;justify-content:space-between;min-height:48px;box-sizing:border-box;align-items:center;padding:10px 12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.optimizerImageChoice span{color:var(--ink);font-size:14px;font-weight:600}
+.optimizerImageChoice input{width:18px;height:18px;accent-color:#7367f0;cursor:pointer}
+.optimizerImageHint{padding:12px 14px;border-radius:8px;background:var(--raised);font-size:13px;line-height:1.6;color:var(--muted);margin:0}
+.optimizerSkillNotice{border:1px solid var(--line);border-radius:8px;padding:12px}
+.optimizerBilling{padding:13px 14px;border:1px solid color-mix(in srgb,#e2a23a 55%,var(--line));background:color-mix(in srgb,#e2a23a 8%,var(--raised));border-radius:8px;color:var(--ink);font-size:13px;line-height:1.5;margin:0!important}
+.optimizerTasks{display:grid;gap:8px;border:1px solid var(--line);padding:14px;border-radius:8px}
+.optimizerTaskRow{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,2fr) auto;gap:8px}
+.optimizerTaskRow textarea{min-height:48px}
+.optimizerTaskRow button{align-self:start}
+@media(max-width:900px){.optimizerRow{grid-template-columns:155px minmax(0,1fr)}.optimizerChoicesThree{grid-template-columns:repeat(3,minmax(0,1fr))}.optimizerHeaderActions button{min-width:105px}}
+@media(max-width:660px){.optimizerRow{grid-template-columns:1fr;gap:6px}.optimizerNoNumber{padding-left:0}.optimizerChoicesThree{grid-template-columns:1fr}.optimizerImageGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.optimizerHeaderActions{flex-wrap:wrap;justify-content:flex-end}.optimizerHeaderActions button{min-width:0}.optimizerTaskRow{grid-template-columns:1fr}.optimizerImagesHeader{flex-wrap:wrap}}
