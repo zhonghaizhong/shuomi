@@ -27,6 +27,13 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  const [imageInstructions,setImageInstructions]=useState("");
  const [imageConfigured,setImageConfigured]=useState(false);
  const [showPreview,setShowPreview]=useState(false);
+ const [saveNameOpen,setSaveNameOpen]=useState(false);
+ const [templateManagerOpen,setTemplateManagerOpen]=useState(false);
+ const [templateName,setTemplateName]=useState("");
+ const [templateRename,setTemplateRename]=useState<string|null>(null);
+ const [templateRenameValue,setTemplateRenameValue]=useState("");
+ const [templateDelete,setTemplateDelete]=useState<string|null>(null);
+ const [templateItems,setTemplateItems]=useState<Array<{id:string;name:string;createdAt:string;config:unknown}>>([]);
  const [podTaskOpen,setPodTaskOpen]=useState(false);
  const [podImageMode,setPodImageMode]=useState("AI重构模式");
  const [podPatternMode,setPodPatternMode]=useState("AI自动模式");
@@ -78,9 +85,14 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  };
  const saveTemplate=()=>{
   if(imageOptimization&&!imageConfigured){setMessage("已开启图片优化，请先填写图片优化设置。");return;}
-  onSaveTemplate?.(info.title,{skills,knowledge,imageOptimization,imageInstructions,podImageMode:isPod?podImageMode:undefined,podPatternMode:isPod?podPatternMode:undefined,podQuantity:isPod?podQuantity:undefined,podTransparent:isPod?podTransparent:undefined,useConfig});
-  onClose();
+  setSaveNameOpen(true);
  };
+ const templateKey="shuomi-demo-agent-templates-"+info.title;
+ const readTemplates=():Array<{id:string;name:string;createdAt:string;config:unknown}>=>{try{const raw=sessionStorage.getItem(templateKey);const parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed.filter(x=>x&&typeof x.id==="string"&&typeof x.name==="string"):[]}catch{return []}};
+ const showTemplates=()=>{setTemplateItems(readTemplates());setTemplateManagerOpen(true);setShowPreview(true);};
+ const saveNamedTemplate=()=>{if(!templateName.trim()){setMessage("请填写模板名称。");return;}const config={skills,knowledge,imageOptimization,imageInstructions,podImageMode:isPod?podImageMode:undefined,podPatternMode:isPod?podPatternMode:undefined,podQuantity:isPod?podQuantity:undefined,podTransparent:isPod?podTransparent:undefined,useConfig};const next=[{id:crypto.randomUUID(),name:templateName.trim(),createdAt:new Date().toLocaleDateString("zh-CN"),config},...readTemplates()];try{sessionStorage.setItem(templateKey,JSON.stringify(next));}catch{}onSaveTemplate?.(info.title,config);setSaveNameOpen(false);onClose();};
+ const renameTemplate=(id:string)=>{const next=templateItems.map(x=>x.id===id?{...x,name:templateRenameValue.trim()||x.name}:x);setTemplateItems(next);try{sessionStorage.setItem(templateKey,JSON.stringify(next));}catch{}setTemplateRename(null);};
+ const deleteTemplate=(id:string)=>{const next=templateItems.filter(x=>x.id!==id);setTemplateItems(next);try{sessionStorage.setItem(templateKey,JSON.stringify(next));}catch{}setTemplateDelete(null);};
  return <dialog ref={ref} className={`${styles.dialog} ${isUse?styles.useDialog:""}`} aria-labelledby={id}
    onCancel={event=>{event.preventDefault();onClose();}}
    onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
