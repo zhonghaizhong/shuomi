@@ -126,7 +126,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
   {podTaskOpen?<ShowcasePODTaskDialog organizationId={organizationId} memberId={memberId} administrator={administrator} onClose={()=>setPodTaskOpen(false)} onTemplate={()=>setPodTaskOpen(false)}/>:null}
   {podMaterialsOpen?<PodManagementWorkspace onClose={()=>setPodMaterialsOpen(false)}/>:null}
-  {configMode?<AgentUseConfigurationDialog mode={configMode} initial={{...useConfig,selectedSkills:skills,selectedKnowledge:knowledge}} onClose={()=>setConfigMode(null)} onSave={value=>{
+  {configMode?<AgentUseConfigurationDialog mode={configMode} agentKind={isPod?"pod":"product"} initial={{...useConfig,selectedSkills:skills,selectedKnowledge:knowledge}} onClose={()=>setConfigMode(null)} onSave={value=>{
    setUseConfig(prev=>({...prev,...value}));
    if(value.selectedSkills)setSkills(value.selectedSkills);
    if(value.selectedKnowledge)setKnowledge(value.selectedKnowledge);
