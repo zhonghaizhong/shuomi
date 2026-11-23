@@ -261,4 +261,4 @@
 .dialog.useDialog{max-height:min(90dvh,calc(100dvh - 24px));}
 
 /* Top-layer :modal rules must override older native inset:0 / transform:none. */
-.dialog:modal,.dialog:modal:has(.modelOptions),.dialog.useDialog:modal{position:fixed;inset:auto;top:50%;left:50%;right:auto;bottom:auto;margin:0;transform:translate(-50%,-50%);}
+.dialog:modal,.dialog:modal:has(.modelOptions),.dialog.useDialog:modal{position:fixed;inset:auto;top:calc(50% - 4px);left:50%;right:auto;bottom:auto;margin:0;transform:translate(-50%,-50%);}
