@@ -128,6 +128,105 @@ function AcquisitionSimulator({mode,onClose}:{mode:"local"|"online";onClose:()=>
   </dialog>;
 }
 
+
+type OnlineSource = "amazon"|"1688";
+type OnlineEntry = "source"|"configure"|"done";
+const amazonSites=["美国站","英国站","德国站","法国站","意大利站","西班牙站","日本站","加拿大站"];
+function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
+  const ref=useRef<HTMLDialogElement>(null),id=useId();
+  const [step,setStep]=useState<OnlineEntry>("source");
+  const [source,setSource]=useState<OnlineSource>("amazon");
+  const [site,setSite]=useState("美国站");
+  const [mode,setMode]=useState<"指定商品"|"按页采集"|"按关键词">("指定商品");
+  const [inputMode,setInputMode]=useState<"商品链接"|"ASIN">("商品链接");
+  const [entries,setEntries]=useState("");
+  const [rule,setRule]=useState("");
+  const [rulesOpen,setRulesOpen]=useState(false);
+  const [autoUpload,setAutoUpload]=useState(false);
+  const [error,setError]=useState("");
+  const [saved,setSaved]=useState(0);
+  useEffect(()=>{
+    const el=ref.current,prev=document.activeElement;
+    el?.showModal();
+    return ()=>{el?.close();if(prev instanceof HTMLElement&&prev.isConnected)prev.focus();};
+  },[]);
+  const choose=(next:OnlineSource)=>{
+    setSource(next);setMode("指定商品");setInputMode("商品链接");setEntries("");setError("");
+    setStep("configure");
+  };
+  const submit=(e:React.FormEvent<HTMLFormElement>)=>{
+    e.preventDefault();
+    const values=entries.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    if(!values.length){setError("请填写采集内容。");return;}
+    if(mode==="指定商品"&&inputMode==="商品链接"){
+      if(values.some(value=>{try{const u=new URL(value);return !["http:","https:"].includes(u.protocol)}catch{return true}})){setError("请输入完整的商品链接，每行一条。");return;}
+    }
+    if(values.length>30){setError("演示模式一次最多输入 30 条。");return;}
+    const previous=restoreAcquisitions();
+    const now=Date.now();
+    const next=values.map((value,index):AcquisitionRecord=>({
+      id:"MOCK-"+(now+index).toString(36),mode:"online",url:value,
+      title:`${source==="amazon"?"亚马逊":"1688"} · ${mode} · 演示记录`,
+      price:"未采集",sku:mode==="指定商品"&&inputMode==="ASIN"?value:"未采集",
+      createdAt:new Date(now).toLocaleString("zh-CN",{hour12:false})
+    }));
+    try{sessionStorage.setItem(demoAcquisitionKey,JSON.stringify([...next,...previous].slice(0,30)));}
+    catch{setError("浏览器禁止保存会话记录，请检查浏览器设置。");return;}
+    setSaved(next.length);setStep("done");setError("");
+  };
+  return <dialog ref={ref} className={`${styles.dialog} ${styles.launchDialog} ${styles.figmaAcquisitionDialog}`}
+    aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}}
+    onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    {step==="source"?<div className={styles.figmaSource}>
+      <div className={styles.figmaSourceTitle}><h2 id={id}>选择在线采集来源</h2><span>按数据收费</span></div>
+      <p>当前支持亚马逊和1688，请选择对应商品来源。</p>
+      <div className={styles.figmaSourceGrid}>
+        <section><strong>亚马逊采集</strong><p>采集 Amazon 商品详情数据</p><p>支持亚马逊商品链接</p><button type="button" onClick={()=>choose("amazon")}>进入亚马逊采集</button></section>
+        <section><strong>1688采集</strong><p>采集1688货源商品详情数据</p><p>支持1688商品链接</p><button type="button" onClick={()=>choose("1688")}>进入1688采集</button></section>
+      </div>
+      <p className={styles.figmaChargeNote}>两种在线采集均按实际采集的数据条数扣除数据额度。</p>
+      <footer><button type="button" onClick={onClose}>取消</button></footer>
+    </div>:step==="configure"?<form className={styles.figmaConfigure} onSubmit={submit}>
+      <div className={styles.figmaSourceTitle}><h2 id={id}>{source==="amazon"?"亚马逊在线采集":"1688在线采集"}</h2><span>{source==="amazon"?"亚马逊":"1688"} · 按数据量计费</span></div>
+      <p>{source==="amazon"?"请先选择站点，再选择采集方式。":"支持指定商品、按页、按关键词三种采集方式。"}</p>
+      <div className={styles.figmaConfigGroup}>
+        {source==="amazon"?<label className={styles.figmaRowLabel}>站点<select aria-label="站点" value={site} onChange={e=>setSite(e.target.value)}>{amazonSites.map(x=><option key={x}>{x}</option>)}</select></label>:null}
+        <div className={styles.figmaModeRow}><span>采集方式</span><div className={styles.figmaSegments} role="group" aria-label="采集方式">{(["指定商品","按页采集","按关键词"] as const).map(x=><button type="button" key={x} aria-pressed={mode===x} onClick={()=>{setMode(x);setEntries("");setError("");}}>{x}</button>)}</div></div>
+      </div>
+      <div className={styles.figmaInputGroup}>
+        <div className={styles.figmaInputHeading}><strong>{mode==="指定商品"?(source==="amazon"?"输入内容":"1688 商品链接"):mode==="按页采集"?"输入页面地址":"输入关键词"}</strong>
+          {source==="amazon"&&mode==="指定商品"?<div className={styles.figmaSegments} role="group" aria-label="输入方式">{(["商品链接","ASIN"] as const).map(x=><button type="button" key={x} aria-pressed={inputMode===x} onClick={()=>{setInputMode(x);setEntries("");setError("");}}>{x}</button>)}</div>:null}
+        </div>
+        <textarea aria-label={mode==="指定商品"?(source==="amazon"&&inputMode==="ASIN"?"ASIN":"商品链接"):mode==="按页采集"?"页面链接":"关键词"}
+          rows={4} value={entries} onChange={e=>setEntries(e.target.value)}
+          placeholder={mode==="指定商品"?(source==="amazon"&&inputMode==="ASIN"?"输入亚马逊 ASIN，支持批量输入，每行一条":`粘贴${source==="amazon"?"亚马逊":"1688"}商品链接，支持批量输入，每行一条`):mode==="按页采集"?"输入商品列表页面链接，每行一条":"输入商品关键词，每行一条"}/>
+      </div>
+      <p className={styles.figmaBill}>按实际采集成功的数据条数扣除数据额度；采集规则不影响计费。</p>
+      <div className={styles.figmaAfter}>
+        <strong>采集后处理</strong>
+        <p>采集结果全部保存至「数据服务 / 我的数据」</p>
+        <label className={styles.figmaToggleRow}>采集后自动转入待上传<input type="checkbox" checked={autoUpload} onChange={e=>setAutoUpload(e.target.checked)}/></label>
+        <small>开启后转入待上传；关闭后仅保存至「我的数据」。</small>
+      </div>
+      <div className={styles.figmaRules}>
+        <label>采集规则<select aria-label="采集规则" value={rule} onChange={e=>setRule(e.target.value)}>
+          <option value="">选择采集规则（可选）</option><option>默认采集规则</option><option>仅采集商品基本资料</option>
+        </select></label>
+        <button type="button" onClick={()=>setRulesOpen(!rulesOpen)}>设置规则</button>
+      </div>
+      {rulesOpen?<div className={styles.figmaRuleSettings}><strong>采集规则设置（演示）</strong><p>选择采集规则后返回本页，采集计费仍按实际成功条数。</p><button type="button" onClick={()=>{setRule("默认采集规则");setRulesOpen(false);}}>保存规则</button></div>:null}
+      <p className={styles.figmaDemoCaption}>演示模式：仅保存当前浏览器模拟记录，不调用真实采集接口或扣除额度；自动转入待上传不会写入正式业务数据。</p>
+      {error?<p role="alert" className={styles.acquisitionError}>{error}</p>:null}
+      <footer><button type="button" onClick={()=>{setError("");setStep("source");}}>取消</button><button type="submit" className={styles.primary}>开始采集</button></footer>
+    </form>:<div className={styles.figmaDone}>
+      <h2 id={id}>采集任务已模拟完成</h2>
+      <p role="status">已记录 {saved} 条${source==="amazon"?"亚马逊":"1688"}演示数据。</p>
+      <p>模拟记录保存在当前浏览器会话。正式采集成功后才会写入「数据服务 / 我的数据」。</p>
+      <footer><button type="button" onClick={()=>{setStep("configure");setEntries("");}}>继续采集</button><button type="button" className={styles.primary} onClick={onClose}>知道了</button></footer>
+    </div>}
+  </dialog>;
+}
+
 function ToolModal({info,onClose,onConfirm}:{info:Dialog;onClose:()=>void;onConfirm:()=>void}) {
   const ref=useRef<HTMLDialogElement>(null), id=useId();
   const [selectedFeature,setSelectedFeature]=useState(0);
@@ -147,7 +246,8 @@ function ToolModal({info,onClose,onConfirm}:{info:Dialog;onClose:()=>void;onConf
     ["在线采集","由平台云端执行，无需客户电脑持续运行即可完成在线采集。"]
   ]:[["功能说明",tool?.description??"请选择工具功能"]];
   const title=info.type==="download"?"下载商品采集插件":info.type==="disable"?"确认停用工具":info.type==="launch"?(isAcquisition?"在线采集":info.name+" · 进入使用"):info.name;
-  if(isAcquisition&&(info.type==="download"||info.type==="launch"))return <AcquisitionSimulator mode={info.type==="download"?"local":"online"} onClose={onClose}/>;
+  if(isAcquisition&&info.type==="download")return <AcquisitionSimulator mode="local" onClose={onClose}/>;
+  if(isAcquisition&&info.type==="launch")return <FigmaOnlineCollection onClose={onClose}/>;
   return <dialog ref={ref} className={`${styles.dialog} ${info.type==="launch"?styles.launchDialog:""}`} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><h2 id={id}>{title}</h2><button type="button" onClick={onClose} aria-label="关闭弹窗">×</button></header>
     {info.type==="download"?<>
