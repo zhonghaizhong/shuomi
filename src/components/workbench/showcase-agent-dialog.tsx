@@ -40,6 +40,10 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  const [podPatternMode,setPodPatternMode]=useState("AI自动模式");
  const [podQuantity,setPodQuantity]=useState(3);
  const [podTransparent,setPodTransparent]=useState(true);
+ const [podChatDraft,setPodChatDraft]=useState("");
+ const [podChatPrompt,setPodChatPrompt]=useState("");
+ const [podChatImage,setPodChatImage]=useState("");
+ const [podChatNotice,setPodChatNotice]=useState("");
  const [configMode,setConfigMode]=useState<ConfigurationMode|null>(null);
  const [useConfig,setUseConfig]=useState<AgentUseConfiguration>({});
 
@@ -68,6 +72,8 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
   }catch{/* A missing or malformed browser draft never prevents opening the dialog. */}
  },[info,organizationId,memberId]);
  const isModel=info.kind==="model",isUse=info.kind==="use",isPod=info.title.includes("POD");
+ const applyPodChatPrompt=()=>{if(!podChatPrompt.trim()){setPodChatNotice("请先填写希望用于贴图生成的指令。");return;}setPodPatternMode("自定义指令模式");setUseConfig(old=>({...old,patternPrompt:podChatPrompt.trim()}));setPodChatNotice("已将指令应用到贴图素材配置，可打开「自定义指令模式」继续编辑。")};
+ const handlePodReference=(file?:File)=>{if(!file)return;if(!file.type.startsWith("image/")){setPodChatNotice("请上传图片文件。");return;}setPodChatImage(file.name);setPodChatNotice("参考图「"+file.name+"」已选择；当前演示未接入图片识别服务，请补充或编辑指令后应用。")};
  const toggle=(items:string[],set:(value:string[])=>void,item:string)=>set(items.includes(item)?items.filter(v=>v!==item):[...items,item]);
  const validCustom=custom.provider.trim()&&custom.model.trim()&&custom.apiKey.trim();
  const customSubmit=()=>{
@@ -146,11 +152,20 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
   :isPod?<><div className={styles.savedTemplate}><button className={styles.secondary} type="button" onClick={showTemplates}>查看模板</button><button className={styles.primary} type="button" onClick={()=>setPodTaskOpen(true)}>创建POD刊登任务</button><small>模板配置与刊登任务分别管理；任务需选择店铺和商品。</small></div><div className={styles.useLayout}>
    <div className={styles.useSteps}>
     <section className={styles.useStep}><h3>步骤 1 · 图片生成方式</h3><p>选择本次 POD 商品图片的生成方式，可在生成刊登方案前调整。</p><div className={styles.podModes}>{[["AI重构模式","引用技能 · 官方方案 · 自定义指令"],["混合模式","支持固定图片 + AI 生成，灵活组合主图与详情图"]].map(([name,desc])=><button key={name} type="button" aria-pressed={podImageMode===name} onClick={()=>{setPodImageMode(name);setConfigMode(name==="混合模式"?"pod-hybrid":"pod-ai");}}><strong>{name}</strong><small>{desc}</small></button>)}</div><p>AI 相关能力按积分计费（实际计费未接入）。</p></section>
-    <section className={styles.useStep}><h3>步骤 2 · 是否启用知识库</h3><p>按需选择要引用的知识；未选择时，AI 不读取任何知识库。</p><div className={styles.picks}>{["平台规则","运营方法","合规参考"].map(item=><label key={item}><input type="checkbox" checked={knowledge.includes(item)} onChange={()=>toggle(knowledge,setKnowledge,item)}/>{item}</label>)}<button type="button" className={styles.secondary} onClick={()=>setConfigMode("knowledge")}>选择知识库</button></div></section>
-    <section className={styles.useStep}><h3>步骤 3 · 启用技能</h3><p>按需选择我的技能或团队技能，使用技能规范贴图生成与图片优化。</p><div className={styles.picks}>{["POD图片生成","贴图优化","文案生成"].map(item=><label key={item}><input type="checkbox" checked={skills.includes(item)} onChange={()=>toggle(skills,setSkills,item)}/>{item}</label>)}<button type="button" className={styles.secondary} onClick={()=>setConfigMode("skills")}>选择技能</button></div></section>
+    <section className={styles.useStep}><h3>步骤 2 · 是否启用知识库</h3><div className={styles.productConfigRow}><div className={styles.productRowText}><strong>使用知识库</strong><small>按需引用已选择的知识资料；未选择时 AI 不读取知识库。</small></div><span className={styles.productStatus}>● {knowledge.length?"已选 "+knowledge.length+" 项":"未启用"}</span><button type="button" className={styles.primary} onClick={()=>setConfigMode("knowledge")}>选择知识库</button></div></section>
+    <section className={styles.useStep}><h3>步骤 3 · 启用技能</h3><div className={styles.productConfigRow}><div className={styles.productRowText}><strong>启用执行技能</strong><small>只应用实际选择的我的技能或团队技能，未选择时不自动运行。</small></div><span className={styles.productStatus}>● {skills.length?"已选 "+skills.length+" 项":"未启用"}</span><button type="button" className={styles.primary} onClick={()=>setConfigMode("skills")}>选择技能</button></div></section>
     <section className={styles.useStep}><h3>步骤 4 · 贴图素材</h3><p>选择本次贴图素材的生成方式，点击模式卡进入配置。</p><div className={styles.podModes}>{[["AI自动模式","AI自动确定主题、风格、元素与排版"],["图片裂变模式","根据参考图片裂变多套新贴图"],["自定义指令模式","依据创作指令生成个性化贴图"]].map(([name,desc])=><button type="button" key={name} aria-pressed={podPatternMode===name} onClick={()=>{setPodPatternMode(name);if(name==="图片裂变模式")setConfigMode("pod-pattern-split");else if(name==="自定义指令模式")setConfigMode("pod-pattern-custom");}}><strong>{name}</strong><small>{desc}</small></button>)}</div><div className={styles.imageInstructions}><p>当前配置：{podPatternMode}{useConfig.splitStrength?" · "+useConfig.splitStrength:""}{useConfig.patternPrompt?" · 自定义指令已填写":""}</p><button className={styles.secondary} type="button" onClick={()=>setConfigMode(podPatternMode==="图片裂变模式"?"pod-pattern-split":podPatternMode==="自定义指令模式"?"pod-pattern-custom":"pod-ai")}>配置当前模式</button></div><label className={styles.podCheck}><input type="checkbox" checked={podTransparent} onChange={e=>setPodTransparent(e.target.checked)}/>生成透明背景</label></section>
     <section className={styles.useStep}><h3>步骤 5 · 生成数量</h3><p>执行时按批次商品数量自动计算。</p><div className={styles.podCount}><span>每个商品生成</span><button aria-label="减少生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.max(1,v-1))}>−</button><strong>{podQuantity}</strong><button aria-label="增加生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.min(20,v+1))}>+</button><span>个</span></div><div className={styles.actionsRow}><button type="button" className={styles.secondary} onClick={()=>setShowPreview(v=>!v)}>预览配置</button><button type="button" className={styles.primary} onClick={saveTemplate}>保存为模板</button></div>{showPreview?<p role="status" className={styles.inlineNotice}>{podImageMode} · {podPatternMode} · {podQuantity} 个 · {podTransparent?"透明 PNG":"普通背景"} · 已选技能 {skills.length} 项 · 已选知识 {knowledge.length} 项</p>:null}</section>
-   </div><aside className={styles.useHelp}><h3>POD 刊登说明</h3><p>配置图片、知识库、贴图素材与生成数量，保存为模板后可在「已适配」流程中调用。</p><h4>图片生成</h4><p>AI 重构或混合模式按需选择，固定图片不会被无意替换。</p><h4>贴图素材</h4><p>AI 自动、图片裂变或自定义指令，分别定义素材生成方式。</p><h4>结果去向</h4><p>已适配调用 · 待审核 · 发布</p><p>当前为交互演示，不会真实生成图片、扣除积分或刊登商品。</p></aside>
+   </div><aside className={styles.useHelp}><h3>硕米POD助手</h3><p>上传印花图后可整理生成指令；当前演示不调用 AI 识图，不会虚构识别结果。</p>
+     <div className={styles.podHelpChat}>
+      {podChatImage?<p>参考图片：{podChatImage}</p>:<p>可上传参考印花图，或者直接填写创作要求。</p>}
+      <label>贴图生成指令<textarea aria-label="POD助手补充要求" value={podChatDraft} onChange={e=>setPodChatDraft(e.target.value)} placeholder="例如：美式手绘猫咪印花、简洁线条、透明背景、适合服装印制……" rows={4}/></label>
+      <div className={styles.podHelpActions}><label className={styles.secondary}>上传印花图<input type="file" accept="image/*" aria-label="上传POD印花参考图" onChange={e=>handlePodReference(e.target.files?.[0])}/></label><button type="button" className={styles.primary} onClick={()=>{if(!podChatDraft.trim()){setPodChatNotice("请先填写创作要求。");return;}setPodChatPrompt(podChatDraft.trim());setPodChatNotice("已整理为待应用的用户指令；当前没有真实 AI 识别结果。")}}>整理指令</button></div>
+      {podChatPrompt?<section className={styles.podHelpResult}><strong>待应用的贴图指令</strong><p>{podChatPrompt}</p><button type="button" onClick={applyPodChatPrompt}>应用到步骤 4</button></section>:null}
+      {podChatNotice?<p role="status">{podChatNotice}</p>:null}
+     </div>
+     <p>确认后可继续进入「贴图素材 → 自定义指令模式」编辑。真实生成、扣积分和刊登尚未执行。</p>
+    </aside>
   </div></>
   :<div className={styles.productLayout}>
    <div className={styles.productSteps}>
