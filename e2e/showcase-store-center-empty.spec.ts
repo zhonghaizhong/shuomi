@@ -515,12 +515,12 @@ test("My Stores Figma optimized asset layout exposes captions and separate opera
  await expect(area.getByText("统一管理店铺连接、授权、网络环境和数据状态。")).toBeVisible();
 
  const filter=area.getByRole("form",{name:"店铺筛选"});
- const criteria=filter.locator('[aria-label="条件筛选"]');
- const actions=filter.locator('[aria-label="搜索与操作"]');
- for(const field of ["平台筛选","站点筛选","店铺类型筛选"])await expect(criteria.getByLabel(field)).toBeVisible();
- await expect(actions.getByLabel("搜索店铺")).toBeVisible();
- await expect(actions.getByRole("button",{name:"重置"})).toBeVisible();
- await expect(actions.getByRole("button",{name:"确认"})).toBeVisible();
+ const left=filter.locator('[data-shuomi-filter-left]');
+ const right=filter.locator('[data-shuomi-filter-right]');
+ await expect(left.getByLabel("搜索店铺")).toBeVisible();
+ for(const field of ["平台筛选","站点筛选","店铺类型筛选"])await expect(right.getByLabel(field)).toBeVisible();
+ await expect(right.getByRole("button",{name:"重置"})).toBeVisible();
+ await expect(right.getByRole("button",{name:"确认"})).toBeVisible();
  const cards=area.locator("article[class*=\"storeCard\"]").filter({hasText:"管理员演示店铺01"});
  await expect(cards.first()).toContainText("店铺 ID：");
  await expect(cards.first()).toContainText("服务期限：");
