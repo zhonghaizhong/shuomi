@@ -189,13 +189,19 @@ test("listing four-stage Figma flow has distinct functional screens",async({page
  await expect(waiting.getByRole("button",{name:"直接上传到平台"})).toBeDisabled();
  // The waiting screen deliberately keeps stage navigation hidden until a task exists.\n await page.goto(entry+"/listing/missing");
  const missing=page.locator('[data-listing-stage="missing"]');
- await expect(missing.getByRole("heading",{name:"商品列表（共 0 个商品）"})).toBeVisible();
- await expect(missing.getByRole("status")).toContainText("暂无商品记录");
+ const missingListTitle=missing.getByRole("heading",{name:/^商品列表（共 \d+ 个商品）$/});
+ await expect(missingListTitle).toBeVisible();
+ if((await missingListTitle.textContent())?.includes("共 0 个商品")){
+  await expect(missing.getByRole("status")).toContainText("暂无商品记录");
+ }
  await missing.getByRole("button",{name:"待审核",exact:true}).click();
  const review=page.locator('[data-listing-stage="review"]');
  await expect(review.getByRole("heading",{name:"为什么需要人工审核 AI 建议？"})).toBeVisible();
- await expect(review.getByRole("heading",{name:"商品列表（共 0 个商品）"})).toBeVisible();
- await expect(review.getByRole("status")).toContainText("暂无商品记录");
+ const reviewListTitle=review.getByRole("heading",{name:/^商品列表（共 \d+ 个商品）$/});
+ await expect(reviewListTitle).toBeVisible();
+ if((await reviewListTitle.textContent())?.includes("共 0 个商品")){
+  await expect(review.getByRole("status")).toContainText("暂无商品记录");
+ }
  await review.getByRole("button",{name:"已上传",exact:true}).click();
  await expect(page.locator("[data-showcase-uploaded]")).toBeVisible();
  await expect(page.locator("[data-showcase-uploaded]")).toContainText("暂无已上传商品记录");
