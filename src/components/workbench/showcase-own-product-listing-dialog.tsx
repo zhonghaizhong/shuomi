@@ -82,10 +82,12 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
     {source==="img"?<div className={styles.productGrid}>
      {skuType==="multi"?<aside className={styles.skuList}><strong>SKU 列表</strong><small>直接输入名称，点击保存</small>
       <div className={styles.skuItems}>{skus.map(s=><div key={s.id} className={styles.skuItem} data-active={currentId===s.id}>
-       <button type="button" className={styles.skuSelect} onClick={()=>setCurrentId(s.id)}>{String(s.id).padStart(2,"0")}</button>
-       <input aria-label={`SKU ${s.id} 名称`} placeholder="输入 SKU 名称" maxLength={60} value={s.draft} onFocus={()=>setCurrentId(s.id)} onChange={e=>patch(s.id,{draft:e.target.value})}/>
-       <button type="button" onClick={()=>{patch(s.id,{name:s.draft.trim()});setCurrentId(s.id)}}>保存</button>
-       <small>{s.images.length?"已上传 "+s.images.length+" 张图片":"未上传图片"}</small>
+       <div className={styles.skuItemRow}>
+        <button type="button" className={styles.skuSelect} aria-label={`选择 SKU ${s.id}`} onClick={()=>setCurrentId(s.id)}>{String(s.id).padStart(2,"0")}</button>
+        <input aria-label={`SKU ${s.id} 名称`} placeholder="输入 SKU 名称" maxLength={60} value={s.draft} onFocus={()=>setCurrentId(s.id)} onChange={e=>patch(s.id,{draft:e.target.value})}/>
+        <button type="button" className={styles.skuSave} onClick={()=>{patch(s.id,{name:s.draft.trim()});setCurrentId(s.id)}}>保存</button>
+       </div>
+       <small className={styles.skuItemStatus}>{s.images.length?"已上传 "+s.images.length+" 张图片":"未上传图片"}</small>
       </div>)}</div>
       <button type="button" className={styles.addSku} onClick={addSku}>＋ 添加 SKU</button>
      </aside>:null}
