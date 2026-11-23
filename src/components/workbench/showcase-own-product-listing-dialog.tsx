@@ -7,6 +7,8 @@ import {readOwnProductBatches,createOwnProductBatch,saveOwnProduct,type OwnProdu
 type Source="img"|"sheet"|"link"|"api";
 type Sku={id:number;name:string;draft:string;description:string;images:string[]};
 const newSku=(id:number):Sku=>({id,name:"",draft:"",description:"",images:[]});
+const availableAgents=():string[]=>{if(typeof window==="undefined")return [];try{const raw=sessionStorage.getItem("shuomi-demo-agents-enabled");if(raw===null)return ["商品优化智能体","POD刊登智能体"];const parsed:unknown=JSON.parse(raw);return Array.isArray(parsed)?parsed.filter((v):v is string=>typeof v==="string"):[]}catch{return []}};
+const agentTemplates=(agent:string):string[]=>{if(!agent)return [];try{const raw=sessionStorage.getItem("shuomi-demo-agent-templates-"+agent);if(raw){const parsed:unknown=JSON.parse(raw);if(Array.isArray(parsed))return parsed.filter((v):v is {name:string}=>Boolean(v&&typeof v==="object"&&"name"in v&&typeof v.name==="string")).map(v=>v.name);}const legacy=sessionStorage.getItem("shuomi-demo-agent-template-"+agent);return legacy?["已有演示模板"]:[]}catch{return []}};
 const sourceOptions:{value:Source;label:string}[]=[
  {value:"img",label:"上传资料"},{value:"sheet",label:"导入表格"},
  {value:"link",label:"商品链接"},{value:"api",label:"API 接入"}
@@ -19,6 +21,10 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
  const [activeImage,setActiveImage]=useState<string|null>(null),[agent,setAgent]=useState(""),[template,setTemplate]=useState("");
  const [link,setLink]=useState(""),[sheetName,setSheetName]=useState(""),[status,setStatus]=useState("");
  const [loadingImages,setLoadingImages]=useState(false);
+ const [enabledAgents,setEnabledAgents]=useState<string[]>(availableAgents);
+ const [templates,setTemplates]=useState<string[]>([]);
+ useEffect(()=>{setEnabledAgents(availableAgents())},[]);
+ useEffect(()=>{setTemplates(agentTemplates(agent));setTemplate("")},[agent]);
  const [batches,setBatches]=useState<OwnProductBatch[]>(()=>readOwnProductBatches(organizationId,memberId));
  const [batchId,setBatchId]=useState(""),[batchMode,setBatchMode]=useState<"create"|"select"|null>(null),[batchName,setBatchName]=useState("");
  const currentBatch=batches.find(b=>b.id===batchId);
@@ -100,8 +106,8 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
    </section>
    <section className={styles.panel}><div className={styles.heading}><h3>03&nbsp; AI 能力与生成</h3><span>提交商品进行校验，缺失必填信息统一在商品管理中补全。</span></div>
     <div className={styles.aiRow}><div className={styles.aiOptions}>
-     <label>智能体<select aria-label="智能体" value={agent} onChange={e=>{setAgent(e.target.value);setTemplate("")}}><option value="">未选择 · 点击选择</option><option value="商品优化智能体">商品优化智能体</option><option value="POD刊登智能体">POD刊登智能体</option><option value="平台适配智能体">平台适配智能体</option></select></label>
-     <label>智能体模板<select aria-label="智能体模板" disabled={!agent} value={template} onChange={e=>setTemplate(e.target.value)}><option value="">请选择智能体模板</option><option value="标准商品优化">标准商品优化</option><option value="基础资料补全">基础资料补全</option></select></label>
+     <label>智能体<select aria-label="智能体" value={agent} onChange={e=>{setAgent(e.target.value);setTemplate("")}}><option value="">{enabledAgents.length?"未选择 · 点击选择":"我的智能体暂无已启用项"}</option>{enabledAgents.map(name=><option key={name} value={name}>{name}</option>)}</select></label>
+     <label>智能体模板<select aria-label="智能体模板" disabled={!agent} value={template} onChange={e=>setTemplate(e.target.value)}><option value="">{!agent?"请先选择智能体":templates.length?"请选择智能体模板":"该智能体暂无已保存模板"}</option>{templates.map(name=><option key={name} value={name}>{name}</option>)}</select></label>
     </div>
     <div className={styles.batchControls}>
       <button type="button" aria-expanded={batchMode==="create"} onClick={()=>{setBatchMode(batchMode==="create"?null:"create");setStatus("")}}>＋ 创建自有商品批次</button>
