@@ -12,7 +12,7 @@ const sites=["美国站","加拿大站","英国站","德国站","法国站"];
 const historicalStart="2026-11-22T07:19:00.000Z";
 const historicalExpiry="2026-12-22T07:19:00.000Z";
 const demoCredentials=(id:string)=>({bindingAccount:"demo_"+id.toLowerCase().replace(/[^a-z0-9]/g,"_"),demoPassword:"DEMO_ONLY_"+id.replace(/[^A-Z0-9]/gi,"_")});
-const isSeededStore=(id:string)=>/^SIM-(?:ADMIN-0[1-5]|C01-0[1-5]|ADMIN-EXPIRED-01|C01-EXPIRED-01)$/.test(id);
+const isSeededStore=(id:string)=>/^(?:SIM-(?:ADMIN-0[1-5]|C01-0[1-5]|ADMIN-EXPIRED-01|C01-EXPIRED-01)|DEMO-[A-Z0-9-]+)$/.test(id);
 const expiredDemoStores:DemoStoreBinding[]=[
  {id:"SIM-ADMIN-EXPIRED-01",name:"管理员已到期测试店铺",platform:"SHEIN",region:"美国站",type:"全托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"管理员",ownerMemberId:"admin",serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1,platformStoreId:"SIM-SHEIN-ADMIN-EXPIRED-01"},
  {id:"SIM-C01-EXPIRED-01",name:"同事01已到期测试店铺",platform:"SHEIN",region:"英国站",type:"半托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"模拟同事01",ownerMemberId:colleague,serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1,platformStoreId:"SIM-SHEIN-C01-EXPIRED-01"}
