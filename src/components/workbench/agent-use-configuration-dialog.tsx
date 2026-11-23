@@ -32,6 +32,11 @@ export type AgentUseConfiguration={
 
 const initialOfficial=["商品识别主图","核心购买理由","核心需求解决","产品结构确认","核心细节证据","核心使用场景","卖点选择理由","规格购买确认"];
 const officialDetail=["核心购买理由","核心需求解决","核心使用场景","细节证据","功能卖点确认","使用体验延展","规格购买确认","购买理由总结"];
+function officialImageExampleUrl(target:"主图"|"详情图",index:number,extension:"png"|"svg"="png"){
+ const base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
+ return `${base}/assets/agent-image-examples/${target==="主图"?"main":"detail"}-${index+1}.${target==="主图"?extension:"svg"}`;
+}
+
 const officialExampleNotes={
  "主图":[["完整展示奶油色保温杯的杯身、杯盖、提手与整体轮廓。","主体完整、背景简洁、光线柔和"],["突出通勤便携与日常饮水的核心价值。","购买理由明确、产品保持主角"],["表现不同生活场景下随时饮水的需求。","场景真实、需求清晰"],["说明杯盖、密封结构、杯口与杯身的关系。","组件清晰、结构可辨"],["突出杯口边缘、杯盖接缝和表面质感。","细节聚焦、避免虚构材料规格"],["在工作或出行环境中展示产品。","使用场景自然、主体醒目"],["概括提手、宽口、外观等选择理由。","卖点精炼、避免未经核实的性能承诺"],["帮助购买者确认外观与需要核对的规格。","尺寸容量以实际商品资料为准"]],
  "详情图":[["从实用性和美观度解释购买价值。","围绕产品用途呈现购买理由"],["以办公和通勤说明日常饮水痛点。","场景与需求一一对应"],["通过桌面、休闲和出行场景展示用途。","让使用环境更具体"],["放大杯口、提手和杯盖的关键细节。","细节真实、重点突出"],["展示杯盖、提手和宽口的使用方式。","功能展示清楚，不虚构参数"],["表现轻松提拿和多场景携带体验。","动作自然、商品一致"],["提示核对容量、尺寸及材质等资料。","不展示未经确认的精确参数"],["总结外观、便携和日常使用价值。","收束信息，帮助购买判断"]]
@@ -243,11 +248,11 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
    <div className={css.optimizerExampleWindow}>
     <header className={css.optimizerExampleHead}><div><strong>示例说明 · {example.target}第 {example.index+1} 张</strong><small>{(example.target==="主图"?initialOfficial:officialDetail)[example.index]} · 保温杯演示素材</small></div><button type="button" onClick={()=>{setExample(null);setExampleZoom(false);}} aria-label="关闭示例">×</button></header>
     <div className={css.optimizerExampleLayout}>
-     <div className={css.optimizerExampleVisual}><button type="button" aria-label="点击放大示例图片" onClick={()=>setExampleZoom(true)}><img src={`${typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":""}/assets/agent-image-examples/${example.target==="主图"?"main":"detail"}-${example.index+1}.svg`} alt={(example.target==="主图"?initialOfficial:officialDetail)[example.index]+"中文保温杯1:1示例"}/></button><small>1:1 中文演示图 · 点击图片放大查看</small></div>
+     <div className={css.optimizerExampleVisual}><button type="button" aria-label="点击放大示例图片" onClick={()=>setExampleZoom(true)}><img src={officialImageExampleUrl(example.target,example.index)} onError={event=>{const img=event.currentTarget;const fallback=officialImageExampleUrl(example.target,example.index,"svg");if(img.src!==new URL(fallback,window.location.href).href)img.src=fallback;}} alt={(example.target==="主图"?initialOfficial:officialDetail)[example.index]+"中文保温杯1:1示例"}/></button><small>1:1 中文演示图 · 点击图片放大查看</small></div>
      <aside className={css.optimizerExampleNotes}><h3>表达目标</h3><p>{officialExampleNotes[example.target][example.index][0]}</p><h3>示例重点</h3><p>{officialExampleNotes[example.target][example.index][1]}</p><p className={css.optimizerExampleCaution}>说明：此为演示保温杯示意图；材质、容量、保温时长等真实参数需依据实际商品资料核对。</p></aside>
     </div>
    </div>
-   {exampleZoom?<div className={css.optimizerExampleZoom} role="dialog" aria-modal="true" aria-label="放大示例图片"><button type="button" onClick={()=>setExampleZoom(false)} aria-label="关闭放大图片">关闭放大</button><img src={`${typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":""}/assets/agent-image-examples/${example.target==="主图"?"main":"detail"}-${example.index+1}.svg`} alt="放大后的1比1中文保温杯示例"/></div>:null}
+   {exampleZoom?<div className={css.optimizerExampleZoom} role="dialog" aria-modal="true" aria-label="放大示例图片"><button type="button" onClick={()=>setExampleZoom(false)} aria-label="关闭放大图片">关闭放大</button><img src={officialImageExampleUrl(example.target,example.index)} onError={event=>{const img=event.currentTarget;const fallback=officialImageExampleUrl(example.target,example.index,"svg");if(img.src!==new URL(fallback,window.location.href).href)img.src=fallback;}} alt="放大后的1比1中文保温杯示例"/></div>:null}
   </div>:null}
   <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={isProductImage&&!child&&!productImageReady} onClick={()=>{
    if(child==="restore"){setSlots(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));setChild("");return;}
