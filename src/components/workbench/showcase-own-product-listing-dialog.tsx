@@ -16,6 +16,7 @@ const sourceOptions:{value:Source;label:string}[]=[
 
 export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId}:{onClose:()=>void;organizationId:string;memberId:string}){
  const ref=useRef<HTMLDialogElement>(null),fileRef=useRef<HTMLInputElement>(null),headingId=useId();
+ const reviewPanelRef=useRef<HTMLElement>(null);
  const [source,setSource]=useState<Source>("img"),[skuType,setSkuType]=useState<"single"|"multi">("multi");
  const [skus,setSkus]=useState<Sku[]>([newSku(1),newSku(2)]),[currentId,setCurrentId]=useState(1);
  const [activeImage,setActiveImage]=useState<string|null>(null),[agent,setAgent]=useState(""),[template,setTemplate]=useState("");
@@ -69,6 +70,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
    setStatus(missing.length?"检测完成：请在下方承接区逐项补齐资料，通过统一检查后才进入自有商品库。":"检测通过：商品已进入自有商品库，可从承接区查看本次结果。");
   }catch(e){setStatus(e instanceof Error?"保存失败："+e.message:"保存失败，请检查浏览器会话存储容量。");}
  };
+ useEffect(()=>{if(reviewProduct){reviewPanelRef.current?.scrollIntoView({block:"start",behavior:"instant"});}},[reviewProduct?.id]);
  const currentReviewSku=reviewSkus.find(s=>s.id===reviewSkuId)||reviewSkus[0];
  const reviewMissing=checkOwnProductSkus(reviewSkus);
  const completeReview=()=>{
@@ -94,8 +96,9 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
   <header className={styles.header}><div><h2 id={headingId}>自有商品一键刊登</h2><p>上传商品资料，按 SKU 整理图片及基础信息，提交后统一检测。</p></div><button type="button" onClick={onClose}>关闭</button></header>
   <div className={styles.content}>
    {!reviewProduct&&readOwnProducts(organizationId,memberId).some(p=>p.status==="待补全")?<div className={styles.pendingBanner}><strong>待补全商品</strong><span>已保存的待补全记录可继续编辑，检查通过后才进入自有商品库。</span><select aria-label="继续补全已有商品" value="" onChange={e=>{const item=readOwnProducts(organizationId,memberId).find(p=>p.id===e.target.value&&p.status==="待补全");if(item){setReviewProduct(item);setReviewSkus(item.skus);setReviewSkuId(item.skus[0]?.id||1);setStatus("已恢复待补全商品："+item.name)}}}><option value="">选择待补全商品</option>{readOwnProducts(organizationId,memberId).filter(p=>p.status==="待补全").map(p=><option key={p.id} value={p.id}>{p.name} · {p.missing.length} 项待补全</option>)}</select></div>:null}
-   {reviewProduct?<section className={styles.reviewPanel} aria-label="商品检测承接区">
+   {reviewProduct?<section ref={reviewPanelRef} className={styles.reviewPanel} aria-label="商品检测承接区">
     <div className={styles.reviewHead}><div><h3>商品检测 · 待补全承接区</h3><p>本次批次：{batches.find(b=>b.id===reviewProduct.batchId)?.name} · {reviewProduct.status==="待上传"?"已通过统一检查":"需补全 "+reviewMissing.length+" 项"}</p></div><button type="button" onClick={()=>{setReviewProduct(null);setReviewSkus([]);setStatus("")}}>继续导入商品</button></div>
+    {status?<p role="status" className={styles.feedback}>{status}</p>:null}
     {reviewProduct.status==="待补全"?<>
      <div className={styles.reviewList}>{reviewSkus.map(x=><button type="button" key={x.id} className={reviewSkuId===x.id?styles.reviewActive:""} onClick={()=>setReviewSkuId(x.id)}>{x.name||"SKU "+x.id}<small>{checkOwnProductSkus([x]).length?checkOwnProductSkus([x]).length+" 项待补全":"资料齐全"}</small></button>)}</div>
      {currentReviewSku?<div className={styles.reviewEditor}>
@@ -107,7 +110,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
      <button type="button" className={styles.reviewCheck} onClick={completeReview}>统一检查并保存</button>
     </>:<p className={styles.reviewSuccess}>全部必填资料已通过检查。商品已加入「我的数据 → 自有商品库」，可从刊登管理选择。</p>}
    </section>:null}
-   <section className={styles.panel}><div className={styles.heading}><h3>01&nbsp; 选择导入方式</h3></div>
+   {!reviewProduct?<><section className={styles.panel}><div className={styles.heading}><h3>01&nbsp; 选择导入方式</h3></div>
     <div className={styles.sources} role="radiogroup" aria-label="选择导入方式">{sourceOptions.map(x=><button type="button" key={x.value} role="radio" aria-checked={source===x.value} onClick={()=>onSource(x.value)}>{x.label}<span className={styles.selectDot}/></button>)}</div>
    </section>
    <section className={styles.panel}>
@@ -154,7 +157,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
     {currentBatch?<p className={styles.batchSelected}>当前批次：<strong>{currentBatch.name}</strong><span>已保存 {currentBatch.productCount} 个商品 · 当前企业成员专属演示数据</span></p>:null}
     <p className={styles.footerHint}>提交后进入检测承接区；资料不完整的商品需补全并通过统一检查后才进入自有商品库。</p>
     {status?<p role="status" className={styles.feedback}>{status}</p>:null}
-   </section>
+   </section></>:null}
   </div>
   {activeImage?<div className={styles.preview} role="dialog" aria-label="图片放大预览" onClick={()=>setActiveImage(null)}><button type="button" onClick={()=>setActiveImage(null)}>关闭预览</button><img alt="商品图片放大预览" src={activeImage}/></div>:null}
  </dialog>;
