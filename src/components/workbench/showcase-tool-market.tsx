@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import styles from "./showcase-tool-market.module.css";
+import {addDemoCollectionBatch} from "./showcase-collection-batches";
 
 type Tool = { name: string; description: string; category: string; tags: [string,string]; status: "ready" | "development"; color: string };
 const tools: Tool[] = [
@@ -132,7 +133,7 @@ function AcquisitionSimulator({mode,onClose}:{mode:"local"|"online";onClose:()=>
 type OnlineSource = "amazon"|"1688";
 type OnlineEntry = "source"|"configure"|"rules"|"done";
 const amazonSites=["美国站","英国站","德国站","法国站","意大利站","西班牙站","日本站","加拿大站"];
-function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
+function FigmaOnlineCollection({onClose,organizationId,memberId}:{onClose:()=>void;organizationId:string;memberId:string}) {
   const ref=useRef<HTMLDialogElement>(null),id=useId();
   const [step,setStep]=useState<OnlineEntry>("source");
   const [source,setSource]=useState<OnlineSource>("amazon");
@@ -181,9 +182,10 @@ function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
       price:"未采集",sku:mode==="指定商品"&&inputMode==="ASIN"?value:"未采集",
       createdAt:new Date(now).toLocaleString("zh-CN",{hour12:false})
     }));
-    try{sessionStorage.setItem(demoAcquisitionKey,JSON.stringify([...next,...previous].slice(0,30)));}
-    catch{setError("浏览器禁止保存会话记录，请检查浏览器设置。");return;}
-    setSaved(next.length);setStep("done");setError("");
+    const batch=addDemoCollectionBatch(organizationId,memberId,source==="1688"?"1688":"Amazon",mode,values);
+    if(!batch){setError("保存到我的数据失败，请检查浏览器会话存储权限。");return;}
+    try{sessionStorage.setItem(demoAcquisitionKey,JSON.stringify([...next,...previous].slice(0,30)));}catch{}
+    setSaved(batch.products.length);setStep("done");setError("");
   };
   return <dialog ref={ref} className={`${styles.dialog} ${styles.launchDialog} ${styles.figmaAcquisitionDialog}`}
     aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}}
@@ -274,13 +276,13 @@ function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
     </div>:<div className={styles.figmaDone}>
       <h2 id={id}>采集任务已模拟完成</h2>
       <p role="status">已记录 {saved} 条{source==="amazon"?"亚马逊":"1688"}演示数据。</p>
-      <p>模拟记录保存在当前浏览器会话。正式采集成功后才会写入「数据服务 / 我的数据」。</p>
+      <p>已保存为当前账号专属的演示批次，可在「数据服务 / 我的数据 → 采集批次」查看。不会调用1688真实接口或扣费。</p>
       <footer><button type="button" onClick={()=>{setStep("configure");setEntries("");}}>继续采集</button><button type="button" className={styles.primary} onClick={onClose}>知道了</button></footer>
     </div>}
   </dialog>;
 }
 
-function ToolModal({info,onClose,onConfirm}:{info:Dialog;onClose:()=>void;onConfirm:()=>void}) {
+function ToolModal({info,onClose,onConfirm,organizationId,memberId}:{info:Dialog;onClose:()=>void;onConfirm:()=>void;organizationId:string;memberId:string}) {
   const ref=useRef<HTMLDialogElement>(null), id=useId();
   const [selectedFeature,setSelectedFeature]=useState(0);
   const tool=tools.find(x=>x.name===info.name);
@@ -300,7 +302,7 @@ function ToolModal({info,onClose,onConfirm}:{info:Dialog;onClose:()=>void;onConf
   ]:[["功能说明",tool?.description??"请选择工具功能"]];
   const title=info.type==="download"?"下载商品采集插件":info.type==="disable"?"确认停用工具":info.type==="launch"?info.name:info.name;
   if(isAcquisition&&info.type==="download")return <AcquisitionSimulator mode="local" onClose={onClose}/>;
-  if(isAcquisition&&info.type==="launch")return <FigmaOnlineCollection onClose={onClose}/>;
+  if(isAcquisition&&info.type==="launch")return <FigmaOnlineCollection onClose={onClose} organizationId={organizationId} memberId={memberId}/>;
   return <dialog ref={ref} className={`${styles.dialog} ${info.type==="launch"?styles.launchDialog:""} ${info.type==="launch"&&(info.name==="POD素材管理工具"||info.name==="自有商品刊登工具")?styles.figmaToolDialog:""}`} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><h2 id={id}>{title}</h2><button type="button" onClick={onClose} aria-label="关闭弹窗">×</button></header>
     {info.type==="download"?<>
@@ -341,7 +343,7 @@ function ToolModal({info,onClose,onConfirm}:{info:Dialog;onClose:()=>void;onConf
   </dialog>;
 }
 
-export function ShowcaseToolMarket({pathname,navigate}:{pathname:string;navigate:(route:string)=>void}) {
+export function ShowcaseToolMarket({pathname,navigate,organizationId,memberId}:{pathname:string;navigate:(route:string)=>void;organizationId:string;memberId:string}) {
   const [category,setCategory]=useState("全部"),[search,setSearch]=useState(""),[applied,setApplied]=useState(""),[dialog,setDialog]=useState<Dialog|null>(null);
   const [enabled,setEnabled]=useState<string[]>(restoreEnabled);
   const [notice,setNotice]=useState("");
@@ -423,6 +425,6 @@ export function ShowcaseToolMarket({pathname,navigate}:{pathname:string;navigate
         )}</div>
         :<div className={styles.empty}>当前没有匹配的已启用工具。你可以前往官方工具启用。</div>}
       </div>:null}
-    {dialog?<ToolModal key={dialog.type+dialog.name} info={dialog} onClose={()=>setDialog(null)} onConfirm={()=>{persist(enabled.filter(x=>x!==dialog.name));setDialog(null);setNotice(dialog.name+"：已在当前演示中停用。");}}/>:null}
+    {dialog?<ToolModal key={dialog.type+dialog.name} info={dialog} organizationId={organizationId} memberId={memberId} onClose={()=>setDialog(null)} onConfirm={()=>{persist(enabled.filter(x=>x!==dialog.name));setDialog(null);setNotice(dialog.name+"：已在当前演示中停用。");}}/>:null}
   </div>;
 }
