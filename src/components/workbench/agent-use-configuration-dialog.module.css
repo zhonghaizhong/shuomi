@@ -115,12 +115,20 @@
 .optimizerImageHint{padding:12px 14px;border-radius:8px;background:var(--raised);font-size:13px;line-height:1.6;color:var(--muted);margin:0}
 .optimizerSkillNotice{border:1px solid var(--line);border-radius:8px;padding:12px}
 .optimizerBilling{padding:13px 14px;border:1px solid color-mix(in srgb,#e2a23a 55%,var(--line));background:color-mix(in srgb,#e2a23a 8%,var(--raised));border-radius:8px;color:var(--ink);font-size:13px;line-height:1.5;margin:0!important}
-.optimizerTasks{display:grid;gap:8px;border:1px solid var(--line);padding:14px;border-radius:8px}
-.optimizerTaskRow{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,2fr) auto;gap:8px}
-.optimizerTaskRow textarea{min-height:48px}
-.optimizerTaskRow button{align-self:start}
+.optimizerTasks{display:grid;gap:16px;border:1px solid var(--line);padding:26px 30px 14px;border-radius:10px;background:var(--raised);min-height:280px;box-sizing:border-box}
+.optimizerTasksHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.optimizerTasksHeader h3{margin:0;font-size:15px;color:var(--ink)}
+.optimizerTasksHeader p{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.optimizerTasksHeader>button{flex:none;min-height:34px}
+.optimizerTaskList{display:grid;align-content:start;gap:9px}
+.optimizerTaskRow{display:grid;grid-template-columns:26px minmax(130px,142px) minmax(0,1fr) 64px;align-items:center;gap:9px;padding:6px 10px;border:1px solid var(--line);border-radius:8px}
+.optimizerTaskNumber{font-weight:700;font-size:13px;color:#21caaa}
+.optimizerTaskRow select,.optimizerTaskRow input{box-sizing:border-box;width:100%;min-width:0;min-height:34px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);padding:6px 9px;font:inherit;font-size:13px}
+.optimizerTaskRow button{min-height:34px;padding:5px 8px;color:#eb8795}
+.optimizerTaskHelp{align-self:end;border:1px solid color-mix(in srgb,#e2a23a 55%,var(--line));border-radius:8px;padding:14px;margin:0;color:#e2a23a;font-size:13px;font-weight:650}
+@media(max-width:660px){.optimizerTasks{padding:16px;min-height:0}.optimizerTasksHeader{flex-wrap:wrap}.optimizerTaskRow{grid-template-columns:24px minmax(0,1fr) 64px}.optimizerTaskRow input{grid-column:2 / -1;grid-row:2}.optimizerTaskRow select{grid-column:2}}
 @media(max-width:900px){.optimizerRow{grid-template-columns:155px minmax(0,1fr)}.optimizerChoicesThree{grid-template-columns:repeat(3,minmax(0,1fr))}.optimizerHeaderActions button{min-width:105px}}
-@media(max-width:660px){.optimizerRow{grid-template-columns:1fr;gap:6px}.optimizerNoNumber{padding-left:0}.optimizerChoicesThree{grid-template-columns:1fr}.optimizerImageGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.optimizerHeaderActions{flex-wrap:wrap;justify-content:flex-end}.optimizerHeaderActions button{min-width:0}.optimizerTaskRow{grid-template-columns:1fr}.optimizerImagesHeader{flex-wrap:wrap}}
+@media(max-width:660px){.optimizerRow{grid-template-columns:1fr;gap:6px}.optimizerNoNumber{padding-left:0}.optimizerChoicesThree{grid-template-columns:1fr}.optimizerImageGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.optimizerHeaderActions{flex-wrap:wrap;justify-content:flex-end}.optimizerHeaderActions button{min-width:0}.optimizerImagesHeader{flex-wrap:wrap}}
 
 .productImageModal .footer{align-items:center;flex-wrap:wrap}
 .optimizerFooterHint{margin-right:auto;color:var(--muted);font-size:13px}
