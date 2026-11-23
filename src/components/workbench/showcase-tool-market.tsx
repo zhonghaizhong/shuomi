@@ -76,14 +76,19 @@ function AcquisitionSimulator({mode,onClose}:{mode:"local"|"online";onClose:()=>
     onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><h2 id={id}>{mode==="local"?"本地插件采集":"在线采集"}</h2>
       <button type="button" aria-label="关闭弹窗" onClick={onClose}>×</button></header>
-    <p className={styles.acquisitionDemoNotice}>演示模式：不安装扩展程序，不访问第三方平台，不消耗真实数据额度。</p>
+    {mode==="online"?<section className={styles.acquisitionFigmaSummary} aria-label="在线采集说明">
+      <p>由平台云端执行，无需客户电脑持续运行即可完成在线采集。</p>
+      <div><span>按数据收费</span><strong>按实际采集数据条数扣除额度</strong></div>
+      <p>采集结果统一保存至「数据服务 / 我的数据」</p>
+    </section>:null}
+    <p className={styles.acquisitionDemoNotice}>当前为操作演示：不会安装浏览器插件、访问第三方平台或扣除真实数据额度。</p>
     <div className={styles.acquisitionTabs} role="group" aria-label="采集功能">
       <button type="button" aria-pressed={view==="capture"} onClick={()=>setView("capture")}>采集商品</button>
       <button type="button" aria-pressed={view==="records"} onClick={()=>setView("records")}>我的数据（演示） {records.length}</button>
     </div>
     {view==="capture"?<div className={styles.acquisitionBody}>
-      <p>{mode==="local"?"安装在客户电脑本地运行，浏览商品时通过浏览器插件直接采集。":"由平台云端执行，无需客户电脑持续运行即可完成在线采集。"}</p>
-      <p className={styles.acquisitionPricing}>{mode==="local"?"免费 · 不消耗数据额度":"按实际采集数据条数扣除额度（演示不实际扣费）"}</p>
+      {mode==="local"?<p>安装在客户电脑本地运行，浏览商品时通过浏览器插件直接采集。</p>:<h3 className={styles.acquisitionFormTitle}>采集任务配置 <span>演示</span></h3>}
+      {mode==="local"?<p className={styles.acquisitionPricing}>免费 · 不消耗数据额度</p>:null}
       {mode==="local"?<div className={styles.acquisitionInstall}>
         <div><strong>浏览器插件</strong><span>{installed?"已模拟安装，可进行采集":"尚未模拟安装"}</span></div>
         <button type="button" onClick={()=>setInstalled(true)} disabled={installed}>{installed?"模拟安装完成":"模拟安装插件"}</button>
@@ -107,7 +112,7 @@ function AcquisitionSimulator({mode,onClose}:{mode:"local"|"online";onClose:()=>
         {error?<p role="alert" className={styles.acquisitionError}>{error}</p>:null}
         <button type="submit" className={styles.primary}>{mode==="local"?"模拟插件采集":"开始模拟在线采集"}</button>
       </form>
-      <p className={styles.acquisitionDestination}>结果去向：数据服务 / 我的数据（仅当前浏览器演示记录）</p>
+      <p className={styles.acquisitionDestination}>{mode==="online"?"本次模拟结果仅保存于当前浏览器会话，不写入正式「我的数据」。":"结果去向：数据服务 / 我的数据（仅当前浏览器演示记录）"}</p>
     </div>:<div className={styles.acquisitionBody}>
       {created?<p role="status" className={styles.acquisitionSuccess}>模拟采集已完成，记录 {created} 已加入我的数据（演示）。</p>:null}
       {records.length?<div className={styles.acquisitionRecords}>{records.map(x=>
