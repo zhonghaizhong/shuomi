@@ -237,12 +237,12 @@ test("POD image, material and language subdialogs match Figma and preserve confi
  await pod.getByRole("button",{name:/AI重构模式/}).click();
  const ai=page.getByRole("dialog",{name:"AI重构图片设置"});
  await ai.getByRole("button",{name:"分别优化"}).click();
- await ai.getByRole("button",{name:"语言：不设置"}).click();
+ await ai.getByRole("button",{name:/语言：已关闭/}).click();
  const language=page.getByRole("dialog",{name:"选择生图语言"});
  await expect(language).toContainText("选择生图语言");
  await language.getByRole("button",{name:"英语",exact:true}).click();
  await expect(ai).toBeVisible();
- await ai.getByRole("button",{name:"底色：不设置"}).click();
+ await ai.getByRole("button",{name:/背景：已关闭/}).click();
  const background=page.getByRole("dialog",{name:"统一图片底色"});
  await background.getByRole("button",{name:"白色背景",exact:true}).click();
  await background.getByRole("button",{name:"确认选择"}).click();
@@ -316,9 +316,8 @@ test("POD Figma listing workflow uses store selection, nested product picker and
  await expect(task).toContainText("步骤 2 · 选择商品");
  await task.getByRole("button",{name:/从我的选品选择/}).click();
  const picker=page.getByRole("dialog",{name:"选择POD商品"});
- await expect(picker).toContainText("Figma 原型示例");
- await expect(picker).toContainText("女士基础款圆领T恤");
- await picker.getByRole("checkbox").first().check();
+ await expect(picker).toContainText("我的选品接口尚未接入");
+ await expect(picker.getByRole("checkbox")).toHaveCount(0);
  await picker.getByRole("button",{name:"取消"}).click();
  await expect(picker).toHaveCount(0);
  await task.getByRole("button",{name:"突出POD设计"}).click();
