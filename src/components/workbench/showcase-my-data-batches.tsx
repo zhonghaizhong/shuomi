@@ -34,11 +34,9 @@ export function ShowcaseMyDataBatches({organizationId,memberId}:{organizationId:
   const dismiss=(event:PointerEvent)=>{
    if(!(event.target as Element)?.closest?.('[data-batch-menu]'))close();
   };
-  window.addEventListener("scroll",close,true);
   window.addEventListener("resize",close);
   document.addEventListener("pointerdown",dismiss);
   return()=>{
-   window.removeEventListener("scroll",close,true);
    window.removeEventListener("resize",close);
    document.removeEventListener("pointerdown",dismiss);
   };
