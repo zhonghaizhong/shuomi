@@ -42,3 +42,38 @@
 .modal footer{display:flex;justify-content:flex-end;gap:10px;}
 .root .modal .dangerButton{background:var(--destructive,#dc535b);border-color:var(--destructive,#dc535b);color:white;}
 @media(max-width:650px){.filters{padding:13px;}.filters label{flex-basis:100%;}.row{margin:0 9px;min-height:78px;}.root .mainAction{gap:9px;padding:9px 2px;flex-wrap:wrap;}.titleArea strong{font-size:14px;}.mainAction time{flex-basis:100%;padding-left:48px;}.clock{width:36px;height:36px;}.menuHost{flex-basis:42px;}.modal{padding:17px;}}
+
+/* Collections list / context menu / dialog: scoped premium Vuexy surfaces.
+   Theme tokens live on both the list and portaled dialog elements. */
+.root,.modal{
+ --collections-bg:#142237;--collections-card:#18283c;
+ --collections-line:#31465e;--collections-text:#edf4ff;
+ --collections-muted:#b5c6d8;--collections-primary:#7367f0;
+}
+:global(.light) .root,:global(.light) .modal{
+ --collections-bg:#fff;--collections-card:#f7fafd;
+ --collections-line:#dfe7ef;--collections-text:#263648;
+ --collections-muted:#64768a;--collections-primary:#7367f0;
+}
+.root{color:var(--collections-text)}
+.root .filters,.root .list,.root .menu,.modal{
+ background:var(--collections-bg);border-color:var(--collections-line);
+ color:var(--collections-text);
+}
+.root .row:nth-child(even){background:var(--collections-card)}
+.root .row:nth-child(odd){background:var(--collections-bg)}
+.root .filters label{background:transparent;color:var(--collections-muted)}
+.root :is(.filters input,.dots),.modal input{
+ background:var(--collections-card);color:var(--collections-text);
+ border-color:var(--collections-line);
+}
+.root button:not(.primary):not(.mainAction):not(.dismiss){
+ background:var(--collections-card);border-color:var(--collections-line);
+ color:var(--collections-text);
+}
+.root .mainAction,.root .menu button{background:transparent;color:var(--collections-text)}
+.root .notice{background:var(--collections-card);border-color:var(--collections-line);color:var(--collections-text)}
+.root :is(.titleArea small,.mainAction time,.footnote,.empty p),.modal p{color:var(--collections-muted)}
+.root .titleArea strong{color:var(--collections-text)}
+.root button.primary{background:var(--collections-primary);border-color:var(--collections-primary);color:#fff}
+.root :is(button,input):focus-visible,.modal input:focus-visible{outline:2px solid var(--collections-primary);outline-offset:2px}
