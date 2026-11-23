@@ -755,3 +755,36 @@
 :global(.light) .figmaToolDialog :is(.listingSourceGrid button[aria-checked="true"],.listingAiGrid button[aria-pressed="true"],.listingSkuOptions button[aria-checked="true"]){border-color:#7367f0;background:#f1efff}
 :global(.light) .figmaToolDialog .listingFeedback{color:#6152bf;background:#f7f5ff}
 @media(max-width:640px){.listingSourceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.listingAiGrid{grid-template-columns:1fr}.figmaToolDialog:has(.figmaListingWorkspace){max-height:calc(100vh - 30px)}}
+
+
+/* Premium Vuexy tool catalog and My Tools, light/dark unified. */
+.page{--tm-bg:#142237;--tm-card:#18283c;--tm-nested:#1d3148;--tm-line:#30465e;--tm-text:#eff6ff;--tm-muted:#adc1d4;--tm-shadow:0 7px 24px rgba(3,12,27,.15);color:var(--tm-text);gap:18px}
+:global(.light) .page{--tm-bg:#fff;--tm-card:#f7fafd;--tm-nested:#edf3f8;--tm-line:#dfe7ef;--tm-text:#263747;--tm-muted:#607183;--tm-shadow:0 6px 22px rgba(32,55,87,.06)}
+.page :is(.header,.toolCard,.mineCard,.mineGuide,.empty,.notice,.toolbar[data-shuomi-filter="balanced"],.mineBar[data-shuomi-filter="balanced"]){background:var(--tm-bg);border-color:var(--tm-line);border-radius:12px;box-shadow:var(--tm-shadow)}
+.page>.header{background:var(--tm-bg);border-color:var(--tm-line);border-radius:12px}
+.page>.header h1{color:var(--tm-text);border-left:3px solid #7367f0}
+.page :is(.header small,.header p,.sectionHeading p,.toolCard p,.mineCard p,.mineGuide p,.mineFilterLabel){color:var(--tm-muted)}
+.page :is(.sectionHeading h2,.mineBar strong,.mineGuide h3,.mineCard h2){color:var(--tm-text)}
+.page .sectionHeading h2{border-left:3px solid #7367f0;padding-left:11px}
+.page .toolCard{background:var(--tm-bg);box-shadow:inset 3px 0 var(--accent),var(--tm-shadow);min-height:185px}
+.page .toolCard h3{color:var(--tm-text)}
+.page .toolCard .tags span{background:var(--tm-card);color:var(--tm-muted);border-radius:7px}
+.page :is(.mineCard,.mineGuide){background:var(--tm-bg);border-color:var(--tm-line)}
+.page .mineCard{box-shadow:inset 3px 0 #4fd1bd,var(--tm-shadow)}
+.page .mineCard footer{border-color:var(--tm-line)}
+.page .mineGuide>div{background:var(--tm-card);border-color:var(--tm-line);border-radius:9px}
+.page :is(.searchTools input,.mineBar input){background:var(--tm-card);border-color:var(--tm-line);border-radius:9px;color:var(--tm-text);min-height:42px}
+.page :is(.searchTools input,.mineBar input)::placeholder{color:var(--tm-muted);opacity:1}
+.page button:not(.primary){background:var(--tm-card);color:var(--tm-text);border-color:var(--tm-line);border-radius:9px}
+.page button:not(.primary):hover:not(:disabled){border-color:#7367f0;background:var(--tm-nested)}
+.page :is(.categories button[aria-pressed="true"],.statusFilter button[aria-pressed="true"]){background:#7367f0;color:#fff;border-color:#7367f0}
+.page button.primary{background:#7367f0;color:#fff;border-color:#7367f0;border-radius:9px}
+.page button.primary:hover:not(:disabled){background:#685dd8;border-color:#685dd8}
+.page :is(button,input,select):focus-visible{outline:2px solid #7367f0;outline-offset:2px}
+.page :is(.toolCard,.mineCard){transition:box-shadow .18s ease,border-color .18s ease}
+@media(hover:hover){.page :is(.toolCard,.mineCard):hover{border-color:color-mix(in srgb,#7367f0 34%,var(--tm-line));box-shadow:0 12px 30px rgba(23,32,62,.16)}}
+/* The existing Figma dialogs retain their sizes and layout. Improve only the common dialog chrome. */
+.dialog{border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.32)}
+.dialog::backdrop{background:rgba(7,14,29,.64);backdrop-filter:blur(4px)}
+:global(.light) .dialog{box-shadow:0 20px 65px rgba(30,53,82,.18)}
+@media(prefers-reduced-motion:reduce){.page :is(.toolCard,.mineCard){transition:none}}
