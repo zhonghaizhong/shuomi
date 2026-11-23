@@ -39,7 +39,7 @@ export function saveVerifiedOptimizedDataset(
  payload:Omit<OptimizedDataset,"id"|"createdAt"|"version"|"acceptedAt"|"reviewStatus"|"listingStatus"|"reviewUpdatedAt">,
  verifiedReceipt:{verifiedBy:"platform-callback";taskId:string;externalReceiptId:string;acceptedAt?:string;result?:"accepted"|"rejected"}|null
 ):OptimizedDataset{
- if(!verifiedReceipt||verifiedReceipt.result==="rejected"||verifiedReceipt.verifiedBy!=="platform-callback"||verifiedReceipt.taskId!==payload.uploadTaskId||verifiedReceipt.externalReceiptId!==payload.externalReceiptId||!verifiedReceipt.externalReceiptId.trim())
+ if(!verifiedReceipt||verifiedReceipt.result!=="accepted"||verifiedReceipt.verifiedBy!=="platform-callback"||verifiedReceipt.taskId!==payload.uploadTaskId||verifiedReceipt.externalReceiptId!==payload.externalReceiptId||!verifiedReceipt.externalReceiptId.trim())
   throw Error("缺少已核实的上传成功回执，不能保存为已优化数据集");
  if(typeof window==="undefined")throw Error("演示存储不可用");
  if(!payload.products.length||!payload.sourceBatchId.trim()||!payload.platform.trim()||!payload.site.trim()||!payload.language.trim())throw Error("优化版本信息不完整");
