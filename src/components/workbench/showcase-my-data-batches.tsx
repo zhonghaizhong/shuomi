@@ -4,6 +4,7 @@ import {readDemoCollectionBatches,createDemoCollectionBatch,renameDemoCollection
 import css from "./showcase-my-data-batches.module.css";
 import {ShowcaseBatchProductsDialog} from "./showcase-batch-products-dialog";
 import {ShowcaseOwnProductLibrary} from "./showcase-own-product-library";
+import {ShowcaseOptimizedDatasetLibrary} from "./showcase-optimized-dataset-library";
 const csvCell=(value:string|number)=>'"'+String(value).replace(/"/g,'""')+'"';
 const downloadBatch=(batch:DemoCollectionBatch)=>{
  const columns=["批次名称","产品来源","采集时间","商品编号","商品名称","SKU","价格","规格","来源说明"];
@@ -50,7 +51,7 @@ export function ShowcaseMyDataBatches({organizationId,memberId}:{organizationId:
    {chosen.length?<div className={css.bulkBar}><span>已选择 {chosen.length} 批</span><button type="button" onClick={()=>toggleArchive(chosen,!archivedOnly)}>{archivedOnly?"批量恢复":"批量归档"}</button><button type="button" onClick={()=>setChosen([])}>取消选择</button></div>:null}
    <footer className={css.pagination}><span>显示 {rows.length} / {visible.length} 批 · 第 {currentPage} / {pageCount} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setPage(v=>v-1)}>上一页</button><button type="button" disabled={currentPage===pageCount} onClick={()=>setPage(v=>v+1)}>下一页</button></div></footer>
   </>:<p role="status" className={css.empty}>暂无{tab}数据。采集批次不会自动写入此分类。</p>}</section>
-  </>:tab==="自有商品库"?<ShowcaseOwnProductLibrary organizationId={organizationId} memberId={memberId}/>:<p role="status" className={css.empty}>暂无数据集。</p>}
+  </>:tab==="自有商品库"?<ShowcaseOwnProductLibrary organizationId={organizationId} memberId={memberId}/>:<ShowcaseOptimizedDatasetLibrary organizationId={organizationId} memberId={memberId}/>}
 
   {picked?<ShowcaseBatchProductsDialog key={picked.id} batch={picked} organizationId={organizationId} memberId={memberId} otherBatches={batches.filter(x=>x.id!==picked.id&&!archived.has(x.id))} onClose={()=>setSelected(null)}/>:null}
   {manage?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setManage(false)}}>
