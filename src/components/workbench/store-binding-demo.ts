@@ -2,7 +2,8 @@
 import {useEffect,useState} from "react";
 
 // Shared showcase-only store register. Binding is not platform authorization or a paid subscription.
-export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;platformStoreId?:string;bindingAccount?:string;authorizationMethod?:string;fixedIpPreference?:boolean;proxyIpAddress?:string;proxyIpPort?:string;proxyIpUser?:string;platformIdStatus?:"已激活"|"获取失败";connectionIssue?:"授权失效"|"连接失败"|"平台接口异常";archived?:boolean};
+// demoPassword is a clearly synthetic fixture value, never a production credential.
+export type DemoStoreBinding={id:string;name:string;platform:"SHEIN";region:string;type:string;status:"已绑定";createdAt:string;group?:string;owner?:string;ownerMemberId:string;serviceStartedAt?:string;serviceExpiresAt?:string;servicePeriods?:number;platformStoreId?:string;bindingAccount?:string;demoPassword?:string;authorizationMethod?:string;fixedIpPreference?:boolean;proxyIpAddress?:string;proxyIpPort?:string;proxyIpUser?:string;platformIdStatus?:"已激活"|"获取失败";connectionIssue?:"授权失效"|"连接失败"|"平台接口异常";archived?:boolean};
 const prefix="shuomi-store-center-demo-ten-v2";
 const eventName="shuomi-demo-store-bindings-changed";
 const mainTenant="SM-ENT-000001";
@@ -10,6 +11,8 @@ const colleague="SIM-COLLEAGUE-01";
 const sites=["美国站","加拿大站","英国站","德国站","法国站"];
 const historicalStart="2026-11-22T07:19:00.000Z";
 const historicalExpiry="2026-12-22T07:19:00.000Z";
+const demoCredentials=(id:string)=>({bindingAccount:"demo_"+id.toLowerCase().replace(/[^a-z0-9]/g,"_"),demoPassword:"DEMO_ONLY_"+id.replace(/[^A-Z0-9]/gi,"_")});
+const isSeededStore=(id:string)=>/^SIM-(?:ADMIN-0[1-5]|C01-0[1-5]|ADMIN-EXPIRED-01|C01-EXPIRED-01)$/.test(id);
 const expiredDemoStores:DemoStoreBinding[]=[
  {id:"SIM-ADMIN-EXPIRED-01",name:"管理员已到期测试店铺",platform:"SHEIN",region:"美国站",type:"全托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"管理员",ownerMemberId:"admin",serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1,platformStoreId:"SIM-SHEIN-ADMIN-EXPIRED-01"},
  {id:"SIM-C01-EXPIRED-01",name:"同事01已到期测试店铺",platform:"SHEIN",region:"英国站",type:"半托管",status:"已绑定",createdAt:"2026-10-01 10:00",group:"未分组",owner:"模拟同事01",ownerMemberId:colleague,serviceStartedAt:"2026-10-01T00:00:00.000Z",serviceExpiresAt:"2026-10-31T00:00:00.000Z",servicePeriods:1,platformStoreId:"SIM-SHEIN-C01-EXPIRED-01"}
@@ -44,13 +47,14 @@ export function startDemoStoreService(store:DemoStoreBinding,now=Date.now()):Dem
 function seeds(organizationId:string):DemoStoreBinding[]{
  if(organizationId!==mainTenant)return [];
  return [...["admin",colleague].flatMap(memberId=>sites.map((region,index)=>({
+  ...demoCredentials((memberId==="admin"?"SIM-ADMIN-":"SIM-C01-")+String(index+1).padStart(2,"0")),
   id:(memberId==="admin"?"SIM-ADMIN-":"SIM-C01-")+String(index+1).padStart(2,"0"),
   name:(memberId==="admin"?"管理员演示店铺":"同事01演示店铺")+String(index+1).padStart(2,"0"),
   platform:"SHEIN" as const,region,type:["全托管","半托管","自营","全托管","半托管"][index],
   status:"已绑定" as const,createdAt:"2026-11-22 15:19",group:"未分组",
   owner:memberId==="admin"?"管理员":"模拟同事01",ownerMemberId:memberId,
   ...(memberId===colleague?index===4?{platformIdStatus:"获取失败" as const,archived:true}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-C01-"+String(index+1).padStart(2,"0"),serviceStartedAt:historicalStart,serviceExpiresAt:historicalExpiry,servicePeriods:1}:{platformIdStatus:"已激活" as const,platformStoreId:"SIM-SHEIN-ADMIN-"+String(index+1).padStart(2,"0"),serviceStartedAt:historicalStart,serviceExpiresAt:historicalExpiry,servicePeriods:1,...(index===3?{connectionIssue:"平台接口异常" as const}:index===4?{connectionIssue:"授权失效" as const}:{})})
- }))),...expiredDemoStores].map(s=>s.id==="SIM-ADMIN-01"?{...s,serviceExpiresAt:new Date(Date.now()+5*periodMs/30).toISOString()}:s.id==="SIM-C01-01"?{...s,serviceExpiresAt:new Date(Date.now()+6*periodMs/30).toISOString()}:s);
+ }))),...expiredDemoStores].map(s=>({...demoCredentials(s.id),...s})).map(s=>s.id==="SIM-ADMIN-01"?{...s,serviceExpiresAt:new Date(Date.now()+5*periodMs/30).toISOString()}:s.id==="SIM-C01-01"?{...s,serviceExpiresAt:new Date(Date.now()+6*periodMs/30).toISOString()}:s);
 }
 export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
  try{
@@ -62,6 +66,7 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
   // Only update the five known synthetic colleague fixtures; never invent platform IDs for real bindings.
   // A preexisting explicit activation state (including retry success) must be preserved.
   const migrated=organizationId===mainTenant?valid.map(store=>{
+   if(isSeededStore(store.id)&&(!store.bindingAccount||!store.demoPassword))store={...store,bindingAccount:store.bindingAccount||demoCredentials(store.id).bindingAccount,demoPassword:store.demoPassword||demoCredentials(store.id).demoPassword};
    // Only backfill synthetic IDs for the known, already paid historical test fixtures.
    if(store.id==="SIM-ADMIN-EXPIRED-01"&&!store.platformStoreId)return {...store,platformStoreId:"SIM-SHEIN-ADMIN-EXPIRED-01"};
    if(store.id==="SIM-C01-EXPIRED-01"&&!store.platformStoreId)return {...store,platformStoreId:"SIM-SHEIN-C01-EXPIRED-01"};
@@ -106,7 +111,7 @@ export function readDemoStoreBindings(organizationId:string):DemoStoreBinding[]{
   const migrationKey=demoStoreKey(organizationId)+"-expired-fixture-v1";
   if(organizationId===mainTenant&&!sessionStorage.getItem(migrationKey)){
    const ids=new Set(migrated.map(x=>x.id));
-   const updated=[...migrated,...expiredDemoStores.filter(x=>!ids.has(x.id))];
+   const updated=[...migrated,...expiredDemoStores.filter(x=>!ids.has(x.id)).map(x=>({...demoCredentials(x.id),...x}))];
    sessionStorage.setItem(demoStoreKey(organizationId),JSON.stringify(updated));
    sessionStorage.setItem(migrationKey,"1");
    return updated.map(x=>({...x,status:"已绑定"}));
