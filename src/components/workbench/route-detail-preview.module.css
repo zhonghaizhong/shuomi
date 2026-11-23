@@ -2641,52 +2641,150 @@
 }
 
 
-/* Data market / API / My Data showcase: scoped palette, preserving Figma interactions. */
+/* DATA SERVICE SUBPAGES — PREMIUM VUEXY V2
+   Only the three actual showcase data routes. Figma content and interactions stay intact. */
 .page[data-commerce-unified="data"]{
- --ds-surface:#18283c;--ds-raised:#142237;--ds-panel:#20334a;
- --ds-line:#344960;--ds-text:#edf4ff;--ds-muted:#b3c3d5;--ds-purple:#7367f0;
+ --ds-bg:#142237;--ds-surface:#18283c;--ds-quiet:#17283d;
+ --ds-raised:#20344b;--ds-line:#31465e;--ds-ink:#edf4ff;
+ --ds-sub:#b6c5d6;--ds-dim:#92a6bb;--ds-accent:#7367f0;
+ --ds-shadow:0 7px 24px rgba(4,13,29,.14);
+ gap:17px;
 }
 :global(.light) .page[data-commerce-unified="data"]{
- --ds-surface:#fff;--ds-raised:#f7fafd;--ds-panel:#edf3f8;
- --ds-line:#e0e7f0;--ds-text:#303546;--ds-muted:#657184;--ds-purple:#7367f0;
+ --ds-bg:#f7fafd;--ds-surface:#fff;--ds-quiet:#f7fafd;
+ --ds-raised:#f0f4f9;--ds-line:#e0e6ee;
+ --ds-ink:#263648;--ds-sub:#657486;--ds-dim:#778597;
+ --ds-shadow:0 6px 20px rgba(34,51,83,.06);
 }
 .page[data-commerce-unified="data"]>.header{
- background:var(--ds-surface);border:1px solid var(--ds-line);
- border-radius:6px;box-shadow:0 5px 20px rgba(6,20,42,.07);
+ min-height:130px;padding:20px 24px;box-sizing:border-box;
+ border-radius:6px;border:1px solid var(--ds-line);
+ background:linear-gradient(110deg,var(--ds-surface) 0%,var(--ds-surface) 75%,color-mix(in srgb,#7367f0 6%,var(--ds-surface)) 100%);
+ box-shadow:var(--ds-shadow);
 }
 .page[data-commerce-unified="data"]>.header h1{
- color:var(--ds-text);border-left:3px solid var(--ds-purple);padding-left:12px
+ border-left:3px solid var(--ds-accent);padding-left:12px;
+ font-size:26px;line-height:34px;color:var(--ds-ink);
+ font-weight:700;white-space:nowrap;
 }
-.page[data-commerce-unified="data"]>.header p,
-.page[data-commerce-unified="data"]>.header>div>div:first-child{color:var(--ds-muted)}
+.page[data-commerce-unified="data"]>.header p{color:var(--ds-sub);font-size:14px;line-height:1.65;max-width:960px}
+.page[data-commerce-unified="data"]>.header>div>div:first-child{color:var(--ds-dim)}
+.page[data-commerce-unified="data"] .headerActions{gap:9px}
+.page[data-commerce-unified="data"] :is(.sectionTitle h2,.table h2,.split h2){
+ border-left:3px solid var(--ds-accent);padding-left:11px;color:var(--ds-ink);
+ font-size:18px;line-height:26px;font-weight:700;
+}
+.page[data-commerce-unified="data"] :is(.sectionTitle p,.split p,.table p){color:var(--ds-sub);line-height:1.65}
 .page[data-commerce-unified="data"] :is(.card,.table,.split>article,.twoCards>article,.metrics>article){
- background:var(--ds-surface);border:1px solid var(--ds-line);
- border-radius:11px;box-shadow:0 7px 22px rgba(7,22,41,.08)
+ background:var(--ds-surface);color:var(--ds-ink);border:1px solid var(--ds-line);
+ border-radius:11px;box-shadow:var(--ds-shadow);
 }
-.page[data-commerce-unified="data"] :is(.card h2,.card h3,.sectionTitle h2,.table h2,.split h2,.split h3){color:var(--ds-text)}
-.page[data-commerce-unified="data"] :is(.sectionTitle h2,.table h2,.split h2){border-left:3px solid var(--ds-purple);padding-left:11px}
-.page[data-commerce-unified="data"] :is(.card p,.sectionTitle p,.split p,.table p,.card small,.split small,.metrics span,.metrics small){color:var(--ds-muted)}
-.page[data-commerce-unified="data"] :is(.toolbar,.tabs,.tableHead,.keyRow,.serviceLine){
- border-color:var(--ds-line);
+.page[data-commerce-unified="data"] .cards{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;
+}
+.page[data-commerce-unified="data"] .card{
+ position:relative;display:flex;flex-direction:column;
+ min-width:0;min-height:222px;padding:21px 19px 17px;
+ overflow:hidden;
+}
+.page[data-commerce-unified="data"] .card::before{
+ content:"";position:absolute;left:0;top:19px;width:3px;height:39px;
+ border-radius:0 3px 3px 0;background:var(--accent,#7367f0);
+}
+.page[data-commerce-unified="data"] .card h3{
+ font-size:17px;line-height:25px;color:var(--ds-ink);font-weight:700;
+}
+.page[data-commerce-unified="data"] .card p{
+ font-size:13px;line-height:1.65;color:var(--ds-sub);flex:1;
+}
+.page[data-commerce-unified="data"] .cardTitle{gap:12px;align-items:center}
+.page[data-commerce-unified="data"] .cardTitle span{
+ color:var(--ds-sub);border:1px solid var(--ds-line);
+ border-radius:999px;background:var(--ds-quiet);
+ padding:4px 9px;font-size:12px;white-space:nowrap;
+}
+.page[data-commerce-unified="data"] .tags{gap:6px}
+.page[data-commerce-unified="data"] .tags small{
+ padding:4px 8px;border-radius:7px;background:var(--ds-raised);
+ color:var(--ds-sub);border:1px solid var(--ds-line);
+}
+.page[data-commerce-unified="data"] :is(.toolbar,.tabs){
+ min-height:55px;padding:9px 12px;gap:9px;
+ background:var(--ds-surface);border:1px solid var(--ds-line);
+ border-radius:10px;box-shadow:var(--ds-shadow);
 }
 .page[data-commerce-unified="data"] :is(.toolbar input,.toolbar select,.filterSelect){
- background:var(--ds-raised);color:var(--ds-text);border-color:var(--ds-line);border-radius:9px;
+ min-height:40px;border:1px solid var(--ds-line);border-radius:8px;
+ background:var(--ds-quiet);color:var(--ds-ink);
 }
-.page[data-commerce-unified="data"] :is(input,select)::placeholder{color:var(--ds-muted);opacity:1}
-.page[data-commerce-unified="data"] :is(.tags small,.serviceLine,.keyRow,.tableHead){
- background:var(--ds-raised);border-color:var(--ds-line);color:var(--ds-muted)
-}
+.page[data-commerce-unified="data"] :is(input,select)::placeholder{color:var(--ds-dim);opacity:1}
+.page[data-commerce-unified="data"] :is(button,.primary,.selected){border-radius:8px}
 .page[data-commerce-unified="data"] :is(.card button,.tabs button,.toolbar button,.headerActions button,.split button,.table button):not(.primary):not(.selected){
- border-color:var(--ds-line);background:var(--ds-raised);color:var(--ds-text);border-radius:9px;
+ background:var(--ds-quiet);border:1px solid var(--ds-line);color:var(--ds-ink);
 }
 .page[data-commerce-unified="data"] :is(.card button,.tabs button,.toolbar button,.headerActions button,.split button,.table button):not(.primary):hover{
- border-color:var(--ds-purple)
+ border-color:var(--ds-accent);background:color-mix(in srgb,var(--ds-accent) 9%,var(--ds-quiet));
 }
-.page[data-commerce-unified="data"] :is(.primary,.selected){
- background:#7367f0;color:#fff;border-color:#7367f0;border-radius:9px;
+.page[data-commerce-unified="data"] :is(.primary,.headerActions .primary,.card .primary){
+ background:#7367f0;border-color:#7367f0;color:#fff;
+ box-shadow:0 3px 10px rgba(115,103,240,.16);
 }
-.page[data-commerce-unified="data"] :is(.tabs .selected,.toolbar .selected){background:color-mix(in srgb,var(--ds-purple) 14%,var(--ds-surface));color:var(--ds-text);border-color:var(--ds-purple)}
-.page[data-commerce-unified="data"] :is(.card,.split>article,.metrics>article){transition:border-color .18s ease,box-shadow .18s ease}
-.page[data-commerce-unified="data"] :is(button,input,select,a):focus-visible{outline:2px solid var(--ds-purple);outline-offset:2px}
-@media(hover:hover){.page[data-commerce-unified="data"] :is(.card,.split>article):hover{border-color:color-mix(in srgb,var(--ds-purple) 32%,var(--ds-line));box-shadow:0 12px 28px rgba(7,22,41,.13)}}
-@media(prefers-reduced-motion:reduce){.page[data-commerce-unified="data"] :is(.card,.split>article,.metrics>article){transition:none}}
+.page[data-commerce-unified="data"] :is(.tabs .selected,.toolbar .selected){
+ color:var(--ds-ink)!important;border:1px solid #7367f0!important;
+ background:color-mix(in srgb,#7367f0 13%,var(--ds-surface))!important;
+}
+.page[data-commerce-unified="data"] .metrics{gap:13px}
+.page[data-commerce-unified="data"] .metrics>article{
+ min-height:107px;padding:18px 19px;position:relative;overflow:hidden;
+}
+.page[data-commerce-unified="data"] .metrics>article::before{
+ content:"";position:absolute;top:16px;bottom:16px;left:0;width:3px;background:#7367f0;
+}
+.page[data-commerce-unified="data"] .metrics span{color:var(--ds-sub);font-size:13px}
+.page[data-commerce-unified="data"] .metrics strong{color:var(--ds-ink);font-weight:700;font-size:25px}
+.page[data-commerce-unified="data"] .metrics small{color:var(--ds-dim);font-size:12px}
+.page[data-commerce-unified="data"] .split{gap:15px}
+.page[data-commerce-unified="data"] .split>article{padding:20px 21px}
+.page[data-commerce-unified="data"] .split h3{color:var(--ds-ink)}
+.page[data-commerce-unified="data"] :is(.serviceLine,.keyRow,.tableHead){
+ border-color:var(--ds-line);background:var(--ds-quiet);color:var(--ds-sub);
+}
+.page[data-commerce-unified="data"] .serviceLine{border-radius:8px;padding:12px}
+.page[data-commerce-unified="data"] .keyRow{
+ min-height:43px;padding:10px 12px;border-bottom:1px solid var(--ds-line);
+}
+.page[data-commerce-unified="data"] .keyRow:nth-of-type(even){background:var(--ds-surface)}
+.page[data-commerce-unified="data"] .table{padding:17px 19px}
+.page[data-commerce-unified="data"] .tableHead{
+ border-radius:8px;padding:12px 14px;font-size:13px;
+}
+.page[data-commerce-unified="data"] .table>div:not(.tableHead){
+ border-bottom:1px solid var(--ds-line);padding:12px 14px;
+ font-size:13px;color:var(--ds-sub);
+}
+.page[data-commerce-unified="data"] :is(.card,.split>article){
+ transition:box-shadow .18s ease,border-color .18s ease;
+}
+.page[data-commerce-unified="data"] :is(button,a,input,select):focus-visible{
+ outline:2px solid #7367f0;outline-offset:2px;
+}
+@media(hover:hover){
+ .page[data-commerce-unified="data"] :is(.card,.split>article):hover{
+ border-color:color-mix(in srgb,#7367f0 33%,var(--ds-line));
+ box-shadow:0 12px 28px rgba(5,18,38,.12);
+ }
+}
+@media(max-width:1250px){
+ .page[data-commerce-unified="data"] .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .page[data-commerce-unified="data"]>.header{min-height:110px;padding:16px}
+ .page[data-commerce-unified="data"]>.header h1{font-size:22px;line-height:30px;white-space:normal}
+ .page[data-commerce-unified="data"] .cards,.page[data-commerce-unified="data"] .split{grid-template-columns:1fr}
+ .page[data-commerce-unified="data"] .toolbar{flex-wrap:wrap}
+ .page[data-commerce-unified="data"] .card{min-height:175px}
+ .page[data-commerce-unified="data"] .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+ .page[data-commerce-unified="data"] :is(.card,.split>article){transition:none}
+}
