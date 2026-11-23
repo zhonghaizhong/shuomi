@@ -359,3 +359,8 @@
 .datasetSelection span,.datasetSelection em{display:block;font-size:12px;font-style:normal;color:var(--muted);overflow-wrap:anywhere}
 .datasetSelection em{border-top:1px solid var(--stroke);padding-top:7px}
 .configuration article:has(.datasetSelection){min-height:282px}
+
+/* My Data batch/version selection: keep the waiting card compact while the chooser owns filters. */
+.page[data-listing-stage="waiting"] .selectedProductVersion{display:grid;align-content:start;gap:5px;padding:11px 12px;background:var(--surface-alt);border:1px solid var(--stroke);border-radius:8px;min-width:0}
+.page[data-listing-stage="waiting"] .selectedProductVersion strong{font-size:13px;color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.page[data-listing-stage="waiting"] .selectedProductVersion span{font-size:12px;color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
