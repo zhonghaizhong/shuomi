@@ -270,10 +270,16 @@ test("1688 online collection creates ten demo products and shows only owned batc
  await expect(mine).toContainText("1 批");
  await mine.getByRole("button",{name:"更多"}).click();
  await mine.getByRole("button",{name:"查看商品"}).click();
- const details=page.getByRole("region",{name:"批次产品明细"});
- await expect(details.locator("tbody tr")).toHaveCount(10);
+ const details=page.getByRole("dialog",{name:"批次商品"});
+ await expect(details).toContainText("批次商品");
+ await expect(details).toContainText("来源平台");
+ await expect(details).toContainText("商品数量");
+ await expect(details.getByRole("row")).toHaveCount(5);
  await expect(details).toContainText("纯棉圆领短袖T恤");
- await expect(details).toContainText("旅行便携洗漱包");
+ await details.getByRole("button",{name:"下一页商品"}).click();
+ await expect(details).toContainText("不锈钢保温水杯");
+ await expect(details.getByRole("button",{name:"下载当前批次"})).toBeVisible();
+ await details.getByRole("button",{name:"关闭批次商品弹窗"}).click();
  await page.goto(base+"/official");
  await page.locator('[class*="toolCard"]').filter({hasText:"商品采集插件"}).getByRole("button",{name:"启用",exact:true}).click();
  await page.getByRole("button",{name:"我的工具",exact:true}).click();
@@ -289,7 +295,8 @@ test("1688 online collection creates ten demo products and shows only owned batc
  await expect(page.getByRole("region",{name:"采集批次",exact:true})).toContainText("2 批");
  await page.getByRole("region",{name:"采集批次",exact:true}).getByRole("button",{name:"更多"}).first().click();
  await page.getByRole("region",{name:"采集批次",exact:true}).getByRole("button",{name:"查看商品"}).click();
- await expect(page.getByRole("region",{name:"批次产品明细"}).locator("tbody tr")).toHaveCount(10);
+ await expect(page.getByRole("dialog",{name:"批次商品"}).locator("tbody tr")).toHaveCount(4);
+ await expect(page.getByRole("dialog",{name:"批次商品"})).toContainText("商品列表");
 });
 
 test("My Data follows Figma batch screen and archives only selected demo batches",async({page})=>{
@@ -310,4 +317,29 @@ test("My Data follows Figma batch screen and archives only selected demo batches
  await expect(region).toContainText("1688 在线采集 · 10个产品（模拟）");
  await region.getByRole("button",{name:"管理批次"}).click();
  await expect(page.getByRole("dialog",{name:"管理采集批次"})).toBeVisible();
+});
+
+test("batch product dialog matches provided layout, supports item archive and pagination",async({page})=>{
+ await page.goto("/shuomi/#/workbench/data/mine");
+ const region=page.getByRole("region",{name:"采集批次",exact:true});
+ const filters=page.getByRole("region",{name:"数据筛选"});
+ await expect(filters.getByRole("textbox",{name:"搜索采集批次"})).toBeVisible();
+ await expect(filters.getByRole("combobox",{name:"采集来源"})).toBeVisible();
+ await expect(filters.getByRole("combobox",{name:"上传状态"})).toBeVisible();
+ await region.getByRole("button",{name:"更多"}).click();
+ await region.getByRole("button",{name:"查看商品"}).click();
+ const dialog=page.getByRole("dialog",{name:"批次商品"});
+ await expect(dialog).toContainText("在线采集");
+ await expect(dialog).toContainText("原始资料保留");
+ await expect(dialog.getByRole("row")).toHaveCount(5);
+ await dialog.getByRole("button",{name:"更多"}).first().click();
+ await dialog.getByRole("button",{name:"归档",exact:true}).click();
+ await expect(dialog).toContainText("已归档所选演示商品");
+ await expect(dialog.locator("tbody tr")).toHaveCount(4);
+ await dialog.getByRole("button",{name:/已归档/}).click();
+ await expect(dialog.locator("tbody tr")).toHaveCount(1);
+ await dialog.getByRole("button",{name:"更多"}).click();
+ await dialog.getByRole("button",{name:"恢复",exact:true}).click();
+ await dialog.getByRole("button",{name:"当前商品"}).click();
+ await expect(dialog.locator("tbody tr")).toHaveCount(4);
 });
