@@ -122,7 +122,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const isImage=mode==="product-image"||mode==="pod-ai";
  const choice=(items:string[],value:string,change:(v:string)=>void)=><div className={css.segment}>{items.map(v=><button key={v} type="button" aria-pressed={value===v} onClick={()=>change(v)}>{v}</button>)}</div>;
  const maybeNotice=message?<p role="status" className={css.notice}>{message}</p>:null;
- return <dialog ref={dialogRef} className={css.modal} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
+ return <dialog ref={dialogRef} className={`${css.modal} ${mode==="product-image"&&!child?css.productImageModal:""}`} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
   <header className={css.head}><div><h2 id={id}>{title}</h2><p>{desc}</p></div><button type="button" className={css.close} aria-label="关闭配置弹窗" onClick={()=>child?setChild(""):onClose()}>×</button></header>
   <main className={css.body}>
    {child==="language"?<div className={css.optionGrid}>{languages.map(x=><button key={x} aria-pressed={(form.imageLanguage??languages[0])===x} onClick={()=>{set("imageLanguage",x);setChild("");}}>{x}</button>)}</div>
