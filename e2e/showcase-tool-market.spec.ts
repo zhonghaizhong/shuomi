@@ -29,14 +29,20 @@ test("official tool introduction opens native modal with close, Escape and focus
  await expect(modal).toHaveCount(0);
  await expect(trigger).toBeFocused();
 });
-test("download plugin dialog is grounded, and does not pretend an installer exists",async({page})=>{
+test("product acquisition local plugin can be installed and used in a truthful simulation",async({page})=>{
  await page.goto(base+"/official");
  await page.locator('[class*="toolCard"]').filter({hasText:"商品采集插件"}).getByRole("button",{name:"介绍"}).click();
  const modal=page.getByRole("dialog");
- await expect(modal).toContainText("下载商品采集插件");
- await expect(modal).toContainText("数据服务");
- await expect(modal.getByRole("button",{name:"暂无可下载文件"})).toBeDisabled();
- await modal.getByRole("button",{name:"取消"}).click();
+ await expect(modal).toContainText("本地插件采集");
+ await expect(modal).toContainText("不安装扩展程序");
+ await modal.getByRole("button",{name:"模拟安装插件"}).click();
+ await expect(modal).toContainText("已模拟安装");
+ await modal.getByRole("textbox",{name:"商品链接 *"}).fill("https://example.com/product/abc");
+ await modal.getByRole("textbox",{name:"商品标题（演示） *"}).fill("演示T恤");
+ await modal.getByRole("button",{name:"模拟插件采集"}).click();
+ await expect(modal).toContainText("模拟采集已完成");
+ await expect(modal).toContainText("演示T恤");
+ await modal.getByRole("button",{name:"关闭",exact:true}).click();
  await expect(modal).toHaveCount(0);
 });
 test("enable an official tool, see it in my tools, disable via confirmation",async({page})=>{
@@ -196,6 +202,13 @@ test("online acquisition has a centered tool-specific modal, not a generic execu
  await expect(modal).toContainText("按实际采集数据条数扣除额度");
  await expect(modal).not.toContainText("公开原型不提供真实工具运行");
  await expect(modal).not.toContainText("工具使用入口");
- await modal.getByRole("button",{name:"确定"}).click();
+ await modal.getByRole("textbox",{name:"商品链接 *"}).fill("https://example.com/product/online");
+ await modal.getByRole("textbox",{name:"商品标题（演示） *"}).fill("演示商品 B");
+ await modal.getByRole("button",{name:"开始模拟在线采集"}).click();
+ await expect(modal).toContainText("模拟采集已完成");
+ await expect(modal).toContainText("演示商品 B");
+ await modal.getByRole("button",{name:/我的数据（演示）/}).click();
+ await expect(modal).toContainText("演示商品 B");
+ await modal.getByRole("button",{name:"关闭",exact:true}).click();
  await expect(modal).toHaveCount(0);
 });
