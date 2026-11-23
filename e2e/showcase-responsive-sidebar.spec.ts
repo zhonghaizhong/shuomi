@@ -187,7 +187,8 @@ test("listing four-stage Figma flow has distinct functional screens",async({page
  await expect(waiting.getByLabel("本次批次 / 产品集")).toHaveValue("");
  await expect(waiting.getByRole("button",{name:"确认目标店铺"})).toBeVisible();
  await expect(waiting.getByRole("button",{name:"直接上传到平台"})).toBeDisabled();
- // The waiting screen deliberately keeps stage navigation hidden until a task exists.\n await page.goto(entry+"/listing/missing");
+ // The waiting screen deliberately keeps stage navigation hidden until a task exists.
+ await page.goto(entry+"/listing/missing");
  const missing=page.locator('[data-listing-stage="missing"]');
  const missingListTitle=missing.getByRole("heading",{name:/^商品列表（共 \d+ 个商品）$/});
  await expect(missingListTitle).toBeVisible();
