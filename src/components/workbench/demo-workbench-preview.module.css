@@ -3869,49 +3869,182 @@
 }
 
 
-/* Data Services showcase home — consistent premium Vuexy dark/light surfaces. */
+/* DATA SERVICE LANDING — PREMIUM VUEXY V2
+   Intentional hierarchy: elevated hero, primary service entry row, quiet steps,
+   then denser reference panels. Kept specific to data to protect other modules. */
 .page[data-commerce-unified="data"]{
- --ds-surface:#18283c;--ds-raised:#142237;--ds-line:#344960;
- --ds-text:#edf4ff;--ds-muted:#b3c3d5;--ds-purple:#7367f0;
+ --data-bg:#142237;
+ --data-surface:#18283c;
+ --data-elevated:#20344a;
+ --data-quiet:#17283c;
+ --data-line:#31465e;
+ --data-ink:#edf4ff;
+ --data-sub:#b6c5d6;
+ --data-dim:#91a6bb;
+ --data-violet:#7367f0;
+ --data-shadow:0 8px 26px rgba(3,12,28,.15);
+ gap:18px;
 }
 :global(.light) .page[data-commerce-unified="data"]{
- --ds-surface:#fff;--ds-raised:#f7fafd;--ds-line:#e0e7f0;
- --ds-text:#303546;--ds-muted:#657184;--ds-purple:#7367f0;
+ --data-bg:#f7fafd;
+ --data-surface:#ffffff;
+ --data-elevated:#f1f5fa;
+ --data-quiet:#f8fafd;
+ --data-line:#e0e6ee;
+ --data-ink:#263648;
+ --data-sub:#637487;
+ --data-dim:#738497;
+ --data-shadow:0 7px 24px rgba(32,50,77,.055);
 }
 .page[data-commerce-unified="data"]>.header{
- background:var(--ds-surface);border:1px solid var(--ds-line);
- border-radius:6px;box-shadow:0 5px 20px rgba(6,20,42,.07);
+ box-sizing:border-box;
+ position:relative;overflow:hidden;
+ min-height:132px;
+ padding:21px 25px;
+ background:linear-gradient(110deg,var(--data-surface) 0%,var(--data-surface) 66%,color-mix(in srgb,#7367f0 7%,var(--data-surface)) 100%);
+ border:1px solid var(--data-line);border-radius:6px;
+ box-shadow:var(--data-shadow);
+}
+.page[data-commerce-unified="data"]>.header::after{
+ content:"";position:absolute;right:-48px;top:-92px;width:242px;height:242px;
+ border:1px solid color-mix(in srgb,var(--data-violet) 15%,transparent);
+ border-radius:50%;pointer-events:none;
 }
 .page[data-commerce-unified="data"]>.header h1{
- color:var(--ds-text);border-left:3px solid var(--ds-purple);
- padding-left:12px;
+ color:var(--data-ink);font-size:26px;line-height:34px;font-weight:700;
+ border-left:3px solid var(--data-violet);padding-left:12px;
+ white-space:nowrap;letter-spacing:-.02em;
 }
-.page[data-commerce-unified="data"]>.header :is(.breadcrumb,p){color:var(--ds-muted)}
-.page[data-commerce-unified="data"] .dataCard,
-.page[data-commerce-unified="data"] .dataSteps article,
-.page[data-commerce-unified="data"] .dataDetails article{
- border:1px solid var(--ds-line);background:var(--ds-surface);
- border-radius:11px;box-shadow:0 7px 22px rgba(7,22,41,.08);
+.page[data-commerce-unified="data"]>.header :is(.breadcrumb,p){color:var(--data-sub)}
+.page[data-commerce-unified="data"]>.header p{font-size:14px;line-height:1.7;max-width:960px}
+.page[data-commerce-unified="data"] .dataCards{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;
 }
-.page[data-commerce-unified="data"] .dataCard{box-shadow:inset 3px 0 0 var(--accent),0 7px 22px rgba(7,22,41,.08)}
-.page[data-commerce-unified="data"] .dataCard h2{color:var(--ds-text)}
-.page[data-commerce-unified="data"] .dataCard p,
-.page[data-commerce-unified="data"] .dataCard div span,
-.page[data-commerce-unified="data"] .dataSteps article p,
-.page[data-commerce-unified="data"] .dataSteps>header p,
-.page[data-commerce-unified="data"] .dataDetails article p{color:var(--ds-muted)}
-.page[data-commerce-unified="data"] .dataSteps h2,
-.page[data-commerce-unified="data"] .dataDetails h3{
- color:var(--ds-text);border-left:3px solid var(--ds-purple);padding-left:11px
+.page[data-commerce-unified="data"] .dataCard{
+ box-sizing:border-box;position:relative;overflow:hidden;
+ display:flex;flex-direction:column;gap:0;
+ min-height:213px;padding:24px 23px 20px;
+ background:var(--data-surface);border:1px solid var(--data-line);
+ border-radius:12px;box-shadow:var(--data-shadow);
+ transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease;
 }
-.page[data-commerce-unified="data"] .dataSteps article strong{color:var(--ds-text)}
+.page[data-commerce-unified="data"] .dataCard::before{
+ content:"";position:absolute;left:0;top:22px;width:3px;height:40px;
+ border-radius:0 3px 3px 0;background:var(--accent);
+}
+.page[data-commerce-unified="data"] .dataCard::after{
+ content:"";position:absolute;right:-40px;top:-60px;
+ width:178px;height:178px;border-radius:50%;
+ background:radial-gradient(circle,color-mix(in srgb,var(--accent) 10%,transparent),transparent 68%);
+ pointer-events:none;
+}
+.page[data-commerce-unified="data"] .dataCard h2{
+ position:relative;z-index:1;margin:0;font-size:20px;line-height:28px;
+ color:var(--data-ink);font-weight:700;letter-spacing:-.012em;
+}
+.page[data-commerce-unified="data"] .dataCard p{
+ position:relative;z-index:1;margin:12px 0 19px;flex:1;
+ max-width:37ch;color:var(--data-sub);font-size:14px;line-height:1.7;
+}
+.page[data-commerce-unified="data"] .dataCard>div{
+ position:relative;z-index:1;display:flex;gap:12px;justify-content:space-between;
+ align-items:center;border-top:1px solid var(--data-line);padding-top:15px;
+}
+.page[data-commerce-unified="data"] .dataCard>div span{
+ padding:5px 10px;border-radius:999px;
+ background:color-mix(in srgb,var(--accent) 10%,var(--data-elevated));
+ color:var(--data-sub);font-size:12px;white-space:nowrap;
+}
 .page[data-commerce-unified="data"] .dataCard button{
- min-height:38px;border:1px solid var(--ds-line);border-radius:9px;
- background:var(--ds-raised);color:var(--ds-text)
+ margin:0;min-height:36px;padding:0 14px;
+ border:1px solid color-mix(in srgb,var(--data-violet) 34%,var(--data-line));
+ border-radius:8px;background:color-mix(in srgb,var(--data-violet) 10%,var(--data-surface));
+ color:var(--data-ink);font-size:13px;font-weight:600;
+ white-space:nowrap;box-shadow:none;
 }
-.page[data-commerce-unified="data"] .dataCard button:hover{border-color:var(--ds-purple);background:color-mix(in srgb,var(--ds-purple) 9%,var(--ds-raised))}
-.page[data-commerce-unified="data"] :is(button,a):focus-visible{outline:2px solid var(--ds-purple);outline-offset:2px}
+.page[data-commerce-unified="data"] .dataCard button:hover{
+ background:var(--data-violet);border-color:var(--data-violet);color:#fff;
+}
+.page[data-commerce-unified="data"] .dataSteps{
+ gap:13px;background:var(--data-surface);border:1px solid var(--data-line);
+ border-radius:12px;padding:21px 22px 23px;box-shadow:var(--data-shadow);
+}
+.page[data-commerce-unified="data"] .dataSteps>header{
+ min-height:32px;display:flex;justify-content:flex-start;align-items:baseline;
+ gap:18px;
+}
+.page[data-commerce-unified="data"] .dataSteps h2{
+ border-left:3px solid var(--data-violet);padding-left:11px;
+ color:var(--data-ink);font-size:18px;line-height:26px;
+ white-space:nowrap;
+}
+.page[data-commerce-unified="data"] .dataSteps>header p{color:var(--data-sub);font-size:13px}
+.page[data-commerce-unified="data"] .dataSteps>div{gap:12px}
+.page[data-commerce-unified="data"] .dataSteps article{
+ min-height:132px;padding:16px;
+ grid-template-columns:34px minmax(0,1fr);gap:7px 11px;align-content:start;
+ background:var(--data-quiet);border:1px solid var(--data-line);border-radius:9px;
+ box-shadow:none;
+}
+.page[data-commerce-unified="data"] .dataSteps article b{
+ display:grid;place-items:center;width:34px;height:34px;
+ background:color-mix(in srgb,#7367f0 11%,var(--data-elevated));
+ border:1px solid color-mix(in srgb,#7367f0 28%,var(--data-line));
+ border-radius:9px;color:var(--data-ink);font-size:13px;font-weight:700;
+}
+.page[data-commerce-unified="data"] .dataSteps article strong{
+ align-self:center;font-size:14px;color:var(--data-ink);line-height:23px;font-weight:650;
+}
+.page[data-commerce-unified="data"] .dataSteps article p{
+ grid-column:1/-1;margin:4px 0 0;color:var(--data-sub);font-size:13px;line-height:1.65;
+}
+.page[data-commerce-unified="data"] .dataDetails{gap:16px;align-items:stretch}
+.page[data-commerce-unified="data"] .dataDetails article{
+ min-height:208px;padding:22px 23px;
+ gap:16px;align-items:start;background:var(--data-surface);
+ border:1px solid var(--data-line);border-radius:12px;box-shadow:var(--data-shadow);
+}
+.page[data-commerce-unified="data"] .dataDetails article>div{gap:8px}
+.page[data-commerce-unified="data"] .dataDetails article>div>span{
+ color:var(--data-dim);font-size:12px;font-weight:600;letter-spacing:.025em;
+}
+.page[data-commerce-unified="data"] .dataDetails h3{
+ border:0;padding:0;color:var(--data-ink);font-size:17px;line-height:25px;
+}
+.page[data-commerce-unified="data"] .dataDetails article p{color:var(--data-sub);font-size:13px;line-height:1.65}
+.page[data-commerce-unified="data"] .dataDetails em{
+ justify-self:start;color:var(--data-ink);
+ background:color-mix(in srgb,#7367f0 10%,var(--data-elevated));
+ border:1px solid color-mix(in srgb,#7367f0 16%,var(--data-line));
+ font-size:12px;border-radius:7px;
+}
+.page[data-commerce-unified="data"] .dataDetails ul{
+ border-left:1px solid var(--data-line);gap:12px;padding-left:18px;
+}
+.page[data-commerce-unified="data"] .dataDetails li :is(b,strong){color:var(--data-ink)}
+.page[data-commerce-unified="data"] .dataDetails li span{color:var(--data-sub)}
 @media(hover:hover){
- .page[data-commerce-unified="data"] .dataCard:hover{border-color:color-mix(in srgb,var(--ds-purple) 35%,var(--ds-line));box-shadow:inset 3px 0 var(--accent),0 12px 30px rgba(7,22,41,.14)}
+ .page[data-commerce-unified="data"] .dataCard:hover{
+  transform:translateY(-2px);
+  border-color:color-mix(in srgb,var(--data-violet) 45%,var(--data-line));
+  box-shadow:0 14px 28px rgba(5,17,35,.14);
+ }
 }
-@media(max-width:720px){.page[data-commerce-unified="data"]>.header h1{white-space:normal}}
+@media(max-width:1100px){
+ .page[data-commerce-unified="data"] .dataCards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .page[data-commerce-unified="data"] .dataSteps>div{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .page[data-commerce-unified="data"] .dataDetails article{grid-template-columns:1fr}
+ .page[data-commerce-unified="data"] .dataDetails ul{border-left:0;border-top:1px solid var(--data-line);padding:13px 0 0}
+}
+@media(max-width:700px){
+ .page[data-commerce-unified="data"]>.header{padding:18px;min-height:118px}
+ .page[data-commerce-unified="data"]>.header h1{font-size:22px;line-height:30px;white-space:normal}
+ .page[data-commerce-unified="data"] .dataCards,
+ .page[data-commerce-unified="data"] .dataSteps>div,
+ .page[data-commerce-unified="data"] .dataDetails{grid-template-columns:1fr}
+ .page[data-commerce-unified="data"] .dataCard{min-height:180px;padding:20px}
+ .page[data-commerce-unified="data"] .dataSteps{padding:18px}
+ .page[data-commerce-unified="data"] .dataSteps>header{flex-direction:column;gap:4px}
+ .page[data-commerce-unified="data"] .dataDetails article{padding:19px}
+}
+@media(prefers-reduced-motion:reduce){.page[data-commerce-unified="data"] .dataCard{transition:none}}
