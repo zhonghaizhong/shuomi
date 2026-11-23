@@ -1001,3 +1001,34 @@
     margin-top: 20px;
   }
 }
+
+
+/* My Tools: Figma 430:5511 / 1168:359 */
+.mineToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 42px;
+  margin-bottom: 18px;
+}
+.mineToolbar > strong { white-space: nowrap; font-size: var(--body-text-size); }
+.mineSearch { display: flex; align-items: center; gap: 12px; width: min(464px, 100%); }
+.mineSearch input { flex: 1; min-width: 0; height: 42px; }
+.mineSearch button { height: 42px; min-width: 88px; }
+.mineResults { display: grid; gap: 16px; }
+.mineResults .mineGrid { align-items: stretch; }
+.mineResults .mineCard, .mineResults .side { min-height: 235px; }
+.mineResults .mineCard { display: flex; flex-direction: column; gap: 10px; }
+.mineResults .mineCard .cardHeading button { height: 38px; min-width: 104px; font-size: var(--body-text-size); }
+.mineResults .side .explanation { padding: 9px 12px; margin-top: 8px; border-radius: 8px; background: var(--tool-nested); }
+.mineResults .side .explanation h3 { font-weight: 700; }
+.podDescription { display: grid; gap: 6px; margin-top: 2px; }
+.podDescription p { font-size: var(--body-text-size); line-height: 21px; }
+.podActions { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--tool-line); }
+.activeStatus { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 8px; color: var(--tool-green); background: var(--tool-green-fill); }
+@media (max-width: 720px) {
+  .mineToolbar { align-items: stretch; flex-direction: column; }
+  .mineSearch { width: 100%; }
+  .mineResults .mineGrid { grid-template-columns: 1fr; }
+}
