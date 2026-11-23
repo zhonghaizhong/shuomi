@@ -67,3 +67,26 @@
 :global(.light) .detailCover{background:#f7f7fa;border-color:#e5e1ed}
 @media(max-width:960px){.detailOverlay{grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr)}.detailStage{padding:15px}.detailPanel{padding:16px}.detailIntro{grid-template-columns:96px minmax(0,1fr)}.detailCover{height:104px}}
 @media(max-width:680px){.detailOverlay{grid-template-columns:1fr;overflow-y:auto}.detailStage{min-height:380px}.largeImage{height:min(55vh,430px);min-height:220px}.detailPanel{max-height:none;overflow:visible;border-left:0;border-top:1px solid #354760}.detailIntro{grid-template-columns:110px minmax(0,1fr)}}
+
+/* Compact centered image viewer: preserve left photo/right information composition. */
+.detailOverlay{inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);width:min(1280px,calc(100vw - 92px));height:min(740px,calc(100dvh - 90px));box-sizing:border-box;border:1px solid #354760;border-radius:12px;overflow:hidden;grid-template-columns:minmax(0,1.65fr) minmax(350px,1fr);box-shadow:0 28px 90px #0009}
+.detailStage{padding:16px 20px;gap:11px;height:100%;box-sizing:border-box;overflow:hidden}
+.largeImage{height:0;min-height:0;max-height:none;flex:1;box-sizing:border-box;object-fit:contain}
+.gallery{flex:none;min-height:62px}.gallery button{height:58px;width:64px}
+.detailPanel{height:100%;max-height:none;box-sizing:border-box;gap:16px;padding:18px 20px}
+.detailMetadata{gap:13px}.detailDescription{margin-top:auto}
+.detailPanel>footer{margin-top:0}
+@media(max-width:960px){.detailOverlay{width:calc(100vw - 32px);height:min(760px,calc(100dvh - 32px));grid-template-columns:minmax(0,1.15fr) minmax(300px,1fr)}}
+@media(max-width:680px){.detailOverlay{width:calc(100vw - 20px);height:calc(100dvh - 20px);display:flex;flex-direction:column;overflow-y:auto}.detailStage{height:auto;min-height:0;flex:none}.largeImage{height:min(40vh,330px);min-height:180px;flex:none}.detailPanel{height:auto;max-height:none;flex:none}.gallery{min-height:50px}}
+/* Price selector popover with draggable lower and upper bounds. */
+.priceRangeHost{position:relative;flex:0 0 155px;z-index:8}
+.priceRangeHost>button{box-sizing:border-box;width:100%;height:40px;min-height:40px;white-space:nowrap;text-align:center;background:var(--bp-bg);border:1px solid var(--bp-line)}
+.pricePopover{position:absolute;right:0;top:calc(100% + 8px);width:280px;box-sizing:border-box;padding:16px;display:grid;gap:12px;border-radius:10px;border:1px solid var(--bp-line);background:var(--bp-card);box-shadow:0 15px 36px #0005}
+.pricePopover>strong{font-size:14px;color:var(--bp-ink)}
+.priceNumbers{display:flex;justify-content:space-between;font-size:12px;color:var(--bp-primary);font-weight:600}
+.pricePopover label{display:grid;gap:7px;font-size:12px;color:var(--bp-muted)}
+.pricePopover input[type=range]{width:100%;height:20px;cursor:pointer;accent-color:var(--bp-primary)}
+.priceActions{display:flex;gap:8px;justify-content:flex-end}
+.priceActions button:last-child{background:var(--bp-primary);border-color:var(--bp-primary);color:white}
+@media(max-width:900px){.priceRangeHost{flex:1 1 135px}}
+@media(max-width:540px){.pricePopover{right:auto;left:0;width:min(280px,calc(100vw - 55px))}}
