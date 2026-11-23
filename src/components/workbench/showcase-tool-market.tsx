@@ -245,25 +245,46 @@ function ToolModal({info,onClose,onConfirm}:{info:Dialog;onClose:()=>void;onConf
     ["本地插件采集","安装在客户电脑本地运行，浏览商品时通过浏览器插件直接采集。"],
     ["在线采集","由平台云端执行，无需客户电脑持续运行即可完成在线采集。"]
   ]:[["功能说明",tool?.description??"请选择工具功能"]];
-  const title=info.type==="download"?"下载商品采集插件":info.type==="disable"?"确认停用工具":info.type==="launch"?(isAcquisition?"在线采集":info.name+" · 进入使用"):info.name;
+  const title=info.type==="download"?"下载商品采集插件":info.type==="disable"?"确认停用工具":info.type==="launch"?info.name:info.name;
   if(isAcquisition&&info.type==="download")return <AcquisitionSimulator mode="local" onClose={onClose}/>;
   if(isAcquisition&&info.type==="launch")return <FigmaOnlineCollection onClose={onClose}/>;
-  return <dialog ref={ref} className={`${styles.dialog} ${info.type==="launch"?styles.launchDialog:""}`} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+  return <dialog ref={ref} className={`${styles.dialog} ${info.type==="launch"?styles.launchDialog:""} ${info.type==="launch"&&(info.name==="POD素材管理工具"||info.name==="自有商品刊登工具")?styles.figmaToolDialog:""}`} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><h2 id={id}>{title}</h2><button type="button" onClick={onClose} aria-label="关闭弹窗">×</button></header>
     {info.type==="download"?<>
       <p>下载安装到自己的电脑，在商品页面直接使用。</p>
       <dl className={styles.downloadDetails}><div><dt>使用方式</dt><dd>电脑端安装插件</dd></div><div><dt>费用</dt><dd>免费 · 不消耗数据额度</dd></div><div><dt>采集方式</dt><dd>打开目标商品页后点击插件采集</dd></div><div><dt>结果去向</dt><dd>数据服务 — 我的数据</dd></div></dl>
       <p>下载后按安装提示完成浏览器插件安装。</p><p className={styles.demoNote}>当前公开展示未提供可验证的安装包，不能模拟下载成功。实际下载需在正式工具入口获取。</p>
     </>: info.type==="disable"?<><p>停用后，该工具将从当前演示的「我的工具」列表中移除，可在官方工具中重新启用。</p><p className={styles.demoNote}>只改变当前浏览器的演示状态，不影响正式账户。</p></>
+    :info.type==="launch"&&info.name==="POD素材管理工具"?<div className={styles.figmaToolIntro}>
+      <p className={styles.figmaToolSubtitle}>贴图审核、素材复用与官方灵感，一处管理</p>
+      <div className={styles.figmaToolProcess}><strong>业务流程</strong><span>生成 → 暂存待审 → 审核通过后贴图 → 订单查图打印</span></div>
+      <div className={styles.figmaToolFeatures}>
+        {[
+          ["01","贴图审核与打印","生成后暂存审核，通过后再贴图；下单后可找原图打印。"],
+          ["02","我的素材","上传、分类管理个人素材，支持在 POD 图片裂变中引用。"],
+          ["03","灵感市场","官方提供示例图片及生成指令，帮助寻找设计灵感。"]
+        ].map(([number,title,detail])=><div key={number}><span className={styles.figmaFeatureNumber}>{number}</span><section><strong>{title}</strong><p>{detail}</p></section></div>)}
+      </div>
+      <div className={styles.figmaToolBottom}><span>功能介绍原型，实际业务功能以开发接入为准</span></div>
+    </div>
+    :info.type==="launch"&&info.name==="自有商品刊登工具"?<div className={styles.figmaToolIntro}>
+      <p className={styles.figmaToolSubtitle}>自有商品导入 · 平台适配 · 快速刊登</p>
+      <div className={styles.figmaListingDescription}><p>支持自有商品信息导入、校验与批量整理。</p><p>沿用现有商品适配流程，无需重复录入。</p></div>
+      <div className={styles.figmaListingCards}>
+        <section><strong>本地商品</strong><p>导入自有商品信息</p></section>
+        <section><strong>信息校验</strong><p>检查字段与图片</p></section>
+        <section><strong>平台适配</strong><p>进入刊登工作流</p></section>
+      </div>
+      <p className={styles.figmaListingHint}>启用后在「我的工具」进入自有商品待上传流程。</p>
+    </div>
     :info.type==="launch"?<div className={styles.launchBody}>
-      <p>{isAcquisition?"由平台云端执行，无需客户电脑持续运行即可完成在线采集。":"选择需要了解的功能，查看对应的使用说明。"}</p>
-      {isAcquisition?<div className={styles.launchCharge}><strong>按数据收费</strong><span>按实际采集数据条数扣除额度</span><span>采集结果统一保存至「数据服务 / 我的数据」</span></div>
-      :<><div className={styles.launchChoices} role="group" aria-label="选择工具功能">{features.map(([name],index)=><button type="button" key={name} aria-pressed={selectedFeature===index} onClick={()=>setSelectedFeature(index)}>{name}</button>)}</div>
-      <div className={styles.launchFeature}><strong>{features[selectedFeature]?.[0]}</strong><p>{features[selectedFeature]?.[1]}</p></div></>}
+      <p>选择需要了解的功能，查看对应的使用说明。</p>
+      <div className={styles.launchChoices} role="group" aria-label="选择工具功能">{features.map(([name],index)=><button type="button" key={name} aria-pressed={selectedFeature===index} onClick={()=>setSelectedFeature(index)}>{name}</button>)}</div>
+      <div className={styles.launchFeature}><strong>{features[selectedFeature]?.[0]}</strong><p>{features[selectedFeature]?.[1]}</p></div>
       <p className={styles.launchAvailability}>当前展示页仅提供功能介绍，实际操作请在正式工作台使用。</p>
     </div>
     :<><p>{tool?.description}</p><div className={styles.tags}>{tool?.tags.map(tag=><span key={tag}>{tag}</span>)}</div><p>适用分类：{tool?.category} · 当前状态：{tool?.status==="development"?"开发中":"可按需启用"}</p><p className={styles.demoNote}>实际功能、授权和费用以正式工作台为准。</p></>}
-    <footer><button type="button" onClick={onClose}>取消</button>{info.type==="disable"?<button type="button" className={styles.primary} onClick={onConfirm}>确认停用</button>:info.type==="download"?<button type="button" disabled title="当前演示未提供实际安装文件">暂无可下载文件</button>:<button type="button" className={styles.primary} onClick={onClose}>确定</button>}</footer>
+    <footer>{info.type!=="launch"?<button type="button" onClick={onClose}>取消</button>:null}{info.type==="disable"?<button type="button" className={styles.primary} onClick={onConfirm}>确认停用</button>:info.type==="download"?<button type="button" disabled title="当前演示未提供实际安装文件">暂无可下载文件</button>:<button type="button" className={styles.primary} onClick={onClose}>{info.type==="launch"&&(info.name==="POD素材管理工具"||info.name==="自有商品刊登工具")?"知道了":"确定"}</button>}</footer>
   </dialog>;
 }
 
