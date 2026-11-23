@@ -350,3 +350,12 @@
 .page[data-listing-stage="waiting"] .ruleSelectedRow strong{color:var(--ink)}
 .page[data-listing-stage="waiting"] .ruleSelectedRow span{border:1px solid #40c69d;border-radius:5px;padding:3px 6px;background:color-mix(in srgb,#40c69d 14%,var(--surface));color:#40c69d;white-space:nowrap}
 .page[data-listing-stage="waiting"] .ruleSettingsButton{align-self:flex-end;min-width:135px}
+
+
+/* Origin-first dataset selection: compact, readable in both approved themes. */
+.sourceGuide{min-height:0!important;margin:0!important;padding:9px 11px;border:1px solid var(--stroke);border-radius:7px;background:var(--surface-alt);color:var(--muted);font-size:12px;line-height:1.5}
+.datasetSelection{display:grid;gap:6px;min-width:0;padding:12px;border-radius:8px;border:1px solid var(--focus);background:color-mix(in srgb,var(--focus) 7%,var(--surface));line-height:1.45}
+.datasetSelection strong{font-size:13px;color:var(--ink)}
+.datasetSelection span,.datasetSelection em{display:block;font-size:12px;font-style:normal;color:var(--muted);overflow-wrap:anywhere}
+.datasetSelection em{border-top:1px solid var(--stroke);padding-top:7px}
+.configuration article:has(.datasetSelection){min-height:282px}
