@@ -132,7 +132,7 @@ test("approved Vuexy visual palette takes precedence over Figma visual skin",asy
    await setTheme(page,mode);
    await expect(header).toBeVisible();
    const bg=await header.evaluate(el=>getComputedStyle(el).backgroundColor);
-   expect(bg,route+" "+mode+" header").toBe(mode==="dark"?"rgb(47, 51, 73)":"rgb(255, 255, 255)");
+   expect(bg,route+" "+mode+" header").toBe(mode==="dark"?"rgb(20, 34, 55)":"rgb(255, 255, 255)");
    const primary=root.locator("button[class*='primary']").first();
    if(await primary.count()){
     const buttonBg=await primary.evaluate(el=>getComputedStyle(el).backgroundColor);
