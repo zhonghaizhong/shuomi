@@ -460,3 +460,8 @@
 }
 @media(max-width:700px){.page>.head h1{white-space:normal}.page>.head{padding:17px}.page .recordRow{min-width:850px}}
 @media(prefers-reduced-motion:reduce){.page :is(.homeCard,.serviceCard,.howtoGrid article,.joinStep,.joinInfo,.recordRow){transition:none}}
+
+/* Regression: generic premium card styling must not override the shared 6px page header. */
+.page[data-eco-page] > .head{
+ border-radius:6px;
+}
