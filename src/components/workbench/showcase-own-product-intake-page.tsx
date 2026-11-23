@@ -20,7 +20,12 @@ export function ShowcaseOwnProductIntakePage({stage}:{stage:OwnIntakeStage}){
  const currentSku=draft.find(s=>s.id===skuId)??draft[0];
  const missing=checkOwnProductSkus(draft);
  const select=(item:OwnProductRecord)=>{setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1);setNotice("")};
- const updateSku=(fields:Partial<OwnProductRecord["skus"][number]>)=>setDraft(old=>old.map(s=>s.id===skuId?{...s,...fields}:s));
+ useEffect(()=>{
+  if(!context?.itemId||selectedId)return;
+  const item=records.find(p=>p.id===context.itemId&&p.status===(stage==="pending"?"入库待完善":"待审核"));
+  if(item){setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1)}
+ },[context,records,selectedId,stage]);
+  const updateSku=(fields:Partial<OwnProductRecord["skus"][number]>)=>setDraft(old=>old.map(s=>s.id===skuId?{...s,...fields}:s));
  const upload=async(e:ChangeEvent<HTMLInputElement>)=>{
   if(!currentSku)return;
   const files=Array.from(e.target.files??[]).slice(0,Math.max(0,8-currentSku.images.length));
