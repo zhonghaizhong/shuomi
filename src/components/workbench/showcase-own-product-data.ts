@@ -4,7 +4,7 @@
 export type OwnProductSku={id:number;name:string;description:string;images:string[];price?:string;stock?:number;skuCode?:string};
 export type OwnProductRecord={
  id:string;batchId:string;name:string;source:"上传资料"|"导入表格"|"商品链接"|"API 接入";
- createdAt:string;checkedAt:string;status:"入库待完善"|"已入库";
+ createdAt:string;checkedAt:string;status:"入库待完善"|"待审核"|"已入库";
  missing:string[];skus:OwnProductSku[];agent:string;template:string;
 };
 export type OwnProductBatch={id:string;name:string;createdAt:string;productCount:number};
@@ -66,7 +66,21 @@ export function updateOwnProductAfterReview(org:string,member:string,id:string,s
  if(!skus.length)throw Error("至少需要一个 SKU");
  const missing=checkOwnProductSkus(skus);
  const checkedAt=new Date().toLocaleString("zh-CN",{hour12:false});
- const updated:OwnProductRecord={...existing,skus,missing,checkedAt,status:missing.length?"入库待完善":"已入库",name:skus[0].name.trim()||existing.name};
+ const updated:OwnProductRecord={...existing,skus,missing,checkedAt,status:missing.length?"入库待完善":"待审核",name:skus[0].name.trim()||existing.name};
+ sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===id?updated:p)));
+ notify(org,member);
+ return updated;
+}
+
+/** First-stage approval belongs to the own-product tool, not 刊登管理/待审核. */
+export function approveOwnProductIntake(org:string,member:string,id:string):OwnProductRecord{
+ if(typeof window==="undefined")throw Error("演示存储不可用");
+ const all=readOwnProducts(org,member);
+ const current=all.find(p=>p.id===id);
+ if(!current)throw Error("无权审核或商品已不存在");
+ if(current.status!=="待审核")throw Error("商品未处于首次入库待审核状态");
+ if(checkOwnProductSkus(current.skus).length)throw Error("资料缺失，请先在待完善补齐");
+ const updated:OwnProductRecord={...current,status:"已入库",missing:[],checkedAt:new Date().toLocaleString("zh-CN",{hour12:false})};
  sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===id?updated:p)));
  notify(org,member);
  return updated;
