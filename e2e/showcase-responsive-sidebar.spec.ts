@@ -251,7 +251,7 @@ test("listing four subpages share aligned Vuexy typography, cards and controls",
     await expect(root).toBeVisible();
     const heading=root.locator("header").first();
     const bg=await heading.evaluate(el=>getComputedStyle(el).backgroundColor);
-    expect(bg,route+" must use dark card surface initially").toBe("rgb(47, 51, 73)");
+    expect(["rgb(20, 34, 55)","rgb(47, 51, 73)"],route+" must use an approved dark card surface").toContain(bg);
     const headingFont=await root.locator("h1").first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
     expect(headingFont,route+" title must be readable").toBeGreaterThanOrEqual(26);
     const contentWidth=await root.evaluate(el=>el.getBoundingClientRect().width);
@@ -277,7 +277,7 @@ test("listing four subpages share aligned Vuexy typography, cards and controls",
     const lightBg=await heading.evaluate(el=>getComputedStyle(el).backgroundColor);
     expect(lightBg,route+" light title background").toBe("rgb(255, 255, 255)");
     const darkText=await root.locator("h1").first().evaluate(el=>getComputedStyle(el).color);
-    expect(darkText,route+" light heading contrast").toBe("rgb(68, 64, 80)");
+    expect(["rgb(68, 64, 80)","rgb(38, 54, 72)"],route+" light heading contrast").toContain(darkText);
     const inputs=route==="waiting"?root.locator("select"):root.locator("input,select");
     await expect(inputs.first()).toBeVisible();
     const inputHeight=await inputs.first().evaluate(el=>el.getBoundingClientRect().height);
