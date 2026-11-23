@@ -206,9 +206,9 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
   if (pathname.startsWith("/workbench/tools/custom")) return <ShowcaseToolCustomization pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/services" || pathname === "/workbench/services/market" || pathname === "/workbench/services/mine" || pathname === "/workbench/services/join") return <ShowcaseEcologyServices pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/listing") return <ListingOverview navigate={href=>router.push(`${href}?preview=1`)} />;
-  if (pathname === "/workbench/listing/waiting") return <ShowcaseListingStage stage="waiting" />;
-  if (pathname === "/workbench/listing/missing") return <ShowcaseListingStage stage="missing" />;
-  if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" />;
+  if (pathname === "/workbench/listing/waiting") return <ShowcaseListingStage stage="waiting" organizationId={organizationId} memberId={memberId} />;
+  if (pathname === "/workbench/listing/missing") return <ShowcaseListingStage stage="missing" organizationId={organizationId} memberId={memberId} />;
+  if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/account/profile" || pathname === "/workbench/account/profile/settings") return <AccountProfilePreview key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview />;
   if (pathname.startsWith("/workbench/account/organization") || pathname.startsWith("/workbench/account/referrals")) return <ShowcaseAccountSuite key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} memberId={memberId} organizationId={organizationId} organizationName={organizationName} />;
