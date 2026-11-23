@@ -23,6 +23,106 @@ function restoreEnabled():string[] {
   try { const raw=sessionStorage.getItem(activationStorage);return raw?JSON.parse(raw) as string[]:["POD素材管理工具"]; }
   catch {return ["POD素材管理工具"];}
 }
+
+type AcquisitionRecord = {
+  id: string; mode: "local" | "online"; url: string;
+  title: string; price: string; sku: string; createdAt: string;
+};
+const demoAcquisitionKey="shuomi:showcase-acquisition-records-v1";
+function restoreAcquisitions():AcquisitionRecord[] {
+  try {
+    const value=JSON.parse(sessionStorage.getItem(demoAcquisitionKey)||"[]") as unknown;
+    return Array.isArray(value)?value.filter((x):x is AcquisitionRecord=>Boolean(x&&typeof x==="object"&&"id" in x&&"url" in x&&"mode" in x)).slice(0,30):[];
+  }catch{return [];}
+}
+function AcquisitionSimulator({mode,onClose}:{mode:"local"|"online";onClose:()=>void}) {
+  const ref=useRef<HTMLDialogElement>(null),id=useId();
+  const [installed,setInstalled]=useState(false);
+  const [url,setUrl]=useState("");
+  const [title,setTitle]=useState("");
+  const [price,setPrice]=useState("");
+  const [sku,setSku]=useState("");
+  const [records,setRecords]=useState<AcquisitionRecord[]>(restoreAcquisitions);
+  const [view,setView]=useState<"capture"|"records">("capture");
+  const [error,setError]=useState("");
+  const [created,setCreated]=useState("");
+  useEffect(()=>{
+    const el=ref.current,prev=document.activeElement;
+    el?.showModal();
+    return ()=>{el?.close();if(prev instanceof HTMLElement&&prev.isConnected)prev.focus();};
+  },[]);
+  const submit=(event:React.FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();
+    setError("");
+    if(mode==="local"&&!installed){setError("请先完成模拟插件安装。");return;}
+    let parsed:URL;
+    try{parsed=new URL(url.trim());}catch{setError("请输入完整的 http 或 https 商品链接。");return;}
+    if(!["http:","https:"].includes(parsed.protocol)){setError("仅支持 http 或 https 商品链接。");return;}
+    if(!title.trim()){setError("请填写用于演示的商品标题。");return;}
+    if(price.trim()&&(!Number.isFinite(Number(price))||Number(price)<0)){setError("商品价格请输入有效的非负数字。");return;}
+    const record:AcquisitionRecord={
+      id:"MOCK-"+Date.now().toString(36),mode,url:parsed.toString(),
+      title:title.trim(),price:price.trim()||"未填写",sku:sku.trim()||"未填写",
+      createdAt:new Date().toLocaleString("zh-CN",{hour12:false})
+    };
+    const next=[record,...records].slice(0,30);
+    setRecords(next);
+    try{sessionStorage.setItem(demoAcquisitionKey,JSON.stringify(next));}catch{setError("采集已模拟完成，但浏览器禁止保存会话记录。");}
+    setCreated(record.id);
+    setView("records");
+  };
+  return <dialog ref={ref} className={`${styles.dialog} ${styles.launchDialog} ${styles.acquisitionDialog}`}
+    aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}}
+    onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <header><h2 id={id}>{mode==="local"?"本地插件采集":"在线采集"}</h2>
+      <button type="button" aria-label="关闭弹窗" onClick={onClose}>×</button></header>
+    <p className={styles.acquisitionDemoNotice}>演示模式：不安装扩展程序，不访问第三方平台，不消耗真实数据额度。</p>
+    <div className={styles.acquisitionTabs} role="group" aria-label="采集功能">
+      <button type="button" aria-pressed={view==="capture"} onClick={()=>setView("capture")}>采集商品</button>
+      <button type="button" aria-pressed={view==="records"} onClick={()=>setView("records")}>我的数据（演示） {records.length}</button>
+    </div>
+    {view==="capture"?<div className={styles.acquisitionBody}>
+      <p>{mode==="local"?"安装在客户电脑本地运行，浏览商品时通过浏览器插件直接采集。":"由平台云端执行，无需客户电脑持续运行即可完成在线采集。"}</p>
+      <p className={styles.acquisitionPricing}>{mode==="local"?"免费 · 不消耗数据额度":"按实际采集数据条数扣除额度（演示不实际扣费）"}</p>
+      {mode==="local"?<div className={styles.acquisitionInstall}>
+        <div><strong>浏览器插件</strong><span>{installed?"已模拟安装，可进行采集":"尚未模拟安装"}</span></div>
+        <button type="button" onClick={()=>setInstalled(true)} disabled={installed}>{installed?"模拟安装完成":"模拟安装插件"}</button>
+      </div>:null}
+      <form className={styles.acquisitionForm} onSubmit={submit}>
+        <label>商品链接 *
+          <input type="url" required value={url} onChange={e=>setUrl(e.target.value)}
+            placeholder="https://example.com/product/123" />
+        </label>
+        <label>商品标题（演示） *
+          <input required maxLength={120} value={title} onChange={e=>setTitle(e.target.value)} placeholder="输入模拟商品标题" />
+        </label>
+        <div className={styles.acquisitionFields}>
+          <label>商品价格（演示）
+            <input type="number" min="0" step="0.01" value={price} onChange={e=>setPrice(e.target.value)} placeholder="例如 29.90" />
+          </label>
+          <label>SKU / 规格（演示）
+            <input maxLength={80} value={sku} onChange={e=>setSku(e.target.value)} placeholder="例如 BLACK-M" />
+          </label>
+        </div>
+        {error?<p role="alert" className={styles.acquisitionError}>{error}</p>:null}
+        <button type="submit" className={styles.primary}>{mode==="local"?"模拟插件采集":"开始模拟在线采集"}</button>
+      </form>
+      <p className={styles.acquisitionDestination}>结果去向：数据服务 / 我的数据（仅当前浏览器演示记录）</p>
+    </div>:<div className={styles.acquisitionBody}>
+      {created?<p role="status" className={styles.acquisitionSuccess}>模拟采集已完成，记录 {created} 已加入我的数据（演示）。</p>:null}
+      {records.length?<div className={styles.acquisitionRecords}>{records.map(x=>
+        <article key={x.id} className={styles.acquisitionRecord}>
+          <div><strong>{x.title}</strong><span>{x.mode==="local"?"本地插件":"在线采集"} · {x.createdAt}</span></div>
+          <p>价格：{x.price} · SKU / 规格：{x.sku}</p>
+          <p className={styles.acquisitionUrl}>{x.url}</p>
+        </article>
+      )}</div>:<p>暂无采集记录。可以返回采集商品，创建一条模拟数据。</p>}
+      <button type="button" onClick={()=>{setCreated("");setView("capture")}}>继续采集</button>
+    </div>}
+    <footer><button type="button" onClick={onClose}>关闭</button></footer>
+  </dialog>;
+}
+
 function ToolModal({info,onClose,onConfirm}:{info:Dialog;onClose:()=>void;onConfirm:()=>void}) {
   const ref=useRef<HTMLDialogElement>(null), id=useId();
   const [selectedFeature,setSelectedFeature]=useState(0);
@@ -42,6 +142,7 @@ function ToolModal({info,onClose,onConfirm}:{info:Dialog;onClose:()=>void;onConf
     ["在线采集","由平台云端执行，无需客户电脑持续运行即可完成在线采集。"]
   ]:[["功能说明",tool?.description??"请选择工具功能"]];
   const title=info.type==="download"?"下载商品采集插件":info.type==="disable"?"确认停用工具":info.type==="launch"?(isAcquisition?"在线采集":info.name+" · 进入使用"):info.name;
+  if(isAcquisition&&(info.type==="download"||info.type==="launch"))return <AcquisitionSimulator mode={info.type==="download"?"local":"online"} onClose={onClose}/>;
   return <dialog ref={ref} className={`${styles.dialog} ${info.type==="launch"?styles.launchDialog:""}`} aria-labelledby={id} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><h2 id={id}>{title}</h2><button type="button" onClick={onClose} aria-label="关闭弹窗">×</button></header>
     {info.type==="download"?<>
