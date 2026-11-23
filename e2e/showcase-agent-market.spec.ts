@@ -140,7 +140,9 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await imageSettings.getByRole("button",{name:/主图.*配置主图优化任务/}).click();
  await expect(imageSettings.getByRole("checkbox",{name:"主图第3张"})).toBeChecked();
  await imageSettings.getByRole("button",{name:"自定义指令"}).click();
- await imageSettings.getByRole("textbox",{name:"图片任务指令 1"}).fill("只优化主图，不修改商品规格");
+ await imageSettings.getByRole("button",{name:"删除"}).last().click();
+ await imageSettings.getByRole("combobox",{name:"任务 1 图片位置"}).selectOption("1");
+ await imageSettings.getByRole("textbox",{name:"任务 1 优化要求"}).fill("只优化主图，不修改商品规格");
  await imageSettings.getByRole("button",{name:"确认选择"}).click();
  await expect(imageSettings).toHaveCount(0);
  await dialog.getByRole("button",{name:"预览优化范围"}).click();
