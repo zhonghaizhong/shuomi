@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {beforeEach,describe,expect,it} from "vitest";
-import {createOwnProductBatch,readOwnProductBatches,readOwnProducts,saveOwnProduct} from "./showcase-own-product-data";
+import {createOwnProductBatch,readOwnProductBatches,readOwnProducts,saveOwnProduct,listOwnPendingProducts,listOwnReadyProducts,updateOwnProductAfterReview} from "./showcase-own-product-data";
 describe("own product intake and batch visibility",()=>{
  beforeEach(()=>sessionStorage.clear());
  it("creates a batch, saves a multi-SKU product, and reads it through the same store",()=>{
@@ -30,4 +30,17 @@ describe("own product intake and batch visibility",()=>{
   expect(readOwnProducts("org-A","user-1")).toHaveLength(0);
   expect(b.productCount).toBe(0);
  });
+ it("stages incomplete product until unified verification completes",()=>{
+  const b=createOwnProductBatch("org-A","user-1","待检测");
+  const item=saveOwnProduct("org-A","user-1",b.id,{name:"保温杯",source:"上传资料",status:"待补全",missing:["SKU 1 基础资料"],skus:[{id:1,name:"500ml",description:"",images:["data:mock"]}],agent:"",template:""});
+  expect(listOwnPendingProducts("org-A","user-1").map(x=>x.id)).toContain(item.id);
+  expect(listOwnReadyProducts("org-A","user-1")).toHaveLength(0);
+  const stillPending=updateOwnProductAfterReview("org-A","user-1",item.id,[{id:1,name:"500ml",description:"",images:["data:mock"]}]);
+  expect(stillPending.status).toBe("待补全");
+  const ready=updateOwnProductAfterReview("org-A","user-1",item.id,[{id:1,name:"500ml",description:"不锈钢 500ml，售价99元",images:["data:mock"]}]);
+  expect(ready.status).toBe("待上传");
+  expect(listOwnReadyProducts("org-A","user-1").map(x=>x.id)).toContain(item.id);
+  expect(listOwnPendingProducts("org-A","user-1")).toHaveLength(0);
+ });
+
 });
