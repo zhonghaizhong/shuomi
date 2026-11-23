@@ -7,6 +7,11 @@ export type ConfigurationMode="product-image"|"pod-ai"|"pod-hybrid"|"pod-pattern
 export type ImageTask={id:number;name:string;prompt:string};
 export type AgentUseConfiguration={
  imageUse?:"共用视觉素材"|"分别优化";
+ optimizationSource?:"引用技能"|"官方方案"|"自定义指令";
+ sharedImageSource?:"主图"|"详情图";
+ imageProcessingScope?:"手动选择"|"按技能设定";
+ selectedMainImages?:number[];
+ selectedDetailImages?:number[];
  generationRule?:"官方方案"|"自定义指令";
  imageTarget?:"主图"|"详情图";
  selectedImages?:number[];
@@ -46,6 +51,8 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const [fileName,setFileName]=useState("");
  const [tasks,setTasks]=useState<ImageTask[]>(initial.imageTasks?.length?initial.imageTasks:[{id:1,name:"自定义图片 1",prompt:""}]);
  const [selectedImgs,setSelectedImgs]=useState<number[]>(initial.selectedImages??[]);
+ const [mainImgs,setMainImgs]=useState<number[]>(initial.selectedMainImages??(mode==="product-image"?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
+ const [detailImgs,setDetailImgs]=useState<number[]>(initial.selectedDetailImages??(mode==="product-image"?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
  const [slots,setSlots]=useState<(string|null)[]>(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));
  const [selectedItems,setSelectedItems]=useState<string[]>(mode==="knowledge"?initial.selectedKnowledge??[]:initial.selectedSkills??[]);
  const [skillTab,setSkillTab]=useState<"我的技能"|"团队技能">("我的技能");
@@ -120,6 +127,15 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  };
 
  const isImage=mode==="product-image"||mode==="pod-ai";
+ const isProductImage=mode==="product-image";
+ const optimizationSource=form.optimizationSource??(form.generationRule==="自定义指令"?"自定义指令":"引用技能");
+ const processingScope=form.imageProcessingScope??"手动选择";
+ const productTarget=form.imageTarget??"主图";
+ const currentImages=productTarget==="主图"?mainImgs:detailImgs;
+ const updateCurrentImages=(next:number[])=>productTarget==="主图"?setMainImgs(next):setDetailImgs(next);
+ const toggleProductImage=(number:number)=>updateCurrentImages(currentImages.includes(number)?currentImages.filter(x=>x!==number):[...currentImages,number].sort((a,b)=>a-b));
+ const selectProductSource=(source:"引用技能"|"官方方案"|"自定义指令")=>setForm(v=>({...v,optimizationSource:source,generationRule:source==="自定义指令"?"自定义指令":"官方方案"}));
+ const saveProductImage=()=>{if(optimizationSource==="引用技能"&&!(form.selectedSkills?.length)){setMessage("请先在上一级选择至少一项技能，或改用官方方案。");return;}if(processingScope==="手动选择"&&!currentImages.length){setMessage("请至少勾选一张要处理的"+productTarget+"。");return;}if(optimizationSource==="自定义指令"&&!tasks.some(t=>t.prompt.trim())){setMessage("请至少填写一条独立生成指令。");return;}commit({...form,optimizationSource,imageProcessingScope:processingScope,sharedImageSource:form.sharedImageSource??"主图",selectedImages:currentImages,selectedMainImages:mainImgs,selectedDetailImages:detailImgs,imageTasks:tasks});};
  const choice=(items:string[],value:string,change:(v:string)=>void)=><div className={css.segment}>{items.map(v=><button key={v} type="button" aria-pressed={value===v} onClick={()=>change(v)}>{v}</button>)}</div>;
  const maybeNotice=message?<p role="status" className={css.notice}>{message}</p>:null;
  return <dialog ref={dialogRef} className={`${css.modal} ${mode==="product-image"&&!child?css.productImageModal:""}`} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
