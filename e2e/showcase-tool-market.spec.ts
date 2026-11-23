@@ -76,12 +76,18 @@ test("my tools search and reset work and launch shows a truthful dialog",async({
  await expect(page.locator('[class*="mineCard"]')).toHaveCount(1);
  await page.getByRole("button",{name:"前往POD素材管理"}).click();
  const modal=page.getByRole("dialog");
- await expect(modal).toContainText("贴图审核、素材复用与官方灵感，一处管理");
- await expect(modal).toContainText("生成 → 暂存待审 → 审核通过后贴图 → 订单查图打印");
- await expect(modal).toContainText("贴图审核与打印");
- await expect(modal).toContainText("官方提供示例图片及生成指令");
- await expect(modal.getByRole("button",{name:"知道了"})).toBeVisible();
- await expect(modal).not.toContainText("公开原型不提供真实工具运行");
+ // Current Figma launch opens the three-module workspace instead of the legacy introduction.
+ await expect(modal.getByRole("heading",{name:"POD 素材管理"})).toBeVisible();
+ await expect(modal.getByRole("button",{name:/我的素材库/})).toBeVisible();
+ await expect(modal.getByRole("button",{name:/产品图审核/})).toBeVisible();
+ await modal.getByRole("button",{name:/灵感市场/}).click();
+ await expect(modal).toContainText("灵感参考 · 共 9 条");
+ await expect(modal.getByRole("button",{name:"加入素材库"})).toHaveCount(9);
+ await modal.getByRole("button",{name:/产品图审核/}).click();
+ await expect(modal).toContainText("暂无产品图审核记录");
+ await modal.getByRole("button",{name:/我的素材库/}).click();
+ await expect(modal).toContainText("暂无素材");
+ await expect(modal.getByRole("button",{name:"上传素材"})).toBeVisible();
  const geometry=await modal.boundingBox();
  const viewport=page.viewportSize()!;
  expect(geometry).not.toBeNull();
@@ -184,8 +190,8 @@ test("my tools adopts Vuexy dark/light surfaces and title indicator without cons
  });
  expect(dark.width).toBeGreaterThan(1136);
  expect(dark.bar).toBe("3px");
- expect(dark.header).toBe("rgb(47, 51, 73)");
- expect(dark.card).toBe("rgb(47, 51, 73)");
+ expect(dark.header).toBe("rgb(20, 34, 55)");
+ expect(dark.card).toBe("rgb(20, 34, 55)");
  await page.evaluate(()=>document.documentElement.classList.add("light"));
  const light=await page.evaluate(()=>{
    const area=document.querySelector('[class*="figmaMine"]') as HTMLElement;
@@ -244,22 +250,19 @@ test("online collection matches Figma source chooser and Amazon/1688 settings",a
  await expect(modal).toContainText("1 条1688演示数据");
 });
 
-test("listing use dialog follows the original Figma introduction instead of invented feature tabs",async({page})=>{
+test("own-product launch opens the Figma import workspace with batch controls",async({page})=>{
  await page.goto(base+"/official");
  await page.locator('[class*="toolCard"]').filter({hasText:"自有商品刊登工具"}).getByRole("button",{name:"启用",exact:true}).click();
  await page.getByRole("button",{name:"我的工具",exact:true}).click();
  await page.locator('[data-figma-tool="自有商品刊登工具"]').getByRole("button",{name:"进入自有商品刊登"}).click();
  const modal=page.getByRole("dialog");
- await expect(modal.getByRole("heading",{name:"自有商品刊登工具"})).toBeVisible();
- await expect(modal).toContainText("自有商品导入 · 平台适配 · 快速刊登");
- await expect(modal).toContainText("支持自有商品信息导入、校验与批量整理。");
- await expect(modal).toContainText("本地商品");
- await expect(modal).toContainText("信息校验");
- await expect(modal).toContainText("平台适配");
- await expect(modal).toContainText("启用后在「我的工具」进入自有商品待上传流程。");
- await expect(modal.getByRole("button",{name:"知道了"})).toBeVisible();
- await expect(modal.getByRole("button",{name:"自有商品导入"})).toHaveCount(0);
- await modal.getByRole("button",{name:"知道了"}).click();
+ await expect(modal.getByRole("heading",{name:"自有商品一键刊登"})).toBeVisible();
+ await expect(modal).toContainText("选择导入方式");
+ await expect(modal.getByRole("button",{name:/创建自有商品批次/})).toBeVisible();
+ await expect(modal.getByRole("button",{name:"选择自有商品批次"})).toBeVisible();
+ await modal.getByRole("button",{name:/创建自有商品批次/}).click();
+ await expect(modal.getByRole("textbox",{name:"新建自有商品批次名称"})).toBeVisible();
+ await modal.getByRole("button",{name:"关闭",exact:true}).first().click();
  await expect(modal).toHaveCount(0);
 });
 
