@@ -4,14 +4,6 @@ import css from "./showcase-pod-management-dialog.module.css";
 
 type Tab="我的素材库"|"产品图审核"|"灵感市场";
 type Asset={id:number;name:string;category:string;style:number;prompt:string;status?:string};
-const sample:Asset[]=[
- {id:1,name:"复古花卉字母",category:"我的自定义分类",style:0,prompt:"复古花卉字母图案，柔和奶油白与薰衣草紫配色，精致花瓣和手写字体，独立主体，高清正方形，透明背景。"},
- {id:2,name:"淡紫色蝴蝶结",category:"我的自定义分类",style:1,prompt:"淡紫色蝴蝶结图案，缎带柔和折叠、精致缎面高光与轻盈线条，甜美复古风格，透明背景，无品牌水印。"},
- {id:3,name:"海浪蓝色装饰",category:"未分类",style:2,prompt:"流动波浪装饰图案，多层蓝色渐变浪线与白色浪花，抽象海洋艺术风格，画面简洁有层次，透明背景。"},
- {id:4,name:"梦幻夜空",category:"未分类",style:3,prompt:"梦幻夜空插画，弯月、闪烁星星和淡紫色云朵，童趣温柔风格，独立图案、精致细节，透明背景。"},
- {id:5,name:"极简线条太阳",category:"我的自定义分类",style:4,prompt:"极简太阳与山丘线条，暖橙色和米白色，复古极简风格，清晰边缘，独立印花主体。"},
- {id:6,name:"水果涂鸦",category:"未分类",style:5,prompt:"年轻活泼的水果涂鸦插画，彩色几何形状，高清印花图案，透明背景。"}
-];
 const ideas:Asset[]=[
  {id:21,name:"复古花卉",category:"复古风格",style:0,prompt:"复古花朵与字母结合，柔和奶油色背景，精致花瓣与装饰性衬线字体，适合POD贴图。"},
  {id:22,name:"缎带蝴蝶结",category:"甜美风格",style:1,prompt:"浅紫色缎带蝴蝶结，缎面高光，甜美复古，独立主体居中，透明背景。"},
@@ -20,13 +12,12 @@ const ideas:Asset[]=[
  {id:25,name:"落日山峦",category:"复古风格",style:4,prompt:"太阳与层叠山丘，温暖复古配色，扁平图形，完整独立主体。"},
  {id:26,name:"水果派对",category:"趣味插画",style:5,prompt:"新鲜柠檬橙子与樱桃组成的趣味图案，清晰配色，年轻俏皮的POD素材。"}
 ];
-const initials:Asset[]=Array.from({length:12},(_,i)=>({...sample[i%6],id:100+i,name:sample[i%6].name+" · 生成图 "+(i+1),status:i<5?"待审核":i<8?"审核通过":i<10?"退回重做":"驳回"}));
 const perPage=10;
 export function PodManagementWorkspace({onClose}:{onClose:()=>void}){
  const ref=useRef<HTMLDialogElement>(null);
  const [tab,setTab]=useState<Tab>("我的素材库");
- const [assets,setAssets]=useState<Asset[]>(sample);
- const [reviews,setReviews]=useState<Asset[]>(initials);
+ const [assets,setAssets]=useState<Asset[]>([]);
+ const [reviews,setReviews]=useState<Asset[]>([]);
  const [categories,setCategories]=useState(["我的自定义分类"]);
  const [search,setSearch]=useState("");const [applied,setApplied]=useState("");
  const [category,setCategory]=useState("全部分类");const [status,setStatus]=useState("全部状态");
@@ -60,12 +51,12 @@ export function PodManagementWorkspace({onClose}:{onClose:()=>void}){
       <button type="button" onClick={reset}>重置</button><button type="submit" className={css.primary}>确认</button>
     </form>
     {notice?<p className={css.notice} role="status">{notice}</p>:null}
-    <div className={css.libraryHint}>{tab==="我的素材库"?"素材预览 · 示例数据（点击「用于POD」可进入刊登工具）":tab==="产品图审核"?"审核图片 · 共"+filtered.length+"张":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
+    <div className={css.libraryHint}>{tab==="我的素材库"?"我的素材库 · 暂无素材，上传后将在这里显示":tab==="产品图审核"?"产品图审核 · 共"+filtered.length+"张":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
     {displayed.length?<div className={css.grid}>{displayed.map(asset=><article className={css.assetCard} key={asset.id}>
        <button type="button" className={css.imageButton} onClick={()=>open("预览图片",asset)} aria-label={"预览"+asset.name}><div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div></button>
        <strong title={asset.name}>{asset.name}</strong><small>{asset.status??asset.category}</small>
        {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>{setNotice("演示入口：请在正式POD刊登工具中引用此素材。")}}>用于POD</button><button type="button" onClick={()=>removeAsset(asset.id)}>删除</button></div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
-      </article>)}</div>:<div className={css.empty}>当前筛选条件下暂无记录，可以重置后查看。</div>}
+      </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无审核记录，请重置筛选。":"暂无产品图审核记录，待 POD 刊登生成图片后将在此显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
    </div>
    {panel?<div className={css.overlay} onClick={e=>{if(e.target===e.currentTarget)setPanel(null)}}><section className={css.subDialog} role="dialog" aria-modal="true" aria-label={panel}>
