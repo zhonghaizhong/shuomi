@@ -132,7 +132,7 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await imageSettings.getByRole("button",{name:"确认选择"}).click();
  await expect(imageSettings).toHaveCount(0);
  await dialog.getByRole("button",{name:"预览优化范围"}).click();
- await expect(dialog.getByRole("status")).toContainText("标题优化");
+ await expect(dialog.getByRole("status")).toContainText("商品标题规范优化");
  await dialog.getByRole("button",{name:"保存为模板"}).click();
  const saveName=page.getByRole("dialog",{name:"保存智能体模板"});
  await saveName.getByRole("textbox",{name:"模板名称"}).fill("商品优化示例模板");
@@ -153,9 +153,9 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await templates.getByRole("button",{name:"保存",exact:true}).click();
  await expect(templates).toContainText("已修改商品优化模板");
  await templates.getByRole("button",{name:"查看配置"}).click();
- await expect(templates).toContainText("标题优化");
+ await expect(templates).toContainText("商品标题规范优化");
  await templates.getByRole("button",{name:"关闭",exact:true}).click();
- await expect(reopened.getByRole("status")).toContainText("标题优化");
+ await expect(reopened.getByRole("status")).toContainText("商品标题规范优化");
  await page.keyboard.press("Escape");
  await page.getByRole("button",{name:"进入使用"}).last().click();
  const pod=page.getByRole("dialog",{name:"POD刊登智能体"});
