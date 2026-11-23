@@ -264,3 +264,33 @@
  .dialog .submit{width:100%;min-width:0;max-width:none;height:48px;min-height:48px;max-height:48px;margin-left:0}
 }
 @media(max-width:420px){.aiOptions,.batchControls{grid-template-columns:1fr}.batchControls{grid-template-rows:repeat(2,40px)}}
+
+
+/* Compact batch actions, and a scroll-safe post-check completion workspace. */
+.batchControls{flex:0 0 170px;max-width:170px;grid-template-rows:27px 27px;gap:5px}
+.dialog .batchControls button{height:27px;min-height:27px;max-height:27px;padding:2px 6px;font-size:11px;line-height:20px}
+.aiRow{gap:10px}
+.reviewPanel{display:grid;gap:12px;padding:16px 20px;border:1px solid var(--accent);border-radius:10px;background:color-mix(in srgb,var(--accent) 5%,var(--bg))}
+.reviewHead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.reviewHead h3{margin:0;font-size:16px}.reviewHead p{margin:6px 0 0;color:var(--muted);font-size:12px}
+.reviewHead button,.reviewCheck,.reviewImages button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:7px;padding:9px 13px;font-size:12px}
+.reviewList{display:flex;flex-wrap:wrap;gap:8px}
+.reviewList button{display:grid;gap:4px;min-width:120px;max-width:230px;min-height:48px;text-align:left;padding:7px 10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;overflow-wrap:anywhere}
+.reviewList button small{font-size:11px;color:var(--muted)}
+.reviewList .reviewActive{border-color:var(--accent)}
+.reviewEditor{display:grid;grid-template-columns:minmax(140px,.65fr) minmax(200px,1.5fr) minmax(180px,1fr);gap:12px;min-width:0}
+.reviewEditor label{display:grid;align-content:start;gap:7px;font-size:12px;font-weight:600;min-width:0}
+.reviewEditor input,.reviewEditor textarea{box-sizing:border-box;min-width:0;width:100%;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);padding:10px;font:inherit;font-size:13px}
+.reviewEditor input{height:41px}.reviewEditor textarea{resize:vertical;min-height:94px}
+.reviewImages{display:flex;flex-direction:column;gap:8px;font-size:12px;min-width:0}
+.reviewImages>div{display:flex;flex-wrap:wrap;gap:5px;max-height:95px;overflow:auto}
+.reviewImages img{height:45px;width:45px;object-fit:cover;border-radius:5px;border:1px solid var(--line)}
+.reviewImages button{align-self:flex-start}
+.reviewMissing{margin:0;padding:9px 12px;border:1px solid var(--line);border-radius:8px;color:#d8963f;font-size:12px;line-height:1.6}
+.reviewCheck{justify-self:start;color:white;border-color:var(--accent);background:var(--accent);font-weight:600}
+.reviewSuccess{font-size:13px;color:var(--accent);margin:0;line-height:1.6}
+.pendingBanner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:12px}
+.pendingBanner span{color:var(--muted)}.pendingBanner select{margin-left:auto;min-width:190px;height:35px;padding:0 9px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--bg)}
+@media(min-width:681px) and (max-width:1050px){.batchControls{flex:0 0 170px;max-width:170px}}
+@media(max-width:680px){.batchControls{flex:unset;max-width:none;grid-template-rows:40px}.dialog .batchControls button{height:40px;min-height:40px;max-height:40px;font-size:11px}.reviewEditor{grid-template-columns:1fr}.pendingBanner select{width:100%;margin-left:0}}
+@media(max-width:420px){.batchControls{grid-template-rows:repeat(2,40px)}}
