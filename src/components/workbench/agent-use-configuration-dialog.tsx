@@ -4,7 +4,7 @@ import {useEffect,useId,useRef,useState} from "react";
 import css from "./agent-use-configuration-dialog.module.css";
 
 export type ConfigurationMode="product-image"|"pod-ai"|"pod-hybrid"|"pod-pattern-split"|"pod-pattern-custom"|"skills"|"knowledge";
-export type ImageTask={id:number;name:string;prompt:string};
+export type ImageTask={id:number;name:string;prompt:string;position?:number;target?:"主图"|"详情图"};
 export type AgentUseConfiguration={
  imageUse?:"共用视觉素材"|"分别优化";
  optimizationSource?:"引用技能"|"官方方案"|"自定义指令";
@@ -49,7 +49,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const [message,setMessage]=useState("");
  const [assetName,setAssetName]=useState("");
  const [fileName,setFileName]=useState("");
- const [tasks,setTasks]=useState<ImageTask[]>(initial.imageTasks?.length?initial.imageTasks:[{id:1,name:"自定义图片 1",prompt:""}]);
+ const [tasks,setTasks]=useState<ImageTask[]>(initial.imageTasks?.length?initial.imageTasks:mode==="product-image"?[{id:1,name:"",prompt:"",target:"主图"},{id:2,name:"",prompt:"",target:"主图"}]:[{id:1,name:"自定义图片 1",prompt:""}]);
  const [selectedImgs,setSelectedImgs]=useState<number[]>(initial.selectedImages??[]);
  const [mainImgs,setMainImgs]=useState<number[]>(initial.selectedMainImages??(mode==="product-image"?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
  const [detailImgs,setDetailImgs]=useState<number[]>(initial.selectedDetailImages??(mode==="product-image"?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
@@ -137,8 +137,10 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
  const selectVisualStrategy=(next:"共用视觉素材"|"分别优化")=>{if(next==="共用视觉素材"){const images=(form.sharedImageSource??"主图")==="主图"?mainImgs:detailImgs;setMainImgs(images);setDetailImgs(images);}set("imageUse",next);setMessage("");};
  const toggleProductImage=(number:number)=>updateCurrentImages(currentImages.includes(number)?currentImages.filter(x=>x!==number):[...currentImages,number].sort((a,b)=>a-b));
  const selectProductSource=(source:"引用技能"|"官方方案"|"自定义指令")=>setForm(v=>({...v,optimizationSource:source,generationRule:source==="自定义指令"?"自定义指令":"官方方案"}));
- const productImageReady=(optimizationSource!=="引用技能"&&processingScope!=="按技能设定"||Boolean(form.selectedSkills?.length))&&(processingScope!=="手动选择"||currentImages.length>0)&&(optimizationSource!=="自定义指令"||tasks.some(t=>t.prompt.trim()));
- const saveProductImage=()=>{if(optimizationSource==="引用技能"&&!(form.selectedSkills?.length)){setMessage("请先在上一级选择至少一项技能，或改用官方方案。");return;}if(processingScope==="手动选择"&&!currentImages.length){setMessage("请至少勾选一张要处理的"+productTarget+"。");return;}if(optimizationSource==="自定义指令"&&!tasks.some(t=>t.prompt.trim())){setMessage("请至少填写一条独立生成指令。");return;}commit({...form,optimizationSource,imageProcessingScope:processingScope,sharedImageSource:form.sharedImageSource??"主图",selectedImages:currentImages,selectedMainImages:sharedVisual?currentImages:mainImgs,selectedDetailImages:sharedVisual?currentImages:detailImgs,imageTasks:tasks});};
+ const visibleCustomTasks=tasks.filter(t=>(t.target??"主图")===productTarget);
+ const customTasksReady=visibleCustomTasks.length>0&&visibleCustomTasks.every(t=>Boolean(t.position)&&Boolean(t.prompt.trim()))&&new Set(visibleCustomTasks.map(t=>t.position)).size===visibleCustomTasks.length;
+ const productImageReady=optimizationSource==="自定义指令"?customTasksReady:(optimizationSource!=="引用技能"&&processingScope!=="按技能设定"||Boolean(form.selectedSkills?.length))&&(processingScope!=="手动选择"||currentImages.length>0);
+ const saveProductImage=()=>{if(optimizationSource==="引用技能"&&!(form.selectedSkills?.length)){setMessage("请先在上一级选择至少一项技能，或改用官方方案。");return;}if(processingScope==="手动选择"&&!currentImages.length){setMessage("请至少勾选一张要处理的"+productTarget+"。");return;}if(optimizationSource==="自定义指令"&&!customTasksReady){setMessage("请为每条自定义任务选择不同图片位置，并填写独立优化要求。");return;}commit({...form,optimizationSource,imageProcessingScope:processingScope,sharedImageSource:form.sharedImageSource??"主图",selectedImages:currentImages,selectedMainImages:sharedVisual?currentImages:mainImgs,selectedDetailImages:sharedVisual?currentImages:detailImgs,imageTasks:tasks});};
  const choice=(items:string[],value:string,change:(v:string)=>void)=><div className={css.segment}>{items.map(v=><button key={v} type="button" aria-pressed={value===v} onClick={()=>change(v)}>{v}</button>)}</div>;
  const maybeNotice=message?<p role="status" className={css.notice}>{message}</p>:null;
  return <dialog ref={dialogRef} className={`${css.modal} ${mode==="product-image"&&!child?css.productImageModal:""}`} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
@@ -187,17 +189,21 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave}:{
      {(form.imageUse??"共用视觉素材")==="共用视觉素材"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>4</span><div><strong>共用来源</strong><small>选择复用来源</small></div></div><div className={css.optimizerChoices}>
       {(["主图","详情图"] as const).map(name=><button type="button" key={name} aria-pressed={(form.sharedImageSource??"主图")===name} onClick={()=>{const selected=name==="主图"?mainImgs:detailImgs;setMainImgs(selected);setDetailImgs(selected);set("sharedImageSource",name);}}><strong>以{name}为准</strong><small>主图、详情图复用{name}侧配置</small></button>)}
      </div></section>:null}
-     {optimizationSource!=="官方方案"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><div className={css.optimizerNoNumber}><strong>图片处理范围</strong><small>选择处理范围</small></div></div><div className={css.optimizerChoices}>
+     {optimizationSource==="引用技能"?<section className={css.optimizerRow}><div className={css.optimizerRowTitle}><div className={css.optimizerNoNumber}><strong>图片处理范围</strong><small>选择处理范围</small></div></div><div className={css.optimizerChoices}>
       {(["手动选择","按技能设定"] as const).map(name=><button type="button" key={name} aria-pressed={processingScope===name} onClick={()=>{set("imageProcessingScope",name);setMessage("");}}>{name}</button>)}
      </div></section>:null}
     </div>
-    {optimizationSource==="自定义指令"?<section className={css.optimizerTasks}><h3>自定义优化指令 · {productTarget}</h3><p>每张图片可使用独立的任务指令。</p>{tasks.map((task,i)=><div className={css.optimizerTaskRow} key={task.id}><input aria-label={"图片任务名称 "+(i+1)} value={task.name} onChange={e=>setTasks(old=>old.map(t=>t.id===task.id?{...t,name:e.target.value}:t))}/><textarea aria-label={"图片任务指令 "+(i+1)} value={task.prompt} onChange={e=>setTasks(old=>old.map(t=>t.id===task.id?{...t,prompt:e.target.value}:t))} placeholder="填写本张图片的优化要求"/><button type="button" disabled={tasks.length===1} onClick={()=>setTasks(old=>old.filter(t=>t.id!==task.id))}>删除</button></div>)}<button type="button" onClick={()=>setTasks(old=>[...old,{id:Math.max(0,...old.map(t=>t.id))+1,name:"自定义图片 "+(old.length+1),prompt:""}])}>＋ 新增任务</button></section>:null}
-    <section className={css.optimizerImages}>
+    {optimizationSource==="自定义指令"?<section className={css.optimizerTasks}>
+     <div className={css.optimizerTasksHeader}><div><h3>{productTarget}自定义优化任务</h3><p>每条任务选择图片位置，并填写独立优化要求。</p></div><button type="button" onClick={()=>setTasks(old=>[...old,{id:Math.max(0,...old.map(t=>t.id))+1,name:"",prompt:"",target:productTarget}])}>＋ 新增任务</button></div>
+     <div className={css.optimizerTaskList}>{visibleCustomTasks.map((task,i)=><div className={css.optimizerTaskRow} key={task.id}><span className={css.optimizerTaskNumber}>{String(i+1).padStart(2,"0")}</span><select aria-label={"任务 "+(i+1)+" 图片位置"} value={task.position??""} onChange={e=>setTasks(old=>old.map(t=>t.id===task.id?{...t,position:e.target.value?Number(e.target.value):undefined}:t))}><option value="">选择图片位置</option>{Array.from({length:8},(_,n)=>n+1).map(n=><option key={n} value={n}>第 {n} 张</option>)}</select><input aria-label={"任务 "+(i+1)+" 优化要求"} value={task.prompt} onChange={e=>setTasks(old=>old.map(t=>t.id===task.id?{...t,prompt:e.target.value}:t))} placeholder="填写独立优化要求..." /><button type="button" className={css.optimizerTaskDelete} onClick={()=>setTasks(old=>old.filter(t=>t.id!==task.id))}>删除</button></div>)}</div>
+     <p className={css.optimizerTaskHelp}>每条任务选择一个已有图片位置，并填写独立优化要求。</p>
+    </section>:null}
+    {optimizationSource!=="自定义指令"?<section className={css.optimizerImages}>
      <div className={css.optimizerImagesHeader}><strong>{optimizationSource==="官方方案"?"选择优化图片 · 可多选":productTarget+" · "+(processingScope==="手动选择"?"勾选需要处理的图片":"按技能设定范围")}</strong>{processingScope==="手动选择"?<div><button type="button" onClick={()=>updateCurrentImages([1,2,3,4,5,6,7,8])}>全选</button><button type="button" onClick={()=>updateCurrentImages([])}>清空</button></div>:null}</div>
      {processingScope==="手动选择"?<div className={css.optimizerImageGrid}>{Array.from({length:8},(_,i)=>i+1).map(n=><label className={css.optimizerImageChoice} key={n}><span>第 {n} 张</span>{optimizationSource==="官方方案"?<small className={css.optimizerImageTaskName}>{(productTarget==="主图"?initialOfficial:officialDetail)[n-1]}</small>:null}<input type="checkbox" aria-label={productTarget+"第"+n+"张"} checked={currentImages.includes(n)} onChange={()=>toggleProductImage(n)}/></label>)}</div>:<p className={css.optimizerSkillNotice}>运行时根据已启用的图片优化技能判断处理位置，不强制使用手动勾选结果。未启用技能时请先返回上一级选择技能。</p>}
      <p className={css.optimizerImageHint}>{optimizationSource==="官方方案"?"勾选需要优化的图片；未勾选保留原图。":"勾选的图片会按技能中对应位置的方案生成，未勾选的保持不变。例如：选中主图第 2 张，将采用技能预设的第 2 张主图方案；详情图同理。"}</p>
-    </section>
-    <p className={css.optimizerBilling}>{optimizationSource==="官方方案"?"计费说明：仅对已勾选图片执行 AI 重构并计费；选择图片越多，预计消耗积分越高。":"计费说明：仅对实际模型生成的新图片按实际消耗的 AI 积分计费；原型演示不扣积分。"}</p>
+    </section>:null}
+    <p className={css.optimizerBilling}>{optimizationSource==="自定义指令"?"费用说明：只有已添加并完成配置的自定义任务会创建 AI 优化任务，并按实际积分计费。":optimizationSource==="官方方案"?"计费说明：仅对已勾选图片执行 AI 重构并计费；选择图片越多，预计消耗积分越高。":"计费说明：仅对实际模型生成的新图片按实际消耗的 AI 积分计费；原型演示不扣积分。"}</p>
    </div>
    :isImage?<div className={css.stack}>
     <p className={css.tip}>计费说明：仅对实际生成图片按 AI 积分计费。当前演示不生成图片、不扣除积分。</p>
