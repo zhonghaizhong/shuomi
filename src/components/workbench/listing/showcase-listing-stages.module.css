@@ -336,3 +336,17 @@
 .targetDialog select{width:100%;min-height:40px;border:1px solid var(--stroke);border-radius:7px;background:var(--surface-alt);color:var(--ink);padding:8px}
 .targetDialog footer{display:flex;justify-content:flex-end;gap:9px}
 .targetDialog footer button{min-height:40px}
+
+.page[data-listing-stage="waiting"] .agentToggleRow,.page[data-listing-stage="waiting"] .ruleRequiredRow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:41px;padding:8px 12px;border:1px solid var(--stroke);border-radius:8px;color:var(--ink);font-size:13px}
+.page[data-listing-stage="waiting"] .agentToggleRow input{appearance:none;position:relative;width:44px;height:25px;border-radius:20px;background:var(--surface-alt);border:1px solid var(--stroke);cursor:pointer;flex:none;transition:background .2s}
+.page[data-listing-stage="waiting"] .agentToggleRow input:after{content:"";position:absolute;left:3px;top:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:transform .2s}
+.page[data-listing-stage="waiting"] .agentToggleRow input:checked{background:#2788d7;border-color:#2788d7}
+.page[data-listing-stage="waiting"] .agentToggleRow input:checked:after{transform:translateX(19px)}
+.page[data-listing-stage="waiting"] .agentStatusRow,.page[data-listing-stage="waiting"] .ruleSelectedRow{display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:53px;padding:9px 12px;border:1px solid var(--stroke);border-radius:8px;color:var(--ink);background:var(--surface-alt)}
+.page[data-listing-stage="waiting"] .agentStatusRow strong,.page[data-listing-stage="waiting"] .ruleSelectedRow strong{font-size:12px;color:var(--muted)}
+.page[data-listing-stage="waiting"] .agentStatusRow span,.page[data-listing-stage="waiting"] .ruleSelectedRow span{font-size:12px;line-height:1.4}
+.page[data-listing-stage="waiting"] .ruleRequiredRow input{accent-color:#40c69d;width:16px;height:16px;flex:none}
+.page[data-listing-stage="waiting"] .ruleSelectedRow{flex-direction:row;align-items:center;justify-content:space-between;min-height:44px}
+.page[data-listing-stage="waiting"] .ruleSelectedRow strong{color:var(--ink)}
+.page[data-listing-stage="waiting"] .ruleSelectedRow span{border:1px solid #40c69d;border-radius:5px;padding:3px 6px;background:color-mix(in srgb,#40c69d 14%,var(--surface));color:#40c69d;white-space:nowrap}
+.page[data-listing-stage="waiting"] .ruleSettingsButton{align-self:flex-end;min-width:135px}
