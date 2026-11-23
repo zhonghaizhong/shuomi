@@ -2803,3 +2803,10 @@
 .page[data-commerce-unified="data"] .apiLogTable :is(th,td):nth-child(6){text-align:right}
 .page[data-commerce-unified="data"] .apiLogStatus{display:inline-flex;align-items:center;min-height:26px;padding:2px 9px;border:1px solid color-mix(in srgb,#28c76f 28%,var(--ds-line));background:color-mix(in srgb,#28c76f 9%,var(--ds-surface));border-radius:7px;color:var(--ds-ink)}
 .page[data-commerce-unified="data"] .apiLogStatus[data-state="partial"]{border-color:color-mix(in srgb,#ff9f43 35%,var(--ds-line));background:color-mix(in srgb,#ff9f43 12%,var(--ds-surface))}
+
+/* The API table is a scroll viewport, not a data row; undo generic table child rules. */
+.page[data-commerce-unified="data"] .table > .apiLogScroll{
+ display:block;box-sizing:border-box;min-width:0;
+ padding:0;border-bottom:1px solid var(--ds-line);
+ background:var(--ds-surface);
+}
