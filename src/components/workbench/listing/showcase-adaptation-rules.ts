@@ -6,7 +6,7 @@ export type RuleCollection={currentId:string;rules:AdaptationRule[]};
 const key=(organizationId:string,memberId:string)=>"shuomi:adaptation-rules-v1:"+organizationId+":"+memberId;
 const defaults:AdaptationRule[]=[
  {id:"rule-shein",name:"SHEIN服装规则",skuMode:"前后缀 + 原货号",prefix:"SKU-",suffix:"-US",priceMode:"成本 × 倍数",priceValue:"1.8",currencyConversion:true,aiFill:false,aiScope:"required",brandMode:"authorized",brandName:""},
- {id:"rule-amazon",name:"亚马逊家居规则",skuMode:"哈希值",prefix:"",suffix:"",priceMode:"使用定价工具",priceValue:"",currencyConversion:true,aiFill:false},
+ {id:"rule-amazon",name:"亚马逊家居规则",skuMode:"哈希值",prefix:"",suffix:"",priceMode:"固定值",priceValue:"0",currencyConversion:true,aiFill:false},
  {id:"rule-fast",name:"低价快速适配",skuMode:"使用原货号",prefix:"",suffix:"",priceMode:"原价 + 固定值",priceValue:"5",currencyConversion:false,aiFill:false,aiScope:"required",brandMode:"authorized",brandName:""}
 ];
 export function readAdaptationRules(organizationId:string,memberId:string):RuleCollection{
