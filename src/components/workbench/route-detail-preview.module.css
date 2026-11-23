@@ -2829,8 +2829,9 @@
 :global(.light) .page[data-commerce-unified="data"] > .sectionTitle{
  background:#fff;border-color:#e0e6ee;color:#263648;
 }
-:global(.light) .page[data-commerce-unified="data"] > .sectionTitle h2{color:#263648}
-:global(.light) .page[data-commerce-unified="data"] > .sectionTitle p{color:#657486}
+/* Explicitly out-rank the legacy broad light-theme title and copy overrides. */
+:global(.light) .page[data-commerce-unified="data"] > .sectionTitle h2{color:#263648!important}
+:global(.light) .page[data-commerce-unified="data"] > .sectionTitle p{color:#657486!important}
 
 /* API management overview — one design system, two existing application themes. */
 .page[data-commerce-unified="data"] .apiDashboard{
