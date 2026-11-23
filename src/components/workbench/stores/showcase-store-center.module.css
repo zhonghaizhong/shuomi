@@ -597,3 +597,32 @@
 }
 .page .storeMetrics button.storeMetric:focus-visible,
 .page .storeRowButtons button:focus-visible{outline:2px solid var(--st-accent);outline-offset:2px}
+
+
+/* 2026-11-24: equal search/criteria tracks in the Figma store filter toolbar.
+   Both halves stay centered without allowing select intrinsic widths to expand the grid. */
+@media(min-width:1321px){
+ .page .filters[data-shuomi-filter="balanced"]{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+ }
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-left],
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right]{min-width:0;width:100%;box-sizing:border-box}
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right]{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) repeat(2,minmax(66px,auto));
+  gap:8px;align-items:center;
+ }
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right] select{
+  width:100%;min-width:0;height:42px;
+ }
+}
+@media(max-width:1320px){
+ .page .filters[data-shuomi-filter="balanced"]{grid-template-columns:minmax(0,1fr)}
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right]{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) repeat(2,minmax(66px,auto));gap:8px;min-width:0;
+ }
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right] select{width:100%;min-width:0;height:42px}
+}
+@media(max-width:680px){
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right]{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right] select:first-child{grid-column:1/-1}
+}
