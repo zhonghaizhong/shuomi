@@ -67,27 +67,27 @@
   color-scheme: light;
 }
 :root:has(.console-theme) body { font-size: var(--body-text-size); line-height: 1.6; }
-/* Keep card surfaces and hover feedback consistent across workbench modules. */
-:root:has(.console-theme) .console-content :is(
+/* Shared workbench card defaults. Component-specific surfaces take precedence:
+   preserving dark Vuexy #142237 / #18283c layering and light equivalents. */
+:where(.console-theme .console-content) :where(
   article[class*="card" i], article[class*="metric" i], article[class*="panel" i], article[class*="tile" i],
   section[class*="card" i], section[class*="panel" i], section[class*="workspace" i],
   aside[class*="card" i], aside[class*="panel" i], li[class*="card" i]
 ) {
-  background-color: var(--console-card-surface) !important;
-  border-color: var(--console-card-border) !important;
-  border-radius: var(--console-card-radius) !important;
-  transition: background-color var(--motion-normal) var(--motion-ease), border-color var(--motion-normal) var(--motion-ease), box-shadow var(--motion-normal) var(--motion-ease), transform var(--motion-normal) var(--motion-ease);
+  background-color: var(--console-card-surface);
+  border-color: var(--console-card-border);
+  border-radius: var(--console-card-radius);
+  transition: background-color var(--motion-normal) var(--motion-ease), border-color var(--motion-normal) var(--motion-ease), box-shadow var(--motion-normal) var(--motion-ease);
 }
-:root:has(.console-theme) .console-content :is(
+:where(.console-theme .console-content) :where(
   article[class*="card" i], article[class*="metric" i], article[class*="panel" i], article[class*="tile" i],
   section[class*="card" i], section[class*="panel" i], section[class*="workspace" i],
   aside[class*="card" i], aside[class*="panel" i], li[class*="card" i]
 ):hover {
-  background-color: var(--console-card-hover) !important;
-  border-color: color-mix(in srgb, var(--console-card-border) 72%, var(--console-blue)) !important;
-  box-shadow: 0 8px 20px var(--shadow-color);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--console-card-border) 72%, var(--console-blue));
 }
+/* No forced hover background or movement: they flattened intentional
+   nested-card surfaces and shifted controls on dense data pages. */
 @media (prefers-reduced-motion: reduce) {
   :root:has(.console-theme) .console-content :is(article[class*="card" i], article[class*="metric" i], article[class*="panel" i], article[class*="tile" i], section[class*="card" i], section[class*="panel" i], section[class*="workspace" i], aside[class*="card" i], aside[class*="panel" i], li[class*="card" i]) { transition: none; }
 }
