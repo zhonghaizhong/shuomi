@@ -158,7 +158,7 @@ test("my tools adopts Vuexy dark/light surfaces and title indicator without cons
  await page.setViewportSize({width:1920,height:1080});
  await page.goto(base+"/mine");
  const region=page.locator('[class*="figmaMine"]');
- const header=region.getByRole("banner");
+ const header=region.locator("header").first();
  const title=header.getByRole("heading",{name:"我的工具"});
  await expect(title).toBeVisible();
  const dark=await page.evaluate(()=>{
