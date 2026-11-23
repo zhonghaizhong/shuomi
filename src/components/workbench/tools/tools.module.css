@@ -1032,3 +1032,52 @@
   .mineSearch { width: 100%; }
   .mineResults .mineGrid { grid-template-columns: 1fr; }
 }
+
+
+/* Figma 1168:375 & 1168:386 — product acquisition only */
+.acquisitionRow { align-items: stretch; }
+.acquisitionRow .acquisitionCard,
+.acquisitionRow .acquisitionGuide { min-height: 362px; border-radius: 12px; }
+.acquisitionCard { position: relative; padding: 18px 23px 22px; gap: 0 !important; }
+.acquisitionCard::before {
+  content: ""; position: absolute; left: -1px; top: 17px;
+  width: 3px; height: 57px; background: #8ebbff;
+}
+.acquisitionCard .cardHeading h2 {
+  color: #8ebbff; font-size: 18px; line-height: 28px;
+}
+.acquisitionCard > p {
+  font-size: 14px; line-height: 20px; margin-top: 4px;
+}
+.acquisitionCard .channelTitle { margin: 10px 0 14px; line-height: 20px; }
+.acquisitionCard .channels { gap: 16px; }
+.acquisitionCard .channels > div {
+  min-height: 150px; padding: 13px 15px 2px; gap: 4px;
+  border-radius: 9px; background: var(--tool-nested);
+}
+.acquisitionCard .channelHeading h3 { font-size: 16px; line-height: 22px; }
+.acquisitionCard .channels p { font-size: 14px; line-height: 20px; }
+.acquisitionCard .freeCopy { color: var(--tool-green); font-size: 14px; line-height: 20px; }
+.acquisitionCard .paidCopy { color: var(--console-blue); font-size: 14px; line-height: 20px; }
+.acquisitionCard .channels button, .acquisitionCard .channels .primaryLink {
+  min-height: 38px; font-size: 14px; border-radius: 10px; margin-top: auto;
+  background: var(--tool-nested); color: var(--foreground);
+}
+.acquisitionCard .resultLink {
+  margin-top: 18px; padding: 9px 13px; border-radius: 10px;
+  line-height: 20px; background: var(--tool-nested); color: var(--tool-muted);
+}
+.acquisitionGuide { padding: 19px 21px; }
+.acquisitionGuide h2 { color: #8ebbff; font-size: 16px; line-height: 24px; margin-bottom: 8px; }
+.acquisitionGuide > p { font-size: 14px; line-height: 20px; }
+.mineResults .acquisitionGuide .explanation {
+  padding: 9px 13px; min-height: 88px; margin-top: 12px;
+  border-radius: 9px; border: 1px solid var(--tool-line); background: var(--tool-nested);
+}
+.acquisitionGuide .explanation h3 { font-size: 14px; line-height: 20px; margin-bottom: 5px; }
+.acquisitionGuide .explanation p { font-size: 14px; line-height: 20px; }
+.acquisitionGuide .tip { font-size: 14px; line-height: 20px; margin-top: 14px; }
+@media (max-width: 1060px) {
+  .acquisitionCard .channels { grid-template-columns: 1fr; }
+  .acquisitionRow .acquisitionCard, .acquisitionRow .acquisitionGuide { min-height: auto; }
+}
