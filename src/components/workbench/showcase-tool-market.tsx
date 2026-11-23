@@ -220,7 +220,7 @@ function FigmaOnlineCollection({onClose}:{onClose:()=>void}) {
       <footer><button type="button" onClick={()=>{setError("");setStep("source");}}>取消</button><button type="submit" className={styles.primary}>开始采集</button></footer>
     </form>:<div className={styles.figmaDone}>
       <h2 id={id}>采集任务已模拟完成</h2>
-      <p role="status">已记录 {saved} 条${source==="amazon"?"亚马逊":"1688"}演示数据。</p>
+      <p role="status">已记录 {saved} 条{source==="amazon"?"亚马逊":"1688"}演示数据。</p>
       <p>模拟记录保存在当前浏览器会话。正式采集成功后才会写入「数据服务 / 我的数据」。</p>
       <footer><button type="button" onClick={()=>{setStep("configure");setEntries("");}}>继续采集</button><button type="button" className={styles.primary} onClick={onClose}>知道了</button></footer>
     </div>}
