@@ -16,6 +16,9 @@ const cases:Case[]=[
  {name:"Referral payout configuration",route:"/account/referrals/withdrawals",trigger:"配置账户",dialog:"配置收款账户"},
  {name:"Referral withdrawal request",route:"/account/referrals/withdrawals",trigger:"申请提现",dialog:"申请提现"},
  {name:"Recent conversation rename",route:"/ai/chat/recent",trigger:"重命名",dialog:"重命名会话",scope:'[data-chat-collection-preview="recent"]',menu:"更多操作：一号店转化率下降分析"},
+ {name:"Recent conversation delete confirmation",route:"/ai/chat/recent",trigger:"删除会话",dialog:"确认删除会话",scope:'[data-chat-collection-preview="recent"]',menu:"更多操作：一号店转化率下降分析",kind:"alertdialog"},
+ {name:"Pending task review",route:"/ai/tasks",trigger:"去确认",dialog:"",kind:"dialog"},
+
 ];
 const rgb=(value:string):number[]|null=>{
  const nums=value.match(/^rgba?\\(([^)]+)\\)$/)?.[1].split(/[,\\s/]+/).map(Number);
@@ -80,7 +83,7 @@ for(const c of cases){
    if(c.scope)root=root.locator(c.scope).first();
    if(c.menu)await root.getByRole("button",{name:c.menu}).click();
    await root.getByRole(c.menu?"menuitem":"button",{name:c.trigger,exact:!["新建任务"].includes(c.trigger)}).first().click();
-   const dialog=page.getByRole(c.kind??"dialog",{name:c.dialog});
+   const dialog=c.dialog?page.getByRole(c.kind??"dialog",{name:c.dialog}):page.getByRole(c.kind??"dialog").first();
    const evidence=await checkDialog(page,dialog,theme,c.name);
    await testInfo.attach("dialog-appearance.json",{body:JSON.stringify({scenario:c,theme,...evidence},null,2),contentType:"application/json"});
    await page.keyboard.press("Escape");
