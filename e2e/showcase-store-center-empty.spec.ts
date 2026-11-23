@@ -800,3 +800,19 @@ test("historically paid colleague demo stores survive reload without debiting ne
  });
  expect(snapshotRestored).toEqual(snapshot);
 });
+
+test("My Stores search remains left of criteria and actions with shared centered axis",async({page})=>{
+ await page.goto(root+"/stores");
+ await page.setViewportSize({width:1600,height:900});
+ const bar=page.getByRole("form",{name:"店铺筛选"});
+ await expect(bar).toHaveAttribute("data-shuomi-filter","balanced");
+ const left=bar.locator('[data-shuomi-filter-left]'),right=bar.locator('[data-shuomi-filter-right]');
+ await expect(left.getByRole("textbox",{name:"搜索店铺"})).toBeVisible();
+ await expect(right.getByRole("combobox")).toHaveCount(3);
+ await expect(right.getByRole("button",{name:"重置"})).toBeVisible();
+ await expect(right.getByRole("button",{name:"确认"})).toBeVisible();
+ const a=await left.boundingBox(),b=await right.boundingBox();
+ expect(a&&b).toBeTruthy();
+ expect(a!.x+a!.width).toBeLessThanOrEqual(b!.x+4);
+ expect(Math.abs(a!.width-b!.width)).toBeLessThan(50);
+});
