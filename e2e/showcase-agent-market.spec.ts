@@ -279,7 +279,9 @@ test("POD Figma listing workflow uses store selection, nested product picker and
  await expect(task).toContainText("步骤 2 · 选择商品");
  await task.getByRole("button",{name:/从我的选品选择/}).click();
  const picker=page.getByRole("dialog",{name:"选择POD商品"});
- await expect(picker).toContainText("暂无可选商品");
+ await expect(picker).toContainText("Figma 原型示例");
+ await expect(picker).toContainText("女士基础款圆领T恤");
+ await picker.getByRole("checkbox").first().check();
  await picker.getByRole("button",{name:"取消"}).click();
  await expect(picker).toHaveCount(0);
  await task.getByRole("button",{name:"突出POD设计"}).click();
