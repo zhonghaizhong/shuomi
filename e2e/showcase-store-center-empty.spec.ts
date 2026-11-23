@@ -181,8 +181,14 @@ test("compact store rows show batch actions only after selection and preserve lo
  const bulk=area.getByRole("region",{name:"批量操作"});
  await expect(bulk).toContainText("已选择 1 家店铺");
  await bulk.getByRole("button",{name:"加入分组"}).click();
- await bulk.getByLabel("选择批量分组").selectOption("未分组");
- await bulk.getByRole("button",{name:"确认加入"}).click();
+ const groupDialog=page.getByRole("dialog",{name:"批量加入分组"});
+ await expect(groupDialog).toContainText("已选择 1 家店铺");
+ await groupDialog.getByLabel("选择批量分组").selectOption("未分组");
+ await groupDialog.getByRole("button",{name:"取消"}).click();
+ await expect(groupDialog).toHaveCount(0);
+ await expect(bulk).toContainText("已选择 1 家店铺");
+ await bulk.getByRole("button",{name:"加入分组"}).click();
+ await groupDialog.getByRole("button",{name:"确认加入"}).click();
  await expect(bulk).toHaveCount(0);
  await expect(area.getByText("批量店铺",{exact:true})).toBeVisible();
 });
