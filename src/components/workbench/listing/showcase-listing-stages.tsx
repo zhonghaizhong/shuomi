@@ -1,5 +1,6 @@
 "use client";
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
+import {readOwnProductBatches,readOwnProducts,ownProductUpdated} from "../showcase-own-product-data";
 import {useRouter} from "next/navigation";
 import styles from "./showcase-listing-stages.module.css";
 
@@ -13,11 +14,17 @@ const descriptions:Record<Stage,string>={
  review:"核对智能体建议，决定应用或退回；审核完成后明确继续原上传任务。"
 };
 const menu=[["waiting","待上传"],["missing","待补全"],["review","待审核"],["uploaded","已上传"]] as const;
-export function ShowcaseListingStage({stage}:{stage:Stage}){
+export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stage;organizationId:string;memberId:string}){
  const router=useRouter();
  const [source,setSource]=useState("采集批次"),[batch,setBatch]=useState(""),[store,setStore]=useState(""),[agent,setAgent]=useState(false),[rules,setRules]=useState(true),[mode,setMode]=useState("平台草稿");
  const [filter,setFilter]=useState(""),[applied,setApplied]=useState(""),[sourceFilter,setSourceFilter]=useState("全部来源"),[appliedSource,setAppliedSource]=useState("全部来源"),[storeFilter,setStoreFilter]=useState("全部店铺"),[appliedStore,setAppliedStore]=useState("全部店铺"),[items,setItems]=useState(seed),[selected,setSelected]=useState<Item|null>(null),[notice,setNotice]=useState(""),[ruleDialog,setRuleDialog]=useState(false),[submitted,setSubmitted]=useState(false);
  const [form,setForm]=useState<Record<string,string>>({});
+ const [dataVersion,setDataVersion]=useState(0);
+ useEffect(()=>{const handle=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d?.memberId===memberId)setDataVersion(n=>n+1)};window.addEventListener(ownProductUpdated,handle);return()=>window.removeEventListener(ownProductUpdated,handle)},[organizationId,memberId]);
+ const ownBatches=useMemo(()=>readOwnProductBatches(organizationId,memberId),[organizationId,memberId,dataVersion]);
+ const ownProducts=useMemo(()=>readOwnProducts(organizationId,memberId),[organizationId,memberId,dataVersion]);
+ const selectedBatch=source==="自有商品库"?ownBatches.find(x=>x.id===batch):undefined;
+ const selectableProducts=selectedBatch?ownProducts.filter(p=>p.batchId===selectedBatch.id):[];
  const [reviewChecked,setReviewChecked]=useState(false),[reviewMode,setReviewMode]=useState<"compare"|"edit">("compare");
  const go=(s:string)=>router.push("/workbench/listing/"+s+"?preview=1");
  const filtered=useMemo(()=>items.filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status).toLowerCase().includes(applied.toLowerCase())&&(appliedSource==="全部来源"||x.source===appliedSource)&&(appliedStore==="全部店铺"||x.store===appliedStore)),[items,applied,appliedSource,appliedStore]);
@@ -37,12 +44,12 @@ export function ShowcaseListingStage({stage}:{stage:Stage}){
   {stage==="waiting"?<>
    <section className={styles.flowHeader}><div><h2>商品上传流程</h2><p>商品 · 规则必选 · 智能体按需 · 平台上传</p></div><div className={styles.flowSteps}>{["选择商品","平台与店铺","启用规则","启用智能体"].map((name,i)=><span key={name}><b>{i+1}</b>{name}</span>)}</div></section>
    <section className={styles.configuration}>
-    <article><header><b>01</b><h2>选择商品</h2></header><p>从采集批次或自有商品库选取</p><label>商品来源<select value={source} onChange={e=>setSource(e.target.value)}><option>采集批次</option><option>自有商品库</option></select></label><label>本次批次 / 产品集<select value={batch} onChange={e=>setBatch(e.target.value)}><option value="">请选择商品</option></select></label><button type="button" onClick={()=>router.push("/workbench/data/mine?preview=1")}>进入我的数据</button></article>
+    <article><header><b>01</b><h2>选择商品</h2></header><p>从采集批次或自有商品库选取</p><label>商品来源<select value={source} onChange={e=>{setSource(e.target.value);setBatch("")}}><option>采集批次</option><option>自有商品库</option></select></label><label>本次批次 / 产品集<select value={batch} onChange={e=>setBatch(e.target.value)}><option value="">请选择商品</option>{source==="自有商品库"?ownBatches.map(b=><option key={b.id} value={b.id}>{b.name} · {b.productCount} 个商品</option>):null}</select></label>{selectedBatch?<small>已选择 {selectableProducts.length} 个商品，待补全 {selectableProducts.filter(p=>p.status==="待补全").length} 个；原始商品资料保持独立。</small>:null}<button type="button" onClick={()=>router.push("/workbench/data/mine?preview=1")}>进入我的数据</button></article>
     <article><header><b>02</b><h2>目标平台与店铺</h2></header><p>先确定平台、站点及经营模式</p><label>平台 / 站点<select disabled value="SHEIN · 美国站"><option>SHEIN · 美国站</option></select></label><label>本次目标店铺<select value={store} onChange={e=>setStore(e.target.value)}><option value="">请选择店铺</option></select></label><small>按目标平台校验资料：缺失先补全，启用智能体需审核</small></article>
     <article><header><b>03</b><h2>启用规则</h2></header><p>规则必须启用才能上传</p><label className={styles.switch}><input type="checkbox" checked={rules} onChange={e=>setRules(e.target.checked)}/> 标准适配规则（必选）</label><button type="button" onClick={()=>setRuleDialog(true)}>适配规则设置</button><small>本次规则生效，原始资料不变</small></article>
     <article><header><b>04</b><h2>启用智能体</h2></header><p>按需重构商品后进入审核</p><label className={styles.switch}><input type="checkbox" checked={agent} onChange={e=>setAgent(e.target.checked)}/> 智能体（按需）</label><label>执行模板<select disabled={!agent}><option>{agent?"商品内容优化模板":"未启用，无需选择"}</option></select></label><small>{agent?"AI 处理结果进入待审核，由你确认应用":"未启用智能体 · 校验后直接上传"}</small></article>
    </section>
-   <section className={styles.submit}><div><h2>本次上传</h2><p>资料缺失先补全；完整商品启用智能体后待审核，未启用则直接提交平台。</p></div><label>提交方式<select value={mode} onChange={e=>setMode(e.target.value)}><option>平台草稿</option><option>直接上传到平台</option></select></label><button type="button" disabled={!batch||!store||!rules} onClick={()=>action(`演示任务已配置：${batch} · ${store} · ${mode}。需真实平台核验才能提交；资料不完整进入待补全${agent?"，启用 AI 的商品进入待审核":""}。`)}>确认提交</button></section>
+   <section className={styles.submit}><div><h2>本次上传</h2><p>资料缺失先补全；完整商品启用智能体后待审核，未启用则直接提交平台。</p></div><label>提交方式<select value={mode} onChange={e=>setMode(e.target.value)}><option>平台草稿</option><option>直接上传到平台</option></select></label><button type="button" disabled={!batch||!store||!rules||(source==="自有商品库"&&selectableProducts.length===0)} onClick={()=>action(`演示任务已配置：${selectedBatch?.name||batch} · ${store} · ${mode}。其中 ${selectableProducts.filter(p=>p.status==="待补全").length} 件自有商品有待补全资料；尚未执行真实平台上传${agent?"，智能体须授权与审核":""}。`)}>确认提交</button></section>
    <p className={styles.hint}>平台原生定时上架按真实能力开放；系统定时发送目前未开放。仅演示配置，不会向平台实际上传。</p>
   </>:<>
    <section className={styles.summary}>{(stage==="missing"?[["0","全部商品"],["0","待补全"],["0","AI已补全"],["0","手动已补全"]]:[["0","待审核"],["0","AI建议待确认"],["0","已应用待继续"],["0","异常"]]).map(([n,label])=><article key={label}><b>{n}</b><span>{label}</span></article>)}</section>
