@@ -169,38 +169,137 @@
 .wrapper .deleteConfirm .deleteConfirmButton{background:#ea5455;border-color:#ea5455;color:#fff}
 
 
-/* My Data & batch dialogs use the same Vuexy tokens as Data Services. */
-.wrapper{--md-bg:#142237;--md-panel:#18283c;--md-inner:#1c3047;--md-line:#30465e;--md-ink:#eff6ff;--md-muted:#adc1d4;--md-primary:#7367f0;--md-input:#142237;gap:16px}
-:global(.light) .wrapper{--md-bg:#fff;--md-panel:#f7fafd;--md-inner:#edf3f8;--md-line:#dfe7ef;--md-ink:#263747;--md-muted:#607183;--md-primary:#7367f0;--md-input:#fff}
-.wrapper :is(.flow,.filterBar,.panel){background:var(--md-bg);border-color:var(--md-line);border-radius:12px;box-shadow:0 5px 22px rgba(7,21,39,.09)}
-:global(.light) .wrapper :is(.flow,.filterBar,.panel){box-shadow:0 5px 20px rgba(32,55,87,.055)}
-.wrapper .flowSteps{border-color:var(--md-line)}
-.wrapper .tabs{background:var(--md-panel);border-color:var(--md-line);border-radius:10px}
-.wrapper .tabs button[aria-current="page"]{background:color-mix(in srgb,var(--md-primary) 12%,var(--md-bg));color:var(--md-primary)}
-.wrapper .filterBar :is(input,select),.wrapper .searchBox{background:var(--md-input);border-color:var(--md-line);color:var(--md-ink);border-radius:9px}
+/* MY DATA — PREMIUM VUEXY V2
+   Compact controls, layered records, restrained status colors; keeps every action. */
+.wrapper{
+ --md-bg:#18283c;--md-panel:#142237;--md-inner:#20334b;
+ --md-line:#31465e;--md-ink:#edf4ff;--md-muted:#b6c5d6;
+ --md-primary:#7367f0;--md-input:#17283c;
+ --md-shadow:0 7px 24px rgba(4,13,29,.14);
+ display:grid;gap:14px;color:var(--md-ink);
+}
+:global(.light) .wrapper{
+ --md-bg:#fff;--md-panel:#f7fafd;--md-inner:#f0f4f9;
+ --md-line:#e0e6ee;--md-ink:#263648;--md-muted:#657486;
+ --md-input:#fff;--md-shadow:0 6px 20px rgba(34,51,83,.06);
+}
+.wrapper :is(.flow,.filterBar,.panel){
+ background:var(--md-bg);border:1px solid var(--md-line);
+ border-radius:11px;box-shadow:var(--md-shadow);
+}
+.wrapper .flow{
+ min-height:62px;padding:12px 18px;gap:14px;
+}
+.wrapper .flow>strong{
+ color:var(--md-ink);border-left:3px solid var(--md-primary);
+ padding-left:10px;font-size:14px;font-weight:700;
+}
+.wrapper .flowSteps{border-color:var(--md-line);gap:8px}
+.wrapper .flowSteps span{color:var(--md-muted);font-size:12px}
+.wrapper .flowSteps i{
+ width:25px;height:25px;border:1px solid color-mix(in srgb,#7367f0 35%,var(--md-line));
+ border-radius:8px;background:color-mix(in srgb,#7367f0 9%,var(--md-panel));
+ color:var(--md-ink);font-size:11px;
+}
+.wrapper .flow>p b{color:var(--md-ink)}
+.wrapper .flow>p small{color:var(--md-muted)}
+.wrapper .tabs{
+ width:max-content;max-width:100%;padding:4px;background:var(--md-panel);
+ border:1px solid var(--md-line);border-radius:9px;
+}
+.wrapper .tabs button{border-radius:7px;padding:9px 18px;color:var(--md-muted)}
+.wrapper .tabs button[aria-current="page"]{
+ background:color-mix(in srgb,#7367f0 14%,var(--md-bg));color:var(--md-ink);
+ box-shadow:inset 0 0 0 1px color-mix(in srgb,#7367f0 30%,var(--md-line));
+}
+.wrapper .filterBar{
+ min-height:62px;padding:10px 14px;gap:10px;
+}
+.wrapper .filterBar :is(input,select){
+ height:40px;background:var(--md-input);border:1px solid var(--md-line);
+ border-radius:8px;color:var(--md-ink);
+}
+.wrapper .filterBar .searchBox{
+ height:40px;min-width:0;flex:1 1 235px;
+ background:var(--md-input);border:1px solid var(--md-line);border-radius:8px;
+}
+.wrapper .filterBar .searchBox input{border:0;background:transparent}
 .wrapper :is(input,select)::placeholder{color:var(--md-muted);opacity:1}
-.wrapper :is(button,input,select):focus-visible{outline:2px solid var(--md-primary);outline-offset:2px}
-.wrapper .heading{border-color:var(--md-line)}
-.wrapper .filterBar .primary,.wrapper .manageDialog footer .primary{background:#7367f0;color:#fff;border-color:#7367f0;border-radius:9px}
-.wrapper .tableScroll{max-width:100%;overflow-x:auto}
-.wrapper .tableScroll table{border-collapse:separate;border-spacing:0;min-width:1060px}
-.wrapper .tableScroll thead{background:var(--md-panel);color:var(--md-ink)}
-.wrapper .tableScroll tbody tr:nth-child(even){background:var(--md-panel)}
-.wrapper .tableScroll tbody tr:hover{background:color-mix(in srgb,var(--md-primary) 7%,var(--md-bg))}
-.wrapper :is(.manageDialog,.deleteConfirm){background:var(--md-bg);border-color:var(--md-line);color:var(--md-ink);border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.28)}
-.wrapper :is(.manageDialog,.deleteConfirm) :is(input,select){color:var(--md-ink);background:var(--md-input);border-color:var(--md-line)}
-.wrapper .manageActions button{background:var(--md-panel);border-color:var(--md-line);border-radius:8px}
-@media(max-width:760px){.wrapper .filterBar{flex-wrap:wrap}.wrapper .filterBar .searchBox{flex:1 1 100%}}
-
-
-/* Refine the real batch workspace without altering tenant isolation or record actions. */
-.wrapper{--md-bg:#18283c;--md-panel:#142237;--md-inner:#20334a;--md-line:#344960;--md-ink:#edf4ff;--md-muted:#b3c3d5;--md-primary:#7367f0;--md-input:#142237}
-:global(.light) .wrapper{--md-bg:#fff;--md-panel:#f7fafd;--md-inner:#edf3f8;--md-line:#e0e7f0;--md-ink:#303546;--md-muted:#657184;--md-primary:#7367f0;--md-input:#fff}
-.wrapper :is(.flow,.filterBar,.panel){background:var(--md-bg);border-color:var(--md-line);border-radius:11px;box-shadow:0 6px 22px rgba(7,22,41,.075)}
-.wrapper .flow>strong,.wrapper .heading>div:first-child strong{color:var(--md-ink)}
-.wrapper :is(.filterBar input,.filterBar select,.searchBox){border-color:var(--md-line);background:var(--md-input);color:var(--md-ink)}
-.wrapper :is(.filterBar button,.headingActions button,.menuHost>button,.pagination button,.bulkBar button){border-color:var(--md-line);border-radius:9px}
-.wrapper :is(.rowMenu,.manageDialog,.deleteConfirm){color:var(--md-ink);border-color:var(--md-line)}
-.wrapper .tableScroll{overflow-x:auto;max-width:100%}
-.wrapper .filterBar .primary{color:#fff;background:#7367f0;border-color:#7367f0}
 .wrapper :is(button,input,select):focus-visible{outline:2px solid #7367f0;outline-offset:2px}
+.wrapper :is(.filterBar>button,.headingActions button,.menuHost>button,.pagination button,.bulkBar button,.details header button){
+ border:1px solid var(--md-line);background:var(--md-panel);
+ border-radius:8px;color:var(--md-ink);
+}
+.wrapper :is(.filterBar>button,.headingActions button,.menuHost>button,.pagination button):not(:disabled):hover{
+ border-color:#7367f0;background:color-mix(in srgb,#7367f0 9%,var(--md-panel));
+}
+.wrapper .filterBar .primary,.wrapper .manageDialog footer .primary{
+ background:#7367f0;color:#fff;border-color:#7367f0;
+ box-shadow:0 3px 10px rgba(115,103,240,.15);
+}
+.wrapper .panel{padding-bottom:12px;overflow:visible}
+.wrapper .heading{
+ min-height:64px;padding:14px 18px;border-bottom:1px solid var(--md-line);
+}
+.wrapper .heading h2{color:var(--md-ink);font-size:17px;line-height:25px}
+.wrapper .heading>div:first-child>span{color:var(--md-muted)}
+.wrapper .headingActions{gap:8px;flex-wrap:wrap}
+.wrapper .tableScroll{min-width:0;max-width:100%;overflow-x:auto;overflow-y:visible}
+.wrapper .tableScroll table{min-width:1060px;border-collapse:separate;border-spacing:0;font-size:13px}
+.wrapper .tableScroll thead{background:var(--md-panel)}
+.wrapper .tableScroll th{
+ padding:13px 14px;border-top:1px solid var(--md-line);
+ border-bottom:1px solid var(--md-line);color:var(--md-muted);
+ font-size:12px;font-weight:650;
+}
+.wrapper .tableScroll td{padding:15px 14px;border-bottom:1px solid var(--md-line);color:var(--md-ink)}
+.wrapper .batchTable tbody tr,
+.wrapper .batchTable tbody tr:nth-child(even){background:var(--md-bg)}
+.wrapper .batchTable tbody tr:nth-child(odd){background:var(--md-panel)}
+.wrapper .batchTable tbody tr:hover{background:color-mix(in srgb,#7367f0 7%,var(--md-bg))}
+.wrapper .batchName strong{color:var(--md-ink);font-size:13px}
+.wrapper .batchName small{color:var(--md-muted)}
+.wrapper .sourcePill{background:var(--md-inner);color:var(--md-muted);border-radius:7px;padding:5px 9px}
+.wrapper .rowMenu{
+ background:var(--md-bg);border:1px solid var(--md-line);
+ border-radius:10px;box-shadow:0 18px 45px rgba(3,14,29,.26);
+}
+.wrapper .rowMenu button{color:var(--md-ink)}
+.wrapper .details{
+ background:var(--md-panel);border:1px solid var(--md-line);
+ border-radius:10px;overflow-x:auto;
+}
+.wrapper .pagination{border-top:1px solid var(--md-line);padding:13px 18px 2px;color:var(--md-muted)}
+.wrapper .pagination button{min-width:34px}
+.wrapper .backdrop{background:rgba(4,11,23,.65);backdrop-filter:blur(4px)}
+.wrapper :is(.manageDialog,.deleteConfirm){
+ width:min(650px,calc(100vw - 32px));max-height:calc(100dvh - 36px);
+ overflow-y:auto;background:var(--md-bg);color:var(--md-ink);
+ border:1px solid var(--md-line);border-radius:13px;
+ box-shadow:0 24px 65px rgba(2,10,22,.36);
+}
+.wrapper :is(.manageDialog,.deleteConfirm) h2{color:var(--md-ink)}
+.wrapper .manageList>div{
+ background:var(--md-panel);border:1px solid var(--md-line);border-radius:9px;
+}
+.wrapper .manageActions button{
+ border:1px solid var(--md-line);background:var(--md-panel);
+ color:var(--md-ink);border-radius:8px;
+}
+.wrapper :is(.manageDialog,.deleteConfirm) :is(input,select){
+ background:var(--md-input);border-color:var(--md-line);color:var(--md-ink);
+}
+.wrapper .deleteConfirm .deleteConfirmButton{
+ background:#ea5455;border-color:#ea5455;color:#fff;
+}
+@media(max-width:900px){
+ .wrapper .flow{flex-wrap:wrap}
+ .wrapper .flowSteps{order:3;flex-basis:100%;border:0;border-top:1px solid var(--md-line);padding:10px 0 0;flex-wrap:wrap}
+ .wrapper .filterBar{flex-wrap:wrap}
+ .wrapper .filterBar .searchBox{flex:1 1 100%}
+}
+@media(max-width:600px){
+ .wrapper .heading{flex-wrap:wrap}
+ .wrapper .headingActions{width:100%}
+ .wrapper .headingActions button{flex:1 1 auto}
+}
