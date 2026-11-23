@@ -316,17 +316,17 @@ test("light mode nested cards and controls are light and text is readable", asyn
 test("tool modal in light theme has light nested details with readable labels", async ({page}) => {
   await page.goto("/shuomi/#/workbench/tools/official");
   await page.getByRole("button", {name:"切换浅色主题"}).click();
-  // Download dialogs are rendered conditionally; find the real install action.
-  const download=page.getByRole("button", {name:"介绍"}).first();
-  await expect(download).toBeVisible();
-  await download.click();
-  const details=page.locator('[class*="downloadDetails"]');
-  await expect(details).toBeVisible();
-  const background=await details.evaluate(el=>getComputedStyle(el).backgroundColor);
-  expect(background).not.toBe("rgb(39, 52, 72)");
-  const label=details.locator("dt").first();
-  await expect(label).toBeVisible();
-  await expect(label).toHaveCSS("color","rgb(111, 107, 125)");
+  // Product collection introduction now follows the original Figma source-selection dialog.
+  const product=page.locator('[class*="toolCard"]').filter({hasText:"商品采集插件"});
+  await product.getByRole("button",{name:"启用",exact:true}).click();
+  await page.getByRole("button",{name:"我的工具",exact:true}).click();
+  await page.locator('[data-figma-tool="商品采集插件"]').getByRole("button",{name:"在线采集"}).click();
+  const modal=page.getByRole("dialog");
+  await expect(modal.getByRole("heading",{name:"选择在线采集来源"})).toBeVisible();
+  const card=modal.locator('[class*="figmaSourceGrid"] section').first();
+  await expect(card).toBeVisible();
+  await expect(card).toContainText("亚马逊采集");
+  await expect(card).toHaveCSS("background-color","rgb(248, 247, 250)");
 });
 
 
