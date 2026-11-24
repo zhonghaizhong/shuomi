@@ -360,7 +360,7 @@ test("product optimizer knowledge picker opens its Figma second-level selector",
 });
 
 
-test("my agents header and both card columns use the approved deep-blue Vuexy surface in dark mode",async({page})=>{
+test("my agents header and both card columns match the user-marked Vuexy filter surface",async({page})=>{
  await page.setViewportSize({width:1700,height:900});
  await page.goto(base+"/mine");
  const dark=page.getByRole("button",{name:"切换深色主题"});
@@ -375,7 +375,7 @@ test("my agents header and both card columns use the approved deep-blue Vuexy su
  await expect(asides).toHaveCount(2);
  for(const item of [header,...await sections.all(),...await asides.all()]){
   const background=await item.evaluate(el=>getComputedStyle(el).backgroundColor);
-  expect(background).toBe("rgb(20, 34, 55)");
+  expect(background).toBe("rgb(47, 51, 73)");
  }
  const light=page.getByRole("button",{name:"切换浅色主题"});
  if(await light.isVisible())await light.click();
