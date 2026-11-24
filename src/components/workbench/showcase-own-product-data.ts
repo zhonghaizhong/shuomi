@@ -151,6 +151,58 @@ export function importOwnProductDemoImagePack(org:string,member:string,raw:unkno
  return {products:6,images:48,pending,review};
 }
 
+
+/** Hydrate 48 generated showcase images from the versioned, same-origin static atlas.
+ * Illustrative ChatGPT output, never represented as the configured Shuomi agent's actual model call.
+ * The source image version is immutable and available even when session storage is empty.
+ */
+export async function installGeneratedOwnProductDemoImages(org:string,member:string):Promise<{products:number;images:number;review:number;pending:number;alreadyInstalled:boolean}>{
+ if(typeof window==="undefined"||!org||!member)throw Error("浏览器会话不可用");
+ const batch=readOwnProductBatches(org,member).find(b=>b.name==="自有商品测试批次");
+ if(!batch)throw Error("未找到自有商品测试批次");
+ const codes=["SH-OPT-TEE-001","SH-OPT-HOOD-002","SH-OPT-TOTE-003","SH-OPT-BOTTLE-004","SH-OPT-MUG-005","SH-OPT-TRAVEL-006"];
+ const records=readOwnProducts(org,member);
+ const demo=records.filter(p=>p.batchId===batch.id&&p.status!=="已入库"&&codes.some(code=>p.skus[0]?.skuCode===code));
+ if(demo.length!==6)throw Error("六款演示商品尚未全部初始化");
+ if(demo.every(p=>p.demoImageSource&&p.skus[0]?.images.length===8))
+  return {products:6,images:48,review:demo.filter(p=>p.status==="待审核").length,pending:demo.filter(p=>p.status==="入库待完善").length,alreadyInstalled:true};
+ const img=await new Promise<HTMLImageElement>((resolve,reject)=>{
+  const source=new Image();
+  source.onload=()=>resolve(source);
+  source.onerror=()=>reject(Error("48 张模拟图片资源暂时无法加载，请核实 GitHub Pages 已发布该静态资源"));
+  const prefix=window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
+  source.src=prefix+"/assets/own-product-ai-demo/six-products-48-images.webp";
+ });
+ if(img.naturalWidth!==1024||img.naturalHeight!==3072)throw Error("模拟图片图集尺寸与模板不一致");
+ const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;
+ const ctx=canvas.getContext("2d");if(!ctx)throw Error("浏览器不支持图片切分");
+ const imagesByCode=new Map<string,string[]>();
+ for(const [productIndex,code] of codes.entries()){
+  const images:string[]=[];
+  for(let tile=0;tile<8;tile++){
+   ctx.clearRect(0,0,256,256);
+   ctx.drawImage(img,(tile%4)*256,(productIndex*2+Math.floor(tile/4))*256,256,256,0,0,256,256);
+   images.push(canvas.toDataURL("image/webp",0.8));
+  }
+  imagesByCode.set(code,images);
+ }
+ // Re-read after async load: never revert a product that was approved or edited in another tab.
+ const fresh=readOwnProducts(org,member);
+ const changed=fresh.map(p=>{
+  if(p.batchId!==batch.id||p.status==="已入库"||!codes.includes(p.skus[0]?.skuCode??"")||p.demoImageSource)return p;
+  const images=imagesByCode.get(p.skus[0].skuCode??"");if(!images)return p;
+  const skus=p.skus.map((sku,i)=>i===0?{...sku,images:images.slice()}:sku);
+  return {...p,skus,missing:checkOwnProductSkus(skus),demoImageSource:"ChatGPT 英语白底 8 张图片模拟"} as OwnProductRecord;
+ });
+ const selected=changed.filter(p=>p.batchId===batch.id&&p.status!=="已入库"&&codes.includes(p.skus[0]?.skuCode??""));
+ const review=selected.filter(p=>p.status==="待审核").length;
+ const pending=selected.filter(p=>p.status==="入库待完善").length;
+ if(review!==4||pending!==2)throw Error("批次状态已变化，已中止自动覆盖图片以保护人工修改");
+ try{sessionStorage.setItem(productKey(org,member),JSON.stringify(changed));}catch{throw Error("本次会话存储空间不足，无法保存 48 张图片")}
+ notify(org,member);
+ return {products:6,images:48,review,pending,alreadyInstalled:false};
+}
+
 /** First-stage Shuomi intake: incomplete drafts stay inside the tool, never in third-party listing 待补全. */
 export function listOwnPendingProducts(org:string,member:string):OwnProductRecord[]{
  return readOwnProducts(org,member).filter(p=>p.status==="入库待完善");
