@@ -250,6 +250,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    :child==="multi-adjust"?<div className={css.stack}><div className={css.optionGrid}>{slots.map((slot,i)=>slot?<label className={css.imageChoice} key={i}><input type="checkbox" checked={multiSelected.includes(i)} onChange={()=>setMultiSelected(old=>old.includes(i)?old.filter(x=>x!==i):[...old,i])}/>{String(i+1).padStart(2,"0")} · {slot}</label>:null)}</div><p>已选 {multiSelected.length} 张</p><div className={css.toolbar}><button onClick={()=>applyMulti("first")} disabled={!multiSelected.length}>移到最前</button><button onClick={()=>applyMulti("last")} disabled={!multiSelected.length}>移到最后</button><button onClick={()=>applyMulti("remove")} disabled={!multiSelected.length}>移除</button></div></div>
    :child==="restore"?<p>将恢复到最近一次保存的图片组合与顺序，未保存的调整会被覆盖。</p>
    :child==="add-image"?<>
+    {slots[slotIndex]?<div className={css.currentSlotActions}><span>当前位置已添加：{slots[slotIndex]}</span><button type="button" onClick={()=>{const next=slots.slice();next[slotIndex]=null;setSlots(next);setChild("");setMessage("");}} aria-label={"移除第 "+(slotIndex+1)+" 张图片"}>移除当前图片</button></div>:null}
     <div className={css.imageSourceCards} aria-label="图片来源">
      {([
       ["应用技能","沿用已启用技能"],
@@ -270,7 +271,10 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
      </>
      :sourceTab==="预设指令AI重构"?<>
       <h3>预设指令AI重构</h3><p>选择当前位置的图片优化任务，点击后加入最终编排序列。</p>
-      <div className={css.optionGrid}>{(hybridTarget==="详情图"&&!hybridShared?officialDetail:initialOfficial).map((name,i)=><button key={name} type="button" onClick={()=>addSlot("AI·"+name)}>{String(i+1).padStart(2,"0")} · {name}</button>)}</div>
+      <div className={css.presetExampleGrid} aria-label="预设指令设计图示例">{(hybridTarget==="详情图"&&!hybridShared?officialDetail:initialOfficial).map((name,i)=><button key={name} type="button" className={css.presetExampleCard} aria-label={String(i+1).padStart(2,"0")+" · "+name} onClick={()=>addSlot("AI·"+name)}>
+       <img src={officialImageExampleUrl(hybridTarget==="详情图"&&!hybridShared?"详情图":"主图",i)} onError={event=>{const img=event.currentTarget;const fallback=officialImageExampleUrl(hybridTarget==="详情图"&&!hybridShared?"详情图":"主图",i,"svg");if(img.src!==new URL(fallback,window.location.href).href)img.src=fallback;}} alt={name+"设计图示例"} loading="lazy"/>
+       <span><small>{String(i+1).padStart(2,"0")}</small><strong>{name}</strong></span>
+      </button>)}</div>
       <div className={css.imageOtherSources}><button type="button" onClick={()=>setChild("official-images")}>官方图片</button><button type="button" onClick={()=>setChild("ai-images")}>AI 渲染图片</button></div>
      </>
      :sourceTab==="从本地上传"?<><h3>从本地上传</h3><label>选择图片文件<input type="file" accept="image/*" onChange={e=>setFileName(e.target.files?.[0]?.name??"")}/></label><p>已选择：{fileName||"尚未选择文件"}。演示版不会上传文件至服务器。</p></>
@@ -326,8 +330,8 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
      </div>
      {hybridShared?<small className={css.hybridSharedHint}>两侧共用下方 8 张图片编排</small>:null}
     </div>
-    <section className={css.panel}><h3>图片添加说明</h3><p>图片来源：应用技能、预设指令AI重构、本地上传、自定义指令。</p><p>编排方式：点击图片位置的“＋”添加；已添加图片可更换或移除。</p></section>
-    <h3>最终图片编排{hybridShared?" · 主图及详情图共用":" · "+hybridTarget}</h3><p>{hybridShared?"主图、详情图共用同一组最多 8 张图片，修改后两侧同步生效。":"当前仅配置"+hybridTarget+"的最多 8 张图片，另一侧可独立设置。"} 拖动已有图片调整顺序，点击“＋”添加；支持更换和删除。</p>
+    <section className={css.panel}><h3>图片添加说明</h3><p>图片来源：应用技能、预设指令AI重构、本地上传、自定义指令。</p><p>编排方式：点击图片位置添加或替换；拖动图片调整顺序，已添加图片可在编辑弹窗中移除。</p></section>
+    <h3>最终图片编排{hybridShared?" · 主图及详情图共用":" · "+hybridTarget}</h3><p>{hybridShared?"主图、详情图共用同一组最多 8 张图片，修改后两侧同步生效。":"当前仅配置"+hybridTarget+"的最多 8 张图片，另一侧可独立设置。"} 拖动已有图片调整顺序，点击图片添加或替换；可在编辑弹窗中移除。</p>
     <div className={css.slotGrid} aria-label="最终图片拖拽排序">{slots.map((v,i)=><div
       className={css.slot} key={i} data-dragging={draggedSlot===i} data-drop-target={dragOverSlot===i&&draggedSlot!==i}
       draggable={Boolean(v)}
@@ -338,7 +342,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
       onDragEnd={finishSlotDrag}
     ><small>{String(i+1).padStart(2,"0")}{v?<span className={css.slotDragHandle} aria-hidden="true">⋮⋮</span>:null}</small>
       <button type="button" aria-label={"添加第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setSourceTab("应用技能");setChild("add-image");}}>{v?<span>{v}</span>:"＋"}</button>
-      {v?<button type="button" aria-label={"调整第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setChild("slot-actions");}}>···</button>:null}
+      
      </div>)}</div>
     <div className={css.toolbar}><button type="button" onClick={()=>setChild("language")}>语言：{form.imageLanguage??"不设置"}</button><button type="button" onClick={()=>setChild("background")}>底色：{form.imageBackground??"不设置"}</button><button type="button" onClick={()=>setChild("restore")}>恢复上次顺序</button></div>
    </div>
