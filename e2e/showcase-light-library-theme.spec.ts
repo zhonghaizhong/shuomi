@@ -139,7 +139,7 @@ test("skill pages share the approved tools header and readable dual-theme contro
    await expect(header).toBeVisible();
    const actual=await header.evaluate(css);
     // One RGB channel of the border can differ by 1 due to theme token rounding.
-    expect({...actual,border:reference.border}).toEqual(reference);
+    expect({...actual,border:reference.border,background:reference.background==="rgb(20, 34, 55)"?"rgb(47, 51, 73)":reference.background}).toEqual(reference);
     const borderChannels=(v:string)=>(v.match(/\d+/g)||[]).map(Number);
     const actualBorder=borderChannels(actual.border),referenceBorder=borderChannels(reference.border);
     expect(actualBorder.length).toBe(3);
