@@ -1,5 +1,5 @@
 "use client";
-import {listingVariantPhotoRoles,readShowcaseUploadTasks,showcaseUploadTasksEvent,type ListingVariantImage,type ShowcaseUploadTask} from "./showcase-upload-tasks";
+import {listingVariantPhotoRoles,readShowcaseUploadTasks,persistShowcaseUploadTaskRecords,showcaseUploadTasksEvent,type ListingVariantImage,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 
 /** User-provided ZIP is browser-local; neither this demo nor GitHub Pages has a server image store.
  * ZIP bytes are kept in IndexedDB scoped to this organization's member and task.
@@ -118,8 +118,7 @@ export async function recoverLocalListingPhotos(org:string,member:string,taskId:
  const restored=groups.reduce((n,g,i)=>n+g.optimizedImages.length-task.demoProduct!.variantImageGroups![i].optimizedImages.length,0);
  if(restored){
   const next={...task,demoProduct:{...task.demoProduct,variantImageGroups:groups}};
-  const storageKey="shuomi:listing-upload-tasks-v1:"+org+":"+member;
-  sessionStorage.setItem(storageKey,JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
+  persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
   window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  }
  return {found:available.size,restored};
@@ -168,8 +167,7 @@ export async function importAmazonVariantBundle(organizationId:string,memberId:s
  }
  if(imported+skipped!==36)throw new Error("图片与六个颜色组不完整，未保存");
  await storePhotos(blobs);
- const storageKey="shuomi:listing-upload-tasks-v1:"+organizationId+":"+memberId;
- sessionStorage.setItem(storageKey,JSON.stringify(tasks.map(t=>next.get(t.id)??t)));
+ persistShowcaseUploadTaskRecords(organizationId,memberId,tasks.map(t=>next.get(t.id)??t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId,memberId}}));
  return {imported,skipped,tasks:2,colors:6};
 }
