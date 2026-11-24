@@ -5,7 +5,7 @@ import {readOwnIntakeNavigation,type OwnIntakeStage} from "./showcase-own-produc
 import {readOwnProductBatches,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
 import css from "./showcase-own-product-intake-page.module.css";
 
-export function ShowcaseOwnProductIntakePage({stage}:{stage:OwnIntakeStage}){
+export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeStage;onClose?:()=>void}){
  const router=useRouter();
  const [context,setContext]=useState<ReturnType<typeof readOwnIntakeNavigation>>(null);
  const [version,setVersion]=useState(0),[query,setQuery]=useState(""),[selectedId,setSelectedId]=useState<string|null>(null);
@@ -58,7 +58,7 @@ export function ShowcaseOwnProductIntakePage({stage}:{stage:OwnIntakeStage}){
  };
  const heading=stage==="pending"?"自有商品待完善":"自有商品待审核";
  return <main className={css.page}>
-  <header className={css.header}><div><small>我的工具 / 自有商品一键刊登 / {heading}</small><h1>{heading}</h1><p>{stage==="pending"?"首次适配发现资料缺失，在此补齐并重新检查；不会进入第三方平台的「刊登管理 → 待补全」。":"资料已通过硕米首次入库检查，逐项确认后写入「我的数据 → 自有商品库」。"}</p></div><button type="button" onClick={()=>router.push("/workbench/tools/mine?preview=1")}>返回我的工具</button></header>
+  <header className={css.header}><div><small>我的工具 / 自有商品一键刊登 / {heading}</small><h1>{heading}</h1><p>{stage==="pending"?"首次适配发现资料缺失，在此补齐并重新检查；不会进入第三方平台的「刊登管理 → 待补全」。":"资料已通过硕米首次入库检查，逐项确认后写入「我的数据 → 自有商品库」。"}</p></div><button type="button" onClick={()=>onClose?onClose():router.push("/workbench/tools/mine?preview=1")}>{onClose?"关闭":"返回我的工具"}</button></header>
   {!context?<section className={css.empty}>当前没有可读取的商品入库会话。请从「我的工具 → 自有商品一键刊登」中的「待完善」或「待审核」入口进入。</section>:<>
    <section className={css.toolbar}><label>搜索商品或批次<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="商品名称 / 批次" aria-label="搜索商品或批次"/></label><strong>共 {list.length} 件</strong></section>
    {notice?<p className={css.notice} role="status">{notice}</p>:null}
