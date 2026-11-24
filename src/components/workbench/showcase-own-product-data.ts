@@ -89,6 +89,7 @@ export function updateOwnProductAfterReview(org:string,member:string,id:string,s
  const all=readOwnProducts(org,member);
  const existing=all.find(p=>p.id===id);
  if(!existing)throw Error("无权修改或找不到该商品");
+ if(existing.status!=="入库待完善")throw Error("只有待完善商品可以补充资料；待审核需先确认，已入库商品不可回退");
  if(!skus.length)throw Error("至少需要一个 SKU");
  const missing=checkOwnProductSkus(skus);
  const checkedAt=new Date().toLocaleString("zh-CN",{hour12:false});
