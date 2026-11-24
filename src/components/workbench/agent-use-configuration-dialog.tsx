@@ -275,7 +275,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
        <img src={officialImageExampleUrl(hybridTarget==="详情图"&&!hybridShared?"详情图":"主图",i)} onError={event=>{const img=event.currentTarget;const fallback=officialImageExampleUrl(hybridTarget==="详情图"&&!hybridShared?"详情图":"主图",i,"svg");if(img.src!==new URL(fallback,window.location.href).href)img.src=fallback;}} alt={name+"设计图示例"} loading="lazy"/>
        <span><small>{String(i+1).padStart(2,"0")}</small><strong>{name}</strong></span>
       </button>)}</div>
-      <div className={css.imageOtherSources}><button type="button" onClick={()=>setChild("official-images")}>官方图片</button><button type="button" onClick={()=>setChild("ai-images")}>AI 渲染图片</button></div>
+      
      </>
      :sourceTab==="从本地上传"?<><h3>从本地上传</h3><label>选择图片文件<input type="file" accept="image/*" onChange={e=>setFileName(e.target.files?.[0]?.name??"")}/></label><p>已选择：{fileName||"尚未选择文件"}。演示版不会上传文件至服务器。</p></>
      :<><h3>自定义指令</h3><label>自定义图片指令<textarea value={assetName} onChange={e=>setAssetName(e.target.value)} placeholder="例如：服装产品主体、面料质感、英文卖点、1:1 构图"/></label><p>按当前编排位置应用此指令，实际图片生成需连接模型。</p></>}
