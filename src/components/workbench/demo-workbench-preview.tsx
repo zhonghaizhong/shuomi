@@ -263,7 +263,7 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div> : null}
     <header className={styles.header}><div><div className={styles.breadcrumb}>AI工作台 / 硕米Chat</div><h1>硕米Chat</h1><p>发起新会话、继续历史工作、收藏重要成果，协同业务资料与智能执行。</p></div><button type="button" className={styles.primary} onClick={()=>navigateInline("/workbench/ai/chat/new?preview=1")}>＋ 新建会话</button></header>
-    <ChatIntroduction preview contentTasks={false} createAction={<button className={styles.primary} onClick={() => navigateInline("/workbench/ai/chat/new?preview=1")}>进入新建会话</button>} />
+    <ChatIntroduction preview hideCreateAction contentTasks={false} createAction={<button className={styles.primary} onClick={() => navigateInline("/workbench/ai/chat/new?preview=1")}>进入新建会话</button>} />
   </div>;
 
   const cockpitLayouts = ["goals", "storeMatrix", "alerts", "advice"];
