@@ -41,6 +41,32 @@ export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omi
  notify(org,member);return product;
 }
 
+/** Explicit, account-scoped demonstration only; these are illustrative goods and public sample photos, not seller inventory. */
+export function simulateFiveOwnProductIntakes(org:string,member:string,batchId:string,template:string):{created:number;pending:number;review:number}{
+ if(typeof window==="undefined")throw Error("演示存储不可用");
+ const batch=readOwnProductBatches(org,member).find(x=>x.id===batchId);
+ if(!batch||batch.name!=="自有商品测试批次")throw Error("请先选择「自有商品测试批次」");
+ if(!template.trim())throw Error("请先选择商品优化智能体已保存的测试模板");
+ const catalog=[
+  {name:"纯棉圆领短袖T恤",code:"SH-DEMO-TEE-001",desc:"基础圆领短袖T恤，棉质面料，黑色 M 码。用于商品资料上传演示。",photo:"photo-1521572163474-6864f9cf17ab",price:"39.90",missing:false},
+  {name:"宽松连帽卫衣",code:"SH-DEMO-HOOD-002",desc:"宽松版型，连帽抽绳，灰色 L 码。用于商品资料上传演示。",photo:"photo-1556821840-3a63f95609a7",price:"89.00",missing:false},
+  {name:"帆布手提购物袋",code:"SH-DEMO-BAG-003",desc:"原色帆布手提袋，日常购物和收纳使用。用于商品资料上传演示。",photo:"photo-1544816155-12df9643f363",price:"25.00",missing:false},
+  {name:"不锈钢保温杯",code:"SH-DEMO-CUP-004",desc:"",photo:"photo-1602143407151-7111542de6e8",price:"59.00",missing:true},
+  {name:"旅行便携洗漱包",code:"SH-DEMO-TRAVEL-005",desc:"旅行收纳袋，黑色标准款，拉链开合。用于商品资料上传演示。",photo:"",price:"29.00",missing:true}
+ ];
+ const existing=readOwnProducts(org,member);
+ const newEntries:OwnProductRecord[]=catalog.filter(item=>!existing.some(p=>p.batchId===batchId&&p.skus.some(s=>s.skuCode===item.code))).map(item=>{
+  const skus:OwnProductSku[]=[{id:1,name:item.name,description:item.desc,images:item.photo?["https://images.unsplash.com/"+item.photo+"?auto=format&fit=crop&w=1200&q=85"]:[],price:item.price,stock:20,skuCode:item.code}];
+  const missing=checkOwnProductSkus(skus);
+  const now=new Date().toLocaleString("zh-CN",{hour12:false});
+  return {id:"OWN-DEMO-"+crypto.randomUUID(),batchId,name:item.name,source:"上传资料" as const,createdAt:now,checkedAt:now,status:missing.length?"入库待完善" as const:"待审核" as const,missing,skus,agent:"商品优化智能体",template};
+ });
+ if(!newEntries.length)return {created:0,pending:0,review:0};
+ sessionStorage.setItem(productKey(org,member),JSON.stringify([...newEntries,...existing]));
+ notify(org,member);
+ return {created:newEntries.length,pending:newEntries.filter(p=>p.status==="入库待完善").length,review:newEntries.filter(p=>p.status==="待审核").length};
+}
+
 /** First-stage Shuomi intake: incomplete drafts stay inside the tool, never in third-party listing 待补全. */
 export function listOwnPendingProducts(org:string,member:string):OwnProductRecord[]{
  return readOwnProducts(org,member).filter(p=>p.status==="入库待完善");
