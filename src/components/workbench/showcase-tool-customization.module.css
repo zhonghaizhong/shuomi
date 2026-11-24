@@ -241,3 +241,21 @@
 /* Keep tool customization title aligned with the 6px shared-page header. */
 .page[data-tool-custom-page] > .header,
 .page[data-tool-custom-page] > header.header{border-radius:6px}
+
+
+/* Deep-theme card and secondary-action surfaces: Vuexy tokens, no layout changes. */
+.page.page :is(.featureGrid article,.features article){
+  background:var(--tm-bg);
+  border-color:var(--tm-line);
+  color:var(--tm-text);
+}
+.page.page :is(.headerActions button,.kinds button,.progressToolbar button,.progressTop button):not(.primary):not([aria-pressed="true"]){
+  background:var(--tm-card);
+  border-color:var(--tm-line);
+  color:var(--tm-text);
+}
+.page.page :is(.kinds button,.progressTop button)[aria-pressed="true"]{
+  background:color-mix(in srgb,#7367f0 16%,var(--tm-bg));
+  border-color:#7367f0;
+  color:var(--tm-text);
+}
