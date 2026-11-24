@@ -4,6 +4,7 @@ import {readOwnProductBatches,readOwnProducts,ownProductUpdated,type OwnProductR
 import {readOptimizedDatasets,optimizedDatasetsChanged} from "./showcase-optimized-datasets";
 import {readArchivedOptimizedVersions,setOptimizedVersionArchived,downloadOptimizedVersionCsv} from "./showcase-dataset-version-actions";
 import css from "./showcase-own-product-library.module.css";
+import {ShowcaseBatchProductsDialog,type BatchProductView} from "./showcase-batch-products-dialog";
 
 const archiveKey=(org:string,member:string)=>"shuomi:own-library-archived-batches-v1:"+org+":"+member;
 const readArchived=(org:string,member:string):string[]=>{
@@ -26,8 +27,8 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
  const [archivedIds,setArchivedIds]=useState<string[]>(()=>readArchived(organizationId,memberId));
  const [archivedOnly,setArchivedOnly]=useState(false),[expanded,setExpanded]=useState<string[]>([]);
  const [menu,setMenu]=useState<string|null>(null),[menuPosition,setMenuPosition]=useState({top:0,left:0});
- const [selectedBatch,setSelectedBatch]=useState<string|null>(null),[selected,setSelected]=useState<OwnProductRecord|null>(null);
- const [versionDetailId,setVersionDetailId]=useState<string|null>(null),[image,setImage]=useState<string|null>(null);
+ const [selectedBatch,setSelectedBatch]=useState<string|null>(null);
+ const [versionDetailId,setVersionDetailId]=useState<string|null>(null);
  const [page,setPage]=useState(1),[checked,setChecked]=useState<string[]>([]),[managing,setManaging]=useState(false);
  const [manageError,setManageError]=useState("");
  useEffect(()=>{
@@ -73,10 +74,18 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
   const box=event.currentTarget.getBoundingClientRect(),height=archivedOnly?164:135;
   setMenuPosition({top:box.bottom+height+8<window.innerHeight?box.bottom+6:Math.max(8,box.top-height-6),left:Math.max(8,Math.min(window.innerWidth-200,box.right-185))});setMenu(id);
  };
- const current=selected?allProducts.find(p=>p.id===selected.id):null;
  const selectedVersion=versions.find(d=>d.id===versionDetailId);
- const batchProducts=selectedBatch?allProducts.filter(p=>p.batchId===selectedBatch&&p.status==="已入库"):[];
- const batchName=batches.find(b=>b.id===selectedBatch)?.name??"自有商品批次";
+ const viewBatches=useMemo<BatchProductView[]>(()=>batches.map(b=>({
+  id:b.id,organizationId,ownerMemberId:memberId,source:"自有商品",method:"自有商品刊登工具",name:b.name,createdAt:b.createdAt,
+  products:allProducts.filter(p=>p.batchId===b.id).map(p=>({
+   id:p.id,name:p.name,sku:p.skus.map(x=>x.skuCode||String(x.id)).join(" / ")||p.id,
+   source:p.source,price:p.skus.find(x=>x.price)?.price||"—",status:p.status,
+   images:p.skus.flatMap(x=>x.images),variantCount:p.skus.length,
+   variants:p.skus.map(x=>x.name),originalTitle:p.name,
+   description:p.skus.map(x=>x.description).filter(Boolean).join("\n"),demoSourceLink:p.source
+  }))
+ })),[batches,allProducts,organizationId,memberId]);
+ const currentViewBatch=viewBatches.find(b=>b.id===selectedBatch);
  return <section className={css.library} aria-label="自有商品库">
   <section className={css.filterBar} data-shuomi-filter="balanced" aria-label="自有商品筛选">
    <div data-shuomi-filter-left className={css.searchBox}><span aria-hidden="true">⌕</span><input aria-label="搜索自有商品批次" placeholder="搜索批次名称 / 商品关键词 / SKU" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")apply()}}/></div>
@@ -102,9 +111,8 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
   </section>
   {manageError?<p role="alert" className={css.error}>{manageError}</p>:null}
   {managing?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setManaging(false)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="管理自有商品批次" onKeyDown={e=>{if(e.key==="Escape")setManaging(false)}}><header><div><h2>管理批次</h2><p>按批次管理归档与恢复；商品及历史优化版本不会被删除。</p></div><button type="button" onClick={()=>setManaging(false)}>关闭</button></header><div className={css.manageList}>{batches.map(b=><div key={b.id}><div><strong>{b.name}</strong><small>{counts(b.id).total} 件商品 · {b.createdAt}</small></div><button type="button" onClick={()=>archiveBatches([b.id],!archived.has(b.id))}>{archived.has(b.id)?"恢复":"归档"}</button></div>)}{batches.length===0?<p className={css.empty}>暂无批次</p>:null}</div></section></div>:null}
-  {selectedBatch?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setSelectedBatch(null)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="自有商品批次商品" onKeyDown={e=>{if(e.key==="Escape")setSelectedBatch(null)}}><header><div><h2>{batchName} · 查看商品</h2><p>只展示通过统一检查并完成入库的商品；待完善和待审核商品仍保留在自有商品刊登工具。</p></div><button type="button" onClick={()=>setSelectedBatch(null)}>关闭</button></header><div className={css.innerScroll}><table className={css.productTable}><thead><tr><th>商品名称</th><th>SKU 数量</th><th>图片数量</th><th>检测状态</th><th>提交时间</th><th>操作</th></tr></thead><tbody>{batchProducts.map(p=><tr key={p.id}><td><strong>{p.name}</strong></td><td>{p.skus.length}</td><td>{p.skus.reduce((n,s)=>n+s.images.length,0)}</td><td><span className={css.ready}>{p.status}</span></td><td>{p.createdAt}</td><td><button type="button" onClick={()=>{setSelected(p);setSelectedBatch(null)}}>查看商品</button></td></tr>)}</tbody></table>{batchProducts.length===0?<p className={css.empty}>该批次目前没有已入库的商品。待审核和待完善商品请在自有商品刊登工具处理。</p>:null}</div><footer className={css.dialogActions}><button type="button" onClick={()=>downloadBatch(batchName,batchProducts)}>下载 CSV</button><button type="button" onClick={()=>setSelectedBatch(null)}>关闭</button></footer></section></div>:null}
+  {currentViewBatch?<ShowcaseBatchProductsDialog key={currentViewBatch.id} ownProductMode batch={currentViewBatch} organizationId={organizationId} memberId={memberId} otherBatches={viewBatches.filter(b=>b.id!==currentViewBatch.id)} onClose={()=>setSelectedBatch(null)} onDownload={products=>downloadBatch(currentViewBatch.name,allProducts.filter(p=>p.batchId===currentViewBatch.id&&products.some(v=>v.id===p.id)))}/>:null}
   {selectedVersion?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setVersionDetailId(null)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="优化版本商品详情" onKeyDown={e=>{if(e.key==="Escape")setVersionDetailId(null)}}><header><div><h2>{selectedVersion.name} · V{selectedVersion.version+1}</h2><p>{selectedVersion.sourceBatchName} · {selectedVersion.platform} / {selectedVersion.site} / {selectedVersion.language}</p></div><button type="button" onClick={()=>setVersionDetailId(null)}>关闭</button></header><p className={css.note}>保存的优化版本仅供查看和下载，不覆盖 V1 商品资料。</p><div className={css.innerScroll}><table className={css.productTable}><thead><tr><th>商品名称</th><th>原商品编号</th><th>SKU</th><th>图片</th><th>描述</th></tr></thead><tbody>{selectedVersion.products.map((p,i)=><tr key={p.sourceProductId+"-"+i}><td>{p.name}</td><td>{p.sourceProductId}</td><td>{p.skuCodes.join(" / ")||"—"}</td><td>{p.images.map((src,j)=><a key={src+j} href={src} target="_blank" rel="noopener noreferrer">图片 {j+1} </a>)}</td><td>{p.description||"—"}</td></tr>)}</tbody></table></div><footer className={css.dialogActions}><button type="button" onClick={()=>downloadOptimizedVersionCsv(selectedVersion)}>下载 CSV</button><button type="button" onClick={()=>setVersionDetailId(null)}>关闭</button></footer></section></div>:null}
-  {current?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="自有商品详情" onKeyDown={e=>{if(e.key==="Escape")setSelected(null)}}><header><div><h2>{current.name}</h2><p>{batches.find(b=>b.id===current.batchId)?.name} · {current.status} · {current.createdAt}</p></div><button type="button" onClick={()=>setSelected(null)}>关闭</button></header>{current.missing.length?<p className={css.warning}>首次适配缺项：{current.missing.join("、")}。需补齐后才能进入完整刊登流程。</p>:null}<div className={css.skus}>{current.skus.map(s=><article key={s.id}><h3>{s.name}</h3><p>{s.description||"基础资料未填写"}</p><div className={css.images}>{s.images.map((src,i)=><button type="button" key={i} onClick={()=>setImage(src)} aria-label={"放大 "+s.name+" 图片 "+(i+1)}><img src={src} alt={s.name+" 图片 "+(i+1)}/></button>)}</div></article>)}</div><footer>原始商品数据不会因为后续店铺刊登规则而被覆盖。</footer></section></div>:null}
-  {image?<div className={css.imagePreview} role="dialog" aria-label="放大图片" onClick={()=>setImage(null)}><button type="button" onClick={()=>setImage(null)}>关闭</button><img src={image} alt="商品图片放大"/></div>:null}
+
  </section>;
 }
