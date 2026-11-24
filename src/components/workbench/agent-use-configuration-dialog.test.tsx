@@ -1,6 +1,7 @@
 import {afterEach,beforeEach,expect,it,vi} from "vitest";
 import {cleanup,fireEvent,render,screen} from "@testing-library/react";
 import {AgentUseConfigurationDialog} from "./agent-use-configuration-dialog";
+import {savePodLibrary} from "./pod-asset-library";
 
 beforeEach(()=>{
  Object.defineProperty(HTMLDialogElement.prototype,"showModal",{configurable:true,value:function(this:HTMLDialogElement){this.open=true;}});
@@ -124,4 +125,34 @@ it("add-image skill matching applies the shared slot to both main and detail",()
   hybridMainSlots:["技能·主图/详情图第1张",null,null,null,null,null,null,null],
   hybridDetailSlots:["技能·主图/详情图第1张",null,null,null,null,null,null,null]
  }));
+});
+
+it("renders actual scoped My Assets images and returns the selected reference",()=>{
+ const save=vi.fn();
+ const asset={id:9001,name:"已上传的图片.png",category:"设计素材",style:0,prompt:"",dataUrl:"data:image/png;base64,iVBORw0KGgo="};
+ savePodLibrary("org-alpha","member-a",[asset]);
+ render(<AgentUseConfigurationDialog mode="pod-pattern-split" agentKind="pod" organizationId="org-alpha" memberId="member-a"
+  initial={{}} onClose={vi.fn()} onSave={save}/>);
+ fireEvent.click(screen.getByRole("button",{name:"上传图片 / 从素材库选择"}));
+ fireEvent.click(screen.getByRole("button",{name:/素材库 · 选择已保存图片/}));
+ expect(screen.getByRole("img",{name:"已上传的图片.png"})).toBeTruthy();
+ expect(screen.getByText("设计素材")).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"预览素材 已上传的图片.png"}));
+ expect(screen.getByRole("dialog",{name:"预览素材 已上传的图片.png"})).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"关闭素材预览"}));
+ fireEvent.click(screen.getByRole("button",{name:"选择素材 已上传的图片.png"}));
+ fireEvent.click(screen.getByRole("button",{name:"确认选择"}));
+ expect(screen.getByText(/已引用我的素材库图片/)).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"保存配置"}));
+ expect(save).toHaveBeenCalledWith(expect.objectContaining({splitSource:"素材库",splitReference:"asset:9001"}));
+});
+
+it("does not reveal a different enterprise or member's image library",()=>{
+ savePodLibrary("org-alpha","member-a",[{id:11,name:"私人图案",category:"私有",style:0,prompt:"",dataUrl:"data:image/png;base64,AA=="}]);
+ render(<AgentUseConfigurationDialog mode="pod-pattern-split" agentKind="pod" organizationId="org-beta" memberId="member-a" initial={{}} onClose={vi.fn()} onSave={vi.fn()}/>);
+ fireEvent.click(screen.getByRole("button",{name:"上传图片 / 从素材库选择"}));
+ fireEvent.click(screen.getByRole("button",{name:/素材库 · 选择已保存图片/}));
+ expect(screen.getByText("我的素材库暂无图片")).toBeTruthy();
+ expect(screen.queryByText("私人图案")).toBeNull();
+ expect(screen.getByRole("button",{name:"确认选择"}).hasAttribute("disabled")).toBe(true);
 });
