@@ -2,6 +2,30 @@
 import {listingDemoArtSet,type ListingArtKind} from "./showcase-listing-ai-images";
 
 /** Local showcase task ledger. This is not platform submission, AI execution or an order. */
+export const listingVariantPhotoRoles=[
+ "商品识别主图","核心购买理由","核心需求解决","产品结构确认","核心细节证据","核心使用场景"
+] as const;
+export type ListingVariantPhotoRole=typeof listingVariantPhotoRoles[number];
+export type ListingVariantImage={role:ListingVariantPhotoRole;url:string;version:number;source:"ai-generated"|"manual-review"};
+export type ListingVariantImageGroup={
+ id:string;color:string;skuIds:string[];originalImages:string[];
+ optimizedImages:ListingVariantImage[];version:number;reviewedAt?:string;
+};
+export type ListingVariantDetail={sku:string;label:string;color:string;size:string;image:string};
+export function buildListingVariantGroups(details:ListingVariantDetail[]):ListingVariantImageGroup[]{
+ const groups=new Map<string,ListingVariantImageGroup>();
+ for(const variant of details){
+  const id=variant.color.trim().toLowerCase();
+  if(!groups.has(id))groups.set(id,{id,color:variant.color,skuIds:[],originalImages:[],optimizedImages:[],version:1});
+  const group=groups.get(id)!;
+  if(!group.skuIds.includes(variant.sku))group.skuIds.push(variant.sku);
+  if(variant.image&&!group.originalImages.includes(variant.image))group.originalImages.push(variant.image);
+ }
+ return [...groups.values()];
+}
+export function variantGroupReady(group:ListingVariantImageGroup):boolean{
+ return listingVariantPhotoRoles.every(role=>group.optimizedImages.some(img=>img.role===role&&/^https:\/\/|^\/assets\//.test(img.url)))&&new Set(group.optimizedImages.map(x=>x.url)).size===6;
+}
 export type ShowcaseUploadTask={
  id:string;organizationId:string;memberId:string;
  source:"采集批次"|"自有商品库"|"数据集";batchId:string;batchName:string;sourceVersionId?:string;sourceVersionLabel?:string;
@@ -10,7 +34,7 @@ export type ShowcaseUploadTask={
  rule:string;ruleConfig?:{id:string;name:string;skuMode:string;prefix:string;suffix:string;priceMode:string;priceValue:string;currencyConversion:boolean;aiFill:boolean};agentId:string|null;agentName:string|null;
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
  status:"待补全"|"待执行智能体"|"待审核"|"待平台提交";
- demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string}>;imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
+ demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:ListingVariantDetail[];variantImageGroups?:ListingVariantImageGroup[];imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
  createdAt:string;demo:true;
 };
 export const showcaseUploadTasksEvent="shuomi:listing-upload-tasks-updated";
@@ -19,7 +43,19 @@ export function readShowcaseUploadTasks(organizationId:string,memberId:string):S
  if(typeof window==="undefined")return [];
  try{
   const raw:unknown=JSON.parse(sessionStorage.getItem(key(organizationId,memberId))||"[]");
-  return Array.isArray(raw)?raw.filter((value):value is ShowcaseUploadTask=>Boolean(value&&typeof value==="object"&&"id"in value&&"organizationId"in value&&value.organizationId===organizationId&&"memberId"in value&&value.memberId===memberId&&"productIds"in value&&Array.isArray(value.productIds)&&"status"in value)):[];
+  return Array.isArray(raw)?raw.filter((value):value is ShowcaseUploadTask=>Boolean(value&&typeof value==="object"&&"id"in value&&"organizationId"in value&&value.organizationId===organizationId&&"memberId"in value&&value.memberId===memberId&&"productIds"in value&&Array.isArray(value.productIds)&&"status"in value)).map(task=>{
+   const data=task.demoProduct;
+   // Upgrade previous multi-variant sessions without resetting the original status or review fields.
+   if(!task.id.startsWith("SHUOMI-AMZ-AI-MULTI:")||!data?.variantDetails?.length)return task;
+   const groups=buildListingVariantGroups(data.variantDetails).map(base=>{
+    const prior=data.variantImageGroups?.find(item=>item.id===base.id);
+    if(!prior)return base;
+    return {...base,optimizedImages:prior.optimizedImages??[],version:prior.version??1,reviewedAt:prior.reviewedAt};
+   });
+   return {...task,demoProduct:{...data,variantImageGroups:groups,
+     // Old fixture mistakenly copied original photos into optimizedImages; never present them as generated output.
+     optimizedImages:[]}};
+  }):[];
  }catch{return [];}
 }
 export function addShowcaseUploadTask(task:ShowcaseUploadTask):boolean{
@@ -125,8 +161,8 @@ export function simulateAmazonMultiVariantListingWorkflow(args:{
      ?"Lightweight classic unisex clogs with ventilation ports, pivoting heel straps, and color/size options. Confirm size chart and category attributes before listing."
      :"40 oz stainless steel insulated travel tumbler with reusable straw, handle and FlowState rotating lid. Color-specific photos retained for each variant.",
     // Use original photographic product assets, never falsely call altered or generated photos authentic.
-    optimizedImages:realPhotos,missingFields:missing,agentRun:"模拟已优化" as const,
-    variantDetails:p.variantDetails!.map(v=>({...v})),imageProvenance:"品牌/零售商真实商品照片（未进行图片 AI 重绘）" as const
+    optimizedImages:[],missingFields:missing,agentRun:"模拟已优化" as const,
+    variantDetails:p.variantDetails!.map(v=>({...v})),variantImageGroups:buildListingVariantGroups(p.variantDetails!),imageProvenance:"品牌/零售商真实商品照片（未进行图片 AI 重绘）" as const
    }
   };
  });
@@ -136,6 +172,28 @@ export function simulateAmazonMultiVariantListingWorkflow(args:{
   window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:args.organizationId,memberId:args.memberId}}));
   return {created:2,missing:1,review:1,alreadyInstalled:false};
  }catch{throw Error("无法保存多变体演示数据");}
+}
+/** Save the actual six-slot gallery for one color only; size SKUs inherit their color group.
+ * This demo accepts an already hosted image URL and never claims to execute an image model.
+ */
+export function saveListingVariantPhoto(org:string,member:string,taskId:string,colorGroupId:string,role:ListingVariantPhotoRole,url:string):ShowcaseUploadTask{
+ if(!listingVariantPhotoRoles.includes(role))throw Error("未知图片任务类型");
+ const path=url.trim();
+ if(path&&!(/^(https:\/\/[^\s]+|\/assets\/[^\s]+)$/.test(path)))throw Error("请输入可访问的 HTTPS 图片链接或本站静态资源路径");
+ const tasks=readShowcaseUploadTasks(org,member);
+ const task=tasks.find(t=>t.id===taskId);
+ if(!task?.demoProduct?.variantImageGroups?.length||!["待补全","待审核"].includes(task.status))throw Error("该商品当前不可修改变体优化图片");
+ if(!task.demoProduct.variantImageGroups.some(g=>g.id===colorGroupId))throw Error("所选颜色组不存在");
+ const groups=task.demoProduct.variantImageGroups.map(g=>{
+  if(g.id!==colorGroupId)return g;
+  const other=g.optimizedImages.filter(img=>img.role!==role);
+  const next=path?[...other,{role,url:path,version:g.version,source:"manual-review" as const}]:other;
+  return {...g,optimizedImages:next,reviewedAt:undefined};
+ });
+ const next={...task,demoProduct:{...task.demoProduct,variantImageGroups:groups}};
+ sessionStorage.setItem(key(org,member),JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
+ window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
+ return next;
 }
 export function completeShowcaseUploadTask(org:string,member:string,taskId:string,fields:Record<string,string>):ShowcaseUploadTask{
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
@@ -149,6 +207,7 @@ export function completeShowcaseUploadTask(org:string,member:string,taskId:strin
 export function approveShowcaseUploadTask(org:string,member:string,taskId:string):ShowcaseUploadTask{
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
  if(!task||task.status!=="待审核"||!task.demoProduct||task.demoProduct.missingFields.length)throw Error("智能体优化结果尚未完成资料检查与人工审核");
+ if(task.demoProduct.variantImageGroups?.length&&!task.demoProduct.variantImageGroups.every(variantGroupReady))throw Error("每个颜色组需要六张不同用途的真实优化图后才能审核通过");
  const next={...task,status:"待平台提交" as const,demoProduct:{...task.demoProduct,reviewedAt:new Date().toISOString()}};
  sessionStorage.setItem(key(org,member),JSON.stringify(records.map(t=>t.id===taskId?next:t)));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
