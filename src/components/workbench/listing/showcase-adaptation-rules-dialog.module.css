@@ -1,5 +1,5 @@
 .overlay{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:16px;box-sizing:border-box;background:rgba(8,12,24,.72)}
-.dialog{--rule-bg:#142237;--rule-panel:#18283c;--rule-elev:#1d3148;--rule-text:#eff6ff;--rule-muted:#adc1d4;--rule-line:#30465e;box-sizing:border-box;width:min(1100px,calc(100vw - 32px));max-height:min(91dvh,880px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--rule-line);border-radius:12px;background:var(--rule-bg);color:var(--rule-text);box-shadow:0 28px 80px #0008;font-size:13px;line-height:1.5}
+.dialog{--rule-bg:#2f3349;--rule-panel:#393d55;--rule-elev:#34384e;--rule-text:#cfcde4;--rule-muted:#acabc1;--rule-line:#52576e;box-sizing:border-box;width:min(1100px,calc(100vw - 32px));max-height:min(91dvh,880px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--rule-line);border-radius:12px;background:var(--rule-bg);color:var(--rule-text);box-shadow:0 28px 80px #0008;font-size:13px;line-height:1.5}
 :global(.light) .dialog{--rule-bg:#fff;--rule-panel:#f7fafd;--rule-elev:#edf3f8;--rule-text:#263747;--rule-muted:#607183;--rule-line:#dfe7ef;box-shadow:0 24px 64px #26374730}
 .dialog *{box-sizing:border-box}
 .dialog button,.dialog input{font:inherit}
@@ -95,7 +95,7 @@
 @media(max-width:600px){.block:first-of-type .options,.block:has(.pair) .options{grid-template-columns:1fr}.block:has(.priceInput) .options{grid-template-columns:1fr}.scopeChoices{flex-basis:100%}.inlineSetting>button:last-child{margin-left:0}}
 
 /* Unified Vuexy adaptation editor: neutral layers, one action palette, consistent sizing. */
-.dialog{--rule-primary:#7367f0;--rule-focus:#8b80ff;--rule-bg:#142237;--rule-panel:#18283c;--rule-elev:#20334a;--rule-text:#eff6ff;--rule-muted:#adbed0;--rule-line:#344b65;width:min(1080px,calc(100vw - 28px));border-radius:12px}
+.dialog{--rule-primary:#7367f0;--rule-focus:#8b80ff;--rule-bg:#2f3349;--rule-panel:#393d55;--rule-elev:#34384e;--rule-text:#cfcde4;--rule-muted:#acabc1;--rule-line:#52576e;width:min(1080px,calc(100vw - 28px));border-radius:12px}
 :global(.light) .dialog{--rule-bg:#fff;--rule-panel:#f7fafd;--rule-elev:#edf3f8;--rule-text:#263747;--rule-muted:#607183;--rule-line:#dfe7ef;--rule-focus:#7367f0}
 .dialog :is(button,input){font-size:13px}
 .dialog :is(button,input):focus-visible{outline:2px solid var(--rule-focus);outline-offset:2px}

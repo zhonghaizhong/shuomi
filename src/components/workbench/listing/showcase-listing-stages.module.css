@@ -369,11 +369,11 @@
 /* Unified listing-management surfaces: Vuexy dark/light, without layout changes.
    Keep local semantic status colors and the accepted primary actions. */
 .page{
- --surface:#142237;
- --surface-alt:#18283c;
- --ink:#edf4ff;
- --muted:#b5c6d8;
- --stroke:#31465e;
+ --surface:#2f3349;
+ --surface-alt:#393d55;
+ --ink:#cfcde4;
+ --muted:#acabc1;
+ --stroke:#52576e;
  --focus:#7367f0;
 }
 :global(.light) .page{

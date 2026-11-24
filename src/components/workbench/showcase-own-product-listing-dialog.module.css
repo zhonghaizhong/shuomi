@@ -1,4 +1,4 @@
-.dialog{--bg:#142237;--panel:#18283c;--ink:#e3ebf9;--muted:#9dafc4;--line:#304b68;--accent:#72beff;position:fixed;inset:0;margin:auto;box-sizing:border-box;padding:0;width:min(1190px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 28px);overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);box-shadow:0 24px 85px #0009;font-size:13px}
+.dialog{--bg:#2f3349;--panel:#393d55;--ink:#cfcde4;--muted:#acabc1;--line:#52576e;--accent:#7367f0;position:fixed;inset:0;margin:auto;box-sizing:border-box;padding:0;width:min(1190px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 28px);overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);box-shadow:0 24px 85px #0009;font-size:13px}
 .dialog::backdrop{background:rgba(5,12,25,.75)}
 .header{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:15px 20px;border-bottom:1px solid var(--line)}
 .header h2{margin:0;font-size:18px;font-weight:700}.header p{margin:5px 0 0;color:var(--muted);font-size:12px}

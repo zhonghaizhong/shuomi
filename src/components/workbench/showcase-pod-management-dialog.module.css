@@ -91,8 +91,8 @@
 
 /* POD assets: explicit dark/light tokens for top-layer and sub-dialogs. */
 .dialog,.subDialog{
- --podassets-bg:#142237;--podassets-card:#18283c;--podassets-line:#31465e;
- --podassets-ink:#edf4ff;--podassets-muted:#b5c6d8;
+ --podassets-bg:#2f3349;--podassets-card:#393d55;--podassets-line:#52576e;
+ --podassets-ink:#cfcde4;--podassets-muted:#acabc1;
  background:var(--podassets-bg);color:var(--podassets-ink);border-color:var(--podassets-line);
 }
 :global(.light) .dialog,:global(.light) .subDialog{
