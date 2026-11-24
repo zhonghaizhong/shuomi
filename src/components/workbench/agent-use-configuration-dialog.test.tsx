@@ -78,12 +78,12 @@ it("hybrid independent strategy separates main and detail image layouts",()=>{
   initial={{hybridStrategy:"共用视觉素材",hybridTarget:"主图",hybridSlots:["AI·商品识别主图",null,null,null,null,null,null,null]}}
   onClose={vi.fn()} onSave={save}/>);
  fireEvent.click(screen.getByRole("button",{name:"分别生成"}));
- fireEvent.click(screen.getByRole("button",{name:"详情图",exact:true}));
+ fireEvent.click(screen.getByRole("button",{name:/^详情图$/}));
  expect(screen.getByText("最终图片编排 · 详情图")).toBeTruthy();
  fireEvent.click(screen.getByRole("button",{name:"添加第 2 张图片"}));
  fireEvent.click(screen.getByRole("button",{name:"预设指令AI重构"}));
  fireEvent.click(screen.getByRole("button",{name:/核心购买理由/}));
- fireEvent.click(screen.getByRole("button",{name:"主图",exact:true}));
+ fireEvent.click(screen.getByRole("button",{name:/^主图$/}));
  expect(screen.getByText("最终图片编排 · 主图")).toBeTruthy();
  fireEvent.click(screen.getByRole("button",{name:"保存组合"}));
  expect(save).toHaveBeenCalledWith(expect.objectContaining({
