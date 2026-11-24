@@ -276,8 +276,9 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
       <header className={styles.header}><div><div className={styles.breadcrumb}>运营驾驶舱 / 店铺矩阵</div><h1>店铺矩阵</h1><p>接入并授权店铺后汇总各店经营表现。</p></div></header>
       <section className={styles.goalMetrics}>{[["0","店铺总数","尚无经营数据"],["0","正常店铺","待经营状态评估"],["0","需关注店铺","待经营状态评估"],["0","异常店铺","待经营状态评估"]].map(([value,label,hint],i)=><article key={label} data-step={i}><strong>{value}</strong><span><b>{label}</b><small>{hint}</small></span></article>)}</section>
       <section className={styles.matrixPanel}><div className={`${styles.matrixFilters} ${styles.cockpitFilterRow} ${styles.matrixSingleRow}`}>
+       <input type="search" aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={event=>setQuery(event.target.value)}/>
        <div className={styles.matrixTimePicker}>
-         <button type="button" aria-label="选择统计时间" aria-expanded={matrixDateOpen} className={styles.matrixTimeTrigger} onClick={()=>setMatrixDateOpen(open=>!open)}>{matrixDateFrom&&matrixDateTo?`${matrixDateFrom} 至 ${matrixDateTo}`:"日期"}</button>
+         <button type="button" aria-label="选择统计时间" aria-expanded={matrixDateOpen} className={styles.matrixTimeTrigger} onClick={()=>setMatrixDateOpen(open=>!open)}>{matrixDateFrom&&matrixDateTo?`${matrixDateFrom} 至 ${matrixDateTo}`:"全部时间"}</button>
          {matrixDateOpen?<div className={styles.matrixDatePopover} role="group" aria-label="自定义统计时间">
            <div className={styles.matrixDateRange}><label>开始日期<input type="date" aria-label="统计开始日期" value={matrixDateFrom} max={matrixDateTo||undefined} onChange={event=>setMatrixDateFrom(event.target.value)}/></label><label>结束日期<input type="date" aria-label="统计结束日期" value={matrixDateTo} min={matrixDateFrom||undefined} onChange={event=>setMatrixDateTo(event.target.value)}/></label><button type="button" className={styles.primary} onClick={()=>{if(matrixDateFrom&&matrixDateTo&&matrixDateFrom<=matrixDateTo){setMatrixDateOpen(false);setNotice("")}else setNotice("请选择正确的开始和结束日期。")}}>确定日期</button><button type="button" onClick={()=>{setMatrixDateFrom("");setMatrixDateTo("");setMatrixDateOpen(false);setNotice("")}}>清空日期</button></div>
          </div>:null}
@@ -285,7 +286,7 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
        <select aria-label="平台" value={matrixPlatform} onChange={event=>setMatrixPlatform(event.target.value)}><option>全部平台</option><option>SHEIN</option></select>
        <select aria-label="站点" value={matrixSite} onChange={event=>setMatrixSite(event.target.value)}><option>全部站点</option><option>美国站</option></select>
        <select aria-label="店铺类型" value={matrixType} onChange={event=>setMatrixType(event.target.value)}><option>全部类型</option><option>全托店</option><option>半托店</option><option>自营店</option></select>
-       <input type="search" aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={event=>setQuery(event.target.value)}/>
+
        <button type="button" onClick={resetMatrixFilters}>重置</button>
        <button type="button" className={styles.primary} onClick={applyMatrixFilters}>确认</button>
      </div><header><div><h2>店铺经营表现</h2><p>同周期经营指标与状态 · {matrixApplied.from&&matrixApplied.to?`${matrixApplied.from} 至 ${matrixApplied.to}`:"全部日期"}</p></div><button onClick={()=>chooseAction("判定说明")}>判定说明</button></header><div className={styles.matrixTable}><div className={styles.matrixColumns}><b>店铺</b><b>平台 · 站点</b><b>成交金额</b><b>成交订单</b><b>预估净利润</b><b>预估净利率</b><b>订单环比</b><b>经营状态</b></div><p role="status">暂无店铺经营数据，请先完成店铺授权及业务同步。</p></div><footer>共 0 家店铺 <span>待真实业务接入后统计</span></footer></section>
