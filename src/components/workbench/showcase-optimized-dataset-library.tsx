@@ -2,7 +2,6 @@
 import {useEffect,useMemo,useState} from "react";
 import {useRouter} from "next/navigation";
 import {z} from "zod";
-import {useWorkbenchContext} from "@/components/providers/workbench-context-provider";
 import {dataRequest,type DataScope} from "@/lib/api/data-services";
 import {customSchema,customSummarySchema,type CustomRequest} from "@/lib/contracts/data-services";
 import css from "./showcase-optimized-dataset-library.module.css";
@@ -15,9 +14,9 @@ type Group={key:string;name:string;site:string;items:Summary[]};
 
 export function ShowcaseOptimizedDatasetLibrary({organizationId,memberId}:{organizationId:string;memberId:string}){
  const router=useRouter();
- const context=useWorkbenchContext();
- const userId=context.user?.id;
- const scope=useMemo<DataScope|null>(()=>userId?{userId,organizationId}:null,[userId,organizationId]);
+ // Showcase runs without WorkbenchContextProvider; use its isolated identity props.
+ // Server authorization still decides whether this identity may read any data.
+ const scope=useMemo<DataScope|null>(()=>memberId&&organizationId?{userId:memberId,organizationId}:null,[memberId,organizationId]);
  const [records,setRecords]=useState<Summary[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState("");
  const [query,setQuery]=useState(""),[appliedQuery,setAppliedQuery]=useState(""),[status,setStatus]=useState("全部状态"),[appliedStatus,setAppliedStatus]=useState("全部状态");
