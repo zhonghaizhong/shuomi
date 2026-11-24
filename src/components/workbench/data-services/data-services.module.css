@@ -210,3 +210,7 @@
 /* Data-service metadata must remain legible on light cards. */
 :global(.light) .page :is(.platformFacts dt,.capability p,.meter p,.usage small,.caption,.table th){color:#5d596c}
 :global(.light) .page :is(.serviceFooter p,.serviceBadges small){color:#514b62}
+
+
+/* Default light-mode metadata on data-market/API cards must not inherit dark-mode pale blue. */
+:global(.light) .page :is(.sectionTitle small,.platformTags small,.serviceBadges small,.cardHeading small,.platformFacts small,.apiGrid small,.caption,.table th,.capability p){color:#5d596c}

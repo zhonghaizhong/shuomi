@@ -1339,3 +1339,8 @@
 .page .overviewFilters label{color:#f6f4ff}
 :global(.light) .page .overviewFilters label{color:#444050}
 .page .overviewFilters :is(label,small){overflow-wrap:anywhere}
+
+
+/* Contrast remediation: muted gauge text on Vuexy panels, both themes. */
+.page .supportGauge>span small{color:#b7b5c8}
+:global(.light) .page .supportGauge>span small{color:#625d70}

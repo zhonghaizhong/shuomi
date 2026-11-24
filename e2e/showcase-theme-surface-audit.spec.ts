@@ -34,12 +34,22 @@ test("all navigable showcase pages keep readable dark/light panels, nested cards
      return n.length>=3&&n.slice(0,3).every(Number.isFinite)?n.slice(0,3):null;
     };
     const lum=(c:number[])=>{const t=c.map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return .2126*t[0]+.7152*t[1]+.0722*t[2]};
+    // Composite translucent backgrounds through ancestors before comparing
+    // contrast. Ignoring rgba alpha incorrectly treats tinted badges as solid.
     const bg=(el:Element):number[]=>{
-     for(let p:Element|null=el;p;p=p.parentElement){
-      const computed=getComputedStyle(p),c=rgb(computed.backgroundColor);
-      if(c&&computed.backgroundColor!=="rgba(0, 0, 0, 0)")return c;
+     const layers:Element[]=[];
+     for(let p:Element|null=el;p;p=p.parentElement)layers.unshift(p);
+     let result=expected==="light"?[255,255,255]:[11,20,34];
+     for(const layer of layers){
+      const value=getComputedStyle(layer).backgroundColor;
+      const channels=rgb(value);
+      if(!channels)continue;
+      const alphaPart=value.match(/^rgba\\([^,]+,[^,]+,[^,]+,\\s*([0-9.]+)\\)$/);
+      const alpha=alphaPart?Number(alphaPart[1]):value.startsWith("rgba(")?Number(value.match(/,\\s*([0-9.]+)\\)$/)?.[1]??1):1;
+      if(!(alpha>0))continue;
+      result=result.map((c,i)=>c*(1-alpha)+channels[i]*alpha);
      }
-     return expected==="light"?[255,255,255]:[11,20,34];
+     return result;
     };
     const shown=(el:Element)=>{
      const r=el.getBoundingClientRect(),s=getComputedStyle(el);
@@ -60,6 +70,9 @@ test("all navigable showcase pages keep readable dark/light panels, nested cards
     }
     let samples=0;
     for(const el of [...main.querySelectorAll('h1,h2,h3,p,small,label,th,td')].filter(shown).slice(0,65)){
+     // Screen-reader-only text is not a visible label to contrast-test.
+     if(el.tagName==="LABEL" && el.querySelector('[class*="visuallyHidden"],.sr-only') &&
+        ![...el.childNodes].some(node=>node.nodeType===Node.TEXT_NODE&&node.textContent?.trim()))continue;
      const s=getComputedStyle(el),fg=rgb(s.color);
      if(!fg||Number.parseFloat(s.fontSize)<12)continue;
      const surface=bg(el),l1=lum(fg),l2=lum(surface),contrast=(Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05);

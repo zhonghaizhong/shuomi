@@ -636,3 +636,8 @@ html.light body {background:#f8f7fa;color:#444050;}
 .showcase-identity-body{padding-top:12px}
 .light .showcase-identity-search-row>label{color:#444050}
 @media(max-width:550px){.showcase-identity-search-row{padding:12px 17px 7px}}
+
+
+/* Generic unstyled form labels must remain readable in Vuexy light mode.
+   Keep styled status chips, headings and the primary palette unchanged. */
+.light main.showcase-content form label:not([class]){color:#444050}

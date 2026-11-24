@@ -88,3 +88,7 @@
 .page[data-preferred-application="select"] .selectionSummary{margin-bottom:6px}
 .page[data-preferred-application="select"] .selectionSummary .primary{padding:5px 12px}
 @media(max-width:850px){.page[data-preferred-application="select"] .filterPanel{grid-template-columns:1fr}.page[data-preferred-application="select"] .searchActions{flex-wrap:wrap}.page[data-preferred-application="select"] .searchActions input{flex-basis:100%}}
+
+
+/* Keep supplier-application field captions legible on white cards. */
+:global(.light) .page .fieldGrid label,:global(.light) .page .filters label{color:#263648}
