@@ -80,7 +80,7 @@ export function checkOwnProductSkus(skus:OwnProductSku[]):string[]{
  skus.forEach((sku,i)=>{
   const label=sku.name.trim()||"SKU "+(i+1);
   if(!sku.name.trim())missing.push("SKU "+(i+1)+" 名称");
-  if(!sku.images.length)missing.push(label+" 商品图片");
+  if(!sku.images.some(src=>typeof src==="string"&&src.trim().length>0))missing.push(label+" 商品图片");
   if(!sku.description.trim())missing.push(label+" 基础资料");
  });
  return missing;
