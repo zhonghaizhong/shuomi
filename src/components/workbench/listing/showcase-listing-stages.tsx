@@ -436,7 +436,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <button type="button" role="tab" aria-selected={pictureTab==="detail"} onClick={()=>{setPictureTab("detail");setPhotoIndex(0);setPhotoAiOpen(false)}}>详情图（{selectedDetailImages.length}）</button>
      </div>
      {selectedVariantGroup&&pictureTab==="main"?<div className={styles.variantImageMode} role="group" aria-label="主图图片版本">
-      <button type="button" aria-pressed={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPhotoIndex(0);setPhotoAiOpen(false)}}>优化图（{selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length}/6）</button>
+      <button type="button" aria-pressed={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPhotoIndex(0);setPhotoAiOpen(false)}}>优化图区（{selectedColorOptimizedImages.length}/6）</button>
       <button type="button" aria-pressed={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPhotoIndex(0);setPhotoAiOpen(false)}}>原始图片（{selectedColorOriginalImages.length}）</button>
      </div>:null}
      {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length<6?<div className={styles.galleryRecoverRow}>
