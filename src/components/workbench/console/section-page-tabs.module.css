@@ -11,3 +11,15 @@
 :global(.light) .help{color:#555067}
 
 .tabs button{font-family:inherit;cursor:pointer;appearance:none;border-top:0;border-bottom:0;border-left:0}
+
+/* In-place tabs belong directly below each module's title/header, not above it.
+   Content roots become layout-transparent so their actual existing header
+   (including task actions) stays in its original component and above the tabs. */
+.inlineSection{display:flex;flex-direction:column;gap:0;min-width:0}
+.inlineSection>.shell{order:2;margin:0 0 18px;flex:none}
+.inlineSection>:not(.shell){display:contents}
+.inlineSection>:not(.shell)>header{order:1;flex:none;margin-bottom:16px}
+.inlineSection>:not(.shell)>:not(header){order:3;min-width:0}
+.inlineSection>:not(.shell)>main{display:contents}
+.inlineSection>:not(.shell)>main>header{order:1;margin-bottom:16px}
+.inlineSection>:not(.shell)>main>:not(header){order:3}
