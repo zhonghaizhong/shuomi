@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {beforeEach,expect,it} from "vitest";
-import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
+import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
 import {listingDemoArtSet} from "./showcase-listing-ai-images";
 import {readDemoCollectionBatches,amazonMultiVariantPhotoFixtures} from "../showcase-collection-batches";
 beforeEach(()=>sessionStorage.clear());
@@ -97,8 +97,12 @@ it("adds the two real photographed multi-variant families to the existing five-p
  expect(stanley.demoProduct?.variantDetails).toHaveLength(3);
  expect(clog.storeId).toBe(stanley.storeId);
  expect(clog.batchId).toBe(stanley.batchId);
- expect(clog.demoProduct?.optimizedImages).toEqual(clog.demoProduct?.sourceImages);
- expect(stanley.demoProduct?.optimizedImages).toEqual(stanley.demoProduct?.sourceImages);
+ expect(clog.demoProduct?.optimizedImages).toEqual([]);
+ expect(stanley.demoProduct?.optimizedImages).toEqual([]);
+ expect(clog.demoProduct?.variantImageGroups?.map(g=>g.color)).toEqual(["Black","White","Navy"]);
+ expect(clog.demoProduct?.variantImageGroups?.map(g=>g.skuIds.length)).toEqual([2,2,2]);
+ expect(stanley.demoProduct?.variantImageGroups?.map(g=>g.skuIds.length)).toEqual([1,1,1]);
+ expect(clog.demoProduct?.variantImageGroups?.every(g=>g.optimizedImages.length===0&&g.originalImages.length>0)).toBe(true);
  expect(()=>approveShowcaseUploadTask(org,member,clog.id)).toThrow();
  expect(simulateAmazonMultiVariantListingWorkflow({...args,products:original.products}).alreadyInstalled).toBe(true);
  expect(readShowcaseUploadTasks("other-tenant",member)).toHaveLength(0);
@@ -115,4 +119,35 @@ it("migrates old five-product browser sessions in place without duplication or r
  expect(migrated.products).toHaveLength(7);
  expect(readDemoCollectionBatches(org,member).find(b=>b.id===args.batchId)?.products).toHaveLength(7);
  expect(amazonMultiVariantPhotoFixtures).toHaveLength(2);
+});
+
+it("stores six independently versioned image roles per color, inherits across sizes, gates review and isolates tenants",()=>{
+ const batch=readDemoCollectionBatches(org,member).find(b=>b.id===args.batchId)!;
+ simulateAmazonMultiVariantListingWorkflow({...args,products:batch.products});
+ const clog=readShowcaseUploadTasks(org,member).find(t=>t.demoProduct?.variantDetails?.length===6)!;
+ const stanley=readShowcaseUploadTasks(org,member).find(t=>t.demoProduct?.variantDetails?.length===3)!;
+ expect(()=>approveShowcaseUploadTask(org,member,stanley.id)).toThrow(/六张/);
+ expect(()=>saveListingVariantPhoto("other",member,stanley.id,"black",listingVariantPhotoRoles[0],"https://example.test/black.jpg")).toThrow();
+ expect(()=>saveListingVariantPhoto(org,member,stanley.id,"unknown",listingVariantPhotoRoles[0],"https://example.test/black.jpg")).toThrow();
+ for(const group of stanley.demoProduct!.variantImageGroups!){
+  listingVariantPhotoRoles.forEach((role,i)=>saveListingVariantPhoto(org,member,stanley.id,group.id,role,"https://example.test/"+group.id+"-"+i+".jpg"));
+ }
+ const completed=readShowcaseUploadTasks(org,member).find(t=>t.id===stanley.id)!;
+ expect(completed.demoProduct?.variantImageGroups?.every(variantGroupReady)).toBe(true);
+ expect(completed.demoProduct?.variantImageGroups?.map(g=>g.optimizedImages.length)).toEqual([6,6,6]);
+ expect(approveShowcaseUploadTask(org,member,stanley.id).status).toBe("待平台提交");
+ expect(clog.demoProduct?.variantImageGroups?.map(g=>g.skuIds.length)).toEqual([2,2,2]);
+ expect(readShowcaseUploadTasks(org,"other-member")).toHaveLength(0);
+});
+it("preserves a legacy multi-variant task's status while removing false AI-image attribution",()=>{
+ const batch=readDemoCollectionBatches(org,member).find(b=>b.id===args.batchId)!;
+ simulateAmazonMultiVariantListingWorkflow({...args,products:batch.products});
+ const original=readShowcaseUploadTasks(org,member)[0];
+ const rawKey="shuomi:listing-upload-tasks-v1:"+org+":"+member;
+ sessionStorage.setItem(rawKey,JSON.stringify([{...original,demoProduct:{...original.demoProduct!,optimizedImages:[...original.demoProduct!.sourceImages],variantImageGroups:undefined}}]));
+ const migrated=readShowcaseUploadTasks(org,member)[0];
+ expect(migrated.status).toBe(original.status);
+ expect(migrated.demoProduct?.sourceImages).toEqual(original.demoProduct?.sourceImages);
+ expect(migrated.demoProduct?.optimizedImages).toEqual([]);
+ expect(migrated.demoProduct?.variantImageGroups).toHaveLength(3);
 });
