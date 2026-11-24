@@ -97,3 +97,12 @@
 .dialog :is(.summary,.toolbar,.pricePopover){background:var(--bp-card);border-color:var(--bp-line);color:var(--bp-ink)}
 .dialog :is(.productPanel,.priceRangeHost>button){border-color:var(--bp-line)}
 .dialog .pricePopover :is(strong,label){color:var(--bp-ink)}
+
+
+/* Keep the 855px product table accessible at intermediate widths without
+   forcing the entire centered dialog outside the viewport. */
+@media(min-width:681px) and (max-width:1020px){
+ .scroll{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+}
+.detailPanel :is(.detailMetadata dd,.detailDescription p){overflow-wrap:anywhere}
+@media(max-width:680px){.detailStageTop{flex-wrap:wrap}.detailStageTop>*{min-width:0}}

@@ -405,3 +405,10 @@
 /* Keep listing page titles legible across the four listing stages. */
 .page .heading h1{font-size:27px;line-height:1.35}
 @media(max-width:700px){.page .heading h1{font-size:26px}}
+
+
+/* Waiting-stage section titles inherit neutral Vuexy ink, not adjacent step/status hues. */
+.page[data-listing-stage="waiting"] .configuration article header h2{color:var(--ink)}
+.page[data-listing-stage="waiting"] .configuration article header{min-width:0}
+.page[data-listing-stage="waiting"] .configuration article header h2{min-width:0;overflow-wrap:anywhere}
+.page[data-listing-stage="waiting"] .configuration :is(input,select,button){max-width:100%}

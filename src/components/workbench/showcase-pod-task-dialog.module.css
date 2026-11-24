@@ -39,3 +39,9 @@
 .dialog :is(input,select,textarea,button:not(.primary)){color:var(--pod-text);border-color:var(--pod-line)}
 .dialog button:not(.primary){background:var(--pod-raise)}
 .dialog .primary{background:var(--pod-primary);border-color:var(--pod-primary);color:#fff}
+
+
+/* POD pickers: long product names and translations cannot widen nested modals. */
+.picker,.productRows,.productRows label,.productRows label span{min-width:0;max-width:100%}
+.productRows label :is(strong,small){overflow-wrap:anywhere}
+.picker :is(input,select,textarea){max-width:100%}

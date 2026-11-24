@@ -48,3 +48,9 @@
 .resultActions{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
 @media(max-width:1100px){.fields{grid-template-columns:minmax(0,1fr);gap:16px}.listActions span{display:none}}
 @media(max-width:639px){.page{padding:20px}.filters{padding:14px;gap:10px}.filters>div{flex:1;min-width:120px}.filters form{flex-basis:100%}.listActions,.footer{align-items:flex-start;flex-direction:column}.listActions>button{width:100%}.footer>div{width:100%;flex-wrap:wrap}.footer button{flex:1}.inputGrid{grid-template-columns:minmax(0,1fr)}.summary{align-items:flex-start}.formCard{padding:16px}.pagination{align-items:flex-start;flex-direction:column}}
+
+
+/* Light-mode supplier application form: labels must be readable against card surfaces. */
+:global(.light) .page .formCard :is(label,.disclosure,.itemFields legend){color:#444050}
+:global(.light) .page .formCard>p{color:#625d70}
+.formCard :is(input,textarea){max-width:100%;min-width:0;box-sizing:border-box}
