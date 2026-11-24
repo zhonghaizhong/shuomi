@@ -132,7 +132,7 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(imageSettings).toContainText("配置对象");
  await expect(imageSettings).toContainText("共用来源");
  // Official task examples are only rendered when the official plan is selected.
- await imageSettings.getByRole("button",{name:"官方方案",exact:true}).click();
+ await imageSettings.getByRole("button",{name:/^官方方案(?:\\s|$)/}).click();
  await imageSettings.getByRole("button",{name:"清空"}).click();
  await expect(imageSettings.getByRole("checkbox",{name:"主图第1张"})).not.toBeChecked();
  await imageSettings.getByRole("button",{name:"全选"}).click();
