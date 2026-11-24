@@ -196,7 +196,9 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(addImage.getByText("图片位置自动匹配")).toBeVisible();
  await expect(addImage.getByRole("button",{name:"确认应用"})).toBeDisabled();
  await addImage.getByRole("button",{name:"预设指令AI重构"}).click();
- await addImage.getByRole("button",{name:/商品识别主图/}).click();
+ await expect(addImage.getByLabel("预设指令设计图示例").getByRole("button")).toHaveCount(8);
+ await expect(addImage.getByRole("img",{name:"商品识别主图设计图示例"})).toBeVisible();
+ await addImage.getByRole("button",{name:/01 · 商品识别主图/}).click();
  await expect(hybrid).toBeVisible();
  await hybrid.getByRole("button",{name:"保存组合"}).click();
  await expect(hybrid).toHaveCount(0);
@@ -310,10 +312,12 @@ test("POD hybrid editing supports direct drag sorting, source selection and rest
  await first.dragTo(second);
  await expect(hybrid.getByLabel("图片位置 1").first()).toContainText("AI·");
  await expect(hybrid.getByLabel("图片位置 2").first()).toContainText("官方·第一张");
- await hybrid.getByRole("button",{name:"调整第 2 张图片"}).click();
- const slotActions=page.getByRole("dialog",{name:"图片快捷调整"});
- await expect(slotActions).toContainText("图片快捷调整");
- await slotActions.getByRole("button",{name:"向左移动一位"}).click();
+ await expect(hybrid.getByRole("button",{name:/调整第 [0-9]+ 张图片/})).toHaveCount(0);
+ await hybrid.getByRole("button",{name:"添加第 2 张图片"}).click();
+ const replaceImage=page.getByRole("dialog",{name:"添加图片"});
+ await expect(replaceImage.getByRole("button",{name:"移除第 2 张图片"})).toBeVisible();
+ await replaceImage.getByRole("button",{name:"取消"}).click();
+ await hybrid.getByLabel("图片位置 2").first().dragTo(hybrid.getByLabel("图片位置 1").first());
  await expect(hybrid.getByLabel("图片位置 1").first()).toContainText("官方·第一张");
  await hybrid.getByRole("button",{name:"恢复上次顺序"}).click();
  const restore=page.getByRole("dialog",{name:"恢复上次顺序？"});
