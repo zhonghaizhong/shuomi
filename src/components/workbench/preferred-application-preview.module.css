@@ -140,3 +140,26 @@
  .modal{padding:16px}
  .modal footer{flex-wrap:wrap}
 }
+/* Compact one-card 优选 introduction; candidate metrics live with the list. */
+.compactHero{display:flex;align-items:center;gap:23px;min-height:155px;padding:23px 28px;border:1px solid color-mix(in srgb,#7367f0 45%,var(--border));border-radius:9px;background:linear-gradient(110deg,color-mix(in srgb,#7367f0 13%,var(--surface)),var(--surface) 70%);min-width:0}
+.heroSymbol{display:grid;place-items:center;flex:none;width:88px;height:88px;border:1px solid color-mix(in srgb,#7367f0 45%,var(--border));border-radius:18px;background:linear-gradient(145deg,#8175fc,#5b4dd7);box-shadow:0 12px 25px #7367f032;color:#fff}
+.heroContent{min-width:0;flex:1;display:grid;gap:9px}
+.heroTitle{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.heroTitle h1{padding-left:12px;border-left:3px solid #7367f0;font-size:22px;line-height:1.3;white-space:nowrap}
+.heroTitle>span{padding:4px 10px;border-radius:30px;border:1px solid #7367f050;background:#7367f01c;color:#b6abff;font-size:12px;white-space:nowrap}
+:global(.light) .heroTitle>span{color:#6658ce}
+.heroContent>p{font-size:13px}
+.heroHighlights{display:flex;gap:18px;flex-wrap:wrap}
+.heroHighlights span{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap}
+.heroHighlights svg{color:#40c99d}
+.heroContent>small{font-size:11px;color:var(--muted);line-height:1.5}
+.page .heroAction{flex:none;border:1px solid #7367f0;border-radius:7px;background:#7367f0;color:#fff;font-weight:650}
+.candidateSummary{display:grid;gap:13px;padding:17px 19px 0}
+.candidateSummaryTitle{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.candidateSummaryTitle h2{font-size:16px;line-height:1.4;padding-left:10px;border-left:3px solid #7367f0}
+.candidateSummaryTitle p{font-size:12px}
+.candidateSummary .metrics{gap:11px}
+.candidateSummary .metrics article{min-height:80px;padding:12px 15px;background:var(--subtle)}
+.candidateSummary .metrics strong{font-size:24px}
+@media(max-width:1050px){.compactHero{flex-wrap:wrap}.heroAction{margin-left:111px}}
+@media(max-width:680px){.compactHero{gap:13px;padding:16px}.heroSymbol{height:55px;width:55px;border-radius:12px}.heroSymbol svg{width:25px}.heroContent{flex-basis:calc(100% - 72px)}.heroTitle h1{font-size:19px}.heroHighlights{gap:9px}.page .heroAction{margin-left:0;width:100%}.candidateSummary{padding:14px 12px 0}.candidateSummary .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.candidateSummary .metrics article{min-height:72px;padding:10px}}
