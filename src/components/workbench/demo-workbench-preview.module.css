@@ -3873,14 +3873,14 @@
    Intentional hierarchy: elevated hero, primary service entry row, quiet steps,
    then denser reference panels. Kept specific to data to protect other modules. */
 .page[data-commerce-unified="data"]{
- --data-bg:#142237;
- --data-surface:#18283c;
- --data-elevated:#20344a;
- --data-quiet:#17283c;
- --data-line:#31465e;
- --data-ink:#edf4ff;
- --data-sub:#b6c5d6;
- --data-dim:#91a6bb;
+ --data-bg:#2f3349;
+ --data-surface:#2f3349;
+ --data-elevated:#393d55;
+ --data-quiet:#393d55;
+ --data-line:#52576e;
+ --data-ink:#cfcde4;
+ --data-sub:#acabc1;
+ --data-dim:#b7b5c8;
  --data-violet:#7367f0;
  --data-shadow:0 8px 26px rgba(3,12,28,.15);
  gap:18px;
