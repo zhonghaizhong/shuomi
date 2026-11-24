@@ -1,7 +1,7 @@
 "use client";
-import {Fragment,useEffect,useMemo,useState} from "react";
+import {Fragment,useEffect,useMemo,useState,type MouseEvent} from "react";
 import {readOwnProductBatches,readOwnProducts,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
-import {readOptimizedDatasets,optimizedDatasetsChanged,type OptimizedDataset} from "./showcase-optimized-datasets";
+import {readOptimizedDatasets,optimizedDatasetsChanged} from "./showcase-optimized-datasets";
 import {readArchivedOptimizedVersions,setOptimizedVersionArchived,downloadOptimizedVersionCsv} from "./showcase-dataset-version-actions";
 import css from "./showcase-own-product-library.module.css";
 
@@ -68,7 +68,7 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
    setArchivedIds(value);setChecked([]);setMenu(null);setPage(1);setSelectedBatch(null);setManageError("");
   }catch{setManageError("批次归档状态保存失败，请重试")}
  };
- const toggleMenu=(event:React.MouseEvent<HTMLButtonElement>,id:string)=>{
+ const toggleMenu=(event:MouseEvent<HTMLButtonElement>,id:string)=>{
   if(menu===id){setMenu(null);return}
   const box=event.currentTarget.getBoundingClientRect(),height=archivedOnly?164:135;
   setMenuPosition({top:box.bottom+height+8<window.innerHeight?box.bottom+6:Math.max(8,box.top-height-6),left:Math.max(8,Math.min(window.innerWidth-200,box.right-185))});setMenu(id);
