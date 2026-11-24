@@ -4841,6 +4841,7 @@
 .knowledgeIntroCard > button:focus-visible {outline:2px solid #aba4f6;outline-offset:3px;}
 .knowledgeIntroFlow {
   display:grid;
+  box-sizing:border-box;
   width:100%;
   max-width:1320px;
   margin-inline:0;

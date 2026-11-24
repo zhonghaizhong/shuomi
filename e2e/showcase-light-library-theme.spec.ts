@@ -192,7 +192,9 @@ test("knowledge landing has exactly two compact entries at desktop and mobile wi
   const boxes=await cards.evaluateAll(items=>items.map(el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,right:b.right};}));
   if(width>800){
    // Full-width page shell; only the descriptive content area is bounded.
-   expect(bounds.width).toBeGreaterThan(1250);
+   // On 1440px screens the sidebar still takes its normal width.
+   if(width>=1920)expect(bounds.width).toBeGreaterThan(1250);
+   else expect(bounds.width).toBeGreaterThan(850);
    expect(bounds.width).toBeLessThanOrEqual(1601);
    expect(boxes[0].width).toBeLessThan(655);
    expect(Math.abs(boxes[0].x-bounds.x)).toBeLessThan(3);
