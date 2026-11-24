@@ -135,10 +135,16 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(imageSettings.getByRole("checkbox",{name:"主图第1张"})).not.toBeChecked();
  await imageSettings.getByRole("button",{name:"全选"}).click();
  await expect(imageSettings.getByRole("checkbox",{name:"主图第1张"})).toBeChecked();
- await imageSettings.getByRole("button",{name:/详情图.*配置详情图优化任务/}).click();
+ // Shared visual assets follow the selected shared source, not the configuration tab.
+ await imageSettings.getByRole("button",{name:/以详情图为准/}).click();
+ await expect(imageSettings.getByRole("checkbox",{name:"详情图第3张"})).toBeChecked();
+ await expect(imageSettings.getByRole("button",{name:"查看详情图第1张示例"})).toContainText("核心购买理由");
  await imageSettings.getByRole("checkbox",{name:"详情图第3张"}).uncheck();
- await imageSettings.getByRole("button",{name:/主图.*配置主图优化任务/}).click();
- await expect(imageSettings.getByRole("checkbox",{name:"主图第3张"})).toBeChecked();
+ await expect(imageSettings.getByRole("button",{name:/共用视觉素材/})).toHaveAttribute("aria-pressed","true");
+ await imageSettings.getByRole("button",{name:/以主图为准/}).click();
+ await expect(imageSettings.getByRole("checkbox",{name:"主图第3张"})).not.toBeChecked();
+ await expect(imageSettings.getByRole("button",{name:"查看主图第1张示例"})).toContainText("商品识别主图");
+ await imageSettings.getByRole("button",{name:"全选"}).click();
  await imageSettings.getByRole("button",{name:"自定义指令"}).click();
  await imageSettings.getByRole("button",{name:"删除"}).last().click();
  await imageSettings.getByRole("combobox",{name:"任务 1 图片位置"}).selectOption("1");
