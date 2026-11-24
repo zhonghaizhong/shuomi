@@ -14,11 +14,11 @@ const collaboration = [
   ["继续跟进", "在任务中心查看结果，收藏会话以便回顾。"],
 ];
 
-export function ChatIntroduction({ createAction, contentTasks, preview = false }: { createAction: ReactNode; contentTasks: boolean; preview?: boolean }) {
+export function ChatIntroduction({ createAction, contentTasks, preview = false, hideCreateAction = false }: { createAction: ReactNode; contentTasks: boolean; preview?: boolean; hideCreateAction?: boolean }) {
   const recentHref = `/workbench/ai/chat/recent${preview ? "?preview=1" : ""}`;
   const savedHref = `/workbench/ai/chat/saved${preview ? "?preview=1" : ""}`;
   const entries = [
-    { title: "新建会话", subtitle: "开始一项新需求", description: "从已保存商品出发，描述内容目标，查看并确认执行方案。", tags: ["目标描述", "方案确认"], example: contentTasks ? "将这个商品的描述和卖点整理成英文。" : "优化这个商品的标题，突出已有资料支持的卖点。", action: createAction },
+    { title: "新建会话", subtitle: "开始一项新需求", description: "从已保存商品出发，描述内容目标，查看并确认执行方案。", tags: ["目标描述", "方案确认"], example: contentTasks ? "将这个商品的描述和卖点整理成英文。" : "优化这个商品的标题，突出已有资料支持的卖点。", action: hideCreateAction ? null : createAction },
     { title: "最近会话", subtitle: "继续之前的工作", description: "保留对话背景与已有方案，从上次讨论的位置继续。", tags: ["继续交流", "任务跟进"], example: "打开之前的讨论，核对方案与已确认任务。", action: <Button asChild variant="outline"><Link href={recentHref} prefetch={false}>查看最近会话 →</Link></Button> },
     { title: "收藏会话", subtitle: "沉淀重要内容", description: "集中查找已收藏的会话，回顾值得保留的需求与结论。", tags: ["重点收藏", "随时回顾"], example: "回到已收藏的内容讨论，继续查看原有消息。", action: <Button asChild variant="outline"><Link href={savedHref} prefetch={false}>进入收藏会话 →</Link></Button> },
   ];
