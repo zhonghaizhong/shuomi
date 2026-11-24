@@ -103,7 +103,7 @@ test("light-mode chat collections never retain dark background colors", async ({
   }
 });
 
-test("my listing and all stages are nested beneath my stores", async ({ page }) => {
+test("listing remains a second-level sidebar link and stages switch via page buttons", async ({ page }) => {
   await page.setViewportSize({width:1440,height:900});
   await page.goto(entry);
   const nav=page.getByRole("navigation",{name:"工作台导航"});
@@ -120,7 +120,8 @@ test("my listing and all stages are nested beneath my stores", async ({ page }) 
   await expect(stores.locator("xpath=ancestor::li[1]")).toHaveClass(/console-nav-level-2/);
   await expect(listing.locator("xpath=ancestor::li[1]")).toHaveClass(/console-nav-level-2/);
   await expect(nav.getByRole("button",{name:"展开我的店铺"})).toHaveCount(0);
-  await nav.getByRole("button",{name:"展开刊登管理"}).click();
+  await expect(nav.getByRole("button",{name:"展开刊登管理"})).toHaveCount(0);
+  await listing.click();
   const stages = [
     ["待上传","waiting"],
     ["待补全","missing"],
@@ -128,15 +129,13 @@ test("my listing and all stages are nested beneath my stores", async ({ page }) 
     ["已上传","uploaded"],
   ] as const;
   for(const [label,route] of stages) {
-    const stage=nav.getByRole("link",{name:label,exact:true});
-    await expect(stage).toBeVisible();
-    await stage.click();
+    const tab=page.getByRole("navigation",{name:"刊登管理阶段"}).getByRole("button",{name:label,exact:true});
+    await expect(tab).toBeVisible();
+    await tab.click();
     await expect(page).toHaveURL(new RegExp("#/workbench/listing/"+route+"(?:[?]|$)"));
-    await expect(page.locator("main.showcase-content")).toBeVisible();
-    await expect(nav.getByRole("button",{name:"收起刊登管理"})).toBeVisible();
+    await expect(tab).toHaveAttribute("aria-current","page");
+    await expect(nav.getByRole("link",{name:label,exact:true})).toHaveCount(0);
   }
-  await nav.getByRole("button",{name:"收起刊登管理"}).click();
-  await expect(nav.getByRole("button",{name:"展开刊登管理"})).toBeVisible();
 });
 
 test("supply overview describes sourcing without publishing management", async ({page})=>{
