@@ -85,9 +85,9 @@ test("preferred application reads owned adapted products and promotes only demo-
  await apply.getByRole("button",{name:"提交演示申请"}).click();
  const detail=page.getByRole("dialog",{name:"优选申请详情"});
  await expect(detail).toBeVisible();
- await expect(detail.getByText("待审核")).toBeVisible();
+ await expect(detail.locator('[data-status="待审核"]')).toBeVisible();
  await detail.getByRole("button",{name:"演示审核通过"}).click();
- await expect(detail.getByText("已通过")).toBeVisible();
+ await expect(detail.locator('[data-status="已通过"]')).toBeVisible();
  await detail.getByRole("button",{name:"关闭"}).click();
  await after.getByRole("button",{name:"查看硕米优选"}).click();
  await expect(page).toHaveURL(/supply\/selected/);

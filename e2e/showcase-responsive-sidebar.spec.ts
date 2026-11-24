@@ -156,12 +156,13 @@ test("listing management overview follows Figma entry and conditional flow", asy
  await page.setViewportSize({width:1440,height:900});
  await page.goto(entry+"/listing");
  const overview=page.locator("[data-listing-management-overview]");
- await expect(overview.getByRole("heading",{name:"从商品数据到平台上传的统一管理"})).toBeVisible();
- for(const name of ["商品数据","待上传配置","上传记录","选择商品","选择目标店铺","配置规则与智能体","确认提交","待补全 · 必填信息补齐后继续","待审核 · 应用后明确继续上传"]){
+ await expect(overview.getByRole("heading",{name:"刊登管理",level:1})).toBeVisible();
+ // The current approved overview has three compact entries and no redundant upload-history card.
+ for(const name of ["第一步：选择商品数据","第二步：配置上传规则","第三步：查看上传结果","选择商品","选择目标店铺","配置规则与智能体","确认提交","资料缺失 → 进入待补全","启用智能体 → 进入待审核"]){
    await expect(overview.getByRole("heading",{name,exact:true})).toBeVisible();
  }
- await expect(overview.getByText("适配规则必选；智能体按需使用")).toBeVisible();
- await expect(overview.getByText(/系统定时发送未开放/)).toBeVisible();
+ await expect(overview.getByText("规则必选，智能体按需启用")).toBeVisible();
+ await expect(overview.getByText("新商品先进入「我的数据」")).toBeVisible();
  await overview.getByRole("button",{name:"进入待上传"}).click();
  await expect(page).toHaveURL(/#\/workbench\/listing\/waiting/);
  await page.goto(entry+"/listing");
@@ -216,7 +217,7 @@ test("listing overview uses aligned Vuexy cards and readable theme surfaces",asy
  await page.setViewportSize({width:1440,height:900});
  await page.goto(entry+"/listing");
  const root=page.locator('[data-listing-management-overview]');
- await expect(root.getByRole("heading",{name:"从商品数据到平台上传的统一管理"})).toBeVisible();
+ await expect(root.getByRole("heading",{name:"刊登管理",level:1})).toBeVisible();
  const cards=root.locator('section[aria-label="刊登管理主要入口"] article');
  await expect(cards).toHaveCount(3);
  const rects=await cards.evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {top:r.top,width:r.width,height:r.height}}));
