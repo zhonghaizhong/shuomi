@@ -13,7 +13,11 @@ test("My Data's self-owned product library uses the same approved dark card as i
  await page.getByRole("button",{name:"自有商品库",exact:true}).click();
  const library=page.getByRole("region",{name:"自有商品库"});
  await expect(library).toBeVisible();
- await expect.poll(()=>library.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(violetPanel);
+ // The library wrapper is deliberately transparent; the batch section owns
+ // the painted Vuexy card surface, alongside the separate filter card.
+ const batchCard=library.locator('[class*="batchSection"]').first();
+ await expect(batchCard).toBeVisible();
+ await expect.poll(()=>batchCard.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(violetPanel);
 });
 test("Listing waiting stage keeps approved Vuexy dark surfaces after shared styles load",async({page})=>{
  await page.goto("/shuomi/#/workbench/listing/waiting");
