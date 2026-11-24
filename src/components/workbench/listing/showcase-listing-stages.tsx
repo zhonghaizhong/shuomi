@@ -15,7 +15,7 @@ import {ShowcaseListingStageHeader} from "./showcase-listing-stage-header";
 import {parseListingPhoto,listingPhotoAtlasUrl} from "./showcase-listing-ai-images";
 
 type Stage="waiting"|"missing"|"review";
-type Item={sku:string;name:string;source:string;store:string;status:string;missing:string[];ai:boolean;taskId?:string;originalName?:string;originalDescription?:string;originalImages?:string[];optimizedDescription?:string;optimizedImages?:string[];batchKey?:string;batchName?:string;sourceVersionId?:string;targetPlatform?:string;targetRegion?:string;targetStoreType?:string};
+type Item={sku:string;name:string;source:string;store:string;status:string;missing:string[];ai:boolean;taskId?:string;originalName?:string;originalDescription?:string;originalImages?:string[];optimizedDescription?:string;optimizedImages?:string[];batchKey?:string;batchName?:string;sourceVersionId?:string;targetPlatform?:string;targetRegion?:string;targetStoreType?:string;detailImages?:string[]};
 const seed:Item[]=[];
 /** The six photographic roles are independently authored tiles of the approved atlas. */
 function ListingProductPhoto({src,alt,size}:{src:string;alt:string;size:number}){
@@ -143,12 +143,25 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const applyBatchFilter=()=>{setListPage(1);const next=batchOptions.some(option=>option.key===batchFilter)?batchFilter:"";setApplied(filter.trim());setAppliedBatch(next);sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),next);};
  const resetBatchFilter=()=>{setListPage(1);setFilter("");setApplied("");setBatchFilter("");setAppliedBatch("");sessionStorage.removeItem(showcaseUploadBatchPreferenceKey(organizationId,memberId));};
  const [reviewChecked,setReviewChecked]=useState(false),[reviewMode,setReviewMode]=useState<"compare"|"edit">("compare");
+ const [pictureTab,setPictureTab]=useState<"main"|"detail">("main");
+ const [fieldTab,setFieldTab]=useState<"common"|"variant"|"sku">("common");
+ const [optionalOpen,setOptionalOpen]=useState(false);
+ const [categoryEdit,setCategoryEdit]=useState(false);
+ const [categoryDraft,setCategoryDraft]=useState("");
+ const [imagePreview,setImagePreview]=useState(false);
  const go=(s:string)=>router.push("/workbench/listing/"+s+"?preview=1");
  const filtered=(items.length?items:taskItems).filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status+" "+(x.batchName||"")).toLowerCase().includes(applied.toLowerCase())&&(!appliedBatch||x.batchKey===appliedBatch));
  const totalPages=Math.max(1,Math.ceil(filtered.length/15));
  const currentPage=Math.min(listPage,totalPages);
  const pageItems=filtered.slice((currentPage-1)*15,currentPage*15);
  const selectedItem=selected?items.find(x=>x.sku===selected.sku)??selected:null;
+ const selectedTask=selectedItem?.taskId?savedTasks.find(task=>task.id===selectedItem.taskId):undefined;
+ const selectedSkuCount=selectedTask?.productIds.length??1;
+ const selectedMainImages=selectedItem?.optimizedImages?.length?selectedItem.optimizedImages:(selectedItem?.originalImages??[]);
+ // Detail images are a separate data field: never relabel main-gallery images as detail photos.
+ const selectedDetailImages=selectedItem?.detailImages??[];
+ const galleryImages=pictureTab==="main"?selectedMainImages:selectedDetailImages;
+ const classChanged=Boolean(categoryDraft.trim());
  const action=(next:string)=>{setNotice(next);setSubmitted(true)};
  const submitUpload=(uploadMode:"平台草稿"|"直接上传到平台"|"定时上传")=>{
   if(!selectedCount||!chosenStore||!rules){setNotice("请先选择商品、有效目标店铺及适配规则。");return}
@@ -177,6 +190,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  };
  const save=()=>{
   if(!selectedItem)return;
+  if(classChanged){setNotice("已修改目标分类草稿。需要重新执行新分类的规则适配后才能提交审核；演示版尚未连接平台类目适配服务。");return}
   const allFilled=selectedItem.missing.every(field=>(form[field]??"").trim().length>0);
   if(!allFilled){setNotice("请补齐所有必填字段后保存。");return}
   if(selectedItem.taskId){try{completeShowcaseUploadTask(organizationId,memberId,selectedItem.taskId,form);setSelected(null);setForm({});setNotice("资料已补齐，进入待审核；必须审核智能体结果后才能提交目标店铺。");}catch(e){setNotice(e instanceof Error?e.message:"保存失败");}return;}
@@ -242,7 +256,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <span className={styles.compactStoreType}>{item.targetStoreType||"—"}</span>
       <span className={styles.compactPlainCell} title={item.store}>{item.store||"—"}</span>
       <span className={styles.compactStatus}>{item.status}</span>
-      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
+      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setPictureTab("main");setFieldTab("common");setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft("");setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
      </div>})}</div></div>{filtered.length>15?<nav className={styles.listPagination} aria-label="商品分页"><span>共 {filtered.length} 条 · 每页 15 条 · 第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setListPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setListPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></nav>:null}
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
@@ -267,39 +281,86 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
    <button type="button" className={styles.productDialogClose} aria-label="关闭查看并补全弹窗" onClick={()=>setSelected(null)}>×</button>
   </header>
   <div className={styles.productDetailBody}>
-   <div className={styles.productPhotoPanel}>
-    <div className={styles.productSectionHeading}><strong>商品图片</strong><small>AI 模拟优化 · 1:1 · 英语 · 白底</small></div>
-    <div className={styles.productHeroImage}>
-     {selectedItem.optimizedImages?.[photoIndex]?<ListingProductPhoto src={selectedItem.optimizedImages[photoIndex]} alt={"商品优化图片 "+(photoIndex+1)} size={340}/>
-      :selectedItem.originalImages?.[0]?<img src={selectedItem.originalImages[0]} alt="商品原始图片"/>:<span>暂无商品图片</span>}
+   <section className={styles.productDialogLeft}>
+    <div className={styles.productPhotoPanel}>
+     <div className={styles.productSectionHeading}><strong>商品图片（主图 {selectedMainImages.length} / 详情图 {selectedDetailImages.length}）</strong><small>保留已保存的图片版本</small></div>
+     <div className={styles.pictureTabs} role="tablist" aria-label="商品图片区">
+      <button type="button" role="tab" aria-selected={pictureTab==="main"} onClick={()=>{setPictureTab("main");setPhotoIndex(0)}}>主图（{selectedMainImages.length}）</button>
+      <button type="button" role="tab" aria-selected={pictureTab==="detail"} onClick={()=>{setPictureTab("detail");setPhotoIndex(0)}}>详情图（{selectedDetailImages.length}）</button>
+     </div>
+     {galleryImages.length?<><div className={styles.productHeroImage}>
+       <button type="button" className={styles.pictureZoom} aria-label="放大当前商品图" onClick={()=>setImagePreview(true)}>
+        <ListingProductPhoto src={galleryImages[Math.min(photoIndex,galleryImages.length-1)]} alt={pictureTab==="main"?"商品主图":"商品详情图"} size={400}/>
+       </button>
+      </div>
+      <div className={styles.productPhotoThumbnails}>{galleryImages.map((src,i)=><button key={src+i} type="button" aria-label={`查看第 ${i+1} 张${pictureTab==="main"?"主图":"详情图"}`} aria-pressed={photoIndex===i} onClick={()=>setPhotoIndex(i)}>
+       <ListingProductPhoto src={src} alt={`图片 ${i+1}`} size={72}/><span>{String(i+1).padStart(2,"0")}</span>
+      </button>)}</div></>:<div className={styles.pictureEmpty}><strong>尚未保存独立详情图</strong><span>主图不会自动当作详情图。详情图需要在原始商品或智能体优化时单独生成、保存。</span></div>}
+     {selectedItem.originalImages?.length?<div className={styles.productOriginalRow}><strong>原始图片</strong><div>{selectedItem.originalImages.slice(0,6).map((src,i)=><img key={src+i} src={src} alt={`原始图片 ${i+1}`}/>)}</div></div>:null}
     </div>
-    <div className={styles.productPhotoThumbnails}>
-     {selectedItem.optimizedImages?.map((src,i)=><button key={src+i} type="button" aria-label={"查看第 "+(i+1)+" 张优化图片"} aria-pressed={photoIndex===i} className={photoIndex===i?styles.productPhotoActive:""} onClick={()=>setPhotoIndex(i)}><ListingProductPhoto src={src} alt={"第 "+(i+1)+" 张优化图片"} size={72}/><span>{String(i+1).padStart(2,"0")}</span></button>)}
+    <div className={styles.dialogProductFacts}><strong>商品基本信息</strong><dl>
+      <div><dt>商品标题</dt><dd>{selectedItem.name}</dd></div>
+      <div><dt>商品 SKU</dt><dd>{selectedItem.sku}</dd></div>
+      <div><dt>所属批次</dt><dd>{selectedItem.batchName??selectedItem.source}</dd></div>
+      <div><dt>目标店铺</dt><dd>{selectedItem.store}</dd></div>
+      <div><dt>优化记录</dt><dd>{selectedItem.optimizedImages?.length?"已有已保存优化图片":"保留原始图片"}</dd></div>
+     </dl></div>
+   </section>
+   <section className={styles.productDialogRight}>
+    <div className={styles.productInfoBlock}>
+     <div className={styles.productSectionHeading}><strong>平台与商品分类</strong><span className={styles.productStagePill}>{stage==="missing"?"待补全":"待审核"}</span></div>
+     <div className={styles.dialogPlatformFacts}>
+      <div><small>目标平台</small><strong>{selectedItem.targetPlatform??selectedTask?.platform??"—"}</strong></div>
+      <div><small>站点</small><strong>{selectedItem.targetRegion??selectedTask?.region??"—"}</strong></div>
+      <div><small>店铺类型</small><strong>{selectedItem.targetStoreType??selectedTask?.storeType??"—"}</strong></div>
+      <div><small>目标店铺</small><strong>{selectedItem.store}</strong></div>
+     </div>
+     <div className={styles.categoryEditor}><div><span>商品分类</span><small>{classChanged?"修改草稿 · 需要重新适配":"当前任务尚未保存已确认的平台类目路径"}</small></div>
+      {categoryEdit?<input aria-label="修改目标商品分类" placeholder="输入目标平台分类路径（演示草稿）" value={categoryDraft} onChange={e=>setCategoryDraft(e.target.value)}/>:<span>{categoryDraft||"等待平台类目数据接入"}</span>}
+      <button type="button" onClick={()=>setCategoryEdit(v=>!v)}>{categoryEdit?"完成编辑":"修改分类"}</button>
+     </div>
+     {classChanged?<p className={styles.categoryNotice}>分类修改需要重新匹配新分类的规则字段，原商品、变体和已优化图片保持不变。未重新适配前不可提交审核。</p>:null}
     </div>
-    {selectedItem.originalImages?.length?<div className={styles.productOriginalRow}><strong>原始图片</strong><div>{selectedItem.originalImages.slice(0,4).map((src,i)=><img key={src+i} src={src} alt={"原始图片 "+(i+1)}/>)}</div></div>:null}
-   </div>
-   <div className={styles.productInfoPanel}>
-    <div className={styles.productSectionHeading}><strong>商品信息</strong><span className={styles.productStagePill}>{stage==="missing"?"待补全":"待审核"}</span></div>
-    <h3>{selectedItem.name}</h3>
-    <div className={styles.productMeta}><span>SKU：{selectedItem.sku}</span><span>目标店铺：{selectedItem.store}</span></div>
-    <div className={styles.productInfoBlock}><strong>智能体优化信息</strong>
-     <div className={styles.productInfoComparison}><small>原始标题</small><p>{selectedItem.originalName??selectedItem.name}</p><small>优化标题</small><p>{selectedItem.name}</p><small>优化英文描述</small><p>{selectedItem.optimizedDescription??"暂无可用优化描述"}</p></div>
+    <div className={styles.productInfoBlock}>
+     <div className={styles.productSectionHeading}><strong>变体信息（首次上传已确认）</strong><small>不在补全阶段重新识别</small></div>
+     <div className={styles.dialogVariantFacts}>
+      <span className={styles.dialogVariantPill}>{selectedSkuCount>1?"多变体":"单变体"}</span>
+      <span>共 {selectedSkuCount} 个 SKU</span>
+      <span>沿用原任务的规格结构</span>
+     </div>
     </div>
-    {stage==="missing"?<div className={styles.productInfoBlock}><div className={styles.productSectionHeading}><strong>待补全资料</strong><small>{selectedItem.missing.length} 项必填</small></div>
-     {selectedItem.missing.length?selectedItem.missing.map(field=><label className={styles.productMissingField} key={field}>{field}<span>必填</span><input aria-label={field} placeholder={"请输入"+field} value={form[field]??""} onChange={e=>setForm(prev=>({...prev,[field]:e.target.value}))}/></label>):<p>资料已补全，继续检查智能体优化结果。</p>}
-     <p className={styles.productHint}>填写后进入「待审核」，不会直接上传到 SHEIN。</p>
-    </div>:<div className={styles.productInfoBlock}><strong>人工审核</strong>
-     <p className={styles.productHint}>启用商品优化智能体后必须先确认标题、描述、图片及平台规则，审核通过才可进入平台提交。</p>
-     {reviewMode==="edit"?<label className={styles.productMissingField}>审核意见<input aria-label="审核意见" placeholder="输入修改意见" value={form.reviewNotes??""} onChange={e=>setForm(prev=>({...prev,reviewNotes:e.target.value}))}/></label>:null}
+    <div className={styles.productInfoBlock}>
+     <div className={styles.dialogFieldTabs} role="tablist" aria-label="商品资料分组">
+      <button type="button" role="tab" aria-selected={fieldTab==="common"} onClick={()=>setFieldTab("common")}>商品公共信息</button>
+      <button type="button" role="tab" aria-selected={fieldTab==="variant"} onClick={()=>setFieldTab("variant")}>变体公共信息</button>
+      <button type="button" role="tab" aria-selected={fieldTab==="sku"} onClick={()=>setFieldTab("sku")}>SKU 信息（{selectedSkuCount}）</button>
+     </div>
+     {fieldTab==="common"?<>
+      <div className={styles.productInfoComparison}><small>原始标题</small><p>{selectedItem.originalName??selectedItem.name}</p><small>优化标题</small><p>{selectedItem.name}</p><small>优化英文描述</small><p>{selectedItem.optimizedDescription??"暂无可用优化描述"}</p></div>
+      {stage==="missing"?<><div className={styles.productSectionHeading}><strong>平台待补全资料</strong><small>缺少 {selectedItem.missing.length} 项必填</small></div>
+       {selectedItem.missing.map(field=><label className={styles.productMissingField} key={field}>{field}<span>必填</span><input aria-label={field} placeholder={"请输入"+field} value={form[field]??""} onChange={e=>setForm(prev=>({...prev,[field]:e.target.value}))}/></label>)}
+       {!selectedItem.missing.length?<p className={styles.productHint}>本商品当前没有未完成的必填资料。</p>:null}
+      </>:null}
+      <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>选填信息 {optionalOpen?"收起":"展开"}</button>
+      {optionalOpen?<p className={styles.productHint}>选填字段以目标平台当前类目规则为准；演示任务暂未提供字段定义，不生成虚构属性。</p>:null}
+     </>:fieldTab==="variant"?<div className={styles.dialogFieldEmpty}>原任务已确认变体结构。当前任务未提供独立的变体公共字段，后续接入平台规则后在此补全，不改变既有 SKU。</div>:<div className={styles.dialogSkuList}>{(selectedTask?.productIds??[selectedItem.sku]).map((code,i)=><div key={code}><strong>SKU {i+1}</strong><span>{code}</span><small>SKU 级独立字段按目标平台类目规则加载</small></div>)}</div>}
+    </div>
+    {stage==="review"?<div className={styles.productInfoBlock}><strong>人工审核</strong>
+     <p className={styles.productHint}>检查标题、描述、图片及目标平台规则，审核通过后才可继续平台提交。</p>
+     {reviewMode==="edit"?<label className={styles.productMissingField}>审核意见<input aria-label="审核意见" value={form.reviewNotes??""} placeholder="输入修改意见" onChange={e=>setForm(prev=>({...prev,reviewNotes:e.target.value}))}/></label>:null}
      <div className={styles.reviewActions}><button type="button" onClick={()=>setReviewMode(reviewMode==="edit"?"compare":"edit")}>手动修改</button><button type="button" onClick={()=>setNotice("演示模式：重新重构需要授权智能体执行，未生成新内容。")}>重新重构</button></div>
      <label className={styles.productReviewCheck}><input type="checkbox" checked={reviewChecked} onChange={e=>setReviewChecked(e.target.checked)}/> 已核对优化结果与目标平台规则</label>
-    </div>}
-   </div>
+    </div>:null}
+   </section>
   </div>
+  {imagePreview&&galleryImages.length?<div className={styles.dialogImageLightbox} role="dialog" aria-modal="true" aria-label="商品图片大图预览">
+    <button type="button" onClick={()=>setImagePreview(false)} aria-label="关闭商品图片大图">关闭</button>
+    <ListingProductPhoto src={galleryImages[Math.min(photoIndex,galleryImages.length-1)]} alt="商品放大图片" size={640}/>
+   </div>:null}
   <footer className={styles.productDetailFooter}>
-   <span>{stage==="missing"?"资料保存后进入待审核":"人工审核通过后进入待平台提交；此处不执行真实上传"}</span>
+   <span>{stage==="missing"?(classChanged?"分类变更草稿需要重新适配，不能直接送审":"保存完整必填资料后进入待审核"):"人工审核通过后进入待平台提交；此处不执行真实上传"}</span>
    <div><button type="button" onClick={()=>setSelected(null)}>取消</button>
-   <button type="button" className={styles.primary} disabled={stage==="review"&&!reviewChecked} onClick={stage==="missing"?(selectedItem.missing.length?save:()=>{setSelected(null);action("已补全。请确认继续原任务。")}):()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"保存并进入待审核":"审核通过"}</button></div>
+   <button type="button" className={styles.primary} disabled={(stage==="review"&&!reviewChecked)||(stage==="missing"&&classChanged)} onClick={stage==="missing"?(selectedItem.missing.length?save:()=>{setSelected(null);action("已补全。请确认继续原任务。")}):()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"重新检查并提交审核":"审核通过"}</button></div>
   </footer>
  </section>
 </div>:null}
