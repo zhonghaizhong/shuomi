@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import {beforeEach,expect,it} from "vitest";
-import {simulateAmazonFiveListingWorkflow,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
+import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
 import {listingDemoArtSet} from "./showcase-listing-ai-images";
+import {readDemoCollectionBatches,amazonMultiVariantPhotoFixtures} from "../showcase-collection-batches";
 beforeEach(()=>sessionStorage.clear());
 const org="SM-ENT-000001",member="admin";
 const items=[
@@ -70,4 +71,48 @@ it("migrates old generated SVG pictures, without changing source photos or appro
  expect(updated.demoProduct?.optimizedImages).toHaveLength(6);
  expect(updated.demoProduct?.optimizedImages.every(x=>x.endsWith(".jpg"))).toBe(true);
  expect(refreshAmazonFiveDemoPhotos(org,member)).toBe(0);
+});
+
+it("adds the two real photographed multi-variant families to the existing five-product batch, idempotently",()=>{
+ const original=readDemoCollectionBatches(org,member).find(b=>b.id===args.batchId)!;
+ expect(original.products).toHaveLength(7);
+ const multi=original.products.filter(p=>p.variantCount&&p.variantCount>1);
+ expect(multi).toHaveLength(2);
+ expect(multi.map(p=>p.variantCount)).toEqual([6,3]);
+ expect(multi.every(p=>p.variantDetails?.every(v=>v.image.startsWith("https://")))).toBe(true);
+ const originalFive=simulateAmazonFiveListingWorkflow({...args,products:original.products});
+ expect(originalFive.created).toBe(5);
+ const extra=simulateAmazonMultiVariantListingWorkflow({...args,batchName:original.name,products:original.products});
+ expect(extra).toEqual({created:2,missing:1,review:1,alreadyInstalled:false});
+ const all=readShowcaseUploadTasks(org,member);
+ expect(all).toHaveLength(7);
+ expect(all.filter(t=>t.status==="待补全")).toHaveLength(4);
+ expect(all.filter(t=>t.status==="待审核")).toHaveLength(3);
+ expect(all.filter(t=>t.id.startsWith("SHUOMI-AMZ-AI-5:"))).toHaveLength(5);
+ const clog=all.find(t=>t.productIds.includes("SIM-AMZ-US-CROCS-10001"))!;
+ const stanley=all.find(t=>t.productIds.includes("SIM-AMZ-US-STANLEY-Q40"))!;
+ expect(clog.status).toBe("待补全");
+ expect(clog.demoProduct?.variantDetails).toHaveLength(6);
+ expect(stanley.status).toBe("待审核");
+ expect(stanley.demoProduct?.variantDetails).toHaveLength(3);
+ expect(clog.storeId).toBe(stanley.storeId);
+ expect(clog.batchId).toBe(stanley.batchId);
+ expect(clog.demoProduct?.optimizedImages).toEqual(clog.demoProduct?.sourceImages);
+ expect(stanley.demoProduct?.optimizedImages).toEqual(stanley.demoProduct?.sourceImages);
+ expect(()=>approveShowcaseUploadTask(org,member,clog.id)).toThrow();
+ expect(simulateAmazonMultiVariantListingWorkflow({...args,products:original.products}).alreadyInstalled).toBe(true);
+ expect(readShowcaseUploadTasks("other-tenant",member)).toHaveLength(0);
+ expect(readShowcaseUploadTasks(org,"colleague")).toHaveLength(0);
+});
+it("migrates old five-product browser sessions in place without duplication or resetting renamed batch",()=>{
+ const original=readDemoCollectionBatches(org,member).find(b=>b.id===args.batchId)!;
+ const storageKey="shuomi:demo-collection-batches-v1:"+org;
+ const existing=JSON.parse(sessionStorage.getItem(storageKey)||"[]");
+ const old=existing.map((b:{id:string;name:string;products:unknown[]})=>b.id===args.batchId?{...b,name:"My manually renamed Amazon batch",products:b.products.slice(0,5)}:b);
+ sessionStorage.setItem(storageKey,JSON.stringify(old));
+ const migrated=readDemoCollectionBatches(org,member).find(b=>b.id===args.batchId)!;
+ expect(migrated.name).toBe("My manually renamed Amazon batch");
+ expect(migrated.products).toHaveLength(7);
+ expect(readDemoCollectionBatches(org,member).find(b=>b.id===args.batchId)?.products).toHaveLength(7);
+ expect(amazonMultiVariantPhotoFixtures).toHaveLength(2);
 });
