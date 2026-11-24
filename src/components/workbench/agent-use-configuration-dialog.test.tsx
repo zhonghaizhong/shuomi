@@ -156,3 +156,27 @@ it("does not reveal a different enterprise or member's image library",()=>{
  expect(screen.queryByText("私人图案")).toBeNull();
  expect(screen.getByRole("button",{name:"确认选择"}).hasAttribute("disabled")).toBe(true);
 });
+
+
+it("drags filled hybrid image slots to reorder, with shared layout persisted for both targets",()=>{
+ const save=vi.fn();
+ render(<AgentUseConfigurationDialog mode="pod-hybrid" agentKind="pod"
+  initial={{hybridStrategy:"共用视觉素材",hybridSlots:["官方·第一张","AI·核心购买理由",null,null,null,null,null,null]}}
+  onClose={vi.fn()} onSave={save}/>);
+ expect(screen.queryByRole("button",{name:"智能排序"})).toBeNull();
+ expect(screen.queryByRole("button",{name:"多选调整"})).toBeNull();
+ const first=screen.getByLabelText("图片位置 1 · 官方·第一张");
+ const second=screen.getByLabelText("图片位置 2 · AI·核心购买理由");
+ const transfer={setData:vi.fn(),effectAllowed:"move",dropEffect:"move"};
+ fireEvent.dragStart(first,{dataTransfer:transfer});
+ fireEvent.dragOver(second,{dataTransfer:transfer});
+ fireEvent.drop(second,{dataTransfer:transfer});
+ fireEvent.dragEnd(first,{dataTransfer:transfer});
+ expect(screen.getByLabelText("图片位置 1 · AI·核心购买理由")).toBeTruthy();
+ expect(screen.getByLabelText("图片位置 2 · 官方·第一张")).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"保存组合"}));
+ expect(save).toHaveBeenCalledWith(expect.objectContaining({
+  hybridMainSlots:["AI·核心购买理由","官方·第一张",null,null,null,null,null,null],
+  hybridDetailSlots:["AI·核心购买理由","官方·第一张",null,null,null,null,null,null]
+ }));
+});
