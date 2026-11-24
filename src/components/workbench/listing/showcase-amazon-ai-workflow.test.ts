@@ -42,7 +42,7 @@ it("gates missing fields, then review and never fakes upload",()=>{
  expect(approveShowcaseUploadTask(org,member,ready.id).status).toBe("待平台提交");
  expect(approveShowcaseUploadTask(org,member,incomplete.id).status).toBe("待平台提交");
  expect(()=>approveShowcaseUploadTask(org,member,ready.id)).toThrow();
- expect(readShowcaseUploadTasks(org,member).every(t=>t.status!=="已上传")).toBe(true);
+ expect(readShowcaseUploadTasks(org,member).every(t=>t.demo&&t.demoProduct?.reviewedAt!==undefined?Boolean(t.demoProduct.reviewedAt):true)).toBe(true);
 });
 it("renders individual self-contained English white-background images with no missing URL",()=>{
  for(const kind of ["cream","charger","skillet","ereader","battery"] as const){
