@@ -171,3 +171,27 @@ test("Store matrix seven filters stay on one desktop row and date picker works",
  await row.getByRole("button",{name:"清空日期"}).click();
  await expect(row.getByRole("button",{name:"选择统计时间"})).toHaveText("全部时间");
 });
+
+
+/* Regression: alert/advice filters must not inherit the former two-column
+   select/actions grids. Ensure both rows are really horizontal in the browser. */
+test("Alerts and advice each keep nine filter controls on one desktop row",async({page})=>{
+ await page.setViewportSize({width:1600,height:900});
+ for(const [route,kind] of [["alerts","alerts"],["advice","advice"]] as const){
+  await page.goto("/shuomi/#/workbench/overview/"+route);
+  const bar=page.locator('[data-cockpit-filter="'+kind+'"]');
+  await expect(bar).toBeVisible();
+  const controls=bar.locator(':scope > *');
+  await expect(controls).toHaveCount(9);
+  const boxes=await controls.evaluateAll(elements=>elements.map(el=>{
+   const rect=el.getBoundingClientRect();
+   return {left:rect.left,top:rect.top,right:rect.right,width:rect.width};
+  }));
+  for(const box of boxes)expect(Math.abs(box.top-boxes[0].top)).toBeLessThan(3);
+  for(let i=1;i<boxes.length;i++)expect(boxes[i].left).toBeGreaterThanOrEqual(boxes[i-1].right-2);
+  await expect(bar.getByRole("button",{name:"选择统计时间"})).toHaveText("全部时间");
+  await bar.getByRole("button",{name:"选择统计时间"}).click();
+  await expect(bar.getByRole("group",{name:"自定义统计时间"})).toBeVisible();
+  await bar.getByRole("button",{name:"清空日期"}).click();
+ }
+});
