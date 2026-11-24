@@ -24,7 +24,7 @@ export function buildListingVariantGroups(details:ListingVariantDetail[]):Listin
  return [...groups.values()];
 }
 export function variantGroupReady(group:ListingVariantImageGroup):boolean{
- return listingVariantPhotoRoles.every(role=>group.optimizedImages.some(img=>img.role===role&&/^https:\/\/|^\/assets\//.test(img.url)))&&new Set(group.optimizedImages.map(x=>x.url)).size===6;
+ return listingVariantPhotoRoles.every(role=>group.optimizedImages.some(img=>img.role===role&&/^(https:\/\/|\/assets\/)/.test(img.url)&&!group.originalImages.includes(img.url)))&&group.optimizedImages.length===6&&new Set(group.optimizedImages.map(x=>x.url)).size===6;
 }
 export type ShowcaseUploadTask={
  id:string;organizationId:string;memberId:string;
@@ -184,6 +184,7 @@ export function saveListingVariantPhoto(org:string,member:string,taskId:string,c
  const task=tasks.find(t=>t.id===taskId);
  if(!task?.demoProduct?.variantImageGroups?.length||!["待补全","待审核"].includes(task.status))throw Error("该商品当前不可修改变体优化图片");
  if(!task.demoProduct.variantImageGroups.some(g=>g.id===colorGroupId))throw Error("所选颜色组不存在");
+ if(path&&task.demoProduct.variantImageGroups.some(g=>g.originalImages.includes(path)))throw Error("原始采集图片不能作为 AI 优化图片使用");
  const groups=task.demoProduct.variantImageGroups.map(g=>{
   if(g.id!==colorGroupId)return g;
   const other=g.optimizedImages.filter(img=>img.role!==role);
