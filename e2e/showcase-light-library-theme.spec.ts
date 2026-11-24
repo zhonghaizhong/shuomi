@@ -117,14 +117,19 @@ test("skill library entry cards open independent pages without relying on third-
  for(const [key,title] of [["official","官方模板"],["mine","我的技能"],["team","团队技能"]]){
   await expect(root.locator('[data-skill-entry="'+key+'"]').getByRole("heading",{name:title})).toBeVisible();
  }
+ const skillTabs=page.getByRole("navigation",{name:"技能库分类"});
  await root.locator('[data-skill-entry="official"]').getByRole("button",{name:"浏览官方模板"}).click();
- await expect(page).toHaveURL(/#\/workbench\/agents\/skills\/official/);
+ // Approved design switches the content below stable tabs, not the browser URL.
+ await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
  await expect(root.getByRole("heading",{name:"官方模板",level:1})).toBeVisible();
- await nav.getByRole("link",{name:"技能库",exact:true}).click();
+ await expect(skillTabs.getByRole("button",{name:"官方模板",exact:true})).toHaveAttribute("aria-current","page");
+ await skillTabs.getByRole("button",{name:"技能库介绍"}).click();
  await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
+ await expect(root.locator('[data-skill-entry]')).toHaveCount(3);
  await root.locator('[data-skill-entry="mine"]').getByRole("button",{name:"查看我的技能"}).click();
- await expect(page).toHaveURL(/#\/workbench\/agents\/skills\/mine/);
+ await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
  await expect(root.getByRole("heading",{name:"我的技能",level:1})).toBeVisible();
+ await expect(skillTabs.getByRole("button",{name:"我的技能",exact:true})).toHaveAttribute("aria-current","page");
 });
 
 test("skill pages share the approved tools header and readable dual-theme controls",async({page})=>{
@@ -235,7 +240,10 @@ test("knowledge landing has exactly two compact entries at desktop and mobile wi
   }
  }
  await page.locator('[data-knowledge-entry="mine"]').getByRole("button",{name:"管理我的知识库"}).click();
- await expect(page).toHaveURL(/\/workbench\/ai\/knowledge\/mine/);
+ await expect(page).toHaveURL(/#\/workbench\/ai\/knowledge(?:\?.*)?$/);
+ await expect(page.locator('[data-library-page="knowledge-mine"]')).toBeVisible();
+ await expect(page.getByRole("heading",{name:"我的知识库",level:1})).toBeVisible();
+ await expect(page.getByRole("navigation",{name:"知识库分类"}).getByRole("button",{name:"我的知识库",exact:true})).toHaveAttribute("aria-current","page");
 });
 
 test("knowledge landing keeps readable card, header and workflow surfaces in both themes",async({page})=>{
@@ -289,5 +297,8 @@ test("skill home matches knowledge layout with three aligned destinations and co
   }
  }
  await page.getByRole("button",{name:"浏览官方模板"}).click();
- await expect(page).toHaveURL(/agents\/skills\/official/);
+ await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
+ await expect(page.locator('[data-skill-flow="official"]')).toBeVisible();
+ await expect(page.getByRole("heading",{name:"官方模板",level:1})).toBeVisible();
+ await expect(page.getByRole("navigation",{name:"技能库分类"}).getByRole("button",{name:"官方模板",exact:true})).toHaveAttribute("aria-current","page");
 });
