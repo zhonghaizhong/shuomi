@@ -1,3 +1,4 @@
+import type {ReactNode} from "react";
 "use client";
 import {useState,useEffect,useRef} from "react";
 import {useRouter} from "next/navigation";
@@ -31,7 +32,7 @@ export function readPersonalPreviewSkills(organizationId="SM-ENT-000001",memberI
 export function savePersonalPreviewSkill(skill:PersonalPreviewSkill,organizationId="SM-ENT-000001",memberId="admin"){
  try{sessionStorage.setItem(scopedKey(personalKey,organizationId,memberId),JSON.stringify([...readPersonalPreviewSkills(organizationId,memberId).filter(x=>x.name!==skill.name),skill]))}catch{}
 }
-export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",memberId="admin",onSectionSelect}:{pathname:string;organizationId?:string;memberId?:string;onSectionSelect?:(path:string)=>void}){
+export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",memberId="admin",onSectionSelect,tabNavigation}:{pathname:string;organizationId?:string;memberId?:string;onSectionSelect?:(path:string)=>void;tabNavigation?:ReactNode}){
  const router=useRouter();
  const category=pathname.endsWith("/official")?"official":pathname.endsWith("/mine")?"mine":pathname.endsWith("/team")?"team":"home";
  const [enabled,setEnabled]=useState(()=>readEnabledPreviewSkills(organizationId,memberId));
@@ -52,6 +53,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
  return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
  <header className={styles.hero}><div className={styles.breadcrumb}>AI工作台 / 技能库</div><h1>技能库</h1><p>选择官方模板、我的技能或团队技能；需要时再在 AI 会话中调用。</p></header>
+ {tabNavigation}
  {category==="home"?<>
  <section className={styles.skillIntroGrid} aria-label="选择技能库入口">
   <article className={styles.skillIntroCard} data-skill-entry="official">
