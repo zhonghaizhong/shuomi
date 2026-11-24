@@ -228,10 +228,11 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   setRecoveringPhotos(true);
   try{
    const found=await recoverLocalListingPhotos(organizationId,memberId,selectedTask.id);
+   if(!found.restored){setPhotoAiOpen(true);setPictureTab("main");setPhotoMode("original");setPhotoIndex(0);}
    setNotice(found.restored
-    ?"已从此浏览器找回 "+found.restored+" 张历史导入图片（全部颜色）；这些是已导入素材，不能自动认定为 AI 重构成品。"
-    :found.found?"找到了本地图片，但当前颜色没有缺失的关联记录；请切换颜色或图片版本查看。"
-    :"当前浏览器没有找到该商品的历史图片。若此前在另一浏览器、无痕窗口或聊天中生成，需重新导入或上传。");
+    ?"已找回 "+found.restored+" 张历史图片并恢复了商品/颜色/图片位次关联；请核对来源，之前真实的 AI 成品不会被覆盖。"
+    :found.found?"此商品本地已有图片记录，但没有新的缺失关联可恢复。已打开原图重构入口；真实生成需要连接图片 AI 服务。"
+    :"此浏览器没有找到可恢复的历史成品。已切换到原始图片并打开单张重构配置；演示站未接通图片生成服务，暂不能自动生成。");
   }catch(e){setNotice(e instanceof Error?e.message:"检查本地历史图片失败");}
   finally{setRecoveringPhotos(false);}
  };
@@ -438,11 +439,11 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <button type="button" aria-pressed={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPhotoIndex(0);setPhotoAiOpen(false)}}>优化图（{selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length}/6）</button>
       <button type="button" aria-pressed={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPhotoIndex(0);setPhotoAiOpen(false)}}>原始图片（{selectedColorOriginalImages.length}）</button>
      </div>:null}
-     {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedColorOptimizedImages.length===0?<div className={styles.galleryRecoverRow}>
-      <span>当前颜色没有已关联的优化图</span>
-      <button type="button" disabled={!selectedTask||recoveringPhotos} onClick={()=>void restoreHistoricalPhotos()}>{recoveringPhotos?"正在查找…":"找回本浏览器历史图片"}</button>
+     {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length<6?<div className={styles.galleryRecoverRow}>
+      <span>检查已生成图片的历史关联</span>
+      <button type="button" disabled={!selectedTask||recoveringPhotos} onClick={()=>void restoreHistoricalPhotos()}>{recoveringPhotos?"正在查找…":"恢复已生成的 AI 重构图片"}</button>
      </div>:null}
-     {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.some(x=>x.source==="demo-import")?<p className={styles.galleryImportedNote}>包含 {selectedVariantGroup.optimizedImages.filter(x=>x.source==="demo-import").length} 张历史导入素材，尚未验证为 AI 重构成品。</p>:null}
+     {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.some(x=>x.source==="demo-import")?<p className={styles.galleryImportedNote}>已找回 {selectedVariantGroup.optimizedImages.filter(x=>x.source==="demo-import").length} 张历史文件；请确认它们是 AI 重构成品还是其他来源，系统不会擅自改写来源证明。</p>:null}
      {galleryImages.length?<div className={styles.compactGallery}>
       <div className={styles.productHeroImage}>
        <button type="button" className={styles.galleryNav} aria-label="上一张图片" disabled={photoSelected===0} onClick={()=>setPhotoIndex(i=>Math.max(0,i-1))}>‹</button>
@@ -465,7 +466,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <strong>单张图片 AI 重构 · {rawGalleryImages.length?"第 "+(photoSelected+1)+" 张":"使用当前变体原图"}</strong>
       {aiPhotoDisplay?<div className={styles.aiSourcePreview}><ListingProductPhoto src={aiPhotoDisplay} alt="当前单张重构的原始参考图片" size={80}/><span>仅使用这一张图片作为重构参考，保留原始文件。</span></div>:null}
       <textarea aria-label="图片 AI 重构要求" rows={2} value={photoAiPrompt} onChange={e=>setPhotoAiPrompt(e.target.value)} placeholder="描述希望如何优化当前图片，例如调整背景与构图，保留商品真实外观。"/>
-      <button type="button" onClick={()=>setNotice("当前 Showcase 尚未接入图片生成服务；没有生成或替换图片。已保留现有图片，请在正式 AI 服务接入后执行。")}>生成单张重构建议</button>
+      <button type="button" onClick={()=>setNotice("当前 GitHub Pages 演示版没有可调用的图片生成后端。原图与重构指令已准备好，但未执行生成；请连接正式图片生成服务后重试，或上传已生成的图片。")}>生成单张重构建议</button>
       <small>此处只针对当前选中的图片；未接通图片生成接口前不会伪造 AI 成品。</small>
      </div>:null}
      {selectedVariantGroup&&selectedTask?.id.startsWith("SHUOMI-AMZ-AI-MULTI:")?<details className={styles.galleryImportAdvanced}>
