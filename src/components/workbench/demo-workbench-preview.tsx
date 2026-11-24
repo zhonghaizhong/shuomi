@@ -142,6 +142,32 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
     .map(event=>[new Date(event.at).toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}),event.category,event.message,"#7367f0"]);
   if(recentAccountActivity.length===0)recentAccountActivity.push(["—","暂无近期操作","成员、角色及推广操作会显示在这里","#7367f0"]);
   const [query, setQuery] = useState("");
+  const [matrixTime,setMatrixTime]=useState("近7天");
+  const [matrixDateFrom,setMatrixDateFrom]=useState("");
+  const [matrixDateTo,setMatrixDateTo]=useState("");
+  const [matrixPlatform,setMatrixPlatform]=useState("全部平台");
+  const [matrixSite,setMatrixSite]=useState("全部站点");
+  const [matrixType,setMatrixType]=useState("全部类型");
+  const [matrixDateOpen,setMatrixDateOpen]=useState(false);
+  const [matrixApplied,setMatrixApplied]=useState({time:"近7天",from:"",to:"",platform:"全部平台",site:"全部站点",type:"全部类型",query:""});
+  const resetMatrixFilters=()=>{
+    setMatrixTime("近7天");setMatrixDateFrom("");setMatrixDateTo("");
+    setMatrixPlatform("全部平台");setMatrixSite("全部站点");setMatrixType("全部类型");
+    setMatrixDateOpen(false);setQuery("");setNotice("");
+    setMatrixApplied({time:"近7天",from:"",to:"",platform:"全部平台",site:"全部站点",type:"全部类型",query:""});
+  };
+  const applyMatrixFilters=()=>{
+    if(matrixTime==="自定义"&&(!matrixDateFrom||!matrixDateTo)){
+      setMatrixDateOpen(true);setNotice("请选择自定义时间的开始日期和结束日期。");return;
+    }
+    if(matrixTime==="自定义"&&matrixDateFrom>matrixDateTo){
+      setMatrixDateOpen(true);setNotice("开始日期不能晚于结束日期。");return;
+    }
+    setMatrixApplied({time:matrixTime,from:matrixDateFrom,to:matrixDateTo,platform:matrixPlatform,site:matrixSite,type:matrixType,query});
+    setMatrixDateOpen(false);
+    setNotice("筛选条件已应用；目前尚无已同步的店铺经营数据。");
+  };
+
   const [notice, setNotice] = useState("");
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [demoGoals, setDemoGoals] = useState<DemoGoal[]>([]);
@@ -250,7 +276,21 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
     </> : page.layout === "storeMatrix" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>运营驾驶舱 / 店铺矩阵</div><h1>店铺矩阵</h1><p>接入并授权店铺后汇总各店经营表现。</p></div></header>
       <section className={styles.goalMetrics}>{[["0","店铺总数","尚无经营数据"],["0","正常店铺","待经营状态评估"],["0","需关注店铺","待经营状态评估"],["0","异常店铺","待经营状态评估"]].map(([value,label,hint],i)=><article key={label} data-step={i}><strong>{value}</strong><span><b>{label}</b><small>{hint}</small></span></article>)}</section>
-      <section className={styles.matrixPanel}><div className={`${styles.matrixFilters} ${styles.cockpitFilterRow}`}><div className={styles.cockpitFilterSelects}>{["近7天","全部平台","全部站点","全部类型"].map((v,i)=><select key={i} aria-label={["时间","平台","站点","店铺类型"][i]}><option>{v}</option></select>)}</div><div className={styles.cockpitFilterActions}><input placeholder="搜索店铺名称" value={query} onChange={event=>setQuery(event.target.value)}/><button onClick={()=>setQuery("")}>重置</button><button className={styles.primary} onClick={()=>setNotice("暂无店铺经营数据，接入业务后即可筛选。")}>确认</button></div></div><header><div><h2>店铺经营表现</h2><p>同周期经营指标与状态</p></div><button onClick={()=>chooseAction("判定说明")}>判定说明</button></header><div className={styles.matrixTable}><div className={styles.matrixColumns}><b>店铺</b><b>平台 · 站点</b><b>成交金额</b><b>成交订单</b><b>预估净利润</b><b>预估净利率</b><b>订单环比</b><b>经营状态</b></div><p role="status">暂无店铺经营数据，请先完成店铺授权及业务同步。</p></div><footer>共 0 家店铺 <span>待真实业务接入后统计</span></footer></section>
+      <section className={styles.matrixPanel}><div className={`${styles.matrixFilters} ${styles.cockpitFilterRow} ${styles.matrixSingleRow}`}>
+       <div className={styles.matrixTimePicker}>
+         <button type="button" aria-label="选择统计时间" aria-expanded={matrixDateOpen} className={styles.matrixTimeTrigger} onClick={()=>setMatrixDateOpen(open=>!open)}>{matrixTime==="自定义"&&matrixDateFrom&&matrixDateTo?`${matrixDateFrom} 至 ${matrixDateTo}`:matrixTime}</button>
+         {matrixDateOpen?<div className={styles.matrixDatePopover} role="group" aria-label="自定义统计时间">
+           <div className={styles.matrixDatePresets}>{["近7天","近30天","自定义"].map(time=><button key={time} type="button" aria-pressed={matrixTime===time} onClick={()=>{setMatrixTime(time);if(time!=="自定义")setMatrixDateOpen(false)}}>{time}</button>)}</div>
+           {matrixTime==="自定义"?<div className={styles.matrixDateRange}><label>开始日期<input type="date" aria-label="统计开始日期" value={matrixDateFrom} max={matrixDateTo||undefined} onChange={event=>setMatrixDateFrom(event.target.value)}/></label><label>结束日期<input type="date" aria-label="统计结束日期" value={matrixDateTo} min={matrixDateFrom||undefined} onChange={event=>setMatrixDateTo(event.target.value)}/></label><button type="button" className={styles.primary} onClick={()=>{if(matrixDateFrom&&matrixDateTo&&matrixDateFrom<=matrixDateTo){setMatrixDateOpen(false);setNotice("")}else setNotice("请选择正确的开始和结束日期。")}}>确定日期</button></div>:null}
+         </div>:null}
+       </div>
+       <select aria-label="平台" value={matrixPlatform} onChange={event=>setMatrixPlatform(event.target.value)}><option>全部平台</option><option>SHEIN</option></select>
+       <select aria-label="站点" value={matrixSite} onChange={event=>setMatrixSite(event.target.value)}><option>全部站点</option><option>美国站</option></select>
+       <select aria-label="店铺类型" value={matrixType} onChange={event=>setMatrixType(event.target.value)}><option>全部类型</option><option>全托店</option><option>半托店</option><option>自营店</option></select>
+       <input type="search" aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={event=>setQuery(event.target.value)}/>
+       <button type="button" onClick={resetMatrixFilters}>重置</button>
+       <button type="button" className={styles.primary} onClick={applyMatrixFilters}>确认</button>
+     </div><header><div><h2>店铺经营表现</h2><p>同周期经营指标与状态</p></div><button onClick={()=>chooseAction("判定说明")}>判定说明</button></header><div className={styles.matrixTable}><div className={styles.matrixColumns}><b>店铺</b><b>平台 · 站点</b><b>成交金额</b><b>成交订单</b><b>预估净利润</b><b>预估净利率</b><b>订单环比</b><b>经营状态</b></div><p role="status">暂无店铺经营数据，请先完成店铺授权及业务同步。</p></div><footer>共 0 家店铺 <span>待真实业务接入后统计</span></footer></section>
     </> : page.layout === "goals" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>运营驾驶舱 / 目标管理</div><h1>目标管理</h1><p>为不同店铺、指标和周期建立独立目标，后续通过真实经营数据跟踪。</p></div><button className={styles.primary} onClick={()=>chooseAction("新建目标")}>新建目标</button></header>
       <section className={styles.goalMetrics}>{[[String(demoGoals.length),"全部目标","当前新建的目标"],["0","已生效","尚未关联业务"],[String(demoGoals.length),"草稿","等待业务接入"]].map(([value,label,hint],i)=><article key={label} data-step={i}><strong>{value}</strong><span><b>{label}</b><small>{hint}</small></span></article>)}</section>
