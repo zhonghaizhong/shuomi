@@ -35,6 +35,14 @@ async function storePhotos(entries:{key:string;blob:Blob}[]):Promise<void>{
   });
  }finally{db.close();}
 }
+/** Local image attachments are browser-only, and are never classified as generated AI artwork. */
+export async function saveListingLocalPhoto(org:string,member:string,task:string,color:string,file:File):Promise<string>{
+ if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>8*1024*1024||file.size===0)
+  throw new Error("请选择不超过 8MB 的 JPG、PNG 或 WebP 图片");
+ const id=["manual",org,member,task,color,Date.now().toString(36),Math.random().toString(36).slice(2,9)].join("|");
+ await storePhotos([{key:id,blob:file}]);
+ return scheme+id;
+}
 export async function readVariantBundlePhoto(url:string):Promise<Blob|null>{
  if(!isVariantBundleUrl(url))return null;
  const db=await openDatabase();
