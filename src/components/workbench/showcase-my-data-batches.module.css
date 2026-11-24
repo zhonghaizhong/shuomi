@@ -172,9 +172,9 @@
 /* MY DATA — PREMIUM VUEXY V2
    Compact controls, layered records, restrained status colors; keeps every action. */
 .wrapper{
- --md-bg:#18283c;--md-panel:#142237;--md-inner:#20334b;
- --md-line:#31465e;--md-ink:#edf4ff;--md-muted:#b6c5d6;
- --md-primary:#7367f0;--md-input:#17283c;
+ --md-bg:#2f3349;--md-panel:#393d55;--md-inner:#34384e;
+ --md-line:#52576e;--md-ink:#cfcde4;--md-muted:#acabc1;
+ --md-primary:#7367f0;--md-input:#393d55;
  --md-shadow:0 7px 24px rgba(4,13,29,.14);
  display:grid;gap:14px;color:var(--md-ink);
 }
