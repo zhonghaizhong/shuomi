@@ -43,6 +43,9 @@ export type ShowcaseUploadTask={
  status:"待补全"|"待执行智能体"|"待审核"|"待平台提交";
  demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:ListingVariantDetail[];variantImageGroups?:ListingVariantImageGroup[];imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
  textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>};
+ /** User-managed display gallery; never replaces preserved source evidence. Key is color group id or "default". */
+ imageEdits?:Record<string,{main?:string[];detail?:string[]}>;
+
  createdAt:string;demo:true;
 };
 export const showcaseUploadTasksEvent="shuomi:listing-upload-tasks-updated";
@@ -200,6 +203,18 @@ export function saveListingVariantPhoto(org:string,member:string,taskId:string,c
   return {...g,optimizedImages:next,reviewedAt:undefined};
  });
  const next={...task,demoProduct:{...task.demoProduct,variantImageGroups:groups}};
+ sessionStorage.setItem(key(org,member),JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
+ window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
+ return next;
+}
+/** Store only a local gallery arrangement. Source images and independently verified AI results remain untouched. */
+export function saveShowcaseGalleryEdits(org:string,member:string,taskId:string,colorId:string,kind:"main"|"detail",urls:string[]):ShowcaseUploadTask{
+ const tasks=readShowcaseUploadTasks(org,member),task=tasks.find(t=>t.id===taskId);
+ if(!task?.demoProduct||!["待补全","待审核"].includes(task.status))throw new Error("当前任务不可编辑图片");
+ if(kind==="main"&&task.demoProduct.variantImageGroups?.length&&!task.demoProduct.variantImageGroups.some(g=>g.id===colorId))throw new Error("颜色组不存在");
+ if(urls.length>24||urls.some(u=>typeof u!=="string"||!(/^(https:\\/\\/|\\/assets\\/|shuomi-bundle:)/.test(u))))throw new Error("图片地址无效或数量超限");
+ const existing=task.imageEdits??{};
+ const next={...task,imageEdits:{...existing,[colorId]:{...existing[colorId],[kind]:[...urls]}}};
  sessionStorage.setItem(key(org,member),JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
