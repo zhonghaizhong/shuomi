@@ -1,3 +1,4 @@
+import type {ReactNode} from "react";
 "use client";
 import {useEffect,useRef,useState} from "react";
 import {useRouter} from "next/navigation";
@@ -8,7 +9,7 @@ const titles:Record<string,string>={home:"项目中心",active:"进行中项目"
 const descriptions:Record<string,string>={home:"从目标到成果，掌握项目进度；具体任务执行在任务中心完成。",active:"查看项目进度与关联资源，管理目标和阶段成果。",mine:"查看项目进度与关联资源，创建、配置及管理项目执行计划。",recent:"继续查看近期打开的项目与当前执行进度。",templates:"按业务需求选择官方模板，查看介绍后创建项目。",archived:"归档项目的资料与报告将继续保留，查看详情后可申请恢复。"};
 const stats=[["进行中","进行中项目","正在规划与推进",FolderKanban],["待确认","待确认项目","等待关键决策",Clock3],["已完成","已完成项目","可查看阶段成果",CheckCircle2],["已归档","已归档项目","可查看历史成果与归档记录",Archive]] as const;
 const fmt=(t:number)=>t>10000?new Date(t).toLocaleDateString("zh-CN"):"示例记录";
-export function ShowcaseProjectCenter({pathname,onSectionSelect}:{pathname:string;onSectionSelect?:(path:string)=>void}){
+export function ShowcaseProjectCenter({pathname,onSectionSelect,tabNavigation}:{pathname:string;onSectionSelect?:(path:string)=>void;tabNavigation?:ReactNode}){
  const router=useRouter();const route=pathname===PROJECT_ROOT?"home":pathname.split("/").at(-1)||"home";
  const tab=titles[route]?route:"home";
  const [records,setRecords]=useState(readPreviewProjects);const [filter,setFilter]=useState("全部");const [query,setQuery]=useState("");const [search,setSearch]=useState("");
@@ -31,6 +32,7 @@ export function ShowcaseProjectCenter({pathname,onSectionSelect}:{pathname:strin
  const filters=tab==="templates"?["全部","店铺经营","商品开发","商品优化","OPC创业"]:tab==="archived"?["全部","店铺经营","商品开发","商品优化","OPC创业"]:["全部","进行中","待确认","已完成"];
  return <main className={s.page} data-project-showcase="true">
  <header className={s.hero}><div><div className={s.breadcrumb}>AI工作台 / 项目中心</div><h1>项目中心</h1><p>查看项目进度、历史访问和模板，按需继续已有工作。</p></div>{tab!=="archived"&&<button className={s.primary} onClick={()=>chat("create")}><Plus size={16}/>新建项目</button>}</header>
+ {tabNavigation}
  {notice&&<div className={s.notice} role="status">{notice}<button onClick={()=>setNotice("")} aria-label="关闭提示">×</button></div>}
  {tab==="home"&&<section className={s.metrics}>{stats.map(([state,label,description,Icon],i)=><button key={state} data-tone={i} onClick={()=>go(state==="已归档"?"archived":"active",state==="已归档"?"":state)}><div><span>{label}</span><Icon size={20}/></div><strong>{records.filter(p=>p.status===state).length}</strong><small>{description}</small></button>)}</section>}
  <section className={s.panel}><header className={s.sectionHead}><div><h2>{tab==="home"?"最近项目":tab==="templates"?"官方模板列表":tab==="archived"?"项目列表":tab==="recent"?"最近访问":"我的项目列表"}</h2><p>{tab==="templates"?"按分类查找模板，先查看介绍，再决定使用。":tab==="home"?"按最近更新排序 · 显示 "+visible.length+" 项":visible.length+" 个项目 · 点击查看详情"}</p></div>{tab==="home"&&<div className={s.actions}><button onClick={()=>go("templates")}>项目模板</button><button onClick={()=>go("active")}>查看全部项目</button></div>}</header>
