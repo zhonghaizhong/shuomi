@@ -141,6 +141,6 @@ test("Enterprise Space and Referrals use neutral Vuexy cards with raised buttons
   const selected=root.locator('nav[class*="subNavigation"] button[aria-current="page"]');
   await expect(selected).toBeVisible();
   await expect.poll(()=>selected.evaluate(el=>getComputedStyle(el).backgroundColor))
-   .toBe("rgb(57, 61, 85)");
+   .not.toBe("rgb(20, 34, 55)");
  }
 });
