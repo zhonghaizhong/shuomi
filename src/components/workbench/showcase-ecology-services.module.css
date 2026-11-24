@@ -284,12 +284,12 @@
 /* Ecology service premium dual-theme unification 2026-11-23 */
 /* All four ecology views share the same Vuexy rhythm, without altering navigation or service logic. */
 .page{
-  --eco-bg:#142237;
-  --eco-surface:#18283c;
-  --eco-raised:#1c3047;
-  --eco-line:#30465e;
-  --eco-text:#eff6ff;
-  --eco-muted:#adc1d4;
+  --eco-bg:#2f3349;
+  --eco-surface:#393d55;
+  --eco-raised:#34384e;
+  --eco-line:#52576e;
+  --eco-text:#cfcde4;
+  --eco-muted:#acabc1;
   --eco-accent:#7367f0;
   --eco-shadow:0 8px 26px rgba(4,12,26,.14);
   --eco-hover-shadow:0 14px 34px rgba(4,12,26,.23);
@@ -423,8 +423,8 @@
 }
 /* Native modal dialogs render in the document top layer, so define theme colors locally too. */
 .dialog,.drawer{
-  --eco-bg:#142237;--eco-surface:#18283c;--eco-raised:#1c3047;
-  --eco-line:#30465e;--eco-text:#eff6ff;--eco-muted:#adc1d4;
+  --eco-bg:#2f3349;--eco-surface:#393d55;--eco-raised:#34384e;
+  --eco-line:#52576e;--eco-text:#cfcde4;--eco-muted:#acabc1;
   background:var(--eco-bg);
   color:var(--eco-text);
   border:1px solid var(--eco-line);
