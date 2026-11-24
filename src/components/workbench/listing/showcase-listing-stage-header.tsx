@@ -1,5 +1,4 @@
 "use client";
-import {useRouter} from "next/navigation";
 import css from "./showcase-listing-stage-header.module.css";
 
 export type ShowcaseListingStageKey="waiting"|"missing"|"review"|"uploaded";
@@ -10,7 +9,6 @@ const stageEntries=[
  {key:"uploaded",label:"已上传",description:"查看平台确认接收的商品、所选批次与优化版本，以及独立的审核和上架状态。"},
 ] as const;
 export function ShowcaseListingStageHeader({stage}:{stage:ShowcaseListingStageKey}){
- const router=useRouter();
  const current=stageEntries.find(item=>item.key===stage)!;
  return <>
   <header className={css.heading}>
@@ -18,9 +16,6 @@ export function ShowcaseListingStageHeader({stage}:{stage:ShowcaseListingStageKe
    <h1>{current.label}</h1>
    <p>{current.description}</p>
   </header>
-  <nav className={css.tabs} aria-label="刊登管理阶段">
-   <button type="button" onClick={()=>router.push("/workbench/listing?preview=1")}>刊登总览</button>
-   {stageEntries.map(item=><button key={item.key} type="button" aria-current={item.key===stage?"page":undefined} onClick={()=>{if(item.key!==stage)router.push("/workbench/listing/"+item.key+"?preview=1")}}>{item.label}</button>)}
-  </nav>
+
  </>;
 }
