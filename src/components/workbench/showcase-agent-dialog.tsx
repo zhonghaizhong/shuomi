@@ -2,6 +2,7 @@
 
 import {useEffect,useId,useRef,useState} from "react";
 import styles from "./showcase-agent-dialog.module.css";
+import {readPodLibrary,savePodLibrary} from "./pod-asset-library";
 import {AgentUseConfigurationDialog,type AgentUseConfiguration,type ConfigurationMode} from "./agent-use-configuration-dialog";
 import {ShowcasePODTaskDialog} from "./showcase-pod-task-dialog";
 import {PodManagementWorkspace} from "./showcase-pod-management-dialog";
@@ -18,6 +19,23 @@ function readableReference(value:string){
  if(value.startsWith("skill:"))return "已关联技能准确版本";
  if(value.startsWith("knowledge:"))return "已关联企业知识库";
  return value;
+}
+
+/* Static Pages preview: produce a clearly labeled local SVG mockup.
+ * This is NOT AI inference. Swap for an authenticated image-generation endpoint
+ * when the real model and billing flow are available. */
+function makePodDemoArtwork(prompt:string):string{
+ const safe=(value:string)=>value.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
+ const flower=/花|flower|floral|daisy/i.test(prompt);
+ const cat=/猫|cat|kitten/i.test(prompt);
+ const motif=flower
+  ? '<g fill="#f3b9d7" stroke="#7a467b" stroke-width="8"><ellipse cx="256" cy="178" rx="37" ry="90"/><ellipse cx="256" cy="336" rx="37" ry="90"/><ellipse cx="178" cy="256" rx="90" ry="37"/><ellipse cx="334" cy="256" rx="90" ry="37"/><circle cx="256" cy="256" r="58" fill="#ffcb5f"/></g>'
+  : cat
+  ? '<g fill="#ddc5fa" stroke="#554078" stroke-width="9"><path d="M150 225 L166 123 L221 171 Q256 160 291 171 L346 123 L362 225 Q391 355 256 380 Q121 355 150 225Z"/><ellipse cx="215" cy="266" rx="8" ry="14" fill="#554078"/><ellipse cx="297" cy="266" rx="8" ry="14" fill="#554078"/><path d="M244 298 Q256 312 268 298" fill="none"/></g>'
+  : '<g fill="#9f94f6" stroke="#6358a5" stroke-width="7"><path d="M256 106 L287 211 L397 211 L307 273 L341 385 L256 318 L171 385 L205 273 L115 211 L225 211Z"/></g>';
+ const excerpt=safe(prompt.slice(0,24));
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="#fcf8ff"/><circle cx="256" cy="252" r="198" fill="#f7edff" stroke="#c4b1e9" stroke-width="5"/>'+motif+'<rect x="36" y="415" width="440" height="70" rx="12" fill="#30294c"/><text x="256" y="439" fill="#fff" font-family="sans-serif" font-size="17" text-anchor="middle">LOCAL DEMO · NOT AI GENERATED</text><text x="256" y="466" fill="#e4dcff" font-family="sans-serif" font-size="16" text-anchor="middle">'+excerpt+'</text></svg>';
+ return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
 }
 
 export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTemplate,organizationId="SM-ENT-000001",memberId="admin",administrator=true}:{
@@ -55,6 +73,8 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  const [podChatPrompt,setPodChatPrompt]=useState("");
  const [podChatImage,setPodChatImage]=useState("");
  const [podChatNotice,setPodChatNotice]=useState("");
+ const [podArtworkPreview,setPodArtworkPreview]=useState<{src:string;prompt:string}|null>(null);
+ const [podArtworkSaved,setPodArtworkSaved]=useState(false);
  const [configMode,setConfigMode]=useState<ConfigurationMode|null>(null);
  const [useConfig,setUseConfig]=useState<AgentUseConfiguration>({});
 
@@ -84,7 +104,27 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  },[info,organizationId,memberId]);
  const isModel=info.kind==="model",isUse=info.kind==="use",isPod=info.title.includes("POD");
  const applyPodChatPrompt=()=>{if(!podChatPrompt.trim()){setPodChatNotice("请先填写希望用于贴图生成的指令。");return;}setPodPatternMode("自定义指令模式");setUseConfig(old=>({...old,patternPrompt:podChatPrompt.trim()}));setPodChatNotice("已将指令应用到贴图素材配置，可打开「自定义指令模式」继续编辑。")};
- const handlePodReference=(file?:File)=>{if(!file)return;if(!file.type.startsWith("image/")){setPodChatNotice("请上传图片文件。");return;}setPodChatImage(file.name);setPodChatNotice("参考图「"+file.name+"」已选择；当前演示未接入图片识别服务，请补充或编辑指令后应用。")};
+ const handlePodReference=(file?:File)=>{if(!file)return;if(!file.type.startsWith("image/")){setPodChatNotice("请上传图片文件。");return;}setPodChatImage(file.name);setPodChatNotice("已上传参考图「"+file.name+"」。请描述画面内容，点击「整理图片指令」；当前尚未接入 AI 图片识别。")};
+ const organizeImagePrompt=()=>{
+  if(!podChatImage){setPodChatNotice("请先上传印花参考图片。");return;}
+  if(!podChatDraft.trim()){setPodChatNotice("图片已上传，请填写图片中的图案、颜色和风格后整理为指令；暂不支持自动识图。");return;}
+  setPodChatPrompt(podChatDraft.trim());setPodChatNotice("已整理你填写的参考图描述，可应用到步骤 4；未执行 AI 图片识别。");
+ };
+ const generatePodArtwork=()=>{
+  const prompt=podChatDraft.trim();
+  if(!prompt){setPodChatNotice("请先输入印花设计指令。");return;}
+  setPodArtworkPreview({src:makePodDemoArtwork(prompt),prompt});
+  setPodArtworkSaved(false);
+  setPodChatNotice("已创建本地印花示意预览（非 AI 生成）。确认后可加入个人素材库；正式生图需接入模型。");
+ };
+ const savePodArtwork=()=>{
+  if(!podArtworkPreview||podArtworkSaved)return;
+  const existing=readPodLibrary(organizationId,memberId);
+  const asset={id:Date.now(),name:"POD本地示意图-"+new Date().toLocaleDateString("zh-CN"),category:"我的自定义分类",style:0,prompt:podArtworkPreview.prompt,dataUrl:podArtworkPreview.src,status:"演示预览"};
+  const ok=savePodLibrary(organizationId,memberId,[...existing,asset]);
+  setPodArtworkSaved(ok);
+  setPodChatNotice(ok?"已加入当前企业及成员的「我的素材库」（浏览器会话演示数据）。":"保存失败：浏览器会话存储空间不足或不可用。");
+ };
  const toggle=(items:string[],set:(value:string[])=>void,item:string)=>set(items.includes(item)?items.filter(v=>v!==item):[...items,item]);
  const validCustom=custom.provider.trim()&&custom.model.trim()&&custom.apiKey.trim();
  const customSubmit=()=>{
@@ -220,15 +260,16 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
     <section className={styles.useStep}><h3>步骤 3 · 启用技能</h3><div className={styles.productConfigRow}><div className={styles.productRowText}><strong>启用执行技能</strong><small>只应用实际选择的我的技能或团队技能，未选择时不自动运行。</small></div><span className={styles.productStatus}>● {skills.length?"已选 "+skills.length+" 项":"未启用"}</span><button type="button" className={styles.primary} onClick={()=>setConfigMode("skills")}>选择技能</button></div></section>
     <section className={styles.useStep}><h3>步骤 4 · 贴图素材</h3><p>选择本次贴图素材的生成方式，点击模式卡进入配置。</p><div className={styles.podModes}>{[["AI自动模式","AI自动确定主题、风格、元素与排版"],["图片裂变模式","根据参考图片裂变多套新贴图"],["自定义指令模式","依据创作指令生成个性化贴图"]].map(([name,desc])=><button type="button" key={name} aria-pressed={podPatternMode===name} onClick={()=>{setPodPatternMode(name);if(name==="图片裂变模式")setConfigMode("pod-pattern-split");else if(name==="自定义指令模式")setConfigMode("pod-pattern-custom");}}><strong>{name}</strong><small>{desc}</small></button>)}</div><div className={styles.imageInstructions}><p>当前配置：{podPatternMode}{useConfig.splitStrength&&podPatternMode==="图片裂变模式"?" · "+useConfig.splitStrength:""}{useConfig.patternPrompt&&podPatternMode==="自定义指令模式"?" · 自定义指令已填写":""}</p>{podPatternMode!=="AI自动模式"?<button className={styles.secondary} type="button" onClick={()=>setConfigMode(podPatternMode==="图片裂变模式"?"pod-pattern-split":"pod-pattern-custom")}>配置当前模式</button>:null}</div><label className={styles.podCheck}><input type="checkbox" checked={podTransparent} onChange={e=>setPodTransparent(e.target.checked)}/>生成透明背景</label></section>
     <section className={styles.useStep}><h3>步骤 5 · 生成数量</h3><p>执行时按批次商品数量自动计算。</p><div className={styles.podCount}><span>每个商品生成</span><button aria-label="减少生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.max(1,v-1))}>−</button><strong>{podQuantity}</strong><button aria-label="增加生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.min(20,v+1))}>+</button><span>个</span></div><div className={styles.actionsRow}><button type="button" className={styles.secondary} onClick={()=>setShowPreview(v=>!v)}>预览配置</button><button type="button" className={styles.primary} onClick={saveTemplate}>保存为模板</button></div>{showPreview?<p role="status" className={styles.inlineNotice}>{podImageMode} · {podPatternMode} · {podQuantity} 个 · {podTransparent?"透明 PNG":"普通背景"} · 已选技能 {skills.length} 项 · 已选知识 {knowledge.length} 项</p>:null}</section>
-   </div><aside className={styles.useHelp}><h3>硕米POD助手</h3><p>上传印花图后可整理生成指令；当前演示不调用 AI 识图，不会虚构识别结果。</p>
+   </div><aside className={styles.useHelp}><h3>硕米POD助手</h3><p>上传图片并补充描述来整理指令，或直接输入指令生成印花示意图。真实识图与生图服务尚未接入。</p>
      <div className={styles.podHelpChat}>
       {podChatImage?<p>参考图片：{podChatImage}</p>:<p>可上传参考印花图，或者直接填写创作要求。</p>}
       <label>贴图生成指令<textarea aria-label="POD助手补充要求" value={podChatDraft} onChange={e=>setPodChatDraft(e.target.value)} placeholder="例如：美式手绘猫咪印花、简洁线条、透明背景、适合服装印制……" rows={4}/></label>
-      <div className={styles.podHelpActions}><label className={styles.secondary}>上传印花图<input type="file" accept="image/*" aria-label="上传POD印花参考图" onChange={e=>handlePodReference(e.target.files?.[0])}/></label><button type="button" className={styles.primary} onClick={()=>{if(!podChatDraft.trim()){setPodChatNotice("请先填写创作要求。");return;}setPodChatPrompt(podChatDraft.trim());setPodChatNotice("已整理为待应用的用户指令；当前没有真实 AI 识别结果。")}}>整理指令</button></div>
+      <div className={styles.podHelpActions}><label className={styles.secondary}>上传参考图<input type="file" accept="image/*" aria-label="上传POD印花参考图" onChange={e=>handlePodReference(e.target.files?.[0])}/></label><button type="button" className={styles.secondary} onClick={organizeImagePrompt}>整理图片指令</button><button type="button" className={styles.primary} onClick={generatePodArtwork}>生成印花图（演示）</button></div>
+      {podArtworkPreview?<section className={styles.podArtworkPreview}><strong>印花图预览 · 本地示意（非 AI 生成）</strong><img src={podArtworkPreview.src} alt="根据输入主题绘制的本地示意印花图，不是 AI 生成图片"/><div className={styles.podHelpActions}><button type="button" className={styles.primary} disabled={podArtworkSaved} onClick={savePodArtwork}>{podArtworkSaved?"已加入我的素材库":"加入我的素材库"}</button><button type="button" className={styles.secondary} onClick={()=>{setPodArtworkPreview(null);setPodArtworkSaved(false)}}>重新设计</button></div></section>:null}
       {podChatPrompt?<section className={styles.podHelpResult}><strong>待应用的贴图指令</strong><p>{podChatPrompt}</p><button type="button" onClick={applyPodChatPrompt}>应用到步骤 4</button></section>:null}
       {podChatNotice?<p role="status">{podChatNotice}</p>:null}
      </div>
-     <p>确认后可继续进入「贴图素材 → 自定义指令模式」编辑。真实生成、扣积分和刊登尚未执行。</p>
+     <p>示意图可保存到当前账号的演示素材库。真实 AI 识图、生图、扣积分及刊登尚未执行。</p>
     </aside>
   </div></>
   :<div className={styles.productLayout}>
