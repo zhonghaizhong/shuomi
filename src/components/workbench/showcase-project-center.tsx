@@ -8,7 +8,7 @@ const titles:Record<string,string>={home:"项目中心",active:"进行中项目"
 const descriptions:Record<string,string>={home:"从目标到成果，掌握项目进度；具体任务执行在任务中心完成。",active:"查看项目进度与关联资源，管理目标和阶段成果。",mine:"查看项目进度与关联资源，创建、配置及管理项目执行计划。",recent:"继续查看近期打开的项目与当前执行进度。",templates:"按业务需求选择官方模板，查看介绍后创建项目。",archived:"归档项目的资料与报告将继续保留，查看详情后可申请恢复。"};
 const stats=[["进行中","进行中项目","正在规划与推进",FolderKanban],["待确认","待确认项目","等待关键决策",Clock3],["已完成","已完成项目","可查看阶段成果",CheckCircle2],["已归档","已归档项目","可查看历史成果与归档记录",Archive]] as const;
 const fmt=(t:number)=>t>10000?new Date(t).toLocaleDateString("zh-CN"):"示例记录";
-export function ShowcaseProjectCenter({pathname}:{pathname:string}){
+export function ShowcaseProjectCenter({pathname,onSectionSelect}:{pathname:string;onSectionSelect?:(path:string)=>void}){
  const router=useRouter();const route=pathname===PROJECT_ROOT?"home":pathname.split("/").at(-1)||"home";
  const tab=titles[route]?route:"home";
  const [records,setRecords]=useState(readPreviewProjects);const [filter,setFilter]=useState("全部");const [query,setQuery]=useState("");const [search,setSearch]=useState("");
@@ -18,7 +18,7 @@ export function ShowcaseProjectCenter({pathname}:{pathname:string}){
  const refresh=()=>setRecords(readPreviewProjects());
  useEffect(()=>{refresh();setDetailId("");setTemplateName("");setConfirm(null);setFilter(new URLSearchParams(location.hash.split("?")[1]||"").get("status")||"全部");setQuery("");setSearch("")},[pathname]);
  useEffect(()=>{if((detailId||templateName)&&!dialog.current?.open)dialog.current?.showModal();else if(!detailId&&!templateName&&dialog.current?.open)dialog.current.close()},[detailId,templateName]);
- const go=(suffix="",state="")=>{setDetailId("");setTemplateName("");router.push(PROJECT_ROOT+(suffix?"/"+suffix:"")+"?preview=1"+(state?"&status="+encodeURIComponent(state):""));if(suffix===tab)setFilter(state||"全部")};
+ const go=(suffix="",state="")=>{setDetailId("");setTemplateName("");const target=PROJECT_ROOT+(suffix?"/"+suffix:"");if(onSectionSelect)onSectionSelect(target);else router.push(target+"?preview=1"+(state?"&status="+encodeURIComponent(state):""));if(state||suffix===tab)setFilter(state||"全部")};
  const save=(p:PreviewProject)=>{try{savePreviewProject(p);refresh();return true}catch{setNotice("无法保存本地演示记录，请检查浏览器存储权限。");return false}};
  const open=(p:PreviewProject)=>{save({...p,visited:Date.now()});setDetailId(p.id);setMilestone(p.milestone);setProgress(p.progress);setStatus(p.status==="已归档"?p.previousStatus||"进行中":p.status);setReport("");setConfirm(null)};
  const close=()=>{setDetailId("");setTemplateName("");setConfirm(null)};
