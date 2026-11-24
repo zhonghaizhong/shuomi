@@ -1,5 +1,5 @@
-import type {ReactNode} from "react";
 "use client";
+import type {ReactNode} from "react";
 import {useEffect,useMemo,useRef,useState} from "react";
 import {readOwnProductBatches,listOwnReadyProducts,ownProductUpdated} from "../showcase-own-product-data";
 import {readOptimizedDatasets,optimizedDatasetsChanged} from "../showcase-optimized-datasets";
