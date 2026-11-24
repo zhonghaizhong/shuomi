@@ -21,7 +21,7 @@ const branches=[
  {eyebrow:"智能体处理",title:"启用智能体 → 进入待审核",description:"启用智能体后，先确认处理结果，再继续上传。",href:"/workbench/listing/review",action:"进入待审核"},
 ] as const;
 
-export function ListingOverview({navigate,showHeading=true}:{navigate?:(href:string)=>void;showHeading?:boolean}){
+export function ListingOverview({navigate,showHeading=true,showTabs=true}:{navigate?:(href:string)=>void;showHeading?:boolean;showTabs?:boolean}){
  const router=useRouter();
  const go=(href:string)=>{const preview=typeof window!=="undefined"&&new URLSearchParams(window.location.search).get("preview")==="1";const target=preview?href+(href.includes("?")?"&":"?")+"preview=1":href;navigate?navigate(target):router.push(target)};
  return <div className={styles.page} data-listing-management-overview>
@@ -30,9 +30,9 @@ export function ListingOverview({navigate,showHeading=true}:{navigate?:(href:str
     <h1>刊登管理</h1>
     <p>统一管理商品从数据准备到平台上传的全过程。</p>
   </header>:null}
-  <nav className={styles.stageTabs} aria-label="刊登管理阶段">
+  {showTabs?<nav className={styles.stageTabs} aria-label="刊登管理阶段">
    {[{label:"刊登总览",href:"/workbench/listing"},{label:"待上传",href:"/workbench/listing/waiting"},{label:"待补全",href:"/workbench/listing/missing"},{label:"待审核",href:"/workbench/listing/review"},{label:"已上传",href:"/workbench/listing/uploaded"}].map(item=><button key={item.href} type="button" aria-current={item.href==="/workbench/listing"?"page":undefined} onClick={()=>go(item.href)}>{item.label}</button>)}
-  </nav>
+  </nav>:null}
   <section className={styles.entrances} aria-label="刊登管理主要入口">
     {entrances.map(item=><article className={styles.entry} key={item.title}>
       <header><h2>{item.title}</h2><span>{item.tag}</span></header>
