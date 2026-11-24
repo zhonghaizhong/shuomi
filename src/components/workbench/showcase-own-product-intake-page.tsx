@@ -4,6 +4,7 @@ import {useRouter} from "next/navigation";
 import {readOwnIntakeNavigation,type OwnIntakeStage} from "./showcase-own-product-intake-navigation";
 import {readOwnProductBatches,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
 import css from "./showcase-own-product-intake-page.module.css";
+import {previewOwnProductOptimization} from "./showcase-own-product-optimization-preview";
 
 export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeStage;onClose?:()=>void}){
  const router=useRouter();
@@ -20,6 +21,8 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
  const selected=records.find(p=>p.id===selectedId);
  const currentSku=draft.find(s=>s.id===skuId)??draft[0];
  const missing=checkOwnProductSkus(draft);
+ const optimization=context&&selected?previewOwnProductOptimization(context.organizationId,context.memberId,selected,draft):null;
+ const optimizedSku=optimization?.proposed.find(p=>p.skuId===currentSku?.id);
  const skuMissing=currentSku?checkOwnProductSkus([currentSku]):[];
  const gallery=currentSku?.images??[];
  const activeImage=gallery.length?gallery[Math.min(imageIndex,gallery.length-1)]:null;
@@ -78,7 +81,13 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
     {!selected?<div className={css.empty}>从左侧选择一件商品，{stage==="pending"?"继续补全缺失资料。":"核对完整资料后确认入库。"}</div>:<>
      <header><div><h2>{selected.name}</h2><p className={css.productMeta}>{batches.find(b=>b.id===selected.batchId)?.name??"原始批次"} · {selected.source} · {selected.createdAt}</p></div><span>{stage==="pending"?"首次入库补全":"首次入库审核"}</span></header>
      <section className={css.summary} aria-label="商品资料检查总览"><strong>资料检查</strong><span>{draft.length} 个 SKU</span><span className={missing.length?css.warning:css.ready}>{missing.length?("需要完善 "+missing.length+" 项"):"必填资料齐全"}</span></section>
+     {optimization?<section className={css.agentReport} aria-label="智能体模板模拟优化结果">
+       <div className={css.agentReportHeader}><div><strong>商品优化智能体 · 模拟执行报告</strong><p>模板：{optimization.template} · 来源：当前账号已保存模板 · 此处未调用真实 AI，也不代表已生成新的商品图片</p></div><span className={optimization.readyForReview?css.ready:css.warning}>{optimization.readyForReview?"优化稿待审核":"优化稿待补全"}</span></div>
+       <div className={css.agentSteps}>{optimization.steps.map((step,i)=><div className={css.agentStep} key={i}><strong>{String(i+1).padStart(2,"0")} · {step.name}</strong><span className={step.status==="needs-input"?css.warning:step.status==="not-enabled"?css.neutral:css.ready}>{step.status==="needs-input"?"需处理":step.status==="not-enabled"?"未启用":"已模拟"}</span><p>{step.result}</p></div>)}</div>
+       <div className={css.agentOutcome}><strong>检查结论</strong><span>{optimization.remaining.length?("仍有 "+optimization.remaining.length+" 项资料需要人工完善；完善后重新检测。"):"模拟优化稿已整理完毕，必填资料齐全，等待人工审核确认。"}</span></div>
+      </section>:selected.agent?<section className={css.agentReport} aria-label="智能体选择记录"><strong>智能体：{selected.agent} · 模板：{selected.template||"未选择"}</strong><p>当前商品尚无可读取的商品优化智能体模板配置，不展示虚构的优化结果。</p></section>:null}
      <div className={css.skus} aria-label="切换 SKU">{draft.map(s=><button type="button" key={s.id} data-selected={skuId===s.id} onClick={()=>{setSkuId(s.id);setImageIndex(0)}}>{s.name||"SKU "+s.id}{checkOwnProductSkus([s]).length?" · 待补全 "+checkOwnProductSkus([s]).length:" · 已完整"}</button>)}</div>
+     {optimizedSku?<section className={css.optimizedCandidate} aria-label="本 SKU 模拟优化内容"><div className={css.sectionHeading}><strong>当前 SKU · 模拟优化后内容</strong><span>与原始资料分开展示，不覆盖原资料</span></div><div><strong>优化标题</strong><p>{optimizedSku.title||"无可靠名称，请补全"}</p></div><div><strong>优化简介</strong><p>{optimizedSku.copy||"缺少可靠基础资料，智能体不能凭空补写，请人工完善"}</p></div><div><strong>图片结果</strong><p>原图 {optimizedSku.photos} 张 · 未运行真实图像生成，保留原图用于人工核对</p></div></section>:null}
      {currentSku?<div className={css.details}>
       <section className={css.gallerySection} aria-label="商品图片轮播"><div className={css.sectionHeading}><strong>商品图片</strong><span>{gallery.length}/8 张 · {gallery.length?"点击放大查看":"缺少商品图片"}</span></div>
        <div className={css.galleryMain}>{activeImage?<button type="button" className={css.mainImageButton} onClick={()=>setPreviewSrc(activeImage)} aria-label="放大当前商品图片"><img src={activeImage} alt={currentSku.name+" 图片 "+(Math.min(imageIndex,gallery.length-1)+1)}/></button>:<div className={css.imageEmpty}>暂无商品图片，请补充至少一张真实商品图片</div>}</div>
