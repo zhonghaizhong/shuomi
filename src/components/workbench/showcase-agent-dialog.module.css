@@ -340,3 +340,36 @@
   background:color-mix(in srgb,var(--agent-dialog-primary) 13%,var(--agent-dialog-raised));
   border-color:var(--agent-dialog-primary);
 }
+
+
+/* POD assistant layout: wider dialog, aligned side panel, taller instruction box. */
+@media(min-width:821px){
+ .dialog.useDialog:has(.podHelpChat){
+  width:min(1214px,calc(100vw - 32px));
+  max-width:calc(100vw - 32px);
+ }
+ .dialog.useDialog:has(.podHelpChat) .useLayout{
+  grid-template-columns:minmax(0,1fr) minmax(285px,300px);
+  align-items:stretch;
+ }
+ .dialog.useDialog:has(.podHelpChat) .useHelp{
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+ }
+ .dialog.useDialog:has(.podHelpChat) .podHelpChat{
+  align-content:start;
+  flex:1 1 auto;
+ }
+}
+.dialog.useDialog:has(.podHelpChat) .podHelpChat textarea{
+ min-height:210px;
+ max-height:360px;
+ resize:vertical;
+}
+@media(max-width:820px){
+ .dialog.useDialog:has(.podHelpChat) .podHelpChat textarea{
+  min-height:160px;
+ }
+}
