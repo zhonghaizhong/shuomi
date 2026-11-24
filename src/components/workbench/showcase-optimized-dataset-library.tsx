@@ -74,7 +74,7 @@ export function ShowcaseOptimizedDatasetLibrary({organizationId,memberId}:{organ
   </section>
   <section className={css.panel}>
    <header className={css.panelHeading}><div><h3>定制数据集</h3><span>共 {filtered.length} 个数据集 · 按名称及站点归类</span></div><button type="button" onClick={()=>router.push("/workbench/data/market")}>前往数据定制</button></header>
-   <div className={css.tableWrap}><table><thead><tr><th>数据集名称</th><th>数据来源</th><th>定制范围</th><th>已交付</th><th>最新版本</th><th>交付状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>
+   <div className={css.tableWrap}><table><thead><tr><th>数据集名称</th><th>数据来源</th><th>定制范围</th><th>已交付</th><th>最新版本</th><th>交付状态</th><th>创建时间</th><th>操作</th></tr></thead>
     {rows.map(g=>{
      const newest=g.items[g.items.length-1],done=g.items.filter(x=>x.state==="DELIVERED"),isOpen=expanded.includes(g.key);
      const versionOf=(item:Summary)=>g.items.indexOf(item)+1;
@@ -94,7 +94,7 @@ export function ShowcaseOptimizedDatasetLibrary({organizationId,memberId}:{organ
       </section></td></tr>:null}
      </tbody>
     })}
-   </tbody></table>
+   </table>
    {loading?<p className={css.empty} role="status">正在读取当前账号的定制数据集…</p>:error?<p className={css.empty} role="alert">{error}</p>:!filtered.length?<p className={css.empty} role="status">{records.length?"没有匹配的定制数据集。":"当前账号暂无定制数据集。请前往数据市场提交定制需求；只有真实交付记录才会显示为已交付。"}</p>:null}
    </div>
    <footer className={css.pagination}><span>显示 {rows.length} / {filtered.length} 个数据集 · 第 {activePage} / {pageCount} 页</span><div><button type="button" disabled={activePage===1} onClick={()=>setPage(v=>v-1)}>上一页</button><button type="button" disabled={activePage===pageCount} onClick={()=>setPage(v=>v+1)}>下一页</button><button type="button" onClick={()=>setRevision(v=>v+1)}>刷新</button></div></footer>
