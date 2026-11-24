@@ -4,6 +4,7 @@ import {usePathname,useSearchParams} from "next/navigation";
 import styles from "./section-page-tabs.module.css";
 type Tab={label:string;href:string};
 const groups:Record<string,{title:string;description:string;tabs:Tab[]}>={
+ listing:{title:"刊登管理",description:"从商品数据开始，选择店铺并配置规则，资料缺失先补全；审核完成再查看上传结果。",tabs:[{label:"刊登总览",href:"/workbench/listing"},{label:"待上传",href:"/workbench/listing/waiting"},{label:"待补全",href:"/workbench/listing/missing"},{label:"待审核",href:"/workbench/listing/review"},{label:"已上传",href:"/workbench/listing/uploaded"}]},
  chat:{title:"硕米Chat",description:"新建会话提出需求；最近会话继续工作，收藏会话保存重要内容。",tabs:[{label:"会话首页",href:"/workbench/ai/chat"},{label:"最近会话",href:"/workbench/ai/chat/recent"},{label:"收藏会话",href:"/workbench/ai/chat/saved"}]},
  tasks:{title:"任务中心",description:"查看任务进度；待确认事项及时处理，异常任务查看原因后再继续。",tabs:[{label:"任务总览",href:"/workbench/ai/tasks"},{label:"进行中",href:"/workbench/ai/tasks/running"},{label:"待确认",href:"/workbench/ai/tasks/pending"},{label:"已完成",href:"/workbench/ai/tasks/completed"},{label:"异常任务",href:"/workbench/ai/tasks/errors"},{label:"定时任务",href:"/workbench/ai/tasks/scheduled"}]},
  projects:{title:"项目中心",description:"总览查看项目进度；通过项目模板快速开始，历史项目可随时查找。",tabs:[{label:"项目总览",href:"/workbench/ai/projects"},{label:"进行中项目",href:"/workbench/ai/projects/active"},{label:"最近访问",href:"/workbench/ai/projects/recent"},{label:"项目模板",href:"/workbench/ai/projects/templates"},{label:"已归档",href:"/workbench/ai/projects/archived"}]},
