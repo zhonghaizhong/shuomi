@@ -126,7 +126,7 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await knowledgePicker.getByRole("button",{name:"确认选择"}).click();
  await dialog.getByRole("button",{name:"开启"}).click();
  await dialog.getByRole("button",{name:"保存为模板"}).click();
- await expect(dialog.getByRole("status")).toContainText("请先填写图片优化设置");
+ await expect(dialog.getByRole("status")).toContainText("请先配置图片处理范围与要求");
  await dialog.getByRole("button",{name:"设置",exact:true}).click();
  const imageSettings=page.getByRole("dialog",{name:"AI图片优化设置"});
  await expect(imageSettings).toContainText("共用视觉素材");
