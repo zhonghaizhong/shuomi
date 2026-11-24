@@ -31,6 +31,7 @@ import { ShowcaseTaskCenter } from "./showcase-task-center";
 import { ShowcaseProjectCenter } from "./showcase-project-center";
 import { ShowcaseStoreCenter } from "./stores/showcase-store-center";
 import {SectionPageTabs,sectionForPath} from "./console/section-page-tabs";
+import tabLayout from "./console/section-page-tabs.module.css";
 
 type Row = { title: string; detail: string; value?: string; state?: string };
 type PageSpec = { section: string; title: string; description: string; metrics?: [string, string, string][]; cards?: [string, string, string][]; rows?: Row[]; filters?: string[]; layout?: "supply" | "data" | "ai" | "agents" | "agentMarket" | "agentMine" | "tools" | "services" | "serviceJoin" | "storeCenter" | "plans" | "account" | "accountProfile" | "accountSettings" | "goals" | "storeMatrix" | "alerts" | "advice" | "tasks" | "libraryHub" | "unavailable" };
@@ -116,8 +117,8 @@ export function DemoWorkbenchPreview(props:ShowcasePreviewProps) {
  useEffect(()=>setCurrentPath(props.pathname),[props.pathname]);
  const section=sectionForPath(currentPath);
  // The header and tabs remain the same height on every selected view.
- return section ? <div data-inline-section={section}>
-  <SectionPageTabs section={section} showHelp activeHref={currentPath} onSelect={setCurrentPath}/>
+ return section ? <div className={tabLayout.inlineSection} data-inline-section={section}>
+  <SectionPageTabs section={section} activeHref={currentPath} onSelect={setCurrentPath}/>
   <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={href=>setCurrentPath(href.split("?")[0])}/>
  </div> : <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={setCurrentPath}/>;
 }
@@ -261,7 +262,7 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
   if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div> : null}
-    <header className={styles.header}><div><div className={styles.breadcrumb}>AI工作台 / 硕米Chat</div><h1>硕米Chat</h1><p>发起新会话、继续历史工作、收藏重要成果，协同业务资料与智能执行。</p></div></header>
+    <header className={styles.header}><div><div className={styles.breadcrumb}>AI工作台 / 硕米Chat</div><h1>硕米Chat</h1><p>发起新会话、继续历史工作、收藏重要成果，协同业务资料与智能执行。</p></div><button type="button" className={styles.primary} onClick={()=>navigateInline("/workbench/ai/chat/new?preview=1")}>＋ 新建会话</button></header>
     <ChatIntroduction preview contentTasks={false} createAction={<button className={styles.primary} onClick={() => navigateInline("/workbench/ai/chat/new?preview=1")}>进入新建会话</button>} />
   </div>;
 
