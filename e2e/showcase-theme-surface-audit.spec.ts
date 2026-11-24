@@ -28,9 +28,9 @@ test("all navigable showcase pages keep readable dark/light panels, nested cards
    const result=await page.locator("main.showcase-content").evaluate((main,expected)=>{
     const issues:string[]=[];
     const rgb=(v:string):number[]|null=>{
-     const m=v.match(/^rgba?\\(([^)]+)\\)$/);
+     const m=v.match(/^rgba?\(([^)]+)\)$/);
      if(!m)return null;
-     const n=m[1].split(/[,\\s/]+/).map(Number);
+     const n=m[1].split(/[,\s/]+/).map(Number);
      return n.length>=3&&n.slice(0,3).every(Number.isFinite)?n.slice(0,3):null;
     };
     const lum=(c:number[])=>{const t=c.map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return .2126*t[0]+.7152*t[1]+.0722*t[2]};
@@ -76,7 +76,7 @@ test("all navigable showcase pages keep readable dark/light panels, nested cards
      const dlg=page.getByRole("dialog",{name:"官方技能介绍"});
      await expect(dlg).toBeVisible();
      const dialogBg=await dlg.evaluate(el=>getComputedStyle(el).backgroundColor);
-     const matched=dialogBg.match(/\\d+/g)?.slice(0,3).map(Number)??[];
+     const matched=dialogBg.match(/\d+/g)?.slice(0,3).map(Number)??[];
      if(matched.length===3){
       const avg=matched.reduce((a,b)=>a+b,0)/3;
       if(theme==="light"&&avg<200)failures.push(theme+" "+route+": modal retains dark background "+dialogBg);

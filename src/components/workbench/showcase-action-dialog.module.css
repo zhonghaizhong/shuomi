@@ -23,3 +23,9 @@
 .detail strong{font-weight:600;overflow-wrap:anywhere}
 .detail p{margin:0;overflow-wrap:anywhere}
 @media(max-width:520px){.detail{grid-template-columns:1fr;gap:4px}}
+
+/* Batch dialog audit: keep long controls and action rows usable at narrow widths. */
+.panel{min-width:0;overscroll-behavior:contain}
+.form :is(input,select,textarea){min-width:0;max-width:100%}
+.actions{flex-wrap:wrap}
+@media(max-width:520px){.actions button{flex:1 1 130px}}

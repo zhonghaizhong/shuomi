@@ -322,3 +322,9 @@
 .dialog .templateSummary dd{margin:0;font-size:12px;color:var(--agent-dialog-muted);min-width:0;overflow-wrap:anywhere;text-align:right}
 .dialog .templateSummary>small{display:block;margin-top:11px;font-size:11px;color:var(--agent-dialog-muted);line-height:1.5}
 @media(max-width:580px){.dialog .templateSummary dl div{grid-template-columns:90px minmax(0,1fr);gap:8px}}
+
+/* Shared agent-dialog containment without altering approved theme colors or layout. */
+.dialog :is(.useStep,.useHelp,.modelOption,.customForm,.imageInstructions){min-width:0}
+.dialog .choiceRow>div:first-child{min-width:0}
+.dialog .choiceRow>span{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:560px){.dialog .choiceRow>span{white-space:normal;text-align:left}}

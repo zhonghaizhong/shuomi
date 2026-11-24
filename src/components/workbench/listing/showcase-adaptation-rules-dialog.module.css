@@ -137,3 +137,7 @@
 .footer .primary,.panelTitle button{background:var(--rule-primary);border-color:var(--rule-primary);color:#fff}
 @media(max-width:900px){.optionsPrice{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.optionsPrice{grid-template-columns:1fr 1fr}.header,.scope,.footer{padding-left:12px;padding-right:12px}}
+
+/* Bound adaptive-rule editor content to the modal's scrollable viewport. */
+.dialog,.workspace,.workspace>*{min-width:0}
+.dialog :is(input,select,textarea){max-width:100%}
