@@ -1,3 +1,4 @@
+import type {ReactNode} from "react";
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -91,12 +92,12 @@ const services = [
 ];
 const products = ["复古水洗牛仔外套", "便携式户外折叠收纳箱", "北欧风陶瓷餐具套装", "女士轻奢链条单肩包", "无线蓝牙头戴式耳机", "大容量运动保温水壶"];
 
-export function RouteDetailPreview({ pathname, organizationId="SM-ENT-000001", memberId="admin" }: { pathname: string;organizationId?:string;memberId?:string }) {
+export function RouteDetailPreview({ pathname, organizationId="SM-ENT-000001", memberId="admin",tabNavigation }: { pathname: string;organizationId?:string;memberId?:string;tabNavigation?:ReactNode }) {
   const page = routes[pathname];
   if (!page) return null;
   if (pathname === "/workbench/supply/applications" || pathname.startsWith("/workbench/supply/applications/")) return <PreferredApplicationPreview key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/account/profile/business" || pathname === "/workbench/account/profile/verification") return <AccountProfilePreview key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
-  return <RoutePage key={pathname+"-"+organizationId+"-"+memberId} page={page} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
+  return <RoutePage key={pathname+"-"+organizationId+"-"+memberId} page={page} pathname={pathname} organizationId={organizationId} memberId={memberId} tabNavigation={tabNavigation} />;
 }
 
 type DetailState = {
@@ -481,7 +482,7 @@ function ReferralDetail({ pathname, query, setQuery, submit, filters, setFilter,
 
 export function hasRouteDetailPreview(pathname: string) { return pathname in routes; }
 
-function RoutePage({ page, pathname,organizationId,memberId }: { page: { section: string; title: string; description: string }; pathname: string;organizationId:string;memberId:string }) {
+function RoutePage({ page, pathname,organizationId,memberId,tabNavigation }: { page: { section: string; title: string; description: string }; pathname: string;organizationId:string;memberId:string;tabNavigation?:ReactNode }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState("全部");
@@ -523,6 +524,7 @@ function RoutePage({ page, pathname,organizationId,memberId }: { page: { section
       </section>
     </div>}
     {header}
+    {tabNavigation}
     {pathname === "/workbench/stores" && <><section className={styles.metrics}>{[["已绑定店铺", "2 家", "当前账户"], ["正常店铺", "2 家", "授权连接正常"], ["即将到期", "0 家", "未来7天"], ["已到期", "2 家", "使用期限已过"], ["待处理", "2 家", "续期或异常"]].map(([a,b,c])=><article key={a}><span>{a}</span><strong>{b}</strong><small>{c}</small></article>)}</section><section className={styles.productFilters} data-shuomi-filter="balanced"><div data-shuomi-filter-left><input aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={e=>setQuery(e.target.value)}/></div><div data-shuomi-filter-right>{["全部站点","全部类型","全部分组","全部状态"].map(x=><FilterSelect key={x} label={x} filters={filters} setFilter={setFilter}/>) }<button onClick={()=>{setQuery("");resetFilters()}}>重置</button><button className={styles.primary} onClick={()=>submit("确认筛选")}>确认</button></div></section><section className={styles.table}><header><h2>店铺列表 <small>共 2 家店铺</small></h2><button onClick={()=>submit("绑定新店铺")}>＋ 绑定新店铺</button></header><div className={styles.serviceRow}><span>店铺与平台</span><span>站点 / 类型</span><span>授权与网络</span><span>使用期限</span><span>管理操作</span></div>{[["一号店", "SHEIN · 美国站 · 半托管", "授权正常 · 网络正常", "月付 · 至 2026-09-30"], ["二号店", "SHEIN · 加拿大站 · 全托管", "授权正常 · 网络正常", "月付 · 至 2026-09-18"]].filter(row=>row.join(" ").includes(query)&&containsFilter(row,filters,"全部站点")&&containsFilter(row,filters,"全部类型")&&containsFilter(row,filters,"全部状态")&&(!filters["全部分组"]||filters["全部分组"]==="全部分组"||(filters["全部分组"]==="核心店铺"&&row[0]==="一号店")||(filters["全部分组"]==="加拿大市场"&&row[0]==="二号店"))).map((row,i)=><div className={styles.serviceRow} key={row[0]}><span><b>{row[0]}</b><small>店铺ID：SHEIN-{i?"CA-002":"US-001"}　·　{ i?"加拿大市场":"核心店铺"}</small></span><span>{row[1]}</span><span>{row[2]}</span><span>{row[3]}</span><span><button onClick={()=>submit("续费店铺")}>续费</button> <button onClick={()=>submit("管理店铺")}>管理</button></span></div>)}</section></>}
     {pathname === "/workbench/store-products" && <StoreProductsPage active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters}/>}
     {pathname === "/workbench/store-orders" && <OrderFulfillmentPage active={active} setActive={setActive} query={query} setQuery={setQuery} submit={submit} filters={filters} setFilter={setFilter} resetFilters={resetFilters}/>}
