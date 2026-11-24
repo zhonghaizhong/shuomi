@@ -1,3 +1,4 @@
+import type {ReactNode} from "react";
 "use client";
 import {useEffect,useState,type FormEvent} from "react";
 import {createPortal} from "react-dom";
@@ -34,7 +35,7 @@ const key="shuomi-task-center-demo-v1";
 function stateLabel(t:Task){return t.state==="revision"?"待修改":t.state==="errors"?"异常":t.state==="scheduled"?(t.paused?"已暂停":"定时运行"):labels[t.state]}
 function read(){try{const s=sessionStorage.getItem(key);if(s){const x=JSON.parse(s);if(Array.isArray(x)&&x.every(t=>t&&typeof t.id==="string"&&typeof t.name==="string"&&[...modes,"revision"].includes(t.state)))return x as Task[]}}catch{}return base}
 function info(t:Task){switch(t.state){case "pending":return ["等待确认后继续任务","核对任务要求后确认，或退回修改","涉及业务修改、费用或重新执行时须先确认并校验权限。"];case "running":return ["任务正在推进，执行结果尚未生成","继续查看后续执行记录与诊断报告","本页为演示摘要，不代表真实实时进度。"];case "completed":return ["本次任务已完成","可核对结果摘要及执行记录","详细结果需正式后台提供；此页保持只读。"];case "errors":return ["同步被授权问题阻断","修复平台授权并核验凭证后再重试","授权恢复前不可无条件重新执行。"];case "scheduled":return [t.paused?"计划已暂停，配置仍保留":"已配置周期计划","查看频率与后续执行规则","实际运行必须遵守授权范围。"];default:return ["任务已退回待修改","补充要求后重新提交确认","当前仅为演示状态。"]}}
-export function ShowcaseTaskCenter({pathname,navigate}:{pathname:string;navigate:(href:string)=>void}){
+export function ShowcaseTaskCenter({pathname,navigate,tabNavigation}:{pathname:string;navigate:(href:string)=>void;tabNavigation?:ReactNode}){
  const segment=pathname.split("/").pop() as Mode;const mode:Mode=modes.includes(segment)?segment:"all";
  const [tasks,setTasks]=useState<Task[]>(read),[input,setInput]=useState(""),[query,setQuery]=useState(""),[scheduleFilter,setScheduleFilter]=useState("全部"),[filter,setFilter]=useState("全部"),[selected,setSelected]=useState<string|null>(null),[dialog,setDialog]=useState<"detail"|"review"|"ai"|"create"|"new"|null>(null),[notice,setNotice]=useState(""),[draft,setDraft]=useState({name:"",scope:"通用业务",frequency:"每天",time:"08:30"}),[note,setNote]=useState(""),[suggestion,setSuggestion]=useState(""),[messages,setMessages]=useState<{role:"user"|"assistant";text:string}[]>([]),[resolved,setResolved]=useState(false);
  useEffect(()=>{try{sessionStorage.setItem(key,JSON.stringify(tasks))}catch{}},[tasks]);
@@ -53,6 +54,7 @@ export function ShowcaseTaskCenter({pathname,navigate}:{pathname:string;navigate
  const title=mode==="all"?"任务中心":mode==="pending"?"待确认任务":mode==="running"?"进行中任务":mode==="completed"?"已完成任务":labels[mode];
  return <div data-task-center-preview={mode} className={`${styles.page} ${styles.tasksPreview} ${extra.root}`}>
  <header className={`${styles.header} ${extra.pageHeader}`}><div><div className={styles.breadcrumb}>AI工作台 / 任务中心</div><h1>任务中心</h1><p>统一查看 AI 发起的任务、处理待确认事项，并追踪执行结果。</p></div>{mode==="scheduled"?<button className={styles.primary} onClick={()=>{setDraft({name:"",scope:"通用业务",frequency:"每天",time:"08:30"});setDialog("create")}}>＋ 新建定时任务</button>:<button className={styles.primary} onClick={()=>{setDraft({name:"",scope:"通用业务",frequency:"每天",time:"08:30"});setDialog("new")}}>＋ 新建任务</button>}</header>
+ {tabNavigation}
  {mode==="all"?<section className={`${styles.taskStats} ${extra.stats}`}>{modes.map((m,i)=><button key={m} data-task-metric={m} style={{"--accent":["#f4bf64","#62a9ff","#4fd1bd","#f38eb3","#ad8aff"][i]} as React.CSSProperties} onClick={()=>go(m)}><div className={extra.statInfo}><strong>{labels[m]}</strong><b className={extra.statValue}>{tasks.filter(t=>t.state===m).length}<span className={extra.unit}>项</span></b></div><span className={extra.statIcon} aria-hidden="true">{(() => {const Glyph=[ListChecks,Activity,CheckCircle2,AlertTriangle,CalendarClock][i];return <Glyph size={26} strokeWidth={1.7}/>})()}</span></button>)}</section>:null}
  {mode==="scheduled"?<section className={extra.metrics}>{[["启用中",tasks.filter(t=>t.state==="scheduled"&&!t.paused).length],["已暂停",tasks.filter(t=>t.state==="scheduled"&&t.paused).length],["周期计划",tasks.filter(t=>t.state==="scheduled").length]].map(([a,b])=><div key={a}><span>{a}</span><strong>{b}<span className={extra.unit}>项</span></strong></div>)}</section>:null}
  {notice?<div role="status" className={extra.notice}>{notice}<button onClick={()=>setNotice("")} aria-label="关闭提示">×</button></div>:null}
