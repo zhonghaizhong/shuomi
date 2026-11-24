@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {beforeEach,expect,it} from "vitest";
-import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
+import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
 import {listingDemoArtSet} from "./showcase-listing-ai-images";
 import {readDemoCollectionBatches,amazonMultiVariantPhotoFixtures} from "../showcase-collection-batches";
 beforeEach(()=>sessionStorage.clear());
@@ -151,4 +151,27 @@ it("preserves a legacy multi-variant task's status while removing false AI-image
  expect(migrated.demoProduct?.sourceImages).toEqual(original.demoProduct?.sourceImages);
  expect(migrated.demoProduct?.optimizedImages).toEqual([]);
  expect(migrated.demoProduct?.variantImageGroups).toHaveLength(3);
+});
+
+it("renders six preview cards automatically per color without claiming generated AI images",()=>{
+ const batch=readDemoCollectionBatches(org,member).find(b=>b.id===args.batchId)!;
+ simulateAmazonMultiVariantListingWorkflow({...args,products:batch.products});
+ const task=readShowcaseUploadTasks(org,member).find(t=>t.demoProduct?.variantDetails?.length===6)!;
+ const colors=task.demoProduct!.variantImageGroups!;
+ expect(colors).toHaveLength(3);
+ for(const color of colors){
+  const preview=listingVariantGalleryCards(color);
+  expect(preview).toHaveLength(6);
+  expect(preview.map(p=>p.role)).toEqual([...listingVariantPhotoRoles]);
+  expect(preview.every(p=>!p.isOptimized&&p.url===color.originalImages[0])).toBe(true);
+  expect(variantGroupReady(color)).toBe(false);
+ }
+ const black=colors[0],white=colors[1];
+ expect(listingVariantGalleryCards(black)[0].url).not.toBe(listingVariantGalleryCards(white)[0].url);
+ const first=listingVariantPhotoRoles[0];
+ saveListingVariantPhoto(org,member,task.id,black.id,first,"https://example.test/black-optimized-main.jpg");
+ const updated=readShowcaseUploadTasks(org,member).find(t=>t.id===task.id)!.demoProduct!.variantImageGroups!;
+ expect(listingVariantGalleryCards(updated[0])[0]).toEqual({index:0,role:first,url:"https://example.test/black-optimized-main.jpg",isOptimized:true});
+ expect(listingVariantGalleryCards(updated[1]).every(p=>!p.isOptimized)).toBe(true);
+ expect(variantGroupReady(updated[0])).toBe(false);
 });
