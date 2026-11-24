@@ -27,7 +27,7 @@ function pictureDetails(config:Config):PictureSetting[]{
  const use=textValue(raw.imageUse,"共用视觉素材");
  const scope=textValue(raw.imageProcessingScope,"未设置");
  const tasks=Array.isArray(raw.imageTasks)?raw.imageTasks.filter((v):v is ImageTask=>Boolean(v&&typeof v==="object")):[];
- const valid=tasks.filter(t=>Number.isInteger(t.position)&&t.position!>=1&&t.position!<=8&&t.prompt?.trim());
+ const valid=tasks.filter(t=>Number.isInteger(t.position)&&(t.position??0)>=1&&(t.position??0)<=8&&typeof t.prompt==="string"&&t.prompt.trim().length>0);
  const taskText=valid.map(t=>(t.target??"主图")+"第"+t.position+"张："+t.prompt.trim()).join("；");
  return [
   {label:"图片优化开关",value:config.imageOptimization===true?"已开启":"未开启"},
