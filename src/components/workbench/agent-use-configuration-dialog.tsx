@@ -3,6 +3,7 @@
 import {useEffect,useId,useRef,useState} from "react";
 import css from "./agent-use-configuration-dialog.module.css";
 import {readPodLibrary,podAssetPreviewSrc,type PodLibraryAsset} from "./pod-asset-library";
+import {loadAgentCatalog,agentCatalogError,type AgentCatalogItem} from "./agent-resource-catalog";
 
 export type ConfigurationMode="product-image"|"pod-ai"|"pod-hybrid"|"pod-pattern-split"|"pod-pattern-custom"|"skills"|"knowledge";
 export type ImageTask={id:number;name:string;prompt:string;position?:number;target?:"主图"|"详情图"};
@@ -91,6 +92,13 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
   else setDetailSlots(next);
  };
  const [selectedItems,setSelectedItems]=useState<string[]>(mode==="knowledge"?initial.selectedKnowledge??[]:initial.selectedSkills??[]);
+ const [catalogItems,setCatalogItems]=useState<AgentCatalogItem[]>([]);
+ const [catalogLoading,setCatalogLoading]=useState(mode==="skills"||mode==="knowledge");
+ const [catalogError,setCatalogError]=useState("");
+ const [catalogNotice,setCatalogNotice]=useState("");
+ const [catalogReload,setCatalogReload]=useState(0);
+ const validSelectedItems=selectedItems.filter(key=>catalogItems.some(item=>item.key===key));
+ const staleSelectedItems=selectedItems.filter(key=>!catalogItems.some(item=>item.key===key));
  const [skillTab,setSkillTab]=useState<"我的技能"|"团队技能">("我的技能");
  const [knowledgeTab,setKnowledgeTab]=useState<"我的知识库"|"团队知识库">("我的知识库");
  const [librarySelected,setLibrarySelected]=useState("");
@@ -109,6 +117,22 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  const selectedLibraryAsset=libraryAssets.find(asset=>String(asset.id)===librarySelected);
  const previewLibraryAsset=libraryAssets.find(asset=>asset.id===libraryPreview);
  const splitLibraryAsset=form.splitSource==="素材库"&&form.splitReference?.startsWith("asset:")?libraryAssets.find(asset=>String(asset.id)===form.splitReference?.slice(6)):undefined;
+ useEffect(()=>{
+  if(mode!=="skills"&&mode!=="knowledge")return;
+  const controller=new AbortController();
+  const kind=mode;
+  setCatalogLoading(true);setCatalogError("");setCatalogNotice("");setCatalogItems([]);
+  const preview=typeof window!=="undefined"&&(window.location.pathname.startsWith("/shuomi")||window.location.search.includes("preview=1")||window.location.hash.includes("preview=1"));
+  void loadAgentCatalog(kind,{organizationId,memberId,preview},controller.signal).then(result=>{
+   if(controller.signal.aborted)return;
+   setCatalogItems(result.items);setCatalogNotice(result.notice??"");
+  }).catch(error=>{
+   if(controller.signal.aborted)return;
+   setCatalogError(agentCatalogError(error,kind));setCatalogItems([]);
+  }).finally(()=>{if(!controller.signal.aborted)setCatalogLoading(false)});
+  return()=>controller.abort();
+ },[mode,organizationId,memberId,catalogReload]);
+
 
  useEffect(()=>{
   const previous=document.activeElement;
@@ -146,8 +170,8 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  const commit=(next:AgentUseConfiguration=form)=>onSave({...next,
   ...((mode==="product-image"||mode==="pod-ai")?{imageTasks:tasks}:{}),
   ...(mode==="pod-hybrid"?{hybridStrategy:form.hybridStrategy??"共用视觉素材",hybridSlots:slots,hybridMainSlots:hybridShared?slots:mainSlots,hybridDetailSlots:hybridShared?slots:detailSlots}:{}),
-  ...(mode==="skills"?{selectedSkills:selectedItems}:{}),
-  ...(mode==="knowledge"?{selectedKnowledge:selectedItems}:{})
+  ...(mode==="skills"?{selectedSkills:validSelectedItems}:{}),
+  ...(mode==="knowledge"?{selectedKnowledge:validSelectedItems}:{})
  });
  const addSlot=(value:string)=>{
   const updated=slots.slice();
@@ -348,18 +372,25 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    </div>
    :mode==="pod-pattern-split"?<div className={css.stack}><label>参考素材<button type="button" className={css.sourceButton} aria-label="上传图片 / 从素材库选择" onClick={()=>setChild("source")}>＋ 上传图片 / 从素材库选择</button></label><p>{form.splitSource?"当前来源："+form.splitSource:"从本地或素材库中选择 1 张参考图片"}</p>{splitLibraryAsset?<div className={css.selectedReference}><img src={podAssetPreviewSrc(splitLibraryAsset)} alt={"当前参考素材 "+splitLibraryAsset.name}/><div><strong>{splitLibraryAsset.name}</strong><small>{splitLibraryAsset.category} · 已从我的素材库引用</small><button type="button" onClick={showAssetLibrary}>更换图片</button></div></div>:null}{form.splitSource==="本地上传"?<label>选择参考图片<input type="file" accept="image/*" onChange={e=>set("splitReference",e.target.files?.[0]?.name??"")}/></label>:null}<h3>裂变强度</h3><div className={css.optionGrid}>{["保守变化","适度创新","大胆裂变"].map(x=><button type="button" key={x} aria-pressed={(form.splitStrength??"适度创新")===x} onClick={()=>set("splitStrength",x)}>{x}</button>)}</div><p>保留主体关键特征，可调整色彩、细节和局部排版。</p></div>
    :mode==="pod-pattern-custom"?<div className={css.stack}><label>生成指令<textarea aria-label="生成指令" rows={5} placeholder="例如：黑色底，朋克风，加入不同样式的闪电和英文短句，适合腰部印刷……" value={form.patternPrompt??""} onChange={e=>set("patternPrompt",e.target.value)}/></label><p>AI 会优先遵循你的指令，同时自动做印刷适配与合规检查（实际能力待接入）。</p></div>
-   :mode==="skills"?<div className={css.stack}>
-    <div className={css.segment}>{(["我的技能","团队技能"] as const).map(tab=><button key={tab} type="button" aria-pressed={skillTab===tab} onClick={()=>setSkillTab(tab)}>{tab}</button>)}</div>
-    {skillTab==="我的技能"?<section className={css.panel}><h3>已启用的个人技能</h3>{(agentKind==="pod"?podSkillSamples:availableSkills.map((name,i)=>({name,description:i?"选择后可设置图片优化范围和方式":"演示商品标题格式规范化"}))).map(item=><label className={css.imageChoice} key={item.name}><input type="checkbox" checked={selectedItems.includes(item.name)} onChange={()=>flip(selectedItems,item.name,setSelectedItems)}/><span><strong>{item.name}</strong><small>v1 · 已启用 · 私有</small><small>{item.description}</small></span></label>)}<p>以上仅为原型示例技能；正式调用以技能库权限和可用版本为准。</p></section>:<section className={css.panel}><h3>可用团队技能</h3><p>当前原型没有配置可选择的团队技能。可在技能库核实团队技能审核状态和可用版本。</p></section>}
-    <div className={css.inline}><strong>已选 {selectedItems.length} 项</strong><button type="button" onClick={()=>setSelectedItems([])}>清空</button></div>
+   :mode==="skills"||mode==="knowledge"?<div className={css.stack}>
+    <div className={css.inline}><p>{mode==="skills"?"选择当前账号有权使用的已启用技能；未选择时不运行技能。":"选择当前企业已启用的知识库；未选择时不引用知识库资料。"}</p><button type="button" onClick={()=>setCatalogReload(value=>value+1)}>刷新列表</button></div>
+    <div className={css.segment}>{(mode==="skills"?["我的技能","团队技能"]:["我的知识库","团队知识库"]).map(tab=><button key={tab} type="button"
+      aria-pressed={mode==="skills"?skillTab===tab:knowledgeTab===tab}
+      onClick={()=>mode==="skills"?setSkillTab(tab as "我的技能"|"团队技能"):setKnowledgeTab(tab as "我的知识库"|"团队知识库")}>{tab}</button>)}</div>
+    {catalogLoading?<p role="status">正在读取当前账号可用的{mode==="skills"?"技能":"知识库"}…</p>:null}
+    {catalogError?<p className={css.notice} role="alert">{catalogError}</p>:null}
+    {catalogNotice?<p className={css.notice} role="status">{catalogNotice}</p>:null}
+    {!catalogLoading&&!catalogError?<section className={css.panel}>
+     <h3>{mode==="skills"?skillTab:knowledgeTab}</h3>
+     {catalogItems.filter(item=>item.source===(mode==="skills"?skillTab:knowledgeTab)).length?
+      catalogItems.filter(item=>item.source===(mode==="skills"?skillTab:knowledgeTab)).map(item=><label key={item.key} className={css.imageChoice}>
+       <input type="checkbox" aria-label={item.name} checked={selectedItems.includes(item.key)} onChange={()=>flip(selectedItems,item.key,setSelectedItems)}/>
+       <span><strong>{item.name}</strong><small>{item.source}{item.revision?" · "+item.revision:""}</small><small>{item.description}</small></span>
+      </label>):<p>{mode==="knowledge"&&knowledgeTab==="团队知识库"?"当前没有可单独选择的团队知识库条目；正式知识库按当前企业权限读取。":mode==="skills"?"暂无当前账户获准使用的已启用技能。":"暂无当前账户可读取的知识库。"}</p>}
+    </section>:null}
+    {staleSelectedItems.length&&!catalogLoading?<p className={css.notice} role="status">原来保存的 {staleSelectedItems.length} 项未在当前账号可用列表中找到，保存时不会继续引用这些失效项目，请重新选择。</p>:null}
+    <div className={css.inline}><strong>已选 {validSelectedItems.length} 项</strong><button type="button" onClick={()=>setSelectedItems([])}>清空</button></div>
    </div>
-   :<div className={css.stack}>
-    <p>仅引用已添加到我的知识库或团队知识库的内容，支持多选；不选择时不引用知识。</p>
-    {agentKind==="pod"?<div className={css.segment}>{(["我的知识库","团队知识库"] as const).map(tab=><button type="button" key={tab} aria-pressed={knowledgeTab===tab} onClick={()=>setKnowledgeTab(tab)}>{tab}</button>)}</div>:null}
-    {agentKind==="pod"&&knowledgeTab==="团队知识库"?<section className={css.panel}><h3>团队知识库</h3><p>当前演示没有可用的团队知识条目。正式使用需要按成员权限读取知识库。</p></section>:<section className={css.panel}><h3>{agentKind==="pod"?"我的知识库（示例）":"可用知识资料"}</h3>{(agentKind==="pod"?podKnowledgeSamples:availableKnowledge.map(name=>({name,description:"按需引用知识资料"}))).map(item=><label key={item.name} className={css.imageChoice}><input type="checkbox" checked={selectedItems.includes(item.name)} onChange={()=>flip(selectedItems,item.name,setSelectedItems)}/><span><strong>{item.name}</strong><small>{item.description}</small></span></label>)}</section>}
-    <div className={css.inline}><strong>已选 {selectedItems.length} 项</strong><button type="button" onClick={()=>setSelectedItems([])}>清空</button></div>
-    <p>示例仅供原型交互校验；正式引用以当前账号实际授权的知识库内容为准。</p>
-   </div>}
    {maybeNotice}
   </main>
   {example?<div className={css.optimizerExampleOverlay} role="dialog" aria-modal="true" aria-label="优化任务示例说明">
