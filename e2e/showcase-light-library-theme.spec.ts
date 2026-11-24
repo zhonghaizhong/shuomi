@@ -211,7 +211,7 @@ test("knowledge landing has exactly two compact entries at desktop and mobile wi
   await expect(root.getByRole("button",{name:"管理我的知识库"})).toBeVisible();
   const header=root.locator(":scope > header");
   const strip=root.locator('aside[aria-label="知识引用说明"]');
-  const bounds=await root.evaluate(el=>{const b=el.getBoundingClientRect();return {x:b.x,width:b.width};});
+  const bounds=await header.evaluate(el=>{const b=el.getBoundingClientRect();return {x:b.x,width:b.width};});
   const headerBounds=await header.boundingBox();
   const stripBounds=await strip.boundingBox();
   expect(headerBounds).not.toBeNull();
