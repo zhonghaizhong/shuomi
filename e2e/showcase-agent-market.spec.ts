@@ -279,7 +279,7 @@ test("POD image, material and language subdialogs match Figma and preserve confi
  await expect(page.getByRole("dialog",{name:"POD刊登智能体"})).toContainText("自定义指令已填写");
 });
 
-test("POD hybrid editing includes Figma image source, reorder, multi-select and restore dialogs",async({page})=>{
+test("POD hybrid editing supports direct drag sorting, source selection and restore",async({page})=>{
  await page.goto(base+"/mine");
  await page.getByRole("button",{name:"进入使用"}).last().click();
  const pod=page.getByRole("dialog",{name:"POD刊登智能体"});
@@ -301,18 +301,20 @@ test("POD hybrid editing includes Figma image source, reorder, multi-select and 
  await aiGallery.getByRole("checkbox",{name:/核心购买理由/}).check();
  await aiGallery.getByRole("button",{name:"确认选择"}).click();
  await expect(hybrid).toBeVisible();
- await hybrid.getByRole("button",{name:"智能排序"}).click();
- await page.getByRole("dialog",{name:"智能排序"}).getByRole("button",{name:/AI图优先/}).click();
- await expect(hybrid).toBeVisible();
- await hybrid.getByRole("button",{name:"调整第 1 张图片"}).click();
+ await expect(hybrid.getByRole("button",{name:"智能排序"})).toHaveCount(0);
+ await expect(hybrid.getByRole("button",{name:"多选调整"})).toHaveCount(0);
+ const first=hybrid.getByLabel("图片位置 1").first();
+ const second=hybrid.getByLabel("图片位置 2").first();
+ await expect(first).toContainText("官方·第一张");
+ await expect(second).toContainText("AI·");
+ await first.dragTo(second);
+ await expect(hybrid.getByLabel("图片位置 1").first()).toContainText("AI·");
+ await expect(hybrid.getByLabel("图片位置 2").first()).toContainText("官方·第一张");
+ await hybrid.getByRole("button",{name:"调整第 2 张图片"}).click();
  const slotActions=page.getByRole("dialog",{name:"图片快捷调整"});
  await expect(slotActions).toContainText("图片快捷调整");
- await slotActions.getByRole("button",{name:"向右移动一位"}).click();
- await expect(hybrid).toBeVisible();
- await hybrid.getByRole("button",{name:"多选调整"}).click();
- const multi=page.getByRole("dialog",{name:"多选调整"});
- await expect(multi).toContainText("多选调整");
- await multi.getByRole("button",{name:"返回"}).click();
+ await slotActions.getByRole("button",{name:"向左移动一位"}).click();
+ await expect(hybrid.getByLabel("图片位置 1").first()).toContainText("官方·第一张");
  await hybrid.getByRole("button",{name:"恢复上次顺序"}).click();
  const restore=page.getByRole("dialog",{name:"恢复上次顺序？"});
  await expect(restore).toContainText("恢复上次顺序？");
