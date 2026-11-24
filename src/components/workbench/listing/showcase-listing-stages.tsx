@@ -160,6 +160,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const [photoAiOpen,setPhotoAiOpen]=useState(false),[photoAiPrompt,setPhotoAiPrompt]=useState("");
  const [photoBusy,setPhotoBusy]=useState(false);
  const [recoveringPhotos,setRecoveringPhotos]=useState(false);
+ const autoRecoveryAttempted=useRef<Set<string>>(new Set());
  const [fieldTab,setFieldTab]=useState<"common"|"shared"|"variant"|"sku">("common");
  const [activeSkuId,setActiveSkuId]=useState("");
  const [textDraft,setTextDraft]=useState<{title:string;description:string;colorDescriptions:Record<string,string>;skuDescriptions:Record<string,string>}>({title:"",description:"",colorDescriptions:{},skuDescriptions:{}});
@@ -236,6 +237,15 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   }catch(e){setNotice(e instanceof Error?e.message:"检查本地历史图片失败");}
   finally{setRecoveringPhotos(false);}
  };
+ useEffect(()=>{
+  if(!selectedTask?.id.startsWith("SHUOMI-AMZ-AI-MULTI:")||!selectedTask.demoProduct?.variantImageGroups?.length)return;
+  const key=organizationId+"|"+memberId+"|"+selectedTask.id;
+  if(autoRecoveryAttempted.current.has(key))return;
+  autoRecoveryAttempted.current.add(key);
+  void recoverLocalListingPhotos(organizationId,memberId,selectedTask.id).then(result=>{
+   if(result.restored)setNotice("已自动找回 "+result.restored+" 张该商品的历史图片，并关联回对应颜色与图片位置；请核对图片来源。");
+  }).catch(()=>{/* Optional recovery never blocks the listing dialog. */});
+ },[organizationId,memberId,selectedTask?.id]);
   const selectedColorOptimizedImages=selectedVariantGroup?listingVariantPhotoRoles.map(role=>selectedVariantGroup.optimizedImages.find(img=>img.role===role)?.url).filter((src):src is string=>Boolean(src)):[];
  const colorPhotoComplete=variantImageGroups.length===0||variantImageGroups.every(variantGroupReady);
  const selectedColorOriginalImages=selectedVariantGroup?.originalImages??(selectedItem?.originalImages??[]);
