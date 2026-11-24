@@ -845,3 +845,26 @@
  .productHeroImage{height:280px;min-height:230px}
  .productDetailFooter{gap:8px}
 }
+
+/* Color-group galleries: scoped to the product completion/review dialog. */
+.variantColorPicker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.variantColorPicker button{min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--stroke);border-radius:8px;padding:7px;color:var(--ink);cursor:pointer;text-align:center}
+.variantColorPicker button[aria-pressed="true"]{border:2px solid var(--listing-primary);background:color-mix(in srgb,var(--listing-primary) 8%,var(--surface))}
+.variantColorPicker img{width:52px;height:52px;object-fit:contain;border-radius:6px;background:#fff}
+.variantColorPicker span{font-weight:650;font-size:12px;white-space:nowrap}
+.variantColorPicker small{font-size:11px;color:var(--muted);white-space:nowrap}
+.variantImageMode{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.variantImageMode button{padding:9px 6px;border:1px solid var(--stroke);background:var(--surface);color:var(--muted);border-radius:7px;cursor:pointer;font-size:12px}
+.variantImageMode button[aria-selected="true"]{background:color-mix(in srgb,var(--listing-primary) 15%,var(--surface));border-color:var(--listing-primary);color:var(--ink);font-weight:650}
+.variantSixSlots{display:grid;gap:8px;border-top:1px solid var(--stroke);padding-top:12px}
+.variantPhotoRole{display:grid;grid-template-columns:24px 48px minmax(0,1fr) auto;align-items:center;gap:9px;padding:7px;border:1px solid var(--stroke);border-radius:7px;background:var(--surface)}
+.variantPhotoRole>img,.variantPhotoMissing{width:48px;height:48px;border-radius:5px;background:#fff;object-fit:contain}
+.variantPhotoMissing{display:grid;place-items:center;font-size:10px;color:#667085}
+.variantPhotoOrdinal{font-size:12px;text-align:center;color:var(--muted)}
+.variantPhotoRole>div:not(.variantPhotoEditor){display:grid;gap:2px;min-width:0}
+.variantPhotoRole strong{font-size:12px;line-height:1.45;color:var(--ink)}
+.variantPhotoRole small{font-size:11px;color:var(--muted)}
+.variantPhotoRole>button,.variantPhotoEditor button{border:1px solid var(--stroke);background:var(--surface-alt);border-radius:6px;padding:8px 10px;color:var(--ink);cursor:pointer;font-size:12px;white-space:nowrap}
+.variantPhotoEditor{grid-column:1/-1;display:flex;align-items:center;gap:7px;min-width:0}
+.variantPhotoEditor input{flex:1;min-width:0;padding:10px;border:1px solid var(--stroke);border-radius:6px;background:var(--surface-alt);color:var(--ink)}
+@media(max-width:620px){.variantColorPicker{gap:5px}.variantColorPicker img{width:42px;height:42px}.variantColorPicker small{font-size:10px}.variantPhotoEditor{flex-wrap:wrap}.variantPhotoEditor input{flex-basis:100%}}
