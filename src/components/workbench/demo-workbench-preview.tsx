@@ -396,6 +396,7 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
           <p className={styles.knowledgeIntroSupporting}>无论是平台预设的官方知识，还是你自己的业务资料，都可以在使用 AI 时按需引用。</p>
         </div>
       </header>
+      {tabNavigation}
       <section className={styles.knowledgeIntroGrid} aria-label="选择知识库">
         <article className={styles.knowledgeIntroCard} data-knowledge-entry="official">
           <div className={styles.knowledgeIntroTop}>
@@ -441,6 +442,7 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
       </aside>
     </> : <>
      <header className={styles.header}><div><div className={styles.breadcrumb}>{page.section}</div><h1>{page.title}</h1><p>{page.description}</p></div>{page.layout === "libraryHub" ? <button className={styles.primary} onClick={() => chooseAction(pathname.includes("projects") ? "新建项目" : pathname.includes("knowledge") ? "新增知识" : pathname.includes("skills") ? "新建技能" : "导出成果")}>{pathname.includes("projects") ? "＋ 新建项目" : pathname.includes("knowledge") ? "＋ 添加知识" : pathname.includes("skills") ? "＋ 新建技能" : "导出成果"}</button> : <button className={styles.primary} onClick={() => chooseAction("新建")}>{pathname.includes("goals") ? "新建目标" : "新建记录"}</button>}</header>
+     {tabNavigation}
     {page.metrics?.length ? <section className={styles.metrics}>{page.metrics.map(([label, value, hint], i) => <article className={styles.metric} key={label} data-step={i}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}</section> : null}
      {page.cards?.length ? <section className={styles.cards}>{page.cards.map(([title, body, action], index) => <article className={styles.card} key={title} style={{ "--accent": ["#00cfe8", "#7367f0", "#28c76f", "#ff9f43"][index % 4] } as React.CSSProperties}><div className={styles.cardHeading}><h2>{title}</h2><span>{index === 0 ? "查阅与启用" : index === 1 ? "管理与复用" : "团队协作"}</span></div><p>{body}</p><button className={styles.secondary} onClick={() => { if (page.layout !== "libraryHub") return chooseAction(action); const base = pathname === "/workbench/ai/knowledge" ? "/workbench/ai/knowledge" : pathname === "/workbench/agents/skills" ? "/workbench/agents/skills" : pathname === "/workbench/ai/reports" ? "/workbench/ai/reports" : "/workbench/ai/projects"; const target = pathname === "/workbench/ai/knowledge" ? (index === 0 ? "official" : "mine") : pathname === "/workbench/agents/skills" ? ["official", "mine", "team"][index] : pathname === "/workbench/ai/reports" ? ["recent", "favorites", "all"][index] : ["active", "recent", "templates"][index]; navigateInline(`${base}/${target}?preview=1`); }}>{action}<span aria-hidden="true">→</span></button></article>)}</section> : null}
     {page.filters?.length ? <section className={styles.filters} data-shuomi-filter="balanced" aria-label="筛选条件">
