@@ -28,3 +28,18 @@ it.each(["chat","tasks","projects","knowledge","skills","reports","catalogs"])("
  const href=onSelect.mock.lastCall?.[0];
  expect(sectionForPath(href)).toBe(section);
 });
+
+it("renders new conversation as a fourth equal-status tab and switches locally without navigation",()=>{
+ const select=vi.fn();
+ const {rerender}=render(<SectionPageTabs section="chat" activeHref="/workbench/ai/chat" onSelect={select}/>);
+ const tabs=screen.getAllByRole("button");
+ expect(tabs.map(tab=>tab.textContent)).toEqual(["会话首页","＋ 新建会话","最近会话","收藏会话"]);
+ expect(tabs).toHaveLength(4);
+ expect(screen.queryByRole("link",{name:/新建会话/})).not.toBeInTheDocument();
+ fireEvent.click(screen.getByRole("button",{name:"＋ 新建会话"}));
+ expect(select).toHaveBeenCalledWith("/workbench/ai/chat/new");
+ expect(sectionForPath("/workbench/ai/chat/new")).toBe("chat");
+ rerender(<SectionPageTabs section="chat" activeHref="/workbench/ai/chat/new" onSelect={select}/>);
+ expect(screen.getAllByRole("button")).toHaveLength(4);
+ expect(screen.getByRole("button",{name:"＋ 新建会话"})).toHaveAttribute("aria-current","page");
+});
