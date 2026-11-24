@@ -3,6 +3,7 @@
 import {useEffect,useId,useRef,useState,type ChangeEvent} from "react";
 import {saveOwnIntakeNavigation,type OwnIntakeStage} from "./showcase-own-product-intake-navigation";
 import {ShowcaseOwnProductIntakeModal} from "./showcase-own-product-intake-modal";
+import {agentPreviewTemplatesChanged,readAgentPreviewTemplates} from "./showcase-agent-template-store";
 import styles from "./showcase-own-product-listing-dialog.module.css";
 import {readOwnProductBatches,createOwnProductBatch,saveOwnProduct,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,type OwnProductBatch,type OwnProductRecord} from "./showcase-own-product-data";
 
@@ -10,7 +11,7 @@ type Source="img"|"sheet"|"link"|"api";
 type Sku={id:number;name:string;draft:string;description:string;images:string[]};
 const newSku=(id:number):Sku=>({id,name:"",draft:"",description:"",images:[]});
 const availableAgents=():string[]=>{if(typeof window==="undefined")return [];try{const raw=sessionStorage.getItem("shuomi-demo-agents-enabled");if(raw===null)return ["商品优化智能体","POD刊登智能体"];const parsed:unknown=JSON.parse(raw);return Array.isArray(parsed)?parsed.filter((v):v is string=>typeof v==="string"):[]}catch{return []}};
-const agentTemplates=(agent:string):string[]=>{if(!agent)return [];try{const raw=sessionStorage.getItem("shuomi-demo-agent-templates-"+agent);if(raw){const parsed:unknown=JSON.parse(raw);if(Array.isArray(parsed))return parsed.filter((v):v is {name:string}=>Boolean(v&&typeof v==="object"&&"name"in v&&typeof v.name==="string")).map(v=>v.name);}const legacy=sessionStorage.getItem("shuomi-demo-agent-template-"+agent);return legacy?["已有演示模板"]:[]}catch{return []}};
+const agentTemplates=(org:string,member:string,agent:string):string[]=>readAgentPreviewTemplates(org,member,agent).map(item=>item.name);
 const sourceOptions:{value:Source;label:string}[]=[
  {value:"img",label:"上传资料"},{value:"sheet",label:"导入表格"},
  {value:"link",label:"商品链接"},{value:"api",label:"API 接入"}
@@ -35,7 +36,20 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
  const [enabledAgents,setEnabledAgents]=useState<string[]>(availableAgents);
  const [templates,setTemplates]=useState<string[]>([]);
  useEffect(()=>{setEnabledAgents(availableAgents())},[]);
- useEffect(()=>{setTemplates(agentTemplates(agent));setTemplate("")},[agent]);
+ useEffect(()=>{
+  const refresh=()=>setTemplates(agentTemplates(organizationId,memberId,agent));
+  refresh();
+  setTemplate("");
+  const onChange=(event:Event)=>{
+   const detail=(event as CustomEvent<{organizationId:string;memberId:string;agent:string}>).detail;
+   if(detail?.organizationId!==organizationId||detail?.memberId!==memberId||detail?.agent!==agent)return;
+   const updated=agentTemplates(organizationId,memberId,agent);
+   setTemplates(updated);
+   setTemplate(current=>updated.includes(current)?current:"");
+  };
+  window.addEventListener(agentPreviewTemplatesChanged,onChange);
+  return()=>window.removeEventListener(agentPreviewTemplatesChanged,onChange);
+ },[agent,organizationId,memberId]);
  const [batches,setBatches]=useState<OwnProductBatch[]>(()=>readOwnProductBatches(organizationId,memberId));
  const [batchId,setBatchId]=useState(""),[batchMode,setBatchMode]=useState<"create"|"select"|null>(null),[batchName,setBatchName]=useState("");
  const currentBatch=batches.find(b=>b.id===batchId);
