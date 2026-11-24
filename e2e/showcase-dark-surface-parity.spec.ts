@@ -148,3 +148,26 @@ test("Enterprise Space and Referrals use neutral Vuexy cards with raised buttons
    .not.toBe("rgb(20, 34, 55)");
  }
 });
+
+
+/* Regression for a formerly inherited 2-column cockpit filter grid. */
+test("Store matrix seven filters stay on one desktop row and date picker works",async({page})=>{
+ await page.setViewportSize({width:1600,height:900});
+ await page.goto("/shuomi/#/workbench/overview/stores");
+ const row=page.locator('[class*="matrixInlineFilters"]');
+ await expect(row).toBeVisible();
+ const children=row.locator(':scope > *');
+ await expect(children).toHaveCount(7);
+ const bounds=await children.evaluateAll(elements=>elements.map(el=>{
+  const rect=el.getBoundingClientRect();
+  return {x:rect.x,y:rect.y,right:rect.right,width:rect.width};
+ }));
+ const firstY=bounds[0].y;
+ for(const box of bounds)expect(Math.abs(box.y-firstY)).toBeLessThan(3);
+ for(let i=1;i<bounds.length;i++)expect(bounds[i].x).toBeGreaterThanOrEqual(bounds[i-1].right-2);
+ await expect(row.getByRole("button",{name:"选择统计时间"})).toHaveText("全部时间");
+ await row.getByRole("button",{name:"选择统计时间"}).click();
+ await expect(row.getByRole("group",{name:"自定义统计时间"})).toBeVisible();
+ await row.getByRole("button",{name:"清空日期"}).click();
+ await expect(row.getByRole("button",{name:"选择统计时间"})).toHaveText("全部时间");
+});
