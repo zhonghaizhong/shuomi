@@ -275,7 +275,7 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
     </> : page.layout === "storeMatrix" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>运营驾驶舱 / 店铺矩阵</div><h1>店铺矩阵</h1><p>接入并授权店铺后汇总各店经营表现。</p></div></header>
       <section className={styles.goalMetrics}>{[["0","店铺总数","尚无经营数据"],["0","正常店铺","待经营状态评估"],["0","需关注店铺","待经营状态评估"],["0","异常店铺","待经营状态评估"]].map(([value,label,hint],i)=><article key={label} data-step={i}><strong>{value}</strong><span><b>{label}</b><small>{hint}</small></span></article>)}</section>
-      <section className={styles.matrixPanel}><div className={`${styles.matrixFilters} ${styles.cockpitFilterRow} ${styles.matrixSingleRow}`}>
+      <section className={styles.matrixPanel}><div className={styles.matrixInlineFilters}>
        <input type="search" aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={event=>setQuery(event.target.value)}/>
        <div className={styles.matrixTimePicker}>
          <button type="button" aria-label="选择统计时间" aria-expanded={matrixDateOpen} className={styles.matrixTimeTrigger} onClick={()=>setMatrixDateOpen(open=>!open)}>{matrixDateFrom&&matrixDateTo?`${matrixDateFrom} 至 ${matrixDateTo}`:"全部时间"}</button>
