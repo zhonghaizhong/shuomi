@@ -50,10 +50,20 @@ export type ShowcaseUploadTask={
 };
 export const showcaseUploadTasksEvent="shuomi:listing-upload-tasks-updated";
 const key=(organizationId:string,memberId:string)=>"shuomi:listing-upload-tasks-v1:"+organizationId+":"+memberId;
+/** Keep task metadata beyond tab closure. IndexedDB holds image bytes separately. */
+export function persistShowcaseUploadTaskRecords(org:string,member:string,tasks:ShowcaseUploadTask[]):void{
+ const k=key(org,member),serialized=JSON.stringify(tasks);
+ sessionStorage.setItem(k,serialized);
+ try{localStorage.setItem(k,serialized)}catch{/* Session remains usable if local quota is exhausted. */}
+}
+
 export function readShowcaseUploadTasks(organizationId:string,memberId:string):ShowcaseUploadTask[]{
  if(typeof window==="undefined")return [];
  try{
-  const raw:unknown=JSON.parse(sessionStorage.getItem(key(organizationId,memberId))||"[]");
+  const k=key(organizationId,memberId);
+  const session=sessionStorage.getItem(k),durable=localStorage.getItem(k);
+  const raw:unknown=JSON.parse(session||durable||"[]");
+  if(!session&&durable)sessionStorage.setItem(k,durable);
   return Array.isArray(raw)?raw.filter((value):value is ShowcaseUploadTask=>Boolean(value&&typeof value==="object"&&"id"in value&&"organizationId"in value&&value.organizationId===organizationId&&"memberId"in value&&value.memberId===memberId&&"productIds"in value&&Array.isArray(value.productIds)&&"status"in value)).map(task=>{
    const data=task.demoProduct;
    // Upgrade previous multi-variant sessions without resetting the original status or review fields.
@@ -73,7 +83,7 @@ export function addShowcaseUploadTask(task:ShowcaseUploadTask):boolean{
  if(typeof window==="undefined"||!task.productIds.length||task.productCount!==task.productIds.length)return false;
  try{
   const existing=readShowcaseUploadTasks(task.organizationId,task.memberId);
-  sessionStorage.setItem(key(task.organizationId,task.memberId),JSON.stringify([task,...existing]));
+  persistShowcaseUploadTaskRecords(task.organizationId,task.memberId,[task,...existing]);
   window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:task.organizationId,memberId:task.memberId}}));
   return true;
  }catch{return false;}
@@ -132,7 +142,7 @@ export function simulateAmazonFiveListingWorkflow(args:{
  });
  if(created.filter(t=>t.status==="待补全").length!==3||created.filter(t=>t.status==="待审核").length!==2)throw Error("演示商品分流异常");
  try{
-  sessionStorage.setItem(key(org,member),JSON.stringify([...created,...existing]));
+  persistShowcaseUploadTaskRecords(org,member,[...created,...existing]);
   window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
   return {created:5,missing:3,review:2,alreadyInstalled:false};
  }catch{throw Error("当前浏览器无法保存智能体演示任务");}
@@ -179,7 +189,7 @@ export function simulateAmazonMultiVariantListingWorkflow(args:{
  });
  if(created.filter(t=>t.status==="待补全").length!==1||created.filter(t=>t.status==="待审核").length!==1)throw Error("两款商品的分流不正确");
  try{
-  sessionStorage.setItem(key(args.organizationId,args.memberId),JSON.stringify([...created,...current]));
+  persistShowcaseUploadTaskRecords(args.organizationId,args.memberId,[...created,...current]);
   window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:args.organizationId,memberId:args.memberId}}));
   return {created:2,missing:1,review:1,alreadyInstalled:false};
  }catch{throw Error("无法保存多变体演示数据");}
@@ -203,7 +213,7 @@ export function saveListingVariantPhoto(org:string,member:string,taskId:string,c
   return {...g,optimizedImages:next,reviewedAt:undefined};
  });
  const next={...task,demoProduct:{...task.demoProduct,variantImageGroups:groups}};
- sessionStorage.setItem(key(org,member),JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
+ persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
 }
@@ -215,7 +225,7 @@ export function saveShowcaseGalleryEdits(org:string,member:string,taskId:string,
  if(urls.length>24||urls.some(u=>typeof u!=="string"||u.length>2048||!(u.startsWith("https://")||u.startsWith("/assets/")||u.startsWith("shuomi-bundle:"))))throw new Error("图片地址无效或数量超限");
  const existing=task.imageEdits??{};
  const next={...task,imageEdits:{...existing,[colorId]:{...existing[colorId],[kind]:[...urls]}}};
- sessionStorage.setItem(key(org,member),JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
+ persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
 }
@@ -235,7 +245,7 @@ export function saveShowcaseListingTextEdits(
   skuDescriptions:{...existing.skuDescriptions,...Object.fromEntries(Object.entries(updates.skuDescriptions??{}).filter(([key,value])=>key.length<=160&&typeof value==="string").map(([key,value])=>[key,value.trim().slice(0,2000)]))}
  };
  const next={...task,textEdits:cleaned};
- sessionStorage.setItem(key(org,member),JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
+ persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
 }
@@ -244,7 +254,7 @@ export function completeShowcaseUploadTask(org:string,member:string,taskId:strin
  if(!task||task.status!=="待补全"||!task.demoProduct)throw Error("没有可补全的演示任务");
  if(task.demoProduct.missingFields.some(f=>!fields[f]?.trim()))throw Error("请先补齐所有缺失资料");
  const next={...task,status:"待审核" as const,missingCount:0,demoProduct:{...task.demoProduct,missingFields:[]}};
- sessionStorage.setItem(key(org,member),JSON.stringify(records.map(t=>t.id===taskId?next:t)));
+ persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
 }
@@ -253,7 +263,7 @@ export function approveShowcaseUploadTask(org:string,member:string,taskId:string
  if(!task||task.status!=="待审核"||!task.demoProduct||task.demoProduct.missingFields.length)throw Error("智能体优化结果尚未完成资料检查与人工审核");
  if(task.demoProduct.variantImageGroups?.length&&!task.demoProduct.variantImageGroups.every(variantGroupReady))throw Error("每个颜色组需要六张不同用途的真实优化图后才能审核通过");
  const next={...task,status:"待平台提交" as const,demoProduct:{...task.demoProduct,reviewedAt:new Date().toISOString()}};
- sessionStorage.setItem(key(org,member),JSON.stringify(records.map(t=>t.id===taskId?next:t)));
+ persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
 }
@@ -278,7 +288,7 @@ export function refreshAmazonFiveDemoPhotos(org:string,member:string):number{
   return {...task,demoProduct:{...task.demoProduct!,optimizedImages:replacement}};
  });
  if(count){
-  sessionStorage.setItem(key(org,member),JSON.stringify(updated));
+  persistShowcaseUploadTaskRecords(org,member,updated);
   window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  }
  return count;
