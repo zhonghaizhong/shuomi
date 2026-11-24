@@ -33,9 +33,9 @@
 
 /* Intelligent market dialog semantic palette — Figma dark blue/light teal. */
 .dialog{
- --agent-dialog-surface:#142237;--agent-dialog-raised:#1c3047;
- --agent-dialog-border:#30465c;--agent-dialog-text:#edf5ff;
- --agent-dialog-muted:#b5c8da;--agent-dialog-primary:#1670ce;
+ --agent-dialog-surface:#2f3349;--agent-dialog-raised:#393d55;
+ --agent-dialog-border:#52576e;--agent-dialog-text:#cfcde4;
+ --agent-dialog-muted:#acabc1;--agent-dialog-primary:#7367f0;
  background:var(--agent-dialog-surface);color:var(--agent-dialog-text);
  border-color:var(--agent-dialog-border);
 }
@@ -286,11 +286,11 @@
 /* Final approved Vuexy palettes for agent configuration/use dialogs.
    Scope to dialog chrome; retain prototype-specific layout and selection states. */
 .dialog{
- --agent-dialog-surface:#142237;
- --agent-dialog-raised:#18283c;
- --agent-dialog-border:#31465e;
- --agent-dialog-text:#edf4ff;
- --agent-dialog-muted:#b5c6d8;
+ --agent-dialog-surface:#2f3349;
+ --agent-dialog-raised:#393d55;
+ --agent-dialog-border:#52576e;
+ --agent-dialog-text:#cfcde4;
+ --agent-dialog-muted:#acabc1;
  --agent-dialog-primary:#7367f0;
  background:var(--agent-dialog-surface);
  color:var(--agent-dialog-text);

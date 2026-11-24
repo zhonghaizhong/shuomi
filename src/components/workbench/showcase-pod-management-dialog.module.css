@@ -1,17 +1,17 @@
-.dialog{position:fixed;top:50%;left:50%;right:auto;bottom:auto;margin:0;transform:translate(-50%,-50%);display:flex;flex-direction:column;width:min(1160px,calc(100vw - 32px));max-width:1160px;height:min(88dvh,820px);max-height:calc(100dvh - 24px);min-height:0;padding:0;overflow:hidden;border:1px solid #48526e;border-radius:13px;background:#1b273a;color:#e9eef9;box-shadow:0 26px 90px #0009}
+.dialog{position:fixed;top:50%;left:50%;right:auto;bottom:auto;margin:0;transform:translate(-50%,-50%);display:flex;flex-direction:column;width:min(1160px,calc(100vw - 32px));max-width:1160px;height:min(88dvh,820px);max-height:calc(100dvh - 24px);min-height:0;padding:0;overflow:hidden;border:1px solid #52576e;border-radius:13px;background:#2f3349;color:#cfcde4;box-shadow:0 26px 90px #0009}
 .dialog::backdrop{background:#090e1bc9}
 .dialog button{font:inherit;cursor:pointer}
 .dialog button:disabled{opacity:.42;cursor:not-allowed}
-.dialog input,.dialog select,.dialog textarea{color:inherit;background:#172234;border:1px solid #40516b;border-radius:8px;min-height:39px;box-sizing:border-box;padding:8px 12px;min-width:0;font:inherit}
+.dialog input,.dialog select,.dialog textarea{color:inherit;background:#393d55;border:1px solid #40516b;border-radius:8px;min-height:39px;box-sizing:border-box;padding:8px 12px;min-width:0;font:inherit}
 .dialog input::placeholder{color:#91a1b9}
-.header{flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:19px 24px 15px;border-bottom:1px solid #40516b;background:#202e43}
+.header{flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:19px 24px 15px;border-bottom:1px solid #40516b;background:#2f3349}
 .header>div{min-width:0;display:grid;gap:4px}
 .header small{color:#8fa8c6;font-size:12px}
 .header h2{margin:0;font-size:21px;font-weight:700;color:inherit;letter-spacing:.2px}
 .header p{margin:0;font-size:13px;line-height:20px;color:#a7b7cb}
 .close{width:36px;height:36px;flex:none;font-size:23px;border-radius:8px;border:1px solid #455671;background:#1c2940;color:inherit}
-.tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:17px 24px 12px;background:#1b273a}
-.tabs button{display:grid;text-align:left;align-content:center;gap:5px;min-height:77px;padding:13px 16px;border:1px solid #40516b;border-radius:9px;color:inherit;background:#223147;position:relative}
+.tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:17px 24px 12px;background:#2f3349}
+.tabs button{display:grid;text-align:left;align-content:center;gap:5px;min-height:77px;padding:13px 16px;border:1px solid #40516b;border-radius:9px;color:inherit;background:#393d55;position:relative}
 .tabs button strong{font-size:15px;font-weight:700}
 .tabs button small{font-size:12px;color:#9dafc4}
 .tabs .active{border-color:#7367f0;background:#2d3559;box-shadow:inset 3px 0 #7367f0}
@@ -24,12 +24,12 @@
 .dialog button:not(.imageButton):not(.close):not(.active){transition:border-color .15s,background .15s}
 .topactions button,.filters button,.pagination button,.cardActions button,.foot button,.modalBody>button,.categoryList button,.subDialog header button{min-height:36px;border:1px solid #465873;border-radius:8px;background:#23334a;color:inherit;padding:7px 13px;white-space:nowrap;font-size:13px}
 .dialog button.primary,.filters .primary,.topactions .primary,.modalBody .primary{background:#7367f0!important;color:white!important;border-color:#7367f0!important}
-.filters{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between;gap:10px;padding:9px;background:#1b273a;border:1px solid #3e4d66;border-radius:9px;margin-bottom:14px;width:100%;box-sizing:border-box;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.filters{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between;gap:10px;padding:9px;background:#2f3349;border:1px solid #3e4d66;border-radius:9px;margin-bottom:14px;width:100%;box-sizing:border-box;min-width:0;overflow-x:auto;scrollbar-width:thin}
 .filters input{flex:1 1 52%;width:0!important;min-width:170px;max-width:none;min-height:40px}.filters select{flex:0 0 190px;width:190px!important;min-width:190px;min-height:40px}.filters button{flex:0 0 auto;min-width:75px;min-height:40px!important;margin:0!important;align-self:center}
 .notice{border:1px solid #426e68;background:#163b38;color:#a4eee1;border-radius:8px;padding:9px 12px;font-size:13px;line-height:1.5;margin:0 0 12px}
 .libraryHint{margin:0 0 11px}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;align-items:stretch}
-.assetCard{display:flex;flex-direction:column;gap:6px;padding:8px;background:#223147;border:1px solid #41516b;border-radius:10px;min-width:0}
+.assetCard{display:flex;flex-direction:column;gap:6px;padding:8px;background:#393d55;border:1px solid #41516b;border-radius:10px;min-width:0}
 .assetCard>strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e9eef9}
 .assetCard>small{color:#a9b9ce;font-size:12px}
 .imageButton{border:0;padding:0;background:transparent;display:block;aspect-ratio:1;width:100%;overflow:hidden;border-radius:8px}
@@ -51,11 +51,11 @@
 .empty{min-height:160px;display:grid;place-items:center;border:1px dashed #53617b;border-radius:10px;color:#b5c0d2}
 .pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;color:#a7bad1;padding-top:12px}
 .pagination button{min-height:32px;padding:5px 10px}
-.foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#202e43;border-top:1px solid #40516b;padding:12px 24px}
+.foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#2f3349;border-top:1px solid #40516b;padding:12px 24px}
 .foot span{font-size:12px;color:#a7bad1}
 .foot button{min-width:90px}
 .overlay{position:absolute;inset:0;background:#080d19c9;display:grid;place-items:center;padding:14px;z-index:4;box-sizing:border-box;overflow:auto}
-.subDialog{width:min(520px,100%);max-height:85%;overflow:auto;border:1px solid #53617b;border-radius:11px;background:#233147;color:#e9eef9;box-shadow:0 16px 50px #0009}
+.subDialog{width:min(520px,100%);max-height:85%;overflow:auto;border:1px solid #53617b;border-radius:11px;background:#2f3349;color:#e9eef9;box-shadow:0 16px 50px #0009}
 .subDialog>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:1px solid #485770}
 .subDialog header h3{font-size:17px;margin:0 0 5px}
 .subDialog header small{font-size:12px;color:#b3c0d0;line-height:1.5}

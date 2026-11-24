@@ -1,4 +1,4 @@
-.page{--st-bg:#142237;--st-surface:#18283c;--st-line:#2b4560;--st-text:#eff6ff;--st-muted:#a9bfd3;--st-accent:#7367f0;--st-control:#101d30;box-sizing:border-box;display:grid;align-content:start;gap:16px;width:calc(100% - 48px);max-width:1600px;margin:0 auto;padding:20px 0 32px;color:var(--st-text);min-width:0}
+.page{--st-bg:#2f3349;--st-surface:#393d55;--st-line:#52576e;--st-text:#cfcde4;--st-muted:#acabc1;--st-accent:#7367f0;--st-control:#393d55;box-sizing:border-box;display:grid;align-content:start;gap:16px;width:calc(100% - 48px);max-width:1600px;margin:0 auto;padding:20px 0 32px;color:var(--st-text);min-width:0}
 :global(.light) .page{--st-bg:#fff;--st-surface:#f7fafd;--st-line:#dbe7e7;--st-text:#213a43;--st-muted:#587078;--st-accent:#7367f0;--st-control:#fff}
 .page *{box-sizing:border-box}.page button,.page input,.page select{font:inherit}.page button{cursor:pointer;min-height:40px;padding:8px 16px;border:1px solid var(--st-line);border-radius:10px;background:var(--st-surface);color:var(--st-text);font-size:14px;font-weight:550}.page button:disabled{opacity:.55;cursor:not-allowed}.page button.primary{background:var(--st-accent);border-color:var(--st-accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:7px}:global(.light) .page button.primary{color:#fff}.page :is(button,input,select):focus-visible{outline:2px solid var(--st-accent);outline-offset:2px}
 .header{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 26px;min-height:116px;border:1px solid var(--st-line);border-radius:6px;background:var(--st-bg)}.header>div{min-width:0}.breadcrumb{font-size:14px;color:var(--st-muted)}.header h1{margin:8px 0 6px;padding-left:12px;border-left:3px solid currentColor;font-size:clamp(24px,2vw,30px);font-weight:700;line-height:1.25;white-space:nowrap}.header p{font-size:15px;line-height:1.6;color:var(--st-muted);margin:0}.header>button{flex-shrink:0}
@@ -338,7 +338,7 @@
 
 
 /* Store center: enforce consistent dark/light Vuexy surfaces, aligned controls and bounded list. */
-.page{--st-card-1:#18283c;--st-card-2:#142237;--st-divider:#314761}
+.page{--st-card-1:#393d55;--st-card-2:#2f3349;--st-divider:#52576e}
 :global(.light) .page{--st-card-1:#f7fafd;--st-card-2:#fff;--st-divider:#dbe7e7}
 .page :is(.header,.panel,.filters,.storeMetrics button.storeMetric,.storeList article.storeCard,.dialog){border:1px solid var(--st-line);color:var(--st-text);box-shadow:none}
 .page :is(.header,.panel,.filters,.dialog){background:var(--st-bg)}
@@ -548,11 +548,11 @@
 /* Store-center dark/light surface audit: match the agreed two-layer Vuexy palette.
    Do not alter layout, status semantics or primary action colors. */
 .page{
-  --st-card-1:#18283c;
-  --st-card-2:#142237;
-  --st-surface:#18283c;
-  --st-bg:#142237;
-  --st-control:#101d30;
+  --st-card-1:#393d55;
+  --st-card-2:#2f3349;
+  --st-surface:#393d55;
+  --st-bg:#2f3349;
+  --st-control:#393d55;
 }
 :global(.light) .page{
   --st-card-1:#f7fafd;

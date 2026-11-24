@@ -46,9 +46,9 @@
 /* Collections list / context menu / dialog: scoped premium Vuexy surfaces.
    Theme tokens live on both the list and portaled dialog elements. */
 .root,.modal{
- --collections-bg:#142237;--collections-card:#18283c;
- --collections-line:#31465e;--collections-text:#edf4ff;
- --collections-muted:#b5c6d8;--collections-primary:#7367f0;
+ --collections-bg:#2f3349;--collections-card:#393d55;
+ --collections-line:#52576e;--collections-text:#cfcde4;
+ --collections-muted:#acabc1;--collections-primary:#7367f0;
 }
 :global(.light) .root,:global(.light) .modal{
  --collections-bg:#fff;--collections-card:#f7fafd;

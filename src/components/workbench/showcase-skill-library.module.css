@@ -83,7 +83,7 @@
 @media(max-width:700px){.shell{width:calc(100% - 24px);padding:14px 0 28px}.hero{min-height:112px;padding:16px 18px}.hero h1{font-size:23px;line-height:30px}.hero p,.breadcrumb{font-size:13px;line-height:20px}.grid,.fourGrid{grid-template-columns:1fr}.toolbar{padding:16px 18px}.searchForm{width:100%}.searchForm input{flex:1;min-width:0;width:auto}.feature{min-height:174px}}
 
 /* Match the approved Tool Market header across skill pages in both themes. */
-.shell{--s-bg:#142237;--s-line:#30465e;--s-txt:#eff6ff;--s-muted:#adc1d4;--s-title:#eff6ff;--s-accent:#7367f0;--s-shadow:0 7px 24px rgba(3,12,27,.15)}
+.shell{--s-bg:#2f3349;--s-line:#52576e;--s-txt:#cfcde4;--s-muted:#acabc1;--s-title:#cfcde4;--s-accent:#7367f0;--s-shadow:0 7px 24px rgba(3,12,27,.15)}
 .shell>.hero{border-color:var(--s-line);border-radius:12px;background:var(--s-bg);box-shadow:var(--s-shadow);padding-left:24px}
 .shell>.hero h1{color:var(--s-title);font-weight:700;border-left-color:#7367f0}
 :global(.light) .shell{--s-bg:#fff;--s-line:#dfe7ef;--s-txt:#263747;--s-muted:#607183;--s-title:#263747;--s-accent:#7367f0;--s-shadow:0 6px 22px rgba(32,55,87,.06)}
@@ -93,10 +93,10 @@
 /* Skill library: nested cards and native dialog must share the same theme.
    Native dialogs may be portaled outside .shell, so give them local tokens. */
 .shell{
- --s-bg:#142237;--s-panel:#18283c;--s-txt:#edf4ff;
- --s-muted:#b5c6d8;--s-line:#31465e;
- --s-border-control:#31465e;--s-control-text:#edf4ff;
- --s-control-bg:#18283c;
+ --s-bg:#2f3349;--s-panel:#393d55;--s-txt:#cfcde4;
+ --s-muted:#acabc1;--s-line:#52576e;
+ --s-border-control:#52576e;--s-control-text:#cfcde4;
+ --s-control-bg:#393d55;
 }
 :global(.light) .shell{
  --s-bg:#fff;--s-panel:#f7fafd;--s-txt:#263648;
@@ -105,8 +105,8 @@
  --s-control-bg:#f7fafd;
 }
 .introDialog{
- --s-bg:#142237;--s-panel:#18283c;--s-txt:#edf4ff;
- --s-muted:#b5c6d8;--s-line:#31465e;--s-accent:#7367f0;
+ --s-bg:#2f3349;--s-panel:#393d55;--s-txt:#cfcde4;
+ --s-muted:#acabc1;--s-line:#52576e;--s-accent:#7367f0;
  --s-card-title:#b5c6ff;
  background:var(--s-bg);color:var(--s-txt);border-color:var(--s-line);
 }

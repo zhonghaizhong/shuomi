@@ -1,4 +1,4 @@
-.page{--surface:#142237;--subtle:#1c3047;--border:#30465c;--text:#edf5ff;--muted:#b5c8da;--accent:#1670ce;--green:#42d2b0;--field:#1c3047;--row:#1c3047;width:100%;max-width:1600px;margin:0 auto;padding:20px 0 36px;display:grid;align-content:start;gap:16px;color:var(--text);font-size:15px;line-height:1.55}
+.page{--surface:#2f3349;--subtle:#393d55;--border:#52576e;--text:#cfcde4;--muted:#acabc1;--accent:#7367f0;--green:#42d2b0;--field:#393d55;--row:#393d55;width:100%;max-width:1600px;margin:0 auto;padding:20px 0 36px;display:grid;align-content:start;gap:16px;color:var(--text);font-size:15px;line-height:1.55}
 :global(.light) .page{--surface:#fff;--subtle:#f1f5fa;--border:#d8e4ee;--text:#172b45;--muted:#496177;--accent:#087f6c;--green:#087f6c;--field:#f1f5fa;--row:#f7fafc}
 .page *{box-sizing:border-box}
 .page h1,.page h2,.page h3,.page p{margin:0}.page h2{font-size:20px;font-weight:650;color:var(--text)}.page h3{font-size:16px;font-weight:600;color:var(--text)}.page p{color:var(--muted);line-height:1.6}.page button{min-height:38px;padding:7px 15px;border:1px solid var(--border);border-radius:6px;background:var(--subtle);color:var(--text);font:inherit;font-size:14px;white-space:nowrap;cursor:pointer}.page button:hover:not(:disabled){border-color:var(--accent)}.page button:disabled{opacity:.5;cursor:not-allowed}.page .primary{background:var(--accent);border-color:var(--accent);color:#fff}.page .primary:hover:not(:disabled){background:#6559df}.page :is(button,input,select,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -56,7 +56,7 @@
 .page .recordLayout td{font-size:13px}
 .page .recordLayout .textButton{background:var(--subtle);border-color:var(--border);color:var(--text)}
 :global(.light) .page .recordLayout .textButton{color:#245c85;background:#e8f2fb}
-.page .recordLayout>.panel:nth-child(2) .primary{background:#1670ce;border-color:#1670ce}
+.page .recordLayout>.panel:nth-child(2) .primary{background:#7367f0;border-color:#7367f0}
 :global(.light) .page .recordLayout>.panel:nth-child(2) .primary{background:#1670ce;border-color:#1670ce}
 .page .recordSummary{background:var(--subtle)}
 :global(.light) .page .status[data-status="可申请"]{--sfg:#087f6c}

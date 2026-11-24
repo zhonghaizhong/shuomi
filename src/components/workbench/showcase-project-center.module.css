@@ -64,7 +64,7 @@
 @media(max-width:700px){.page{width:calc(100% - 24px);padding:14px 0 28px}.hero{min-height:112px;padding:16px 18px;align-items:flex-start;flex-wrap:wrap}.hero h1{font-size:23px;line-height:30px}.metrics,.cards{grid-template-columns:1fr}.panel{padding:14px}.sectionHead{align-items:flex-start;flex-wrap:wrap}.search input{width:100%;flex:1}.dialog{padding:16px}}
 
 /* Project hub approved dark/light palette; no layout or button behavior changes. */
-.page{--bg:#142237;--panel:#18283c;--text:#edf4ff;--muted:#b5c6d8;--line:#31465e;--control:#31465e;--primary:#7367f0;--title:#edf4ff}
+.page{--bg:#2f3349;--panel:#393d55;--text:#cfcde4;--muted:#acabc1;--line:#52576e;--control:#52576e;--primary:#7367f0;--title:#e5e4f4}
 :global(.light) .page{--bg:#fff;--panel:#f7fafd;--text:#263648;--muted:#64768a;--line:#dfe7ef;--control:#dfe7ef;--primary:#7367f0;--title:#263648}
 .page :is(.hero,.panel,.metrics>button,.note){background:var(--bg);border-color:var(--line);color:var(--text)}
 .page :is(input,select){border-color:var(--line);color:var(--text);background:var(--panel)}

@@ -214,7 +214,7 @@
 }
 
 /* Enterprise spaces: remove legacy grey and hard-coded dark dialog input. */
-.page{--surface:#142237;--sub:#18283c;--ink:#edf4ff;--muted:#b5c6d8;--border:#31465e;--primary:#7367f0}
+.page{--surface:#2f3349;--sub:#393d55;--ink:#cfcde4;--muted:#acabc1;--border:#52576e;--primary:#7367f0}
 :global(.light) .page{--surface:#fff;--sub:#f7fafd;--ink:#263648;--muted:#64768a;--border:#dfe7ef;--primary:#7367f0}
 .page :is(.heading,.identity,.panel,.metrics article,.tabsBar,.dialog){background:var(--surface);color:var(--ink);border-color:var(--border)}
 .page :is(.dialog input,.dialog select,.filters input,.filters select,.tabsBar button,.memberStatusTabs button){background:var(--sub);color:var(--ink);border-color:var(--border)}

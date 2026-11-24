@@ -162,7 +162,7 @@
 @container(max-width:380px){.root .stats>button[data-task-metric]{padding:10px;gap:5px}.root .stats>button[data-task-metric]>.statIcon{width:32px;height:32px}.root .stats>button[data-task-metric]>.statIcon svg{width:18px;height:18px}}
 
 /* Task-center semantic dark/light surfaces; do not alter task actions or status colors. */
-.root{--task-surface:#142237;--task-raised:#18283c;--task-line:#31465e;--task-text:#edf4ff;--task-muted:#b5c6d8;--task-link:#a99dff;--task-row-alt:#18283c}
+.root{--task-surface:#2f3349;--task-raised:#393d55;--task-line:#52576e;--task-text:#cfcde4;--task-muted:#acabc1;--task-link:#a99dff;--task-row-alt:#393d55}
 :global(.light) .root{--task-surface:#fff;--task-raised:#f7fafd;--task-line:#dfe7ef;--task-text:#263648;--task-muted:#64768a;--task-link:#7367f0;--task-row-alt:#f7fafd}
 .root :is(.metrics>div,.notice,.empty,.modal){background:var(--task-surface);border-color:var(--task-line);color:var(--task-text)}
 .root :is(.modal .summary,.modal button:not(.primary),.searchInput select){background:var(--task-raised);border-color:var(--task-line);color:var(--task-text)}
