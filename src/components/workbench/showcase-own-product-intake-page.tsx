@@ -43,7 +43,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
   initialSelectionContext.current=contextKey;
   if(!context.itemId)return;
   const item=records.find(p=>p.id===context.itemId&&p.status===(stage==="pending"?"入库待完善":"待审核"));
-  if(item){uploadGeneration.current++;setUploading(false);activeUploadProduct.current=item.id;setChecked([]);setImageIndex(0);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1)}
+  if(item){const itemIndex=list.findIndex(p=>p.id===item.id);if(itemIndex<0)return;setPage(Math.floor(itemIndex/15)+1);uploadGeneration.current++;setUploading(false);activeUploadProduct.current=item.id;setChecked([]);setImageIndex(0);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1)}
  },[context,records,stage]);
   const updateSku=(fields:Partial<OwnProductRecord["skus"][number]>)=>setDraft(old=>old.map(s=>s.id===skuId?{...s,...fields}:s));
  const upload=async(e:ChangeEvent<HTMLInputElement>)=>{
