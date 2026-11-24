@@ -122,3 +122,51 @@ it("refreshes only the requested demo batch and preserves approved products and 
  expect(pouch.missing.some(m=>m.includes("商品图片"))).toBe(true);
  expect(pouch.skus).toHaveLength(2);
 });
+
+it("reads all real saved product-image template settings instead of guessing language or background",()=>{
+ const org="image-config-org",member="image-config-member";
+ const batch=createOwnProductBatch(org,member,"自有商品测试批次");
+ writeAgentPreviewTemplates(org,member,"商品优化智能体",[{
+  id:"configured-template",name:"图片配置验收",createdAt:"2026-11-24",
+  config:{skills:[],knowledge:[],imageOptimization:true,imageInstructions:"产品主体不可变形",
+   useConfig:{
+    imageLanguage:"西班牙语",imageBackground:"自定义背景要求",
+    imageBackgroundCustom:"柔和浅灰摄影棚背景",optimizationSource:"自定义指令",
+    imageUse:"分别优化",imageProcessingScope:"手动选择",
+    selectedMainImages:[1,3],selectedDetailImages:[2],
+    imageTasks:[
+     {id:1,target:"主图",position:1,name:"hero",prompt:"主体完整居中"},
+     {id:2,target:"详情图",position:2,name:"detail",prompt:"展示可信材质纹理"}
+    ]
+   }}
+ }]);
+ simulateFiveOwnProductIntakes(org,member,batch.id,"测试模板");
+ const record={...readOwnProducts(org,member)[0],template:"图片配置验收"};
+ const result=previewOwnProductOptimization(org,member,record)!;
+ expect(result.templateFound).toBe(true);
+ const setting=(name:string)=>result.pictureSettings.find(x=>x.label===name)?.value;
+ expect(setting("生图语言")).toBe("西班牙语");
+ expect(setting("背景设置")).toContain("柔和浅灰摄影棚背景");
+ expect(setting("优化来源")).toBe("自定义指令");
+ expect(setting("视觉素材策略")).toBe("分别优化");
+ expect(setting("主图图片位置")).toBe("第1张、第3张");
+ expect(setting("详情图图片位置")).toBe("第2张");
+ expect(setting("逐张图片要求")).toContain("详情图第2张：展示可信材质纹理");
+ expect(setting("补充图片指令")).toBe("产品主体不可变形");
+});
+
+it("does not invent image settings when a saved template omits them",()=>{
+ const org="unset-config-org",member="unset-config-member";
+ const batch=createOwnProductBatch(org,member,"自有商品测试批次");
+ writeAgentPreviewTemplates(org,member,"商品优化智能体",[{
+  id:"unset-template",name:"不指定图片",createdAt:"2026-11-24",
+  config:{imageOptimization:false,skills:[],knowledge:[],useConfig:{}}
+ }]);
+ simulateFiveOwnProductIntakes(org,member,batch.id,"测试模板");
+ const record={...readOwnProducts(org,member)[0],template:"不指定图片"};
+ const result=previewOwnProductOptimization(org,member,record)!;
+ expect(result.pictureSettings.find(s=>s.label==="生图语言")?.value).toContain("不指定");
+ expect(result.pictureSettings.find(s=>s.label==="背景设置")?.value).toContain("不限制");
+ expect(result.pictureSettings.find(s=>s.label==="主图图片位置")?.value).toBe("未选");
+ expect(result.steps.find(s=>s.name==="图片优化配置")?.status).toBe("not-enabled");
+});
