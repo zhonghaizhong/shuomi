@@ -192,6 +192,9 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await hybrid.getByRole("button",{name:"添加第 1 张图片"}).click();
  const addImage=page.getByRole("dialog",{name:"添加图片"});
  await expect(addImage).toContainText("预设指令AI重构");
+ await expect(addImage.getByLabel("图片来源").getByRole("button")).toHaveCount(4);
+ await expect(addImage.getByText("图片位置自动匹配")).toBeVisible();
+ await expect(addImage.getByRole("button",{name:"确认应用"})).toBeDisabled();
  await addImage.getByRole("button",{name:"预设指令AI重构"}).click();
  await addImage.getByRole("button",{name:/商品识别主图/}).click();
  await expect(hybrid).toBeVisible();
