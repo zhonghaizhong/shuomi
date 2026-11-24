@@ -910,3 +910,68 @@
 .variantBundleUpload>input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .variantBundleUpload>strong{font-size:12px;font-weight:650}
 .variantBundleUpload>small{font-size:11px;color:var(--muted);line-height:1.5}
+
+
+/* Text-only variant selector and field-level text reconstruction workbench. */
+.variantSelectionPanel{display:grid;gap:10px;padding:12px;border:1px solid var(--stroke);border-radius:9px;background:var(--surface-alt)}
+.variantSelectionPanel>strong{font-size:13px;color:var(--ink);font-weight:650}
+.variantSelectionPanel .variantColorPicker{gap:8px}
+.variantSelectionPanel .variantColorPicker button{
+  justify-content:center;min-height:52px;gap:3px;
+  background:var(--surface);border:1px solid var(--stroke);border-radius:8px;
+  padding:8px 5px;box-sizing:border-box;
+}
+.variantSelectionPanel .variantColorPicker button[aria-pressed="true"]{border:2px solid #7367f0;background:color-mix(in srgb,#7367f0 15%,var(--surface))}
+.variantSelectionPanel .variantColorPicker button span{font-size:13px}
+.variantSelectionPanel .variantColorPicker button small{font-size:11px}
+.variantSizePicker{display:flex;gap:7px;flex-wrap:wrap}
+.variantSizePicker button,.aiSkuPills button{
+ min-width:56px;min-height:34px;padding:6px 10px;
+ background:var(--surface);border:1px solid var(--stroke);
+ border-radius:7px;color:var(--ink);font-size:12px;cursor:pointer;
+}
+.variantSizePicker button[aria-pressed="true"],.aiSkuPills button[aria-pressed="true"]{
+ background:#7367f0;border-color:#7367f0;color:#fff;
+}
+.variantSelectedCaption{font-size:12px;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.dialogFieldTabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;align-items:stretch;padding-bottom:8px}
+.dialogFieldTabs button{min-height:42px;padding:6px 5px;white-space:normal;line-height:1.35;min-width:0}
+.aiFieldToolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.aiFieldFilters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.aiFieldFilters span:first-child{color:var(--ink);font-weight:650}
+.aiBatchTrigger{background:color-mix(in srgb,#7367f0 18%,var(--surface));border:1px solid #7367f0;color:var(--ink);border-radius:8px;min-height:36px;padding:7px 12px;font-size:12px;font-weight:650;cursor:pointer}
+.aiBatchPanel{display:grid;gap:12px;padding:15px;background:var(--surface);border:1px solid #7367f0;border-radius:9px;font-size:13px;min-width:0}
+.aiBatchPanel header{display:flex;align-items:center;gap:10px}
+.aiBatchPanel header strong{font-size:14px;color:var(--ink)}
+.aiBatchPanel header span{color:var(--muted);margin-left:auto;font-size:12px}
+.aiBatchPanel header button{border:0;background:transparent;color:var(--ink);font-size:22px;cursor:pointer}
+.aiBatchPanel label{display:grid;gap:7px;font-size:12px;color:var(--muted)}
+.aiBatchPanel select,.aiBatchPanel textarea,.aiEditableField input,.aiEditableField textarea{
+ width:100%;min-width:0;box-sizing:border-box;border:1px solid var(--stroke);border-radius:7px;
+ background:var(--surface-alt);color:var(--ink);padding:9px 11px;font:inherit;font-size:13px;
+}
+.aiBatchPanel textarea,.aiEditableField textarea{resize:vertical;min-height:64px;line-height:1.6}
+.aiBatchChecks{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.aiBatchChecks label{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:13px}
+.aiBatchChecks input{accent-color:#7367f0}
+.aiBatchPanel p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}
+.aiRuleNote{padding:10px 12px;border-radius:7px;background:var(--surface-alt);border:1px solid var(--stroke);font-size:12px;line-height:1.6;color:var(--muted)}
+.aiFeedback{padding:9px 12px;border-left:3px solid #e9ae5d;background:var(--surface-alt);color:var(--ink)!important}
+.aiBatchSubmit{justify-self:end;min-height:36px;padding:8px 15px;border-radius:7px;background:#7367f0;color:#fff;border:1px solid #7367f0;cursor:pointer}
+.aiBatchSubmit:disabled{opacity:.42;cursor:not-allowed}
+.aiEditableField{display:grid;gap:7px;min-width:0}
+.aiEditableField>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.aiEditableField label{font-size:13px;color:var(--ink);font-weight:600}
+.aiEditableField>div>button{border:1px solid #7367f0;border-radius:7px;padding:6px 10px;color:var(--ink);background:color-mix(in srgb,#7367f0 11%,var(--surface));font-size:12px;cursor:pointer;white-space:nowrap}
+.aiVariantEditor{display:grid;gap:12px}
+.aiVariantEditor>strong{font-size:14px;color:var(--ink)}
+.aiVariantEditor>p{font-size:12px;color:var(--muted);margin:0;line-height:1.6}
+.aiSkuPills{display:flex;flex-wrap:wrap;gap:8px}
+.qualificationField{display:grid;gap:9px;border:1px solid var(--stroke);padding:12px;border-radius:8px;background:var(--surface)}
+.qualificationField strong{font-size:13px;color:var(--ink)}
+.qualificationField label{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.qualificationField input[type=file]{min-width:0;max-width:100%;font-size:12px;color:var(--muted)}
+.qualificationField small{font-size:11px;color:var(--muted);line-height:1.5}
+.productDetailFooter>div{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:1050px){.dialogFieldTabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.variantSelectionPanel .variantColorPicker{grid-template-columns:repeat(3,minmax(0,1fr))}.aiFieldToolbar{align-items:flex-start}.aiBatchTrigger{width:100%}}
