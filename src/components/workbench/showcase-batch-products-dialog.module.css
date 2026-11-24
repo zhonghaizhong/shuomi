@@ -111,22 +111,22 @@
 /* Theme parity: batch product dialog follows the approved Shuomi/Vuexy surfaces.
    The dialog owns the tokens so nested controls never inherit unrelated page colors. */
 .dialog{
-  --bp-bg:#142237;
-  --bp-card:#18283c;
-  --bp-row:#142237;
-  --bp-line:#31465e;
-  --bp-ink:#edf4ff;
-  --bp-muted:#b5c6d8;
+  --bp-bg:#2f3349;
+  --bp-card:#393d55;
+  --bp-row:#34384e;
+  --bp-line:#52576e;
+  --bp-ink:#cfcde4;
+  --bp-muted:#acabc1;
   --bp-primary:#7367f0;
   color-scheme:dark;
 }
 :global(.light) .dialog{
   --bp-bg:#fff;
-  --bp-card:#f7fafd;
+  --bp-card:#f8f7fa;
   --bp-row:#fff;
-  --bp-line:#dfe7ef;
-  --bp-ink:#263648;
-  --bp-muted:#64768a;
+  --bp-line:#e5e1ed;
+  --bp-ink:#444050;
+  --bp-muted:#6f6b7d;
   --bp-primary:#7367f0;
   color-scheme:light;
 }
@@ -155,7 +155,7 @@
 }
 :global(.light) .dialog .productPanel nav button[aria-pressed=true]{color:#6155d9}
 .dialog .scroll th{background:var(--bp-card);color:var(--bp-muted)}
-.dialog .scroll tbody tr:nth-child(odd) td{background:var(--bp-card)}
+.dialog .scroll tbody tr:nth-child(odd) td{background:var(--bp-row)}
 .dialog .scroll tbody tr:nth-child(even) td{background:var(--bp-bg)}
 .dialog .scroll tbody tr:hover td{background:color-mix(in srgb,var(--bp-primary) 5%,var(--bp-card))}
 .dialog .dropdown{background:var(--bp-card);border-color:var(--bp-line)}
@@ -168,3 +168,21 @@
 .dialog .moveDialog{background:var(--bp-bg);color:var(--bp-ink)}
 .dialog .moveDialog footer{display:flex;justify-content:flex-end;gap:10px}
 .dialog .detailOverlay button{color:inherit}
+
+/* Match My Data surface tokens in every nested layer, not a separate navy dialog theme. */
+.dialog .summary{background:var(--bp-card)}
+.dialog .toolbar{background:var(--bp-bg)}
+.dialog .search,.dialog .toolbar select,.dialog .priceRangeHost>button{background:var(--bp-bg)}
+.dialog .productPanel{background:var(--bp-bg)}
+.dialog .scroll th{background:var(--bp-card)}
+.dialog .scroll tbody tr:nth-child(odd) td{background:var(--bp-row)}
+.dialog .scroll tbody tr:nth-child(even) td{background:var(--bp-bg)}
+.dialog .bulkTools button:disabled{opacity:.45}
+.dialog .detailOverlay{background:var(--bp-bg);color:var(--bp-ink);border-color:var(--bp-line)}
+.dialog .detailStage{background:var(--bp-bg)}
+.dialog .detailPanel{background:var(--bp-card);border-color:var(--bp-line)}
+.dialog .detailPanel>header,.dialog .detailPanel>footer{border-color:var(--bp-line)}
+.dialog .detailPanel h2,.dialog .detailIntro h3,.dialog .detailPrice,.dialog .detailMetadata dd{color:var(--bp-ink)}
+.dialog .detailStageTop,.dialog .detailMetadata dt,.dialog .detailDescription p,.dialog .detailPanel>footer span{color:var(--bp-muted)}
+.dialog .detailDescription,.dialog .detailCover{background:var(--bp-bg);border-color:var(--bp-line)}
+.dialog .largeImage{background:var(--bp-card);border-color:var(--bp-line)}
