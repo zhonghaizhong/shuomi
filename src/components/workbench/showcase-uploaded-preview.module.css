@@ -234,3 +234,15 @@
 /* Uploaded batch chooser: same full-width action as the other listing stages. */
 .toolbar .filters label>button{width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;background:var(--upload-inset);color:var(--upload-ink);border-color:var(--upload-border)}
 .toolbar .filters label>button:hover{border-color:var(--upload-primary)}
+
+/* Same heading, filters and controls as other listing management tabs. */
+.page{gap:16px}
+.page .toolbar :is(button,input,select),
+.page .pagination button,
+.page .item button{
+ box-sizing:border-box;min-height:40px;border-radius:6px;font-size:14px;font-weight:600;line-height:1.4;
+}
+.page .toolbar button,.page .pagination button,.page .item button{padding:0 16px}
+.page .toolbar .primary{background:#7367f0;border-color:#7367f0;color:#fff}
+.page .listTitle{min-height:54px;box-sizing:border-box}
+.page .columns{min-height:46px;align-items:center}
