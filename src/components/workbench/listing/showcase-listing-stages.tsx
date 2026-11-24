@@ -364,7 +364,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   <div className={styles.productDetailBody}>
    <section className={styles.productDialogLeft}>
     <div className={styles.productPhotoPanel}>
-     <div className={styles.productSectionHeading}><strong>{selectedVariantGroup?"变体图片 · "+selectedVariantGroup.color:"商品图片 · 主图 "+selectedMainImages.length+" / 详情图 "+selectedDetailImages.length}</strong><small>{selectedVariantGroup?selectedVariantGroup.optimizedImages.length+"/6 张优化图":"保留已保存的图片版本"}</small></div>
+     <div className={styles.productSectionHeading}><strong>图片管理{selectedVariantGroup?" · "+selectedVariantGroup.color+(activeSku?" / "+activeSku.size:""):""}</strong><small>{selectedVariantGroup?selectedVariantGroup.optimizedImages.length+"/6 张优化图":"保留已保存的图片版本"}</small></div>
      {variantImageGroups.length?<div className={styles.variantSelectionPanel}>
        <strong>第一层变体 · 颜色</strong>
        <div className={styles.variantColorPicker} role="group" aria-label="选择颜色变体">
@@ -378,13 +378,14 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
        </div>
        {activeSku?<p className={styles.variantSelectedCaption}>当前 SKU：{activeSku.sku} · {activeSku.color} / {activeSku.size}</p>:null}
       </div>:null}
-     {selectedVariantGroup?<div className={styles.variantImageMode} role="tablist" aria-label="原始与优化图片切换">
-      <button type="button" role="tab" aria-selected={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPictureTab("main");setPhotoIndex(0)}}>优化／演示素材（{selectedColorOptimizedImages.length}/6）</button>
-      <button type="button" role="tab" aria-selected={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPictureTab("main");setPhotoIndex(0)}}>原始实拍（{selectedColorOriginalImages.length}）</button>
-     </div>:null}
-     {!selectedVariantGroup?<div className={styles.pictureTabs} role="tablist" aria-label="商品图片区">
+     <div className={styles.pictureTabs} role="tablist" aria-label="商品图片区">
       <button type="button" role="tab" aria-selected={pictureTab==="main"} onClick={()=>{setPictureTab("main");setPhotoIndex(0)}}>主图（{selectedMainImages.length}）</button>
       <button type="button" role="tab" aria-selected={pictureTab==="detail"} onClick={()=>{setPictureTab("detail");setPhotoIndex(0)}}>详情图（{selectedDetailImages.length}）</button>
+     </div>
+     {selectedVariantGroup&&pictureTab==="main"?<div className={styles.variantImageMode} role="group" aria-label="主图图片版本">
+      <span className={styles.photoVersionLabel}>图片版本</span>
+      <button type="button" aria-pressed={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPhotoIndex(0)}}>优化图（{selectedColorOptimizedImages.length}/6）</button>
+      <button type="button" aria-pressed={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPhotoIndex(0)}}>原始实拍（{selectedColorOriginalImages.length}）</button>
      </div>:null}
      {galleryImages.length?<><div className={styles.productHeroImage}>
        <button type="button" className={styles.pictureZoom} aria-label="放大当前商品图" onClick={()=>setImagePreview(true)}>
