@@ -38,6 +38,20 @@ jobs:
         run: |
           test -s dist-pages/assets/own-product-ai-demo/six-products-48-images.webp
           node -e "const fs=require('fs');const b=fs.readFileSync('dist-pages/assets/own-product-ai-demo/six-products-48-images.webp');if(b.toString('ascii',0,4)!=='RIFF'||b.toString('ascii',8,12)!=='WEBP')process.exit(1)"
+      - name: Verify all 30 photographic product previews are published
+        run: |
+          test "$(find dist-pages/assets/listing-ai-preview/approved -name '*.jpg' -type f | wc -l)" -eq 30
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const dir = "dist-pages/assets/listing-ai-preview/approved";
+          const names = ["cream", "charger", "skillet", "ereader", "battery"];
+          for (const kind of names) for (let i = 1; i <= 6; i++) {
+            const name = `${kind}-${String(i).padStart(2,"0")}.jpg`;
+            const bytes = fs.readFileSync(`${dir}/${name}`);
+            if (bytes.length < 10000 || bytes[0] !== 255 || bytes[1] !== 216)
+              throw new Error(`Invalid JPG preview: ${name}`);
+          }
+          NODE
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist-pages
