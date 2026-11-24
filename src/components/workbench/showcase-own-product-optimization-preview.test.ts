@@ -58,3 +58,15 @@ it("keeps pending, review and approved statuses separate and never reopens an ap
  expect(readOwnProducts(org,member).find(p=>p.id===cup.id)?.status).toBe("已入库");
  expect(readOwnProducts(org,member).find(p=>p.id===cup.id)?.originalSkus?.[0]?.description).toBe("");
 });
+
+it("rejects an empty image URL as missing and prevents advancing to review",()=>{
+ const org="image-org",member="image-member";
+ const batch=createOwnProductBatch(org,member,"自有商品测试批次");
+ simulateFiveOwnProductIntakes(org,member,batch.id,"测试模板");
+ const pending=readOwnProducts(org,member).find(p=>p.status==="入库待完善")!;
+ const incomplete=pending.skus.map(s=>({...s,name:"商品名",description:"可信商品描述",images:["  "]}));
+ expect(checkOwnProductSkus(incomplete)).toContain("商品名 商品图片");
+ const saved=updateOwnProductAfterReview(org,member,pending.id,incomplete);
+ expect(saved.status).toBe("入库待完善");
+ expect(()=>approveOwnProductIntake(org,member,pending.id)).toThrow("待审核");
+});
