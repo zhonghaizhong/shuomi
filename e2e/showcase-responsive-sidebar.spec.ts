@@ -130,12 +130,15 @@ test("listing remains a second-level sidebar link and stages switch via page but
     ["待审核","review"],
     ["已上传","uploaded"],
   ] as const;
+  const tabs=page.getByRole("navigation",{name:"刊登管理分类"});
   for(const [label,route] of stages) {
-    const tab=page.getByRole("navigation",{name:"刊登管理阶段"}).getByRole("button",{name:label,exact:true});
+    const tab=tabs.getByRole("button",{name:label,exact:true});
     await expect(tab).toBeVisible();
     await tab.click();
-    await expect(page).toHaveURL(new RegExp("#/workbench/listing/"+route+"(?:[?]|$)"));
+    // Approved behavior: keep the top navigation fixed and switch content in place.
+    await expect(page).toHaveURL(/#\/workbench\/listing\/waiting(?:[?]|$)/);
     await expect(tab).toHaveAttribute("aria-current","page");
+    await expect(route==="uploaded"?page.locator("[data-showcase-uploaded]"):page.locator('[data-listing-stage="'+route+'"]')).toBeVisible();
     await expect(nav.getByRole("link",{name:label,exact:true})).toHaveCount(0);
   }
 });
@@ -163,17 +166,20 @@ test("listing management overview follows Figma entry and conditional flow", asy
  }
  await expect(overview.getByText("规则必选，智能体按需启用")).toBeVisible();
  await expect(overview.getByText("新商品先进入「我的数据」")).toBeVisible();
- await overview.getByRole("button",{name:"进入待上传"}).click();
- await expect(page).toHaveURL(/#\/workbench\/listing\/waiting/);
- await page.goto(entry+"/listing");
- await overview.getByRole("button",{name:"进入待补全"}).click();
- await expect(page).toHaveURL(/#\/workbench\/listing\/missing/);
- await page.goto(entry+"/listing");
- await overview.getByRole("button",{name:"进入待审核"}).click();
- await expect(page).toHaveURL(/#\/workbench\/listing\/review/);
- await page.goto(entry+"/listing");
- await overview.getByRole("button",{name:"查看已上传"}).click();
- await expect(page).toHaveURL(/#\/workbench\/listing\/uploaded/);
+ const topTabs=page.getByRole("navigation",{name:"刊登管理分类"});
+ for(const [button,tab,expected] of [
+  ["进入待上传","待上传","waiting"],
+  ["进入待补全","待补全","missing"],
+  ["进入待审核","待审核","review"],
+  ["查看已上传","已上传","uploaded"],
+ ] as const){
+  await overview.getByRole("button",{name:button}).click();
+  await expect(page).toHaveURL(/#\/workbench\/listing(?:[?]|$)/);
+  await expect(topTabs.getByRole("button",{name:tab,exact:true})).toHaveAttribute("aria-current","page");
+  await expect(expected==="uploaded"?page.locator("[data-showcase-uploaded]"):page.locator('[data-listing-stage="'+expected+'"]')).toBeVisible();
+  await topTabs.getByRole("button",{name:"刊登总览",exact:true}).click();
+  await expect(overview).toBeVisible();
+ }
 });
 
 test("listing four-stage Figma flow has distinct functional screens",async({page})=>{
@@ -200,7 +206,10 @@ test("listing four-stage Figma flow has distinct functional screens",async({page
  if((await missingListTitle.textContent())?.includes("共 0 个商品")){
   await expect(missing.getByRole("status")).toContainText("暂无商品记录");
  }
- await missing.getByRole("button",{name:"待审核",exact:true}).click();
+ const stageTabs=page.getByRole("navigation",{name:"刊登管理分类"});
+ await stageTabs.getByRole("button",{name:"待审核",exact:true}).click();
+ await expect(page).toHaveURL(/#\/workbench\/listing\/missing(?:[?]|$)/);
+ await expect(stageTabs.getByRole("button",{name:"待审核",exact:true})).toHaveAttribute("aria-current","page");
  const review=page.locator('[data-listing-stage="review"]');
  await expect(review.getByRole("heading",{name:"为什么需要人工审核 AI 建议？"})).toBeVisible();
  const reviewListTitle=review.getByRole("heading",{name:/^商品列表（共 \d+ 个商品）$/});
@@ -208,7 +217,8 @@ test("listing four-stage Figma flow has distinct functional screens",async({page
  if((await reviewListTitle.textContent())?.includes("共 0 个商品")){
   await expect(review.getByRole("status")).toContainText("暂无商品记录");
  }
- await review.getByRole("button",{name:"已上传",exact:true}).click();
+ await stageTabs.getByRole("button",{name:"已上传",exact:true}).click();
+ await expect(stageTabs.getByRole("button",{name:"已上传",exact:true})).toHaveAttribute("aria-current","page");
  await expect(page.locator("[data-showcase-uploaded]")).toBeVisible();
  await expect(page.locator("[data-showcase-uploaded]")).toContainText("暂无已上传商品记录");
 });
