@@ -185,6 +185,9 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(pod).toContainText("步骤 5 · 生成数量");
  await pod.getByRole("button",{name:/混合模式/}).click();
  const hybrid=page.getByRole("dialog",{name:"混合模式设置"});
+ await expect(hybrid.getByLabel("共用视觉素材同步应用对象")).toContainText("主图 ✓");
+ await expect(hybrid.getByLabel("共用视觉素材同步应用对象")).toContainText("详情图 ✓");
+ await expect(hybrid.getByText("最终图片编排 · 主图及详情图共用")).toBeVisible();
  await expect(hybrid.getByRole("button",{name:"添加第 1 张图片"})).toBeVisible();
  await hybrid.getByRole("button",{name:"添加第 1 张图片"}).click();
  const addImage=page.getByRole("dialog",{name:"添加图片"});
