@@ -3,7 +3,7 @@
 /** Local showcase task ledger. This is not platform submission, AI execution or an order. */
 export type ShowcaseUploadTask={
  id:string;organizationId:string;memberId:string;
- source:"采集批次"|"自有商品库"|"数据集";batchId:string;batchName:string;sourceVersionId?:string;
+ source:"采集批次"|"自有商品库"|"数据集";batchId:string;batchName:string;sourceVersionId?:string;sourceVersionLabel?:string;
  productIds:string[];productCount:number;missingCount:number;
  storeId:string;storeName:string;platform:"SHEIN";region:string;storeType:string;
  rule:string;ruleConfig?:{id:string;name:string;skuMode:string;prefix:string;suffix:string;priceMode:string;priceValue:string;currencyConversion:boolean;aiFill:boolean};agentId:string|null;agentName:string|null;
@@ -33,7 +33,7 @@ export function addShowcaseUploadTask(task:ShowcaseUploadTask):boolean{
 /** One source batch and selected data version remain the common identifier across all four stages. */
 export const showcaseUploadBatchKey=(task:Pick<ShowcaseUploadTask,"source"|"batchId"|"sourceVersionId">)=>
  JSON.stringify([task.source,task.batchId,task.sourceVersionId||"original"]);
-export const showcaseUploadBatchLabel=(task:Pick<ShowcaseUploadTask,"source"|"batchName"|"sourceVersionId">)=>
- task.batchName+" · "+(task.sourceVersionId&&task.sourceVersionId!=="original"?"已选优化版本":"原始版本")+" · "+task.source;
+export const showcaseUploadBatchLabel=(task:Pick<ShowcaseUploadTask,"source"|"batchName"|"sourceVersionId"|"sourceVersionLabel">)=>
+ task.batchName+" · "+(task.sourceVersionLabel||(task.sourceVersionId&&task.sourceVersionId!=="original"?"优化版本 "+task.sourceVersionId:"原始版本"))+" · "+task.source;
 export const showcaseUploadBatchPreferenceKey=(organizationId:string,memberId:string)=>
  "shuomi:listing-batch-filter-v1:"+organizationId+":"+memberId;
