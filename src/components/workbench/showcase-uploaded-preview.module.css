@@ -230,3 +230,7 @@
 .batchContext{display:flex;flex-wrap:wrap;align-items:center;gap:9px 18px;margin:0 20px 14px;padding:11px 14px;border:1px solid var(--border,#44485e);border-radius:7px;background:var(--secondary,#393d55);font-size:13px}
 .batchContext strong{color:var(--foreground,#e2e2f0);font-weight:650}
 .batchContext span{color:var(--muted-foreground,#acabc1)}
+
+/* Uploaded batch chooser: same full-width action as the other listing stages. */
+.toolbar .filters label>button{width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;background:var(--upload-inset);color:var(--upload-ink);border-color:var(--upload-border)}
+.toolbar .filters label>button:hover{border-color:var(--upload-primary)}
