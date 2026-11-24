@@ -2644,9 +2644,9 @@
 /* DATA SERVICE SUBPAGES — PREMIUM VUEXY V2
    Only the three actual showcase data routes. Figma content and interactions stay intact. */
 .page[data-commerce-unified="data"]{
- --ds-bg:#142237;--ds-surface:#18283c;--ds-quiet:#17283d;
- --ds-raised:#20344b;--ds-line:#31465e;--ds-ink:#edf4ff;
- --ds-sub:#b6c5d6;--ds-dim:#92a6bb;--ds-accent:#7367f0;
+ --ds-bg:#2f3349;--ds-surface:#2f3349;--ds-quiet:#393d55;
+ --ds-raised:#393d55;--ds-line:#52576e;--ds-ink:#cfcde4;
+ --ds-sub:#acabc1;--ds-dim:#b7b5c8;--ds-accent:#7367f0;
  --ds-shadow:0 7px 24px rgba(4,13,29,.14);
  gap:17px;
 }
