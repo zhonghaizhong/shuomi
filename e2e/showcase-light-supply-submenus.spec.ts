@@ -78,3 +78,31 @@ test("preferred application Figma flow: overview, selection, details, supply for
  await page.locator("[data-preferred-application]").getByRole("button",{name:"未通过",exact:true}).first().click();
  await expect(page.getByText("SQ-20260815-003").first()).toBeVisible();
 });
+
+
+test("Supply market has four equal-width entry cards on one desktop row",async({page})=>{
+ await page.setViewportSize({width:1600,height:900});
+ await page.goto(url("/supply"));
+ const cards=page.locator('[class*="supplyPreview"] [class*="supplyCards"] > article');
+ await expect(cards).toHaveCount(4);
+ const bounds=await cards.evaluateAll(elements=>elements.map(el=>{
+  const b=el.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height,right:b.right};
+ }));
+ for(const box of bounds){
+  expect(Math.abs(box.y-bounds[0].y)).toBeLessThan(3);
+  expect(Math.abs(box.width-bounds[0].width)).toBeLessThan(3);
+ }
+ for(let i=1;i<bounds.length;i++)expect(bounds[i].x).toBeGreaterThanOrEqual(bounds[i-1].right-2);
+ for(const title of ["硕米自营","硕米优选","货盘集成","优选申请"]){
+  await expect(cards.filter({has:page.getByRole("heading",{name:title,exact:true})})).toBeVisible();
+ }
+ await expect(cards.filter({hasText:"货盘集成"}).getByRole("button",{name:"进入"})).toBeVisible();
+ await expect(cards.filter({hasText:"优选申请"}).getByRole("button",{name:"进入"})).toBeVisible();
+ await page.setViewportSize({width:1000,height:900});
+ const middle=await cards.evaluateAll(elements=>elements.map(el=>el.getBoundingClientRect().y));
+ expect(Math.abs(middle[0]-middle[1])).toBeLessThan(3);
+ expect(middle[2]).toBeGreaterThan(middle[0]+40);
+ await page.setViewportSize({width:640,height:900});
+ const narrow=await cards.evaluateAll(elements=>elements.map(el=>el.getBoundingClientRect().y));
+ for(let i=1;i<narrow.length;i++)expect(narrow[i]).toBeGreaterThan(narrow[i-1]+40);
+});
