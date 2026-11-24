@@ -431,3 +431,11 @@
 .batchFilterHint{margin:0 14px 2px;font-size:12px;color:var(--muted)}
 .page .item>span:nth-child(2) small{display:block;margin-top:4px;color:var(--muted);font-size:12px}
 @media(max-width:760px){.page[data-listing-stage="missing"] .filters,.page[data-listing-stage="review"] .filters{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Batch-aware listing results: 15 records per page. */
+.listPagination{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 2px 2px;color:var(--muted);font-size:13px}
+.listPagination>div{display:flex;gap:8px}
+.listPagination button,.filterChoices button{min-height:40px;padding:8px 13px;border:1px solid var(--stroke);border-radius:7px;background:var(--surface-alt);color:var(--ink);font:inherit;cursor:pointer}
+.listPagination button:disabled{opacity:.45;cursor:not-allowed}
+.filterChoices label>button{width:100%;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
