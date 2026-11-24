@@ -81,7 +81,7 @@ it("places My Listing beside My Stores and preserves listing context",()=>{
  expect(Object.fromEntries(new URL(listing.getAttribute("href")!,"https://test.invalid").searchParams)).toEqual({preparation:id,store:id,operation:id});
  expect(screen.queryByRole("button",{name:"展开刊登管理"})).not.toBeInTheDocument();
  for(const stage of ["待上传","待补全","待审核","已上传"]){
-  expect(screen.queryByRole("link",{name:stage,exact:true})).not.toBeInTheDocument();
+  expect(screen.queryByRole("link",{name:new RegExp("^"+stage+"$")})).not.toBeInTheDocument();
  }
  query.value="";
 });
