@@ -1,20 +1,117 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import {useRouter} from "next/navigation";
-import {optimizedDatasetsChanged,readOptimizedDatasets} from "./showcase-optimized-datasets";
+import {z} from "zod";
+import {useWorkbenchContext} from "@/components/providers/workbench-context-provider";
+import {dataRequest,type DataScope} from "@/lib/api/data-services";
+import {customSchema,customSummarySchema,type CustomRequest} from "@/lib/contracts/data-services";
 import css from "./showcase-optimized-dataset-library.module.css";
+
+type Summary=z.infer<typeof customSummarySchema>;
+const stateName:Record<string,string>={SUBMITTED:"已提交",EVALUATING:"需求评估",SPEC_CONFIRMED:"规格已确认",PREPARING:"数据制作中",DELIVERED:"已交付",CLOSED:"已关闭"};
+const formatDate=(value:string)=>{const time=new Date(value);return Number.isNaN(time.valueOf())?value:time.toLocaleString("zh-CN",{hour12:false})};
+const groupKey=(item:Summary)=>item.name.trim().toLocaleLowerCase()+"|"+item.site;
+type Group={key:string;name:string;site:string;items:Summary[]};
+
 export function ShowcaseOptimizedDatasetLibrary({organizationId,memberId}:{organizationId:string;memberId:string}){
  const router=useRouter();
- const [revision,setRevision]=useState(0),[search,setSearch]=useState(""),[selectedId,setSelectedId]=useState("");
- useEffect(()=>{const onUpdated=(event:Event)=>{const detail=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;if(detail?.organizationId===organizationId&&detail?.memberId===memberId)setRevision(v=>v+1)};window.addEventListener(optimizedDatasetsChanged,onUpdated);return()=>window.removeEventListener(optimizedDatasetsChanged,onUpdated)},[organizationId,memberId]);
- const datasets=useMemo(()=>readOptimizedDatasets(organizationId,memberId),[organizationId,memberId,revision]);
- const filtered=datasets.filter(d=>(d.name+" "+d.sourceBatchName+" "+d.platform+" "+d.site+" "+d.language).toLowerCase().includes(search.toLowerCase()));
- const selected=datasets.find(x=>x.id===selectedId);
- return <section className={css.page} aria-label="优化数据集">
-  <header className={css.heading}><div><h2>数据集</h2><p>第三方平台确认接收后自动保存优化版本；审核与上架状态独立更新。原始商品保留不覆盖。</p></div><span>优化版本 <strong>{datasets.length}</strong></span></header>
-  <div className={css.guide}><strong>区分三种数据</strong><div><span>采集批次 · 原始采集资料</span><span>自有商品库 · 自有原始资料</span><span>数据集 · 已优化的可复用版本</span></div></div>
-  <label className={css.search}>搜索优化版本<input aria-label="搜索优化版本" placeholder="批次名称 / 来源 / 适配站点 / 语言" value={search} onChange={e=>setSearch(e.target.value)}/></label>
-  <div className={css.tableWrap}><table><thead><tr><th>优化数据集</th><th>原始来源</th><th>原适配站点 / 语言</th><th>商品数</th><th>版本</th><th>审核状态</th><th>上架状态</th><th>操作</th></tr></thead><tbody>{filtered.map(d=><tr key={d.id}><td><strong>{d.name}</strong><small>{d.createdAt}</small></td><td>{d.sourceKind}<small>{d.sourceBatchName}</small></td><td>{d.platform} · {d.site}<small>{d.language}</small></td><td>{d.products.length}</td><td>V{d.version}</td><td>{d.reviewStatus??"待审核"}</td><td>{d.listingStatus??"未上架"}</td><td><button type="button" onClick={()=>setSelectedId(d.id)}>查看来源与版本</button><button type="button" onClick={()=>{sessionStorage.setItem("shuomi:listing-dataset-prefill:"+organizationId+":"+memberId,d.id);router.push("/workbench/listing/waiting?preview=1");}}>再次刊登</button></td></tr>)}</tbody></table>{!filtered.length?<p role="status" className={css.empty}>{datasets.length?"没有匹配的优化版本。":"暂无优化数据集。必须先收到第三方平台确认接收的真实回执，才会保存优化版本；审核通过或上架不作为保存前提。"}</p>:null}</div>
-  {selected?<div className={css.overlay} onClick={e=>{if(e.target===e.currentTarget)setSelectedId("")}}><section className={css.detail} role="dialog" aria-modal="true" aria-label="优化版本详情"><header><div><h3>{selected.name} · V{selected.version}</h3><p>来源：{selected.sourceKind} / {selected.sourceBatchName}</p></div><button type="button" onClick={()=>setSelectedId("")}>关闭</button></header><p>原平台：{selected.platform} · {selected.site} · {selected.language} · {selected.storeName}</p><p>平台接收：已确认 · {selected.acceptedAt||selected.createdAt}</p><p>审核状态：{selected.reviewStatus??"待审核"} · 上架状态：{selected.listingStatus??"未上架"}</p><p>包含 {selected.products.length} 件商品。再次刊登会复用此版本的内容作为起点，自动适配仍须根据目标平台规则重新检查。</p><div className={css.products}>{selected.products.slice(0,20).map(p=><span key={p.sourceProductId}>{p.name}</span>)}</div><footer>原始批次、价格、库存与既有历史版本不被修改。</footer></section></div>:null}
+ const context=useWorkbenchContext();
+ const userId=context.user?.id;
+ const scope=useMemo<DataScope|null>(()=>userId?{userId,organizationId}:null,[userId,organizationId]);
+ const [records,setRecords]=useState<Summary[]>([]);
+ const [loading,setLoading]=useState(true),[error,setError]=useState("");
+ const [query,setQuery]=useState(""),[appliedQuery,setAppliedQuery]=useState(""),[status,setStatus]=useState("全部状态"),[appliedStatus,setAppliedStatus]=useState("全部状态");
+ const [expanded,setExpanded]=useState<string[]>([]);
+ const [detailId,setDetailId]=useState<string|null>(null),[details,setDetails]=useState<Record<string,CustomRequest>>({});
+ const [detailError,setDetailError]=useState(""),[detailLoading,setDetailLoading]=useState(false);
+ const [page,setPage]=useState(1);
+ const [revision,setRevision]=useState(0);
+ useEffect(()=>{
+  if(!scope){setRecords([]);setLoading(false);setError("请先确认当前用户和企业。");return}
+  const controller=new AbortController();setLoading(true);setError("");
+  dataRequest(scope,"custom",z.array(customSummarySchema).max(100),undefined,controller.signal)
+   .then(data=>{if(!controller.signal.aborted)setRecords(data)})
+   .catch(()=>{if(!controller.signal.aborted){setRecords([]);setError("定制数据集读取失败，请检查当前企业权限或刷新重试。")}})
+   .finally(()=>{if(!controller.signal.aborted)setLoading(false)});
+  return()=>controller.abort();
+ },[scope,revision]);
+ const groups=useMemo(()=>{
+  const map=new Map<string,Group>();
+  [...records].sort((a,b)=>a.createdAt.localeCompare(b.createdAt)).forEach(item=>{
+   const key=groupKey(item);let group=map.get(key);
+   if(!group){group={key,name:item.name,site:item.site,items:[]};map.set(key,group)}
+   group.items.push(item);
+  });
+  return [...map.values()].sort((a,b)=>(b.items[b.items.length-1]?.createdAt||"").localeCompare(a.items[a.items.length-1]?.createdAt||""));
+ },[records]);
+ const filtered=groups.filter(g=>{
+  const text=(g.name+" "+g.site+" "+g.items.map(x=>x.id+" "+x.state).join(" ")).toLowerCase();
+  return text.includes(appliedQuery.toLowerCase())&&(appliedStatus==="全部状态"||g.items.some(x=>stateName[x.state]===appliedStatus));
+ });
+ const pageCount=Math.max(1,Math.ceil(filtered.length/10)),activePage=Math.min(page,pageCount);
+ const rows=filtered.slice((activePage-1)*10,activePage*10);
+ const deliveredCount=records.filter(x=>x.state==="DELIVERED").length;
+ const openDetail=async(id:string)=>{
+  setDetailId(id);setDetailError("");
+  if(details[id]||!scope)return;
+  setDetailLoading(true);
+  try{const result=await dataRequest(scope,"custom/"+id,customSchema);setDetails(old=>({...old,[id]:result}))}
+  catch{setDetailError("无法读取该定制订单的实际详情，请检查当前身份及服务状态。")}
+  finally{setDetailLoading(false)}
+ };
+ const selected=detailId?details[detailId]:null;
+ const apply=()=>{setAppliedQuery(query.trim());setAppliedStatus(status);setPage(1)};
+ const reset=()=>{setQuery("");setAppliedQuery("");setStatus("全部状态");setAppliedStatus("全部状态");setPage(1)};
+ return <section className={css.page} aria-label="用户定制数据集">
+  <header className={css.heading}>
+   <div><h2>数据集</h2><p>管理用户定制的数据集、交付记录和历史版本；同名同站点的交付按版本展示，原始交付保留。</p></div>
+   <div className={css.headingStats}><span>定制数据集 <strong>{groups.length}</strong></span><span>已交付 <strong>{deliveredCount}</strong></span></div>
+  </header>
+  <div className={css.guide}><strong>数据来源说明</strong><span>采集批次 · 自行采集</span><span>自有商品库 · 自有商品资料</span><span>数据集 · 用户定制与交付</span></div>
+  <section className={css.filterBar} data-shuomi-filter="balanced" aria-label="定制数据集筛选">
+   <label className={css.search}><span aria-hidden="true">⌕</span><input aria-label="搜索定制数据集" placeholder="搜索数据集名称 / 站点 / 编号" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")apply()}}/></label>
+   <div className={css.filterActions}><select aria-label="定制数据集状态" value={status} onChange={e=>setStatus(e.target.value)}><option>全部状态</option>{Object.values(stateName).map(v=><option key={v}>{v}</option>)}</select><button type="button" onClick={reset}>重置</button><button type="button" className={css.primary} onClick={apply}>确认</button></div>
+  </section>
+  <section className={css.panel}>
+   <header className={css.panelHeading}><div><h3>定制数据集</h3><span>共 {filtered.length} 个数据集 · 按名称及站点归类</span></div><button type="button" onClick={()=>router.push("/workbench/data/market")}>前往数据定制</button></header>
+   <div className={css.tableWrap}><table><thead><tr><th>数据集名称</th><th>数据来源</th><th>定制范围</th><th>已交付</th><th>最新版本</th><th>交付状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>
+    {rows.map(g=>{
+     const newest=g.items[g.items.length-1],done=g.items.filter(x=>x.state==="DELIVERED"),isOpen=expanded.includes(g.key);
+     const versionOf=(item:Summary)=>g.items.indexOf(item)+1;
+     return <tbody key={g.key} className={css.groupBody}>
+      <tr><td><div className={css.datasetName}><strong>{g.name}</strong><small>定制数据集 · 版本独立保存</small></div></td>
+       <td><span className={css.tag}>用户定制</span></td><td>{g.site.toUpperCase()} <small>Amazon · 按需定制</small></td>
+       <td><b className={css.metric}>{done.length}</b></td><td><b className={css.version}>V{versionOf(newest)}</b></td>
+       <td><span className={newest.state==="DELIVERED"?css.delivered:css.pending}>{stateName[newest.state]||newest.state}</span></td>
+       <td className={css.date}>{formatDate(g.items[0].createdAt)}</td>
+       <td><div className={css.actions}><button type="button" aria-expanded={isOpen} onClick={()=>setExpanded(old=>isOpen?old.filter(k=>k!==g.key):[...old,g.key])}>{isOpen?"收起":"展开"}</button><button type="button" onClick={()=>openDetail(newest.id)}>更多</button></div></td></tr>
+      {isOpen?<tr className={css.expandedRow}><td colSpan={8}><section className={css.versions}><header><strong>数据集版本</strong><span>按真实定制订单记录版本 · 已交付的数据不会被后续版本覆盖</span></header>
+       <div className={css.versionItems}>{[...g.items].reverse().map(item=><div className={css.versionItem} key={item.id}>
+        <div className={css.versionInfo}><strong>V{versionOf(item)} · {item.name}</strong><small>{formatDate(item.createdAt)} · {item.site.toUpperCase()} · 定制订单 {item.id.slice(0,8)}</small></div>
+        <span className={item.state==="DELIVERED"?css.delivered:css.pending}>{stateName[item.state]||item.state}</span>
+        <div className={css.actions}><button type="button" onClick={()=>openDetail(item.id)}>查看详情</button></div>
+       </div>)}</div>
+      </section></td></tr>:null}
+     </tbody>
+    })}
+   </tbody></table>
+   {loading?<p className={css.empty} role="status">正在读取当前账号的定制数据集…</p>:error?<p className={css.empty} role="alert">{error}</p>:!filtered.length?<p className={css.empty} role="status">{records.length?"没有匹配的定制数据集。":"当前账号暂无定制数据集。请前往数据市场提交定制需求；只有真实交付记录才会显示为已交付。"}</p>:null}
+   </div>
+   <footer className={css.pagination}><span>显示 {rows.length} / {filtered.length} 个数据集 · 第 {activePage} / {pageCount} 页</span><div><button type="button" disabled={activePage===1} onClick={()=>setPage(v=>v-1)}>上一页</button><button type="button" disabled={activePage===pageCount} onClick={()=>setPage(v=>v+1)}>下一页</button><button type="button" onClick={()=>setRevision(v=>v+1)}>刷新</button></div></footer>
+  </section>
+  {detailId?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setDetailId(null)}}><section className={css.detail} role="dialog" aria-modal="true" aria-label="定制数据集版本详情">
+   <header><div><h3>定制版本详情</h3><p>仅显示当前用户有权访问的真实定制记录。</p></div><button type="button" onClick={()=>setDetailId(null)}>关闭</button></header>
+   {detailLoading?<p role="status">正在读取定制版本…</p>:detailError?<p role="alert">{detailError}</p>:selected?<div className={css.detailBody}>
+    <div><span>数据集名称</span><strong>{selected.input.name}</strong></div>
+    <div><span>交付状态</span><strong>{stateName[selected.state]||selected.state}</strong></div>
+    <div><span>定制站点</span><strong>{selected.input.query.site.toUpperCase()}</strong></div>
+    <div><span>数据量</span><strong>{selected.deliveredRows} 条已交付</strong></div>
+    <div><span>交付格式</span><strong>{(selected.spec?.format||selected.input.format).toUpperCase()}</strong></div>
+    <div><span>规格版本</span><strong>第 {selected.specRevision} 次规格确认</strong></div>
+    <div><span>创建时间</span><strong>{formatDate(selected.createdAt)}</strong></div>
+    <div><span>订单编号</span><strong>{selected.id}</strong></div>
+    <p className={css.detailNote}>规格修订和新的交付订单均保留历史记录。此页面不伪造预览数据或下载地址；实际交付文件以数据定制服务的交付入口为准。</p>
+   </div>:null}
+  </section></div>:null}
  </section>;
 }
