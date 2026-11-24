@@ -1,5 +1,5 @@
-import {beforeEach,expect,it} from "vitest";
-import {createOwnProductBatch,readOwnProducts,simulateFiveOwnProductIntakes,installSixProductOptimizationDemo,importOwnProductDemoImagePack,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake} from "./showcase-own-product-data";
+import {beforeEach,expect,it,vi} from "vitest";
+import {createOwnProductBatch,readOwnProducts,simulateFiveOwnProductIntakes,installSixProductOptimizationDemo,importOwnProductDemoImagePack,installGeneratedOwnProductDemoImages,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake} from "./showcase-own-product-data";
 import {previewOwnProductOptimization} from "./showcase-own-product-optimization-preview";
 import {writeAgentPreviewTemplates} from "./showcase-agent-template-store";
 
@@ -207,4 +207,45 @@ it("rejects incorrect English-white eight-slot image pack without changing recor
  const baseline=JSON.stringify(readOwnProducts(org,member));
  expect(()=>importOwnProductDemoImagePack(org,member,{format:"shuomi-own-product-six-optimization-image-pack",version:2,language:"中文",background:"白色背景",perProduct:8,products:[]})).toThrow("不符合测试模板");
  expect(JSON.stringify(readOwnProducts(org,member))).toBe(baseline);
+});
+
+it("automatically hydrates eight English-white generated tiles for each of the six sample products",async()=>{
+ const org="atlas-org",member="atlas-member";
+ createOwnProductBatch(org,member,"自有商品测试批次");
+ installSixProductOptimizationDemo(org,member);
+ const original=readOwnProducts(org,member).map(p=>p.originalSkus?.[0]?.images[0]);
+ const oldImage=globalThis.Image;
+ class AtlasImage {
+  onload:(()=>void)|null=null;
+  onerror:(()=>void)|null=null;
+  naturalWidth=1024;naturalHeight=3072;
+  set src(_value:string){queueMicrotask(()=>this.onload?.());}
+ }
+ vi.stubGlobal("Image",AtlasImage);
+ const draw=vi.fn();
+ const getContext=vi.spyOn(HTMLCanvasElement.prototype,"getContext").mockReturnValue({drawImage:draw,clearRect:vi.fn()} as unknown as CanvasRenderingContext2D);
+ const dataURL=vi.spyOn(HTMLCanvasElement.prototype,"toDataURL").mockReturnValue("data:image/webp;base64,"+btoa("a-preview-tile"));
+ try{
+  expect(await installGeneratedOwnProductDemoImages(org,member)).toEqual({products:6,images:48,review:4,pending:2,alreadyInstalled:false});
+  const all=readOwnProducts(org,member);
+  expect(all.filter(p=>p.status==="待审核")).toHaveLength(4);
+  expect(all.filter(p=>p.status==="入库待完善")).toHaveLength(2);
+  expect(all.map(p=>p.skus[0].images.length)).toEqual([8,8,8,8,8,8]);
+  expect(all.map(p=>p.originalSkus?.[0]?.images[0])).toEqual(original);
+  expect(draw).toHaveBeenCalledTimes(48);
+  expect((await installGeneratedOwnProductDemoImages(org,member)).alreadyInstalled).toBe(true);
+ }finally{
+  getContext.mockRestore();dataURL.mockRestore();vi.stubGlobal("Image",oldImage);
+ }
+});
+
+it("does not change approvals when a completed demo product is revisited",async()=>{
+ const org="approved-demo-org",member="approved-demo-member";
+ createOwnProductBatch(org,member,"自有商品测试批次");
+ installSixProductOptimizationDemo(org,member);
+ const item=readOwnProducts(org,member).find(p=>p.status==="待审核")!;
+ approveOwnProductIntake(org,member,item.id);
+ const result=await installGeneratedOwnProductDemoImages(org,member);
+ expect(result.alreadyInstalled).toBe(true);
+ expect(readOwnProducts(org,member).find(p=>p.id===item.id)?.status).toBe("已入库");
 });
