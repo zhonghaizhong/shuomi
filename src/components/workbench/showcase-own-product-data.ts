@@ -162,10 +162,13 @@ export async function installGeneratedOwnProductDemoImages(org:string,member:str
  if(!batch)throw Error("未找到自有商品测试批次");
  const codes=["SH-OPT-TEE-001","SH-OPT-HOOD-002","SH-OPT-TOTE-003","SH-OPT-BOTTLE-004","SH-OPT-MUG-005","SH-OPT-TRAVEL-006"];
  const records=readOwnProducts(org,member);
- const demo=records.filter(p=>p.batchId===batch.id&&p.status!=="已入库"&&codes.some(code=>p.skus[0]?.skuCode===code));
+ const demo=records.filter(p=>p.batchId===batch.id&&codes.some(code=>p.skus[0]?.skuCode===code));
  if(demo.length!==6)throw Error("六款演示商品尚未全部初始化");
- if(demo.every(p=>p.demoImageSource&&p.skus[0]?.images.length===8))
-  return {products:6,images:48,review:demo.filter(p=>p.status==="待审核").length,pending:demo.filter(p=>p.status==="入库待完善").length,alreadyInstalled:true};
+ const reviewCount=demo.filter(p=>p.status==="待审核").length;
+ const pendingCount=demo.filter(p=>p.status==="入库待完善").length;
+ // Never undo a user's completed approvals or manual edits on subsequent visits.
+ if(demo.some(p=>p.status==="已入库")||demo.every(p=>p.demoImageSource&&p.skus[0]?.images.length===8))
+  return {products:6,images:demo.reduce((n,p)=>n+Math.min(8,p.skus[0]?.images.length??0),0),review:reviewCount,pending:pendingCount,alreadyInstalled:true};
  const img=await new Promise<HTMLImageElement>((resolve,reject)=>{
   const source=new Image();
   source.onload=()=>resolve(source);
