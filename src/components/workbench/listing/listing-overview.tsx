@@ -23,7 +23,7 @@ const branches=[
 
 export function ListingOverview({navigate,showHeading=true}:{navigate?:(href:string)=>void;showHeading?:boolean}){
  const router=useRouter();
- const go=(href:string)=>navigate?navigate(href):router.push(href);
+ const go=(href:string)=>{const preview=typeof window!=="undefined"&&new URLSearchParams(window.location.search).get("preview")==="1";const target=preview?href+(href.includes("?")?"&":"?")+"preview=1":href;navigate?navigate(target):router.push(target)};
  return <div className={styles.page} data-listing-management-overview>
   {showHeading?<header className={styles.header}>
     <p className={styles.eyebrow}>店铺中心 / 刊登管理</p>
@@ -56,6 +56,7 @@ export function ListingOverview({navigate,showHeading=true}:{navigate?:(href:str
       <p>{branch.description}</p>
       <button type="button" onClick={()=>go(branch.href)}>{branch.action}</button>
     </article>)}
+    <aside className={styles.quickStart}><h3>你可以这样开始</h3><p>新商品先进入「我的数据」</p><p>已选商品进入「待上传」</p><p>提交后在「已上传」查看结果和记录</p></aside>
   </section>
   <p className={styles.note}>上传后可在「已上传」中查看商品状态和上传记录。</p>
  </div>;
