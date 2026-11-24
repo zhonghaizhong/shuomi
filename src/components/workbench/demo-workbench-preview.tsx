@@ -209,7 +209,7 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
   if (pathname === "/workbench/listing/missing") return <ShowcaseListingStage stage="missing" organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/account/profile" || pathname === "/workbench/account/profile/settings") return <AccountProfilePreview key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
-  if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview />;
+  if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview organizationId={organizationId} memberId={memberId} />;
   if (pathname.startsWith("/workbench/account/organization") || pathname.startsWith("/workbench/account/referrals")) return <ShowcaseAccountSuite key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} memberId={memberId} organizationId={organizationId} organizationName={organizationName} />;
   if (pathname === "/workbench/agents/skills" || ["/workbench/agents/skills/official", "/workbench/agents/skills/mine", "/workbench/agents/skills/team"].includes(pathname)) return <ShowcaseSkillLibrary pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   if (["/workbench/ai/tasks","/workbench/ai/tasks/pending","/workbench/ai/tasks/running","/workbench/ai/tasks/completed","/workbench/ai/tasks/errors","/workbench/ai/tasks/scheduled"].includes(pathname)) return <ShowcaseTaskCenter pathname={pathname} navigate={router.push} />;
