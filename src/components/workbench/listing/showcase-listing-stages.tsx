@@ -131,11 +131,12 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   }catch(e){setNotice(e instanceof Error?e.message:"五款商品演示初始化失败");}
  },[organizationId,memberId,dataVersion,agentDemoVersion,availableStoreBindings.length,collectedBatches]);
 
- const batchOptions=Array.from(new Map(savedTasks.map(task=>[showcaseUploadBatchKey(task),{key:showcaseUploadBatchKey(task),label:showcaseUploadBatchLabel(task),source:task.source,name:task.batchName,version:task.sourceVersionId||"original"}])).values());
+ const currentBatchName=(task:ShowcaseUploadTask)=>collectedBatches.find(b=>b.id===task.batchId)?.name??task.batchName;
+ const batchOptions=Array.from(new Map(savedTasks.map(task=>[showcaseUploadBatchKey(task),{key:showcaseUploadBatchKey(task),label:showcaseUploadBatchLabel({...task,batchName:currentBatchName(task)}),source:task.source,name:currentBatchName(task),version:task.sourceVersionId||"original"}])).values());
  const activeBatch=batchOptions.find(option=>option.key===appliedBatch);
  const stagePickerBatches:PickBatch[]=savedTasks.filter(t=>t.source===stagePickSource).reduce<PickBatch[]>((acc,t)=>{
   let b=acc.find(x=>x.id===t.batchId);
-  if(!b){b={id:t.batchId,name:t.batchName,sourceName:t.source,date:t.createdAt,products:[],versions:[]};acc.push(b)}
+  if(!b){b={id:t.batchId,name:currentBatchName(t),sourceName:t.source,date:t.createdAt,products:[],versions:[]};acc.push(b)}
   for(const id of t.productIds){if(!b.products.some(p=>p.id===id))b.products.push({id,name:id})}
   const id=t.sourceVersionId||"original";let v=b.versions.find(v=>v.id===id);
   if(!v){v={id,label:t.sourceVersionLabel||"原始版本",count:0,isOriginal:id==="original"};b.versions.push(v)}
@@ -144,7 +145,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  },[]);
  const chooseStageBatch=(batchId:string,versionId:string)=>{const key=JSON.stringify([stagePickSource,batchId,versionId]);setBatchFilter(key);setAppliedBatch(key);setListPage(1);sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),key);setStageBatchDialog(false)};
 
- const taskItems:Item[]=savedTasks.filter(task=>stage==="missing"?task.status==="待补全":task.status==="待审核").flatMap(task=>task.productIds.map((id,i)=>({sku:id+" · "+task.id.slice(-8),name:task.demoProduct?.optimizedName??task.batchName+(task.productCount>1?` · 商品 ${i+1}`:""),source:task.source,store:task.storeName,status:task.status,missing:task.demoProduct?.missingFields??(task.status==="待补全"?["商品必填资料"]:[]),ai:Boolean(task.agentId),taskId:task.id,originalName:task.demoProduct?.sourceName,originalDescription:task.demoProduct?.sourceDescription,originalImages:task.demoProduct?.sourceImages,optimizedDescription:task.demoProduct?.optimizedDescription,optimizedImages:task.demoProduct?.optimizedImages,batchKey:showcaseUploadBatchKey(task),batchName:task.batchName,sourceVersionId:task.sourceVersionId||"original",targetPlatform:task.platform,targetRegion:task.region,targetStoreType:task.storeType})));
+ const taskItems:Item[]=savedTasks.filter(task=>stage==="missing"?task.status==="待补全":task.status==="待审核").flatMap(task=>task.productIds.map((id,i)=>({sku:id+" · "+task.id.slice(-8),name:task.demoProduct?.optimizedName??task.batchName+(task.productCount>1?` · 商品 ${i+1}`:""),source:task.source,store:task.storeName,status:task.status,missing:task.demoProduct?.missingFields??(task.status==="待补全"?["商品必填资料"]:[]),ai:Boolean(task.agentId),taskId:task.id,originalName:task.demoProduct?.sourceName,originalDescription:task.demoProduct?.sourceDescription,originalImages:task.demoProduct?.sourceImages,optimizedDescription:task.demoProduct?.optimizedDescription,optimizedImages:task.demoProduct?.optimizedImages,batchKey:showcaseUploadBatchKey(task),batchName:currentBatchName(task),sourceVersionId:task.sourceVersionId||"original",targetPlatform:task.platform,targetRegion:task.region,targetStoreType:task.storeType})));
  const applyBatchFilter=()=>{setListPage(1);const next=batchOptions.some(option=>option.key===batchFilter)?batchFilter:"";setApplied(filter.trim());setAppliedBatch(next);sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),next);};
  const resetBatchFilter=()=>{setListPage(1);setFilter("");setApplied("");setBatchFilter("");setAppliedBatch("");sessionStorage.removeItem(showcaseUploadBatchPreferenceKey(organizationId,memberId));};
  const [reviewChecked,setReviewChecked]=useState(false),[reviewMode,setReviewMode]=useState<"compare"|"edit">("compare");
