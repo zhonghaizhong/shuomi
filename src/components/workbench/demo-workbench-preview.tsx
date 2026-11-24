@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, LibraryBig } from "lucide-react";
+import { BookOpen, Info, Layers3, LibraryBig, MessageSquare, Zap } from "lucide-react";
 import styles from "./demo-workbench-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts } from "./plans-demo-facts";
 import {useDemoPurchases} from "./showcase-purchases";
@@ -374,16 +374,24 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
       <section className={styles.unavailable}><span>功能筹备中</span><h2>暂未开放</h2><p>{pathname.includes("selected") ? "平台正在审核优质供应商和商品资源。开放后可按品质与供货能力选品，进入我的数据，后续可在刊登管理中管理。" : "正在接入平台自有货源并完善商品质量审核规则。开放后可浏览自营商品，并保存至我的数据，后续从刊登管理处理。"}</p><hr/><small>开放时间以通知中心的正式公告为准。</small></section>
     </> : pathname === "/workbench/ai/knowledge" ? <>
       <header className={styles.header}>
-        <div><div className={styles.breadcrumb}>AI工作台 / 知识库</div><h1>知识库</h1><p>查阅官方知识，管理自己的业务资料，为 AI 对话与业务任务提供参考。</p></div>
+        <div>
+          <div className={styles.breadcrumb}>AI工作台 / 知识库</div>
+          <h1>知识库</h1>
+          <p className={styles.knowledgeIntroLead}>让 AI 有知识可参考，更准确地理解你的业务需求。</p>
+          <p className={styles.knowledgeIntroSupporting}>无论是平台预设的官方知识，还是你自己的业务资料，都可以在使用 AI 时按需引用。</p>
+        </div>
       </header>
       <section className={styles.knowledgeIntroGrid} aria-label="选择知识库">
         <article className={styles.knowledgeIntroCard} data-knowledge-entry="official">
           <div className={styles.knowledgeIntroTop}>
             <span className={styles.knowledgeIntroIcon} aria-hidden="true"><BookOpen size={23}/></span>
-            <span className={styles.knowledgeIntroType}>平台维护</span>
+            <div className={styles.knowledgeIntroHeading}>
+              <span className={styles.knowledgeIntroType}>平台预设</span>
+              <h2>官方知识库</h2>
+              <p>平台提前整理并预设好的知识，可直接选择，让 AI 在会话、任务或智能体中按需引用。</p>
+            </div>
           </div>
-          <h2>官方知识库</h2>
-          <p>集中查阅平台规则、跨境电商运营方法及合规参考，按需选择知识并应用到会话或任务。</p>
+          <div className={styles.knowledgeIntroExample}><strong>例如：</strong><p>做 SHEIN 商品优化时，可引用平台规则、运营方法和合规参考。</p></div>
           <div className={styles.knowledgeIntroTags} aria-label="官方知识库内容">
             {["平台规则","运营方法","合规参考","AI应用"].map(tag=><span key={tag}>{tag}</span>)}
           </div>
@@ -392,16 +400,30 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
         <article className={styles.knowledgeIntroCard} data-knowledge-entry="mine">
           <div className={styles.knowledgeIntroTop}>
             <span className={styles.knowledgeIntroIcon} aria-hidden="true"><LibraryBig size={23}/></span>
-            <span className={styles.knowledgeIntroType}>个人资料</span>
+            <div className={styles.knowledgeIntroHeading}>
+              <span className={styles.knowledgeIntroType}>自己管理</span>
+              <h2>我的知识库</h2>
+              <p>管理自己的业务资料，以及已启用的官方知识，在需要时统一提供给 AI 引用。</p>
+            </div>
           </div>
-          <h2>我的知识库</h2>
-          <p>管理已启用的官方知识及自行整理的业务资料，需要时关联会话或任务，方便长期复用。</p>
+          <div className={styles.knowledgeIntroExample}><strong>例如：</strong><p>保存品牌规范、商品资料和企业要求，让 AI 结合你的业务规则完成工作。</p></div>
           <div className={styles.knowledgeIntroTags} aria-label="我的知识库功能">
-            {["资料管理","知识分类","按需引用","知识复用"].map(tag=><span key={tag}>{tag}</span>)}
+            {["业务资料","品牌要求","按需引用","知识复用"].map(tag=><span key={tag}>{tag}</span>)}
           </div>
           <button type="button" className={styles.primary} onClick={()=>router.push("/workbench/ai/knowledge/mine?preview=1")}>管理我的知识库</button>
         </article>
       </section>
+      <aside className={styles.knowledgeIntroFlow} aria-label="知识引用说明">
+        <div className={styles.knowledgeIntroFlowHeading}><Info size={20} aria-hidden="true"/><strong>知识如何帮助 AI？</strong></div>
+        <div className={styles.knowledgeIntroFlowContent}>
+          <ol className={styles.knowledgeIntroFlowSteps}>
+            <li><Layers3 size={17} aria-hidden="true"/><span>选择知识</span></li>
+            <li><MessageSquare size={17} aria-hidden="true"/><span>在 AI 工作中引用</span></li>
+            <li><Zap size={17} aria-hidden="true"/><span>AI 参考知识执行任务</span></li>
+          </ol>
+          <p>官方知识和我的知识库都可以被 AI 引用，区别在于来源和管理方式。</p>
+        </div>
+      </aside>
     </> : <>
      <header className={styles.header}><div><div className={styles.breadcrumb}>{page.section}</div><h1>{page.title}</h1><p>{page.description}</p></div>{page.layout === "libraryHub" ? <button className={styles.primary} onClick={() => chooseAction(pathname.includes("projects") ? "新建项目" : pathname.includes("knowledge") ? "新增知识" : pathname.includes("skills") ? "新建技能" : "导出成果")}>{pathname.includes("projects") ? "＋ 新建项目" : pathname.includes("knowledge") ? "＋ 添加知识" : pathname.includes("skills") ? "＋ 新建技能" : "导出成果"}</button> : <button className={styles.primary} onClick={() => chooseAction("新建")}>{pathname.includes("goals") ? "新建目标" : "新建记录"}</button>}</header>
     {page.metrics?.length ? <section className={styles.metrics}>{page.metrics.map(([label, value, hint], i) => <article className={styles.metric} key={label} data-step={i}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}</section> : null}

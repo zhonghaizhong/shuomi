@@ -173,6 +173,13 @@ test("knowledge landing has exactly two compact entries at desktop and mobile wi
   await expect(cards).toHaveCount(2);
   await expect(root.getByText("官方知识推荐")).toHaveCount(0);
   await expect(root.getByText("最近更新")).toHaveCount(0);
+  await expect(root.getByText("让 AI 有知识可参考，更准确地理解你的业务需求。")).toBeVisible();
+  await expect(root.getByText("官方知识和我的知识库都可以被 AI 引用，区别在于来源和管理方式。")).toBeVisible();
+  await expect(root.getByText("做 SHEIN 商品优化时，可引用平台规则、运营方法和合规参考。")).toBeVisible();
+  await expect(root.getByText("保存品牌规范、商品资料和企业要求，让 AI 结合你的业务规则完成工作。")).toBeVisible();
+  await expect(root.getByRole("listitem")).toHaveCount(3);
+  await expect(root.getByRole("button",{name:"浏览官方知识"})).toBeVisible();
+  await expect(root.getByRole("button",{name:"管理我的知识库"})).toBeVisible();
   const boxes=await cards.evaluateAll(items=>items.map(el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,right:b.right};}));
   if(width>800){
    expect(boxes[0].width).toBeLessThan(575);
@@ -184,4 +191,18 @@ test("knowledge landing has exactly two compact entries at desktop and mobile wi
  }
  await page.locator('[data-knowledge-entry="mine"]').getByRole("button",{name:"管理我的知识库"}).click();
  await expect(page).toHaveURL(/\/workbench\/ai\/knowledge\/mine/);
+});
+
+test("knowledge landing keeps readable card, header and workflow surfaces in both themes",async({page})=>{
+ for(const theme of ["light","dark"]){
+  await page.goto("/shuomi/#/workbench/ai/knowledge");
+  const toggle=page.getByRole("button",{name:theme==="light"?"切换浅色主题":"切换深色主题"});
+  if(await toggle.isVisible())await toggle.click();
+  const root=page.locator('[data-library-hub="knowledge"]');
+  const items=[root.locator(":scope > header"),...await root.locator("[data-knowledge-entry]").all(),root.locator('aside[aria-label="知识引用说明"]')];
+  for(const item of items){
+   const color=await item.evaluate(el=>getComputedStyle(el).backgroundColor);
+   if(color!=="rgba(0, 0, 0, 0)")expect(isLight(color)).toBe(theme==="light");
+  }
+ }
 });
