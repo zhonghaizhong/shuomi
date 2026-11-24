@@ -1040,3 +1040,8 @@
 @media(max-width:680px){.galleryActions .galleryAiButton{margin-left:0}.compactGallery .productHeroImage{min-height:190px;height:240px}.galleryNav{width:26px;flex-basis:26px}.galleryCounter{right:36px}}
 
 .aiSourcePreview{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);line-height:1.5}.aiSourcePreview img,.aiSourcePreview [role="img"]{width:70px!important;height:70px!important;object-fit:contain;flex:none;background:#fff;border-radius:7px}
+
+.galleryRecoverRow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border:1px dashed var(--stroke);border-radius:7px;padding:9px 11px;background:var(--surface);font-size:12px;color:var(--muted)}
+.galleryRecoverRow button{min-height:32px;border:1px solid #7367f0;border-radius:6px;padding:6px 10px;background:color-mix(in srgb,#7367f0 14%,var(--surface));color:var(--ink);font-size:12px;cursor:pointer}
+.galleryRecoverRow button:disabled{opacity:.45;cursor:not-allowed}
+.galleryImportedNote{margin:0;font-size:11px;line-height:1.5;color:var(--muted)}
