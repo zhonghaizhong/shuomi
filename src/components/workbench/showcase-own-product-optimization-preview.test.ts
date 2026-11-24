@@ -1,5 +1,5 @@
 import {beforeEach,expect,it} from "vitest";
-import {createOwnProductBatch,readOwnProducts,simulateFiveOwnProductIntakes,installSixProductOptimizationDemo,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake} from "./showcase-own-product-data";
+import {createOwnProductBatch,readOwnProducts,simulateFiveOwnProductIntakes,installSixProductOptimizationDemo,importOwnProductDemoImagePack,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake} from "./showcase-own-product-data";
 import {previewOwnProductOptimization} from "./showcase-own-product-optimization-preview";
 import {writeAgentPreviewTemplates} from "./showcase-agent-template-store";
 
@@ -18,7 +18,7 @@ it("simulates the selected saved template with four review and two missing produ
   expect(result?.templateFound).toBe(true);
   expect(result?.template).toBe("测试模板");
   expect(result?.readyForReview).toBe(checkOwnProductSkus(product.skus).length===0);
-  expect(result?.steps.find(s=>s.name==="图片优化配置")?.result).toContain("未生成或修复新图");
+  expect(result?.steps.find(s=>s.name==="图片优化配置")?.result).toContain("未实际调用生图服务");
  }
  expect(simulateFiveOwnProductIntakes(org,member,batch.id,"测试模板").created).toBe(0);
  expect(readOwnProducts(org,member)).toHaveLength(6);
@@ -43,7 +43,7 @@ it("keeps pending, review and approved statuses separate and never reopens an ap
  const batch=createOwnProductBatch(org,member,"自有商品测试批次");
  simulateFiveOwnProductIntakes(org,member,batch.id,"测试模板");
  const items=readOwnProducts(org,member);
- const cup=items.find(p=>p.skus.some(s=>s.skuCode==="SH-DEMO-CUP-004"))!;
+ const cup=items.find(p=>p.skus.some(s=>s.skuCode==="SH-OPT-MUG-005"))!;
  const reviewed=items.find(p=>p.status==="待审核")!;
  expect(()=>updateOwnProductAfterReview(org,member,reviewed.id,reviewed.skus)).toThrow("只有待完善商品");
  expect(()=>approveOwnProductIntake(org,member,cup.id)).toThrow("待审核");
@@ -169,4 +169,42 @@ it("does not invent image settings when a saved template omits them",()=>{
  expect(result.pictureSettings.find(s=>s.label==="背景设置")?.value).toContain("不限制");
  expect(result.pictureSettings.find(s=>s.label==="主图图片位置")?.value).toBe("未选");
  expect(result.steps.find(s=>s.name==="图片优化配置")?.status).toBe("not-enabled");
+});
+
+it("imports 48 independently generated demo images but keeps 4 review and 2 incomplete, and preserves original photos",()=>{
+ const org="import-org",member="import-member";
+ const batch=createOwnProductBatch(org,member,"自有商品测试批次");
+ expect(installSixProductOptimizationDemo(org,member).created).toBe(6);
+ const codes=["SH-OPT-TEE-001","SH-OPT-HOOD-002","SH-OPT-TOTE-003","SH-OPT-BOTTLE-004","SH-OPT-MUG-005","SH-OPT-TRAVEL-006"];
+ const photo="data:image/jpeg;base64,"+btoa("demo-image");
+ const payload={format:"shuomi-own-product-six-optimization-image-pack",version:2,language:"英语",background:"白色背景",perProduct:8,
+  products:codes.map(code=>({skuCode:code,images:Array.from({length:8},(_,n)=>photo+n.toString(36).padEnd(4,"a"))}))};
+ // Each simulated slot must remain separately addressable and valid Base64.
+ payload.products.forEach(p=>p.images=p.images.map((_,n)=>"data:image/jpeg;base64,"+btoa("image-"+p.skuCode+"-"+n)));
+ const result=importOwnProductDemoImagePack(org,member,payload);
+ expect(result).toEqual({products:6,images:48,pending:2,review:4});
+ const products=readOwnProducts(org,member);
+ for(const p of products){
+  expect(p.skus[0].images).toHaveLength(8);
+  expect(p.skus[0].images[0]).toMatch(/^data:image\/jpeg;base64,/);
+  expect(p.originalSkus?.[0]?.images).toHaveLength(1);
+  expect(p.demoImageSource).toContain("模拟");
+ }
+ expect(products.filter(p=>p.status==="待审核")).toHaveLength(4);
+ expect(products.filter(p=>p.status==="入库待完善")).toHaveLength(2);
+ const mug=products.find(p=>p.skus[0].skuCode==="SH-OPT-MUG-005")!;
+ expect(mug.missing.some(m=>m.includes("基础资料"))).toBe(true);
+ const pouch=products.find(p=>p.skus[0].skuCode==="SH-OPT-TRAVEL-006")!;
+ expect(pouch.skus[1].images).toHaveLength(0);
+ expect(pouch.missing.some(m=>m.includes("商品图片"))).toBe(true);
+ expect(()=>importOwnProductDemoImagePack("other-org",member,payload)).toThrow("请先创建");
+});
+
+it("rejects incorrect English-white eight-slot image pack without changing records",()=>{
+ const org="reject-org",member="reject-member";
+ createOwnProductBatch(org,member,"自有商品测试批次");
+ installSixProductOptimizationDemo(org,member);
+ const baseline=JSON.stringify(readOwnProducts(org,member));
+ expect(()=>importOwnProductDemoImagePack(org,member,{format:"shuomi-own-product-six-optimization-image-pack",version:2,language:"中文",background:"白色背景",perProduct:8,products:[]})).toThrow("不符合测试模板");
+ expect(JSON.stringify(readOwnProducts(org,member))).toBe(baseline);
 });
