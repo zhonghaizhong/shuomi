@@ -3055,3 +3055,180 @@
   .page[data-commerce-unified="data"] .apiConnection {grid-template-columns:minmax(0,1fr)}
   .page[data-commerce-unified="data"] .apiConnectionMeta {border-left:0;padding-left:0}
 }
+
+/* Cargo integration application: scoped Vuexy redesign with restrained
+   Figma-inspired multicolor steps. The parent page keeps the global width. */
+.supplyDetailPreview .catalogApplyLayout{
+ --ca-surface:#2f3349;--ca-raised:#393d55;--ca-border:#4a4e67;
+ --ca-text:#f2f0fb;--ca-muted:#acabc1;--ca-soft:#c9c5df;
+ display:grid;grid-template-columns:minmax(0,1.18fr) minmax(340px,.82fr);
+ align-items:stretch;gap:16px;min-width:0;width:100%;
+}
+.supplyDetailPreview .catalogApplyLayout>article{
+ display:flex;flex-direction:column;gap:20px;min-width:0;
+ padding:24px 25px;border:1px solid var(--ca-border);border-radius:9px;
+ background:var(--ca-surface);color:var(--ca-text);
+ box-shadow:0 5px 18px rgb(0 0 0 / 7%);
+}
+.supplyDetailPreview .catalogApplyLayout .catalogApplyFormCard{
+ box-shadow:inset 3px 0 0 #7367f0,0 5px 18px rgb(0 0 0 / 7%);
+}
+.supplyDetailPreview .catalogApplySectionHeader{
+ display:flex;align-items:flex-start;justify-content:space-between;
+ gap:18px;min-width:0;
+}
+.supplyDetailPreview .catalogApplySectionHeader>div{min-width:0;}
+.supplyDetailPreview .catalogApplyEyebrow{
+ display:block;margin-bottom:8px;font-size:12px;line-height:18px;
+ font-weight:650;color:#b3a9ff;letter-spacing:.025em;
+}
+.supplyDetailPreview .catalogApplyProcessCard .catalogApplyEyebrow{color:#69d6c4;}
+.supplyDetailPreview .catalogApplySectionHeader h2{
+ display:block;margin:0 0 7px;padding-left:11px;border-left:3px solid #7367f0;
+ font-size:19px;line-height:27px;font-weight:700;color:var(--ca-text);
+ white-space:nowrap;
+}
+.supplyDetailPreview .catalogApplyProcessCard .catalogApplySectionHeader h2{border-left-color:#39bca6;}
+.supplyDetailPreview .catalogApplySectionHeader p{
+ margin:0;color:var(--ca-muted);font-size:13px;line-height:1.65;
+}
+.supplyDetailPreview .catalogApplyTag{
+ flex:none;display:inline-flex;align-items:center;min-height:28px;
+ padding:3px 10px;border:1px solid #5b5482;border-radius:6px;
+ background:color-mix(in srgb,#7367f0 12%,var(--ca-surface));
+ color:#c6beff;font-size:12px;line-height:20px;white-space:nowrap;
+}
+.supplyDetailPreview .catalogApplyForm{
+ display:flex;flex:1;flex-direction:column;gap:21px;min-width:0;
+}
+.supplyDetailPreview .catalogApplyFields{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ column-gap:16px;row-gap:19px;min-width:0;
+}
+.supplyDetailPreview .catalogApplyFields>label{
+ display:flex;flex-wrap:wrap;gap:0;align-content:start;
+ min-width:0;color:var(--ca-text);font-size:13px;
+ line-height:20px;font-weight:600;
+}
+.supplyDetailPreview .catalogApplyFields>label>span{
+ margin-left:4px;color:#f3b16d;
+}
+.supplyDetailPreview .catalogApplyFields input{
+ box-sizing:border-box;display:block;flex:0 0 100%;
+ width:100%;height:44px;min-height:44px;margin-top:9px;
+ padding:10px 12px;border:1px solid var(--ca-border);border-radius:7px;
+ background:var(--ca-raised);color:var(--ca-text);
+ font-size:13px;line-height:20px;
+}
+.supplyDetailPreview .catalogApplyFields input::placeholder{
+ color:var(--ca-muted);opacity:1;
+}
+.supplyDetailPreview .catalogApplyFields input:focus-visible{
+ outline:2px solid #7367f0;outline-offset:2px;border-color:#7367f0;
+}
+.supplyDetailPreview .catalogApplyServiceNote{
+ display:flex;align-items:flex-start;gap:13px;min-width:0;
+ margin-top:3px;padding:14px 15px;
+ border:1px solid color-mix(in srgb,#f5b45b 26%,var(--ca-border));
+ border-radius:8px;background:color-mix(in srgb,#f5b45b 7%,var(--ca-surface));
+}
+.supplyDetailPreview .catalogApplyNoteIcon{
+ display:grid;place-items:center;flex:none;width:33px;height:33px;
+ border-radius:8px;background:color-mix(in srgb,#f5b45b 15%,var(--ca-raised));
+ color:#f5be75;font-size:17px;font-weight:700;
+}
+.supplyDetailPreview .catalogApplyServiceNote strong{
+ display:block;margin-bottom:4px;font-size:13px;font-weight:700;
+ line-height:20px;color:#ffcf8e;
+}
+.supplyDetailPreview .catalogApplyServiceNote p{
+ margin:0;color:var(--ca-muted);font-size:12px;line-height:1.65;
+}
+.supplyDetailPreview .catalogApplyActions{
+ display:flex;align-items:flex-end;justify-content:space-between;
+ gap:14px;flex-wrap:wrap;margin-top:auto;padding-top:19px;
+ border-top:1px solid var(--ca-border);
+}
+.supplyDetailPreview .catalogApplyActions p{
+ flex:1;min-width:220px;margin:0;color:var(--ca-muted);
+ font-size:12px;line-height:1.6;
+}
+.supplyDetailPreview .catalogApplyActions .primary{
+ flex:none;min-width:142px;min-height:38px;padding:7px 18px;
+ font-size:13px!important;font-weight:650;
+}
+.supplyDetailPreview .catalogApplyTimeline{
+ display:grid;gap:0;list-style:none;margin:0;padding:0;min-width:0;
+}
+.supplyDetailPreview .catalogApplyTimeline li{
+ --step:#62a9ff;position:relative;display:grid;
+ grid-template-columns:42px minmax(0,1fr);gap:15px;
+ align-items:start;min-width:0;padding:0 0 18px;
+}
+.supplyDetailPreview .catalogApplyTimeline li[data-step="two"]{--step:#b3a7ff;}
+.supplyDetailPreview .catalogApplyTimeline li[data-step="three"]{--step:#48d2b8;}
+.supplyDetailPreview .catalogApplyTimeline li[data-step="four"]{--step:#f5b45b;padding-bottom:0;}
+.supplyDetailPreview .catalogApplyTimeline li:not(:last-child)::after{
+ content:"";position:absolute;top:44px;bottom:4px;left:20px;width:1px;
+ background:var(--ca-border);
+}
+.supplyDetailPreview .catalogApplyStepNumber{
+ display:grid;place-items:center;width:42px;height:42px;flex:none;
+ border:1px solid color-mix(in srgb,var(--step) 42%,var(--ca-border));
+ border-radius:10px;background:color-mix(in srgb,var(--step) 12%,var(--ca-surface));
+ color:var(--step);font-size:14px;font-weight:750;
+ font-variant-numeric:tabular-nums;
+}
+.supplyDetailPreview .catalogApplyTimeline strong{
+ display:block;margin:2px 0 4px;font-size:14px;
+ line-height:21px;font-weight:700;color:var(--ca-text);
+}
+.supplyDetailPreview .catalogApplyTimeline p{
+ margin:0;color:var(--ca-muted);font-size:12px;line-height:1.6;
+}
+.supplyDetailPreview .catalogApplyOutcome{
+ margin-top:auto;padding:14px 15px;
+ border:1px solid var(--ca-border);border-radius:8px;
+ background:var(--ca-raised);
+}
+.supplyDetailPreview .catalogApplyOutcome>strong{
+ display:block;margin-bottom:5px;color:var(--ca-text);
+ font-size:13px;line-height:20px;font-weight:700;
+}
+.supplyDetailPreview .catalogApplyOutcome>p{
+ margin:0;color:var(--ca-muted);font-size:12px;line-height:1.6;
+}
+.supplyDetailPreview .catalogApplyOutcome>div{
+ display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;
+}
+.supplyDetailPreview .catalogApplyOutcome span{
+ display:inline-flex;align-items:center;min-height:26px;padding:3px 9px;
+ border:1px solid var(--ca-border);border-radius:6px;
+ background:var(--ca-surface);color:var(--ca-soft);font-size:12px;
+}
+:global(.light) .supplyDetailPreview .catalogApplyLayout{
+ --ca-surface:#fff;--ca-raised:#f8f7fa;--ca-border:#e0ddeb;
+ --ca-text:#444050;--ca-muted:#6f6b7d;--ca-soft:#625d70;
+}
+:global(.light) .supplyDetailPreview .catalogApplyTag{
+ color:#6658ce;border-color:#e1dcfb;background:#f1efff;
+}
+:global(.light) .supplyDetailPreview .catalogApplyEyebrow{color:#6658ce;}
+:global(.light) .supplyDetailPreview .catalogApplyProcessCard .catalogApplyEyebrow{color:#087f6c;}
+:global(.light) .supplyDetailPreview .catalogApplyServiceNote strong{color:#8c510a;}
+:global(.light) .supplyDetailPreview .catalogApplyNoteIcon{color:#94550a;}
+:global(.light) .supplyDetailPreview .catalogApplyTimeline li[data-step="one"]{--step:#276dba;}
+:global(.light) .supplyDetailPreview .catalogApplyTimeline li[data-step="two"]{--step:#6658ce;}
+:global(.light) .supplyDetailPreview .catalogApplyTimeline li[data-step="three"]{--step:#087f6c;}
+:global(.light) .supplyDetailPreview .catalogApplyTimeline li[data-step="four"]{--step:#a3630b;}
+@media(max-width:1080px){
+ .supplyDetailPreview .catalogApplyLayout{grid-template-columns:minmax(0,1fr);}
+ .supplyDetailPreview .catalogApplyLayout>article{padding:20px;}
+ .supplyDetailPreview .catalogApplyActions{align-items:center;}
+}
+@media(max-width:600px){
+ .supplyDetailPreview .catalogApplyFields{grid-template-columns:minmax(0,1fr);gap:15px;}
+ .supplyDetailPreview .catalogApplySectionHeader{flex-wrap:wrap;gap:10px;}
+ .supplyDetailPreview .catalogApplyLayout>article{padding:16px;}
+ .supplyDetailPreview .catalogApplyActions .primary{width:100%;}
+}

@@ -106,3 +106,41 @@ test("Supply market has four equal-width entry cards on one desktop row",async({
  const narrow=await cards.evaluateAll(elements=>elements.map(el=>el.getBoundingClientRect().y));
  for(let i=1;i<narrow.length;i++)expect(narrow[i]).toBeGreaterThan(narrow[i-1]+40);
 });
+
+test("cargo application page uses aligned, colorful yet theme-consistent workflow with validated fields",async({page})=>{
+ for(const width of [1440,2560,720]){
+  await page.setViewportSize({width,height:950});
+  await page.goto(url("/supply/catalogs/apply"));
+  const root=page.locator('[data-catalog-apply="true"]');
+  await expect(root).toBeVisible();
+  const cards=root.locator(":scope > article");
+  await expect(cards).toHaveCount(2);
+  const steps=root.locator("ol li[data-step]");
+  await expect(steps).toHaveCount(4);
+  await expect(root.getByText("技术对接属于有偿服务")).toBeVisible();
+  const xs=await cards.evaluateAll(items=>items.map(el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height};}));
+  if(width>=1440){
+   expect(Math.abs(xs[0].y-xs[1].y)).toBeLessThan(3);
+   expect(Math.abs(xs[0].height-xs[1].height)).toBeLessThan(3);
+   expect(xs[1].x).toBeGreaterThan(xs[0].x+xs[0].width);
+  }else expect(xs[1].y).toBeGreaterThan(xs[0].y+40);
+  const submit=root.getByRole("button",{name:"提交对接申请"});
+  await submit.click();
+  await expect(page.getByRole("dialog",{name:"提交对接申请"})).toHaveCount(0);
+  await root.getByRole("textbox",{name:/货盘名称/}).fill("示例货盘");
+  await root.getByRole("textbox",{name:/货盘网址/}).fill("https://example.com");
+  await root.getByRole("textbox",{name:/对接联系人/}).fill("测试联系人 test@example.com");
+  await root.getByRole("textbox",{name:/主要商品类目/}).fill("家居、宠物");
+  await submit.click();
+  const dialog=page.getByRole("dialog",{name:"提交对接申请"});
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("不会提交申请");
+  await page.getByRole("button",{name:"关闭操作弹窗"}).click();
+  for(const theme of ["dark","light"]){
+   const toggle=page.getByRole("button",{name:theme==="light"?"切换浅色主题":"切换深色主题"});
+   if(await toggle.isVisible())await toggle.click();
+   const bg=await cards.first().evaluate(el=>getComputedStyle(el).backgroundColor);
+   expect(pale(bg)).toBe(theme==="light");
+  }
+ }
+});
