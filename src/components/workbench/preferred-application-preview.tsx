@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState,type FormEvent} from "react";
 import {useRouter} from "next/navigation";
-import {BadgeCheck,ClipboardList,Database,Info,PackageCheck,Search,Star,Workflow} from "lucide-react";
+import {BadgeCheck,ClipboardList,Database,Info,PackageCheck,Search,Star,Workflow,CheckCircle2} from "lucide-react";
 import {
  emptyPreferredSupply,preferredApplicationChanged,ownProductUpdated,optimizedDatasetsChanged,
  readPreferredCandidates,readPreferredApplications,submitPreferredDemoApplication,simulatePreferredReview,
@@ -83,28 +83,15 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  };
  const openRecord=(record:PreferredApplicationRecord)=>{setRecordDetail(record.id);setError("");setReviewReason("")};
  return <main className={styles.page} data-preferred-application="unified" data-organization={organizationId} data-member={memberId} aria-label="优选申请">
-  <header className={styles.heading}>
-   <div><small>供应市场 / 优选申请</small><h1>优选申请</h1><p>自动读取自有商品库中完成首次适配和智能体优化的商品，申请审核通过后可进入硕米优选。</p></div>
-   <button type="button" onClick={()=>router.push("/workbench/supply/selected?preview=1")}>查看硕米优选</button>
-  </header>
-  <section className={styles.benefits} aria-label="加入硕米优选的好处">
-   <div className={styles.benefitHeading}><Star size={20}/><div><h2>加入硕米优选，给好商品更多被发现的机会</h2><p>让商品从自己的资料库走向平台优选展示与潜在合作场景。</p></div></div>
-   <div className={styles.benefitGrid}>
-    <article data-benefit="show"><BadgeCheck size={20}/><div><strong>进入优选展示池</strong><p>审核通过的商品可在硕米优选展示，让平台内选品用户查找。</p></div></article>
-    <article data-benefit="supply"><PackageCheck size={20}/><div><strong>展示供货实力</strong><p>集中呈现商品图片、规格及供货条件，减少反复介绍。</p></div></article>
-    <article data-benefit="connect"><Workflow size={20}/><div><strong>获得潜在对接机会</strong><p>便于有需求的用户了解商品并发起后续合作沟通。</p></div></article>
+  <section className={styles.compactHero} aria-label="硕米优选介绍">
+   <div className={styles.heroSymbol}><Star size={38} strokeWidth={1.8}/></div>
+   <div className={styles.heroContent}>
+    <div className={styles.heroTitle}><h1>加入硕米优选</h1><span>精选商品池</span></div>
+    <p>让优质商品进入平台优选展示，获得更多被发现和合作的机会。</p>
+    <div className={styles.heroHighlights}><span><CheckCircle2 size={17}/>优选展示</span><span><CheckCircle2 size={17}/>供货信息清晰</span><span><CheckCircle2 size={17}/>潜在合作对接</span></div>
+    <small>审核通过后展示；曝光、询盘及成交不作保证，具体以平台正式服务为准。</small>
    </div>
-   <small>加入优选不保证曝光量、客户询盘或成交；实际推荐、撮合和交易服务以平台正式开通及合作规则为准。</small>
-  </section>
-  <section className={styles.metrics} aria-label="优选申请概况">
-   <article data-tone="cyan"><div><small>自有商品</small><strong>{candidates.length}</strong><span>当前账号商品库</span></div><Database size={22}/></article>
-   <article data-tone="violet"><div><small>可申请</small><strong>{eligible.length}</strong><span>已完成适配和优化</span></div><BadgeCheck size={22}/></article>
-   <article data-tone="orange"><div><small>审核中</small><strong>{working.length}</strong><span>等待审核结果</span></div><ClipboardList size={22}/></article>
-   <article data-tone="green"><div><small>已入选</small><strong>{approved.length}</strong><span>审核通过商品</span></div><Star size={22}/></article>
-  </section>
-  <section className={styles.flowStrip} aria-label="优选申请流程">
-   <div><Workflow size={19}/><strong>入选流程</strong></div>
-   <ol><li><span>01</span>首次适配</li><li><span>02</span>智能体优化</li><li><span>03</span>提交申请</li><li><span>04</span>审核后入选</li></ol>
+   <button type="button" className={styles.heroAction} onClick={()=>router.push("/workbench/supply/selected?preview=1")}>查看硕米优选</button>
   </section>
   <section className={styles.mainPanel}>
    <div className={styles.tabs} role="tablist" aria-label="优选申请内容">
@@ -112,6 +99,15 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
     <button type="button" role="tab" aria-selected={view==="records"} onClick={()=>setView("records")}>申请记录 <span>{records.length}</span></button>
    </div>
    {view==="products"?<>
+    <section className={styles.candidateSummary} aria-label="商品候选状态概览">
+     <div className={styles.candidateSummaryTitle}><h2>商品候选</h2><p>从自有商品库自动读取符合条件的商品</p></div>
+     <div className={styles.metrics}>
+      <article data-tone="cyan"><div><small>自有商品</small><strong>{candidates.length}</strong><span>当前账号商品库</span></div><Database size={20}/></article>
+      <article data-tone="violet"><div><small>可申请</small><strong>{eligible.length}</strong><span>已完成适配和优化</span></div><BadgeCheck size={20}/></article>
+      <article data-tone="orange"><div><small>审核中</small><strong>{working.length}</strong><span>等待审核结果</span></div><ClipboardList size={20}/></article>
+      <article data-tone="green"><div><small>已入选</small><strong>{approved.length}</strong><span>审核通过商品</span></div><Star size={20}/></article>
+     </div>
+    </section>
     <div className={styles.panelHeading}><div><h2>自有商品库 · 申请候选</h2><p>商品自动同步；没有优化版本或首次适配未完成的商品不会开放申请。</p></div><button type="button" className={styles.primary} disabled={!chosen.length} onClick={()=>showApply()}>申请已选商品（{chosen.length}）</button></div>
     <div className={styles.filters} aria-label="商品筛选">
      <label className={styles.searchBox}><Search size={17}/><input aria-label="搜索商品名称或SKU" value={query} onChange={e=>{setQuery(e.target.value);setPage(1)}} placeholder="搜索商品名称 / SKU / 批次"/></label>
