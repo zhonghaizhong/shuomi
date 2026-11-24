@@ -1,3 +1,4 @@
+import type {ReactNode} from "react";
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./showcase-uploaded-preview.module.css";
@@ -8,7 +9,7 @@ import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./listi
 
 type Item={sku:string;name:string;batch:string;batchKey:string;site:string;platform:string;time:string;productId:string;reviewStatus:string;listingStatus:string;datasetId:string;receiptId:string};
 
-export function ShowcaseUploadedPreview({organizationId,memberId}:{organizationId:string;memberId:string}){
+export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:{organizationId:string;memberId:string;tabNavigation?:ReactNode}){
  const readPreferredBatch=()=>typeof window==="undefined"?"":sessionStorage.getItem(showcaseUploadBatchPreferenceKey(organizationId,memberId))||"";
  const [batch,setBatch]=useState(readPreferredBatch),[appliedBatch,setAppliedBatch]=useState(readPreferredBatch);
  const [batchDialog,setBatchDialog]=useState(false),[pickSource,setPickSource]=useState<PickSource>("采集批次");
@@ -54,6 +55,7 @@ export function ShowcaseUploadedPreview({organizationId,memberId}:{organizationI
 
  return <div className={styles.page} data-showcase-uploaded>
   <ShowcaseListingStageHeader stage="uploaded"/>
+  {tabNavigation}
   <section className={styles.metrics}>
    {[[String(records.length),"平台已接收商品","仅来自已验证的平台回执"],[String(records.filter(x=>x.reviewStatus==="审核通过").length),"审核通过","审核通过不等于已上架"],[String(records.filter(x=>x.listingStatus==="已上架").length),"已上架","以平台状态回执为准"]].map(([value,title,sub],i)=><article key={title} data-tone={i}><strong>{value}</strong><span><b>{title}</b><small>{sub}</small></span></article>)}
   </section>
