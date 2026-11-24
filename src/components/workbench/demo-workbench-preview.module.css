@@ -3957,8 +3957,8 @@
 }
 .page[data-commerce-unified="data"] .dataCard button{
  margin:0;min-height:36px;padding:0 14px;
- border:1px solid color-mix(in srgb,var(--data-violet) 34%,var(--data-line));
- border-radius:8px;background:color-mix(in srgb,var(--data-violet) 10%,var(--data-surface));
+ border:1px solid var(--data-line);
+ border-radius:8px;background:var(--data-elevated);
  color:var(--data-ink);font-size:13px;font-weight:600;
  white-space:nowrap;box-shadow:none;
 }
