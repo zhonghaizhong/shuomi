@@ -52,3 +52,8 @@
 .footer button{min-width:80px}
 @media(max-width:800px){.columns,.tableRow{grid-template-columns:40px minmax(140px,2fr) 90px 75px}.columns>:nth-child(3),.tableRow>:nth-child(3),.columns>:nth-child(6),.tableRow>:nth-child(6){display:none}.versionGrid{grid-template-columns:1fr}}
 @media(max-width:580px){.dialog{width:calc(100vw - 12px);height:min(93dvh,880px)}.header,.content,.footer{padding-left:12px;padding-right:12px}.topline{flex-direction:column;align-items:stretch}.filters{flex:auto}.columns,.tableRow{grid-template-columns:32px minmax(110px,1fr) 70px}.columns>:nth-child(5),.tableRow>:nth-child(5){display:none}.products>div{grid-template-columns:1fr}.footer span{display:none}}
+
+
+/* Optional product-source selection, matching the inline batch/version picker. */
+.topline label{display:flex;align-items:center;gap:9px;margin-top:8px;font-size:12px}
+.topline select{min-height:34px;padding:6px 10px;border:1px solid var(--stroke);border-radius:6px;background:var(--surface-alt);color:var(--ink)}
