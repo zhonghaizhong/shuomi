@@ -84,7 +84,7 @@ export function installSixProductOptimizationDemo(org:string,member:string):{cre
    optimized.push({...original[1],name:"旅行洗漱收纳包｜另一色｜拉链开合",description:"商品简介：旅行洗漱收纳包，拉链开合，另一颜色变体。缺少该变体的独立实拍图片，禁止使用主款图片冒充。"});
   }
   const missing=checkOwnProductSkus(optimized);
-  return {id:"OWN-SIX-DEMO-"+item.code,batchId,name:item.name,source:"上传资料",createdAt:now,checkedAt:now,status:missing.length?"入库待完善":"待审核",missing,skus:optimized,originalSkus:cloneSkus(original),agent:"商品优化智能体",template:"测试模板"};
+  return {id:"OWN-SIX-DEMO-"+item.code,batchId,name:item.name,source:"上传资料" as const,createdAt:now,checkedAt:now,status:missing.length?"入库待完善" as const:"待审核" as const,missing,skus:optimized,originalSkus:cloneSkus(original),agent:"商品优化智能体",template:"测试模板"};
  });
  if(created.filter(x=>x.status==="待审核").length!==4||created.filter(x=>x.status==="入库待完善").length!==2)throw Error("模拟商品分流数量异常");
  const prior=readOwnProducts(org,member);
