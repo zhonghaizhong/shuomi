@@ -23,3 +23,41 @@ test("Listing waiting stage keeps approved Vuexy dark surfaces after shared styl
  const header=stage.locator("header").first();
  await expect.poll(()=>header.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(violetPanel);
 });
+
+
+/* Browser-computed backgrounds, not a source-token grep. Kept in the existing
+   showcase interaction suite, which runs against the built Pages preview. */
+test("Tool Market actual dark-mode button and card backgrounds keep approved Vuexy states",async({page})=>{
+ await page.goto("/shuomi/#/workbench/tools/official");
+ await ensureDark(page);
+ const firstCard=page.locator('[class*="toolCard"]').first();
+ await expect(firstCard).toBeVisible();
+ const background=async(selector:string)=>page.locator(selector).first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ await expect.poll(()=>firstCard.evaluate(el=>getComputedStyle(el).backgroundColor))
+  .toBe("rgb(57, 61, 85)");
+ const primary=firstCard.getByRole("button",{name:"介绍"});
+ await expect(primary).toBeVisible();
+ const defaultButton=await primary.evaluate(el=>getComputedStyle(el).backgroundColor);
+ // Secondary actions must be raised, never white or a light-theme fill.
+ expect(defaultButton).toBe("rgb(57, 61, 85)");
+ const selected=page.getByRole("button",{name:"采集",exact:true});
+ await selected.click();
+ await expect(selected).toHaveAttribute("aria-pressed","true");
+ await expect.poll(()=>selected.evaluate(el=>getComputedStyle(el).backgroundColor))
+  .toBe("rgb(115, 103, 240)");
+ await expect.poll(()=>background('[class*="toolCard"]')).toBe("rgb(57, 61, 85)");
+});
+
+test("Tool customization real card and button paints retain dark/light separation",async({page})=>{
+ await page.goto("/shuomi/#/workbench/tools/custom");
+ await ensureDark(page);
+ const first=page.locator('[class*="features"] article').first();
+ await expect(first).toBeVisible();
+ await expect.poll(()=>first.evaluate(el=>getComputedStyle(el).backgroundColor))
+  .toBe("rgb(47, 51, 73)");
+ const action=page.getByRole("button",{name:"提交定制需求"});
+ await expect(action).toBeVisible();
+ // Preserve the primary action brand rather than painting it as a neutral card.
+ await expect.poll(()=>action.evaluate(el=>getComputedStyle(el).backgroundColor))
+  .toBe("rgb(115, 103, 240)");
+});
