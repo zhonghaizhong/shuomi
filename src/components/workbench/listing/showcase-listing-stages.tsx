@@ -455,24 +455,61 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
      </div>
     </div>
     <div className={styles.productInfoBlock}>
+
      <div className={styles.dialogFieldTabs} role="tablist" aria-label="商品资料分组">
-      <button type="button" role="tab" aria-selected={fieldTab==="common"} onClick={()=>setFieldTab("common")}>商品公共信息</button>
-      <button type="button" role="tab" aria-selected={fieldTab==="variant"} onClick={()=>setFieldTab("variant")}>变体公共信息</button>
-      <button type="button" role="tab" aria-selected={fieldTab==="sku"} onClick={()=>setFieldTab("sku")}>SKU 信息（{selectedVariantGroup?selectedVariantSkus.length:selectedSkuCount}）</button>
+      <button type="button" role="tab" aria-selected={fieldTab==="common"} onClick={()=>{setFieldTab("common");setAiTargetField(null)}}>商品公共信息</button>
+      <button type="button" role="tab" aria-selected={fieldTab==="shared"} onClick={()=>{setFieldTab("shared");setAiTargetField(null)}}>变体公用信息</button>
+      <button type="button" role="tab" aria-selected={fieldTab==="variant"} onClick={()=>{setFieldTab("variant");setAiTargetField(null)}}>当前变体（{selectedVariantGroup?.color??"无"}）</button>
+      <button type="button" role="tab" aria-selected={fieldTab==="sku"} onClick={()=>{setFieldTab("sku");setAiTargetField(null)}}>当前 SKU（{activeSku?.size??"单 SKU"}）</button>
      </div>
+     <div className={styles.aiFieldToolbar}>
+      <div className={styles.aiFieldFilters}><span>资料字段</span><span>必填 / 选填依平台规则判断</span></div>
+      <button type="button" className={styles.aiBatchTrigger} aria-expanded={batchAiOpen} onClick={()=>{setBatchAiOpen(v=>!v);setAiTargetField(null);setAiFeedback("")}}>✦ AI 批量重构 · 仅信息字段</button>
+     </div>
+     {batchAiOpen?<section className={styles.aiBatchPanel} aria-label="AI 批量重构配置">
+      <header><strong>✦ {aiTargetField?"AI 字段重构":"AI 批量重构"}</strong><span>不包含图片</span><button type="button" aria-label="收起重构配置" onClick={()=>{setBatchAiOpen(false);setAiTargetField(null)}}>×</button></header>
+      {aiTargetField?<p>指定字段：{aiEligibleFields.find(f=>f.key===aiTargetField)?.label??aiTargetField}。仅在符合平台规则时允许重构。</p>:<>
+       <label>重构范围
+        <select aria-label="重构信息范围" value={batchAiScope} onChange={e=>setBatchAiScope(e.target.value as "current"|"all")}><option value="current">当前信息标签</option><option value="all">整个商品的可编辑文字字段</option></select>
+       </label>
+       <div className={styles.aiBatchChecks}>
+        <label><input type="checkbox" checked={batchAiRequired} onChange={e=>setBatchAiRequired(e.target.checked)}/> 必填信息</label>
+        <label><input type="checkbox" checked={batchAiOptional} onChange={e=>setBatchAiOptional(e.target.checked)}/> 选填信息</label>
+       </div>
+       <p>本次可处理：{selectedAiFields.map(f=>f.label).join("、")||"暂无符合条件的字段"}。未获取平台规则的字段不会擅自纳入。</p>
+      </>}
+      <label>补充要求（选填）
+       <textarea value={batchAiInstructions} onChange={e=>setBatchAiInstructions(e.target.value)} rows={2} maxLength={500} placeholder="优化英文表达，保留真实属性，不添加未经证实的卖点"/>
+      </label>
+      <div className={styles.aiRuleNote}>平台固定枚举、类目、认证资料、真实参数、价格、库存和所有图片均不会进入批量重构；AI 结果需要人工确认才能应用。</div>
+      {aiFeedback?<p role="status" className={styles.aiFeedback}>{aiFeedback}</p>:null}
+      <button type="button" className={styles.aiBatchSubmit} disabled={!aiTargetField&&!selectedAiFields.length} onClick={requestAiSuggestions}>生成重构建议</button>
+     </section>:null}
      {fieldTab==="common"?<>
-      <div className={styles.productInfoComparison}><small>原始标题</small><p>{selectedItem.originalName??selectedItem.name}</p><small>优化标题</small><p>{selectedItem.name}</p><small>优化英文描述</small><p>{selectedItem.optimizedDescription??"暂无可用优化描述"}</p></div>
+      <div className={styles.productInfoComparison}><small>原始标题（只读，永久保留）</small><p>{selectedItem.originalName??selectedItem.name}</p></div>
+      <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题 · 可修改</label><button type="button" onClick={()=>openAiForField("title")}>✦ AI 重构</button></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>
+      <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述 · 可修改</label><button type="button" onClick={()=>openAiForField("description")}>✦ AI 重构</button></div><textarea id="listing-edit-desc" rows={4} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>
       {stage==="missing"?<><div className={styles.productSectionHeading}><strong>平台待补全资料</strong><small>缺少 {selectedItem.missing.length} 项必填</small></div>
-       {selectedItem.missing.map(field=><label className={styles.productMissingField} key={field}>{field}<span>必填</span><input aria-label={field} placeholder={"请输入"+field} value={form[field]??""} onChange={e=>setForm(prev=>({...prev,[field]:e.target.value}))}/></label>)}
+       {selectedItem.missing.map(field=>/(资质|认证|证书|检测|报告|文件|许可)/.test(field)?<div className={styles.qualificationField} key={field}><strong>{field} · 必填</strong><label>选择资质文件<input type="file" accept=".pdf,.png,.jpg,.jpeg" aria-label={"上传"+field} onChange={e=>setSelectedQualification(x=>({...x,[field]:e.target.files?.[0]?.name??""}))}/></label><small>{selectedQualification[field]?"已选择本地文件："+selectedQualification[field]+"（未上传服务器）":"需要真实资质，AI 不生成或伪造文件。"}</small></div>
+       :<label className={styles.productMissingField} key={field}>{field}<span>必填 · 人工核对</span><input aria-label={field} placeholder={"请输入"+field} value={form[field]??""} onChange={e=>setForm(prev=>({...prev,[field]:e.target.value}))}/></label>)}
        {!selectedItem.missing.length?<p className={styles.productHint}>本商品当前没有未完成的必填资料。</p>:null}
       </>:null}
-      <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>选填信息 {optionalOpen?"收起":"展开"}</button>
-      {optionalOpen?<p className={styles.productHint}>选填字段以目标平台当前类目规则为准；演示任务暂未提供字段定义，不生成虚构属性。</p>:null}
-     </>:fieldTab==="variant"?<div className={styles.dialogFieldEmpty}>{selectedVariantGroup?"当前颜色："+selectedVariantGroup.color+"，尺码："+selectedVariantSkus.map(v=>v.size).join("、")+"；同色 SKU 共享图片，规格各自独立。":"原任务已确认变体结构；其他属性依据平台规则补全。"}</div>:<div className={styles.dialogSkuList}>{(variantDetails.length?selectedVariantSkus.map(v=>v.sku):(selectedTask?.productIds??[selectedItem.sku])).map((code,i)=><div key={code}>
-       {selectedVariantSkus[i]?.image?<img src={selectedVariantSkus[i].image} alt={selectedVariantSkus[i].label+" 实拍变体图片"} style={{width:64,height:64,objectFit:"contain",background:"#fff",borderRadius:6}}/>:null}
-       <strong>SKU {i+1}</strong><span>{code}</span>
-       {selectedVariantSkus[i]?<small>{selectedVariantSkus[i].color} · {selectedVariantSkus[i].size} · {selectedVariantSkus[i].label}</small>:<small>SKU 级独立字段按目标平台类目规则加载</small>}
-      </div>)}</div>}
+      <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>平台选填信息 {optionalOpen?"收起":"展开"}</button>
+      {optionalOpen?<p className={styles.productHint}>选填字段以目标平台真实类目规则为准；未接入前不虚构字段和可选值。</p>:null}
+     </>:fieldTab==="shared"?<div className={styles.dialogFieldEmpty}><strong>变体公用信息</strong><p>适用于同一商品的所有变体，如平台允许共用的品牌、材质或公共规格。当前演示任务未保存独立的变体公用属性，待接入目标平台类目字段后显示必填与选填项。</p><span>平台规定的固定选项只能从平台合法值中选择，不开放自由 AI 重构。</span></div>
+     :fieldTab==="variant"?<div className={styles.aiVariantEditor}>
+       <strong>{selectedVariantGroup?.color??"当前变体"} · 当前颜色资料</strong>
+       <p>当前颜色下有 {selectedVariantSkus.length} 个 SKU。修改颜色描述只作用于这一颜色组。</p>
+       <div className={styles.aiEditableField}><div><label htmlFor="listing-color-desc">颜色描述 · 选填</label><button type="button" onClick={()=>openAiForField("colorDescription")}>✦ AI 重构</button></div>
+       <textarea id="listing-color-desc" rows={3} value={textDraft.colorDescriptions[editingColorKey]??""} maxLength={2000} placeholder="输入该颜色共用的描述" onChange={e=>setTextDraft(d=>({...d,colorDescriptions:{...d.colorDescriptions,[editingColorKey]:e.target.value}}))}/></div>
+       <div className={styles.aiRuleNote}>颜色代码等平台枚举值不能由 AI 自行生成；图片在左侧独立管理。</div>
+      </div>:<div className={styles.aiVariantEditor}>
+       <strong>当前 SKU · {activeSku?.sku??editingSkuKey}</strong>
+       {selectedVariantSkus.length>1?<div className={styles.aiSkuPills}>{selectedVariantSkus.map(v=><button type="button" key={v.sku} aria-pressed={editingSkuKey===v.sku} onClick={()=>setActiveSkuId(v.sku)}>{v.size}</button>)}</div>:null}
+       <div className={styles.aiEditableField}><div><label htmlFor="listing-sku-desc">SKU 补充描述 · 选填</label><button type="button" onClick={()=>openAiForField("skuDescription")}>✦ AI 重构</button></div>
+       <textarea id="listing-sku-desc" rows={3} value={textDraft.skuDescriptions[editingSkuKey]??""} maxLength={2000} placeholder="仅对当前 SKU 生效" onChange={e=>setTextDraft(d=>({...d,skuDescriptions:{...d.skuDescriptions,[editingSkuKey]:e.target.value}}))}/></div>
+       <p>已确认规格：{activeSku?activeSku.color+" / "+activeSku.size:"沿用原任务 SKU"}。价格、库存、尺码代码等真实字段不能由 AI 重构。</p>
+      </div>}
     </div>
     {stage==="review"?<div className={styles.productInfoBlock}><strong>人工审核</strong>
      <p className={styles.productHint}>检查标题、描述、图片及目标平台规则，审核通过后才可继续平台提交。</p>
@@ -501,7 +538,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
    </div>:null}
   <footer className={styles.productDetailFooter}>
    <span>{stage==="missing"?(classChanged?"分类变更草稿需要重新适配，不能直接送审":"保存完整必填资料后进入待审核"):"人工审核通过后进入待平台提交；此处不执行真实上传"}</span>
-   <div><button type="button" onClick={()=>setSelected(null)}>取消</button>
+   <div><button type="button" onClick={()=>setSelected(null)}>取消</button><button type="button" onClick={saveTextOnly}>保存补全资料</button>
    <button type="button" className={styles.primary} disabled={(stage==="review"&&(!reviewChecked||!colorPhotoComplete))||(stage==="missing"&&classChanged)} onClick={stage==="missing"?(selectedItem.missing.length?save:()=>{setSelected(null);action("已补全。请确认继续原任务。")}):()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"重新检查并提交审核":"审核通过"}</button></div>
   </footer>
  </section>
