@@ -121,7 +121,7 @@
 /* Skill landing parallels the approved knowledge landing: one header, three
    useful destinations and one compact explanation, all with shared edges. */
 .shell[data-skill-flow="home"]{gap:18px;}
-.shell[data-skill-flow="home"]>.hero{min-height:139px;padding:22px 26px;border-radius:8px;}
+.shell[data-skill-flow="home"]>.hero{min-height:139px;padding:22px 24px;border-radius:12px;}
 .shell[data-skill-flow="home"]>.hero .skillIntroLead{margin-top:8px;color:var(--s-txt);font-size:17px;font-weight:600;line-height:1.5;}
 .shell[data-skill-flow="home"]>.hero .skillIntroSupporting{margin-top:6px;color:var(--s-muted);font-size:14px;line-height:1.6;font-weight:400;}
 .skillIntroGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;width:100%;min-width:0;}
