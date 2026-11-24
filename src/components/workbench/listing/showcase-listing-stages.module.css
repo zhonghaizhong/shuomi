@@ -986,3 +986,55 @@
  background:color-mix(in srgb,var(--listing-primary) 15%,var(--surface));
  border-color:var(--listing-primary);color:var(--ink);font-weight:650;
 }
+
+/* Compact picture workbench: one gallery instead of duplicate original strip and six-card preview. */
+.productPhotoPanel{display:grid;gap:10px;padding:12px;min-width:0}
+.productPhotoPanel .variantSelectionPanel{gap:9px;padding:10px}
+.variantSelectorLine{display:grid;grid-template-columns:46px minmax(0,1fr);align-items:center;gap:8px}
+.variantSelectorLine>strong{font-size:12px;white-space:nowrap;color:var(--ink)}
+.variantSelectorLine .variantColorPicker{display:flex;flex-wrap:wrap;gap:6px}
+.variantSelectorLine .variantColorPicker button{min-width:72px;min-height:34px;padding:5px 10px}
+.variantSelectorLine .variantSizePicker{gap:6px}
+.productPhotoPanel .variantImageMode{padding:0;gap:7px}
+.productPhotoPanel .pictureTabs button{min-height:39px}
+.compactGallery{display:grid;gap:8px;min-width:0}
+.compactGallery .productHeroImage{
+ width:100%;height:clamp(225px,31vh,370px);min-height:225px;max-height:370px;
+ padding:8px;box-sizing:border-box;position:relative;display:flex;gap:7px;
+ justify-content:space-between;align-items:center;
+ background:var(--surface);border-radius:9px;overflow:hidden
+}
+.compactGallery .pictureZoom{
+ flex:1;min-width:0;height:100%;display:flex;align-items:center;justify-content:center;cursor:zoom-in
+}
+.compactGallery .pictureZoom>img,.compactGallery .pictureZoom>[role="img"]{
+ display:block;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;
+ object-fit:contain;flex-shrink:1!important;background:#fff;border-radius:6px
+}
+.galleryNav{
+ flex:0 0 32px;width:32px;height:32px;display:grid;place-items:center;
+ border-radius:50%;border:0;z-index:1;background:color-mix(in srgb,var(--listing-primary) 25%,var(--surface));
+ color:var(--ink);font-size:24px;cursor:pointer
+}
+.galleryNav:disabled{opacity:.25;cursor:not-allowed}
+.galleryCounter{position:absolute;right:51px;bottom:13px;z-index:2;border-radius:5px;padding:3px 8px;background:rgba(23,27,43,.76);color:#fff;font-size:12px;pointer-events:none}
+.compactGallery .productPhotoThumbnails{display:flex;gap:6px;flex-wrap:nowrap;max-width:100%;overflow-x:auto;padding:3px 2px}
+.compactGallery .productPhotoThumbnails button{height:58px;width:58px;flex:0 0 58px}
+.compactGallery .productPhotoThumbnails button img,.compactGallery .productPhotoThumbnails button>[role="img"]{width:50px!important;height:50px!important}
+.galleryActions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.galleryActions button,.galleryAiPanel>button,.galleryImportAdvanced button{
+ min-height:34px;padding:6px 9px;border:1px solid var(--stroke);border-radius:7px;
+ background:var(--surface);color:var(--ink);font-size:12px;cursor:pointer;white-space:nowrap
+}
+.galleryActions button:disabled{opacity:.4;cursor:not-allowed}
+.galleryActions .galleryAiButton{margin-left:auto;background:#7367f0;border-color:#7367f0;color:#fff;font-weight:600}
+.galleryFileInput{display:none}
+.galleryAiPanel{display:grid;gap:8px;background:var(--surface);border:1px solid var(--stroke);border-radius:8px;padding:12px}
+.galleryAiPanel>strong{font-size:13px;color:var(--ink)}
+.galleryAiPanel textarea{width:100%;box-sizing:border-box;resize:vertical;border:1px solid var(--stroke);border-radius:6px;color:var(--ink);background:var(--surface-alt);padding:8px;font:inherit;font-size:12px}
+.galleryAiPanel>button{justify-self:end;background:#7367f0;color:#fff;border-color:#7367f0}
+.galleryAiPanel>small{font-size:11px;color:var(--muted);line-height:1.5}
+.galleryImportAdvanced{border:1px solid var(--stroke);border-radius:7px;padding:8px 10px;color:var(--muted);font-size:12px}
+.galleryImportAdvanced summary{cursor:pointer;color:var(--muted);font-size:12px}
+.galleryImportAdvanced .variantPhotoAdvancedBody{padding-top:10px}
+@media(max-width:680px){.galleryActions .galleryAiButton{margin-left:0}.compactGallery .productHeroImage{min-height:190px;height:240px}.galleryNav{width:26px;flex-basis:26px}.galleryCounter{right:36px}}
