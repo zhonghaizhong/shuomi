@@ -31,7 +31,7 @@ export function readPersonalPreviewSkills(organizationId="SM-ENT-000001",memberI
 export function savePersonalPreviewSkill(skill:PersonalPreviewSkill,organizationId="SM-ENT-000001",memberId="admin"){
  try{sessionStorage.setItem(scopedKey(personalKey,organizationId,memberId),JSON.stringify([...readPersonalPreviewSkills(organizationId,memberId).filter(x=>x.name!==skill.name),skill]))}catch{}
 }
-export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",memberId="admin"}:{pathname:string;organizationId?:string;memberId?:string}){
+export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",memberId="admin",onSectionSelect}:{pathname:string;organizationId?:string;memberId?:string;onSectionSelect?:(path:string)=>void}){
  const router=useRouter();
  const category=pathname.endsWith("/official")?"official":pathname.endsWith("/mine")?"mine":pathname.endsWith("/team")?"team":"home";
  const [enabled,setEnabled]=useState(()=>readEnabledPreviewSkills(organizationId,memberId));
@@ -41,7 +41,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const dialog=useRef<HTMLDialogElement>(null);
  useEffect(()=>{setFilter("全部");setQuery("");setSearch("");setIntro(null);setEnabled(readEnabledPreviewSkills(organizationId,memberId));setPersonal(readPersonalPreviewSkills(organizationId,memberId))},[pathname,organizationId,memberId]);
  useEffect(()=>{if(intro&&!dialog.current?.open)dialog.current?.showModal();else if(!intro&&dialog.current?.open)dialog.current.close()},[intro]);
- const go=(p:string)=>router.push(root+(p?"/"+p:"")+"?preview=1");
+ const go=(p:string)=>{const href=root+(p?"/"+p:"");if(onSectionSelect)onSectionSelect(href);else router.push(href+"?preview=1")};
  const chat=(mode:string,name="")=>router.push("/workbench/ai/chat/new?preview=1&skillMode="+mode+"&skill="+encodeURIComponent(name));
  const toggle=(name:string)=>{const next=enabled.includes(name)?enabled.filter(x=>x!==name):[...enabled,name];setEnabled(next);try{sessionStorage.setItem(scopedKey(enabledKey,organizationId,memberId),JSON.stringify(next))}catch{}};
  const title=category==="home"?"技能库":category==="official"?"官方模板":category==="mine"?"我的技能":"团队技能";
