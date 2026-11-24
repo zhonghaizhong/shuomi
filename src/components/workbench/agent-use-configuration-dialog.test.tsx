@@ -92,3 +92,36 @@ it("hybrid independent strategy separates main and detail image layouts",()=>{
   hybridDetailSlots:["AI·商品识别主图","AI·核心购买理由",null,null,null,null,null,null]
  }));
 });
+
+
+it("add-image picker matches four Figma source cards and blocks skill use when none are enabled",()=>{
+ const save=vi.fn();
+ render(<AgentUseConfigurationDialog mode="pod-hybrid" agentKind="pod" initial={{hybridStrategy:"共用视觉素材",selectedSkills:[]}} onClose={vi.fn()} onSave={save}/>);
+ fireEvent.click(screen.getByRole("button",{name:"添加第 1 张图片"}));
+ const sources=screen.getByLabelText("图片来源");
+ expect(sources.querySelectorAll("button")).toHaveLength(4);
+ expect(screen.getByText("步骤 3 未启用技能",{exact:false})).toBeTruthy();
+ expect(screen.getByRole("button",{name:"确认应用"}).hasAttribute("disabled")).toBe(true);
+ expect(screen.getByText("图片位置自动匹配")).toBeTruthy();
+ expect(screen.getByText("主图 / 详情图第1张")).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"预设指令AI重构"}));
+ expect(screen.getByRole("button",{name:/01 · 商品识别主图/})).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:/01 · 商品识别主图/}));
+ fireEvent.click(screen.getByRole("button",{name:"保存组合"}));
+ expect(save).toHaveBeenCalledWith(expect.objectContaining({hybridSlots:["AI·商品识别主图",null,null,null,null,null,null,null]}));
+});
+
+it("add-image skill matching applies the shared slot to both main and detail",()=>{
+ const save=vi.fn();
+ render(<AgentUseConfigurationDialog mode="pod-hybrid" agentKind="pod"
+  initial={{hybridStrategy:"共用视觉素材",selectedSkills:["POD图片优化（示例）"]}}
+  onClose={vi.fn()} onSave={save}/>);
+ fireEvent.click(screen.getByRole("button",{name:"添加第 1 张图片"}));
+ expect(screen.getByText("已启用 1 项技能")).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"确认应用"}));
+ fireEvent.click(screen.getByRole("button",{name:"保存组合"}));
+ expect(save).toHaveBeenCalledWith(expect.objectContaining({
+  hybridMainSlots:["技能·主图/详情图第1张",null,null,null,null,null,null,null],
+  hybridDetailSlots:["技能·主图/详情图第1张",null,null,null,null,null,null,null]
+ }));
+});
