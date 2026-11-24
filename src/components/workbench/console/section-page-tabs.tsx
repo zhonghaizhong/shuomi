@@ -13,14 +13,15 @@ const groups:Record<string,{title:string;description:string;tabs:Tab[]}>={
  catalogs:{title:"货盘集成",description:"先浏览可用货盘；需要新的货盘时再发起对接申请。",tabs:[{label:"货盘总览",href:"/workbench/supply/catalogs"},{label:"货盘选品",href:"/workbench/supply/catalogs/selection"},{label:"申请对接",href:"/workbench/supply/catalogs/apply"}]}
 };
 export type SectionTabsKey=keyof typeof groups;
-export function SectionPageTabs({section,showHelp=false}:{section:SectionTabsKey;showHelp?:boolean}){
+export function sectionForPath(path:string):SectionTabsKey|undefined {return (Object.keys(groups) as SectionTabsKey[]).find(key=>groups[key].tabs.some(tab=>path===tab.href));}
+export function SectionPageTabs({section,showHelp=false,activeHref,onSelect}:{section:SectionTabsKey;showHelp?:boolean;activeHref?:string;onSelect?:(href:string)=>void}){
  const pathname=usePathname(),query=useSearchParams();
  const group=groups[section];
  const preview=query?.get("preview")==="1";
  return <section className={styles.shell} aria-label={group.title+"页面导航"}>
   {showHelp?<p className={styles.help}>{group.description}</p>:null}
   <nav className={styles.tabs} aria-label={group.title+"分类"}>
-   {group.tabs.map(tab=><Link key={tab.href} href={tab.href+(preview?"?preview=1":"")} prefetch={false} aria-current={pathname===tab.href?"page":undefined}>{tab.label}</Link>)}
+   {group.tabs.map(tab=>onSelect?<button key={tab.href} type="button" onClick={()=>onSelect(tab.href)} aria-current={(activeHref??pathname)===tab.href?"page":undefined}>{tab.label}</button>:<Link key={tab.href} href={tab.href+(preview?"?preview=1":"")} prefetch={false} aria-current={pathname===tab.href?"page":undefined}>{tab.label}</Link>)}
   </nav>
  </section>;
 }
