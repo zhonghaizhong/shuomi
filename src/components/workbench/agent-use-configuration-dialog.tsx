@@ -89,17 +89,6 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
   else if(hybridTarget==="主图")setMainSlots(next);
   else setDetailSlots(next);
  };
- const selectHybridStrategy=(strategy:"共用视觉素材"|"分别生成")=>{
-  if(strategy===form.hybridStrategy)return;
-  if(strategy==="共用视觉素材"){
-   const source=hybridTarget==="主图"?mainSlots:detailSlots;
-   setSharedSlots(source.slice());setMainSlots(source.slice());setDetailSlots(source.slice());
-  }else{
-   setMainSlots(sharedSlots.slice());setDetailSlots(sharedSlots.slice());
-  }
-  set("hybridStrategy",strategy);
-  setMultiSelected([]);setMessage("");
- };
  const [selectedItems,setSelectedItems]=useState<string[]>(mode==="knowledge"?initial.selectedKnowledge??[]:initial.selectedSkills??[]);
  const [skillTab,setSkillTab]=useState<"我的技能"|"团队技能">("我的技能");
  const [knowledgeTab,setKnowledgeTab]=useState<"我的知识库"|"团队知识库">("我的知识库");
@@ -116,6 +105,18 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  },[]);
 
  const set=<K extends keyof AgentUseConfiguration>(key:K,value:AgentUseConfiguration[K])=>setForm(old=>({...old,[key]:value}));
+ const selectHybridStrategy=(strategy:"共用视觉素材"|"分别生成")=>{
+  if(strategy===(form.hybridStrategy??"共用视觉素材"))return;
+  if(strategy==="共用视觉素材"){
+   const source=hybridTarget==="主图"?mainSlots:detailSlots;
+   setSharedSlots(source.slice());setMainSlots(source.slice());setDetailSlots(source.slice());
+  }else{
+   setMainSlots(sharedSlots.slice());setDetailSlots(sharedSlots.slice());
+  }
+  set("hybridStrategy",strategy);
+  setMultiSelected([]);setMessage("");
+ };
+
  const flip=(array:string[],value:string,callback:(next:string[])=>void)=>callback(array.includes(value)?array.filter(x=>x!==value):[...array,value]);
  const title=child==="add-image"?"添加图片":child==="language"?"选择生图语言":child==="background"?"统一图片底色":child==="source"?"选择参考素材":child==="library"?"从我的素材库引用":child==="sort"?"智能排序":child==="slot-actions"?"图片快捷调整":child==="official-images"?"添加官方图片":child==="ai-images"?"选择 AI 渲染图片":child==="multi-adjust"?"多选调整":child==="restore"?"恢复上次顺序？":({
   "product-image":"AI图片优化设置","pod-ai":"AI重构图片设置","pod-hybrid":"混合模式设置","pod-pattern-split":"图片裂变模式","pod-pattern-custom":"自定义指令模式","skills":agentKind==="pod"?"选择执行技能":"选择技能","knowledge":agentKind==="pod"?"选择引用知识":"选择知识库"
