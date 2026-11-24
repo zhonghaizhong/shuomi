@@ -626,3 +626,37 @@
  .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right]{grid-template-columns:repeat(2,minmax(0,1fr))}
  .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right] select:first-child{grid-column:1/-1}
 }
+
+
+/* Approved compact-width search/filter standard: My Stores.
+   Older two-equal-track rules above must not force both children to width 100%.
+   Preserve right-aligned buttons and keep all three dropdowns bounded. */
+@media(min-width:1321px){
+ .page .filters[data-shuomi-filter="balanced"]{
+  display:flex!important;flex-flow:row nowrap;align-items:center;gap:10px;
+ }
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-left]{
+  flex:1 1 300px;width:auto;max-width:480px;min-width:180px;
+ }
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right]{
+  display:flex;flex:0 0 auto;width:auto;max-width:none;min-width:0;
+  margin-left:auto;justify-content:flex-end;align-items:center;flex-wrap:nowrap;gap:10px;
+ }
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right] select{
+  flex:0 0 140px;width:140px;min-width:0;max-width:160px;height:40px;min-height:40px;
+ }
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right] button{
+  flex:0 0 76px;width:76px;min-width:76px;height:40px;min-height:40px;
+ }
+}
+@media(min-width:681px) and (max-width:1320px){
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-left]{
+  width:100%;max-width:none;
+ }
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right]{
+  display:flex;width:100%;flex-wrap:wrap;gap:10px;justify-content:flex-end;
+ }
+ .page .filters[data-shuomi-filter="balanced"] > [data-shuomi-filter-right] select{
+  width:140px;max-width:160px;flex:0 0 140px;
+ }
+}
