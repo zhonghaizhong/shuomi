@@ -235,6 +235,8 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const rawGalleryImages=pictureTab==="main"?selectedMainImages:selectedDetailImages;
  const galleryImages=rawGalleryImages.map(src=>mediaUrl(src)).filter((src):src is string=>Boolean(src));
  const photoSelected=Math.min(photoIndex,Math.max(rawGalleryImages.length-1,0));
+ const aiPhotoSource=rawGalleryImages[photoSelected]??selectedColorOriginalImages[0]??selectedItem?.originalImages?.[0];
+ const aiPhotoDisplay=mediaUrl(aiPhotoSource);
  const updateGallery=(next:string[])=>{
   if(!selectedTask){setNotice("此商品尚无可编辑的刊登任务。");return}
   try{saveShowcaseGalleryEdits(organizationId,memberId,selectedTask.id,galleryEditKey,pictureTab,next);setPhotoIndex(i=>Math.min(i,Math.max(next.length-1,0)));}
@@ -439,10 +441,11 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <button type="button" disabled={photoSelected===0||!selectedTask} onClick={()=>moveCurrentPhoto(-1)} aria-label="当前图片左移">左移</button>
       <button type="button" disabled={photoSelected>=rawGalleryImages.length-1||!selectedTask} onClick={()=>moveCurrentPhoto(1)} aria-label="当前图片右移">右移</button>
       <button type="button" disabled={!rawGalleryImages.length||!selectedTask} onClick={removeCurrentPhoto}>删除</button>
-      <button type="button" className={styles.galleryAiButton} disabled={!rawGalleryImages.length} onClick={()=>setPhotoAiOpen(v=>!v)}>✦ AI 重构当前图片</button>
+      <button type="button" className={styles.galleryAiButton} disabled={!aiPhotoSource} onClick={()=>setPhotoAiOpen(v=>!v)}>✦ AI 重构单张</button>
      </div>
      {photoAiOpen?<div className={styles.galleryAiPanel}>
-      <strong>单张图片 AI 重构 · 第 {photoSelected+1} 张</strong>
+      <strong>单张图片 AI 重构 · {rawGalleryImages.length?"第 "+(photoSelected+1)+" 张":"使用当前变体原图"}</strong>
+      {aiPhotoDisplay?<div className={styles.aiSourcePreview}><ListingProductPhoto src={aiPhotoDisplay} alt="当前单张重构的原始参考图片" size={80}/><span>仅使用这一张图片作为重构参考，保留原始文件。</span></div>:null}
       <textarea aria-label="图片 AI 重构要求" rows={2} value={photoAiPrompt} onChange={e=>setPhotoAiPrompt(e.target.value)} placeholder="描述希望如何优化当前图片，例如调整背景与构图，保留商品真实外观。"/>
       <button type="button" onClick={()=>setNotice("当前 Showcase 尚未接入图片生成服务；没有生成或替换图片。已保留现有图片，请在正式 AI 服务接入后执行。")}>生成单张重构建议</button>
       <small>此处只针对当前选中的图片；未接通图片生成接口前不会伪造 AI 成品。</small>
@@ -457,13 +460,6 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       </div>
      </details>:null}
     </div>
-    <div className={styles.dialogProductFacts}><strong>商品基本信息</strong><dl>
-      <div><dt>商品标题</dt><dd>{selectedItem.name}</dd></div>
-      <div><dt>商品 SKU</dt><dd>{selectedItem.sku}</dd></div>
-      <div><dt>所属批次</dt><dd>{selectedItem.batchName??selectedItem.source}</dd></div>
-      <div><dt>目标店铺</dt><dd>{selectedItem.store}</dd></div>
-      <div><dt>优化记录</dt><dd>{selectedVariantGroup?(variantGroupReady(selectedVariantGroup)?"当前颜色六张图已齐":"当前颜色优化图待完成"):selectedItem.optimizedImages?.length?"已有已保存优化图片":"保留原始图片"}</dd></div>
-     </dl></div>
    </section>
    <section className={styles.productDialogRight}>
     <div className={styles.productInfoBlock}>
