@@ -79,7 +79,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    if(typeof data.podPatternMode==="string")setPodPatternMode(data.podPatternMode);
    if(Number.isSafeInteger(data.podQuantity)&&data.podQuantity>=1&&data.podQuantity<=20)setPodQuantity(data.podQuantity);
    if(typeof data.podTransparent==="boolean")setPodTransparent(data.podTransparent);
-   if(data.useConfig&&typeof data.useConfig==="object")setUseConfig(data.useConfig);
+   if(data.useConfig&&typeof data.useConfig==="object"){setUseConfig(data.useConfig);const cfg=data.useConfig as Record<string,unknown>;if(["optimizationSource","imageLanguage","imageBackground","selectedMainImages","selectedDetailImages","imageTasks"].some(key=>cfg[key]!==undefined))setImageConfigured(true);}
   }catch{/* A missing or malformed browser draft never prevents opening the dialog. */}
  },[info,organizationId,memberId]);
  const isModel=info.kind==="model",isUse=info.kind==="use",isPod=info.title.includes("POD");
