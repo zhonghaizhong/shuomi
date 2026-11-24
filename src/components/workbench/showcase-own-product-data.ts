@@ -5,12 +5,13 @@ export type OwnProductSku={id:number;name:string;description:string;images:strin
 export type OwnProductRecord={
  id:string;batchId:string;name:string;source:"上传资料"|"导入表格"|"商品链接"|"API 接入";
  createdAt:string;checkedAt:string;status:"入库待完善"|"待审核"|"已入库";
- missing:string[];skus:OwnProductSku[];agent:string;template:string;
+ missing:string[];skus:OwnProductSku[];originalSkus?:OwnProductSku[];agent:string;template:string;
 };
 export type OwnProductBatch={id:string;name:string;createdAt:string;productCount:number};
 const batchKey=(org:string,member:string)=>"shuomi:own-product-batches-v1:"+org+":"+member;
 const productKey=(org:string,member:string)=>"shuomi:own-product-records-v1:"+org+":"+member;
 export const ownProductUpdated="shuomi:own-products-updated";
+const cloneSkus=(skus:OwnProductSku[]):OwnProductSku[]=>skus.map(s=>({...s,images:[...s.images]}));
 const readArray=(key:string):unknown[]=>{if(typeof window==="undefined")return [];try{const p:unknown=JSON.parse(sessionStorage.getItem(key)||"[]");return Array.isArray(p)?p:[]}catch{return []}};
 export function readOwnProductBatches(org:string,member:string):OwnProductBatch[]{
  return readArray(batchKey(org,member)).filter((p):p is OwnProductBatch=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"name"in p&&typeof p.name==="string"&&"createdAt"in p&&typeof p.createdAt==="string")).map(p=>({...p,productCount:readOwnProducts(org,member).filter(x=>x.batchId===p.id).length}));
@@ -34,7 +35,7 @@ export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omi
  if(!readOwnProductBatches(org,member).some(b=>b.id===batchId))throw Error("该批次不属于当前账号或已不存在");
  if(!entry.skus.length)throw Error("请至少添加一个 SKU");
  const time=new Date().toLocaleString("zh-CN",{hour12:false});
- const product:OwnProductRecord={...entry,id:"OWN-P-"+crypto.randomUUID(),batchId,createdAt:time,checkedAt:time};
+ const product:OwnProductRecord={...entry,skus:cloneSkus(entry.skus),originalSkus:cloneSkus(entry.skus),id:"OWN-P-"+crypto.randomUUID(),batchId,createdAt:time,checkedAt:time};
  const current=readOwnProducts(org,member);
  // Keep prior products intact if session storage is full; no success without the actual data.
  sessionStorage.setItem(productKey(org,member),JSON.stringify([product,...current]));
@@ -59,7 +60,7 @@ export function simulateFiveOwnProductIntakes(org:string,member:string,batchId:s
   const skus:OwnProductSku[]=[{id:1,name:item.name,description:item.desc,images:item.photo?["https://images.unsplash.com/"+item.photo+"?auto=format&fit=crop&w=1200&q=85"]:[],price:item.price,stock:20,skuCode:item.code}];
   const missing=checkOwnProductSkus(skus);
   const now=new Date().toLocaleString("zh-CN",{hour12:false});
-  return {id:"OWN-DEMO-"+crypto.randomUUID(),batchId,name:item.name,source:"上传资料" as const,createdAt:now,checkedAt:now,status:missing.length?"入库待完善" as const:"待审核" as const,missing,skus,agent:"商品优化智能体",template};
+  return {id:"OWN-DEMO-"+crypto.randomUUID(),batchId,name:item.name,source:"上传资料" as const,createdAt:now,checkedAt:now,status:missing.length?"入库待完善" as const:"待审核" as const,missing,skus,originalSkus:cloneSkus(skus),agent:"商品优化智能体",template};
  });
  if(!newEntries.length)return {created:0,pending:0,review:0};
  sessionStorage.setItem(productKey(org,member),JSON.stringify([...newEntries,...existing]));
@@ -93,7 +94,7 @@ export function updateOwnProductAfterReview(org:string,member:string,id:string,s
  if(!skus.length)throw Error("至少需要一个 SKU");
  const missing=checkOwnProductSkus(skus);
  const checkedAt=new Date().toLocaleString("zh-CN",{hour12:false});
- const updated:OwnProductRecord={...existing,skus,missing,checkedAt,status:missing.length?"入库待完善":"待审核",name:skus[0].name.trim()||existing.name};
+ const updated:OwnProductRecord={...existing,originalSkus:cloneSkus(existing.originalSkus??existing.skus),skus:cloneSkus(skus),missing,checkedAt,status:missing.length?"入库待完善":"待审核",name:skus[0].name.trim()||existing.name};
  sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===id?updated:p)));
  notify(org,member);
  return updated;
