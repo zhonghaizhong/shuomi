@@ -4188,3 +4188,10 @@
  --agent-selected:#efecff;
  --agent-muted-chip:#f8f7fa;
 }
+
+/* Agent-market card surfaces: match the approved Vuexy filter panel in both themes.
+   Preserve accent rails and purple action buttons; remove per-card tinted fill. */
+.agentsPreview.agentsPreview .dataCard {
+  background: var(--agent-surface);
+  border-color: var(--agent-border);
+}
