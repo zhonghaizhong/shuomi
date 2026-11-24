@@ -13,6 +13,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
  const [batchFilter,setBatchFilter]=useState(""),[page,setPage]=useState(1),[checked,setChecked]=useState<string[]>([]),[showSource,setShowSource]=useState(false);
  const [draft,setDraft]=useState<OwnProductRecord["skus"]>([]),[skuId,setSkuId]=useState(1),[notice,setNotice]=useState("");
  const fileRef=useRef<HTMLInputElement>(null);
+ const initialSelectionContext=useRef<string|null>(null);
  const activeUploadProduct=useRef<string|null>(null);
  const uploadGeneration=useRef(0);
  const [uploading,setUploading]=useState(false);
@@ -36,10 +37,14 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
  const activeImage=gallery.length?gallery[Math.min(imageIndex,gallery.length-1)]:null;
  const select=(item:OwnProductRecord)=>{uploadGeneration.current++;setUploading(false);activeUploadProduct.current=item.id;setChecked([]);setShowSource(false);setImageIndex(0);setPreviewSrc(null);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1);setNotice("")};
  useEffect(()=>{
-  if(!context?.itemId||selectedId)return;
+  if(!context)return;
+  const contextKey=context.organizationId+":"+context.memberId+":"+stage+":"+(context.itemId??"");
+  if(initialSelectionContext.current===contextKey)return;
+  initialSelectionContext.current=contextKey;
+  if(!context.itemId)return;
   const item=records.find(p=>p.id===context.itemId&&p.status===(stage==="pending"?"入库待完善":"待审核"));
   if(item){uploadGeneration.current++;setUploading(false);activeUploadProduct.current=item.id;setChecked([]);setImageIndex(0);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1)}
- },[context,records,selectedId,stage]);
+ },[context,records,stage]);
   const updateSku=(fields:Partial<OwnProductRecord["skus"][number]>)=>setDraft(old=>old.map(s=>s.id===skuId?{...s,...fields}:s));
  const upload=async(e:ChangeEvent<HTMLInputElement>)=>{
   if(!currentSku||!selected)return;
