@@ -5,7 +5,7 @@ import {readOptimizedDatasets,optimizedDatasetsChanged} from "../showcase-optimi
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import {readShowcaseEnabledAgents,readShowcaseAgentTemplates,showcaseAgentId,showcaseAgentStateChanged} from "../showcase-agent-demo-state";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
-import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,variantGroupReady,type ListingVariantPhotoRole,completeShowcaseUploadTask,approveShowcaseUploadTask,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
+import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,type ListingVariantPhotoRole,completeShowcaseUploadTask,approveShowcaseUploadTask,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 import {useRouter} from "next/navigation";
 import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
@@ -334,19 +334,15 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
      {selectedVariantGroup?<div className={styles.variantSixSlots}>
       <div className={styles.productSectionHeading}><strong>六张图片 · {selectedVariantGroup.color}</strong><small>已生成 {selectedVariantGroup.optimizedImages.length}/6 · 其余为演示预览</small></div>
       <div className={styles.variantSixGrid}>
-       {listingVariantPhotoRoles.map((role,i)=>{
-        const result=selectedVariantGroup.optimizedImages.find(img=>img.role===role);
-        const previewSource=selectedVariantGroup.originalImages[0]??selectedItem.originalImages?.[0];
-        return <button className={styles.variantPhotoTile} type="button" key={role} aria-label={selectedVariantGroup.color+" "+role+(result?" 查看优化成品":" 查看演示预览")} onClick={()=>setVariantPreviewIndex(i)}>
-         <div className={styles.variantPhotoTileImage}>
-          {result?.url?<img src={result.url} alt={selectedVariantGroup.color+" "+role+" 优化结果"}/>:previewSource?<img src={previewSource} alt={selectedVariantGroup.color+" 来源实拍示意"} />:<span>暂无参考图</span>}
-          <span className={styles.variantPhotoTileIndex}>{String(i+1).padStart(2,"0")}</span>
-          {!result?<span className={styles.variantPhotoTileWatermark}>演示预览 · 非 AI 成品</span>:null}
+       {listingVariantGalleryCards(selectedVariantGroup).map(card=><button className={styles.variantPhotoTile} type="button" key={card.role} aria-label={selectedVariantGroup.color+" "+card.role+(card.isOptimized?" 查看优化成品":" 查看演示预览")} onClick={()=>setVariantPreviewIndex(card.index)}>
+         <div className={styles.variantPhotoTileImage} data-preview-role={card.index}>
+          {card.url?<img src={card.url} alt={selectedVariantGroup.color+" "+card.role+(card.isOptimized?" 优化图片":" 商品实拍排版预览")}/>:<span>暂无参考图</span>}
+          <span className={styles.variantPhotoTileIndex}>{String(card.index+1).padStart(2,"0")}</span>
+          {!card.isOptimized?<span className={styles.variantPhotoTileWatermark}>演示预览 · 非 AI 成品</span>:null}
          </div>
-         <strong>{role}</strong>
-         <small>{result?"已保存优化图片":"等待 AI 实际生成"}</small>
-        </button>;
-       })}
+         <strong>{card.role}</strong>
+         <small>{card.isOptimized?"已保存优化图片":"等待 AI 实际生成"}</small>
+        </button>)}
       </div>
       <p className={styles.productHint}>自动按当前颜色展示六种图片用途的版式预览。同颜色不同尺码共享图片；预览不写入优化结果，也不会绕过审核。</p>
       <details className={styles.variantPhotoAdvanced}><summary>高级：替换为已生成的图片</summary>
