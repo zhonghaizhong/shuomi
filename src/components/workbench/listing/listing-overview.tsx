@@ -23,7 +23,7 @@ const branches=[
 
 export function ListingOverview({navigate,showHeading=true,showTabs=true}:{navigate?:(href:string)=>void;showHeading?:boolean;showTabs?:boolean}){
  const router=useRouter();
- const go=(href:string)=>{const preview=typeof window!=="undefined"&&new URLSearchParams(window.location.search).get("preview")==="1";const target=preview?href+(href.includes("?")?"&":"?")+"preview=1":href;navigate?navigate(target):router.push(target)};
+ const go=(href:string)=>{const preview=typeof window!=="undefined"&&new URLSearchParams(window.location.search).get("preview")==="1";const target=preview?href+(href.includes("?")?"&":"?")+"preview=1":href;if(navigate)navigate(href);else router.push(target)};
  return <div className={styles.page} data-listing-management-overview>
   {showHeading?<header className={styles.header}>
     <p className={styles.eyebrow}>店铺中心 / 刊登管理</p>
