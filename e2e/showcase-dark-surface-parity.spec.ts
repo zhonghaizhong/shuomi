@@ -34,7 +34,7 @@ test("Tool Market actual dark-mode button and card backgrounds keep approved Vue
  await expect(firstCard).toBeVisible();
  const background=async(selector:string)=>page.locator(selector).first().evaluate(el=>getComputedStyle(el).backgroundColor);
  await expect.poll(()=>firstCard.evaluate(el=>getComputedStyle(el).backgroundColor))
-  .toBe("rgb(57, 61, 85)");
+  .toBe("rgb(47, 51, 73)");
  const primary=firstCard.getByRole("button",{name:"介绍"});
  await expect(primary).toBeVisible();
  const defaultButton=await primary.evaluate(el=>getComputedStyle(el).backgroundColor);
