@@ -227,8 +227,8 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const selectedColorOriginalImages=selectedVariantGroup?.originalImages??(selectedItem?.originalImages??[]);
  const galleryKey=selectedVariantGroup?.id??"default";
  const galleryEditKey=galleryKey+":"+(pictureTab==="detail"?"detail":photoMode);
- const originalMain=photoMode==="optimized"?(selectedVariantGroup?selectedColorOptimizedImages:(selectedItem?.optimizedImages??[])):selectedColorOriginalImages;
- const savedGallery=selectedTask?.imageEdits?.[galleryEditKey]?.[pictureTab];
+ const originalMain=photoMode==="optimized"?(selectedVariantGroup?selectedColorOptimizedImages:(selectedItem?.optimizedImages?.length?selectedItem.optimizedImages:selectedColorOriginalImages)):selectedColorOriginalImages;
+
  const selectedMainImages=selectedTask?.imageEdits?.[galleryKey+":"+photoMode]?.main??originalMain;
  const selectedDetailImages=selectedTask?.imageEdits?.[galleryKey+":detail"]?.detail??(selectedItem?.detailImages??[]);
  // Do not silently substitute source photos when the optimized gallery has no saved results.
@@ -420,7 +420,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <button type="button" role="tab" aria-selected={pictureTab==="detail"} onClick={()=>{setPictureTab("detail");setPhotoIndex(0);setPhotoAiOpen(false)}}>详情图（{selectedDetailImages.length}）</button>
      </div>
      {selectedVariantGroup&&pictureTab==="main"?<div className={styles.variantImageMode} role="group" aria-label="主图图片版本">
-      <button type="button" aria-pressed={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPhotoIndex(0);setPhotoAiOpen(false)}}>优化图（{selectedColorOptimizedImages.length}/6）</button>
+      <button type="button" aria-pressed={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPhotoIndex(0);setPhotoAiOpen(false)}}>优化图（{selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length}/6）</button>
       <button type="button" aria-pressed={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPhotoIndex(0);setPhotoAiOpen(false)}}>原始图片（{selectedColorOriginalImages.length}）</button>
      </div>:null}
      {galleryImages.length?<div className={styles.compactGallery}>
