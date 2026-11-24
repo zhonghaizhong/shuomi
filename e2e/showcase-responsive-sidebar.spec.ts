@@ -265,16 +265,20 @@ test("listing four subpages share aligned Vuexy typography, cards and controls",
     if(route==="missing"||route==="review"){
       const cards=root.locator('section[class*="summary"]');
       if(route==="missing")await expect(cards.locator("article")).toHaveCount(4);
-      const batch=root.getByRole("combobox",{name:"选择刊登批次"});
+      const batch=root.getByRole("button",{name:"选择刊登批次"});
       await expect(batch).toBeVisible();
-      await expect(batch.locator("option")).toHaveCount(1);
-      await batch.selectOption("");
+      await batch.click();
+      const picker=page.getByRole("dialog",{name:"选择商品批次与版本"});
+      await expect(picker).toBeVisible();
+      await picker.getByRole("button",{name:"取消"}).click();
+      await expect(picker).not.toBeVisible();
+      
       await root.getByRole("textbox",{name:"搜索商品"}).fill("不存在的商品 SKU");
       await root.getByRole("button",{name:"确认",exact:true}).first().click();
       await expect(root.getByRole("heading",{name:"商品列表（共 0 个商品）"})).toBeVisible();
       await root.getByRole("button",{name:"重置"}).click();
       await expect(root.getByRole("textbox",{name:"搜索商品"})).toHaveValue("");
-      await expect(batch).toHaveValue("");
+      await expect(batch).toContainText("全部批次");
       await expect(root.getByRole("heading",{name:"商品列表（共 0 个商品）"})).toBeVisible();
     }
     const enableLight=page.getByRole("button",{name:"切换浅色主题"});
