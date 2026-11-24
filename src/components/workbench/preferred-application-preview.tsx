@@ -20,7 +20,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const router=useRouter();
  const [revision,setRevision]=useState(0);
  const [view,setView]=useState<View>(()=>pathname.endsWith("/progress")||pathname.endsWith("/records")?"records":"products");
- const [query,setQuery]=useState(""),[filter,setFilter]=useState("全部商品");
+ const [query,setQuery]=useState(""),[appliedQuery,setAppliedQuery]=useState(""),[filter,setFilter]=useState("全部商品");
  const [recordFilter,setRecordFilter]=useState("全部状态");
  const [selected,setSelected]=useState<string[]>([]);
  const [supply,setSupply]=useState<PreferredSupply>(emptyPreferredSupply);
@@ -48,7 +48,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const activeRecord=records.find(row=>row.id===recordDetail);
  const eligible=candidates.filter(c=>c.status==="可申请"),working=candidates.filter(c=>c.status==="审核中"),approved=candidates.filter(c=>c.status==="已入选");
  const filtered=candidates.filter(c=>{
-  const q=query.trim().toLowerCase();
+  const q=appliedQuery.trim().toLowerCase();
   if(q&&![c.product.name,c.product.batchId,...c.product.skus.map(s=>s.skuCode||s.name)].join(" ").toLowerCase().includes(q))return false;
   return filter==="全部商品"||filter==="可申请"&&c.status==="可申请"||
    filter==="审核中"&&c.status==="审核中"||filter==="已入选"&&c.status==="已入选"||
@@ -101,19 +101,26 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
    {view==="products"?<>
     <section className={styles.candidateSummary} aria-label="商品候选状态概览">
      <div className={styles.candidateSummaryTitle}><h2>商品候选</h2><p>从自有商品库自动读取符合条件的商品</p></div>
-     <div className={styles.metrics}>
-      <article data-tone="cyan"><div><small>自有商品</small><strong>{candidates.length}</strong><span>当前账号商品库</span></div><Database size={20}/></article>
-      <article data-tone="violet"><div><small>可申请</small><strong>{eligible.length}</strong><span>已完成适配和优化</span></div><BadgeCheck size={20}/></article>
-      <article data-tone="orange"><div><small>审核中</small><strong>{working.length}</strong><span>等待审核结果</span></div><ClipboardList size={20}/></article>
-      <article data-tone="green"><div><small>已入选</small><strong>{approved.length}</strong><span>审核通过商品</span></div><Star size={20}/></article>
+     <div className={styles.metrics} aria-label="按状态筛选商品">
+      {([
+       {key:"全部商品",tone:"cyan",label:"自有商品",count:candidates.length,description:"当前账号商品库",Icon:Database},
+       {key:"可申请",tone:"violet",label:"可申请",count:eligible.length,description:"已完成适配和优化",Icon:BadgeCheck},
+       {key:"审核中",tone:"orange",label:"审核中",count:working.length,description:"等待审核结果",Icon:ClipboardList},
+       {key:"已入选",tone:"green",label:"已入选",count:approved.length,description:"审核通过商品",Icon:Star}
+      ] as const).map(({key,tone,label,count,description,Icon})=>
+       <button type="button" key={key} data-tone={tone} className={styles.metricCard} aria-pressed={filter===key} onClick={()=>{setFilter(key);setPage(1)}}>
+        <span className={styles.metricValue}>{count}</span>
+        <span className={styles.metricCopy}><strong>{label}</strong><small>{description}</small></span>
+        <Icon className={styles.metricIcon} size={18} aria-hidden="true"/>
+       </button>
+      )}
      </div>
     </section>
-    <div className={styles.panelHeading}><div><h2>自有商品库 · 申请候选</h2><p>商品自动同步；没有优化版本或首次适配未完成的商品不会开放申请。</p></div><button type="button" className={styles.primary} disabled={!chosen.length} onClick={()=>showApply()}>申请已选商品（{chosen.length}）</button></div>
-    <div className={styles.filters} aria-label="商品筛选">
-     <label className={styles.searchBox}><Search size={17}/><input aria-label="搜索商品名称或SKU" value={query} onChange={e=>{setQuery(e.target.value);setPage(1)}} placeholder="搜索商品名称 / SKU / 批次"/></label>
-     <select aria-label="筛选申请状态" value={filter} onChange={e=>{setFilter(e.target.value);setPage(1)}}>{["全部商品","可申请","待处理","审核中","已入选"].map(x=><option key={x}>{x}</option>)}</select>
-     <button type="button" onClick={()=>{setQuery("");setFilter("全部商品");setPage(1)}}>重置</button>
-    </div>
+    <div className={styles.panelHeading}><div><h2>自有商品库 · 申请候选</h2><p>商品自动同步；仅完成首次适配与智能体优化的商品可以申请。</p></div><button type="button" className={styles.primary} disabled={!chosen.length} onClick={()=>showApply()}>申请已选商品（{chosen.length}）</button></div>
+    <form className={styles.filters} aria-label="商品筛选" onSubmit={e=>{e.preventDefault();setAppliedQuery(query);setPage(1)}}>
+     <label className={styles.searchBox}><Search size={17}/><input aria-label="搜索商品名称或SKU" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索商品名称 / SKU / 批次"/></label>
+     <button type="submit" className={styles.confirmSearch}>确定</button>
+    </form>
     <div className={styles.tableWrap}><table><thead><tr><th>选择</th><th>商品</th><th>适配与优化</th><th>申请状态</th><th>操作</th></tr></thead><tbody>
      {visible.map(c=><tr key={c.product.id} data-product-id={c.product.id}>
       <td><input type="checkbox" aria-label={"选择"+c.product.name} disabled={c.status!=="可申请"} checked={chosen.includes(c.product.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,c.product.id]:v.filter(id=>id!==c.product.id))}/></td>
