@@ -1,0 +1,4 @@
+.dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(1320px,calc(100vw - 36px));max-width:none;height:min(790px,calc(100dvh - 36px));max-height:calc(100dvh - 36px);overflow:auto;padding:0;border:1px solid var(--line,#304b68);border-radius:11px;background:#142237;color:#e3ebf9;box-shadow:0 24px 85px #0009}
+.dialog::backdrop{background:rgba(5,12,25,.75)}
+:global(.light) .dialog{background:#fff;color:#333c4c;border-color:#dbe3ec}
+@media(max-width:760px){.dialog{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);border-radius:9px}}
