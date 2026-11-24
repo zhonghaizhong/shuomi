@@ -193,3 +193,19 @@
  .skillIntroFlowSteps li{padding:10px 0;}
  .skillIntroFlowSteps li:not(:last-child){border-right:0;border-bottom:1px solid var(--s-line);}
 }
+
+/* Home grid children share one explicit track at every viewport.
+   Prevent auto-sized implicit grid tracks from shifting the header relative
+   to the workflow and destination cards at narrow/intermediate widths. */
+.shell[data-skill-flow="home"]{
+ grid-template-columns:minmax(0,1fr);
+}
+.shell[data-skill-flow="home"]>.hero,
+.shell[data-skill-flow="home"]>.skillIntroGrid,
+.shell[data-skill-flow="home"]>.skillIntroFlow{
+ box-sizing:border-box;
+ width:100%;
+ min-width:0;
+ max-width:100%;
+ justify-self:stretch;
+}
