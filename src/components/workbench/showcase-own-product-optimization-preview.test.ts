@@ -32,7 +32,8 @@ it("does not use a different member's template configuration or invent missing d
  const cup=readOwnProducts(org,member).find(p=>p.skus.some(s=>s.skuCode==="SH-OPT-MUG-005"));
  expect(cup).toBeDefined();
  const result=previewOwnProductOptimization(org,member,cup!);
- expect(result?.templateFound).toBe(false);
+ expect(result?.templateFound).toBe(true);
+ expect(result?.steps.find(s=>s.name==="技能配置")?.result).not.toContain("private");
  expect(result?.proposed[0]?.copy).toBe("");
  expect(result?.remaining.length).toBeGreaterThan(0);
 });
