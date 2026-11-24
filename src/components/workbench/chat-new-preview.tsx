@@ -31,18 +31,18 @@ const stores = [
   ["品牌旗舰店", "Amazon", "英国站", "自营店"],
 ];
 
-type Props = { onAction: (label: string) => void };
+type Props = { onAction: (label: string) => void;organizationId?:string;memberId?:string };
 type ApprovalKind = "knowledge" | "skill" | "report";
 type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; approval?: ApprovalKind };
 
-export function ChatNewPreview({ onAction }: Props) {
+export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberId="admin" }: Props) {
   const router=useRouter();
   const [projectEntry]=useState(()=>{const q=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const id=q.get("projectId");const template=projectTemplates.find(t=>t.name===q.get("projectTemplate"));const project=readPreviewProjects().find(p=>p.id===id&&p.status!=="已归档");return {mode:q.get("projectMode"),template,project}});
   const [linkedProjectId,setLinkedProjectId]=useState(projectEntry.project?.id||"");
   const [projectName,setProjectName]=useState(projectEntry.template?.name||"");
   const [skillEntry] = useState(()=>{const query=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const mode=query.get("skillMode");const name=query.get("skill")||"";return {mode,name}});
   const [modeIndex, setModeIndex] = useState(projectEntry.mode==="create"?2:skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
-  const [draft, setDraft] = useState(skillEntry.mode==="edit"&&readPersonalPreviewSkills().some(s=>s.name===skillEntry.name)?"编辑技能："+skillEntry.name:projectEntry.template?projectEntry.template.description:projectEntry.project?"继续推进："+projectEntry.project.name:"");
+  const [draft, setDraft] = useState(skillEntry.mode==="edit"&&readPersonalPreviewSkills(organizationId,memberId).some(s=>s.name===skillEntry.name)?"编辑技能："+skillEntry.name:projectEntry.template?projectEntry.template.description:projectEntry.project?"继续推进："+projectEntry.project.name:"");
   const [drawer, setDrawer] = useState<"resources" | "stores" | null>(null);
   const [resourceTab, setResourceTab] = useState("我的知识库");
   const [resourceSearch, setResourceSearch] = useState("");
@@ -54,7 +54,7 @@ export function ChatNewPreview({ onAction }: Props) {
   const [scheduleTime, setScheduleTime] = useState("09:00");
   const [scheduleWeekday, setScheduleWeekday] = useState("1");
   const [scheduleMonthday, setScheduleMonthday] = useState("1");
-  const [selectedResources, setSelectedResources] = useState<string[]>(()=>skillEntry.mode==="reference"&&[...readEnabledPreviewSkills(),...readPersonalPreviewSkills().map(s=>s.name)].includes(skillEntry.name)?[skillEntry.name]:projectEntry.project?[projectEntry.project.name]:[]);
+  const [selectedResources, setSelectedResources] = useState<string[]>(()=>skillEntry.mode==="reference"&&[...readEnabledPreviewSkills(organizationId,memberId),...readPersonalPreviewSkills(organizationId,memberId).map(s=>s.name)].includes(skillEntry.name)?[skillEntry.name]:projectEntry.project?[projectEntry.project.name]:[]);
   const [selectedStores, setSelectedStores] = useState<string[]>(projectEntry.project&&projectEntry.project.scope!=="通用业务"?projectEntry.project.scope.split("、"):[]);
   const [pendingResources, setPendingResources] = useState<string[]>([]);
   const [pendingStores, setPendingStores] = useState<string[]>([]);
@@ -118,7 +118,7 @@ export function ChatNewPreview({ onAction }: Props) {
     }
     setConfirmation(true);
   };
-  const visibleResources = (resourceTab==="我的项目"?readPreviewProjects().filter(p=>p.status!=="已归档").map(p=>p.name):resourceTab==="我的技能"?[...readEnabledPreviewSkills(),...readPersonalPreviewSkills().map(s=>s.name)]:resourceGroups[resourceTab] ?? []).filter(item => item.toLowerCase().includes(resourceSearch.toLowerCase()));
+  const visibleResources = (resourceTab==="我的项目"?readPreviewProjects().filter(p=>p.status!=="已归档").map(p=>p.name):resourceTab==="我的技能"?[...readEnabledPreviewSkills(organizationId,memberId),...readPersonalPreviewSkills(organizationId,memberId).map(s=>s.name)]:resourceGroups[resourceTab] ?? []).filter(item => item.toLowerCase().includes(resourceSearch.toLowerCase()));
   const visibleStores = stores.filter(row =>
     row.join(" ").toLowerCase().includes(storeSearch.toLowerCase()) &&
     (!storePlatform || row[1] === storePlatform) &&
@@ -155,7 +155,7 @@ export function ChatNewPreview({ onAction }: Props) {
     const labels: Record<ApprovalKind, string> = { knowledge: "知识库", skill: "技能", report: "报告" };
     const label = labels[message.approval];
     if(confirm&&message.approval==="report"&&linkedProjectId){const p=readPreviewProjects().find(p=>p.id===linkedProjectId&&p.status!=="已归档");const name=message.text.split("\n").find(x=>x.startsWith("报告主题："))?.slice(5).trim();if(p&&name){try{savePreviewProject({...p,reports:[...p.reports,name],updated:Date.now()})}catch{onAction("本地成果保存失败");return}}}
-    if(confirm&&message.approval==="skill"){const goal=message.text.split("\n").find(line=>line.startsWith("技能目标："))?.slice(5).trim();if(goal)savePersonalPreviewSkill({name:skillEntry.mode==="edit"&&skillEntry.name?skillEntry.name:goal,description:goal});}
+    if(confirm&&message.approval==="skill"){const goal=message.text.split("\n").find(line=>line.startsWith("技能目标："))?.slice(5).trim();if(goal)savePersonalPreviewSkill({name:skillEntry.mode==="edit"&&skillEntry.name?skillEntry.name:goal,description:goal},organizationId,memberId);}
     setMessages(current => current.map(item => item.id === message.id ? { ...item, approval: undefined } : item).concat({
       id: Date.now(),
       role: "assistant",
