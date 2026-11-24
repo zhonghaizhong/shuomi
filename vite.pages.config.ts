@@ -54,6 +54,12 @@ const bundledAgentExamples = {
       `${here}/dist-pages/assets/own-product-ai-demo`,
       { recursive: true }
     );
+    // Include the approved real-photography atlas; no external image host required.
+    await cp(
+      `${here}/public/assets/listing-ai-preview`,
+      `${here}/dist-pages/assets/listing-ai-preview`,
+      { recursive: true }
+    );
   },
 };
 
