@@ -106,3 +106,65 @@
 }
 .detailPanel :is(.detailMetadata dd,.detailDescription p){overflow-wrap:anywhere}
 @media(max-width:680px){.detailStageTop{flex-wrap:wrap}.detailStageTop>*{min-width:0}}
+
+
+/* Theme parity: batch product dialog follows the approved Shuomi/Vuexy surfaces.
+   The dialog owns the tokens so nested controls never inherit unrelated page colors. */
+.dialog{
+  --bp-bg:#142237;
+  --bp-card:#18283c;
+  --bp-row:#142237;
+  --bp-line:#31465e;
+  --bp-ink:#edf4ff;
+  --bp-muted:#b5c6d8;
+  --bp-primary:#7367f0;
+  color-scheme:dark;
+}
+:global(.light) .dialog{
+  --bp-bg:#fff;
+  --bp-card:#f7fafd;
+  --bp-row:#fff;
+  --bp-line:#dfe7ef;
+  --bp-ink:#263648;
+  --bp-muted:#64768a;
+  --bp-primary:#7367f0;
+  color-scheme:light;
+}
+.dialog .heading h2{border-left:3px solid var(--bp-primary);padding-left:11px}
+.dialog :is(.summary,.toolbar,.productPanel){border-color:var(--bp-line)}
+.dialog .productPanel{background:var(--bp-bg);overflow:visible}
+.dialog .productPanel>header{border-bottom:1px solid var(--bp-line)}
+.dialog :is(button,select,input){color:var(--bp-ink)}
+.dialog button:not(.thumbButton){background:var(--bp-card);border-color:var(--bp-line)}
+.dialog button:not(.thumbButton):not(:disabled):hover{border-color:var(--bp-primary)}
+.dialog :is(.search,.toolbar select,.moveDialog select,.priceRangeHost>button){background:var(--bp-bg);border-color:var(--bp-line);color:var(--bp-ink)}
+.dialog .search input::placeholder{color:var(--bp-muted);opacity:1}
+.dialog .toolbar select{color-scheme:dark}
+:global(.light) .dialog .toolbar select{color-scheme:light}
+.dialog .toolbar [data-shuomi-filter-right]>button:last-child,
+.dialog .priceActions button:last-child,
+.dialog .moveDialog footer button:last-child:not(:disabled){
+  background:var(--bp-primary);
+  border-color:var(--bp-primary);
+  color:#fff;
+}
+.dialog .productPanel nav button[aria-pressed=true]{
+  background:color-mix(in srgb,var(--bp-primary) 16%,var(--bp-card));
+  border-color:var(--bp-primary);
+  color:#b4adff;
+}
+:global(.light) .dialog .productPanel nav button[aria-pressed=true]{color:#6155d9}
+.dialog .scroll th{background:var(--bp-card);color:var(--bp-muted)}
+.dialog .scroll tbody tr:nth-child(odd) td{background:var(--bp-card)}
+.dialog .scroll tbody tr:nth-child(even) td{background:var(--bp-bg)}
+.dialog .scroll tbody tr:hover td{background:color-mix(in srgb,var(--bp-primary) 5%,var(--bp-card))}
+.dialog .dropdown{background:var(--bp-card);border-color:var(--bp-line)}
+.dialog .dropdown button{background:transparent;border:0}
+.dialog .pagination b{background:var(--bp-primary);color:#fff}
+.dialog .bulkTools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.dialog .bulkTools button{min-height:36px}
+.dialog .bulkTools .archiveButton:not(:disabled){color:#fa91a2;border-color:#885361}
+.dialog .bottom button{background:var(--bp-card)}
+.dialog .moveDialog{background:var(--bp-bg);color:var(--bp-ink)}
+.dialog .moveDialog footer{display:flex;justify-content:flex-end;gap:10px}
+.dialog .detailOverlay button{color:inherit}
