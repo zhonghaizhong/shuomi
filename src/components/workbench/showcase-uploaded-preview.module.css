@@ -220,3 +220,13 @@
   .listTitle { padding: 14px 16px; }
   .pagination { padding: 16px; }
 }
+
+/* Uploaded records use the same compact source-batch-version selector as review/missing. */
+.toolbar .filters{flex:1 1 280px;min-width:0}
+.toolbar .filters label{width:100%;min-width:0}
+.toolbar .filters select{width:100%;min-width:0}
+.toolbar .search{flex:2 1 370px;min-width:0}
+.toolbar .search input{min-width:160px}
+.batchContext{display:flex;flex-wrap:wrap;align-items:center;gap:9px 18px;margin:0 20px 14px;padding:11px 14px;border:1px solid var(--border,#44485e);border-radius:7px;background:var(--secondary,#393d55);font-size:13px}
+.batchContext strong{color:var(--foreground,#e2e2f0);font-weight:650}
+.batchContext span{color:var(--muted-foreground,#acabc1)}
