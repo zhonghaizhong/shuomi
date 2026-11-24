@@ -5,7 +5,7 @@ import {readOptimizedDatasets,optimizedDatasetsChanged} from "../showcase-optimi
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import {readShowcaseEnabledAgents,readShowcaseAgentTemplates,showcaseAgentId,showcaseAgentStateChanged} from "../showcase-agent-demo-state";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
-import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,type ListingVariantPhotoRole,completeShowcaseUploadTask,approveShowcaseUploadTask,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
+import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,type ListingVariantPhotoRole,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 import {useRouter} from "next/navigation";
 import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
@@ -155,7 +155,13 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const [photoMode,setPhotoMode]=useState<"optimized"|"original">("optimized");
  const [editingPhotoRole,setEditingPhotoRole]=useState<ListingVariantPhotoRole|null>(null);
  const [photoDraft,setPhotoDraft]=useState("");
- const [fieldTab,setFieldTab]=useState<"common"|"variant"|"sku">("common");
+ const [fieldTab,setFieldTab]=useState<"common"|"shared"|"variant"|"sku">("common");
+ const [activeSkuId,setActiveSkuId]=useState("");
+ const [textDraft,setTextDraft]=useState<{title:string;description:string;colorDescriptions:Record<string,string>;skuDescriptions:Record<string,string>}>({title:"",description:"",colorDescriptions:{},skuDescriptions:{}});
+ const [batchAiOpen,setBatchAiOpen]=useState(false),[batchAiScope,setBatchAiScope]=useState<"current"|"all">("current");
+ const [batchAiRequired,setBatchAiRequired]=useState(true),[batchAiOptional,setBatchAiOptional]=useState(false);
+ const [batchAiInstructions,setBatchAiInstructions]=useState(""),[aiTargetField,setAiTargetField]=useState<string|null>(null),[aiFeedback,setAiFeedback]=useState("");
+ const [selectedQualification,setSelectedQualification]=useState<Record<string,string>>({});
  const [optionalOpen,setOptionalOpen]=useState(false);
  const [categoryEdit,setCategoryEdit]=useState(false);
  const [categoryDraft,setCategoryDraft]=useState("");
@@ -174,6 +180,16 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const variantImageGroups=selectedTask?.demoProduct?.variantImageGroups??[];
  const selectedVariantGroup=variantImageGroups.find(g=>g.id===variantColorId)??variantImageGroups[0];
  const selectedVariantSkus=variantDetails.filter(v=>v.color.trim().toLowerCase()===selectedVariantGroup?.id);
+ const activeSku=selectedVariantSkus.find(v=>v.sku===activeSkuId)??selectedVariantSkus[0];
+ const editingColorKey=selectedVariantGroup?.id??"default";
+ const editingSkuKey=activeSku?.sku??selectedTask?.productIds[0]??selectedItem?.sku??"";
+ const aiEligibleFields=[
+  {key:"title",label:"商品标题",scope:"common",required:true},
+  {key:"description",label:"商品描述",scope:"common",required:true},
+  ...(variantImageGroups.length?[{key:"colorDescription",label:"当前颜色描述",scope:"variant",required:false}]:[]),
+  ...(variantDetails.length?[{key:"skuDescription",label:"当前 SKU 补充描述",scope:"sku",required:false}]:[])
+ ];
+ const selectedAiFields=aiEligibleFields.filter(f=>(batchAiScope==="all"||f.scope===fieldTab)&&((f.required&&batchAiRequired)||(!f.required&&batchAiOptional)));
  useEffect(()=>{
   let cancelled=false;
   const urls:string[]=[];
@@ -245,8 +261,16 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   const record:ShowcaseUploadTask={id:"LIST-"+crypto.randomUUID(),organizationId,memberId,source:source,batchId:batch,batchName:chosenBatch?.name??batch,sourceVersionId:selectedVersionId,sourceVersionLabel:selectedVersion?.label??"原始版本",productIds:selectedProductIds,productCount:selectedCount,missingCount,storeId:chosenStore.id,storeName:chosenStore.name,platform:"SHEIN",region:chosenStore.region,storeType:chosenStore.type,rule:currentRule.name,ruleConfig:{...currentRule},agentId:agent?agentId:null,agentName:agent?chosenAgent?.name??null:null,templateId:agent?templateId:null,mode:uploadMode,status,createdAt:new Date().toISOString(),demo:true};
   if(addShowcaseUploadTask(record)){sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),showcaseUploadBatchKey(record));setBatchFilter(showcaseUploadBatchKey(record));setAppliedBatch(showcaseUploadBatchKey(record));setSubmitted(true);setNotice("已保存本次演示刊登任务（"+selectedCount+" 件，"+chosenStore.name+"，"+status+"）。已记住本次来源、批次与版本，后续阶段按同一批次筛选；未执行真实平台上传。")}else setNotice("演示任务保存失败，请检查会话存储。");
  };
+ const persistText=()=>{if(!selectedTask)return false;try{saveShowcaseListingTextEdits(organizationId,memberId,selectedTask.id,textDraft);return true}catch(e){setNotice(e instanceof Error?e.message:"保存文本资料失败");return false}};
+ const saveTextOnly=()=>{if(persistText())setNotice("已保存商品、颜色和 SKU 文本修改；原始数据保持不变。")};
+ const openAiForField=(field:string)=>{setAiTargetField(field);setBatchAiScope("current");setBatchAiOpen(true);setAiFeedback("")};
+ const requestAiSuggestions=()=>{
+  if(!selectedAiFields.length&&!aiTargetField){setAiFeedback("当前选择没有符合条件的可重构字段，请调整范围或勾选内容。");return}
+  setAiFeedback("已识别可处理的文本字段，但当前 Showcase 尚未接入可执行的 AI 文本重构服务，因此没有生成或覆盖任何内容。平台固定枚举、认证文件、图片及真实数值均已排除。");
+ };
  const save=()=>{
   if(!selectedItem)return;
+  if(selectedTask&&!persistText())return;
   if(classChanged){setNotice("已修改目标分类草稿。需要重新执行新分类的规则适配后才能提交审核；演示版尚未连接平台类目适配服务。");return}
   const allFilled=selectedItem.missing.every(field=>(form[field]??"").trim().length>0);
   if(!allFilled){setNotice("请补齐所有必填字段后保存。");return}
@@ -313,7 +337,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <span className={styles.compactStoreType}>{item.targetStoreType||"—"}</span>
       <span className={styles.compactPlainCell} title={item.store}>{item.store||"—"}</span>
       <span className={styles.compactStatus}>{item.status}</span>
-      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft("");setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
+      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions}}})());setBatchAiOpen(false);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft("");setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
      </div>})}</div></div>{filtered.length>15?<nav className={styles.listPagination} aria-label="商品分页"><span>共 {filtered.length} 条 · 每页 15 条 · 第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setListPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setListPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></nav>:null}
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
@@ -341,7 +365,19 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
    <section className={styles.productDialogLeft}>
     <div className={styles.productPhotoPanel}>
      <div className={styles.productSectionHeading}><strong>{selectedVariantGroup?"变体图片 · "+selectedVariantGroup.color:"商品图片 · 主图 "+selectedMainImages.length+" / 详情图 "+selectedDetailImages.length}</strong><small>{selectedVariantGroup?selectedVariantGroup.optimizedImages.length+"/6 张优化图":"保留已保存的图片版本"}</small></div>
-     {variantImageGroups.length?<div className={styles.variantColorPicker} role="group" aria-label="选择颜色变体">{variantImageGroups.map(group=><button type="button" key={group.id} aria-pressed={selectedVariantGroup?.id===group.id} onClick={()=>{setVariantColorId(group.id);setVariantPreviewIndex(null);setPhotoIndex(0);setPictureTab("main");setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("")}}><img src={group.originalImages[0]} alt={group.color+" 商品原图"}/><span>{group.color}</span><small>{group.skuIds.length} SKU · {group.optimizedImages.length}/6</small></button>)}</div>:null}
+     {variantImageGroups.length?<div className={styles.variantSelectionPanel}>
+       <strong>第一层变体 · 颜色</strong>
+       <div className={styles.variantColorPicker} role="group" aria-label="选择颜色变体">
+         {variantImageGroups.map(group=><button type="button" key={group.id} aria-pressed={selectedVariantGroup?.id===group.id} onClick={()=>{setVariantColorId(group.id);setActiveSkuId("");setVariantPreviewIndex(null);setPhotoIndex(0);setPictureTab("main");setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("")}}>
+          <span>{group.color}</span><small>{group.skuIds.length} 个 SKU</small>
+         </button>)}
+       </div>
+       <strong>第二层变体 · 尺码{selectedVariantGroup?"（"+selectedVariantGroup.color+"）":""}</strong>
+       <div className={styles.variantSizePicker} role="group" aria-label="选择尺码变体">
+         {selectedVariantSkus.map(v=><button type="button" key={v.sku} aria-pressed={activeSku?.sku===v.sku} onClick={()=>{setActiveSkuId(v.sku);setFieldTab("sku")}}>{v.size}</button>)}
+       </div>
+       {activeSku?<p className={styles.variantSelectedCaption}>当前 SKU：{activeSku.sku} · {activeSku.color} / {activeSku.size}</p>:null}
+      </div>:null}
      {selectedVariantGroup?<div className={styles.variantImageMode} role="tablist" aria-label="原始与优化图片切换">
       <button type="button" role="tab" aria-selected={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPictureTab("main");setPhotoIndex(0)}}>优化／演示素材（{selectedColorOptimizedImages.length}/6）</button>
       <button type="button" role="tab" aria-selected={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPictureTab("main");setPhotoIndex(0)}}>原始实拍（{selectedColorOriginalImages.length}）</button>
