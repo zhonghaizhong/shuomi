@@ -46,17 +46,6 @@ const officialExampleNotes={
  "详情图":[["从实用性和美观度解释购买价值。","围绕产品用途呈现购买理由"],["以办公和通勤说明日常饮水痛点。","场景与需求一一对应"],["通过桌面、休闲和出行场景展示用途。","让使用环境更具体"],["放大杯口、提手和杯盖的关键细节。","细节真实、重点突出"],["展示杯盖、提手和宽口的使用方式。","功能展示清楚，不虚构参数"],["表现轻松提拿和多场景携带体验。","动作自然、商品一致"],["提示核对容量、尺寸及材质等资料。","不展示未经确认的精确参数"],["总结外观、便携和日常使用价值。","收束信息，帮助购买判断"]]
 } as const;
 
-const availableSkills=["商品标题规范优化（示例）","商品图片优化（示例）"];
-const availableKnowledge=["平台规则","运营方法","合规参考"];
-const podSkillSamples=[
- {name:"POD图案生成规范（示例）",description:"用于演示内容与规则的规范化，实际版本以技能库为准"},
- {name:"POD图片优化（示例）",description:"可用于规范图片生成与优化，实际配置在图片设置中调整"}
-];
-const podKnowledgeSamples=[
- {name:"跨境平台规则",description:"已添加的站点政策、店铺规则与运营限制"},
- {name:"商品运营方法",description:"已添加的商品刊登、定价及运营指引"},
- {name:"跨境合规资料",description:"已添加的知识产权、税务与合规内容"}
-];
 const languages=["不设置（默认关闭）","英语","中文","西班牙语","法语","德语","日语"];
 
 export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKind="product",organizationId="SM-ENT-000001",memberId="admin"}:{
