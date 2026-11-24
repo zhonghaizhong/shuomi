@@ -814,5 +814,13 @@ test("My Stores search remains left of criteria and actions with shared centered
  const a=await left.boundingBox(),b=await right.boundingBox();
  expect(a&&b).toBeTruthy();
  expect(a!.x+a!.width).toBeLessThanOrEqual(b!.x+4);
- expect(Math.abs(a!.width-b!.width)).toBeLessThan(50);
+ // Approved wide-screen standard: bounded search, compact selects, fixed actions.
+ // Equal-width halves are an obsolete requirement and would stretch dropdowns.
+ expect(a!.width).toBeLessThanOrEqual(484);
+ expect(a!.width).toBeGreaterThanOrEqual(180);
+ const sizes=await right.locator("select").evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().width));
+ expect(sizes).toHaveLength(3);
+ expect(sizes.every(width=>width>=120&&width<=176)).toBe(true);
+ expect(await right.getByRole("button",{name:"重置"}).evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(39);
+ expect(Math.abs(a!.y-b!.y)).toBeLessThan(2);
 });
