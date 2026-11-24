@@ -4390,7 +4390,7 @@
 .cockpitPreview .cockpitUnifiedFilters{
  display:flex;
  flex-direction:row;
- flex-wrap:wrap;
+ flex-wrap:nowrap;
  align-items:center;
  gap:8px;
  min-width:0;
@@ -4501,4 +4501,34 @@
  .cockpitPreview .cockpitUnifiedFilters>.matrixTimePicker{flex:1 1 140px}
  .cockpitPreview .cockpitUnifiedFilters>select{flex:1 1 110px}
  .cockpitPreview .cockpitUnifiedFilters>button{flex:1 1 70px}
+}
+
+/* Keep all nine alert/advice controls on one row at desktop widths.
+   Use shrinking columns rather than wrapping the final action buttons. */
+@media(min-width:761px){
+ .cockpitPreview .cockpitUnifiedFilters{
+  display:flex;
+  flex-wrap:nowrap;
+  width:100%;
+  box-sizing:border-box;
+ }
+ .cockpitPreview .cockpitUnifiedFilters>input[type="search"]{
+  flex:1 1 170px;
+  min-width:120px;
+ }
+ .cockpitPreview .cockpitUnifiedFilters>.matrixTimePicker{
+  flex:0 1 140px;
+  min-width:118px;
+ }
+ .cockpitPreview .cockpitUnifiedFilters>select{
+  flex:1 1 100px;
+  min-width:80px;
+  max-width:none;
+ }
+ .cockpitPreview .cockpitUnifiedFilters>button{
+  flex:0 0 70px;
+ }
+}
+@media(max-width:760px){
+ .cockpitPreview .cockpitUnifiedFilters{flex-wrap:wrap}
 }
