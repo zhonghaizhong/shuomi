@@ -29,3 +29,11 @@ export function addShowcaseUploadTask(task:ShowcaseUploadTask):boolean{
   return true;
  }catch{return false;}
 }
+
+/** One source batch and selected data version remain the common identifier across all four stages. */
+export const showcaseUploadBatchKey=(task:Pick<ShowcaseUploadTask,"source"|"batchId"|"sourceVersionId">)=>
+ JSON.stringify([task.source,task.batchId,task.sourceVersionId||"original"]);
+export const showcaseUploadBatchLabel=(task:Pick<ShowcaseUploadTask,"source"|"batchName"|"sourceVersionId">)=>
+ task.batchName+" · "+(task.sourceVersionId&&task.sourceVersionId!=="original"?"已选优化版本":"原始版本")+" · "+task.source;
+export const showcaseUploadBatchPreferenceKey=(organizationId:string,memberId:string)=>
+ "shuomi:listing-batch-filter-v1:"+organizationId+":"+memberId;
