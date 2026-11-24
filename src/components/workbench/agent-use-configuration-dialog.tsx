@@ -222,7 +222,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
       ["预设指令AI重构","使用预设指令生成图片"],
       ["从本地上传","上传电脑中的图片"],
       ["自定义指令","按指令生成图片"]
-     ] as const).map(([name,description])=><button type="button" key={name} aria-pressed={sourceTab===name} onClick={()=>{setSourceTab(name);setMessage("");}}><strong>{name}</strong><small>{description}</small></button>)}
+     ] as const).map(([name,description])=><button type="button" key={name} aria-label={name} aria-pressed={sourceTab===name} onClick={()=>{setSourceTab(name);setMessage("");}}><strong>{name}</strong><small>{description}</small></button>)}
     </div>
     <section className={css.imageSourcePanel}>
      {sourceTab==="应用技能"?<>
