@@ -868,3 +868,26 @@
 .variantPhotoEditor{grid-column:1/-1;display:flex;align-items:center;gap:7px;min-width:0}
 .variantPhotoEditor input{flex:1;min-width:0;padding:10px;border:1px solid var(--stroke);border-radius:6px;background:var(--surface-alt);color:var(--ink)}
 @media(max-width:620px){.variantColorPicker{gap:5px}.variantColorPicker img{width:42px;height:42px}.variantColorPicker small{font-size:10px}.variantPhotoEditor{flex-wrap:wrap}.variantPhotoEditor input{flex-basis:100%}}
+
+/* Six-role preview gallery replaces long empty rows. All theme colors use the existing surface tokens. */
+.variantSixGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.variantPhotoTile{min-width:0;display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid var(--stroke);background:var(--surface);border-radius:9px;color:var(--ink);cursor:zoom-in;text-align:left;transition:border-color .18s ease,background .18s ease}
+.variantPhotoTile:hover,.variantPhotoTile:focus-visible{border-color:#7367f0;background:var(--surface-alt);outline-offset:2px}
+.variantPhotoTileImage{aspect-ratio:1/1;width:100%;position:relative;overflow:hidden;border-radius:7px;background:linear-gradient(155deg,#f8f7ff,#eef0f5);display:flex;align-items:center;justify-content:center}
+.variantPhotoTileImage img{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
+.variantPhotoTileImage>span:not(.variantPhotoTileIndex):not(.variantPhotoTileWatermark){font-size:12px;color:#667085}
+.variantPhotoTileIndex{position:absolute;top:6px;left:6px;font-size:10px;font-weight:750;color:#383356;background:rgba(255,255,255,.92);border-radius:4px;padding:3px 6px}
+.variantPhotoTileWatermark{position:absolute;bottom:0;left:0;right:0;padding:7px 3px;background:linear-gradient(0deg,rgba(30,30,46,.8),rgba(30,30,46,.5));color:#fff;text-align:center;font-size:10px;white-space:nowrap}
+.variantPhotoTile>strong{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.variantPhotoTile>small{font-size:11px;color:var(--muted)}
+.variantPhotoAdvanced{border-top:1px solid var(--stroke);padding-top:8px}
+.variantPhotoAdvanced summary{color:var(--muted);font-size:12px;cursor:pointer;list-style-position:inside}
+.variantPhotoAdvancedBody{padding:9px 0 0;display:grid;gap:8px}
+.variantPhotoAdvancedBody label{display:grid;gap:5px;font-size:12px;color:var(--muted)}
+.variantPhotoAdvancedBody input,.variantPhotoAdvancedBody select{width:100%;min-width:0;border:1px solid var(--stroke);border-radius:7px;background:var(--surface-alt);color:var(--ink);padding:9px}
+.variantPhotoAdvancedBody>button{background:color-mix(in srgb,#7367f0 15%,var(--surface));border:1px solid #7367f0;color:var(--ink);border-radius:7px;padding:9px 12px;cursor:pointer}
+.variantPreviewLightboxBody{display:flex;flex-direction:column;align-items:center;gap:9px;max-width:min(640px,95%);color:#f8f8fb}
+.variantPreviewLightboxBody img{width:min(520px,75vw);height:min(520px,62vh);object-fit:contain;border-radius:9px;background:#fff}
+.variantPreviewLightboxBody strong{font-size:15px}
+.variantPreviewLightboxBody span{text-align:center;font-size:12px;color:#c5c5d8}
+@media(max-width:590px){.variantSixGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.variantPhotoTileWatermark{font-size:9px}}
