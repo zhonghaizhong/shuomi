@@ -33,13 +33,30 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
    }
    void installGeneratedOwnProductDemoImages(context.organizationId,context.memberId).then(report=>{
     if(report.alreadyInstalled)return;
-    setSelectedId(null);setChecked([]);setVersion(v=>v+1);
+    setChecked([]);setVersion(v=>v+1);
     setNotice("已自动安装 "+report.products+" 款商品的 "+report.images+" 张英语白底模拟优化图；"+report.review+" 款待审核、"+report.pending+" 款待完善。原始图片可展开核对。");
    }).catch(error=>setNotice(error instanceof Error?error.message:"自动生成图片预览加载失败"));
   }catch(e){setNotice(e instanceof Error?e.message:"测试批次初始化失败");}
  },[context]);
  const records=useMemo(()=>context?readOwnProducts(context.organizationId,context.memberId):[],[context,version]);
  const batches=useMemo(()=>context?readOwnProductBatches(context.organizationId,context.memberId):[],[context,version]);
+ // If generated photos arrive while a product is open, refresh only its untouched
+ // stock-image gallery; preserve the user's title, description and uploaded images.
+ useEffect(()=>{
+  if(!selectedId)return;
+  const latest=records.find(p=>p.id===selectedId);
+  if(!latest?.demoImageSource)return;
+  setDraft(previous=>{
+   let changed=false;
+   const updated=previous.map(sku=>{
+    const next=latest.skus.find(s=>s.id===sku.id);
+    if(!next||sku.images.length!==1||!sku.images[0]?.startsWith("https://images.unsplash.com/")||next.images.length!==8)return sku;
+    changed=true;
+    return {...sku,images:[...next.images]};
+   });
+   return changed?updated:previous;
+  });
+ },[records,selectedId]);
  const list=records.filter(p=>p.status===(stage==="pending"?"入库待完善":"待审核")&&(!batchFilter||p.batchId===batchFilter)&&(p.name+" "+p.id+" "+p.skus.map(s=>(s.name+" "+(s.skuCode??""))).join(" ")+" "+(batches.find(b=>b.id===p.batchId)?.name??"")).toLowerCase().includes(query.trim().toLowerCase()));
  const totalPages=Math.max(1,Math.ceil(list.length/15));
  const currentPage=Math.min(page,totalPages);
