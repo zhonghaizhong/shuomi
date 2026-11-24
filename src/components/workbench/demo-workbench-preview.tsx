@@ -31,7 +31,6 @@ import { ShowcaseTaskCenter } from "./showcase-task-center";
 import { ShowcaseProjectCenter } from "./showcase-project-center";
 import { ShowcaseStoreCenter } from "./stores/showcase-store-center";
 import {SectionPageTabs,sectionForPath} from "./console/section-page-tabs";
-import tabLayout from "./console/section-page-tabs.module.css";
 
 type Row = { title: string; detail: string; value?: string; state?: string };
 type PageSpec = { section: string; title: string; description: string; metrics?: [string, string, string][]; cards?: [string, string, string][]; rows?: Row[]; filters?: string[]; layout?: "supply" | "data" | "ai" | "agents" | "agentMarket" | "agentMine" | "tools" | "services" | "serviceJoin" | "storeCenter" | "plans" | "account" | "accountProfile" | "accountSettings" | "goals" | "storeMatrix" | "alerts" | "advice" | "tasks" | "libraryHub" | "unavailable" };
@@ -117,12 +116,11 @@ export function DemoWorkbenchPreview(props:ShowcasePreviewProps) {
  useEffect(()=>setCurrentPath(props.pathname),[props.pathname]);
  const section=sectionForPath(currentPath);
  // The header and tabs remain the same height on every selected view.
- return section ? <div className={tabLayout.inlineSection} data-inline-section={section}>
-  <SectionPageTabs section={section} activeHref={currentPath} onSelect={setCurrentPath}/>
-  <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={href=>setCurrentPath(href.split("?")[0])}/>
- </div> : <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={setCurrentPath}/>;
+ const onSectionSelect=(href:string)=>setCurrentPath(href.split("?")[0]);
+ const tabNavigation=section?<SectionPageTabs section={section} activeHref={currentPath} onSelect={onSectionSelect} onCreateChat={()=>window.location.assign("/workbench/ai/chat/new?preview=1")}/>:null;
+ return <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={onSectionSelect} tabNavigation={tabNavigation}/>;
 }
-function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId=accountTenant.id,organizationName=accountTenant.name,onSectionSelect }: ShowcasePreviewProps & {onSectionSelect:(path:string)=>void}) {
+function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId=accountTenant.id,organizationName=accountTenant.name,onSectionSelect,tabNavigation }: ShowcasePreviewProps & {onSectionSelect:(path:string)=>void;tabNavigation?:React.ReactNode}) {
   const router = useRouter();
   const navigateInline=(href:string)=>{const target=href.split("?")[0];const origin=sectionForPath(pathname);if(origin&&sectionForPath(target)===origin)onSectionSelect(target);else router.push(href);};
   const {state:accountSuite}=useShowcaseSuite();
@@ -247,22 +245,23 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
   if (pathname === "/workbench/tools/official" || pathname === "/workbench/tools/mine") return <ShowcaseToolMarket key={organizationId+"::"+memberId+"::"+pathname} pathname={pathname} navigate={router.push} organizationId={organizationId} memberId={memberId} />;
   if (pathname.startsWith("/workbench/tools/custom")) return <ShowcaseToolCustomization pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/services" || pathname === "/workbench/services/market" || pathname === "/workbench/services/mine" || pathname === "/workbench/services/join") return <ShowcaseEcologyServices pathname={pathname} navigate={router.push} />;
-  if (pathname === "/workbench/listing") return <ListingOverview showTabs={false} navigate={onSectionSelect} />;
-  if (pathname === "/workbench/listing/waiting") return <ShowcaseListingStage stage="waiting" organizationId={organizationId} memberId={memberId} />;
-  if (pathname === "/workbench/listing/missing") return <ShowcaseListingStage stage="missing" organizationId={organizationId} memberId={memberId} />;
-  if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" organizationId={organizationId} memberId={memberId} />;
+  if (pathname === "/workbench/listing") return <ListingOverview showTabs={false} navigate={onSectionSelect} tabNavigation={tabNavigation} />;
+  if (pathname === "/workbench/listing/waiting") return <ShowcaseListingStage stage="waiting" organizationId={organizationId} memberId={memberId} tabNavigation={tabNavigation} />;
+  if (pathname === "/workbench/listing/missing") return <ShowcaseListingStage stage="missing" organizationId={organizationId} memberId={memberId} tabNavigation={tabNavigation} />;
+  if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" organizationId={organizationId} memberId={memberId} tabNavigation={tabNavigation} />;
   if (pathname === "/workbench/account/profile" || pathname === "/workbench/account/profile/settings") return <AccountProfilePreview key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
-  if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview organizationId={organizationId} memberId={memberId} />;
+  if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview organizationId={organizationId} memberId={memberId} tabNavigation={tabNavigation} />;
   if (pathname.startsWith("/workbench/account/organization") || pathname.startsWith("/workbench/account/referrals")) return <ShowcaseAccountSuite key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} memberId={memberId} organizationId={organizationId} organizationName={organizationName} />;
-  if (pathname === "/workbench/agents/skills" || ["/workbench/agents/skills/official", "/workbench/agents/skills/mine", "/workbench/agents/skills/team"].includes(pathname)) return <ShowcaseSkillLibrary pathname={pathname} organizationId={organizationId} memberId={memberId} onSectionSelect={onSectionSelect} />;
-  if (["/workbench/ai/tasks","/workbench/ai/tasks/pending","/workbench/ai/tasks/running","/workbench/ai/tasks/completed","/workbench/ai/tasks/errors","/workbench/ai/tasks/scheduled"].includes(pathname)) return <ShowcaseTaskCenter pathname={pathname} navigate={href=>{if(sectionForPath(href))onSectionSelect(href);else navigateInline(href)}} />;
+  if (pathname === "/workbench/agents/skills" || ["/workbench/agents/skills/official", "/workbench/agents/skills/mine", "/workbench/agents/skills/team"].includes(pathname)) return <ShowcaseSkillLibrary pathname={pathname} organizationId={organizationId} memberId={memberId} onSectionSelect={onSectionSelect} tabNavigation={tabNavigation} />;
+  if (["/workbench/ai/tasks","/workbench/ai/tasks/pending","/workbench/ai/tasks/running","/workbench/ai/tasks/completed","/workbench/ai/tasks/errors","/workbench/ai/tasks/scheduled"].includes(pathname)) return <ShowcaseTaskCenter pathname={pathname} navigate={href=>{if(sectionForPath(href.split("?")[0]))onSectionSelect(href);else navigateInline(href)}} tabNavigation={tabNavigation} />;
   if (["/workbench/store-center","/workbench/stores","/workbench/store-products","/workbench/store-orders"].includes(pathname) || pathname.startsWith("/workbench/store-orders/")) return <ShowcaseStoreCenter key={organizationId+"::"+memberId} pathname={pathname} navigate={router.push} memberId={memberId} organizationId={organizationId} />;
-  if (pathname === "/workbench/ai/projects" || ["/active","/recent","/templates","/archived","/mine"].some(suffix=>pathname === "/workbench/ai/projects"+suffix)) return <ShowcaseProjectCenter key={pathname} pathname={pathname} onSectionSelect={onSectionSelect} />;
+  if (pathname === "/workbench/ai/projects" || ["/active","/recent","/templates","/archived","/mine"].some(suffix=>pathname === "/workbench/ai/projects"+suffix)) return <ShowcaseProjectCenter key={pathname} pathname={pathname} onSectionSelect={onSectionSelect} tabNavigation={tabNavigation} />;
   if (pathname === "/workbench/supply/selected") return <ShowcaseSelectedMarket organizationId={organizationId} memberId={memberId}/>;
-  if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} organizationId={organizationId} memberId={memberId} />;
+  if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} organizationId={organizationId} memberId={memberId} tabNavigation={tabNavigation} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div> : null}
-    <header className={styles.header}><div><div className={styles.breadcrumb}>AI工作台 / 硕米Chat</div><h1>硕米Chat</h1><p>发起新会话、继续历史工作、收藏重要成果，协同业务资料与智能执行。</p></div><button type="button" className={styles.primary} onClick={()=>navigateInline("/workbench/ai/chat/new?preview=1")}>＋ 新建会话</button></header>
+    <header className={styles.header}><div><div className={styles.breadcrumb}>AI工作台 / 硕米Chat</div><h1>硕米Chat</h1><p>发起新会话、继续历史工作、收藏重要成果，协同业务资料与智能执行。</p></div></header>
+    {tabNavigation}
     <ChatIntroduction preview hideCreateAction contentTasks={false} createAction={<button className={styles.primary} onClick={() => navigateInline("/workbench/ai/chat/new?preview=1")}>进入新建会话</button>} />
   </div>;
 
