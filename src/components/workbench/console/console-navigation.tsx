@@ -166,8 +166,10 @@ function NavBranch({ node, pathname, trail, depth, onNavigate, listingQuery = ""
   const href = query?.get("preview") === "1" ? `${baseHref}${baseHref.includes("?") ? "&" : "?"}preview=1` : baseHref;
   // Account leaf pages have their own in-content tab navigation. Keep route data for breadcrumbs,
   // but do not duplicate third-level links in the sidebar.
+  // These seven workbench sections use page-level tabs; keep child routes for deep links and breadcrumbs.
+  const inPageTabSections = ["/workbench/ai/chat", "/workbench/ai/tasks", "/workbench/ai/projects", "/workbench/ai/knowledge", "/workbench/agents/skills", "/workbench/ai/reports", "/workbench/supply/catalogs"];
   const hideAccountLeaves = depth === 2 && ["/workbench/account/profile", "/workbench/account/organization", "/workbench/account/referrals"].includes(node.href);
-  const visibleChildren = hideAccountLeaves ? undefined : node.children;
+  const visibleChildren = hideAccountLeaves || depth === 2 && inPageTabSections.includes(node.href) ? undefined : node.children;
   const active = trail.includes(node.href) || pathname === node.href;
   // The route-keyed subtree resets disclosure even when navigating back to an earlier route.
   const [expanded, setExpanded] = useState(active);
