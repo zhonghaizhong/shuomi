@@ -4172,6 +4172,12 @@
  background:#2f3349;
  border-color:#44485e;
 }
+:global(.light) .agentsPreview.agentsPreview>.header,
+:global(.light) .agentsPreview.agentsPreview .agentMine>article>section,
+:global(.light) .agentsPreview.agentsPreview .agentMine>article>aside{
+ background:#fff;
+ border-color:#ddd9e9;
+}
 :global(.light) .agentsPreview.agentsPreview{
  --agent-surface:#fff;
  --agent-raised:#f8f7fa;
