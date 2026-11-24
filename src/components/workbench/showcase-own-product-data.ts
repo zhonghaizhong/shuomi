@@ -6,7 +6,7 @@ export type OwnProductSku={id:number;name:string;description:string;images:strin
 export type OwnProductRecord={
  id:string;batchId:string;name:string;source:"上传资料"|"导入表格"|"商品链接"|"API 接入";
  createdAt:string;checkedAt:string;status:"入库待完善"|"待审核"|"已入库";
- missing:string[];skus:OwnProductSku[];originalSkus?:OwnProductSku[];agent:string;template:string;
+ missing:string[];skus:OwnProductSku[];originalSkus?:OwnProductSku[];agent:string;template:string;demoImageSource?:string;
 };
 export type OwnProductBatch={id:string;name:string;createdAt:string;productCount:number};
 const batchKey=(org:string,member:string)=>"shuomi:own-product-batches-v1:"+org+":"+member;
@@ -59,7 +59,7 @@ export function simulateFiveOwnProductIntakes(org:string,member:string,batchId:s
  */
 export function installSixProductOptimizationDemo(org:string,member:string):{created:number;pending:number;review:number;alreadyInstalled:boolean}{
  if(typeof window==="undefined"||!org||!member)throw Error("演示账号信息不完整");
- const marker="shuomi:own-product-six-demo-v1:"+org+":"+member;
+ const marker="shuomi:own-product-six-demo-v2:"+org+":"+member;
  if(sessionStorage.getItem(marker)==="ready")return {created:0,pending:0,review:0,alreadyInstalled:true};
  const existingBatches=readOwnProductBatches(org,member);
  const batch=existingBatches.find(b=>b.name==="自有商品测试批次");
@@ -99,12 +99,56 @@ export function installSixProductOptimizationDemo(org:string,member:string):{cre
  if(needsTemplate)writeAgentPreviewTemplates(org,member,"商品优化智能体",[...templates,{
   id:"own-six-demo-test-template",name:"测试模板",createdAt:now,config:{
    skills:["标题结构整理","商品卖点提炼","信息完整性检测"],knowledge:[],
-   imageOptimization:true,imageInstructions:"保留可信商品原图；检查变体图是否齐全；没有生成的新图不得冒充 AI 优化图。"
+   imageOptimization:true,imageInstructions:"English labels; white background; eight image slots per product; preserve original source. Generated illustrative assets must be marked as simulation.",useConfig:{imageLanguage:"英语",imageBackground:"白色背景",optimizationSource:"官方方案",imageUse:"共用视觉素材",imageProcessingScope:"手动选择",selectedMainImages:[1,2,3,4,5,6,7,8],selectedDetailImages:[1,2,3,4,5,6,7,8]}
   }
  }]);
  sessionStorage.setItem(marker,"ready");
  notify(org,member);
  return {created:6,pending:2,review:4,alreadyInstalled:false};
+}
+
+
+/** Import the six actual ChatGPT-generated image sheets split into 48 standalone images.
+ * Explicit user-selected JSON payload; no server upload or real model invocation.
+ * All original source photos and missing-field statuses are preserved.
+ */
+export function importOwnProductDemoImagePack(org:string,member:string,raw:unknown):{products:number;images:number;pending:number;review:number}{
+ if(typeof window==="undefined")throw Error("请在浏览器中导入图片演示包");
+ if(!raw||typeof raw!=="object")throw Error("图片包格式无效");
+ const payload=raw as Record<string,unknown>;
+ if(payload.format!=="shuomi-own-product-six-optimization-image-pack"||payload.version!==2||payload.language!=="英语"||payload.background!=="白色背景"||payload.perProduct!==8||!Array.isArray(payload.products)||payload.products.length!==6)
+  throw Error("图片包不符合测试模板：英语、白底、每款 8 张、共 6 款");
+ const demoBatch=readOwnProductBatches(org,member).find(b=>b.name==="自有商品测试批次");
+ if(!demoBatch)throw Error("请先创建自有商品测试批次");
+ const all=readOwnProducts(org,member);
+ const validCodes=["SH-OPT-TEE-001","SH-OPT-HOOD-002","SH-OPT-TOTE-003","SH-OPT-BOTTLE-004","SH-OPT-MUG-005","SH-OPT-TRAVEL-006"];
+ const byCode=new Map<string,string[]>();
+ for(const candidate of payload.products){
+  if(!candidate||typeof candidate!=="object")throw Error("图片包产品记录无效");
+  const item=candidate as Record<string,unknown>;
+  if(typeof item.skuCode!=="string"||!validCodes.includes(item.skuCode)||byCode.has(item.skuCode)||!Array.isArray(item.images)||item.images.length!==8||
+    !item.images.every(x=>typeof x==="string"&&/^data:image\/jpeg;base64,[a-zA-Z0-9+/]+={0,2}$/.test(x)&&x.length<120000))
+   throw Error("图片包存在重复 SKU、损坏的图片或图片数量不足");
+  byCode.set(item.skuCode,item.images as string[]);
+ }
+ if(validCodes.some(code=>!byCode.has(code)))throw Error("六款测试商品的图片必须全部齐全");
+ const candidates=validCodes.map(code=>all.find(p=>p.batchId===demoBatch.id&&p.status!=="已入库"&&p.skus.some(s=>s.skuCode===code)));
+ if(candidates.some(p=>!p))throw Error("演示批次中缺少待审核或待完善商品，请先重建六款商品");
+ const ids=new Set(candidates.map(p=>p!.id));
+ const next=all.map(p=>{
+  if(!ids.has(p.id))return p;
+  const code=p.skus[0]?.skuCode??"";
+  const pictures=byCode.get(code);
+  if(!pictures)return p;
+  const skus=p.skus.map((sku,i)=>i===0?{...sku,images:pictures.slice()}:sku);
+  return {...p,skus,missing:checkOwnProductSkus(skus),demoImageSource:"ChatGPT 示意图片模拟"} as OwnProductRecord;
+ });
+ const review=next.filter(p=>ids.has(p.id)&&p.status==="待审核").length;
+ const pending=next.filter(p=>ids.has(p.id)&&p.status==="入库待完善").length;
+ if(review!==4||pending!==2)throw Error("预期状态不是 4 款待审核、2 款待完善，已停止导入");
+ try{sessionStorage.setItem(productKey(org,member),JSON.stringify(next));}catch{throw Error("浏览器会话存储空间不足，未能保存全部 48 张图片；请换一个空白演示会话。")}
+ notify(org,member);
+ return {products:6,images:48,pending,review};
 }
 
 /** First-stage Shuomi intake: incomplete drafts stay inside the tool, never in third-party listing 待补全. */
