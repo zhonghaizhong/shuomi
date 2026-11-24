@@ -144,7 +144,9 @@ const lightModules: Array<[string,string]> = [
   ["/workbench/agents/market",'[class*="agentCards"] article'],
   ["/workbench/agents/mine",'[class*="agentMine"] > article > section'],
   ["/workbench/ai/projects",'[data-project-showcase] [class*="metrics"] > button'],
-  ["/workbench/ai/knowledge",'[class*="metrics"] > article'],
+  // The knowledge landing intentionally has two intro cards instead of obsolete metric cards.
+  // Check a solid surfaced tag inside the new card (the card itself uses a gradient).
+  ["/workbench/ai/knowledge",'[data-library-hub="knowledge"] [class*="knowledgeIntroTags"] > span'],
   ["/workbench/ai/reports",'[class*="metrics"] > article'],
   ["/workbench/tools",'[class*="entry"]'],
   ["/workbench/tools/official",'[class*="toolCard"]'],
