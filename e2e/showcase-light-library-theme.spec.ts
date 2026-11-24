@@ -105,20 +105,26 @@ test("linked Figma home, official catalog, enabled skills and closed team",async
  await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
 });
 
-test("clicking the AI workbench skill menu opens the independent introduction and exposes children",async({page})=>{
+test("skill library entry cards open independent pages without relying on third-level navigation",async({page})=>{
  await page.goto("/shuomi/#/workbench/ai");
  const nav=page.getByRole("navigation",{name:"工作台导航"});
  await nav.getByRole("link",{name:"技能库",exact:true}).click();
  await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
  const root=page.locator('[data-skill-showcase="true"]');
  await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
- await expect(nav.getByRole("link",{name:"官方模板",exact:true})).toBeVisible();
- await expect(nav.getByRole("link",{name:"我的技能",exact:true})).toBeVisible();
- await expect(nav.getByRole("link",{name:"团队技能",exact:true})).toBeVisible();
- await nav.getByRole("link",{name:"官方模板",exact:true}).click();
+ const entries=root.locator('[data-skill-entry]');
+ await expect(entries).toHaveCount(3);
+ for(const [key,title] of [["official","官方模板"],["mine","我的技能"],["team","团队技能"]]){
+  await expect(entries.locator('[data-skill-entry="'+key+'"]').getByRole("heading",{name:title})).toBeVisible();
+ }
+ await entries.locator('[data-skill-entry="official"]').getByRole("button",{name:"浏览官方模板"}).click();
+ await expect(page).toHaveURL(/#\/workbench\/agents\/skills\/official/);
  await expect(root.getByRole("heading",{name:"官方模板",level:1})).toBeVisible();
  await nav.getByRole("link",{name:"技能库",exact:true}).click();
  await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
+ await entries.locator('[data-skill-entry="mine"]').getByRole("button",{name:"查看我的技能"}).click();
+ await expect(page).toHaveURL(/#\/workbench\/agents\/skills\/mine/);
+ await expect(root.getByRole("heading",{name:"我的技能",level:1})).toBeVisible();
 });
 
 test("skill pages share the approved tools header and readable dual-theme controls",async({page})=>{
