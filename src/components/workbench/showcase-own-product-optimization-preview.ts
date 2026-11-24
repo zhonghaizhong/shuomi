@@ -62,10 +62,10 @@ export function previewOwnProductOptimization(org:string,member:string,record:Ow
  const steps:OwnOptimizationPreview["steps"]=[
   {name:"模板关联",result:saved?"已读取当前账号保存的模板配置":"模板已改名、删除或当前账号不可访问；仅能展示商品资料检查",status:saved?"simulated":"needs-input"},
   {name:"商品信息整理",result:"模拟整理了 "+titleChanges+" 个 SKU 标题、"+copyChanges+" 个 SKU 描述；保留原始资料用于对比，不补造材质、规格或卖点。",status:"simulated"},
-  {name:"SKU 与变体检查",result:"识别 "+skus.length+" 个 SKU；"+(missingImages?"有 "+missingImages+" 个 SKU 缺少有效图片，保留待完善":"图片字段齐全，保留原始图片来源；未执行真实图片生成"),status:missingImages?"needs-input":"simulated"},
+  {name:"SKU 与变体检查",result:"识别 "+skus.length+" 个 SKU；"+(missingImages?"有 "+missingImages+" 个 SKU 缺少有效图片，保留待完善":record.demoImageSource?"已加载 ChatGPT 模拟优化图片，原始来源仍独立保留":"图片字段齐全；仅保留来源图片，尚未加载模拟优化图"),status:missingImages?"needs-input":"simulated"},
   {name:"技能配置",result:!saved?"无法读取配置":skillNames.length?"模板选择："+skillNames.join("、"):"模板未启用技能",status:!saved?"needs-input":skillNames.length?"simulated":"not-enabled"},
   {name:"知识库配置",result:!saved?"无法读取配置":knowledgeNames.length?"模板引用："+knowledgeNames.join("、")+"（仅展示引用，未执行检索）":"模板未关联知识库",status:!saved?"needs-input":knowledgeNames.length?"simulated":"not-enabled"},
-  {name:"图片优化配置",result:!saved?"无法读取配置":c.imageOptimization?"已读取语言、背景、图片来源与主图/详情图要求；仅展示模拟配置，未实际调用生图服务":"模板未启用图片优化；不应生成替换图片",status:!saved?"needs-input":c.imageOptimization?"simulated":"not-enabled"},
+  {name:"图片优化配置",result:!saved?"无法读取配置":c.imageOptimization?(record.demoImageSource?"已加载按英语、白底和每款 8 张要求制作的 ChatGPT 示意图片；没有调用硕米真实生图服务。":"已读取语言、背景、图片来源与主图/详情图要求；仅展示模拟配置，未实际调用生图服务"):"模板未启用图片优化；不应生成替换图片",status:!saved?"needs-input":c.imageOptimization?"simulated":"not-enabled"},
   {name:"入库缺项检测",result:needs.length?"仍需人工补全："+needs.join("、"):"资料必填项齐全，可进入待审核",status:needs.length?"needs-input":"simulated"}
  ];
  return {
