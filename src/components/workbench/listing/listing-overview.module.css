@@ -314,3 +314,12 @@
 .steps p{margin-top:8px}
 .branches article{min-height:170px}
 @media(max-width:620px){.stageTabs{display:flex;overflow-x:auto}.stageTabs button{flex:0 0 auto;min-width:96px}}
+
+/* Compact guidance shares a row with the two exception paths. */
+.branches{grid-template-columns:repeat(3,minmax(0,1fr))}
+.quickStart{display:flex;flex-direction:column;justify-content:center;gap:10px;min-width:0;padding:21px 22px;border:1px solid var(--listing-border);border-radius:7px;background:var(--listing-inset)}
+.quickStart h3{margin:0 0 3px;font-size:19px;line-height:1.4;color:var(--listing-text)}
+.quickStart p{margin:0;position:relative;padding-left:16px;font-size:14px;color:var(--listing-muted);line-height:1.5}
+.quickStart p:before{content:"";position:absolute;top:.64em;left:0;width:6px;height:6px;border-radius:50%;background:var(--listing-primary)}
+@media(max-width:1000px){.branches{grid-template-columns:repeat(2,minmax(0,1fr))}.quickStart{grid-column:1/-1}}
+@media(max-width:620px){.branches{grid-template-columns:1fr}.quickStart{grid-column:auto}}
