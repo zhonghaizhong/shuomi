@@ -1,4 +1,5 @@
 "use client";
+import {listingDemoArtSet,type ListingArtKind} from "./showcase-listing-ai-images";
 
 /** Local showcase task ledger. This is not platform submission, AI execution or an order. */
 export type ShowcaseUploadTask={
@@ -67,7 +68,7 @@ export function simulateAmazonFiveListingWorkflow(args:{
  const now=new Date().toISOString();
  const created:ShowcaseUploadTask[]=args.products.map(product=>{
   const plan=amazonRules[product.sku],missing=[...plan.missing];
-  const images=Array.from({length:8},(_,i)=>"/shuomi/assets/listing-ai-preview/"+plan.art+"-"+String(i+1).padStart(2,"0")+".svg");
+  const images=listingDemoArtSet(plan.art as ListingArtKind);
   return {
    id:scopeKey+":"+product.sku,organizationId:org,memberId:member,source:"采集批次",batchId:args.batchId,
    batchName:args.batchName,sourceVersionId:"original",sourceVersionLabel:"原始版本",
