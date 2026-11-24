@@ -66,7 +66,7 @@ export function ShowcaseOptimizedDatasetLibrary({organizationId,memberId}:{organ
    <div><h2>数据集</h2><p>管理用户定制的数据集、交付记录和历史版本；同名同站点的交付按版本展示，原始交付保留。</p></div>
    <div className={css.headingStats}><span>定制数据集 <strong>{groups.length}</strong></span><span>已交付 <strong>{deliveredCount}</strong></span></div>
   </header>
-  <div className={css.guide}><strong>数据来源说明</strong><span>采集批次 · 自行采集</span><span>自有商品库 · 自有商品资料</span><span>数据集 · 用户定制与交付</span></div>
+  
   <section className={css.filterBar} data-shuomi-filter="balanced" aria-label="定制数据集筛选">
    <label className={css.search}><span aria-hidden="true">⌕</span><input aria-label="搜索定制数据集" placeholder="搜索数据集名称 / 站点 / 编号" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")apply()}}/></label>
    <div className={css.filterActions}><select aria-label="定制数据集状态" value={status} onChange={e=>setStatus(e.target.value)}><option>全部状态</option>{Object.values(stateName).map(v=><option key={v}>{v}</option>)}</select><button type="button" onClick={reset}>重置</button><button type="button" className={css.primary} onClick={apply}>确认</button></div>
