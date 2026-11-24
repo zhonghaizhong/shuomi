@@ -758,7 +758,7 @@
 
 
 /* Premium Vuexy tool catalog and My Tools, light/dark unified. */
-.page{--tm-bg:#142237;--tm-card:#18283c;--tm-nested:#1d3148;--tm-line:#30465e;--tm-text:#eff6ff;--tm-muted:#adc1d4;--tm-shadow:0 7px 24px rgba(3,12,27,.15);color:var(--tm-text);gap:18px}
+.page{--tm-bg:#2f3349;--tm-card:#393d55;--tm-nested:#34384e;--tm-line:#52576e;--tm-text:#cfcde4;--tm-muted:#acabc1;--tm-shadow:0 7px 24px rgba(3,12,27,.15);color:var(--tm-text);gap:18px}
 :global(.light) .page{--tm-bg:#fff;--tm-card:#f7fafd;--tm-nested:#edf3f8;--tm-line:#dfe7ef;--tm-text:#263747;--tm-muted:#607183;--tm-shadow:0 6px 22px rgba(32,55,87,.06)}
 .page :is(.header,.toolCard,.mineCard,.mineGuide,.empty,.notice,.toolbar[data-shuomi-filter="balanced"],.mineBar[data-shuomi-filter="balanced"]){background:var(--tm-bg);border-color:var(--tm-line);border-radius:12px;box-shadow:var(--tm-shadow)}
 .page>.header{background:var(--tm-bg);border-color:var(--tm-line);border-radius:12px}
