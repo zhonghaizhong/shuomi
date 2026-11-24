@@ -19,6 +19,7 @@ export function ShowcaseListingStageHeader({stage}:{stage:ShowcaseListingStageKe
    <p>{current.description}</p>
   </header>
   <nav className={css.tabs} aria-label="刊登管理阶段">
+   <button type="button" onClick={()=>router.push("/workbench/listing?preview=1")}>刊登总览</button>
    {stageEntries.map(item=><button key={item.key} type="button" aria-current={item.key===stage?"page":undefined} onClick={()=>{if(item.key!==stage)router.push("/workbench/listing/"+item.key+"?preview=1")}}>{item.label}</button>)}
   </nav>
  </>;
