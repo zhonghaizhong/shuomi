@@ -242,6 +242,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
      :sourceTab==="从本地上传"?<><h3>从本地上传</h3><label>选择图片文件<input type="file" accept="image/*" onChange={e=>setFileName(e.target.files?.[0]?.name??"")}/></label><p>已选择：{fileName||"尚未选择文件"}。演示版不会上传文件至服务器。</p></>
      :<><h3>自定义指令</h3><label>自定义图片指令<textarea value={assetName} onChange={e=>setAssetName(e.target.value)} placeholder="例如：服装产品主体、面料质感、英文卖点、1:1 构图"/></label><p>按当前编排位置应用此指令，实际图片生成需连接模型。</p></>}
     </section>
+   </>
    :isProductImage?<div className={css.optimizer}>
     <div className={css.optimizerRows}>
      <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>1</span><div><strong>优化方式</strong><small>选择规则来源</small></div></div><div className={css.optimizerChoicesThree}>
