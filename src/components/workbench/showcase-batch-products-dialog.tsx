@@ -31,6 +31,7 @@ export function ShowcaseBatchProductsDialog({batch,organizationId,memberId,other
  const [moveOpen,setMoveOpen]=useState(false);
  const [detailId,setDetailId]=useState<string|null>(null);
  const [galleryIndex,setGalleryIndex]=useState(0);
+ const [selectedVariantSku,setSelectedVariantSku]=useState<string|null>(null);
  const products=useMemo(()=>batch.products.filter(p=>(state.archived.includes(p.id)===(tab==="已归档"))&&!state.moved[p.id]&&(p.name+" "+p.sku+" "+p.source).toLowerCase().includes(query.trim().toLowerCase())&&(variant==="全部变体"||(variant==="多变体"&&(p.variantCount||0)>1)||(variant==="单变体"&&(p.variantCount||0)<=1))&&(Number(p.price.match(/\d+(?:\.\d+)?/)?.[0]??0)>=minPrice&&Number(p.price.match(/\d+(?:\.\d+)?/)?.[0]??0)<=maxPrice)),[batch.products,state,tab,query,variant,minPrice,maxPrice]);
  const perPage=10,count=Math.max(1,Math.ceil(products.length/perPage)),current=Math.min(page,count),rows=products.slice((current-1)*perPage,current*perPage);
  const selectedAll=rows.length>0&&rows.every(p=>chosen.includes(p.id));
@@ -40,8 +41,15 @@ export function ShowcaseBatchProductsDialog({batch,organizationId,memberId,other
  function archive(ids:string[],restore:boolean){const a=new Set(state.archived);ids.forEach(id=>restore?a.delete(id):a.add(id));save({...state,archived:[...a]});setChosen([]);setMenu(null);setPage(1);setMessage(restore?"已恢复所选演示商品。":"已归档所选演示商品，原始模拟采集数据保留。")}
  function move(){if(!moveTarget){setMessage("请选择目标批次。");return}const ids=chosen.length?chosen:menu?[menu]:[];if(!ids.length){setMessage("请选择需要移动的商品。");return}const moved={...state.moved};ids.forEach(id=>moved[id]=moveTarget);save({...state,moved});setMoveOpen(false);setMenu(null);setChosen([]);setPage(1);setMessage("已记录演示商品转移意向，未修改原始数据或其他批次。")}
  function chooseMove(id?:string){setChosen(id?[id]:chosen);setMenu(null);setMoveTarget("");setMoveOpen(true)}
- function openDetail(id:string){setDetailId(id);setGalleryIndex(0);setMenu(null)}
+ function openDetail(id:string){setDetailId(id);setGalleryIndex(0);setSelectedVariantSku(null);setMenu(null)}
  const detailProduct=batch.products.find(p=>p.id===detailId);
+ const selectedVariant=detailProduct?.variantDetails?.find(v=>v.sku===selectedVariantSku)??detailProduct?.variantDetails?.[0];
+ // Only show media belonging to the selected variant. A product-level gallery is
+ // used when there is no per-variant media, never as an invented variant image set.
+ const variantGallery=selectedVariant
+   ? [...new Set([selectedVariant.image,...(selectedVariant.images??[])].filter(Boolean))]
+   : detailProduct?.images??[];
+ const activeImage=variantGallery[Math.min(galleryIndex,Math.max(variantGallery.length-1,0))];
  const allArchived=state.archived.length;
  return <dialog ref={dialog} className={css.dialog} aria-labelledby={headingId} onCancel={e=>{e.preventDefault();if(moveOpen)setMoveOpen(false);else if(detailId)setDetailId(null);else onClose()}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
   <header className={css.heading}><div><h2 id={headingId}>批次商品</h2><strong>{batch.name}</strong><p>{batch.method} · {ownProductMode?"自有商品资料":"原始采集商品"} · <span>{ownProductMode?"批次数据":"模拟数据"}</span></p></div><button type="button" onClick={onClose} aria-label="关闭批次商品弹窗">×</button></header>
@@ -62,23 +70,25 @@ export function ShowcaseBatchProductsDialog({batch,organizationId,memberId,other
   <footer className={css.bottom}><span>{ownProductMode?"自有商品原始资料和入库状态保持不变；归档仅影响此列表。":"商品可单个或批量调整批次归属；归档不会删除原始数据。"}</span><button type="button" onClick={()=>exportProducts(batch.products)}>下载当前批次</button></footer>
   {detailProduct?<div className={css.detailOverlay} role="presentation">
     <div className={css.detailStage}>
-     <div className={css.detailStageTop}><span>{ownProductMode?"自有商品图片 · 保留原资料":batch.source==="Amazon"?"公开产品参考图片 · 非实时抓取":"演示参考照片 · 非 1688 原始采集图片"}</span><span>{galleryIndex+1} / {detailProduct.images?.length||1}</span></div>
-     {detailProduct.images?.length?<img className={css.largeImage} src={detailProduct.images[Math.min(galleryIndex,detailProduct.images.length-1)]} alt={detailProduct.name+"的放大演示参考图"}/>:<div className={css.emptyPhoto}>暂无可用照片</div>}
-     <div className={css.gallery}>{(detailProduct.images||[]).map((url,i)=><button key={url} type="button" aria-label={"查看第"+(i+1)+"张图片"} aria-pressed={galleryIndex===i} onClick={()=>setGalleryIndex(i)}><img src={url} alt={detailProduct.name+"演示图 "+(i+1)}/></button>)}</div>
+     <div className={css.detailStageTop}><span>{ownProductMode?"自有商品图片 · 保留原资料":batch.source==="Amazon"?"公开产品参考图片 · 非实时抓取":"演示参考照片 · 非 1688 原始采集图片"}</span><span>{variantGallery.length?galleryIndex+1:0} / {variantGallery.length}</span></div>
+     {activeImage?<img className={css.largeImage} src={activeImage} alt={(selectedVariant?.label??detailProduct.name)+"的商品参考图"}/>:<div className={css.emptyPhoto}>暂无可用照片</div>}
+     <div className={css.gallery}>{variantGallery.map((url,i)=><button key={url} type="button" aria-label={"查看第"+(i+1)+"张图片"} aria-pressed={galleryIndex===i} onClick={()=>setGalleryIndex(i)}><img src={url} alt={(selectedVariant?.label??detailProduct.name)+" 图片 "+(i+1)}/></button>)}</div>
+     {selectedVariant?<div className={css.variantCurrentInfo} aria-live="polite"><strong>{selectedVariant.label}</strong><span>SKU {selectedVariant.sku} · 颜色 {selectedVariant.color} · 规格 {selectedVariant.size}</span></div>:null}
     </div>
     <aside className={css.detailPanel} role="dialog" aria-modal="true" aria-label="商品详情">
      <header><h2>商品详情</h2><button type="button" onClick={()=>setDetailId(null)} aria-label="关闭商品详情">×</button></header>
-     <section className={css.detailIntro}><div className={css.detailCover}>{detailProduct.images?.[0]?<img src={detailProduct.images[0]} alt={detailProduct.name+"演示主图"}/>:<span>商品主图</span>}</div><div><h3>{detailProduct.name}</h3><div className={css.detailIdentity}><span>{ownProductMode?batch.source:batch.source+"（模拟）"}</span><small>SKU {detailProduct.sku}</small></div><strong className={css.detailPrice}>{detailProduct.price}</strong><small>{ownProductMode?detailProduct.status:"模拟参考价格，非真实供应商报价"}</small></div></section>
+     <section className={css.detailIntro}><div className={css.detailCover}>{activeImage?<img src={activeImage} alt={(selectedVariant?.label??detailProduct.name)+"主图"}/>:<span>商品主图</span>}</div><div><h3>{detailProduct.name}</h3><div className={css.detailIdentity}><span>{ownProductMode?batch.source:batch.source+"（模拟）"}</span><small>SKU {detailProduct.sku}</small></div><strong className={css.detailPrice}>{detailProduct.price}</strong><small>{ownProductMode?detailProduct.status:"模拟参考价格，非真实供应商报价"}</small></div></section>
      <dl className={css.detailMetadata}>
       <div><dt>原始标题</dt><dd>{detailProduct.originalTitle||detailProduct.name}</dd></div>
       <div><dt>原始链接</dt><dd>{detailProduct.demoSourceLink?.startsWith("https://")?<a href={detailProduct.demoSourceLink} target="_blank" rel="noopener noreferrer">查看 Amazon 原始商品 · {detailProduct.sku}</a>:detailProduct.demoSourceLink||"演示数据，未接入真实商品链接"}</dd></div>
-      <div><dt>变体信息</dt><dd>{(detailProduct.variantCount||0)>1?"多变体 · "+detailProduct.variantCount+" 个规格":"单变体"}<div className={css.variantChips}>{(detailProduct.variants||[]).map(v=><span key={v}>{v}</span>)}</div>
+      <div><dt>变体信息</dt><dd>{(detailProduct.variantCount||0)>1?"多变体 · "+detailProduct.variantCount+" 个规格":"单变体"}{!detailProduct.variantDetails?.length?<div className={css.variantChips}>{(detailProduct.variants||[]).map(v=><span key={v}>{v}</span>)}</div>:null}
       {detailProduct.variantDetails?.length?<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:9,marginTop:10}}>
-       {detailProduct.variantDetails.map(v=><div key={v.sku} style={{border:"1px solid var(--stroke, #60657a)",borderRadius:8,padding:7,display:"flex",alignItems:"center",gap:7,minWidth:0}}>
+       {detailProduct.variantDetails.map(v=><button type="button" key={v.sku} aria-label={"选择变体 "+v.label} aria-pressed={selectedVariant?.sku===v.sku} onClick={()=>{setSelectedVariantSku(v.sku);setGalleryIndex(0)}} style={{border:"1px solid "+(selectedVariant?.sku===v.sku?"var(--primary, #7367f0)":"var(--stroke, #60657a)"),background:selectedVariant?.sku===v.sku?"var(--primary-soft, rgba(115,103,240,.12))":"transparent",color:"inherit",textAlign:"left",cursor:"pointer",borderRadius:8,padding:7,display:"flex",alignItems:"center",gap:7,minWidth:0}}>
         <img src={v.image} alt={v.label+" 对应实拍商品图"} loading="lazy" style={{width:50,height:50,objectFit:"contain",background:"#fff",borderRadius:6,flexShrink:0}}/>
         <span style={{fontSize:11,overflowWrap:"anywhere"}}>{v.label}<small style={{display:"block",opacity:.7}}>{v.sku}</small></span>
-       </div>)}
+       </button>)}
       </div>:null}</dd></div>
+      {selectedVariant?<div aria-live="polite"><dt>当前变体原始资料</dt><dd>SKU：{selectedVariant.sku} · 颜色：{selectedVariant.color} · 尺码：{selectedVariant.size}<br/>价格：{selectedVariant.price??"未单独采集"} · 库存：{selectedVariant.stock??"未获取"}<br/>描述：{selectedVariant.description??"沿用商品公共描述"}{selectedVariant.sourceUrl?<><br/><a href={selectedVariant.sourceUrl} target="_blank" rel="noopener noreferrer">查看该变体原始链接</a></>:null}</dd></div>:null}
       <div><dt>{ownProductMode?"来源方式":"采集方式"}</dt><dd>{ownProductMode?detailProduct.source:batch.method}</dd></div>
       <div><dt>{ownProductMode?"创建时间":"采集时间"}</dt><dd>{batch.createdAt}</dd></div>
      </dl>
