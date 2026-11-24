@@ -11,7 +11,7 @@ import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./showcase-batch-version-picker";
 import styles from "./showcase-listing-stages.module.css";
-import {importAmazonVariantBundle,readVariantBundlePhoto,saveListingLocalPhoto,isVariantBundleUrl} from "./showcase-variant-bundle-import";
+import {importAmazonVariantBundle,recoverLocalListingPhotos,readVariantBundlePhoto,saveListingLocalPhoto,isVariantBundleUrl} from "./showcase-variant-bundle-import";
 import {ShowcaseListingStageHeader} from "./showcase-listing-stage-header";
 import {parseListingPhoto,listingPhotoAtlasUrl} from "./showcase-listing-ai-images";
 
@@ -159,6 +159,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const [photoFileAction,setPhotoFileAction]=useState<"upload"|"replace">("upload");
  const [photoAiOpen,setPhotoAiOpen]=useState(false),[photoAiPrompt,setPhotoAiPrompt]=useState("");
  const [photoBusy,setPhotoBusy]=useState(false);
+ const [recoveringPhotos,setRecoveringPhotos]=useState(false);
  const [fieldTab,setFieldTab]=useState<"common"|"shared"|"variant"|"sku">("common");
  const [activeSkuId,setActiveSkuId]=useState("");
  const [textDraft,setTextDraft]=useState<{title:string;description:string;colorDescriptions:Record<string,string>;skuDescriptions:Record<string,string>}>({title:"",description:"",colorDescriptions:{},skuDescriptions:{}});
@@ -222,7 +223,19 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   finally{setBundleImporting(false);}
  };
 
- const selectedColorOptimizedImages=selectedVariantGroup?listingVariantPhotoRoles.map(role=>selectedVariantGroup.optimizedImages.find(img=>img.role===role)?.url).filter((src):src is string=>Boolean(src)):[];
+ const restoreHistoricalPhotos=async()=>{
+  if(!selectedTask)return;
+  setRecoveringPhotos(true);
+  try{
+   const found=await recoverLocalListingPhotos(organizationId,memberId,selectedTask.id);
+   setNotice(found.restored
+    ?"已从此浏览器找回 "+found.restored+" 张历史导入图片（全部颜色）；这些是已导入素材，不能自动认定为 AI 重构成品。"
+    :found.found?"找到了本地图片，但当前颜色没有缺失的关联记录；请切换颜色或图片版本查看。"
+    :"当前浏览器没有找到该商品的历史图片。若此前在另一浏览器、无痕窗口或聊天中生成，需重新导入或上传。");
+  }catch(e){setNotice(e instanceof Error?e.message:"检查本地历史图片失败");}
+  finally{setRecoveringPhotos(false);}
+ };
+  const selectedColorOptimizedImages=selectedVariantGroup?listingVariantPhotoRoles.map(role=>selectedVariantGroup.optimizedImages.find(img=>img.role===role)?.url).filter((src):src is string=>Boolean(src)):[];
  const colorPhotoComplete=variantImageGroups.length===0||variantImageGroups.every(variantGroupReady);
  const selectedColorOriginalImages=selectedVariantGroup?.originalImages??(selectedItem?.originalImages??[]);
  const galleryKey=selectedVariantGroup?.id??"default";
@@ -425,6 +438,11 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <button type="button" aria-pressed={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPhotoIndex(0);setPhotoAiOpen(false)}}>优化图（{selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length}/6）</button>
       <button type="button" aria-pressed={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPhotoIndex(0);setPhotoAiOpen(false)}}>原始图片（{selectedColorOriginalImages.length}）</button>
      </div>:null}
+     {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedColorOptimizedImages.length===0?<div className={styles.galleryRecoverRow}>
+      <span>当前颜色没有已关联的优化图</span>
+      <button type="button" disabled={!selectedTask||recoveringPhotos} onClick={()=>void restoreHistoricalPhotos()}>{recoveringPhotos?"正在查找…":"找回本浏览器历史图片"}</button>
+     </div>:null}
+     {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.some(x=>x.source==="demo-import")?<p className={styles.galleryImportedNote}>包含 {selectedVariantGroup.optimizedImages.filter(x=>x.source==="demo-import").length} 张历史导入素材，尚未验证为 AI 重构成品。</p>:null}
      {galleryImages.length?<div className={styles.compactGallery}>
       <div className={styles.productHeroImage}>
        <button type="button" className={styles.galleryNav} aria-label="上一张图片" disabled={photoSelected===0} onClick={()=>setPhotoIndex(i=>Math.max(0,i-1))}>‹</button>
