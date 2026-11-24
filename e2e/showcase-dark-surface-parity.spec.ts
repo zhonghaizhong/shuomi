@@ -122,3 +122,25 @@ test("Data Market, API and My Data have Vuexy dark computed surfaces",async({pag
  await expect.poll(()=>mine.locator('[class*="filterBar"]').first().evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(47, 51, 73)");
  await expect.poll(()=>mine.getByRole("region",{name:"采集批次",exact:true}).evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(47, 51, 73)");
 });
+
+
+/* Screenshotted account routes share one stylesheet; guard against a later
+   deep-blue override or full-card KPI tint surviving at the CSS tail. */
+test("Enterprise Space and Referrals use neutral Vuexy cards with raised buttons",async({page})=>{
+ for(const route of ["/organization","/referrals"]){
+  await page.goto("/shuomi/#/workbench/account"+route);
+  await ensureDark(page);
+  const root=page.locator('[data-account-suite="'+route+'"]');
+  await expect(root).toBeVisible();
+  for(const selector of ['header[class*="hero"]','[class*="identity"]','[class*="metrics"] article','section[class*="panel"]']){
+   const target=root.locator(selector).first();
+   await expect(target).toBeVisible();
+   await expect.poll(()=>target.evaluate(el=>getComputedStyle(el).backgroundColor),route+" "+selector)
+    .toBe("rgb(47, 51, 73)");
+  }
+  const selected=root.locator('nav[class*="subNavigation"] button[aria-current="page"]');
+  await expect(selected).toBeVisible();
+  await expect.poll(()=>selected.evaluate(el=>getComputedStyle(el).backgroundColor))
+   .toBe("rgb(57, 61, 85)");
+ }
+});
