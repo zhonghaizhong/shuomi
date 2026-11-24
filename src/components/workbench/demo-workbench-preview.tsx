@@ -296,7 +296,7 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
        <select aria-label="店铺类型" value={matrixType} onChange={event=>setMatrixType(event.target.value)}><option>全部类型</option><option>全托店</option><option>半托店</option><option>自营店</option></select>
 
        <button type="button" onClick={resetMatrixFilters}>重置</button>
-       <button type="button" className={styles.primary} onClick={applyMatrixFilters}>确认</button>
+       <button type="button" className={styles.primary} onClick={()=>applyMatrixFilters()}>确认</button>
      </div><header><div><h2>店铺经营表现</h2><p>同周期经营指标与状态 · {matrixApplied.from&&matrixApplied.to?`${matrixApplied.from} 至 ${matrixApplied.to}`:"全部日期"}</p></div><button onClick={()=>chooseAction("判定说明")}>判定说明</button></header><div className={styles.matrixTable}><div className={styles.matrixColumns}><b>店铺</b><b>平台 · 站点</b><b>成交金额</b><b>成交订单</b><b>预估净利润</b><b>预估净利率</b><b>订单环比</b><b>经营状态</b></div><p role="status">暂无店铺经营数据，请先完成店铺授权及业务同步。</p></div><footer>共 0 家店铺 <span>待真实业务接入后统计</span></footer></section>
     </> : page.layout === "goals" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>运营驾驶舱 / 目标管理</div><h1>目标管理</h1><p>为不同店铺、指标和周期建立独立目标，后续通过真实经营数据跟踪。</p></div><button className={styles.primary} onClick={()=>chooseAction("新建目标")}>新建目标</button></header>
