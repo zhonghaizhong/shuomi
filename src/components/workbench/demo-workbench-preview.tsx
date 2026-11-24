@@ -112,12 +112,13 @@ function titleFromPath(pathname: string) {
 
 type ShowcasePreviewProps={pathname:string;memberId?:string;organizationId?:string;organizationName?:string};
 export function DemoWorkbenchPreview(props:ShowcasePreviewProps) {
+ const router=useRouter();
  const [currentPath,setCurrentPath]=useState(props.pathname);
  useEffect(()=>setCurrentPath(props.pathname),[props.pathname]);
  const section=sectionForPath(currentPath);
  // The header and tabs remain the same height on every selected view.
  const onSectionSelect=(href:string)=>setCurrentPath(href.split("?")[0]);
- const tabNavigation=section?<SectionPageTabs section={section} activeHref={currentPath} onSelect={onSectionSelect} onCreateChat={()=>window.location.assign("/workbench/ai/chat/new?preview=1")}/>:null;
+ const tabNavigation=section?<SectionPageTabs section={section} activeHref={currentPath} onSelect={onSectionSelect} onCreateChat={()=>router.push("/workbench/ai/chat/new?preview=1")}/>:null;
  return <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={onSectionSelect} tabNavigation={tabNavigation}/>;
 }
 function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId=accountTenant.id,organizationName=accountTenant.name,onSectionSelect,tabNavigation }: ShowcasePreviewProps & {onSectionSelect:(path:string)=>void;tabNavigation?:React.ReactNode}) {
