@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useRef,useState,type ChangeEvent} from "react";
 import {useRouter} from "next/navigation";
 import {readOwnIntakeNavigation,type OwnIntakeStage} from "./showcase-own-product-intake-navigation";
-import {readOwnProductBatches,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,installSixProductOptimizationDemo,importOwnProductDemoImagePack,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
+import {readOwnProductBatches,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,installSixProductOptimizationDemo,installGeneratedOwnProductDemoImages,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
 import css from "./showcase-own-product-intake-page.module.css";
 import {previewOwnProductOptimization} from "./showcase-own-product-optimization-preview";
 
@@ -13,7 +13,6 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
  const [batchFilter,setBatchFilter]=useState(""),[page,setPage]=useState(1),[checked,setChecked]=useState<string[]>([]),[showSource,setShowSource]=useState(false);
  const [draft,setDraft]=useState<OwnProductRecord["skus"]>([]),[skuId,setSkuId]=useState(1),[notice,setNotice]=useState("");
  const fileRef=useRef<HTMLInputElement>(null);
- const demoImagePackRef=useRef<HTMLInputElement>(null);
  const initialSelectionContext=useRef<string|null>(null);
  const activeUploadProduct=useRef<string|null>(null);
  const uploadGeneration=useRef(0);
@@ -29,9 +28,14 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
    const target=readOwnProductBatches(context.organizationId,context.memberId).find(b=>b.name==="自有商品测试批次");
    if(target)setBatchFilter(target.id);
    if(!result.alreadyInstalled){
-    setSelectedId(null);setPage(1);setChecked([]);setNotice("已重建自有商品测试批次：4 款待审核、2 款待完善；英语白底 48 张模拟图请使用上方「导入测试模板 48 张图片」。原始资料与优化稿分别保留。");
+    setSelectedId(null);setPage(1);setChecked([]);setNotice("已重建自有商品测试批次，正在加载 48 张英语白底模拟图片……");
     setVersion(v=>v+1);
    }
+   void installGeneratedOwnProductDemoImages(context.organizationId,context.memberId).then(report=>{
+    if(report.alreadyInstalled)return;
+    setSelectedId(null);setChecked([]);setVersion(v=>v+1);
+    setNotice("已自动安装 "+report.products+" 款商品的 "+report.images+" 张英语白底模拟优化图；"+report.review+" 款待审核、"+report.pending+" 款待完善。原始图片可展开核对。");
+   }).catch(error=>setNotice(error instanceof Error?error.message:"自动生成图片预览加载失败"));
   }catch(e){setNotice(e instanceof Error?e.message:"测试批次初始化失败");}
  },[context]);
  const records=useMemo(()=>context?readOwnProducts(context.organizationId,context.memberId):[],[context,version]);
@@ -109,8 +113,6 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
     <label>搜索商品<input aria-label="搜索商品或批次" value={query} placeholder="商品名称 / SKU / 批次" onChange={e=>{setQuery(e.target.value);setPage(1);uploadGeneration.current++;setUploading(false);activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}/></label>
     <label>选择批次<select aria-label="筛选自有商品批次" value={batchFilter} onChange={e=>{setBatchFilter(e.target.value);setPage(1);uploadGeneration.current++;setUploading(false);activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}><option value="">全部批次</option>{batches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
     <strong>共 {list.length} 件 · 每页最多 15 件</strong>
-    <button type="button" onClick={()=>demoImagePackRef.current?.click()} title="导入测试模板 48 张英语白底模拟图片">导入测试模板 48 张图片</button>
-    <input ref={demoImagePackRef} type="file" accept=".json,application/json" hidden aria-label="选择商品优化图片 JSON 包" onChange={e=>{const file=e.target.files?.[0];e.target.value="";if(!file||!context)return;void file.text().then(content=>{const report=importOwnProductDemoImagePack(context.organizationId,context.memberId,JSON.parse(content));setVersion(v=>v+1);setSelectedId(null);setChecked([]);setNotice("已导入 "+report.products+" 款商品共 "+report.images+" 张英语白底模拟优化图片；"+report.review+" 款待审核、"+report.pending+" 款待完善。");}).catch(error=>setNotice(error instanceof Error?error.message:"图片包导入失败"));}}/>
    </section>
    {notice?<p role="status" className={css.notice}>{notice}</p>:null}
    <div className={css.layout}>
@@ -134,7 +136,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
         {gallery.length>1?<div className={css.galleryControls}><button type="button" onClick={()=>setImageIndex(i=>(i+gallery.length-1)%gallery.length)}>上一张</button><span>{Math.min(imageIndex+1,gallery.length)} / {gallery.length}</span><button type="button" onClick={()=>setImageIndex(i=>(i+1)%gallery.length)}>下一张</button></div>:null}
         <div className={css.galleryThumbnails}>{gallery.map((src,i)=><button type="button" key={i} data-selected={i===imageIndex} onClick={()=>setImageIndex(i)} aria-label={"查看第 "+(i+1)+" 张图片"}><img src={src} alt={"缩略图 "+(i+1)}/></button>)}</div>
         {stage==="pending"?<><button type="button" className={css.uploadButton} disabled={gallery.length>=8||uploading} onClick={()=>fileRef.current?.click()}>{uploading?"图片读取中…":"补充图片"}</button><input type="file" ref={fileRef} accept="image/*" multiple hidden onChange={e=>void upload(e)}/></>:null}
-        <small className={css.finePrint}>{selected.demoImageSource?"图片来源："+selected.demoImageSource+"；尚非硕米真实 AI 执行。":"当前为来源图片；可在上方导入 48 张独立模拟优化图片。"} 原始图片保留在「查看原始上传资料」。</small>
+        <small className={css.finePrint}>{selected.demoImageSource?"图片来源："+selected.demoImageSource+"；尚非硕米真实 AI 执行。":"当前为来源图片；自动加载英语白底模拟优化图片中。"} 原始图片保留在「查看原始上传资料」。</small>
        </section>
        <section className={css.information} aria-label="优化后商品资料"><div className={css.sectionHeading}><strong>优化后商品资料</strong><span>逐项查看 · {stage==="pending"?"可完善":"只读审核"}</span></div>
         {[
