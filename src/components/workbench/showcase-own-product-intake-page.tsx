@@ -14,6 +14,8 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
  const [draft,setDraft]=useState<OwnProductRecord["skus"]>([]),[skuId,setSkuId]=useState(1),[notice,setNotice]=useState("");
  const fileRef=useRef<HTMLInputElement>(null);
  const activeUploadProduct=useRef<string|null>(null);
+ const uploadGeneration=useRef(0);
+ const [uploading,setUploading]=useState(false);
  useEffect(()=>{activeUploadProduct.current=selectedId},[selectedId]);
  const [imageIndex,setImageIndex]=useState(0),[previewSrc,setPreviewSrc]=useState<string|null>(null);
  useEffect(()=>{setContext(readOwnIntakeNavigation(stage));setSelectedId(null);setNotice("")},[stage]);
@@ -32,19 +34,22 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
  const skuMissing=currentSku?checkOwnProductSkus([currentSku]):[];
  const gallery=currentSku?.images??[];
  const activeImage=gallery.length?gallery[Math.min(imageIndex,gallery.length-1)]:null;
- const select=(item:OwnProductRecord)=>{activeUploadProduct.current=item.id;setChecked([]);setShowSource(false);setImageIndex(0);setPreviewSrc(null);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1);setNotice("")};
+ const select=(item:OwnProductRecord)=>{uploadGeneration.current++;setUploading(false);activeUploadProduct.current=item.id;setChecked([]);setShowSource(false);setImageIndex(0);setPreviewSrc(null);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1);setNotice("")};
  useEffect(()=>{
   if(!context?.itemId||selectedId)return;
   const item=records.find(p=>p.id===context.itemId&&p.status===(stage==="pending"?"入库待完善":"待审核"));
-  if(item){activeUploadProduct.current=item.id;setChecked([]);setImageIndex(0);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1)}
+  if(item){uploadGeneration.current++;setUploading(false);activeUploadProduct.current=item.id;setChecked([]);setImageIndex(0);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1)}
  },[context,records,selectedId,stage]);
   const updateSku=(fields:Partial<OwnProductRecord["skus"][number]>)=>setDraft(old=>old.map(s=>s.id===skuId?{...s,...fields}:s));
  const upload=async(e:ChangeEvent<HTMLInputElement>)=>{
   if(!currentSku||!selected)return;
+  if(uploading)return;
   const targetProductId=selected.id,targetSkuId=currentSku.id;
+  const currentGeneration=++uploadGeneration.current;
   const files=Array.from(e.target.files??[]).slice(0,Math.max(0,8-currentSku.images.length));
   e.target.value="";
   if(!files.length)return;
+  setUploading(true);
   try{
    const images=await Promise.all(files.map(file=>new Promise<string>((resolve,reject)=>{
     if(!file.type.startsWith("image/"))return reject(new Error("只能上传图片"));
@@ -52,12 +57,14 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
    })));
    // Files are read asynchronously. Never assign images to a different product/SKU
    // if the user navigates while FileReader is still processing.
-   if(activeUploadProduct.current!==targetProductId)return;
+   if(activeUploadProduct.current!==targetProductId||uploadGeneration.current!==currentGeneration)return;
    setDraft(old=>old.map(s=>s.id===targetSkuId?{...s,images:[...s.images,...images].slice(0,8)}:s));
-  }catch(e){if(activeUploadProduct.current===targetProductId)setNotice(e instanceof Error?e.message:"上传失败")}
+  }catch(e){if(activeUploadProduct.current===targetProductId&&uploadGeneration.current===currentGeneration)setNotice(e instanceof Error?e.message:"上传失败")}
+  finally{if(uploadGeneration.current===currentGeneration)setUploading(false)}
  };
  const save=()=>{
   if(!selected||!context)return;
+  if(uploading){setNotice("商品图片仍在读取中，请完成图片读取后再保存并检测。");return;}
   try{
    const updated=updateOwnProductAfterReview(context.organizationId,context.memberId,selected.id,draft);
    setVersion(v=>v+1);setDraft(updated.skus);
@@ -82,8 +89,8 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
   </header>
   {!context?<section className={css.empty}>未找到当前入库会话，请从自有商品刊登工具的「待完善」或「待审核」进入。</section>:<>
    <section className={css.toolbar}>
-    <label>搜索商品<input aria-label="搜索商品或批次" value={query} placeholder="商品名称 / SKU / 批次" onChange={e=>{setQuery(e.target.value);setPage(1);activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}/></label>
-    <label>选择批次<select aria-label="筛选自有商品批次" value={batchFilter} onChange={e=>{setBatchFilter(e.target.value);setPage(1);activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}><option value="">全部批次</option>{batches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+    <label>搜索商品<input aria-label="搜索商品或批次" value={query} placeholder="商品名称 / SKU / 批次" onChange={e=>{setQuery(e.target.value);setPage(1);uploadGeneration.current++;setUploading(false);activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}/></label>
+    <label>选择批次<select aria-label="筛选自有商品批次" value={batchFilter} onChange={e=>{setBatchFilter(e.target.value);setPage(1);uploadGeneration.current++;setUploading(false);activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}><option value="">全部批次</option>{batches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
     <strong>共 {list.length} 件 · 每页最多 15 件</strong>
    </section>
    {notice?<p role="status" className={css.notice}>{notice}</p>:null}
@@ -95,7 +102,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
       <button type="button" className={css.productPick} onClick={()=>select(item)} aria-pressed={selectedId===item.id}><strong>{item.name}</strong><small>{batches.find(b=>b.id===item.batchId)?.name??"原批次"} · {item.skus.length} SKU</small><small className={stage==="pending"?css.warning:css.ready}>{stage==="pending"?"需完善 "+item.missing.length+" 项":"待人工确认"}</small></button>
      </article>})}
      {!pagedList.length?<p className={css.empty}>当前筛选下没有{stage==="pending"?"待完善":"待审核"}商品。</p>:null}
-     <footer className={css.listPagination}><span>第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>{setPage(p=>Math.max(1,p-1));activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>{setPage(p=>Math.min(totalPages,p+1));activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}>下一页</button></div></footer>
+     <footer className={css.listPagination}><span>第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>{setPage(p=>Math.max(1,p-1));uploadGeneration.current++;setUploading(false);activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>{setPage(p=>Math.min(totalPages,p+1));uploadGeneration.current++;setUploading(false);activeUploadProduct.current=null;setSelectedId(null);setChecked([]);setShowSource(false)}}>下一页</button></div></footer>
     </section>
     <section className={css.editor} aria-label="商品优化详情">
      {!selected?<div className={css.empty}>选择左侧商品，查看智能体优化稿、图片和逐项处理结果。</div>:<>
@@ -107,7 +114,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
         <div className={css.galleryMain}>{activeImage?<button type="button" className={css.mainImageButton} onClick={()=>setPreviewSrc(activeImage)} aria-label="点击放大图片"><img src={activeImage} alt={currentSku.name+" 第 "+(imageIndex+1)+" 张"}/></button>:<div className={css.imageEmpty}>暂无可靠商品图片，请补充原图。</div>}</div>
         {gallery.length>1?<div className={css.galleryControls}><button type="button" onClick={()=>setImageIndex(i=>(i+gallery.length-1)%gallery.length)}>上一张</button><span>{Math.min(imageIndex+1,gallery.length)} / {gallery.length}</span><button type="button" onClick={()=>setImageIndex(i=>(i+1)%gallery.length)}>下一张</button></div>:null}
         <div className={css.galleryThumbnails}>{gallery.map((src,i)=><button type="button" key={i} data-selected={i===imageIndex} onClick={()=>setImageIndex(i)} aria-label={"查看第 "+(i+1)+" 张图片"}><img src={src} alt={"缩略图 "+(i+1)}/></button>)}</div>
-        {stage==="pending"?<><button type="button" className={css.uploadButton} disabled={gallery.length>=8} onClick={()=>fileRef.current?.click()}>补充图片</button><input type="file" ref={fileRef} accept="image/*" multiple hidden onChange={e=>void upload(e)}/></>:null}
+        {stage==="pending"?<><button type="button" className={css.uploadButton} disabled={gallery.length>=8||uploading} onClick={()=>fileRef.current?.click()}>{uploading?"图片读取中…":"补充图片"}</button><input type="file" ref={fileRef} accept="image/*" multiple hidden onChange={e=>void upload(e)}/></>:null}
         <small className={css.finePrint}>仅展示上传的原图。没有真实生成结果时，不把原图标记为 AI 新图。</small>
        </section>
        <section className={css.information} aria-label="优化后商品资料"><div className={css.sectionHeading}><strong>优化后商品资料</strong><span>逐项查看 · {stage==="pending"?"可完善":"只读审核"}</span></div>
@@ -141,7 +148,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
        <div className={css.reviewChecks}>{draft.map(s=><label key={s.id}><input type="checkbox" checked={checked.includes(String(s.id))} onChange={e=>setChecked(old=>e.target.checked?[...old,String(s.id)]:old.filter(v=>v!==String(s.id)))}/><span>已核对 {s.name||"SKU "+s.id} 的标题、描述、图片和必要资料</span></label>)}</div>}
       </section>
       <div className={css.sourceDisclosure}><button type="button" aria-expanded={showSource} onClick={()=>setShowSource(v=>!v)}>{showSource?"收起原始资料":"查看原始上传资料"}</button>{showSource?<div className={css.originalData}>{selected.skus.map(s=><article key={s.id}><strong>{s.name||"SKU "+s.id}</strong><p>{s.description||"原始描述缺失"}</p><small>原始图片 {s.images.length} 张 · SKU {s.skuCode||"未提供"}</small></article>)}</div>:null}</div>
-      <footer className={css.actionFooter}><span>{stage==="pending"?"补全后统一检测，全部满足条件才进入待审核。":"确认后仅进入自有商品库，不代表已刊登到第三方平台。"}</span>{stage==="pending"?<button type="button" className={css.primary} onClick={save}>保存并重新检测</button>:<button type="button" className={css.primary} disabled={checked.length!==draft.length} onClick={()=>approve(selected)}>确认入库</button>}</footer>
+      <footer className={css.actionFooter}><span>{stage==="pending"?"补全后统一检测，全部满足条件才进入待审核。":"确认后仅进入自有商品库，不代表已刊登到第三方平台。"}</span>{stage==="pending"?<button type="button" className={css.primary} disabled={uploading} onClick={save}>{uploading?"读取图片中…":"保存并重新检测"}</button>:<button type="button" className={css.primary} disabled={checked.length!==draft.length} onClick={()=>approve(selected)}>确认入库</button>}</footer>
      </>}
     </section>
    </div>
