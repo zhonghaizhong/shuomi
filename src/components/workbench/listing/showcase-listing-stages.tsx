@@ -35,11 +35,23 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const [scheduledDate,setScheduledDate]=useState(""),[scheduledTime,setScheduledTime]=useState("");
  const [scheduleEnabled,setScheduleEnabled]=useState(false),[showTimeSettings,setShowTimeSettings]=useState(false);
  const [platformSite,setPlatformSite]=useState("");
- const [targetDialog,setTargetDialog]=useState(false),[draftSite,setDraftSite]=useState(""),[draftStore,setDraftStore]=useState("");
+ const [targetDialog,setTargetDialog]=useState(false),[draftPlatform,setDraftPlatform]=useState(""),[draftRegion,setDraftRegion]=useState(""),[draftType,setDraftType]=useState(""),[draftStore,setDraftStore]=useState("");
  const [currentRule,setCurrentRule]=useState<AdaptationRule>(()=>{const data=readAdaptationRules(organizationId,memberId);return data.rules.find(rule=>rule.id===data.currentId)??data.rules[0]});
  const {visible:availableStoreBindings}=useDemoStoreBindings(organizationId,memberId,memberId==="admin");
  const boundStores=availableStoreBindings.filter(s=>s.platformStoreId&&!s.archived&&!s.connectionIssue&&s.platformIdStatus!=="获取失败"&&demoStoreServiceActive(s));
  const siteChoices=Array.from(new Set(boundStores.map(s=>s.platform+" · "+s.region)));
+ const platformChoices=Array.from(new Set(boundStores.map(s=>s.platform)));
+ const regionChoices=Array.from(new Set(boundStores.filter(s=>s.platform===draftPlatform).map(s=>s.region)));
+ const typeChoices=Array.from(new Set(boundStores.filter(s=>s.platform===draftPlatform&&s.region===draftRegion).map(s=>s.type)));
+ const filteredTargetStores=boundStores.filter(s=>s.platform===draftPlatform&&s.region===draftRegion&&s.type===draftType);
+ const beginTargetSelection=()=>{
+  const current=boundStores.find(s=>s.id===store&&s.platform+" · "+s.region===platformSite);
+  setDraftPlatform(current?.platform??"");
+  setDraftRegion(current?.region??"");
+  setDraftType(current?.type??"");
+  setDraftStore(current?.id??"");
+  setTargetDialog(true);
+ };
  const siteStores=boundStores.filter(s=>s.platform+" · "+s.region===platformSite);
  const chosenStore=siteStores.find(s=>s.id===store);
  useEffect(()=>{if(platformSite&&!siteChoices.includes(platformSite)){setPlatformSite("");setStore("")}},[platformSite,siteChoices.join("|")]);
@@ -184,7 +196,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
      <small>{selectedCount>0?"已选择 "+selectedCount+" 件商品，历史版本与原始数据均保留。":"未选择商品；请选择批次和版本后继续。"}</small>
      <button type="button" onClick={()=>router.push("/workbench/data/mine?preview=1")}>查看我的数据</button>
     </article>
-    <article><header><b>02</b><h2>目标平台与店铺</h2></header><p>选择平台站点及目标店铺</p><button type="button" onClick={()=>{setDraftSite(platformSite);setDraftStore(store);setTargetDialog(true)}}>{platformSite||"请选择店铺"}</button><button type="button" onClick={()=>{if(chosenStore){setNotice("已确认目标店铺："+chosenStore.name+"（"+chosenStore.region+"）")}else{setDraftSite(platformSite);setDraftStore(store);setTargetDialog(true)}}}>{chosenStore?"已确认："+chosenStore.name:"确认目标店铺"}</button><small>{chosenStore?`提交后将按 ${chosenStore.platform} · ${chosenStore.region} 的要求校验，目标店铺：${chosenStore.name}`:"提交后　资料完整后自动分流"}</small></article>
+    <article><header><b>02</b><h2>目标平台与店铺</h2></header><p>选择平台站点及目标店铺</p><button type="button" onClick={beginTargetSelection}>{platformSite||"请选择店铺"}</button><button type="button" onClick={()=>{if(chosenStore){setNotice("已确认目标店铺："+chosenStore.name+"（"+chosenStore.region+"）")}else{beginTargetSelection()}}}>{chosenStore?"已确认："+chosenStore.name:"确认目标店铺"}</button><small>{chosenStore?`提交后将按 ${chosenStore.platform} · ${chosenStore.region} 的要求校验，目标店铺：${chosenStore.name}`:"提交后　资料完整后自动分流"}</small></article>
     <article><header><b>03</b><h2>智能体（按需）</h2></header><p>按需重构商品后进入审核</p>
      <label className={styles.agentToggleRow}><span>启用智能体</span><input aria-label="启用智能体" type="checkbox" checked={agent} onChange={e=>{setAgent(e.target.checked);setAgentId("");setTemplateId("")}}/></label>
      <div className={styles.agentStatusRow}><strong>智能体</strong><span>{agent?chosenAgent?.name??"请选择智能体":"未启用，无需选择"}</span></div>
@@ -229,7 +241,15 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   </>}
   {stageBatchDialog?<ShowcaseBatchVersionPicker source={stagePickSource} batches={stagePickerBatches} selected={activeBatch&&activeBatch.source===stagePickSource?{batchId:JSON.parse(activeBatch.key)[1],versionId:activeBatch.version}:null} onSourceChange={setStagePickSource} onClose={()=>setStageBatchDialog(false)} onConfirm={v=>chooseStageBatch(v.batchId,v.versionId)}/>:null}
   {batchDialog?<ShowcaseBatchVersionPicker source={source} batches={pickerBatches} selected={chosenBatch?{batchId:batch,versionId:selectedVersionId}:null} onClose={()=>setBatchDialog(false)} onConfirm={value=>{setBatch(value.batchId);setSelectedVersionId(value.versionId);setBatchDialog(false);setNotice("已选择商品批次及数据版本。")}}/>:null}
-  {targetDialog?<div className={styles.overlay} role="presentation" onMouseDown={e=>e.target===e.currentTarget&&setTargetDialog(false)}><section className={`${styles.dialog} ${styles.targetDialog}`} role="dialog" aria-modal="true" aria-label="选择目标平台与店铺"><header><h2>选择目标平台与店铺</h2><p>先选择平台及站点，再从当前账号可管理、连接正常且服务有效的店铺中选择。</p></header><label>平台 / 站点<select aria-label="选择平台与站点" value={draftSite} onChange={e=>{setDraftSite(e.target.value);setDraftStore("")}}><option value="">请选择平台与站点</option>{siteChoices.map(site=><option key={site} value={site}>{site}</option>)}</select></label><label>目标店铺<select aria-label="选择本次目标店铺" disabled={!draftSite} value={draftStore} onChange={e=>setDraftStore(e.target.value)}><option value="">请选择店铺</option>{boundStores.filter(s=>s.platform+" · "+s.region===draftSite).map(s=><option key={s.id} value={s.id}>{s.name} · {s.type}</option>)}</select></label><p>{draftSite?"仅列出该站点下可用的绑定店铺。":"请先选择平台与站点。"}</p><footer><button type="button" onClick={()=>setTargetDialog(false)}>取消</button><button type="button" className={styles.primary} disabled={!draftSite||!draftStore} onClick={()=>{setPlatformSite(draftSite);setStore(draftStore);setTargetDialog(false);setNotice("已确认本次上传的目标平台、站点和店铺。")}}>确认目标店铺</button></footer></section></div>:null}
+  {targetDialog?<div className={styles.overlay} role="presentation" onMouseDown={e=>e.target===e.currentTarget&&setTargetDialog(false)}><section className={`${styles.dialog} ${styles.targetDialog}`} role="dialog" aria-modal="true" aria-label="选择目标平台与店铺">
+   <header><h2>选择目标平台与店铺</h2><p>分别选择平台、站点及店铺类型，再从连接正常、服务有效且当前账号可管理的店铺中选择。</p></header>
+   <label>平台<select aria-label="选择目标平台" value={draftPlatform} onChange={e=>{setDraftPlatform(e.target.value);setDraftRegion("");setDraftType("");setDraftStore("")}}><option value="">请选择平台</option>{platformChoices.map(value=><option key={value} value={value}>{value}</option>)}</select></label>
+   <label>站点<select aria-label="选择目标站点" disabled={!draftPlatform} value={draftRegion} onChange={e=>{setDraftRegion(e.target.value);setDraftType("");setDraftStore("")}}><option value="">请选择站点</option>{regionChoices.map(value=><option key={value} value={value}>{value}</option>)}</select></label>
+   <label>店铺类型<select aria-label="选择目标店铺类型" disabled={!draftRegion} value={draftType} onChange={e=>{setDraftType(e.target.value);setDraftStore("")}}><option value="">请选择店铺类型</option>{typeChoices.map(value=><option key={value} value={value}>{value}</option>)}</select></label>
+   <label>目标店铺<select aria-label="选择本次目标店铺" disabled={!draftType} value={draftStore} onChange={e=>setDraftStore(e.target.value)}><option value="">请选择店铺</option>{filteredTargetStores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+   <p>{!draftPlatform?"请先选择平台。":!draftRegion?"请选择目标站点。":!draftType?"请选择店铺类型。":filteredTargetStores.length?"仅显示符合筛选条件的可用店铺。":"当前筛选条件下暂无可用店铺。"}</p>
+   <footer><button type="button" onClick={()=>setTargetDialog(false)}>取消</button><button type="button" className={styles.primary} disabled={!draftPlatform||!draftRegion||!draftType||!filteredTargetStores.some(s=>s.id===draftStore)} onClick={()=>{setPlatformSite(draftPlatform+" · "+draftRegion);setStore(draftStore);setTargetDialog(false);setNotice("已确认本次上传的目标平台、站点、店铺类型和店铺。")}}>确认目标店铺</button></footer>
+  </section></div>:null}
    {ruleDialog?<AdaptationRulesDialog organizationId={organizationId} memberId={memberId} site={platformSite} storeName={chosenStore?.name??""} onClose={()=>setRuleDialog(false)} onSave={next=>{setCurrentRule(next);setRuleDialog(false);setNotice("适配规则已保存；将在本次上传任务中使用「"+next.name+"」，不会改动原始商品。")}}/>:null}
    {selectedItem?<div className={styles.overlay} role="presentation" onMouseDown={e=>e.target===e.currentTarget&&setSelected(null)}>
  <section role="dialog" aria-modal="true" aria-label={stage==="missing"?"查看并补全":"审核智能体建议"} className={`${styles.dialog} ${styles.productDetailDialog}`}>
