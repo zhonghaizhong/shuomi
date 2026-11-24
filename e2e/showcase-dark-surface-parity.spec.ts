@@ -71,10 +71,10 @@ test("Tool Market landing background matches Vuexy dark cards and raised actions
  const root=page.locator("[data-tool-home]");
  await expect(root).toBeVisible();
  const color=(selector:string)=>root.locator(selector).first().evaluate(el=>getComputedStyle(el).backgroundColor);
- for(const selector of ['header','[class*="entry"]','[class*="capability"]','[class*="process"]','[class*="note"]']){
+ for(const selector of ['header','article[class*="entry"]','article[class*="capability"]','section[class*="process"]','section[class*="note"]']){
   await expect.poll(()=>color(selector),selector).toBe("rgb(47, 51, 73)");
  }
  await expect.poll(()=>root.getByRole("button",{name:"浏览官方工具"}).evaluate(el=>getComputedStyle(el).backgroundColor))
   .toBe("rgb(57, 61, 85)");
- await expect.poll(()=>color('[class*="step"]')).toBe("rgb(57, 61, 85)");
+ await expect.poll(()=>color('li[class*="step"]')).toBe("rgb(57, 61, 85)");
 });
