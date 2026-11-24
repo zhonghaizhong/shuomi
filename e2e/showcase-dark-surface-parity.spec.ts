@@ -61,3 +61,20 @@ test("Tool customization real card and button paints retain dark/light separatio
  await expect.poll(()=>action.evaluate(el=>getComputedStyle(el).backgroundColor))
   .toBe("rgb(115, 103, 240)");
 });
+
+
+/* Screenshot regression: the top-level Tool Market route has its own stylesheet.
+   Check computed pixels, not only /tools/official color tokens. */
+test("Tool Market landing background matches Vuexy dark cards and raised actions",async({page})=>{
+ await page.goto("/shuomi/#/workbench/tools");
+ await ensureDark(page);
+ const root=page.locator("[data-tool-home]");
+ await expect(root).toBeVisible();
+ const color=(selector:string)=>root.locator(selector).first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ for(const selector of ['header','[class*="entry"]','[class*="capability"]','[class*="process"]','[class*="note"]']){
+  await expect.poll(()=>color(selector),selector).toBe("rgb(47, 51, 73)");
+ }
+ await expect.poll(()=>root.getByRole("button",{name:"浏览官方工具"}).evaluate(el=>getComputedStyle(el).backgroundColor))
+  .toBe("rgb(57, 61, 85)");
+ await expect.poll(()=>color('[class*="step"]')).toBe("rgb(57, 61, 85)");
+});
