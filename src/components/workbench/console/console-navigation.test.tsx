@@ -79,9 +79,10 @@ it("places My Listing beside My Stores and preserves listing context",()=>{
  expect(screen.queryByRole("button",{name:"展开我的店铺"})).not.toBeInTheDocument();
  expect(screen.queryByRole("link",{name:"商品刊登"})).not.toBeInTheDocument();
  expect(Object.fromEntries(new URL(listing.getAttribute("href")!,"https://test.invalid").searchParams)).toEqual({preparation:id,store:id,operation:id});
- const active=screen.getByRole("link",{name:"待补全"});
- expect(active.closest("li")).toHaveClass("console-nav-level-3");
- expect(active).toHaveAttribute("aria-current","page");
+ expect(screen.queryByRole("button",{name:"展开刊登管理"})).not.toBeInTheDocument();
+ for(const stage of ["待上传","待补全","待审核","已上传"]){
+  expect(screen.queryByRole("link",{name:stage,exact:true})).not.toBeInTheDocument();
+ }
  query.value="";
 });
 it.each(["official", "mine", "team"])("keeps skill category %s under the independent Figma introduction", category => {
