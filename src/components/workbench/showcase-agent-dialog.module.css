@@ -328,3 +328,15 @@
 .dialog .choiceRow>div:first-child{min-width:0}
 .dialog .choiceRow>span{max-width:100%;overflow-wrap:anywhere}
 @media(max-width:560px){.dialog .choiceRow>span{white-space:normal;text-align:left}}
+
+
+/* Keep secondary choices on the raised Vuexy dialog surface in both themes. */
+.dialog :is(.toggleButtons button,.podModes button,.podCount button){
+  background:var(--agent-dialog-raised);
+  border-color:var(--agent-dialog-border);
+  color:var(--agent-dialog-text);
+}
+.dialog :is(.toggleButtons button,.podModes button,.podCount button)[aria-pressed="true"]{
+  background:color-mix(in srgb,var(--agent-dialog-primary) 13%,var(--agent-dialog-raised));
+  border-color:var(--agent-dialog-primary);
+}
