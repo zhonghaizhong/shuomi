@@ -18,7 +18,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
  useEffect(()=>{if(!context)return;const refresh=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===context.organizationId&&d.memberId===context.memberId)setVersion(v=>v+1)};window.addEventListener(ownProductUpdated,refresh);return()=>window.removeEventListener(ownProductUpdated,refresh)},[context]);
  const records=useMemo(()=>context?readOwnProducts(context.organizationId,context.memberId):[],[context,version]);
  const batches=useMemo(()=>context?readOwnProductBatches(context.organizationId,context.memberId):[],[context,version]);
- const list=records.filter(p=>p.status===(stage==="pending"?"入库待完善":"待审核")&&(!batchFilter||p.batchId===batchFilter)&&(p.name+" "+p.id+" "+(batches.find(b=>b.id===p.batchId)?.name??"")).toLowerCase().includes(query.toLowerCase()));
+ const list=records.filter(p=>p.status===(stage==="pending"?"入库待完善":"待审核")&&(!batchFilter||p.batchId===batchFilter)&&(p.name+" "+p.id+" "+p.skus.map(s=>(s.name+" "+(s.skuCode??""))).join(" ")+" "+(batches.find(b=>b.id===p.batchId)?.name??"")).toLowerCase().includes(query.trim().toLowerCase()));
  const totalPages=Math.max(1,Math.ceil(list.length/15));
  const currentPage=Math.min(page,totalPages);
  const pagedList=list.slice((currentPage-1)*15,currentPage*15);
@@ -76,8 +76,8 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
   </header>
   {!context?<section className={css.empty}>未找到当前入库会话，请从自有商品刊登工具的「待完善」或「待审核」进入。</section>:<>
    <section className={css.toolbar}>
-    <label>搜索商品<input aria-label="搜索商品或批次" value={query} placeholder="商品名称 / SKU / 批次" onChange={e=>{setQuery(e.target.value);setPage(1)}}/></label>
-    <label>选择批次<select aria-label="筛选自有商品批次" value={batchFilter} onChange={e=>{setBatchFilter(e.target.value);setPage(1);setSelectedId(null)}}><option value="">全部批次</option>{batches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+    <label>搜索商品<input aria-label="搜索商品或批次" value={query} placeholder="商品名称 / SKU / 批次" onChange={e=>{setQuery(e.target.value);setPage(1);setSelectedId(null);setChecked([]);setShowSource(false)}}/></label>
+    <label>选择批次<select aria-label="筛选自有商品批次" value={batchFilter} onChange={e=>{setBatchFilter(e.target.value);setPage(1);setSelectedId(null);setChecked([]);setShowSource(false)}}><option value="">全部批次</option>{batches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
     <strong>共 {list.length} 件 · 每页最多 15 件</strong>
    </section>
    {notice?<p role="status" className={css.notice}>{notice}</p>:null}
