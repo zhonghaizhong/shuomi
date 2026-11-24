@@ -239,13 +239,33 @@ it("automatically hydrates eight English-white generated tiles for each of the s
  }
 });
 
-it("does not change approvals when a completed demo product is revisited",async()=>{
+it("preserves approved products but still replaces stock images on the other five",async()=>{
  const org="approved-demo-org",member="approved-demo-member";
  createOwnProductBatch(org,member,"自有商品测试批次");
  installSixProductOptimizationDemo(org,member);
  const item=readOwnProducts(org,member).find(p=>p.status==="待审核")!;
+ const originalImage=item.skus[0].images[0];
  approveOwnProductIntake(org,member,item.id);
- const result=await installGeneratedOwnProductDemoImages(org,member);
- expect(result.alreadyInstalled).toBe(true);
- expect(readOwnProducts(org,member).find(p=>p.id===item.id)?.status).toBe("已入库");
+ const oldImage=globalThis.Image;
+ class AtlasImage {
+  onload:(()=>void)|null=null;
+  onerror:(()=>void)|null=null;
+  naturalWidth=1024;naturalHeight=3072;
+  set src(_value:string){queueMicrotask(()=>this.onload?.());}
+ }
+ vi.stubGlobal("Image",AtlasImage);
+ const getContext=vi.spyOn(HTMLCanvasElement.prototype,"getContext").mockReturnValue({drawImage:vi.fn(),clearRect:vi.fn()} as unknown as CanvasRenderingContext2D);
+ const dataURL=vi.spyOn(HTMLCanvasElement.prototype,"toDataURL").mockReturnValue("data:image/webp;base64,"+btoa("preview-tile"));
+ try{
+  const result=await installGeneratedOwnProductDemoImages(org,member);
+  expect(result).toMatchObject({products:6,images:40,review:3,pending:2,alreadyInstalled:false});
+  const items=readOwnProducts(org,member);
+  const approved=items.find(p=>p.id===item.id)!;
+  expect(approved.status).toBe("已入库");
+  expect(approved.skus[0].images).toEqual([originalImage]);
+  expect(items.filter(p=>p.status!=="已入库").every(p=>p.skus[0].images.length===8)).toBe(true);
+  expect((await installGeneratedOwnProductDemoImages(org,member)).alreadyInstalled).toBe(true);
+ }finally{
+  getContext.mockRestore();dataURL.mockRestore();vi.stubGlobal("Image",oldImage);
+ }
 });
