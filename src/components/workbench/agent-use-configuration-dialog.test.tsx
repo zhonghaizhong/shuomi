@@ -50,3 +50,45 @@ it("product optimization settings follow the chosen official shared source witho
   imageUse:"共用视觉素材",sharedImageSource:"详情图",selectedMainImages:[1],selectedDetailImages:[1],selectedImages:[1]
  }));
 });
+
+
+it("hybrid shared strategy is first and configures main and detail together",()=>{
+ const save=vi.fn();
+ render(<AgentUseConfigurationDialog mode="pod-hybrid" agentKind="pod"
+  initial={{hybridStrategy:"共用视觉素材",hybridTarget:"主图",hybridSlots:["AI·商品识别主图",null,null,null,null,null,null,null]}}
+  onClose={vi.fn()} onSave={save}/>);
+ const strategy=screen.getByText("视觉策略");
+ const target=screen.getByText("配置对象");
+ expect(strategy.compareDocumentPosition(target)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+ const paired=screen.getByLabelText("共用视觉素材同步应用对象");
+ expect(paired.textContent).toContain("主图 ✓");
+ expect(paired.textContent).toContain("详情图 ✓");
+ expect(screen.getByText("最终图片编排 · 主图及详情图共用")).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"保存组合"}));
+ expect(save).toHaveBeenCalledWith(expect.objectContaining({
+  hybridStrategy:"共用视觉素材",
+  hybridMainSlots:["AI·商品识别主图",null,null,null,null,null,null,null],
+  hybridDetailSlots:["AI·商品识别主图",null,null,null,null,null,null,null]
+ }));
+});
+
+it("hybrid independent strategy separates main and detail image layouts",()=>{
+ const save=vi.fn();
+ render(<AgentUseConfigurationDialog mode="pod-hybrid" agentKind="pod"
+  initial={{hybridStrategy:"共用视觉素材",hybridTarget:"主图",hybridSlots:["AI·商品识别主图",null,null,null,null,null,null,null]}}
+  onClose={vi.fn()} onSave={save}/>);
+ fireEvent.click(screen.getByRole("button",{name:"分别生成"}));
+ fireEvent.click(screen.getByRole("button",{name:"详情图",exact:true}));
+ expect(screen.getByText("最终图片编排 · 详情图")).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"添加第 2 张图片"}));
+ fireEvent.click(screen.getByRole("button",{name:"预设指令AI重构"}));
+ fireEvent.click(screen.getByRole("button",{name:/核心购买理由/}));
+ fireEvent.click(screen.getByRole("button",{name:"主图",exact:true}));
+ expect(screen.getByText("最终图片编排 · 主图")).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"保存组合"}));
+ expect(save).toHaveBeenCalledWith(expect.objectContaining({
+  hybridStrategy:"分别生成",
+  hybridMainSlots:["AI·商品识别主图",null,null,null,null,null,null,null],
+  hybridDetailSlots:["AI·商品识别主图","AI·核心购买理由",null,null,null,null,null,null]
+ }));
+});
