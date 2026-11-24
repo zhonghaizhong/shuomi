@@ -159,6 +159,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const [categoryEdit,setCategoryEdit]=useState(false);
  const [categoryDraft,setCategoryDraft]=useState("");
  const [imagePreview,setImagePreview]=useState(false);
+ const [variantPreviewIndex,setVariantPreviewIndex]=useState<number|null>(null);
  const go=(s:string)=>router.push("/workbench/listing/"+s+"?preview=1");
  const filtered=(items.length?items:taskItems).filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status+" "+(x.batchName||"")).toLowerCase().includes(applied.toLowerCase())&&(!appliedBatch||x.batchKey===appliedBatch));
  const totalPages=Math.max(1,Math.ceil(filtered.length/15));
@@ -174,7 +175,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const selectedColorOptimizedImages=selectedVariantGroup?listingVariantPhotoRoles.map(role=>selectedVariantGroup.optimizedImages.find(img=>img.role===role)?.url).filter((src):src is string=>Boolean(src)):[];
  const colorPhotoComplete=variantImageGroups.length===0||variantImageGroups.every(variantGroupReady);
  const selectedColorOriginalImages=selectedVariantGroup?.originalImages??(selectedItem?.originalImages??[]);
- const selectedMainImages=selectedVariantGroup?(photoMode==="optimized"?selectedColorOptimizedImages:selectedColorOriginalImages):(selectedItem?.optimizedImages?.length?selectedItem.optimizedImages:(selectedItem?.originalImages??[]));
+ const selectedMainImages=selectedVariantGroup?(photoMode==="optimized"?(selectedColorOptimizedImages.length?selectedColorOptimizedImages:selectedColorOriginalImages):selectedColorOriginalImages):(selectedItem?.optimizedImages?.length?selectedItem.optimizedImages:(selectedItem?.originalImages??[]));
  // Detail images are a separate data field: never relabel main-gallery images as detail photos.
  const selectedDetailImages=selectedItem?.detailImages??[];
  const galleryImages=pictureTab==="main"?selectedMainImages:selectedDetailImages;
@@ -284,7 +285,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <span className={styles.compactStoreType}>{item.targetStoreType||"—"}</span>
       <span className={styles.compactPlainCell} title={item.store}>{item.store||"—"}</span>
       <span className={styles.compactStatus}>{item.status}</span>
-      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft("");setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
+      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft("");setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
      </div>})}</div></div>{filtered.length>15?<nav className={styles.listPagination} aria-label="商品分页"><span>共 {filtered.length} 条 · 每页 15 条 · 第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setListPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setListPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></nav>:null}
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
@@ -312,7 +313,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
    <section className={styles.productDialogLeft}>
     <div className={styles.productPhotoPanel}>
      <div className={styles.productSectionHeading}><strong>{selectedVariantGroup?"变体图片 · "+selectedVariantGroup.color:"商品图片 · 主图 "+selectedMainImages.length+" / 详情图 "+selectedDetailImages.length}</strong><small>{selectedVariantGroup?selectedVariantGroup.optimizedImages.length+"/6 张优化图":"保留已保存的图片版本"}</small></div>
-     {variantImageGroups.length?<div className={styles.variantColorPicker} role="group" aria-label="选择颜色变体">{variantImageGroups.map(group=><button type="button" key={group.id} aria-pressed={selectedVariantGroup?.id===group.id} onClick={()=>{setVariantColorId(group.id);setPhotoIndex(0);setPictureTab("main");setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("")}}><img src={group.originalImages[0]} alt={group.color+" 商品原图"}/><span>{group.color}</span><small>{group.skuIds.length} SKU · {group.optimizedImages.length}/6</small></button>)}</div>:null}
+     {variantImageGroups.length?<div className={styles.variantColorPicker} role="group" aria-label="选择颜色变体">{variantImageGroups.map(group=><button type="button" key={group.id} aria-pressed={selectedVariantGroup?.id===group.id} onClick={()=>{setVariantColorId(group.id);setVariantPreviewIndex(null);setPhotoIndex(0);setPictureTab("main");setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("")}}><img src={group.originalImages[0]} alt={group.color+" 商品原图"}/><span>{group.color}</span><small>{group.skuIds.length} SKU · {group.optimizedImages.length}/6</small></button>)}</div>:null}
      {selectedVariantGroup?<div className={styles.variantImageMode} role="tablist" aria-label="原始与优化图片切换">
       <button type="button" role="tab" aria-selected={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPictureTab("main");setPhotoIndex(0)}}>AI 优化（{selectedColorOptimizedImages.length}/6）</button>
       <button type="button" role="tab" aria-selected={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPictureTab("main");setPhotoIndex(0)}}>原始实拍（{selectedColorOriginalImages.length}）</button>
@@ -331,15 +332,30 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       </button>)}</div></>:<div className={styles.pictureEmpty}><strong>{selectedVariantGroup&&photoMode==="optimized"?"该颜色尚无 AI 优化图":"尚未保存独立详情图"}</strong><span>{selectedVariantGroup&&photoMode==="optimized"?"必须实际生成并绑定六种不同用途的图。原始实拍图不能视为 AI 成品。":"主图与详情图分开保存。"}</span></div>}
      {selectedColorOriginalImages.length?<div className={styles.productOriginalRow}><strong>{selectedVariantGroup?.color??"商品"} · 原始实拍</strong><div>{selectedColorOriginalImages.slice(0,6).map((src,i)=><img key={src+i} src={src} alt={"原始图片 "+(i+1)}/>)}</div></div>:null}
      {selectedVariantGroup?<div className={styles.variantSixSlots}>
-      <div className={styles.productSectionHeading}><strong>六张优化图 · {selectedVariantGroup.color}</strong><small>{variantGroupReady(selectedVariantGroup)?"已齐全":"还缺 "+(6-selectedVariantGroup.optimizedImages.length)+" 张"}</small></div>
-      {listingVariantPhotoRoles.map((role,i)=>{const photo=selectedVariantGroup.optimizedImages.find(img=>img.role===role);return <div className={styles.variantPhotoRole} key={role}>
-        <span className={styles.variantPhotoOrdinal}>{i+1}</span>
-        {photo?.url?<img src={photo.url} alt={selectedVariantGroup.color+" "+role}/>:<span className={styles.variantPhotoMissing}>待生成</span>}
-        <div><strong>{role}</strong><small>{photo?.url?"已绑定 V"+photo.version:"尚无 AI 成品"}</small></div>
-        <button type="button" onClick={()=>{setEditingPhotoRole(editingPhotoRole===role?null:role);setPhotoDraft(photo?.url??"")}}>{photo?"更换":"绑定"}</button>
-        {editingPhotoRole===role?<div className={styles.variantPhotoEditor}><input value={photoDraft} onChange={e=>setPhotoDraft(e.target.value)} aria-label={selectedVariantGroup.color+" "+role+" 图片链接"} placeholder="HTTPS 图片地址或 /assets/ 静态路径"/><button type="button" onClick={()=>saveColorPhoto(role)}>保存</button><button type="button" onClick={()=>{setEditingPhotoRole(null);setPhotoDraft("")}}>取消</button></div>:null}
-      </div>})}
-      <p className={styles.productHint}>同色不同尺码 SKU 继承本组图片；不同颜色独立保存。未绑定六张不同用途的优化成品前不可审核通过。</p>
+      <div className={styles.productSectionHeading}><strong>六张图片 · {selectedVariantGroup.color}</strong><small>已生成 {selectedVariantGroup.optimizedImages.length}/6 · 其余为演示预览</small></div>
+      <div className={styles.variantSixGrid}>
+       {listingVariantPhotoRoles.map((role,i)=>{
+        const result=selectedVariantGroup.optimizedImages.find(img=>img.role===role);
+        const previewSource=selectedVariantGroup.originalImages[0]??selectedItem.originalImages?.[0];
+        return <button className={styles.variantPhotoTile} type="button" key={role} aria-label={selectedVariantGroup.color+" "+role+(result?" 查看优化成品":" 查看演示预览")} onClick={()=>setVariantPreviewIndex(i)}>
+         <div className={styles.variantPhotoTileImage}>
+          {result?.url?<img src={result.url} alt={selectedVariantGroup.color+" "+role+" 优化结果"}/>:previewSource?<img src={previewSource} alt={selectedVariantGroup.color+" 来源实拍示意"} />:<span>暂无参考图</span>}
+          <span className={styles.variantPhotoTileIndex}>{String(i+1).padStart(2,"0")}</span>
+          {!result?<span className={styles.variantPhotoTileWatermark}>演示预览 · 非 AI 成品</span>:null}
+         </div>
+         <strong>{role}</strong>
+         <small>{result?"已保存优化图片":"等待 AI 实际生成"}</small>
+        </button>;
+       })}
+      </div>
+      <p className={styles.productHint}>自动按当前颜色展示六种图片用途的版式预览。同颜色不同尺码共享图片；预览不写入优化结果，也不会绕过审核。</p>
+      <details className={styles.variantPhotoAdvanced}><summary>高级：替换为已生成的图片</summary>
+       <div className={styles.variantPhotoAdvancedBody}>
+        <label>图片用途<select aria-label="手动替换的图片用途" value={editingPhotoRole??listingVariantPhotoRoles[0]} onChange={e=>{setEditingPhotoRole(e.target.value as ListingVariantPhotoRole);setPhotoDraft("")}}>{listingVariantPhotoRoles.map(role=><option key={role} value={role}>{role}</option>)}</select></label>
+        <label>成品图片地址<input value={photoDraft} onChange={e=>setPhotoDraft(e.target.value)} aria-label={selectedVariantGroup.color+" 已生成图片链接"} placeholder="HTTPS 图片地址或 /assets/ 静态路径"/></label>
+        <button type="button" onClick={()=>saveColorPhoto(editingPhotoRole??listingVariantPhotoRoles[0])}>保存至 {selectedVariantGroup.color}</button>
+       </div>
+      </details>
      </div>:null}
     </div>
     <div className={styles.dialogProductFacts}><strong>商品基本信息</strong><dl>
@@ -401,6 +417,19 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
     </div>:null}
    </section>
   </div>
+  {variantPreviewIndex!==null&&selectedVariantGroup?<div className={styles.dialogImageLightbox} role="dialog" aria-modal="true" aria-label="颜色变体图片预览">
+    <button type="button" aria-label="关闭变体图片预览" onClick={()=>setVariantPreviewIndex(null)}>关闭</button>
+    {(()=>{
+      const role=listingVariantPhotoRoles[variantPreviewIndex];
+      const image=selectedVariantGroup.optimizedImages.find(img=>img.role===role);
+      const src=image?.url??selectedVariantGroup.originalImages[0];
+      return <div className={styles.variantPreviewLightboxBody}>
+       {src?<img src={src} alt={selectedVariantGroup.color+" "+role}/>:null}
+       <strong>{selectedVariantGroup.color} · {role}</strong>
+       <span>{image?"已保存优化结果":"演示预览：原始商品实拍，仅展示角色位置，尚未实际 AI 重构"}</span>
+      </div>;
+    })()}
+   </div>:null}
   {imagePreview&&galleryImages.length?<div className={styles.dialogImageLightbox} role="dialog" aria-modal="true" aria-label="商品图片大图预览">
     <button type="button" onClick={()=>setImagePreview(false)} aria-label="关闭商品图片大图">关闭</button>
     <ListingProductPhoto src={galleryImages[Math.min(photoIndex,galleryImages.length-1)]} alt="商品放大图片" size={640}/>
