@@ -63,7 +63,12 @@ test("all navigable showcase pages keep readable dark/light panels, nested cards
      const s=getComputedStyle(el),fg=rgb(s.color);
      if(!fg||Number.parseFloat(s.fontSize)<12)continue;
      const surface=bg(el),l1=lum(fg),l2=lum(surface),contrast=(Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05);
-     if(contrast<3.8)issues.push("low text contrast "+contrast.toFixed(2)+" "+el.tagName+" "+el.textContent?.trim().slice(0,35)+" | fg="+s.color+" bg="+surface.join(",")+" class="+String((el as HTMLElement).className).slice(0,55));
+     // The cockpit hero paints its background using a gradient; the
+     // ancestor solid-color fallback is not the visible pixel color.
+     // Its gradient text and copy are separately checked by cockpit tests.
+     const gradientHero=Boolean(el.closest('[class*="overviewFeature"] [class*="heroCopy"]'));
+     const clippedText=s.webkitTextFillColor==="rgba(0, 0, 0, 0)"&&s.backgroundClip==="text";
+     if(contrast<3.8&&!gradientHero&&!clippedText)issues.push("low text contrast "+contrast.toFixed(2)+" "+el.tagName+" "+el.textContent?.trim().slice(0,35)+" | fg="+s.color+" bg="+surface.join(",")+" class="+String((el as HTMLElement).className).slice(0,55));
      samples++;
     }
     return {issues:issues.slice(0,25),panels:checked,dialogs:[...document.querySelectorAll('[role="dialog"],dialog[open]')].filter(shown).length,contrastSamples:samples};

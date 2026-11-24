@@ -1334,3 +1334,8 @@
     filter:none;
   }
 }
+
+/* Readable compact filter labels; preserve the approved violet hero gradient. */
+.page .overviewFilters label{color:#f6f4ff}
+:global(.light) .page .overviewFilters label{color:#444050}
+.page .overviewFilters :is(label,small){overflow-wrap:anywhere}

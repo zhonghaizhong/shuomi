@@ -465,3 +465,7 @@
 .page[data-eco-page] > .head{
  border-radius:6px;
 }
+
+/* Join-page eyebrow: readable against white/light Vuexy surfaces. */
+:global(.light) .page .joinHero>div>small{color:#087f6c}
+.page .joinHero>div>small{overflow-wrap:anywhere}

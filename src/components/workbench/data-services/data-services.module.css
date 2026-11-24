@@ -206,3 +206,7 @@
   .market .serviceFooter button,.market .purple .serviceFooter button {width:100%}
   .market .processRow {align-items:stretch}
 }
+
+/* Data-service metadata must remain legible on light cards. */
+:global(.light) .page :is(.platformFacts dt,.capability p,.meter p,.usage small,.caption,.table th){color:#5d596c}
+:global(.light) .page :is(.serviceFooter p,.serviceBadges small){color:#514b62}
