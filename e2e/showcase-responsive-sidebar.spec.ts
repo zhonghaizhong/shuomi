@@ -122,6 +122,8 @@ test("listing remains a second-level sidebar link and stages switch via page but
   await expect(nav.getByRole("button",{name:"展开我的店铺"})).toHaveCount(0);
   await expect(nav.getByRole("button",{name:"展开刊登管理"})).toHaveCount(0);
   await listing.click();
+  await expect(page).toHaveURL(/#\/workbench\/listing(?:[?]|$)/);
+  await page.goto(entry+"/listing/waiting");
   const stages = [
     ["待上传","waiting"],
     ["待补全","missing"],
