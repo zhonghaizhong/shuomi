@@ -102,7 +102,7 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
   onSaveModel(info.title,"custom");
  };
  const saveTemplate=()=>{
-  if(imageOptimization&&!imageConfigured){setMessage("已开启图片优化，请先填写图片优化设置。");return;}
+  if(imageOptimization&&!imageConfigured&&!Object.keys(useConfig).some(k=>["optimizationSource","imageLanguage","imageBackground","selectedMainImages","selectedDetailImages","imageTasks"].includes(k))){setMessage("已开启图片优化，请先配置图片处理范围与要求。");return;}
   setSaveNameOpen(true);
  };
  const readTemplates=()=>readAgentPreviewTemplates(organizationId,memberId,info.title);
@@ -111,19 +111,35 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
   if(!raw||typeof raw!=="object")return [["配置资料","没有可用的配置摘要"]];
   const c=raw as Record<string,unknown>,extra=c.useConfig&&typeof c.useConfig==="object"?c.useConfig as Record<string,unknown>:{};
   const labels=(value:unknown)=>Array.isArray(value)?value.filter((x):x is string=>typeof x==="string").join("、"):"";
+  const option=(v:unknown,defaultValue="未设置")=>typeof v==="string"&&v.trim()?v:defaultValue;
+  const selected=(v:unknown)=>Array.isArray(v)?v.filter((n):n is number=>Number.isInteger(n)&&n>=1&&n<=8).map(n=>"第"+n+"张").join("、")||"未选":"未选";
+  const tasks=Array.isArray(extra.imageTasks)?extra.imageTasks.filter((v):v is Record<string,unknown>=>Boolean(v&&typeof v==="object")):[];
+  const taskText=tasks.filter(t=>typeof t.prompt==="string"&&t.prompt.trim()&&Number.isInteger(t.position)&&Number(t.position)>=1&&Number(t.position)<=8).map(t=>option(t.target,"主图")+"第"+t.position+"张："+t.prompt).join("；")||"未设置";
+  const imageFacts:Array<[string,string]>=[
+   ["生图语言",option(extra.imageLanguage,"未设置（不指定）")],
+   ["图片背景",option(extra.imageBackground,"不设置")+(extra.imageBackground==="自定义背景要求"?"："+option(extra.imageBackgroundCustom,"未填写"):"")],
+   ["图片优化来源",option(extra.optimizationSource)],
+   ["图片使用策略",option(extra.imageUse,"共用视觉素材")],
+   ["共用素材来源",option(extra.sharedImageSource,"主图")],
+   ["处理范围",option(extra.imageProcessingScope)],
+   ["主图图片位置",selected(extra.selectedMainImages??extra.selectedImages)],
+   ["详情图图片位置",selected(extra.selectedDetailImages??extra.selectedImages)],
+   ["逐张图片要求",taskText],
+   ["补充优化指令",option(c.imageInstructions)]
+  ];
   return isPod?[
-   ["图片生成",typeof c.podImageMode==="string"?c.podImageMode:"未设置"],
+   ["图片生成",option(c.podImageMode)],
    ["知识库",labels(c.knowledge)||"未启用"],
    ["执行技能",labels(c.skills)||"未启用"],
-   ["贴图素材",typeof c.podPatternMode==="string"?c.podPatternMode:"AI自动模式"],
+   ["贴图素材",option(c.podPatternMode,"AI自动模式")],
    ["生成数量",typeof c.podQuantity==="number"&&Number.isFinite(c.podQuantity)?String(c.podQuantity)+" / 商品":"按模板配置"],
    ["透明背景",c.podTransparent===true?"启用":"关闭"],
-   ["生图语言",typeof extra.imageLanguage==="string"?extra.imageLanguage:"未设置"],
-   ["图片底色",typeof extra.imageBackground==="string"?extra.imageBackground:"未设置"]
+   ...imageFacts
   ]:[
    ["执行技能",labels(c.skills)||"未启用"],
    ["知识库",labels(c.knowledge)||"未启用"],
-   ["图片优化",c.imageOptimization?"启用":"未启用"]
+   ["图片优化",c.imageOptimization?"启用":"未启用"],
+   ...(c.imageOptimization?imageFacts:[])
   ];
  };
  const saveNamedTemplate=()=>{if(!templateName.trim()){setMessage("请填写模板名称。");return;}const config={skills,knowledge,imageOptimization,imageInstructions,podImageMode:isPod?podImageMode:undefined,podPatternMode:isPod?podPatternMode:undefined,podQuantity:isPod?podQuantity:undefined,podTransparent:isPod?podTransparent:undefined,useConfig};const next=[{id:crypto.randomUUID(),name:templateName.trim(),createdAt:new Date().toLocaleDateString("zh-CN"),config},...readTemplates()];try{writeAgentPreviewTemplates(organizationId,memberId,info.title,next);}catch{setMessage("模板保存失败，请检查浏览器存储空间。");return;}onSaveTemplate?.(info.title,config);setSaveNameOpen(false);onClose();};
