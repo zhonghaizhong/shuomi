@@ -63,7 +63,7 @@ export function simulateAmazonFiveListingWorkflow(args:{
  const existing=readShowcaseUploadTasks(org,member);
  const scopeKey="SHUOMI-AMZ-AI-5:"+args.batchId+":"+args.storeId;
  const previous=existing.filter(task=>task.id.startsWith(scopeKey));
- if(previous.length===5)return {created:0,missing:previous.filter(t=>t.status==="待补全").length,review:previous.filter(t=>t.status==="待审核").length,alreadyInstalled:true};
+ if(previous.length===5){refreshAmazonFiveDemoPhotos(org,member);return {created:0,missing:previous.filter(t=>t.status==="待补全").length,review:previous.filter(t=>t.status==="待审核").length,alreadyInstalled:true};}
  if(previous.length)throw Error("已存在部分演示任务，请先检查任务记录，避免重复覆盖");
  const now=new Date().toISOString();
  const created:ShowcaseUploadTask[]=args.products.map(product=>{
@@ -105,4 +105,30 @@ export function approveShowcaseUploadTask(org:string,member:string,taskId:string
  sessionStorage.setItem(key(org,member),JSON.stringify(records.map(t=>t.id===taskId?next:t)));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
+}
+
+/** Migrate only old generated SVG previews in this user's five-product demo.
+ * Never reset review status, custom field values, source images, or other batches.
+ */
+export function refreshAmazonFiveDemoPhotos(org:string,member:string):number{
+ if(typeof window==="undefined")return 0;
+ const records=readShowcaseUploadTasks(org,member);
+ let count=0;
+ const updated=records.map(task=>{
+  const src=task.demoProduct?.optimizedImages;
+  const sku=task.productIds[0]?.replace(/^SIM-AMZ-US-/,"");
+  const plan=sku?amazonRules[sku]:undefined;
+  if(!plan||!task.id.startsWith("SHUOMI-AMZ-AI-5:")||!src?.length)return task;
+  const generated=src.every(x=>x.startsWith("data:image/svg+xml")||x.startsWith("shuomi-photo:"));
+  if(!generated)return task; // preserve any manually attached photography
+  const replacement=listingDemoArtSet(plan.art as ListingArtKind);
+  if(src.length===replacement.length&&src.every((x,i)=>x===replacement[i]))return task;
+  count++;
+  return {...task,demoProduct:{...task.demoProduct!,optimizedImages:replacement}};
+ });
+ if(count){
+  sessionStorage.setItem(key(org,member),JSON.stringify(updated));
+  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
+ }
+ return count;
 }
