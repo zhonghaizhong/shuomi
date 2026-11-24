@@ -425,3 +425,35 @@ test("POD assistant keeps generated images and copied prompts inside chat with i
  await expect(pod.getByRole("status")).toContainText("已将指令应用");
  await expect(chat.locator('[data-pod-message="artwork"]')).toHaveCount(1);
 });
+
+test("POD conversation and prompt editor grow together to the bottom of the assistant panel",async({page})=>{
+ for(const viewport of [{width:1440,height:900},{width:2560,height:1440},{width:720,height:900}]){
+  await page.setViewportSize(viewport);
+  await page.goto(base+"/mine");
+  await page.getByRole("button",{name:"进入使用"}).last().click();
+  const dialog=page.getByRole("dialog",{name:"POD刊登智能体"});
+  const assistant=dialog.locator('[class*="useHelp"]').filter({has:dialog.getByRole("log",{name:"POD助手聊天记录"})});
+  const thread=dialog.getByRole("log",{name:"POD助手聊天记录"});
+  const input=dialog.getByRole("textbox",{name:"POD助手补充要求"});
+  const actions=assistant.locator('[class*="podChatComposer"] [class*="podHelpActions"]');
+  const [panelBox,threadBox,inputBox,actionsBox]=await Promise.all([assistant.boundingBox(),thread.boundingBox(),input.boundingBox(),actions.boundingBox()]);
+  for(const box of [panelBox,threadBox,inputBox,actionsBox])expect(box).not.toBeNull();
+  expect(threadBox!.width).toBeGreaterThan(200);
+  expect(Math.abs(threadBox!.x-inputBox!.x)).toBeLessThan(4);
+  expect(Math.abs(threadBox!.width-inputBox!.width)).toBeLessThan(20);
+  expect(threadBox!.y+threadBox!.height).toBeLessThan(inputBox!.y);
+  expect(inputBox!.y+inputBox!.height).toBeLessThanOrEqual(actionsBox!.y+2);
+  expect(actionsBox!.y+actionsBox!.height).toBeLessThanOrEqual(panelBox!.y+panelBox!.height+2);
+  if(viewport.width>820){
+   expect(threadBox!.height).toBeGreaterThan(245);
+   expect(inputBox!.height).toBeGreaterThan(165);
+   // The lower editor and controls actually occupy the assistant's available height.
+   expect(panelBox!.y+panelBox!.height-(actionsBox!.y+actionsBox!.height)).toBeLessThan(115);
+  }else{
+   expect(inputBox!.height).toBeGreaterThanOrEqual(158);
+  }
+  await dialog.getByRole("button",{name:"生成印花图（演示）"}).scrollIntoViewIfNeeded();
+  await expect(dialog.getByRole("button",{name:"整理图片指令"})).toBeVisible();
+  await page.keyboard.press("Escape");
+ }
+});
