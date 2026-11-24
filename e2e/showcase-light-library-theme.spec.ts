@@ -180,9 +180,24 @@ test("knowledge landing has exactly two compact entries at desktop and mobile wi
   await expect(root.getByRole("listitem")).toHaveCount(3);
   await expect(root.getByRole("button",{name:"浏览官方知识"})).toBeVisible();
   await expect(root.getByRole("button",{name:"管理我的知识库"})).toBeVisible();
+  const header=root.locator(":scope > header");
+  const strip=root.locator('aside[aria-label="知识引用说明"]');
+  const bounds=await root.evaluate(el=>{const b=el.getBoundingClientRect();return {x:b.x,width:b.width};});
+  const headerBounds=await header.boundingBox();
+  const stripBounds=await strip.boundingBox();
+  expect(headerBounds).not.toBeNull();
+  expect(stripBounds).not.toBeNull();
+  expect(Math.abs(headerBounds!.x-bounds.x)).toBeLessThan(3);
+  expect(Math.abs(headerBounds!.width-bounds.width)).toBeLessThan(3);
   const boxes=await cards.evaluateAll(items=>items.map(el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,right:b.right};}));
   if(width>800){
-   expect(boxes[0].width).toBeLessThan(575);
+   // Full-width page shell; only the descriptive content area is bounded.
+   expect(bounds.width).toBeGreaterThan(1250);
+   expect(bounds.width).toBeLessThanOrEqual(1601);
+   expect(boxes[0].width).toBeLessThan(655);
+   expect(Math.abs(boxes[0].x-bounds.x)).toBeLessThan(3);
+   expect(Math.abs(stripBounds!.x-boxes[0].x)).toBeLessThan(3);
+   expect(Math.abs(stripBounds!.width-(boxes[1].right-boxes[0].x))).toBeLessThan(3);
    expect(Math.abs(boxes[0].width-boxes[1].width)).toBeLessThan(3);
    expect(Math.abs(boxes[0].y-boxes[1].y)).toBeLessThan(3);
   }else{
