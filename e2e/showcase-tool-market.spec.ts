@@ -270,8 +270,8 @@ test("1688 online collection creates ten demo products and shows only owned batc
  await page.goto("/shuomi/#/workbench/data/mine");
  const mine=page.getByRole("region",{name:"采集批次",exact:true});
  await expect(mine).toContainText("1688 在线采集 · 10个产品（模拟）");
- await expect(mine).toContainText("1 批");
- await mine.getByRole("button",{name:"更多"}).click();
+ await expect(mine).toContainText("2 批");
+ await mine.getByRole("row").filter({hasText:"1688 在线采集 · 10个产品（模拟）"}).getByRole("button",{name:"更多"}).click();
  await mine.getByRole("button",{name:"查看商品"}).click();
  const details=page.getByRole("dialog",{name:"批次商品"});
  await expect(details).toContainText("批次商品");
@@ -295,8 +295,8 @@ test("1688 online collection creates ten demo products and shows only owned batc
  await expect(modal).toContainText("已记录 10 条1688演示数据");
  await modal.getByRole("button",{name:"知道了"}).click();
  await page.goto("/shuomi/#/workbench/data/mine");
- await expect(page.getByRole("region",{name:"采集批次",exact:true})).toContainText("2 批");
- await page.getByRole("region",{name:"采集批次",exact:true}).getByRole("button",{name:"更多"}).first().click();
+ await expect(page.getByRole("region",{name:"采集批次",exact:true})).toContainText("3 批");
+ await page.getByRole("region",{name:"采集批次",exact:true}).getByRole("row").filter({hasText:"1688 在线采集"}).first().getByRole("button",{name:"更多"}).click();
  await page.getByRole("region",{name:"采集批次",exact:true}).getByRole("button",{name:"查看商品"}).click();
  await expect(page.getByRole("dialog",{name:"批次商品"}).locator("tbody tr")).toHaveCount(4);
  await expect(page.getByRole("dialog",{name:"批次商品"})).toContainText("商品列表");
@@ -309,12 +309,13 @@ test("My Data follows Figma batch screen and archives only selected demo batches
  const region=page.getByRole("region",{name:"采集批次",exact:true});
  await expect(region.getByRole("columnheader",{name:/批次名称/})).toBeVisible();
  for(const name of ["产品来源","总量","符合","过滤","创建时间","上传状态","操作"]){await expect(region.getByRole("columnheader",{name})).toBeVisible()}
- await region.getByRole("button",{name:"更多"}).click();
+ await region.getByRole("row").filter({hasText:"1688 在线采集 · 10个产品（模拟）"}).getByRole("button",{name:"更多"}).click();
  await region.getByRole("button",{name:"归档批次"}).click();
- await expect(region).toContainText("暂无采集批次");
+ await expect(region).not.toContainText("1688 在线采集 · 10个产品（模拟）");
+  await expect(region).toContainText("Amazon 美国站");
  await region.getByRole("button",{name:"已归档"}).click();
  await expect(region).toContainText("1688 在线采集 · 10个产品（模拟）");
- await region.getByRole("button",{name:"更多"}).click();
+ await region.getByRole("row").filter({hasText:"1688 在线采集 · 10个产品（模拟）"}).getByRole("button",{name:"更多"}).click();
  await region.getByRole("button",{name:"恢复批次"}).click();
  await region.getByRole("button",{name:"返回批次"}).click();
  await expect(region).toContainText("1688 在线采集 · 10个产品（模拟）");
@@ -329,7 +330,7 @@ test("batch product dialog matches provided layout, supports item archive and pa
  await expect(filters.getByRole("textbox",{name:"搜索采集批次"})).toBeVisible();
  await expect(filters.getByRole("combobox",{name:"采集来源"})).toBeVisible();
  await expect(filters.getByRole("combobox",{name:"上传状态"})).toBeVisible();
- await region.getByRole("button",{name:"更多"}).click();
+ await region.getByRole("row").filter({hasText:"1688 在线采集 · 10个产品（模拟）"}).getByRole("button",{name:"更多"}).click();
  await region.getByRole("button",{name:"查看商品"}).click();
  const dialog=page.getByRole("dialog",{name:"批次商品"});
  await expect(dialog).toContainText("在线采集");
@@ -350,7 +351,7 @@ test("batch product dialog matches provided layout, supports item archive and pa
 test("1688 demo products provide realistic sample photos, simulated prices, variants and split detail gallery",async({page})=>{
  await page.goto("/shuomi/#/workbench/data/mine");
  const batch=page.getByRole("region",{name:"采集批次",exact:true});
- await batch.getByRole("button",{name:"更多"}).click();
+ await batch.getByRole("row").filter({hasText:"1688 在线采集 · 10个产品（模拟）"}).getByRole("button",{name:"更多"}).click();
  await batch.getByRole("button",{name:"查看商品"}).click();
  const modal=page.getByRole("dialog",{name:"批次商品"});
  await expect(modal).toContainText("¥19.80 起");
@@ -376,7 +377,7 @@ test("1688 demo products provide realistic sample photos, simulated prices, vari
 test("batch product image viewer stays compact and price sliders filter by a selected range",async({page})=>{
  await page.goto("/shuomi/#/workbench/data/mine");
  const batch=page.getByRole("region",{name:"采集批次",exact:true});
- await batch.getByRole("button",{name:"更多"}).click();
+ await batch.getByRole("row").filter({hasText:"1688 在线采集 · 10个产品（模拟）"}).getByRole("button",{name:"更多"}).click();
  await batch.getByRole("button",{name:"查看商品"}).click();
  const modal=page.getByRole("dialog",{name:"批次商品"});
  await modal.getByRole("button",{name:"价格区间"}).click();
