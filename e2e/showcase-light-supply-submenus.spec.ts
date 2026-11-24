@@ -33,12 +33,14 @@ test("Figma preferred application submenus have legible dark/light card, text an
   await turnDark(page);
   const root=page.locator("[data-preferred-application]");
   await expect(root,route).toBeVisible();
-  const panel=root.locator('[class*="heading"]').first();
+  const panel=root.locator('[class*="mainPanel"]').first();
+   const heroTitle=root.getByRole("heading",{name:"加入硕米优选",exact:true});
+   await expect(heroTitle).toBeVisible();
   await expect(panel).toBeVisible();
   const darkBg=await panel.evaluate(el=>getComputedStyle(el).backgroundColor);
   expect(pale(darkBg),route+" dark bg").toBeFalsy();
   await page.getByRole("button",{name:"切换浅色主题"}).click();
-  const c=await panel.evaluate(el=>({bg:getComputedStyle(el).backgroundColor,fg:getComputedStyle(el.querySelector("h1")!).color}));
+  const c=await panel.evaluate(async el=>({bg:getComputedStyle(el).backgroundColor,fg:getComputedStyle(document.querySelector('[data-preferred-application] h1')!).color}));
   expect(pale(c.bg),route+" light bg").toBeTruthy();
   expect(contrast(c.bg,c.fg),route+" heading contrast").toBeGreaterThanOrEqual(4.5);
   const cards=root.locator('[class*="metric"],[class*="panel"],[class*="infoColumns"]>article');
@@ -53,8 +55,8 @@ test("preferred application reads owned adapted products and promotes only demo-
  await page.goto(url("/supply/applications"));
  const root=page.locator('[data-preferred-application="unified"]');
  await expect(root).toBeVisible();
- await expect(root.getByRole("heading",{name:/加入硕米优选，给好商品更多被发现的机会/})).toBeVisible();
- await expect(root.getByText(/不保证曝光量、客户询盘或成交/)).toBeVisible();
+ await expect(root.getByRole("heading",{name:"加入硕米优选"})).toBeVisible();
+ await expect(root.getByText(/曝光、询盘及成交不作保证/)).toBeVisible();
  await expect(root.getByRole("tab",{name:/商品候选/})).toBeVisible();
  await expect(root.getByRole("tab",{name:/申请记录/})).toBeVisible();
  const scope=await root.evaluate(el=>({org:el.getAttribute("data-organization")!,member:el.getAttribute("data-member")!}));
