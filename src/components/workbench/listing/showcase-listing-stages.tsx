@@ -11,17 +11,11 @@ import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./showcase-batch-version-picker";
 import styles from "./showcase-listing-stages.module.css";
+import {ShowcaseListingStageHeader} from "./showcase-listing-stage-header";
 
 type Stage="waiting"|"missing"|"review";
 type Item={sku:string;name:string;source:string;store:string;status:string;missing:string[];ai:boolean;batchKey?:string;batchName?:string;sourceVersionId?:string};
 const seed:Item[]=[];
-const names:Record<Stage,string>={waiting:"待上传",missing:"待补全",review:"待审核"};
-const descriptions:Record<Stage,string>={
- waiting:"配置一次上传任务，资料缺失先补全；审核及应用后，明确继续原任务。",
- missing:"补齐并保存资料后，核对原任务与准确版本，明确继续上传；未绑定草稿先选择目标。",
- review:"核对智能体建议，决定应用或退回；审核完成后明确继续原上传任务。"
-};
-const menu=[["waiting","待上传"],["missing","待补全"],["review","待审核"],["uploaded","已上传"]] as const;
 export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stage;organizationId:string;memberId:string}){
  const router=useRouter();
  const [source,setSource]=useState<PickSource>("采集批次"),[batch,setBatch]=useState(""),[selectedVersionId,setSelectedVersionId]=useState("original"),[batchDialog,setBatchDialog]=useState(false),[store,setStore]=useState(""),[agent,setAgent]=useState(false),[agentId,setAgentId]=useState(""),[templateId,setTemplateId]=useState(""),[rules,setRules]=useState(true),[mode,setMode]=useState<"平台草稿"|"直接上传到平台"|"定时上传">("平台草稿");
@@ -122,8 +116,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   setSelected(null);setForm({});action("资料已保存到演示记录。请核对原任务，确认继续上传；启用智能体时先进入待审核。");
  };
  return <div className={styles.page} data-listing-stage={stage}>
-  <header className={styles.heading}><small>店铺中心 / 刊登管理 / {names[stage]}</small><h1>{names[stage]}</h1><p>{descriptions[stage]}</p></header>
-  {stage!=="waiting"?<nav className={styles.tabs} aria-label="刊登管理阶段">{menu.map(([key,label])=><button type="button" key={key} aria-current={key===stage?"page":undefined} onClick={()=>key!==stage&&go(key)}>{label}</button>)}</nav>:null}
+  <ShowcaseListingStageHeader stage={stage}/>
   {notice?<div className={styles.notice} role="status">{notice}<button type="button" onClick={()=>setNotice("")} aria-label="关闭提示">×</button></div>:null}
   {stage==="waiting"?<>
    <section className={styles.flowHeader}><div><h2>商品上传流程</h2><p>商品 · 规则必选 · 智能体按需 · 平台上传</p></div><div className={styles.flowSteps}>{[["选择商品","待选择"],["平台与店铺","当前"],["启用智能体","按需"],["启用规则","必选"]].map(([name,state],i)=><span key={name}><b>{i+1}</b><strong>{name}</strong><small>{state}</small></span>)}</div></section>
