@@ -94,3 +94,29 @@ test("Data Services landing uses consistent dark Vuexy card and button paints",a
  await expect.poll(()=>paint('.dataSteps article')).toBe("rgb(57, 61, 85)");
  await expect.poll(()=>paint('.dataCards article button')).toBe("rgb(57, 61, 85)");
 });
+
+
+/* These are the three real showcase routes shown in the data-service screenshots.
+   Verify painted surfaces, not the mere presence of source CSS tokens. */
+test("Data Market, API and My Data have Vuexy dark computed surfaces",async({page})=>{
+ const bg=async(selector:string)=>page.locator(selector).first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ await page.goto("/shuomi/#/workbench/data/market");
+ await ensureDark(page);
+ const market=page.locator('[data-commerce-unified="data"]');
+ await expect(market.locator('[class*="cards"] article').first()).toBeVisible();
+ await expect.poll(()=>bg('[data-commerce-unified="data"] [class*="cards"] article')).toBe("rgb(47, 51, 73)");
+ await expect.poll(()=>bg('[data-commerce-unified="data"] [class*="toolbar"]')).toBe("rgb(47, 51, 73)");
+ await expect.poll(()=>bg('[data-commerce-unified="data"] [class*="toolbar"] input')).toBe("rgb(57, 61, 85)");
+ await page.goto("/shuomi/#/workbench/data/api");
+ await ensureDark(page);
+ const api=page.locator('[data-api-dashboard]');
+ await expect(api).toBeVisible();
+ await expect.poll(()=>bg('[data-api-dashboard] [class*="apiMetrics"] article')).toBe("rgb(47, 51, 73)");
+ await expect.poll(()=>bg('[data-api-dashboard] [class*="apiSection"]')).toBe("rgb(47, 51, 73)");
+ await page.goto("/shuomi/#/workbench/data/mine");
+ await ensureDark(page);
+ const mine=page.locator('[data-my-data-owner]');
+ await expect(mine).toBeVisible();
+ await expect.poll(()=>mine.locator('[class*="filterBar"]').first().evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(47, 51, 73)");
+ await expect.poll(()=>mine.getByRole("region",{name:"采集批次"}).evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(47, 51, 73)");
+});
