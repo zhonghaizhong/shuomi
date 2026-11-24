@@ -70,3 +70,52 @@
 .optimizedCandidate>div>strong{font-size:12px}
 .optimizedCandidate p{font-size:12px;line-height:1.65;margin:0;color:var(--ink);overflow-wrap:anywhere}
 @media(max-width:740px){.agentSteps{grid-template-columns:1fr}}
+
+
+/* Rebuilt intake review: a narrow product rail and one consistent detailed work area. */
+.page{width:min(1500px,calc(100% - 32px))}
+.layout{grid-template-columns:minmax(270px,0.82fr) minmax(600px,2fr);align-items:start}
+.toolbar{align-items:end;justify-content:flex-start;flex-wrap:wrap}
+.toolbar label{flex:1 1 220px;max-width:380px}
+.toolbar select{width:100%;height:41px;background:var(--panel);border:1px solid var(--border);border-radius:7px;color:var(--ink);padding:0 11px;font:inherit}
+.toolbar>strong{margin-left:auto;align-self:center}
+.listHead,.detailHeader,.sectionHeading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.listHead h2{margin:0}.listHead span{font-size:12px;color:var(--muted)}
+.page .productPick{display:grid;flex:1;min-width:0;gap:6px;text-align:left;padding:6px 2px;border:0!important;background:transparent!important;white-space:normal}
+.productPick strong{font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.productPick small{font-size:11px;line-height:1.5}
+.page .row{padding:11px 7px;margin:0 -7px;min-height:78px}
+.page .row[data-selected=true]{border-radius:8px;background:color-mix(in srgb,var(--accent) 12%,var(--bg))}
+.listPagination{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:15px 0 0;font-size:12px;color:var(--muted)}
+.listPagination>div{display:flex;gap:7px}.page button:disabled{opacity:.48;cursor:not-allowed}
+.overviewStrip{display:flex;flex-wrap:wrap;gap:10px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);border-radius:8px;font-size:12px;margin-bottom:14px}
+.overviewStrip>span{padding-right:10px;border-right:1px solid var(--border)}
+.overviewStrip>span:last-child{border:0}
+.overviewStrip strong{color:var(--ink);font-weight:650}
+.details{grid-template-columns:minmax(220px,.84fr) minmax(330px,1.16fr);gap:14px}
+.gallerySection,.information{background:var(--bg);align-content:start}
+.galleryMain{height:300px}
+.gallerySection .finePrint{color:var(--muted);font-size:11px;line-height:1.5}
+.information{gap:9px}
+.reviewField{border:1px solid var(--border);border-radius:8px;background:var(--panel);padding:11px;min-width:0;display:grid;gap:8px}
+.reviewField input,.reviewField textarea{box-sizing:border-box;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--ink);padding:9px 10px;min-width:0;font:inherit;font-size:12px}
+.reviewField textarea{resize:vertical;min-height:92px}
+.reviewField p{margin:0;font-size:12px;color:var(--muted);line-height:1.5}
+.agentReport{margin-top:14px;margin-bottom:0;padding:14px}
+.agentReport .agentSteps{grid-template-columns:repeat(2,minmax(0,1fr))}
+.reportIntro{margin:0;color:var(--muted);font-size:12px;line-height:1.65}
+.agentOutcome{margin-top:2px}
+.missingList{margin-top:14px}
+.reviewChecks{display:grid;gap:9px}
+.reviewChecks label{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--border);border-radius:7px;background:var(--panel);font-size:12px;cursor:pointer}
+.reviewChecks input{width:17px;height:17px;accent-color:var(--accent);flex:none}
+.sourceDisclosure{margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
+.sourceDisclosure>button{font-size:12px}
+.originalData{display:grid;gap:8px;margin-top:10px}
+.originalData article{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px}
+.originalData p{white-space:pre-wrap;font-size:12px;line-height:1.6}.originalData small{color:var(--muted)}
+.editor .actionFooter{display:flex;gap:15px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:15px;padding-top:15px;border-top:1px solid var(--border)}
+.actionFooter>span{color:var(--muted);font-size:12px;line-height:1.6;flex:1}
+.page .primary{background:var(--accent);border-color:var(--accent);color:white}
+@media(max-width:1180px){.layout{grid-template-columns:1fr}.details{grid-template-columns:minmax(220px,.84fr) minmax(330px,1.16fr)}}
+@media(max-width:740px){.details{grid-template-columns:1fr}.agentReport .agentSteps{grid-template-columns:1fr}.galleryMain{height:260px}.toolbar>strong{margin-left:0}}
