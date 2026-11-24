@@ -1045,3 +1045,25 @@
 .galleryRecoverRow button{min-height:32px;border:1px solid #7367f0;border-radius:6px;padding:6px 10px;background:color-mix(in srgb,#7367f0 14%,var(--surface));color:var(--ink);font-size:12px;cursor:pointer}
 .galleryRecoverRow button:disabled{opacity:.45;cursor:not-allowed}
 .galleryImportedNote{margin:0;font-size:11px;line-height:1.5;color:var(--muted)}
+
+/* Unified listing actions. Scope to primary page controls; photo editors and
+   modal micro-controls retain their purpose-specific sizes. */
+.page>.listPanel .filters button,
+.page>.listPanel .listHeader button,
+.page>.listPanel .item button,
+.page>.configuration article>button,
+.page>.submit>button,
+.page>.flowHeader button,
+.page>.pagination button{
+ box-sizing:border-box;min-height:40px;padding:0 16px;border-radius:6px;
+ font-size:14px;font-weight:600;line-height:1.4;white-space:nowrap;
+}
+.page>.listPanel .filters input,
+.page>.listPanel .filters select{
+ box-sizing:border-box;min-height:40px;font-size:14px;border-radius:6px;
+}
+.page>.listPanel .listHeader{min-height:54px;margin:14px 0 12px}
+.page>.listPanel .listHeader h2{font-size:18px;line-height:1.4}
+.page>.listPanel .columns{min-height:46px;align-items:center;font-size:14px}
+.page>.listPanel .listHeader button{background:var(--surface-alt);color:var(--ink);border:1px solid var(--stroke)}
+.page>.listPanel .filters .primary,.page>.submit>.primary{background:#7367f0;border-color:#7367f0;color:#fff}
