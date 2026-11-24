@@ -153,7 +153,8 @@ export async function importSingleColorAIReconstruction(
   const path=expected[index],details=manifest.images.find(x=>x.path===path),bytes=packageFiles.get(path);
   if(!details||details.method!=="ai-generated"||!bytes||bytes.length<1024||
      bytes[0]!==0xff||bytes[1]!==0xd8)throw new Error("图片包缺少有效的 AI 重构图："+path);
-  const hashBytes=await crypto.subtle.digest("SHA-256",bytes.slice().buffer);
+  const hashInput=new Uint8Array(bytes.length);hashInput.set(bytes);
+  const hashBytes=await crypto.subtle.digest("SHA-256",hashInput);
   const digest=Array.from(new Uint8Array(hashBytes)).map(x=>x.toString(16).padStart(2,"0")).join("");
   if(details.sha256!==digest||hashes.has(digest))throw new Error("图片校验不通过或出现重复成品："+path);
   hashes.add(digest);
