@@ -22,7 +22,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
  const totalPages=Math.max(1,Math.ceil(list.length/15));
  const currentPage=Math.min(page,totalPages);
  const pagedList=list.slice((currentPage-1)*15,currentPage*15);
- const selected=records.find(p=>p.id===selectedId);
+ const selected=records.find(p=>p.id===selectedId&&p.status===(stage==="pending"?"入库待完善":"待审核")&&pagedList.some(visible=>visible.id===p.id));
  const currentSku=draft.find(s=>s.id===skuId)??draft[0];
  const missing=checkOwnProductSkus(draft);
  const optimization=context&&selected?previewOwnProductOptimization(context.organizationId,context.memberId,selected,draft):null;
@@ -89,7 +89,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
       <button type="button" className={css.productPick} onClick={()=>select(item)} aria-pressed={selectedId===item.id}><strong>{item.name}</strong><small>{batches.find(b=>b.id===item.batchId)?.name??"原批次"} · {item.skus.length} SKU</small><small className={stage==="pending"?css.warning:css.ready}>{stage==="pending"?"需完善 "+item.missing.length+" 项":"待人工确认"}</small></button>
      </article>})}
      {!pagedList.length?<p className={css.empty}>当前筛选下没有{stage==="pending"?"待完善":"待审核"}商品。</p>:null}
-     <footer className={css.listPagination}><span>第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></footer>
+     <footer className={css.listPagination}><span>第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>{setPage(p=>Math.max(1,p-1));setSelectedId(null);setChecked([]);setShowSource(false)}}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>{setPage(p=>Math.min(totalPages,p+1));setSelectedId(null);setChecked([]);setShowSource(false)}}>下一页</button></div></footer>
     </section>
     <section className={css.editor} aria-label="商品优化详情">
      {!selected?<div className={css.empty}>选择左侧商品，查看智能体优化稿、图片和逐项处理结果。</div>:<>
