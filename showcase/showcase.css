@@ -641,3 +641,33 @@ html.light body {background:#f8f7fa;color:#444050;}
 /* Generic unstyled form labels must remain readable in Vuexy light mode.
    Keep styled status chips, headings and the primary palette unchanged. */
 .light main.showcase-content form label:not([class]){color:#444050}
+
+/* Contrast gate remediation: scoped to the affected showcase routes.
+   Keep the approved Vuexy purple palette and existing component geometry. */
+/* A search label inherited a white input surface with near-white text in dark mode. */
+html.dark main.showcase-content[data-route="/workbench"] label[class*="_search_"] {
+  color:#eae7f5;background:#383c54;border-color:#595b73;
+}
+/* The status pill was green text on the same green background. */
+html.dark main.showcase-content[data-route="/workbench"] [class*="_digestLead_"] > div > small {
+  color:#10442b;background:#dcfae7;
+}
+/* Thin muted labels fell below the readability threshold in both themes. */
+html.dark main.showcase-content[data-route="/workbench"] [class*="_supportGauge_"] > span > small {color:#d0cde0;}
+html.light main.showcase-content[data-route="/workbench"] [class*="_supportGauge_"] > span > small {color:#5e596b;}
+/* Larger brand headings retain purple, with enough luminance over dark cards. */
+html.dark main.showcase-content[data-route="/workbench/ai"] h2,
+html.dark main.showcase-content[data-route="/workbench/ai/knowledge"] h2,
+html.dark main.showcase-content[data-route="/workbench/ai/knowledge/official"] h3 {
+  color:#b2aaff;
+}
+/* Form labels were inheriting the old dark-theme lavender on white. */
+html.light main.showcase-content[data-route="/workbench/supply/catalogs/apply"] label {
+  color:#444050;
+}
+/* Data management metadata needs dark captions on the light surface. */
+html.light main.showcase-content[data-route="/workbench/data/market"] small,
+html.light main.showcase-content[data-route="/workbench/data/api"] small,
+html.light main.showcase-content[data-route="/workbench/data/api"] [class*="_apiSecurityNote_"] {
+  color:#595568;
+}
