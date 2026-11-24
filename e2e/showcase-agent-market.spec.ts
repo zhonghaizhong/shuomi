@@ -338,3 +338,29 @@ test("product optimizer knowledge picker opens its Figma second-level selector",
  await product.getByRole("button",{name:"选择知识库"}).click();
  await expect(page.getByRole("dialog",{name:"选择知识库"})).toBeVisible();
 });
+
+
+test("my agents header and both card columns use the filter-bar Vuexy surface in dark mode",async({page})=>{
+ await page.setViewportSize({width:1700,height:900});
+ await page.goto(base+"/mine");
+ const dark=page.getByRole("button",{name:"切换深色主题"});
+ if(await dark.isVisible())await dark.click();
+ const root=page.locator('[class*="agentsPreview"]');
+ const toolbar=root.locator('[class*="agentMineToolbar"]');
+ const header=root.locator('header').first();
+ const sections=root.locator('[class*="agentMine"] > article > section');
+ const asides=root.locator('[class*="agentMine"] > article > aside');
+ await expect(toolbar).toBeVisible();
+ await expect(sections).toHaveCount(2);
+ await expect(asides).toHaveCount(2);
+ for(const item of [header,...await sections.all(),...await asides.all()]){
+  const background=await item.evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(background).toBe("rgb(47, 51, 73)");
+ }
+ const light=page.getByRole("button",{name:"切换浅色主题"});
+ if(await light.isVisible())await light.click();
+ for(const item of [header,...await sections.all(),...await asides.all()]){
+  const background=await item.evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(background).toBe("rgb(255, 255, 255)");
+ }
+});
