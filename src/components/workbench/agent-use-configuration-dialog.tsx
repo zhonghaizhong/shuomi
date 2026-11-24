@@ -101,6 +101,9 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  const [libraryAssets,setLibraryAssets]=useState<PodLibraryAsset[]>(()=>readPodLibrary(organizationId,memberId));
  const [multiSelected,setMultiSelected]=useState<number[]>([]);
  const [aiSelected,setAiSelected]=useState<string[]>([]);
+ const dragSlotRef=useRef<number|null>(null);
+ const [draggedSlot,setDraggedSlot]=useState<number|null>(null);
+ const [dragOverSlot,setDragOverSlot]=useState<number|null>(null);
  const showAssetLibrary=()=>{setLibraryAssets(readPodLibrary(organizationId,memberId));setLibraryQuery("");setLibraryCategory("全部分类");setLibraryPage(1);setLibrarySelected("");setLibraryPreview(null);setMessage("");setChild("library");};
  const filteredLibraryAssets=libraryAssets.filter(asset=>(libraryCategory==="全部分类"||asset.category===libraryCategory)&&[asset.name,asset.category].some(text=>text.toLowerCase().includes(libraryQuery.toLowerCase())));
  const selectedLibraryAsset=libraryAssets.find(asset=>String(asset.id)===librarySelected);
@@ -157,6 +160,15 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  const activeTarget=form.imageTarget??"主图";
  const compact=(v:(string|null)[])=>v.filter((x):x is string=>Boolean(x));
  const pad=(v:string[])=>Array.from({length:8},(_,i)=>v[i]??null);
+ const moveSlot=(from:number,to:number)=>{
+  if(from===to||from<0||from>=slots.length||to<0||to>=slots.length||!slots[from])return;
+  const next=slots.slice();
+  const [moving]=next.splice(from,1);
+  next.splice(to,0,moving);
+  setSlots(next);
+  setSlotIndex(to);
+ };
+ const finishSlotDrag=()=>{dragSlotRef.current=null;setDraggedSlot(null);setDragOverSlot(null)};
  const reorderSlot=(action:"left"|"right"|"first"|"last"|"remove")=>{
   const current=slots.slice();
   const v=current[slotIndex];
@@ -307,16 +319,28 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    :mode==="pod-hybrid"?<div className={css.stack}>
     <p className={css.tip}>官方渲染仅支持已接入平台；AI 图片按实际使用积分计费。演示版不生成或上传图片。</p>
     <div className={css.hybridControls}>
-     <div className={css.hybridControlRow}><strong>视觉策略</strong>{choice(["共用视觉素材","分别生成"],form.hybridStrategy??"共用视觉素材",x=>selectHybridStrategy(x as "共用视觉素材"|"分别生成"))}</div>
+     <div className={css.hybridControlRow}><strong>视觉策略</strong>{choice(["共用视觉素材","分别生成"],form.hybridStrategy??"共用视觉素材",x=>{selectHybridStrategy(x as "共用视觉素材"|"分别生成");finishSlotDrag()})}</div>
      <div className={css.hybridControlRow}><strong>配置对象</strong>
-      {hybridShared?<div className={css.segment} aria-label="共用视觉素材同步应用对象"><span className={css.hybridBothSelected}>主图 ✓</span><span className={css.hybridBothSelected}>详情图 ✓</span><small>两侧共用以下 8 张图片编排</small></div>
-      :choice(["主图","详情图"],hybridTarget,x=>{set("hybridTarget",x as AgentUseConfiguration["hybridTarget"]);setMultiSelected([]);})}
+      {hybridShared?<div className={css.segment} aria-label="共用视觉素材同步应用对象"><span className={css.hybridBothSelected}>主图 ✓</span><span className={css.hybridBothSelected}>详情图 ✓</span></div>
+      :choice(["主图","详情图"],hybridTarget,x=>{set("hybridTarget",x as AgentUseConfiguration["hybridTarget"]);setMultiSelected([]);finishSlotDrag()})}
      </div>
+     {hybridShared?<small className={css.hybridSharedHint}>两侧共用下方 8 张图片编排</small>:null}
     </div>
     <section className={css.panel}><h3>图片添加说明</h3><p>图片来源：应用技能、预设指令AI重构、本地上传、自定义指令。</p><p>编排方式：点击图片位置的“＋”添加；已添加图片可更换或移除。</p></section>
-    <h3>最终图片编排{hybridShared?" · 主图及详情图共用":" · "+hybridTarget}</h3><p>{hybridShared?"主图、详情图共用同一组最多 8 张图片，修改后两侧同步生效。":"当前仅配置"+hybridTarget+"的最多 8 张图片，另一侧可独立设置。"} 按位置添加；支持更换和删除。</p>
-    <div className={css.slotGrid}>{slots.map((v,i)=><div className={css.slot} key={i}><small>{String(i+1).padStart(2,"0")}</small><button type="button" aria-label={"添加第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setSourceTab("应用技能");setChild("add-image");}}>{v?<span>{v}</span>:"＋"}</button>{v?<button type="button" aria-label={"调整第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setChild("slot-actions");}}>···</button>:null}</div>)}</div>
-    <div className={css.toolbar}><button type="button" onClick={()=>setChild("language")}>语言：{form.imageLanguage??"不设置"}</button><button type="button" onClick={()=>setChild("background")}>底色：{form.imageBackground??"不设置"}</button><button type="button" disabled={!compact(slots).length} onClick={()=>setChild("sort")}>智能排序</button><button type="button" disabled={!compact(slots).length} onClick={()=>setChild("multi-adjust")}>多选调整</button><button type="button" onClick={()=>setChild("restore")}>恢复上次顺序</button></div>
+    <h3>最终图片编排{hybridShared?" · 主图及详情图共用":" · "+hybridTarget}</h3><p>{hybridShared?"主图、详情图共用同一组最多 8 张图片，修改后两侧同步生效。":"当前仅配置"+hybridTarget+"的最多 8 张图片，另一侧可独立设置。"} 拖动已有图片调整顺序，点击“＋”添加；支持更换和删除。</p>
+    <div className={css.slotGrid} aria-label="最终图片拖拽排序">{slots.map((v,i)=><div
+      className={css.slot} key={i} data-dragging={draggedSlot===i} data-drop-target={dragOverSlot===i&&draggedSlot!==i}
+      draggable={Boolean(v)}
+      aria-label={"图片位置 "+(i+1)+(v?" · "+v:" · 空位")}
+      onDragStart={event=>{if(!v){event.preventDefault();return;}dragSlotRef.current=i;setDraggedSlot(i);event.dataTransfer.effectAllowed="move";event.dataTransfer.setData("text/plain",String(i));}}
+      onDragOver={event=>{if(dragSlotRef.current===null)return;event.preventDefault();event.dataTransfer.dropEffect="move";setDragOverSlot(i)}}
+      onDrop={event=>{event.preventDefault();const from=dragSlotRef.current;if(from!==null)moveSlot(from,i);finishSlotDrag();}}
+      onDragEnd={finishSlotDrag}
+    ><small>{String(i+1).padStart(2,"0")}{v?<span className={css.slotDragHandle} aria-hidden="true">⋮⋮</span>:null}</small>
+      <button type="button" aria-label={"添加第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setSourceTab("应用技能");setChild("add-image");}}>{v?<span>{v}</span>:"＋"}</button>
+      {v?<button type="button" aria-label={"调整第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setChild("slot-actions");}}>···</button>:null}
+     </div>)}</div>
+    <div className={css.toolbar}><button type="button" onClick={()=>setChild("language")}>语言：{form.imageLanguage??"不设置"}</button><button type="button" onClick={()=>setChild("background")}>底色：{form.imageBackground??"不设置"}</button><button type="button" onClick={()=>setChild("restore")}>恢复上次顺序</button></div>
    </div>
    :mode==="pod-pattern-split"?<div className={css.stack}><label>参考素材<button type="button" className={css.sourceButton} aria-label="上传图片 / 从素材库选择" onClick={()=>setChild("source")}>＋ 上传图片 / 从素材库选择</button></label><p>{form.splitSource?"当前来源："+form.splitSource:"从本地或素材库中选择 1 张参考图片"}</p>{splitLibraryAsset?<div className={css.selectedReference}><img src={podAssetPreviewSrc(splitLibraryAsset)} alt={"当前参考素材 "+splitLibraryAsset.name}/><div><strong>{splitLibraryAsset.name}</strong><small>{splitLibraryAsset.category} · 已从我的素材库引用</small><button type="button" onClick={showAssetLibrary}>更换图片</button></div></div>:null}{form.splitSource==="本地上传"?<label>选择参考图片<input type="file" accept="image/*" onChange={e=>set("splitReference",e.target.files?.[0]?.name??"")}/></label>:null}<h3>裂变强度</h3><div className={css.optionGrid}>{["保守变化","适度创新","大胆裂变"].map(x=><button type="button" key={x} aria-pressed={(form.splitStrength??"适度创新")===x} onClick={()=>set("splitStrength",x)}>{x}</button>)}</div><p>保留主体关键特征，可调整色彩、细节和局部排版。</p></div>
    :mode==="pod-pattern-custom"?<div className={css.stack}><label>生成指令<textarea aria-label="生成指令" rows={5} placeholder="例如：黑色底，朋克风，加入不同样式的闪电和英文短句，适合腰部印刷……" value={form.patternPrompt??""} onChange={e=>set("patternPrompt",e.target.value)}/></label><p>AI 会优先遵循你的指令，同时自动做印刷适配与合规检查（实际能力待接入）。</p></div>
