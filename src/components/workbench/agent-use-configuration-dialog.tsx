@@ -391,6 +391,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
     {staleSelectedItems.length&&!catalogLoading?<p className={css.notice} role="status">原来保存的 {staleSelectedItems.length} 项未在当前账号可用列表中找到，保存时不会继续引用这些失效项目，请重新选择。</p>:null}
     <div className={css.inline}><strong>已选 {validSelectedItems.length} 项</strong><button type="button" onClick={()=>setSelectedItems([])}>清空</button></div>
    </div>
+   :null}
    {maybeNotice}
   </main>
   {example?<div className={css.optimizerExampleOverlay} role="dialog" aria-modal="true" aria-label="优化任务示例说明">
@@ -403,7 +404,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    </div>
    {exampleZoom?<div className={css.optimizerExampleZoom} role="dialog" aria-modal="true" aria-label="放大示例图片"><button type="button" onClick={()=>setExampleZoom(false)} aria-label="关闭放大图片">关闭放大</button><img src={officialImageExampleUrl(example.target,example.index)} onError={event=>{const img=event.currentTarget;const fallback=officialImageExampleUrl(example.target,example.index,"svg");if(img.src!==new URL(fallback,window.location.href).href)img.src=fallback;}} alt="放大后的1比1中文保温杯示例"/></div>:null}
   </div>:null}
-  <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child==="add-image"?"取消":child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={(isProductImage&&!child&&!productImageReady)||(child==="library"&&!selectedLibraryAsset)||(child==="add-image"&&(sourceTab==="应用技能"?!form.selectedSkills?.length:sourceTab==="从本地上传"?!fileName:sourceTab==="自定义指令"?!assetName.trim():true))} onClick={()=>{
+  <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child==="add-image"?"取消":child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={((mode==="skills"||mode==="knowledge")&&(catalogLoading||Boolean(catalogError)))||(isProductImage&&!child&&!productImageReady)||(child==="library"&&!selectedLibraryAsset)||(child==="add-image"&&(sourceTab==="应用技能"?!form.selectedSkills?.length:sourceTab==="从本地上传"?!fileName:sourceTab==="自定义指令"?!assetName.trim():true))} onClick={()=>{
    if(child==="restore"){setSlots(initialHybridSlots(hybridShared?initial.hybridSlots:hybridTarget==="主图"?initial.hybridMainSlots??initial.hybridSlots:initial.hybridDetailSlots??initial.hybridSlots));setChild("");return;}
    if(child==="ai-images"){addManyAi();return;}
    if(child==="library"){
