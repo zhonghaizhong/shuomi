@@ -87,6 +87,43 @@ async function readZip(file:File):Promise<Map<string,Uint8Array>>{
  }
  return files;
 }
+/** Recover actual browser-held historical images whose session-scoped gallery links were lost.
+ * Only reads the current org/member/task and known variant role; never labels imports as AI-generated.
+ */
+export async function recoverLocalListingPhotos(org:string,member:string,taskId:string):Promise<{found:number;restored:number}>{
+ const tasks=readShowcaseUploadTasks(org,member),task=tasks.find(t=>t.id===taskId);
+ if(!task?.demoProduct?.variantImageGroups?.length)throw new Error("当前商品没有可恢复的多变体图片记录");
+ const db=await openDatabase();
+ let keys:IDBValidKey[];
+ try{
+  keys=await new Promise<IDBValidKey[]>((resolve,reject)=>{
+   const tx=db.transaction(storeName,"readonly"),request=tx.objectStore(storeName).getAllKeys();
+   request.onsuccess=()=>resolve(request.result);
+   request.onerror=()=>reject(request.error??new Error("读取历史图片目录失败"));
+  });
+ }finally{db.close();}
+ const base=[org,member,taskId].join("|")+"|";
+ const available=new Set(keys.filter((k):k is string=>typeof k==="string"&&k.startsWith(base)));
+ const groups=task.demoProduct.variantImageGroups.map(group=>{
+  const existing=new Set(group.optimizedImages.map(img=>img.role));
+  const recovered:ListingVariantImage[]=[];
+  for(let i=0;i<listingVariantPhotoRoles.length;i++){
+   const role=listingVariantPhotoRoles[i],savedKey=base+group.id+"|"+i;
+   if(available.has(savedKey)&&!existing.has(role)){
+    recovered.push({role,url:scheme+savedKey,version:group.version,source:"demo-import",provenance:"在当前浏览器找回的历史导入素材，未验证为 AI 重构成品"});
+   }
+  }
+  return {...group,optimizedImages:[...group.optimizedImages,...recovered]};
+ });
+ const restored=groups.reduce((n,g,i)=>n+g.optimizedImages.length-task.demoProduct!.variantImageGroups![i].optimizedImages.length,0);
+ if(restored){
+  const next={...task,demoProduct:{...task.demoProduct,variantImageGroups:groups}};
+  const storageKey="shuomi:listing-upload-tasks-v1:"+org+":"+member;
+  sessionStorage.setItem(storageKey,JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
+  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
+ }
+ return {found:available.size,restored};
+}
 export type VariantBundleImportResult={imported:number;skipped:number;tasks:number;colors:number};
 /** One ZIP binds 36 images into the existing two Amazon showcase tasks, never creating a real platform upload. */
 export async function importAmazonVariantBundle(organizationId:string,memberId:string,file:File):Promise<VariantBundleImportResult>{
