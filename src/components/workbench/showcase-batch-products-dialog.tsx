@@ -33,7 +33,7 @@ export function ShowcaseBatchProductsDialog({batch,organizationId,memberId,other
  const [galleryIndex,setGalleryIndex]=useState(0);
  const [selectedVariantSku,setSelectedVariantSku]=useState<string|null>(null);
  const products=useMemo(()=>batch.products.filter(p=>(state.archived.includes(p.id)===(tab==="已归档"))&&!state.moved[p.id]&&(p.name+" "+p.sku+" "+p.source).toLowerCase().includes(query.trim().toLowerCase())&&(variant==="全部变体"||(variant==="多变体"&&(p.variantCount||0)>1)||(variant==="单变体"&&(p.variantCount||0)<=1))&&(Number(p.price.match(/\d+(?:\.\d+)?/)?.[0]??0)>=minPrice&&Number(p.price.match(/\d+(?:\.\d+)?/)?.[0]??0)<=maxPrice)),[batch.products,state,tab,query,variant,minPrice,maxPrice]);
- const perPage=10,count=Math.max(1,Math.ceil(products.length/perPage)),current=Math.min(page,count),rows=products.slice((current-1)*perPage,current*perPage);
+ const perPage=4,count=Math.max(1,Math.ceil(products.length/perPage)),current=Math.min(page,count),rows=products.slice((current-1)*perPage,current*perPage);
  const selectedAll=rows.length>0&&rows.every(p=>chosen.includes(p.id));
  useEffect(()=>{const node=dialog.current;if(node&&!node.open)node.showModal();return()=>node?.close()},[]);
  useEffect(()=>{setChosen([]);setPage(1);setMenu(null);},[tab,query,variant,minPrice,maxPrice]);
@@ -71,7 +71,7 @@ export function ShowcaseBatchProductsDialog({batch,organizationId,memberId,other
   {detailProduct?<div className={css.detailOverlay} role="presentation">
     <div className={css.detailStage}>
      <div className={css.detailStageTop}><span>{ownProductMode?"自有商品图片 · 保留原资料":batch.source==="Amazon"?"公开产品参考图片 · 非实时抓取":"演示参考照片 · 非 1688 原始采集图片"}</span><span>{variantGallery.length?galleryIndex+1:0} / {variantGallery.length}</span></div>
-     {activeImage?<img className={css.largeImage} src={activeImage} alt={(selectedVariant?.label??detailProduct.name)+"的商品参考图"}/>:<div className={css.emptyPhoto}>暂无可用照片</div>}
+     {activeImage?<img className={css.largeImage} src={activeImage} alt={detailProduct.name+"的放大演示参考图"}/>:<div className={css.emptyPhoto}>暂无可用照片</div>}
      <div className={css.gallery}>{variantGallery.map((url,i)=><button key={url} type="button" aria-label={"查看第"+(i+1)+"张图片"} aria-pressed={galleryIndex===i} onClick={()=>setGalleryIndex(i)}><img src={url} alt={(selectedVariant?.label??detailProduct.name)+" 图片 "+(i+1)}/></button>)}</div>
      {selectedVariant?<div className={css.variantCurrentInfo} aria-live="polite"><strong>{selectedVariant.label}</strong><span>SKU {selectedVariant.sku} · 颜色 {selectedVariant.color} · 规格 {selectedVariant.size}</span></div>:null}
     </div>
