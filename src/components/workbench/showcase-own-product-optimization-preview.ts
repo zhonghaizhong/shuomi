@@ -19,7 +19,7 @@ function labels(value:unknown):string[]{
 const textValue=(v:unknown,fallback="未设置"):string=>typeof v==="string"&&v.trim()?v.trim():fallback;
 const positions=(v:unknown):string=>Array.isArray(v)?v.filter((n):n is number=>Number.isInteger(n)&&n>=1&&n<=8).map(n=>"第"+n+"张").join("、")||"未选": "未选";
 function pictureDetails(config:Config):PictureSetting[]{
- const raw=config.useConfig&&typeof config.useConfig==="object"?config.useConfig as AgentUseConfiguration:{};
+ const raw:AgentUseConfiguration=config.useConfig&&typeof config.useConfig==="object"?config.useConfig as AgentUseConfiguration:{};
  const language=textValue(raw.imageLanguage,"未设置（不指定语言）");
  const bg=textValue(raw.imageBackground,"未设置（不限制背景）");
  const background=bg==="自定义背景要求"?bg+"："+textValue(raw.imageBackgroundCustom,"未填写自定义内容"):bg;
