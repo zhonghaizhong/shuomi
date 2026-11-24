@@ -1,7 +1,7 @@
 "use client";
 
 /** Isolated, browser-session-only fixture batches. Never represents a 1688 API response. */
-export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";images?:string[];variants?:string[];variantCount?:number;originalTitle?:string;description?:string;demoSourceLink?:string};
+export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string}>;originalTitle?:string;description?:string;demoSourceLink?:string};
 export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
 type CatalogItem={name:string;price:string;variants:string[];description:string;photos:string[]};
 // Public photographic sample references. Not original 1688 product photos or authenticated offers.
@@ -37,11 +37,60 @@ const amazonUsFive=[
  {asin:"B0CFPJYX7P",name:"Amazon Kindle Paperwhite 16GB (2024 Release), Black",price:"$129.99（第三方参考价）",variants:["Black / 16GB / 2024"],description:"真实商品资料演示：Amazon Kindle Paperwhite 2024 款，黑色、16GB。价格仅供演示，不代表当前 Amazon 实时成交价或库存。",photos:["https://www.bigw.com.au/medias/sys_master/images/images/h54/h94/85360867672094.jpg"]},
  {asin:"B00NTCHCU2",name:"Amazon Basics AAA Alkaline Batteries, 20-Count, 1.5V",price:"$12.49（第三方参考价）",variants:["AAA / 1.5V / 20-count"],description:"真实商品资料演示：Amazon Basics AAA 1.5V 碱性电池 20 粒装。ASIN 已核对；价格为第三方参考，非当前 Amazon 报价。",photos:["https://www.ufinebattery.com/images/upload/amazonbasics-alkaline.webp"]}
 ] as const;
+/** Verified real product families with color/size choices; Amazon child ASINs are NOT claimed.
+ * Image URLs are photographic originals shown on actual product pages, not generated art.
+ * Only the fixture is simulated; there was no Amazon API access or merchant listing created.
+ */
+export const amazonMultiVariantPhotoFixtures=[
+ {id:"SIM-AMZ-US-CROCS-10001",sku:"AMZ-US-CROCS-10001",name:"Crocs Unisex Classic Clog, Color and Size Options",price:"价格待采集（不模拟 Amazon 实时报价）",
+  sourceUrl:"https://www.crocs.com/p/classic-clog/10001.html",
+  description:"真实品牌商品 Crocs Classic Clog，款号 10001。演示颜色/尺码的多变体数据；Amazon 具体父子 ASIN 未核实，不应将本地 SKU 视为 ASIN。",
+  variants:[
+   {sku:"CROCS-001-M8",label:"Black / Men's US 8",color:"Black",size:"M8 / W10",image:"https://www.sneakers4u.nl/img/images/2023/07/14/crocs-classic-clog-black-10001-001.jpg"},
+   {sku:"CROCS-001-M9",label:"Black / Men's US 9",color:"Black",size:"M9 / W11",image:"https://www.sneakers4u.nl/img/images/2023/07/14/crocs-classic-clog-black-10001-001.jpg"},
+   {sku:"CROCS-100-M8",label:"White / Men's US 8",color:"White",size:"M8 / W10",image:"https://www.crocs.ch/cdn/shop/products/CRO0002WHT_7e46eabf-2af5-4d4f-a183-ee015167b6db_1200x.jpg?v=1704412862"},
+   {sku:"CROCS-100-M9",label:"White / Men's US 9",color:"White",size:"M9 / W11",image:"https://www.crocs.ch/cdn/shop/products/CRO0002WHT_7e46eabf-2af5-4d4f-a183-ee015167b6db_1200x.jpg?v=1704412862"},
+   {sku:"CROCS-410-M8",label:"Navy / Men's US 8",color:"Navy",size:"M8 / W10",image:"https://www.crocs.in/media/catalog/product/1/0/10001_410_alt100.jpeg"},
+   {sku:"CROCS-410-M9",label:"Navy / Men's US 9",color:"Navy",size:"M9 / W11",image:"https://www.crocs.in/media/catalog/product/1/0/10001_410_alt100.jpeg"}
+  ],
+  images:[
+   "https://www.sneakers4u.nl/img/images/2023/07/14/crocs-classic-clog-black-10001-001.jpg",
+   "https://www.crocs.ch/cdn/shop/products/CRO0002WHT_7e46eabf-2af5-4d4f-a183-ee015167b6db_1200x.jpg?v=1704412862",
+   "https://www.crocs.in/media/catalog/product/1/0/10001_410_alt100.jpeg"
+  ]},
+ {id:"SIM-AMZ-US-STANLEY-Q40",sku:"AMZ-US-STANLEY-QUENCHER40",name:"Stanley Quencher H2.0 FlowState Tumbler, 40 oz, Multiple Colors",price:"价格待采集（不模拟 Amazon 实时报价）",
+  sourceUrl:"https://www.stanley1913.com/products/adventure-quencher-travel-tumbler-40-oz",
+  description:"真实品牌商品 Stanley 40 oz Quencher H2.0 FlowState；演示颜色变体。Amazon 实时价格、库存及具体变体 ASIN 尚未通过接口核实。",
+  variants:[
+   {sku:"STANLEY-Q40-CREAM",label:"Cream 2.0 / 40 oz",color:"Cream 2.0",size:"40 oz",image:"https://au.stanley1913.com/cdn/shop/files/B2B_Web_PNG-TheQuencherH2.OFlowStateTumbler40OZ-Cream2.0-Front_1400x.png?v=1742252844"},
+   {sku:"STANLEY-Q40-BLACK",label:"Black / 40 oz",color:"Black",size:"40 oz",image:"https://au.stanley1913.com/cdn/shop/files/Untitleddesign_1_1400x.png?v=1741819955"},
+   {sku:"STANLEY-Q40-ROSE",label:"Rose Quartz / 40 oz",color:"Rose Quartz",size:"40 oz",image:"https://www.elite-usa.com/cdn/shop/files/EU_Stan_RQ_14967.jpg?v=1726066365&width=1024"}
+  ],
+  images:[
+   "https://au.stanley1913.com/cdn/shop/files/B2B_Web_PNG-TheQuencherH2.OFlowStateTumbler40OZ-Cream2.0-Front_1400x.png?v=1742252844",
+   "https://au.stanley1913.com/cdn/shop/files/Untitleddesign_1_1400x.png?v=1741819955",
+   "https://www.elite-usa.com/cdn/shop/files/EU_Stan_RQ_14967.jpg?v=1726066365&width=1024"
+  ]}
+] as const;
 const amazonDemoId="SIM-AMAZON-US-5-20261124";
 function amazonUsDemoBatch(organizationId:string,memberId:string):DemoCollectionBatch{
- return {id:amazonDemoId,organizationId,ownerMemberId:memberId,source:"Amazon",method:"美国站 · 商品资料演示",name:"Amazon 美国站 · 5个真实商品（模拟采集）",createdAt:"2026-11-24 18:11",status:"已采集 · 待上传",demo:true,
-  products:amazonUsFive.map((p,i)=>({id:"SIM-AMZ-US-"+p.asin,sku:p.asin,name:p.name,originalTitle:p.name,source:"Amazon US · ASIN "+p.asin+"（公开资料演示）",price:p.price,variants:[...p.variants],variantCount:1,images:[...p.photos],description:p.description,demoSourceLink:"https://www.amazon.com/dp/"+p.asin,status:"演示数据"}))
+ return {id:amazonDemoId,organizationId,ownerMemberId:memberId,source:"Amazon",method:"美国站 · 商品资料演示",name:"Amazon 美国站 · 7个真实商品（模拟采集）",createdAt:"2026-11-24 18:11",status:"已采集 · 待上传",demo:true,
+  products:[...amazonUsFive.map(p=>({id:"SIM-AMZ-US-"+p.asin,sku:p.asin,name:p.name,originalTitle:p.name,source:"Amazon US · ASIN "+p.asin+"（公开资料演示）",price:p.price,variants:[...p.variants],variantCount:1,images:[...p.photos],description:p.description,demoSourceLink:"https://www.amazon.com/dp/"+p.asin,status:"演示数据" as const})),
+   ...amazonMultiVariantPhotoFixtures.map(p=>({id:p.id,sku:p.sku,name:p.name,originalTitle:p.name,source:"Amazon 美国站 · 品牌实物公开资料（模拟采集，未核实 Amazon 子 ASIN）",price:p.price,variants:p.variants.map(v=>v.label),variantDetails:p.variants.map(v=>({...v})),variantCount:p.variants.length,images:[...p.images],description:p.description,demoSourceLink:p.sourceUrl,status:"演示数据" as const}))]
  };
+}
+/** Append two fixture products to an already seeded five-product batch without resetting edits. */
+function migrateAmazonMultiVariantBatch(batches:DemoCollectionBatch[]):DemoCollectionBatch[]{
+ return batches.map(b=>{
+  if(b.id!==amazonDemoId||b.source!=="Amazon"||b.organizationId!=="SM-ENT-000001"||b.ownerMemberId!=="admin")return b;
+  const additions=amazonMultiVariantPhotoFixtures.filter(p=>!b.products.some(existing=>existing.id===p.id)).map(p=>({
+   id:p.id,sku:p.sku,name:p.name,originalTitle:p.name,source:"Amazon 美国站 · 品牌商品公开资料（模拟采集）",price:p.price,
+   variants:p.variants.map(v=>v.label),variantDetails:p.variants.map(v=>({...v})),variantCount:p.variants.length,
+   images:[...p.images],description:p.description,demoSourceLink:p.sourceUrl,status:"演示数据" as const
+  }));
+  const oldName="Amazon 美国站 · 5个真实商品（模拟采集）";
+  return {...b,name:b.name===oldName?"Amazon 美国站 · 7个真实商品（模拟采集）":b.name,products:[...b.products,...additions]};
+ });
 }
 const amazonSeedMarker=(org:string,member:string)=>"shuomi:amazon-us-five-seeded-v1:"+org+":"+member;
 
@@ -61,6 +110,7 @@ export function readDemoCollectionBatches(organizationId:string,memberId="admin"
    if(!result.some(b=>b.id===amazonDemoId))result=[amazonUsDemoBatch(organizationId,memberId),...result];
    sessionStorage.setItem(amazonSeedMarker(organizationId,memberId),"1");
   }
+  result=migrateAmazonMultiVariantBatch(result);
   sessionStorage.setItem(key(organizationId),JSON.stringify(result));
   return result.filter(batch=>batch.organizationId===organizationId&&batch.ownerMemberId===memberId).map(decorate);
  }catch{return organizationId==="SM-ENT-000001"&&memberId==="admin"?[amazonUsDemoBatch(organizationId,memberId),initialBatch(organizationId)]:[];}
