@@ -4736,21 +4736,22 @@
 }
 .knowledgeIntroGrid {
   display: grid;
+  box-sizing: border-box;
   width: 100%;
-  max-width: 1320px;
   margin-inline: 0;
   grid-template-columns: repeat(2,minmax(0,1fr));
   gap: 18px;
   min-width: 0;
+  container-type: inline-size;
 }
 .knowledgeIntroCard {
   --knowledge-accent: #7367f0;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 342px;
-  gap: 14px;
-  padding: 23px 24px 21px;
+  min-height: 292px;
+  gap: 12px;
+  padding: 20px 22px 19px;
   border: 1px solid color-mix(in srgb,var(--knowledge-accent) 28%,#44485e);
   border-radius: 9px;
   background: linear-gradient(130deg,color-mix(in srgb,var(--knowledge-accent) 5%,#2f3349),#2f3349 76%);
@@ -4843,7 +4844,6 @@
   display:grid;
   box-sizing:border-box;
   width:100%;
-  max-width:1320px;
   margin-inline:0;
   grid-template-columns:245px minmax(0,1fr);
   align-items:center;
@@ -4878,6 +4878,47 @@
 .knowledgeIntroFlowSteps li svg {flex:none;color:#a99dff;}
 .knowledgeIntroFlowSteps li:not(:last-child)::after {content:"→";margin-left:8px;color:#a8a3c4;}
 .knowledgeIntroFlowContent p {margin:0;color:#acabc1;font-size:12px;line-height:1.5;}
+/* Wide cards divide content into introduction and concrete example without extra panels.
+   The grid and the footer span exactly the same available width as the title panel. */
+@container (min-width: 1400px) {
+  .knowledgeIntroCard {
+    display: grid;
+    grid-template-columns: minmax(0,1.16fr) minmax(0,.84fr);
+    grid-template-rows: minmax(0,1fr) auto;
+    align-items: start;
+    column-gap: 22px;
+    row-gap: 14px;
+    min-height: 258px;
+  }
+  .knowledgeIntroTop {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .knowledgeIntroExample {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: stretch;
+    justify-content: center;
+    padding: 0 0 0 20px;
+    border-top: 0;
+    border-left: 1px solid #494d66;
+  }
+  .knowledgeIntroTags {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+  }
+  .knowledgeIntroCard > button {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    align-self: center;
+    margin-top: 0;
+  }
+  :global(.light) .knowledgeIntroExample {
+    border-left-color: #e6e6f1;
+  }
+}
 :global(.light) .libraryHubPreview[data-library-hub="knowledge"] > .header,
 :global(.light) .libraryHubPreview[data-library-hub="knowledge"] .knowledgeIntroFlow {
   color:#444050;

@@ -196,12 +196,20 @@ test("knowledge landing has exactly two compact entries at desktop and mobile wi
    if(width>=1920)expect(bounds.width).toBeGreaterThan(1250);
    else expect(bounds.width).toBeGreaterThan(850);
    expect(bounds.width).toBeLessThanOrEqual(1601);
-   expect(boxes[0].width).toBeLessThan(655);
-   expect(Math.abs(boxes[0].x-bounds.x)).toBeLessThan(3);
-   expect(Math.abs(stripBounds!.x-boxes[0].x)).toBeLessThan(3);
-   expect(Math.abs(stripBounds!.width-(boxes[1].right-boxes[0].x))).toBeLessThan(3);
+   // The title, two-card row and help strip must share BOTH edges.
+   expect(Math.abs(boxes[0].x-headerBounds!.x)).toBeLessThan(3);
+   expect(Math.abs(boxes[1].right-(headerBounds!.x+headerBounds!.width))).toBeLessThan(3);
+   expect(Math.abs(stripBounds!.x-headerBounds!.x)).toBeLessThan(3);
+   expect(Math.abs((stripBounds!.x+stripBounds!.width)-(headerBounds!.x+headerBounds!.width))).toBeLessThan(3);
    expect(Math.abs(boxes[0].width-boxes[1].width)).toBeLessThan(3);
    expect(Math.abs(boxes[0].y-boxes[1].y)).toBeLessThan(3);
+   // On large monitors the two equal cards use their full width but stay compact.
+   const heights=await cards.evaluateAll(items=>items.map(el=>el.getBoundingClientRect().height));
+   if(bounds.width>=1400){
+    expect(boxes[0].width).toBeGreaterThan(650);
+    expect(heights[0]).toBeLessThan(310);
+    expect(Math.abs(heights[0]-heights[1])).toBeLessThan(3);
+   }
   }else{
    expect(boxes[1].y).toBeGreaterThan(boxes[0].y+120);
   }
