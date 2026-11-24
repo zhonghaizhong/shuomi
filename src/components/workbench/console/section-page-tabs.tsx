@@ -5,7 +5,7 @@ import styles from "./section-page-tabs.module.css";
 type Tab={label:string;href:string};
 const groups:Record<string,{title:string;description:string;tabs:Tab[]}>={
  listing:{title:"刊登管理",description:"从商品数据开始，选择店铺并配置规则，资料缺失先补全；审核完成再查看上传结果。",tabs:[{label:"刊登总览",href:"/workbench/listing"},{label:"待上传",href:"/workbench/listing/waiting"},{label:"待补全",href:"/workbench/listing/missing"},{label:"待审核",href:"/workbench/listing/review"},{label:"已上传",href:"/workbench/listing/uploaded"}]},
- chat:{title:"硕米Chat",description:"新建会话提出需求；最近会话继续工作，收藏会话保存重要内容。",tabs:[{label:"会话首页",href:"/workbench/ai/chat"},{label:"最近会话",href:"/workbench/ai/chat/recent"},{label:"收藏会话",href:"/workbench/ai/chat/saved"}]},
+ chat:{title:"硕米Chat",description:"新建会话提出需求；最近会话继续工作，收藏会话保存重要内容。",tabs:[{label:"会话首页",href:"/workbench/ai/chat"},{label:"＋ 新建会话",href:"/workbench/ai/chat/new"},{label:"最近会话",href:"/workbench/ai/chat/recent"},{label:"收藏会话",href:"/workbench/ai/chat/saved"}]},
  tasks:{title:"任务中心",description:"查看任务进度；待确认事项及时处理，异常任务查看原因后再继续。",tabs:[{label:"任务总览",href:"/workbench/ai/tasks"},{label:"进行中",href:"/workbench/ai/tasks/running"},{label:"待确认",href:"/workbench/ai/tasks/pending"},{label:"已完成",href:"/workbench/ai/tasks/completed"},{label:"异常任务",href:"/workbench/ai/tasks/errors"},{label:"定时任务",href:"/workbench/ai/tasks/scheduled"}]},
  projects:{title:"项目中心",description:"总览查看项目进度；通过项目模板快速开始，历史项目可随时查找。",tabs:[{label:"项目总览",href:"/workbench/ai/projects"},{label:"进行中项目",href:"/workbench/ai/projects/active"},{label:"最近访问",href:"/workbench/ai/projects/recent"},{label:"项目模板",href:"/workbench/ai/projects/templates"},{label:"已归档",href:"/workbench/ai/projects/archived"}]},
  knowledge:{title:"知识库",description:"官方规则与自有资料统一管理；使用 AI 时按需选择引用。",tabs:[{label:"知识库介绍",href:"/workbench/ai/knowledge"},{label:"官方知识库",href:"/workbench/ai/knowledge/official"},{label:"我的知识库",href:"/workbench/ai/knowledge/mine"}]},
@@ -15,17 +15,16 @@ const groups:Record<string,{title:string;description:string;tabs:Tab[]}>={
 };
 export type SectionTabsKey=keyof typeof groups;
 export function sectionForPath(path:string):SectionTabsKey|undefined {return (Object.keys(groups) as SectionTabsKey[]).find(key=>groups[key].tabs.some(tab=>path===tab.href));}
-export function SectionPageTabs({section,showHelp=false,activeHref,onSelect,onCreateChat}:{section:SectionTabsKey;showHelp?:boolean;activeHref?:string;onSelect?:(href:string)=>void;onCreateChat?:()=>void}){
+export function SectionPageTabs({section,showHelp=false,activeHref,onSelect}:{section:SectionTabsKey;showHelp?:boolean;activeHref?:string;onSelect?:(href:string)=>void}){
  const pathname=usePathname(),query=useSearchParams();
  const group=groups[section];
  const preview=query?.get("preview")==="1";
  return <section className={styles.shell} aria-label={group.title+"页面导航"}>
   {showHelp?<p className={styles.help}>{group.description}</p>:null}
   <nav className={styles.tabs} aria-label={group.title+"分类"}>
-   {group.tabs.map((tab,index)=><span className={styles.tabItem} key={tab.href}>
-    {onSelect?<button type="button" onClick={()=>onSelect(tab.href)} aria-current={(activeHref??pathname)===tab.href?"page":undefined}>{tab.label}</button>:<Link href={tab.href+(preview?"?preview=1":"")} prefetch={false} aria-current={pathname===tab.href?"page":undefined}>{tab.label}</Link>}
-    {section==="chat"&&index===0?(onCreateChat?<button type="button" className={styles.createChat} onClick={onCreateChat}>＋ 新建会话</button>:<Link className={styles.createChat} href={"/workbench/ai/chat/new"+(preview?"?preview=1":"")} prefetch={false}>＋ 新建会话</Link>):null}
-   </span>)}
+   {group.tabs.map(tab=>onSelect
+    ?<button key={tab.href} type="button" onClick={()=>onSelect(tab.href)} aria-current={(activeHref??pathname)===tab.href?"page":undefined}>{tab.label}</button>
+    :<Link key={tab.href} href={tab.href+(preview?"?preview=1":"")} prefetch={false} aria-current={pathname===tab.href?"page":undefined}>{tab.label}</Link>)}
   </nav>
  </section>;
 }
