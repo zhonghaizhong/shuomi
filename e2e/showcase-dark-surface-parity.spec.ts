@@ -185,9 +185,15 @@ test("Alerts and advice each keep nine filter controls on one desktop row",async
   await expect(controls).toHaveCount(9);
   const boxes=await controls.evaluateAll(elements=>elements.map(el=>{
    const rect=el.getBoundingClientRect();
-   return {left:rect.left,top:rect.top,right:rect.right,width:rect.width};
+   const style=getComputedStyle(el);
+   return {tag:el.tagName,left:rect.left,top:rect.top,right:rect.right,width:rect.width,
+    gridRow:style.gridRowStart,gridColumn:style.gridColumnStart,marginTop:style.marginTop};
   }));
-  for(const box of boxes)expect(Math.abs(box.top-boxes[0].top)).toBeLessThan(3);
+  const layout=await bar.evaluate(el=>({display:getComputedStyle(el).display,
+   gridColumns:getComputedStyle(el).gridTemplateColumns,
+   viewport:innerWidth}));
+  console.log("[cockpit-filter-layout]",kind,layout,boxes);
+  for(const box of boxes)expect(Math.abs(box.top-boxes[0].top),JSON.stringify({kind,layout,boxes})).toBeLessThan(3);
   for(let i=1;i<boxes.length;i++)expect(boxes[i].left).toBeGreaterThanOrEqual(boxes[i-1].right-2);
   await expect(bar.getByRole("button",{name:"选择统计时间"})).toHaveText("全部时间");
   await bar.getByRole("button",{name:"选择统计时间"}).click();
