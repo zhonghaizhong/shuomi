@@ -39,7 +39,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
  useEffect(()=>{
   const refresh=()=>setTemplates(agentTemplates(organizationId,memberId,agent));
   refresh();
-  setTemplate("");
+  setTemplate(current=>{const saved=agentTemplates(organizationId,memberId,agent);return saved.includes(current)?current:""});
   const onChange=(event:Event)=>{
    const detail=(event as CustomEvent<{organizationId:string;memberId:string;agent:string}>).detail;
    if(detail?.organizationId!==organizationId||detail?.memberId!==memberId||detail?.agent!==agent)return;
@@ -54,14 +54,25 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
  const [batchId,setBatchId]=useState(""),[batchMode,setBatchMode]=useState<"create"|"select"|null>(null),[batchName,setBatchName]=useState("");
  const currentBatch=batches.find(b=>b.id===batchId);
  const simulateFive=()=>{
-  if(agent!=="商品优化智能体"){setStatus("请先启用并选择「商品优化智能体」。");return;}
-  if(!template||!templates.includes(template)){setStatus("请先选择该智能体已保存的测试模板。");return;}
-  if(currentBatch?.name!=="自有商品测试批次"){setStatus("请先选择「自有商品测试批次」。");return;}
+  // One-click demo: resolve the existing owned batch and saved test template without requiring unrelated form selections.
+  const ownedBatch=batches.find(b=>b.name==="自有商品测试批次");
+  if(!ownedBatch){setStatus("当前企业成员没有「自有商品测试批次」。请先创建该批次，或切换到创建它的账号。");return;}
+  const available=availableAgents();
+  if(!available.includes("商品优化智能体")){setStatus("请先在「我的智能体」启用商品优化智能体。");return;}
+  const saved=agentTemplates(organizationId,memberId,"商品优化智能体");
+  const chosenTemplate=saved.find(t=>t.includes("测试"))??saved[0];
+  if(!chosenTemplate){setStatus("商品优化智能体尚无已保存模板。请在「我的智能体」保存测试模板后再模拟上传。");return;}
   try{
-   const result=simulateFiveOwnProductIntakes(organizationId,memberId,currentBatch.id,template);
+   setAgent("商品优化智能体");
+   setBatchId(ownedBatch.id);
+   setTemplate(chosenTemplate);
+   const result=simulateFiveOwnProductIntakes(organizationId,memberId,ownedBatch.id,chosenTemplate);
+   const latest=readOwnProducts(organizationId,memberId).filter(p=>p.batchId===ownedBatch.id);
+   const pending=latest.filter(p=>p.status==="入库待完善").length;
+   const review=latest.filter(p=>p.status==="待审核").length;
    setBatches(readOwnProductBatches(organizationId,memberId));
    setIntakeRefresh(v=>v+1);
-   setStatus(result.created?("模拟导入 "+result.created+" 件：本次待完善 "+result.pending+" 件，待审核 "+result.review+" 件。测试记录已保存至当前企业成员的浏览器会话。"):"这 5 件测试商品已存在当前批次，不会重复导入。");
+   setStatus(result.created?(`模拟上传成功：本次新增 ${result.created} 件；「自有商品测试批次」当前待完善 ${pending} 件、待审核 ${review} 件。已使用模板「${chosenTemplate}」，可点击右侧待办查看。`):(`这 5 件测试商品已存在该批次，未重复导入。当前待完善 ${pending} 件、待审核 ${review} 件。`));
   }catch(e){setStatus(e instanceof Error?e.message:"模拟导入失败");}
  };
 
@@ -188,7 +199,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
       <button type="button" aria-expanded={batchMode==="select"} onClick={()=>{setBatchMode(batchMode==="select"?null:"select");setStatus("")}}>选择自有商品批次</button>
     </div>
     <button type="button" className={styles.submit} onClick={validate}>提交检测</button>
-    <button type="button" className={styles.submit} disabled={agent!=="商品优化智能体"||!template||currentBatch?.name!=="自有商品测试批次"} onClick={simulateFive} title="仅当前企业成员的测试数据；不会调用实际上传或 AI 服务">模拟上传 5 件测试商品</button>
+    <button type="button" className={styles.submit} onClick={simulateFive} title="自动选择当前账号的自有商品测试批次与已保存的商品优化智能体测试模板；不调用实际 AI 服务">模拟上传 5 件测试商品</button>
     <button type="button" className={`${styles.intakeAction} ${styles.intakePending}`} onClick={()=>openStage("pending")}>待完善 <b>{pendingRecords.length}</b></button>
     <button type="button" className={`${styles.intakeAction} ${styles.intakeReview}`} onClick={()=>openStage("review")}>待审核 <b>{awaitingRecords.length}</b></button></div>
     {batchMode==="create"?<div className={styles.batchEditor}><label>新批次名称<input aria-label="新建自有商品批次名称" maxLength={60} placeholder="输入批次名称" value={batchName} onChange={e=>setBatchName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveBatch()}}}/></label><button type="button" onClick={saveBatch}>创建并选择</button><button type="button" onClick={()=>setBatchMode(null)}>取消</button></div>:null}
