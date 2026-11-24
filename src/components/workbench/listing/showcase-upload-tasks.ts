@@ -211,7 +211,7 @@ export function saveListingVariantPhoto(org:string,member:string,taskId:string,c
 export function saveShowcaseGalleryEdits(org:string,member:string,taskId:string,colorId:string,kind:"main"|"detail",urls:string[]):ShowcaseUploadTask{
  const tasks=readShowcaseUploadTasks(org,member),task=tasks.find(t=>t.id===taskId);
  if(!task?.demoProduct||!["待补全","待审核"].includes(task.status))throw new Error("当前任务不可编辑图片");
- if(kind==="main"&&task.demoProduct.variantImageGroups?.length&&!task.demoProduct.variantImageGroups.some(g=>g.id===colorId))throw new Error("颜色组不存在");
+ if(task.demoProduct.variantImageGroups?.length&&!task.demoProduct.variantImageGroups.some(g=>colorId===g.id||colorId===g.id+":optimized"||colorId===g.id+":original"||colorId===g.id+":detail"))throw new Error("颜色组不存在");
  if(urls.length>24||urls.some(u=>typeof u!=="string"||!(/^(https:\\/\\/|\\/assets\\/|shuomi-bundle:)/.test(u))))throw new Error("图片地址无效或数量超限");
  const existing=task.imageEdits??{};
  const next={...task,imageEdits:{...existing,[colorId]:{...existing[colorId],[kind]:[...urls]}}};
