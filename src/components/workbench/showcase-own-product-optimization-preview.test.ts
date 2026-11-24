@@ -48,10 +48,13 @@ it("keeps pending, review and approved statuses separate and never reopens an ap
  expect(()=>approveOwnProductIntake(org,member,cup.id)).toThrow("待审核");
  const completed=updateOwnProductAfterReview(org,member,cup.id,cup.skus.map(s=>({...s,description:"由用户补充的商品实物说明"})));
  expect(completed.status).toBe("待审核");
+ expect(completed.originalSkus?.[0]?.description).toBe("");
+ expect(completed.skus[0]?.description).toBe("由用户补充的商品实物说明");
  expect(completed.missing).toEqual([]);
  expect(()=>updateOwnProductAfterReview(org,member,cup.id,cup.skus)).toThrow("只有待完善商品");
  expect(approveOwnProductIntake(org,member,cup.id).status).toBe("已入库");
  expect(()=>updateOwnProductAfterReview(org,member,cup.id,cup.skus)).toThrow("只有待完善商品");
  expect(()=>approveOwnProductIntake(org,member,cup.id)).toThrow("待审核");
  expect(readOwnProducts(org,member).find(p=>p.id===cup.id)?.status).toBe("已入库");
+ expect(readOwnProducts(org,member).find(p=>p.id===cup.id)?.originalSkus?.[0]?.description).toBe("");
 });
