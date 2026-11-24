@@ -216,16 +216,32 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    :child==="multi-adjust"?<div className={css.stack}><div className={css.optionGrid}>{slots.map((slot,i)=>slot?<label className={css.imageChoice} key={i}><input type="checkbox" checked={multiSelected.includes(i)} onChange={()=>setMultiSelected(old=>old.includes(i)?old.filter(x=>x!==i):[...old,i])}/>{String(i+1).padStart(2,"0")} · {slot}</label>:null)}</div><p>已选 {multiSelected.length} 张</p><div className={css.toolbar}><button onClick={()=>applyMulti("first")} disabled={!multiSelected.length}>移到最前</button><button onClick={()=>applyMulti("last")} disabled={!multiSelected.length}>移到最后</button><button onClick={()=>applyMulti("remove")} disabled={!multiSelected.length}>移除</button></div></div>
    :child==="restore"?<p>将恢复到最近一次保存的图片组合与顺序，未保存的调整会被覆盖。</p>
    :child==="add-image"?<>
-    <div className={css.tabGrid}>{["应用技能","预设指令AI重构","从本地上传","自定义指令","官方图片","AI 渲染图片"].map(t=><button key={t} aria-pressed={sourceTab===t} onClick={()=>setSourceTab(t)}>{t}</button>)}</div>
-    <section className={css.panel}><h3>{sourceTab}</h3>
-     {sourceTab==="应用技能"?<><p>沿用步骤 3 已启用的技能，按图片所在位置匹配。</p><button type="button" onClick={()=>addSlot("技能·"+String(slotIndex+1).padStart(2,"0"))}>应用到当前编排位置</button></>
-     :sourceTab==="预设指令AI重构"?<div className={css.optionGrid}>{(form.hybridTarget==="详情图"?officialDetail:initialOfficial).map((name,i)=><button key={name} onClick={()=>addSlot("AI·"+name)}>{String(i+1).padStart(2,"0")} · {name}</button>)}</div>
-     :sourceTab==="官方图片"?<button type="button" onClick={()=>setChild("official-images")}>选择官方图片</button>
-     :sourceTab==="AI 渲染图片"?<button type="button" onClick={()=>setChild("ai-images")}>选择 AI 渲染图片</button>
-     :sourceTab==="从本地上传"?<><label>选择图片文件<input type="file" accept="image/*" onChange={e=>{const file=e.target.files?.[0];setFileName(file?.name??"");}}/></label><p>演示版不上传文件至服务器。</p><button type="button" disabled={!fileName} onClick={()=>addSlot("本地·"+fileName)}>确认添加所选图片</button></>
-     :<><label>自定义图片指令<textarea value={assetName} onChange={e=>setAssetName(e.target.value)} placeholder="例如：服装产品主体、面料质感、英文卖点、1:1 构图"/></label><button type="button" disabled={!assetName.trim()} onClick={()=>addSlot("AI·自定义指令")}>应用当前指令</button></>}
+    <div className={css.imageSourceCards} aria-label="图片来源">
+     {([
+      ["应用技能","沿用已启用技能"],
+      ["预设指令AI重构","使用预设指令生成图片"],
+      ["从本地上传","上传电脑中的图片"],
+      ["自定义指令","按指令生成图片"]
+     ] as const).map(([name,description])=><button type="button" key={name} aria-pressed={sourceTab===name} onClick={()=>{setSourceTab(name);setMessage("");}}><strong>{name}</strong><small>{description}</small></button>)}
+    </div>
+    <section className={css.imageSourcePanel}>
+     {sourceTab==="应用技能"?<>
+      <div className={css.imageSourcePanelHeading}><div><h3>应用技能</h3><p>自动沿用步骤 3 已启用的技能，无需在这里重复选择。</p></div><span className={css.imageSkillStatus} data-enabled={Boolean(form.selectedSkills?.length)}>{form.selectedSkills?.length?"已启用 "+form.selectedSkills.length+" 项技能":"● 步骤 3 未启用技能"}</span></div>
+      <div className={css.imageAutoMatch}><strong>图片位置自动匹配</strong><div className={css.imageAutoMatchGrid}>
+       <div><small>当前编排位置</small><strong>{hybridShared?"主图 / 详情图":hybridTarget}第{slotIndex+1}张</strong></div>
+       <span aria-hidden="true" className={css.imageAutoArrow}>→</span>
+       <div className={css.imageAutoResult}><small>自动匹配来源</small><strong>{form.selectedSkills?.length?"已启用技能 · "+(hybridShared?"主图 / 详情图":hybridTarget)+"第"+(slotIndex+1)+"张":"尚无已启用技能"}</strong></div>
+      </div><p>同类型、同序号自动匹配 · 主图对应主图，详情图对应详情图</p></div>
+      <p className={css.imageSourceHelper}>{form.selectedSkills?.length?"将按已启用技能和当前图片位置建立引用；实际执行仍须校验技能规则。":"如技能缺少该序号的图片，将不会自动引用其他图片。请先在步骤 3 启用技能。"}</p>
+     </>
+     :sourceTab==="预设指令AI重构"?<>
+      <h3>预设指令AI重构</h3><p>选择当前位置的图片优化任务，点击后加入最终编排序列。</p>
+      <div className={css.optionGrid}>{(hybridTarget==="详情图"&&!hybridShared?officialDetail:initialOfficial).map((name,i)=><button key={name} type="button" onClick={()=>addSlot("AI·"+name)}>{String(i+1).padStart(2,"0")} · {name}</button>)}</div>
+      <div className={css.imageOtherSources}><button type="button" onClick={()=>setChild("official-images")}>官方图片</button><button type="button" onClick={()=>setChild("ai-images")}>AI 渲染图片</button></div>
+     </>
+     :sourceTab==="从本地上传"?<><h3>从本地上传</h3><label>选择图片文件<input type="file" accept="image/*" onChange={e=>setFileName(e.target.files?.[0]?.name??"")}/></label><p>已选择：{fileName||"尚未选择文件"}。演示版不会上传文件至服务器。</p></>
+     :<><h3>自定义指令</h3><label>自定义图片指令<textarea value={assetName} onChange={e=>setAssetName(e.target.value)} placeholder="例如：服装产品主体、面料质感、英文卖点、1:1 构图"/></label><p>按当前编排位置应用此指令，实际图片生成需连接模型。</p></>}
     </section>
-   </>
    :isProductImage?<div className={css.optimizer}>
     <div className={css.optimizerRows}>
      <section className={css.optimizerRow}><div className={css.optimizerRowTitle}><span>1</span><div><strong>优化方式</strong><small>选择规则来源</small></div></div><div className={css.optimizerChoicesThree}>
@@ -305,7 +321,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    </div>
    {exampleZoom?<div className={css.optimizerExampleZoom} role="dialog" aria-modal="true" aria-label="放大示例图片"><button type="button" onClick={()=>setExampleZoom(false)} aria-label="关闭放大图片">关闭放大</button><img src={officialImageExampleUrl(example.target,example.index)} onError={event=>{const img=event.currentTarget;const fallback=officialImageExampleUrl(example.target,example.index,"svg");if(img.src!==new URL(fallback,window.location.href).href)img.src=fallback;}} alt="放大后的1比1中文保温杯示例"/></div>:null}
   </div>:null}
-  <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={isProductImage&&!child&&!productImageReady} onClick={()=>{
+  <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child==="add-image"?"取消":child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={(isProductImage&&!child&&!productImageReady)||(child==="add-image"&&(sourceTab==="应用技能"?!form.selectedSkills?.length:sourceTab==="从本地上传"?!fileName:sourceTab==="自定义指令"?!assetName.trim():true))} onClick={()=>{
    if(child==="restore"){setSlots(initialHybridSlots(hybridShared?initial.hybridSlots:hybridTarget==="主图"?initial.hybridMainSlots??initial.hybridSlots:initial.hybridDetailSlots??initial.hybridSlots));setChild("");return;}
    if(child==="ai-images"){addManyAi();return;}
    if(child==="library"){
@@ -313,12 +329,27 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
     setForm(v=>({...v,splitSource:"素材库",splitReference:librarySelected}));setChild("");setMessage("已选择原型素材示例；未读取真实素材库。");return;
    }
    if(child==="language"||child==="background"){setChild("");return;}
+   if(child==="add-image"){
+    if(sourceTab==="应用技能"){
+     if(!form.selectedSkills?.length){setMessage("请先在步骤 3 启用技能。");return;}
+     addSlot("技能·"+(hybridShared?"主图/详情图":hybridTarget)+"第"+(slotIndex+1)+"张");return;
+    }
+    if(sourceTab==="从本地上传"){
+     if(!fileName){setMessage("请先选择本地图片。");return;}
+     addSlot("本地·"+fileName);return;
+    }
+    if(sourceTab==="自定义指令"){
+     if(!assetName.trim()){setMessage("请先填写生成指令。");return;}
+     addSlot("AI·自定义指令");return;
+    }
+    setMessage("请从上方选择一项图片任务。");return;
+   }
    if(child){setChild("");return;}
    if(isProductImage){saveProductImage();return;}
    if(mode==="pod-pattern-split"&&!form.splitReference?.trim()){setMessage("图片裂变需要先选择一张参考图片，不能空白保存。");return;}
    if(mode==="pod-pattern-custom"&&!form.patternPrompt?.trim()){setMessage("请填写生成指令后保存配置。");return;}
    if(isImage&&form.generationRule==="自定义指令"&&!tasks.some(t=>t.prompt.trim())){setMessage("请至少填写一条独立生成指令。");return;}
    commit();
-  }}>{child?"确认选择":mode==="pod-hybrid"?"保存组合":mode==="skills"?"完成选择":mode==="knowledge"?"确认选择":mode==="product-image"?(productImageReady?"确认选择":"请先补全"):mode==="pod-ai"?"确认选择":"保存配置"}</button></footer>
+  }}>{child==="add-image"?"确认应用":child?"确认选择":mode==="pod-hybrid"?"保存组合":mode==="skills"?"完成选择":mode==="knowledge"?"确认选择":mode==="product-image"?(productImageReady?"确认选择":"请先补全"):mode==="pod-ai"?"确认选择":"保存配置"}</button></footer>
  </dialog>;
 }
