@@ -11,7 +11,7 @@ import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./showcase-batch-version-picker";
 import styles from "./showcase-listing-stages.module.css";
-import {importAmazonVariantBundle,recoverLocalListingPhotos,readVariantBundlePhoto,saveListingLocalPhoto,isVariantBundleUrl} from "./showcase-variant-bundle-import";
+import {importAmazonVariantBundle,importSingleColorAIReconstruction,recoverLocalListingPhotos,readVariantBundlePhoto,saveListingLocalPhoto,isVariantBundleUrl} from "./showcase-variant-bundle-import";
 import {ShowcaseListingStageHeader} from "./showcase-listing-stage-header";
 import {parseListingPhoto,listingPhotoAtlasUrl} from "./showcase-listing-ai-images";
 
@@ -160,6 +160,8 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const [photoAiOpen,setPhotoAiOpen]=useState(false),[photoAiPrompt,setPhotoAiPrompt]=useState("");
  const [photoBusy,setPhotoBusy]=useState(false);
  const [recoveringPhotos,setRecoveringPhotos]=useState(false);
+ const aiSixImportRef=useRef<HTMLInputElement>(null);
+ const [aiSixImporting,setAiSixImporting]=useState(false);
  const autoRecoveryAttempted=useRef<Set<string>>(new Set());
  const [fieldTab,setFieldTab]=useState<"common"|"shared"|"variant"|"sku">("common");
  const [activeSkuId,setActiveSkuId]=useState("");
@@ -224,7 +226,17 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   finally{setBundleImporting(false);}
  };
 
- const restoreHistoricalPhotos=async()=>{
+ const uploadSixAIImages=async(file:File|undefined)=>{
+  if(!file||!selectedTask||!selectedVariantGroup)return;
+  setAiSixImporting(true);
+  try{
+   const imported=await importSingleColorAIReconstruction(organizationId,memberId,selectedTask.id,selectedVariantGroup.id,file);
+   setPhotoMode("optimized");setPictureTab("main");setPhotoIndex(0);
+   setNotice("已为 "+selectedVariantGroup.color+" 关联 "+imported+" 张新生成的 AI 重构图片；同色尺码共享，保存原始图，进入人工审核后再上架。");
+  }catch(e){setNotice(e instanceof Error?e.message:"导入 AI 重构图片包失败");}
+  finally{setAiSixImporting(false);}
+ };
+  const restoreHistoricalPhotos=async()=>{
   if(!selectedTask)return;
   setRecoveringPhotos(true);
   try{
@@ -452,6 +464,10 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
      {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length<6?<div className={styles.galleryRecoverRow}>
       <span>检查已生成图片的历史关联</span>
       <button type="button" disabled={!selectedTask||recoveringPhotos} onClick={()=>void restoreHistoricalPhotos()}>{recoveringPhotos?"正在查找…":"恢复已生成的 AI 重构图片"}</button>
+      {selectedVariantGroup?.id==="black"?<>
+       <input ref={aiSixImportRef} className={styles.galleryFileInput} type="file" accept=".zip,application/zip" aria-label="导入本颜色的六张AI重构图片包" onChange={e=>{const file=e.currentTarget.files?.[0];void uploadSixAIImages(file);e.currentTarget.value=""}}/>
+       <button type="button" disabled={!selectedTask||aiSixImporting} onClick={()=>aiSixImportRef.current?.click()}>{aiSixImporting?"正在关联…":"导入6张新AI重构图"}</button>
+      </>:null}
      </div>:null}
      {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.some(x=>x.source==="demo-import")?<p className={styles.galleryImportedNote}>已找回 {selectedVariantGroup.optimizedImages.filter(x=>x.source==="demo-import").length} 张历史文件；请确认它们是 AI 重构成品还是其他来源，系统不会擅自改写来源证明。</p>:null}
      {galleryImages.length?<div className={styles.compactGallery}>
