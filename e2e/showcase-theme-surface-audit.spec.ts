@@ -45,7 +45,7 @@ test("all navigable showcase pages keep readable dark/light panels, nested cards
       const channels=rgb(value);
       if(!channels)continue;
       const alphaPart=value.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([0-9.]+)\)$/);
-      const alpha=alphaPart?Number(alphaPart[1]):value.startsWith("rgba(")?Number(value.match(/,\s*([0-9.]+)\)$/)?.[1]??1):1;
+      const alpha=alphaPart?Number(alphaPart[1]):value.startsWith("rgba(")?Number.parseFloat(value.slice(value.lastIndexOf(",")+1)):1;
       if(!(alpha>0))continue;
       result=result.map((c,i)=>c*(1-alpha)+channels[i]*alpha);
      }
