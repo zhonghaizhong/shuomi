@@ -492,3 +492,47 @@
  .productDetailFooter>div{justify-content:flex-end}
  .productPhotoThumbnails{gap:4px}
 }
+
+
+/* Compact 8-column product list shared by completion and AI review.
+   The backing task supplies platform/region/type; do not infer store metadata. */
+.compactListingTable{min-width:1240px}
+.compactListingTable .columns,.compactListingTable .item{
+ display:grid;
+ grid-template-columns:minmax(260px,2.7fr) minmax(200px,1.75fr) minmax(78px,.65fr) minmax(80px,.7fr) minmax(90px,.8fr) minmax(146px,1.25fr) minmax(78px,.65fr) minmax(116px,.88fr);
+ align-items:center;
+ gap:14px;
+ padding:11px 16px;
+ min-width:0;
+ box-sizing:border-box;
+}
+.compactListingTable .columns{min-height:44px;background:var(--surface-alt);border-bottom:1px solid var(--stroke)}
+.compactListingTable .item{min-height:80px;background:var(--surface);border-bottom:1px solid var(--stroke)}
+.compactListingTable .item:nth-child(odd){background:var(--surface-alt)}
+.compactListingTable .item>div,.compactListingTable .item>span{min-width:0}
+.compactProductCell{display:flex;align-items:center;gap:12px;min-width:0}
+.compactProductCell>img,.compactProductCell>[role="img"]{width:46px!important;height:46px!important;border-radius:7px;flex-shrink:0;object-fit:contain;background:#fff}
+.compactProductText,.compactBatchCell{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+.compactListingTable .item .compactProductText strong,.compactListingTable .item .compactBatchCell strong{
+ font-size:13px;font-weight:650;line-height:1.35;color:var(--ink);margin:0;min-width:0;
+ display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
+}
+.compactListingTable .item .compactProductText small,.compactListingTable .item .compactBatchCell small{
+ display:block;color:var(--muted);font-size:12px;line-height:1.25;
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.compactProductPlaceholder{display:flex;flex-shrink:0;align-items:center;justify-content:center;width:46px;height:46px;border:1px solid var(--stroke);border-radius:7px;font-size:10px;color:var(--muted)}
+.compactPlainCell{font-size:13px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.compactListingTable .item .compactStoreType{
+ display:inline-flex;justify-self:start;align-items:center;min-width:0;max-width:100%;
+ padding:5px 9px;border-radius:7px;background:color-mix(in srgb,#7367f0 17%,var(--surface-alt));
+ color:var(--ink);font-size:12px;white-space:nowrap;
+}
+.compactListingTable .item .compactStatus{font-size:13px;white-space:nowrap;color:var(--ink)}
+.compactListingTable .item .compactAction{
+ justify-self:start;min-height:34px;max-width:100%;padding:6px 12px;
+ border:1px solid #7367f0;border-radius:7px;background:transparent;color:var(--ink);
+ font-weight:600;font-size:12px;white-space:nowrap;cursor:pointer;
+}
+.compactListingTable .item .compactAction:hover{background:color-mix(in srgb,#7367f0 14%,transparent)}
+.emptyListingRow{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px}
