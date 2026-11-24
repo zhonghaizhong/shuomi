@@ -42,6 +42,7 @@ export type ShowcaseUploadTask={
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
  status:"待补全"|"待执行智能体"|"待审核"|"待平台提交";
  demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:ListingVariantDetail[];variantImageGroups?:ListingVariantImageGroup[];imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
+ textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>};
  createdAt:string;demo:true;
 };
 export const showcaseUploadTasksEvent="shuomi:listing-upload-tasks-updated";
@@ -199,6 +200,26 @@ export function saveListingVariantPhoto(org:string,member:string,taskId:string,c
   return {...g,optimizedImages:next,reviewedAt:undefined};
  });
  const next={...task,demoProduct:{...task.demoProduct,variantImageGroups:groups}};
+ sessionStorage.setItem(key(org,member),JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
+ window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
+ return next;
+}
+/** Explicit text edits preserve original product and prior AI output; never touch photos or platform attributes. */
+export function saveShowcaseListingTextEdits(
+ org:string,member:string,taskId:string,
+ updates:NonNullable<ShowcaseUploadTask["textEdits"]>
+):ShowcaseUploadTask{
+ const tasks=readShowcaseUploadTasks(org,member),task=tasks.find(t=>t.id===taskId);
+ if(!task?.demoProduct||!["待补全","待审核"].includes(task.status))throw Error("当前任务不可保存资料修改");
+ const safe=(value:string|undefined,max:number)=>typeof value==="string"?value.trim().slice(0,max):undefined;
+ const existing=task.textEdits??{};
+ const cleaned={
+  title:safe(updates.title,500)??existing.title,
+  description:safe(updates.description,6000)??existing.description,
+  colorDescriptions:{...existing.colorDescriptions,...Object.fromEntries(Object.entries(updates.colorDescriptions??{}).filter(([key,value])=>key.length<=100&&typeof value==="string").map(([key,value])=>[key,value.trim().slice(0,2000)]))},
+  skuDescriptions:{...existing.skuDescriptions,...Object.fromEntries(Object.entries(updates.skuDescriptions??{}).filter(([key,value])=>key.length<=160&&typeof value==="string").map(([key,value])=>[key,value.trim().slice(0,2000)]))}
+ };
+ const next={...task,textEdits:cleaned};
  sessionStorage.setItem(key(org,member),JSON.stringify(tasks.map(t=>t.id===taskId?next:t)));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
