@@ -4294,3 +4294,87 @@
  .storeMatrixPreview .matrixFilters.matrixSingleRow > :nth-child(6){grid-column:6}
  .storeMatrixPreview .matrixFilters.matrixSingleRow > :nth-child(7){grid-column:7}
 }
+
+
+/* Matrix-only filter layout: do not reuse historic matrixFilters/cockpitFilterRow
+   grids. Flex wrapping retains one line on desktop and sensible small screens. */
+.storeMatrixPreview .matrixInlineFilters{
+ display:flex;
+ flex-direction:row;
+ flex-wrap:wrap;
+ align-items:center;
+ gap:9px;
+ min-width:0;
+ padding:12px;
+ border:1px solid #44485e;
+ border-radius:6px;
+ background:#393d55;
+ overflow:visible;
+}
+.storeMatrixPreview .matrixInlineFilters > input[type="search"]{
+ flex:2 1 280px;
+ min-width:180px;
+ width:auto;
+}
+.storeMatrixPreview .matrixInlineFilters > .matrixTimePicker{
+ flex:0 1 180px;
+ min-width:138px;
+ width:auto;
+ position:relative;
+ z-index:3;
+}
+.storeMatrixPreview .matrixInlineFilters > select{
+ flex:1 1 125px;
+ min-width:110px;
+ width:auto;
+}
+.storeMatrixPreview .matrixInlineFilters > button{
+ flex:0 0 78px;
+ min-width:78px;
+ width:78px;
+ white-space:nowrap;
+}
+.storeMatrixPreview .matrixInlineFilters > :is(input,select,button),
+.storeMatrixPreview .matrixInlineFilters > .matrixTimePicker > button{
+ box-sizing:border-box;
+ height:40px;
+ min-height:40px;
+ max-height:40px;
+ margin:0;
+ padding:0 11px;
+ border:1px solid #555a73;
+ border-radius:6px;
+ background:#2f3349;
+ color:#cfcde4;
+ font:inherit;
+ font-size:13px;
+}
+.storeMatrixPreview .matrixInlineFilters > button.primary{
+ background:#7367f0;
+ border-color:#7367f0;
+ color:#fff;
+}
+.storeMatrixPreview .matrixInlineFilters > .matrixTimePicker > button{
+ width:100%;
+ text-align:left;
+ overflow:hidden;
+ white-space:nowrap;
+ text-overflow:ellipsis;
+ cursor:pointer;
+}
+:global(.light) .storeMatrixPreview .matrixInlineFilters{
+ background:#f8f7fa;
+ border-color:#ddd9e9;
+}
+:global(.light) .storeMatrixPreview .matrixInlineFilters > :is(input,select,button:not(.primary)),
+:global(.light) .storeMatrixPreview .matrixInlineFilters > .matrixTimePicker > button{
+ background:#fff;
+ border-color:#d9dce6;
+ color:#444050;
+}
+@media(max-width:760px){
+ .storeMatrixPreview .matrixInlineFilters > input[type="search"]{flex:1 1 100%;width:100%}
+ .storeMatrixPreview .matrixInlineFilters > .matrixTimePicker{flex:1 1 160px}
+ .storeMatrixPreview .matrixInlineFilters > select{flex:1 1 120px}
+ .storeMatrixPreview .matrixInlineFilters > button{flex:1 1 76px}
+}
