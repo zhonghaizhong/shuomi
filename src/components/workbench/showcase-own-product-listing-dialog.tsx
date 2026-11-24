@@ -5,7 +5,7 @@ import {saveOwnIntakeNavigation,type OwnIntakeStage} from "./showcase-own-produc
 import {ShowcaseOwnProductIntakeModal} from "./showcase-own-product-intake-modal";
 import {agentPreviewTemplatesChanged,readAgentPreviewTemplates} from "./showcase-agent-template-store";
 import styles from "./showcase-own-product-listing-dialog.module.css";
-import {readOwnProductBatches,createOwnProductBatch,saveOwnProduct,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,type OwnProductBatch,type OwnProductRecord} from "./showcase-own-product-data";
+import {readOwnProductBatches,createOwnProductBatch,saveOwnProduct,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,simulateFiveOwnProductIntakes,type OwnProductBatch,type OwnProductRecord} from "./showcase-own-product-data";
 
 type Source="img"|"sheet"|"link"|"api";
 type Sku={id:number;name:string;draft:string;description:string;images:string[]};
@@ -53,6 +53,18 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
  const [batches,setBatches]=useState<OwnProductBatch[]>(()=>readOwnProductBatches(organizationId,memberId));
  const [batchId,setBatchId]=useState(""),[batchMode,setBatchMode]=useState<"create"|"select"|null>(null),[batchName,setBatchName]=useState("");
  const currentBatch=batches.find(b=>b.id===batchId);
+ const simulateFive=()=>{
+  if(agent!=="商品优化智能体"){setStatus("请先启用并选择「商品优化智能体」。");return;}
+  if(!template||!templates.includes(template)){setStatus("请先选择该智能体已保存的测试模板。");return;}
+  if(currentBatch?.name!=="自有商品测试批次"){setStatus("请先选择「自有商品测试批次」。");return;}
+  try{
+   const result=simulateFiveOwnProductIntakes(organizationId,memberId,currentBatch.id,template);
+   setBatches(readOwnProductBatches(organizationId,memberId));
+   setIntakeRefresh(v=>v+1);
+   setStatus(result.created?("模拟导入 "+result.created+" 件：本次待完善 "+result.pending+" 件，待审核 "+result.review+" 件。测试记录已保存至当前企业成员的浏览器会话。"):"这 5 件测试商品已存在当前批次，不会重复导入。");
+  }catch(e){setStatus(e instanceof Error?e.message:"模拟导入失败");}
+ };
+
  const saveBatch=()=>{try{const next=createOwnProductBatch(organizationId,memberId,batchName);setBatches(readOwnProductBatches(organizationId,memberId));setBatchId(next.id);setBatchMode(null);setBatchName("");setStatus("已创建批次「"+next.name+"」，可以提交商品检测。")}catch(e){setStatus(e instanceof Error?e.message:"无法创建批次")}};
 
  useEffect(()=>{const el=ref.current,previous=document.activeElement;el?.showModal();return()=>{el?.close();if(previous instanceof HTMLElement&&previous.isConnected)previous.focus()}},[]);
@@ -176,6 +188,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
       <button type="button" aria-expanded={batchMode==="select"} onClick={()=>{setBatchMode(batchMode==="select"?null:"select");setStatus("")}}>选择自有商品批次</button>
     </div>
     <button type="button" className={styles.submit} onClick={validate}>提交检测</button>
+    <button type="button" className={styles.submit} disabled={agent!=="商品优化智能体"||!template||currentBatch?.name!=="自有商品测试批次"} onClick={simulateFive} title="仅当前企业成员的测试数据；不会调用实际上传或 AI 服务">模拟上传 5 件测试商品</button>
     <button type="button" className={`${styles.intakeAction} ${styles.intakePending}`} onClick={()=>openStage("pending")}>待完善 <b>{pendingRecords.length}</b></button>
     <button type="button" className={`${styles.intakeAction} ${styles.intakeReview}`} onClick={()=>openStage("review")}>待审核 <b>{awaitingRecords.length}</b></button></div>
     {batchMode==="create"?<div className={styles.batchEditor}><label>新批次名称<input aria-label="新建自有商品批次名称" maxLength={60} placeholder="输入批次名称" value={batchName} onChange={e=>setBatchName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveBatch()}}}/></label><button type="button" onClick={saveBatch}>创建并选择</button><button type="button" onClick={()=>setBatchMode(null)}>取消</button></div>:null}
