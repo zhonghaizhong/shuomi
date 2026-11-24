@@ -377,7 +377,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
      <div className={styles.dialogFieldTabs} role="tablist" aria-label="商品资料分组">
       <button type="button" role="tab" aria-selected={fieldTab==="common"} onClick={()=>setFieldTab("common")}>商品公共信息</button>
       <button type="button" role="tab" aria-selected={fieldTab==="variant"} onClick={()=>setFieldTab("variant")}>变体公共信息</button>
-      <button type="button" role="tab" aria-selected={fieldTab==="sku"} onClick={()=>setFieldTab("sku")}>SKU 信息（{selectedSkuCount}）</button>
+      <button type="button" role="tab" aria-selected={fieldTab==="sku"} onClick={()=>setFieldTab("sku")}>SKU 信息（{selectedVariantGroup?selectedVariantSkus.length:selectedSkuCount}）</button>
      </div>
      {fieldTab==="common"?<>
       <div className={styles.productInfoComparison}><small>原始标题</small><p>{selectedItem.originalName??selectedItem.name}</p><small>优化标题</small><p>{selectedItem.name}</p><small>优化英文描述</small><p>{selectedItem.optimizedDescription??"暂无可用优化描述"}</p></div>
@@ -387,10 +387,10 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       </>:null}
       <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>选填信息 {optionalOpen?"收起":"展开"}</button>
       {optionalOpen?<p className={styles.productHint}>选填字段以目标平台当前类目规则为准；演示任务暂未提供字段定义，不生成虚构属性。</p>:null}
-     </>:fieldTab==="variant"?<div className={styles.dialogFieldEmpty}>{selectedVariantGroup?"当前颜色："+selectedVariantGroup.color+"，尺码："+selectedVariantSkus.map(v=>v.size).join("、")+"；同色 SKU 共享图片，规格各自独立。":"原任务已确认变体结构；其他属性依据平台规则补全。"}</div>:<div className={styles.dialogSkuList}>{(variantDetails.length?variantDetails.map(v=>v.sku):(selectedTask?.productIds??[selectedItem.sku])).map((code,i)=><div key={code}>
-       {variantDetails[i]?.image?<img src={variantDetails[i].image} alt={variantDetails[i].label+" 实拍变体图片"} style={{width:64,height:64,objectFit:"contain",background:"#fff",borderRadius:6}}/>:null}
+     </>:fieldTab==="variant"?<div className={styles.dialogFieldEmpty}>{selectedVariantGroup?"当前颜色："+selectedVariantGroup.color+"，尺码："+selectedVariantSkus.map(v=>v.size).join("、")+"；同色 SKU 共享图片，规格各自独立。":"原任务已确认变体结构；其他属性依据平台规则补全。"}</div>:<div className={styles.dialogSkuList}>{(variantDetails.length?selectedVariantSkus.map(v=>v.sku):(selectedTask?.productIds??[selectedItem.sku])).map((code,i)=><div key={code}>
+       {selectedVariantSkus[i]?.image?<img src={selectedVariantSkus[i].image} alt={selectedVariantSkus[i].label+" 实拍变体图片"} style={{width:64,height:64,objectFit:"contain",background:"#fff",borderRadius:6}}/>:null}
        <strong>SKU {i+1}</strong><span>{code}</span>
-       {variantDetails[i]?<small>{variantDetails[i].color} · {variantDetails[i].size} · {variantDetails[i].label}</small>:<small>SKU 级独立字段按目标平台类目规则加载</small>}
+       {selectedVariantSkus[i]?<small>{selectedVariantSkus[i].color} · {selectedVariantSkus[i].size} · {selectedVariantSkus[i].label}</small>:<small>SKU 级独立字段按目标平台类目规则加载</small>}
       </div>)}</div>}
     </div>
     {stage==="review"?<div className={styles.productInfoBlock}><strong>人工审核</strong>
