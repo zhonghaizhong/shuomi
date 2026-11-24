@@ -1,19 +1,20 @@
 .introduction, .introSection { display: grid; gap: 1.25rem; min-width: 0; }
-.landingGrid, .scenarios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.125rem; min-width: 0; }
-.landingCard { display: flex; flex-direction: column; align-items: stretch; gap: .875rem; min-width: 0; min-height: 19rem; padding: 1.375rem; }
+.landingGrid, .scenarios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .875rem; min-width: 0; }
+.landingCard { display: flex; flex-direction: column; align-items: stretch; gap: .625rem; min-width: 0; min-height: 14.5rem; padding: 1rem 1.125rem; }
 .landingCard { box-shadow: inset 3px 0 var(--chat-accent), 0 4px 14px #00000012; }
 .landingCard:nth-child(1) { --chat-accent: #62a9ff; }
 .landingCard:nth-child(2) { --chat-accent: #4fd1bd; }
 .landingCard:nth-child(3) { --chat-accent: #ad8aff; }
 .landingCard h2 { font-size: 1.25rem; line-height: 1.4; font-weight: 700; }
 .landingCard h2, .example strong { color: var(--chat-accent); }
+.landingCard > p { margin: 0; line-height: 1.5; }
 .landingCard p, .step p, .newWorkspace p, .newGuide li { color: var(--muted-foreground); font-size: var(--body-text-size); line-height: 1.7; }
-.landingCard .subtitle { color: var(--foreground); margin-top: .25rem; }
-.entryActions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; margin-top: auto; padding-top: .25rem; }
-.tags { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
-.example { min-height: 4.75rem; padding: .875rem; border: 1px solid var(--border); border-radius: var(--control-radius); background: color-mix(in srgb, var(--secondary) 72%, var(--card)); font-size: var(--body-text-size); }
+.landingCard .subtitle { color: var(--foreground); margin-top: .125rem; line-height: 1.45; }
+.entryActions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; margin-top: 0; padding-top: 0; }
+.tags { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem; }
+.example { min-height: 3.5rem; padding: .625rem .75rem; border: 1px solid var(--border); border-radius: var(--control-radius); background: color-mix(in srgb, var(--secondary) 72%, var(--card)); font-size: var(--body-text-size); }
 .example strong { font-weight: 600; }
-.example p { margin-top: .4rem; }
+.example p { margin-top: .2rem; line-height: 1.45; }
 .introSection > h2 { font-size: 1.2rem; line-height: 1.4; font-weight: 700; }
 .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .875rem; list-style: none; margin: 0; padding: 0; }
 .step { min-width: 0; min-height: 7rem; padding: 1rem 1.125rem; height: 100%; }
