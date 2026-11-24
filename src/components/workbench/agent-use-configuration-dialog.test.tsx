@@ -180,3 +180,27 @@ it("drags filled hybrid image slots to reorder, with shared layout persisted for
   hybridDetailSlots:["AI·核心购买理由","官方·第一张",null,null,null,null,null,null]
  }));
 });
+
+
+it("shows eight existing preview images for preset reconstruction and removes a filled tile without an ellipsis",()=>{
+ const save=vi.fn();
+ render(<AgentUseConfigurationDialog mode="pod-hybrid" agentKind="pod"
+  initial={{hybridStrategy:"共用视觉素材",hybridSlots:["官方·第一张",null,null,null,null,null,null,null]}}
+  onClose={vi.fn()} onSave={save}/>);
+ expect(screen.queryByRole("button",{name:"调整第 1 张图片"})).toBeNull();
+ fireEvent.click(screen.getByRole("button",{name:"添加第 1 张图片"}));
+ expect(screen.getByRole("button",{name:"移除第 1 张图片"})).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"预设指令AI重构"}));
+ const gallery=screen.getByLabelText("预设指令设计图示例");
+ expect(gallery.querySelectorAll("button")).toHaveLength(8);
+ const examples=gallery.querySelectorAll("img");
+ expect(examples).toHaveLength(8);
+ expect(examples[0].getAttribute("src")).toContain("/assets/agent-image-examples/main-1.png");
+ fireEvent.click(screen.getByRole("button",{name:"01 · 商品识别主图"}));
+ expect(screen.queryByRole("button",{name:"调整第 1 张图片"})).toBeNull();
+ fireEvent.click(screen.getByRole("button",{name:"保存组合"}));
+ expect(save).toHaveBeenCalledWith(expect.objectContaining({
+  hybridMainSlots:["AI·商品识别主图",null,null,null,null,null,null,null],
+  hybridDetailSlots:["AI·商品识别主图",null,null,null,null,null,null,null]
+ }));
+});
