@@ -49,11 +49,17 @@ test("uploaded products keep empty state consistent through filtering, reset, an
  await expect(main).toBeVisible();
  await expect(main).toContainText("暂无已上传商品记录");
  await expect(main.getByRole("button",{name:"查看商品"})).toHaveCount(0);
- await main.getByRole("combobox",{name:"已发布站点"}).selectOption("美国站");
+ const batch=main.getByRole("combobox",{name:"选择刊登批次"});
+ await expect(batch).toBeVisible();
+ await expect(batch.locator("option")).toHaveCount(1);
+ await batch.selectOption("");
+ await main.getByRole("textbox",{name:"搜索已上传商品"}).fill("不存在的商品 SKU");
  await main.getByRole("button",{name:"确认"}).click();
  await expect(main).toContainText("暂无已上传商品记录");
  await expect(main.getByRole("button",{name:"查看商品"})).toHaveCount(0);
  await main.getByRole("button",{name:"重置"}).click();
+ await expect(batch).toHaveValue("");
+ await expect(main.getByRole("textbox",{name:"搜索已上传商品"})).toHaveValue("");
  await expect(main).toContainText("暂无已上传商品记录");
  await page.reload();
  await expect(main).toContainText("暂无已上传商品记录");
