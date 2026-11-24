@@ -284,7 +284,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       <span className={styles.compactStoreType}>{item.targetStoreType||"—"}</span>
       <span className={styles.compactPlainCell} title={item.store}>{item.store||"—"}</span>
       <span className={styles.compactStatus}>{item.status}</span>
-      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setPictureTab("main");setFieldTab("common");setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft("");setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
+      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft("");setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
      </div>})}</div></div>{filtered.length>15?<nav className={styles.listPagination} aria-label="商品分页"><span>共 {filtered.length} 条 · 每页 15 条 · 第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setListPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setListPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></nav>:null}
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
@@ -311,11 +311,16 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   <div className={styles.productDetailBody}>
    <section className={styles.productDialogLeft}>
     <div className={styles.productPhotoPanel}>
-     <div className={styles.productSectionHeading}><strong>商品图片（主图 {selectedMainImages.length} / 详情图 {selectedDetailImages.length}）</strong><small>保留已保存的图片版本</small></div>
-     <div className={styles.pictureTabs} role="tablist" aria-label="商品图片区">
+     <div className={styles.productSectionHeading}><strong>{selectedVariantGroup?"变体图片 · "+selectedVariantGroup.color:"商品图片 · 主图 "+selectedMainImages.length+" / 详情图 "+selectedDetailImages.length}</strong><small>{selectedVariantGroup?selectedVariantGroup.optimizedImages.length+"/6 张优化图":"保留已保存的图片版本"}</small></div>
+     {variantImageGroups.length?<div className={styles.variantColorPicker} role="group" aria-label="选择颜色变体">{variantImageGroups.map(group=><button type="button" key={group.id} aria-pressed={selectedVariantGroup?.id===group.id} onClick={()=>{setVariantColorId(group.id);setPhotoIndex(0);setPictureTab("main");setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("")}}><img src={group.originalImages[0]} alt={group.color+" 商品原图"}/><span>{group.color}</span><small>{group.skuIds.length} SKU · {group.optimizedImages.length}/6</small></button>)}</div>:null}
+     {selectedVariantGroup?<div className={styles.variantImageMode} role="tablist" aria-label="原始与优化图片切换">
+      <button type="button" role="tab" aria-selected={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPictureTab("main");setPhotoIndex(0)}}>AI 优化（{selectedColorOptimizedImages.length}/6）</button>
+      <button type="button" role="tab" aria-selected={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPictureTab("main");setPhotoIndex(0)}}>原始实拍（{selectedColorOriginalImages.length}）</button>
+     </div>:null}
+     {!selectedVariantGroup?<div className={styles.pictureTabs} role="tablist" aria-label="商品图片区">
       <button type="button" role="tab" aria-selected={pictureTab==="main"} onClick={()=>{setPictureTab("main");setPhotoIndex(0)}}>主图（{selectedMainImages.length}）</button>
       <button type="button" role="tab" aria-selected={pictureTab==="detail"} onClick={()=>{setPictureTab("detail");setPhotoIndex(0)}}>详情图（{selectedDetailImages.length}）</button>
-     </div>
+     </div>:null}
      {galleryImages.length?<><div className={styles.productHeroImage}>
        <button type="button" className={styles.pictureZoom} aria-label="放大当前商品图" onClick={()=>setImagePreview(true)}>
         <ListingProductPhoto src={galleryImages[Math.min(photoIndex,galleryImages.length-1)]} alt={pictureTab==="main"?"商品主图":"商品详情图"} size={400}/>
@@ -323,15 +328,26 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       </div>
       <div className={styles.productPhotoThumbnails}>{galleryImages.map((src,i)=><button key={src+i} type="button" aria-label={`查看第 ${i+1} 张${pictureTab==="main"?"主图":"详情图"}`} aria-pressed={photoIndex===i} onClick={()=>setPhotoIndex(i)}>
        <ListingProductPhoto src={src} alt={`图片 ${i+1}`} size={72}/><span>{String(i+1).padStart(2,"0")}</span>
-      </button>)}</div></>:<div className={styles.pictureEmpty}><strong>尚未保存独立详情图</strong><span>主图不会自动当作详情图。详情图需要在原始商品或智能体优化时单独生成、保存。</span></div>}
-     {selectedItem.originalImages?.length?<div className={styles.productOriginalRow}><strong>原始图片</strong><div>{selectedItem.originalImages.slice(0,6).map((src,i)=><img key={src+i} src={src} alt={`原始图片 ${i+1}`}/>)}</div></div>:null}
+      </button>)}</div></>:<div className={styles.pictureEmpty}><strong>{selectedVariantGroup&&photoMode==="optimized"?"该颜色尚无 AI 优化图":"尚未保存独立详情图"}</strong><span>{selectedVariantGroup&&photoMode==="optimized"?"必须实际生成并绑定六种不同用途的图。原始实拍图不能视为 AI 成品。":"主图与详情图分开保存。"}</span></div>}
+     {selectedColorOriginalImages.length?<div className={styles.productOriginalRow}><strong>{selectedVariantGroup?.color??"商品"} · 原始实拍</strong><div>{selectedColorOriginalImages.slice(0,6).map((src,i)=><img key={src+i} src={src} alt={"原始图片 "+(i+1)}/>)}</div></div>:null}
+     {selectedVariantGroup?<div className={styles.variantSixSlots}>
+      <div className={styles.productSectionHeading}><strong>六张优化图 · {selectedVariantGroup.color}</strong><small>{variantGroupReady(selectedVariantGroup)?"已齐全":"还缺 "+(6-selectedVariantGroup.optimizedImages.length)+" 张"}</small></div>
+      {listingVariantPhotoRoles.map((role,i)=>{const photo=selectedVariantGroup.optimizedImages.find(img=>img.role===role);return <div className={styles.variantPhotoRole} key={role}>
+        <span className={styles.variantPhotoOrdinal}>{i+1}</span>
+        {photo?.url?<img src={photo.url} alt={selectedVariantGroup.color+" "+role}/>:<span className={styles.variantPhotoMissing}>待生成</span>}
+        <div><strong>{role}</strong><small>{photo?.url?"已绑定 V"+photo.version:"尚无 AI 成品"}</small></div>
+        <button type="button" onClick={()=>{setEditingPhotoRole(editingPhotoRole===role?null:role);setPhotoDraft(photo?.url??"")}}>{photo?"更换":"绑定"}</button>
+        {editingPhotoRole===role?<div className={styles.variantPhotoEditor}><input value={photoDraft} onChange={e=>setPhotoDraft(e.target.value)} aria-label={selectedVariantGroup.color+" "+role+" 图片链接"} placeholder="HTTPS 图片地址或 /assets/ 静态路径"/><button type="button" onClick={()=>saveColorPhoto(role)}>保存</button><button type="button" onClick={()=>{setEditingPhotoRole(null);setPhotoDraft("")}}>取消</button></div>:null}
+      </div>})}
+      <p className={styles.productHint}>同色不同尺码 SKU 继承本组图片；不同颜色独立保存。未绑定六张不同用途的优化成品前不可审核通过。</p>
+     </div>:null}
     </div>
     <div className={styles.dialogProductFacts}><strong>商品基本信息</strong><dl>
       <div><dt>商品标题</dt><dd>{selectedItem.name}</dd></div>
       <div><dt>商品 SKU</dt><dd>{selectedItem.sku}</dd></div>
       <div><dt>所属批次</dt><dd>{selectedItem.batchName??selectedItem.source}</dd></div>
       <div><dt>目标店铺</dt><dd>{selectedItem.store}</dd></div>
-      <div><dt>优化记录</dt><dd>{selectedItem.optimizedImages?.length?"已有已保存优化图片":"保留原始图片"}</dd></div>
+      <div><dt>优化记录</dt><dd>{selectedVariantGroup?(variantGroupReady(selectedVariantGroup)?"当前颜色六张图已齐":"当前颜色优化图待完成"):selectedItem.optimizedImages?.length?"已有已保存优化图片":"保留原始图片"}</dd></div>
      </dl></div>
    </section>
    <section className={styles.productDialogRight}>
@@ -351,7 +367,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
     </div>
     <div className={styles.productInfoBlock}>
      <div className={styles.productSectionHeading}><strong>变体信息（首次上传已确认）</strong><small>不在补全阶段重新识别</small></div>
-     <div className={styles.dialogVariantFacts}>
+     <div className={styles.dialogVariantFacts}>{selectedVariantGroup?<span>{selectedVariantGroup.color} · {selectedVariantSkus.length} SKU</span>:null}
       <span className={styles.dialogVariantPill}>{selectedSkuCount>1?"多变体":"单变体"}</span>
       <span>共 {selectedSkuCount} 个 SKU</span>
       <span>{variantDetails.length?"颜色/尺码均已建档":"沿用原任务的规格结构"}</span>
@@ -371,7 +387,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       </>:null}
       <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>选填信息 {optionalOpen?"收起":"展开"}</button>
       {optionalOpen?<p className={styles.productHint}>选填字段以目标平台当前类目规则为准；演示任务暂未提供字段定义，不生成虚构属性。</p>:null}
-     </>:fieldTab==="variant"?<div className={styles.dialogFieldEmpty}>原任务已确认变体结构。颜色和尺码属于变体维度，每个 SKU 保留各自的颜色、尺码及真实商品图；其他属性仍依据平台规则补全。</div>:<div className={styles.dialogSkuList}>{(variantDetails.length?variantDetails.map(v=>v.sku):(selectedTask?.productIds??[selectedItem.sku])).map((code,i)=><div key={code}>
+     </>:fieldTab==="variant"?<div className={styles.dialogFieldEmpty}>{selectedVariantGroup?"当前颜色："+selectedVariantGroup.color+"，尺码："+selectedVariantSkus.map(v=>v.size).join("、")+"；同色 SKU 共享图片，规格各自独立。":"原任务已确认变体结构；其他属性依据平台规则补全。"}</div>:<div className={styles.dialogSkuList}>{(variantDetails.length?variantDetails.map(v=>v.sku):(selectedTask?.productIds??[selectedItem.sku])).map((code,i)=><div key={code}>
        {variantDetails[i]?.image?<img src={variantDetails[i].image} alt={variantDetails[i].label+" 实拍变体图片"} style={{width:64,height:64,objectFit:"contain",background:"#fff",borderRadius:6}}/>:null}
        <strong>SKU {i+1}</strong><span>{code}</span>
        {variantDetails[i]?<small>{variantDetails[i].color} · {variantDetails[i].size} · {variantDetails[i].label}</small>:<small>SKU 级独立字段按目标平台类目规则加载</small>}
@@ -381,7 +397,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
      <p className={styles.productHint}>检查标题、描述、图片及目标平台规则，审核通过后才可继续平台提交。</p>
      {reviewMode==="edit"?<label className={styles.productMissingField}>审核意见<input aria-label="审核意见" value={form.reviewNotes??""} placeholder="输入修改意见" onChange={e=>setForm(prev=>({...prev,reviewNotes:e.target.value}))}/></label>:null}
      <div className={styles.reviewActions}><button type="button" onClick={()=>setReviewMode(reviewMode==="edit"?"compare":"edit")}>手动修改</button><button type="button" onClick={()=>setNotice("演示模式：重新重构需要授权智能体执行，未生成新内容。")}>重新重构</button></div>
-     <label className={styles.productReviewCheck}><input type="checkbox" checked={reviewChecked} onChange={e=>setReviewChecked(e.target.checked)}/> 已核对优化结果与目标平台规则</label>
+     <label className={styles.productReviewCheck}><input type="checkbox" checked={reviewChecked} onChange={e=>setReviewChecked(e.target.checked)}/> 已核对优化结果与目标平台规则</label>{!colorPhotoComplete?<p className={styles.productHint}>有颜色组尚未绑定完整的六张优化图片，无法审核通过。</p>:null}
     </div>:null}
    </section>
   </div>
@@ -392,7 +408,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
   <footer className={styles.productDetailFooter}>
    <span>{stage==="missing"?(classChanged?"分类变更草稿需要重新适配，不能直接送审":"保存完整必填资料后进入待审核"):"人工审核通过后进入待平台提交；此处不执行真实上传"}</span>
    <div><button type="button" onClick={()=>setSelected(null)}>取消</button>
-   <button type="button" className={styles.primary} disabled={(stage==="review"&&!reviewChecked)||(stage==="missing"&&classChanged)} onClick={stage==="missing"?(selectedItem.missing.length?save:()=>{setSelected(null);action("已补全。请确认继续原任务。")}):()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"重新检查并提交审核":"审核通过"}</button></div>
+   <button type="button" className={styles.primary} disabled={(stage==="review"&&(!reviewChecked||!colorPhotoComplete))||(stage==="missing"&&classChanged)} onClick={stage==="missing"?(selectedItem.missing.length?save:()=>{setSelected(null);action("已补全。请确认继续原任务。")}):()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"重新检查并提交审核":"审核通过"}</button></div>
   </footer>
  </section>
 </div>:null}
