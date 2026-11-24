@@ -22,6 +22,8 @@ export type AgentUseConfiguration={
  hybridStrategy?:"共用视觉素材"|"分别生成";
  hybridTarget?:"主图"|"详情图";
  hybridSlots?:(string|null)[];
+ hybridMainSlots?:(string|null)[];
+ hybridDetailSlots?:(string|null)[];
  splitStrength?:string;
  splitSource?:string;
  splitReference?:string;
@@ -75,7 +77,29 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  const [selectedImgs,setSelectedImgs]=useState<number[]>(initial.selectedImages??[]);
  const [mainImgs,setMainImgs]=useState<number[]>(initial.selectedMainImages??((mode==="product-image"||mode==="pod-ai")?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
  const [detailImgs,setDetailImgs]=useState<number[]>(initial.selectedDetailImages??((mode==="product-image"||mode==="pod-ai")?[1,2,3,4,5,6,7,8]:initial.selectedImages??[]));
- const [slots,setSlots]=useState<(string|null)[]>(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));
+ const initialHybridSlots=(items?:(string|null)[])=>Array.from({length:8},(_,i)=>items?.[i]??null);
+ const [sharedSlots,setSharedSlots]=useState<(string|null)[]>(()=>initialHybridSlots(initial.hybridSlots));
+ const [mainSlots,setMainSlots]=useState<(string|null)[]>(()=>initialHybridSlots(initial.hybridMainSlots??initial.hybridSlots));
+ const [detailSlots,setDetailSlots]=useState<(string|null)[]>(()=>initialHybridSlots(initial.hybridDetailSlots??initial.hybridSlots));
+ const hybridShared=(form.hybridStrategy??"共用视觉素材")==="共用视觉素材";
+ const hybridTarget=form.hybridTarget??"主图";
+ const slots=hybridShared?sharedSlots:hybridTarget==="主图"?mainSlots:detailSlots;
+ const setSlots=(next:(string|null)[])=>{
+  if(hybridShared){setSharedSlots(next);setMainSlots(next.slice());setDetailSlots(next.slice());}
+  else if(hybridTarget==="主图")setMainSlots(next);
+  else setDetailSlots(next);
+ };
+ const selectHybridStrategy=(strategy:"共用视觉素材"|"分别生成")=>{
+  if(strategy===form.hybridStrategy)return;
+  if(strategy==="共用视觉素材"){
+   const source=hybridTarget==="主图"?mainSlots:detailSlots;
+   setSharedSlots(source.slice());setMainSlots(source.slice());setDetailSlots(source.slice());
+  }else{
+   setMainSlots(sharedSlots.slice());setDetailSlots(sharedSlots.slice());
+  }
+  set("hybridStrategy",strategy);
+  setMultiSelected([]);setMessage("");
+ };
  const [selectedItems,setSelectedItems]=useState<string[]>(mode==="knowledge"?initial.selectedKnowledge??[]:initial.selectedSkills??[]);
  const [skillTab,setSkillTab]=useState<"我的技能"|"团队技能">("我的技能");
  const [knowledgeTab,setKnowledgeTab]=useState<"我的知识库"|"团队知识库">("我的知识库");
@@ -107,7 +131,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  } as Record<ConfigurationMode,string>)[mode];
  const commit=(next:AgentUseConfiguration=form)=>onSave({...next,
   ...((mode==="product-image"||mode==="pod-ai")?{imageTasks:tasks}:{}),
-  ...(mode==="pod-hybrid"?{hybridSlots:slots}:{}),
+  ...(mode==="pod-hybrid"?{hybridStrategy:form.hybridStrategy??"共用视觉素材",hybridSlots:slots,hybridMainSlots:hybridShared?slots:mainSlots,hybridDetailSlots:hybridShared?slots:detailSlots}:{}),
   ...(mode==="skills"?{selectedSkills:selectedItems}:{}),
   ...(mode==="knowledge"?{selectedKnowledge:selectedItems}:{})
  });
@@ -242,9 +266,15 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    </div>
    :mode==="pod-hybrid"?<div className={css.stack}>
     <p className={css.tip}>官方渲染仅支持已接入平台；AI 图片按实际使用积分计费。演示版不生成或上传图片。</p>
-    <div className={css.inline}><span>配置对象</span>{choice(["主图","详情图"],form.hybridTarget??"主图",x=>set("hybridTarget",x as AgentUseConfiguration["hybridTarget"]))}<span>视觉策略</span>{choice(["共用视觉素材","分别生成"],form.hybridStrategy??"共用视觉素材",x=>set("hybridStrategy",x as AgentUseConfiguration["hybridStrategy"]))}</div>
+    <div className={css.hybridControls}>
+     <div className={css.hybridControlRow}><strong>视觉策略</strong>{choice(["共用视觉素材","分别生成"],form.hybridStrategy??"共用视觉素材",x=>selectHybridStrategy(x as "共用视觉素材"|"分别生成"))}</div>
+     <div className={css.hybridControlRow}><strong>配置对象</strong>
+      {hybridShared?<div className={css.segment} aria-label="共用视觉素材同步应用对象"><span className={css.hybridBothSelected}>主图 ✓</span><span className={css.hybridBothSelected}>详情图 ✓</span><small>两侧共用以下 8 张图片编排</small></div>
+      :choice(["主图","详情图"],hybridTarget,x=>{set("hybridTarget",x as AgentUseConfiguration["hybridTarget"]);setMultiSelected([]);})}
+     </div>
+    </div>
     <section className={css.panel}><h3>图片添加说明</h3><p>图片来源：应用技能、预设指令AI重构、本地上传、自定义指令。</p><p>编排方式：点击图片位置的“＋”添加；已添加图片可更换或移除。</p></section>
-    <h3>最终图片编排</h3><p>最多 8 张图片，按位置添加；支持更换和删除。</p>
+    <h3>最终图片编排{hybridShared?" · 主图及详情图共用":" · "+hybridTarget}</h3><p>{hybridShared?"主图、详情图共用同一组最多 8 张图片，修改后两侧同步生效。":"当前仅配置"+hybridTarget+"的最多 8 张图片，另一侧可独立设置。"} 按位置添加；支持更换和删除。</p>
     <div className={css.slotGrid}>{slots.map((v,i)=><div className={css.slot} key={i}><small>{String(i+1).padStart(2,"0")}</small><button type="button" aria-label={"添加第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setSourceTab("应用技能");setChild("add-image");}}>{v?<span>{v}</span>:"＋"}</button>{v?<button type="button" aria-label={"调整第 "+(i+1)+" 张图片"} onClick={()=>{setSlotIndex(i);setChild("slot-actions");}}>···</button>:null}</div>)}</div>
     <div className={css.toolbar}><button type="button" onClick={()=>setChild("language")}>语言：{form.imageLanguage??"不设置"}</button><button type="button" onClick={()=>setChild("background")}>底色：{form.imageBackground??"不设置"}</button><button type="button" disabled={!compact(slots).length} onClick={()=>setChild("sort")}>智能排序</button><button type="button" disabled={!compact(slots).length} onClick={()=>setChild("multi-adjust")}>多选调整</button><button type="button" onClick={()=>setChild("restore")}>恢复上次顺序</button></div>
    </div>
@@ -275,7 +305,7 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    {exampleZoom?<div className={css.optimizerExampleZoom} role="dialog" aria-modal="true" aria-label="放大示例图片"><button type="button" onClick={()=>setExampleZoom(false)} aria-label="关闭放大图片">关闭放大</button><img src={officialImageExampleUrl(example.target,example.index)} onError={event=>{const img=event.currentTarget;const fallback=officialImageExampleUrl(example.target,example.index,"svg");if(img.src!==new URL(fallback,window.location.href).href)img.src=fallback;}} alt="放大后的1比1中文保温杯示例"/></div>:null}
   </div>:null}
   <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={isProductImage&&!child&&!productImageReady} onClick={()=>{
-   if(child==="restore"){setSlots(Array.from({length:8},(_,i)=>initial.hybridSlots?.[i]??null));setChild("");return;}
+   if(child==="restore"){setSlots(initialHybridSlots(hybridShared?initial.hybridSlots:hybridTarget==="主图"?initial.hybridMainSlots??initial.hybridSlots:initial.hybridDetailSlots??initial.hybridSlots));setChild("");return;}
    if(child==="ai-images"){addManyAi();return;}
    if(child==="library"){
     if(!librarySelected){setMessage("请选择一张参考素材。");return;}
