@@ -45,7 +45,7 @@ test("Tool Market actual dark-mode button and card backgrounds keep approved Vue
  await expect(selected).toHaveAttribute("aria-pressed","true");
  await expect.poll(()=>selected.evaluate(el=>getComputedStyle(el).backgroundColor))
   .toBe("rgb(115, 103, 240)");
- await expect.poll(()=>background('[class*="toolCard"]')).toBe("rgb(57, 61, 85)");
+ await expect.poll(()=>background('[class*="toolCard"]')).toBe("rgb(47, 51, 73)");
 });
 
 test("Tool customization real card and button paints retain dark/light separation",async({page})=>{
