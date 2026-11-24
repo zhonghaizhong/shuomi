@@ -12,7 +12,7 @@ import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./showcase-batch-version-picker";
 import styles from "./showcase-listing-stages.module.css";
-import {importAmazonVariantBundle,importSingleColorAIReconstruction,recoverLocalListingPhotos,readVariantBundlePhoto,saveListingLocalPhoto,isVariantBundleUrl} from "./showcase-variant-bundle-import";
+import {importAmazonVariantBundle,importSingleColorAIReconstruction,importThreeColorAIReconstruction,recoverLocalListingPhotos,readVariantBundlePhoto,saveListingLocalPhoto,isVariantBundleUrl} from "./showcase-variant-bundle-import";
 import {ShowcaseListingStageHeader} from "./showcase-listing-stage-header";
 import {parseListingPhoto,listingPhotoAtlasUrl} from "./showcase-listing-ai-images";
 
@@ -162,6 +162,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const [photoBusy,setPhotoBusy]=useState(false);
  const [recoveringPhotos,setRecoveringPhotos]=useState(false);
  const aiSixImportRef=useRef<HTMLInputElement>(null);
+ const aiAllColorImportRef=useRef<HTMLInputElement>(null);
  const [aiSixImporting,setAiSixImporting]=useState(false);
  const autoRecoveryAttempted=useRef<Set<string>>(new Set());
  const [fieldTab,setFieldTab]=useState<"common"|"shared"|"variant"|"sku">("common");
@@ -227,6 +228,16 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   finally{setBundleImporting(false);}
  };
 
+ const uploadAllAIImages=async(file:File|undefined)=>{
+  if(!file||!selectedTask)return;
+  setAiSixImporting(true);
+  try{
+   const result=await importThreeColorAIReconstruction(organizationId,memberId,selectedTask.id,file);
+   setPictureTab("main");setPhotoMode("optimized");setPhotoIndex(0);
+   setNotice("已关联 "+result.colors+" 种颜色、共 "+result.count+" 张独立生成的 AI 图片至当前刊登任务。切换 Black、White、Navy 可以查看对应图片；所有图片仍须人工核对后才能审核。");
+  }catch(e){setNotice(e instanceof Error?e.message:"关联已生成图片失败");}
+  finally{setAiSixImporting(false);}
+ };
  const uploadSixAIImages=async(file:File|undefined)=>{
   if(!file||!selectedTask||!selectedVariantGroup)return;
   setAiSixImporting(true);
@@ -464,11 +475,14 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <button type="button" aria-pressed={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPhotoIndex(0);setPhotoAiOpen(false)}}>原始图片（{selectedColorOriginalImages.length}）</button>
      </div>:null}
      {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length<6?<div className={styles.galleryRecoverRow}>
-      <span>检查已生成图片的历史关联</span>
+      <span>此次模拟已优化文字，图片须单独导入到本任务</span>
       <button type="button" disabled={!selectedTask||recoveringPhotos} onClick={()=>void restoreHistoricalPhotos()}>{recoveringPhotos?"正在查找…":"恢复已生成的 AI 重构图片"}</button>
-      {["black","white","navy"].includes(selectedVariantGroup?.id??"")?<>
-       <input ref={aiSixImportRef} className={styles.galleryFileInput} type="file" accept=".zip,application/zip" aria-label="导入本颜色的六张AI重构图片包" onChange={e=>{const file=e.currentTarget.files?.[0];void uploadSixAIImages(file);e.currentTarget.value=""}}/>
-       <button type="button" disabled={!selectedTask||aiSixImporting} onClick={()=>aiSixImportRef.current?.click()}>{aiSixImporting?"正在关联…":"导入当前颜色6张AI重构图"}</button>
+      {selectedTask?.id.startsWith("SHUOMI-AMZ-AI-MULTI:")&&["black","white","navy"].includes(selectedVariantGroup?.id??"")?<>
+       <input ref={aiAllColorImportRef} className={styles.galleryFileInput} type="file" accept=".zip,application/zip" aria-label="导入Black White Navy三色共18张AI成品" onChange={e=>{const file=e.currentTarget.files?.[0];void uploadAllAIImages(file);e.currentTarget.value=""}}/>
+       <button type="button" disabled={!selectedTask||aiSixImporting} onClick={()=>aiAllColorImportRef.current?.click()}>{aiSixImporting?"正在关联…":"导入三色18张AI成品"}</button>
+       <details className={styles.galleryImportAdvanced}><summary>仅导入当前颜色</summary>
+        <input ref={aiSixImportRef} type="file" accept=".zip,application/zip" aria-label="导入本颜色的六张AI重构图片包" onChange={e=>{const file=e.currentTarget.files?.[0];void uploadSixAIImages(file);e.currentTarget.value=""}}/>
+       </details>
       </>:null}
      </div>:null}
      {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.some(x=>x.source==="demo-import")?<p className={styles.galleryImportedNote}>已找回 {selectedVariantGroup.optimizedImages.filter(x=>x.source==="demo-import").length} 张历史文件；请确认它们是 AI 重构成品还是其他来源，系统不会擅自改写来源证明。</p>:null}
@@ -480,7 +494,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
        <span className={styles.galleryCounter}>{photoSelected+1} / {galleryImages.length}</span>
       </div>
       <div className={styles.productPhotoThumbnails}>{galleryImages.map((src,i)=><button key={src+i} type="button" aria-label={`查看第 ${i+1} 张图片`} aria-pressed={photoSelected===i} onClick={()=>setPhotoIndex(i)}><ListingProductPhoto src={src} alt={`图片 ${i+1}`} size={72}/></button>)}</div>
-     </div>:<div className={styles.pictureEmpty}><strong>{pictureTab==="detail"?"暂无详情图":photoMode==="optimized"?"暂无已保存的优化图":"暂无图片"}</strong><span>{pictureTab==="main"&&photoMode==="optimized"?"没有实际优化结果时不展示原始图，可上传图片或逐张重构。":"可在下方上传图片。"}</span></div>}
+     </div>:<div className={styles.pictureEmpty}><strong>{pictureTab==="detail"?"暂无详情图":photoMode==="optimized"?"此模拟任务尚未关联 AI 图片":"暂无图片"}</strong><span>{pictureTab==="main"&&photoMode==="optimized"?"AI 文案优化与图片生成分别保存。请在上方导入已生成的图片包，系统会自动匹配当前商品与颜色；不会用原图冒充优化图。":"可在下方上传图片。"}</span></div>}
      <div className={styles.galleryActions}>
       <input ref={photoFileInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="上传当前商品图片" className={styles.galleryFileInput} onChange={e=>{const file=e.currentTarget.files?.[0];void handlePhotoUpload(file);e.currentTarget.value=""}}/>
       <button type="button" disabled={photoBusy||!selectedTask} onClick={()=>{setPhotoFileAction("upload");photoFileInput.current?.click()}}>上传图片</button>
