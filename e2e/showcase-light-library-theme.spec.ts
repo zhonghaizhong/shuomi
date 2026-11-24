@@ -115,14 +115,14 @@ test("skill library entry cards open independent pages without relying on third-
  const entries=root.locator('[data-skill-entry]');
  await expect(entries).toHaveCount(3);
  for(const [key,title] of [["official","官方模板"],["mine","我的技能"],["team","团队技能"]]){
-  await expect(entries.locator('[data-skill-entry="'+key+'"]').getByRole("heading",{name:title})).toBeVisible();
+  await expect(root.locator('[data-skill-entry="'+key+'"]').getByRole("heading",{name:title})).toBeVisible();
  }
- await entries.locator('[data-skill-entry="official"]').getByRole("button",{name:"浏览官方模板"}).click();
+ await root.locator('[data-skill-entry="official"]').getByRole("button",{name:"浏览官方模板"}).click();
  await expect(page).toHaveURL(/#\/workbench\/agents\/skills\/official/);
  await expect(root.getByRole("heading",{name:"官方模板",level:1})).toBeVisible();
  await nav.getByRole("link",{name:"技能库",exact:true}).click();
  await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
- await entries.locator('[data-skill-entry="mine"]').getByRole("button",{name:"查看我的技能"}).click();
+ await root.locator('[data-skill-entry="mine"]').getByRole("button",{name:"查看我的技能"}).click();
  await expect(page).toHaveURL(/#\/workbench\/agents\/skills\/mine/);
  await expect(root.getByRole("heading",{name:"我的技能",level:1})).toBeVisible();
 });
