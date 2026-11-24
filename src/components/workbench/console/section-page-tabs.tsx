@@ -15,14 +15,17 @@ const groups:Record<string,{title:string;description:string;tabs:Tab[]}>={
 };
 export type SectionTabsKey=keyof typeof groups;
 export function sectionForPath(path:string):SectionTabsKey|undefined {return (Object.keys(groups) as SectionTabsKey[]).find(key=>groups[key].tabs.some(tab=>path===tab.href));}
-export function SectionPageTabs({section,showHelp=false,activeHref,onSelect}:{section:SectionTabsKey;showHelp?:boolean;activeHref?:string;onSelect?:(href:string)=>void}){
+export function SectionPageTabs({section,showHelp=false,activeHref,onSelect,onCreateChat}:{section:SectionTabsKey;showHelp?:boolean;activeHref?:string;onSelect?:(href:string)=>void;onCreateChat?:()=>void}){
  const pathname=usePathname(),query=useSearchParams();
  const group=groups[section];
  const preview=query?.get("preview")==="1";
  return <section className={styles.shell} aria-label={group.title+"页面导航"}>
   {showHelp?<p className={styles.help}>{group.description}</p>:null}
   <nav className={styles.tabs} aria-label={group.title+"分类"}>
-   {group.tabs.map(tab=>onSelect?<button key={tab.href} type="button" onClick={()=>onSelect(tab.href)} aria-current={(activeHref??pathname)===tab.href?"page":undefined}>{tab.label}</button>:<Link key={tab.href} href={tab.href+(preview?"?preview=1":"")} prefetch={false} aria-current={pathname===tab.href?"page":undefined}>{tab.label}</Link>)}
+   {group.tabs.map((tab,index)=><span className={styles.tabItem} key={tab.href}>
+    {onSelect?<button type="button" onClick={()=>onSelect(tab.href)} aria-current={(activeHref??pathname)===tab.href?"page":undefined}>{tab.label}</button>:<Link href={tab.href+(preview?"?preview=1":"")} prefetch={false} aria-current={pathname===tab.href?"page":undefined}>{tab.label}</Link>}
+    {section==="chat"&&index===0?(onCreateChat?<button type="button" className={styles.createChat} onClick={onCreateChat}>＋ 新建会话</button>:<Link className={styles.createChat} href={"/workbench/ai/chat/new"+(preview?"?preview=1":"")} prefetch={false}>＋ 新建会话</Link>):null}
+   </span>)}
   </nav>
  </section>;
 }
