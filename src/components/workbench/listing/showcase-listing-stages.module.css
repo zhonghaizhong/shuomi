@@ -536,3 +536,312 @@
 }
 .compactListingTable .item .compactAction:hover{background:color-mix(in srgb,#7367f0 14%,transparent)}
 .emptyListingRow{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px}
+
+
+/* Product completion workbench v1: large modal with independent scrolling
+   and separate main/detail galleries. Both themes use existing Vuexy tokens. */
+.productDetailDialog{
+ width:min(1500px,calc(100vw - 36px));
+ max-width:1500px;
+ height:min(960px,calc(100dvh - 32px));
+ max-height:calc(100dvh - 32px);
+ border-radius:11px;
+}
+.productDetailBody{
+ display:grid;
+ grid-template-columns:minmax(370px,.92fr) minmax(560px,1.38fr);
+ gap:16px;
+ flex:1;
+ min-height:0;
+ padding:16px 18px;
+ overflow:hidden;
+ align-items:stretch;
+}
+.productDialogLeft,.productDialogRight{
+ display:flex;
+ flex-direction:column;
+ gap:14px;
+ min-width:0;
+ min-height:0;
+ overflow-y:auto;
+ overflow-x:hidden;
+ overscroll-behavior:contain;
+ scrollbar-width:thin;
+ padding:0 4px 4px 0;
+}
+.productDialogRight .productInfoBlock{
+ gap:12px;
+}
+.productPhotoPanel{
+ flex:none;
+ gap:12px;
+ padding:15px;
+}
+.pictureTabs,.dialogFieldTabs{
+ display:flex;
+ align-items:center;
+ gap:7px;
+ border-bottom:1px solid var(--stroke);
+ padding-bottom:7px;
+}
+.pictureTabs button,.dialogFieldTabs button{
+ flex:none;
+ min-height:34px;
+ border:1px solid var(--stroke);
+ border-radius:7px;
+ background:var(--surface);
+ color:var(--muted);
+ padding:6px 12px;
+ font-size:13px;
+ font-weight:600;
+ cursor:pointer;
+}
+.pictureTabs button[aria-selected="true"],.dialogFieldTabs button[aria-selected="true"]{
+ background:#7367f0;
+ border-color:#7367f0;
+ color:#fff;
+}
+.productHeroImage{
+ height:clamp(260px,34vh,420px);
+ max-height:none;
+ min-height:260px;
+ padding:10px;
+ box-sizing:border-box;
+ border-radius:8px;
+}
+.pictureZoom{
+ background:transparent;
+ border:0;
+ padding:0;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ width:100%;
+ height:100%;
+ cursor:zoom-in;
+}
+.pictureZoom>img,.pictureZoom>[role="img"]{
+ max-width:100%;
+ max-height:100%;
+ width:min(100%,400px)!important;
+ height:min(100%,400px)!important;
+ object-fit:contain;
+}
+.pictureEmpty{
+ border:1px dashed var(--stroke);
+ border-radius:8px;
+ min-height:170px;
+ padding:24px;
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ align-items:center;
+ gap:8px;
+ background:var(--surface);
+ text-align:center;
+}
+.pictureEmpty strong{font-size:14px;color:var(--ink)}
+.pictureEmpty span{font-size:12px;color:var(--muted);line-height:1.6}
+.productPhotoThumbnails{
+ display:flex;
+ flex-wrap:wrap;
+ gap:8px;
+}
+.productPhotoThumbnails button{
+ width:68px;
+ height:68px;
+ flex:none;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+.productPhotoThumbnails button img,.productPhotoThumbnails button>[role="img"]{
+ width:60px!important;
+ height:60px!important;
+ border-radius:5px;
+ object-fit:contain;
+}
+.dialogProductFacts{
+ border:1px solid var(--stroke);
+ border-radius:9px;
+ background:var(--surface-alt);
+ padding:15px;
+ display:grid;
+ gap:12px;
+}
+.dialogProductFacts>strong{
+ font-size:14px;
+ border-left:3px solid #7367f0;
+ padding-left:10px;
+}
+.dialogProductFacts dl{margin:0;display:grid;gap:0}
+.dialogProductFacts dl>div{
+ display:grid;
+ grid-template-columns:95px minmax(0,1fr);
+ gap:12px;
+ padding:9px 0;
+ border-bottom:1px solid var(--stroke);
+ font-size:12px;
+}
+.dialogProductFacts dl>div:last-child{border-bottom:0}
+.dialogProductFacts dt{color:var(--muted)}
+.dialogProductFacts dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.dialogPlatformFacts{
+ display:grid;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:10px;
+ padding:4px 0 10px;
+ border-bottom:1px solid var(--stroke);
+}
+.dialogPlatformFacts>div{min-width:0;display:grid;gap:6px}
+.dialogPlatformFacts small{font-size:12px;color:var(--muted)}
+.dialogPlatformFacts strong{font-size:13px;overflow-wrap:anywhere;font-weight:600}
+.categoryEditor{
+ display:grid;
+ grid-template-columns:minmax(104px,.7fr) minmax(150px,2fr) auto;
+ align-items:center;
+ gap:12px;
+}
+.categoryEditor>div{display:grid;gap:4px}
+.categoryEditor>div>span{font-size:13px;font-weight:600}
+.categoryEditor small{font-size:11px;color:var(--muted);line-height:1.4}
+.categoryEditor>span{
+ border:1px solid var(--stroke);
+ border-radius:6px;
+ background:var(--surface);
+ padding:10px;
+ font-size:13px;
+ color:var(--muted);
+ min-width:0;
+ overflow-wrap:anywhere;
+}
+.categoryEditor>input{
+ background:var(--surface);
+ color:var(--ink);
+ border:1px solid var(--stroke);
+ border-radius:6px;
+ min-height:39px;
+ padding:8px 10px;
+ min-width:0;
+}
+.categoryEditor>button{
+ white-space:nowrap;
+ border:1px solid #7367f0;
+ border-radius:7px;
+ background:color-mix(in srgb,#7367f0 12%,var(--surface));
+ color:var(--ink);
+ padding:9px 13px;
+ cursor:pointer;
+}
+.categoryNotice{
+ font-size:12px;
+ line-height:1.6;
+ color:var(--muted);
+ border-left:3px solid #e6ac54;
+ background:var(--surface);
+ padding:9px 12px;
+}
+.dialogVariantFacts{
+ display:flex;
+ align-items:center;
+ gap:16px;
+ flex-wrap:wrap;
+ font-size:13px;
+}
+.dialogVariantPill{
+ color:#c8bfff;
+ padding:6px 12px;
+ border-radius:6px;
+ background:color-mix(in srgb,#7367f0 22%,var(--surface-alt));
+ font-weight:600;
+}
+.dialogVariantFacts>span:last-child{color:var(--muted)}
+.dialogFieldTabs{
+ gap:6px;
+ flex-wrap:wrap;
+}
+.dialogFieldTabs button{font-size:12px}
+.optionalToggle{
+ background:var(--surface);
+ border:1px solid var(--stroke);
+ color:var(--ink);
+ border-radius:7px;
+ text-align:left;
+ padding:10px 12px;
+ cursor:pointer;
+}
+.dialogFieldEmpty{
+ padding:18px;
+ border-radius:7px;
+ background:var(--surface);
+ border:1px dashed var(--stroke);
+ color:var(--muted);
+ line-height:1.7;
+ font-size:13px;
+}
+.dialogSkuList{display:grid;gap:8px}
+.dialogSkuList>div{
+ padding:12px;
+ display:grid;
+ grid-template-columns:85px minmax(0,1fr);
+ gap:6px 10px;
+ background:var(--surface);
+ border:1px solid var(--stroke);
+ border-radius:7px;
+}
+.dialogSkuList strong{font-size:13px}
+.dialogSkuList span{font-size:12px;overflow-wrap:anywhere}
+.dialogSkuList small{grid-column:2;color:var(--muted);font-size:12px}
+.dialogImageLightbox{
+ position:absolute;
+ inset:0;
+ z-index:15;
+ display:flex;
+ flex-direction:column;
+ gap:12px;
+ align-items:center;
+ justify-content:center;
+ background:rgba(10,13,28,.96);
+ padding:16px;
+}
+.dialogImageLightbox>button{
+ align-self:flex-end;
+ margin-right:16px;
+ padding:9px 16px;
+ border:1px solid var(--stroke);
+ background:var(--surface-alt);
+ color:var(--ink);
+ border-radius:7px;
+ cursor:pointer;
+}
+.dialogImageLightbox>img,.dialogImageLightbox>[role="img"]{
+ max-width:calc(100vw - 70px);
+ max-height:calc(100dvh - 145px);
+ width:min(640px,85vw)!important;
+ height:min(640px,75vh)!important;
+ object-fit:contain;
+ border-radius:9px;
+ background:#fff;
+}
+@media(max-width:1100px){
+ .productDetailBody{grid-template-columns:minmax(300px,.9fr) minmax(450px,1.2fr)}
+ .dialogPlatformFacts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:850px){
+ .productDetailDialog{
+  width:calc(100vw - 20px);
+  height:calc(100dvh - 20px);
+  max-height:calc(100dvh - 20px);
+ }
+ .productDetailBody{
+  display:block;
+  overflow-y:auto;
+  padding:12px;
+ }
+ .productDialogLeft,.productDialogRight{overflow:visible}
+ .productDialogLeft{margin-bottom:12px}
+ .categoryEditor{grid-template-columns:1fr auto}
+ .categoryEditor>div{grid-column:1/-1}
+ .productHeroImage{height:280px;min-height:230px}
+ .productDetailFooter{gap:8px}
+}
