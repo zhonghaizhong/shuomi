@@ -26,6 +26,25 @@ function decorate(batch:DemoCollectionBatch):DemoCollectionBatch{
  if(batch.source!=="1688"||batch.demo!==true)return batch;
  return {...batch,products:batch.products.map((p,i)=>addDemoFields(p,i))};
 }
+/** Real, independently identified US Amazon listings; fixture only, not an Amazon API scrape.
+ * References/prices are indicative and can change. Photos are illustrative product matches.
+ * Never label these as fresh Amazon price/stock responses.
+ */
+const amazonUsFive=[
+ {asin:"B00TTD9BRC",name:"CeraVe Moisturizing Cream, Face & Body Moisturizer, 19 oz",price:"$17.80（2026-11-23参考价）",variants:["19 oz (539 g) / Jar"],description:"真实商品资料演示：CeraVe 19 oz 面部及身体保湿霜，含神经酰胺与透明质酸。ASIN 已核对；价格为第三方历史参考，并非实时 Amazon 报价。",photos:["https://images-na.ssl-images-amazon.com/images/I/61c5dK4tv9L.jpg"]},
+ {asin:"B07WRKXQ8W",name:"Anker PowerPort III Nano 20W USB-C Wall Charger, White",price:"$11.99（品牌站参考价）",variants:["White / 20W / USB-C"],description:"真实商品资料演示：Anker 20W 单 USB-C 紧凑型充电器，白色。ASIN 对应 Anker PowerPort III Nano；价格仅为品牌同类产品参考，不代表该 ASIN 实时售价。",photos:["https://cdn.shopify.com/s/files/1/0493/9834/9974/files/A2637121_TD01_V1_6effced4-d18a-403b-94c8-783dba212e64_3840x.png?v=1730775376"]},
+ {asin:"B00008GKD3",name:"Lodge L8SK3 Pre-Seasoned Cast Iron Skillet, 10.25 Inch",price:"$19.90（第三方参考价）",variants:["10.25 inch / Black / L8SK3"],description:"真实商品资料演示：Lodge L8SK3 10.25 英寸预开锅铸铁平底锅，双导流口与辅助把手。价格来自第三方商品跟踪参考，非实时 Amazon 报价。",photos:["https://down-sg.img.susercontent.com/file/c1e6f7028ab2ea2458f8dfc2fe5346bd"]},
+ {asin:"B0CFPJYX7P",name:"Amazon Kindle Paperwhite 16GB (2024 Release), Black",price:"$129.99（第三方参考价）",variants:["Black / 16GB / 2024"],description:"真实商品资料演示：Amazon Kindle Paperwhite 2024 款，黑色、16GB。价格仅供演示，不代表当前 Amazon 实时成交价或库存。",photos:["https://www.bigw.com.au/medias/sys_master/images/images/h54/h94/85360867672094.jpg"]},
+ {asin:"B00NTCHCU2",name:"Amazon Basics AAA Alkaline Batteries, 20-Count, 1.5V",price:"$12.49（第三方参考价）",variants:["AAA / 1.5V / 20-count"],description:"真实商品资料演示：Amazon Basics AAA 1.5V 碱性电池 20 粒装。ASIN 已核对；价格为第三方参考，非当前 Amazon 报价。",photos:["https://www.ufinebattery.com/images/upload/amazonbasics-alkaline.webp"]}
+] as const;
+const amazonDemoId="SIM-AMAZON-US-5-20261124";
+function amazonUsDemoBatch(organizationId:string,memberId:string):DemoCollectionBatch{
+ return {id:amazonDemoId,organizationId,ownerMemberId:memberId,source:"Amazon",method:"美国站 · 商品资料演示",name:"Amazon 美国站 · 5个真实商品（模拟采集）",createdAt:"2026-11-24 18:11",status:"已采集 · 待上传",demo:true,
+  products:amazonUsFive.map((p,i)=>({id:"SIM-AMZ-US-"+p.asin,sku:p.asin,name:p.name,originalTitle:p.name,source:"Amazon US · ASIN "+p.asin+"（公开资料演示）",price:p.price,variants:[...p.variants],variantCount:1,images:[...p.photos],description:p.description,demoSourceLink:"https://www.amazon.com/dp/"+p.asin,status:"演示数据"}))
+ };
+}
+const amazonSeedMarker=(org:string,member:string)=>"shuomi:amazon-us-five-seeded-v1:"+org+":"+member;
+
 const prefix="shuomi:demo-collection-batches-v1:";
 const seedNames=demoCatalog.map(x=>x.name);
 function key(organizationId:string){return prefix+organizationId;}
@@ -34,10 +53,17 @@ function initialBatch(organizationId:string):DemoCollectionBatch{return {id:"SIM
 export function readDemoCollectionBatches(organizationId:string,memberId="admin",_isAdministrator=false):DemoCollectionBatch[]{
  if(typeof window==="undefined")return [];
  try{const stored=sessionStorage.getItem(key(organizationId));let result:DemoCollectionBatch[];
-  if(stored===null){result=organizationId==="SM-ENT-000001"?[decorate(initialBatch(organizationId))]:[];sessionStorage.setItem(key(organizationId),JSON.stringify(result));}
+  if(stored===null){result=organizationId==="SM-ENT-000001"?[decorate(initialBatch(organizationId))]:[];}
   else{const data:unknown=JSON.parse(stored);result=Array.isArray(data)?data.filter(valid):[];}
+  // Seed once for the requested default-enterprise administrator, including sessions
+  // that already contain the previous 1688 demo. Do not re-create a batch if deleted.
+  if(organizationId==="SM-ENT-000001"&&memberId==="admin"&&!sessionStorage.getItem(amazonSeedMarker(organizationId,memberId))){
+   if(!result.some(b=>b.id===amazonDemoId))result=[amazonUsDemoBatch(organizationId,memberId),...result];
+   sessionStorage.setItem(amazonSeedMarker(organizationId,memberId),"1");
+  }
+  sessionStorage.setItem(key(organizationId),JSON.stringify(result));
   return result.filter(batch=>batch.organizationId===organizationId&&batch.ownerMemberId===memberId).map(decorate);
- }catch{return organizationId==="SM-ENT-000001"&&memberId==="admin"?[initialBatch(organizationId)]:[];}
+ }catch{return organizationId==="SM-ENT-000001"&&memberId==="admin"?[amazonUsDemoBatch(organizationId,memberId),initialBatch(organizationId)]:[];}
 }
 export function addDemoCollectionBatch(organizationId:string,memberId:string,source:"1688"|"Amazon",method:string,entries:string[]):DemoCollectionBatch|null{
  if(typeof window==="undefined"||!entries.length)return null;
