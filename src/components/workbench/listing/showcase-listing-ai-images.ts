@@ -1,5 +1,5 @@
 "use client";
-/** 5×6 approved photographic e-commerce images assembled into one WebP atlas.
+/** 5×6 approved independent photographic e-commerce images.
  *  Each source tile is 192×192. Original high-resolution JPG files are
  *  supplied separately; this compact atlas serves the live showcase previews.
  */
@@ -8,7 +8,8 @@ const order:ListingArtKind[]=["cream","charger","skillet","ereader","battery"];
 const prefix="shuomi-photo:";
 export function listingDemoArtSet(kind:ListingArtKind):string[]{
  if(!order.includes(kind))throw Error("未知商品图片分类");
- return Array.from({length:6},(_,index)=>prefix+kind+":"+index);
+ const base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
+ return Array.from({length:6},(_,index)=>base+"/assets/listing-ai-preview/approved/"+kind+"-"+String(index+1).padStart(2,"0")+".jpg");
 }
 export function parseListingPhoto(src:string):{kind:ListingArtKind;index:number;row:number;col:number}|null{
  if(!src.startsWith(prefix))return null;
