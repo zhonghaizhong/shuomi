@@ -171,7 +171,15 @@ it("renders six preview cards automatically per color without claiming generated
  const first=listingVariantPhotoRoles[0];
  saveListingVariantPhoto(org,member,task.id,black.id,first,"https://example.test/black-optimized-main.jpg");
  const updated=readShowcaseUploadTasks(org,member).find(t=>t.id===task.id)!.demoProduct!.variantImageGroups!;
- expect(listingVariantGalleryCards(updated[0])[0]).toEqual({index:0,role:first,url:"https://example.test/black-optimized-main.jpg",isOptimized:true});
+ expect(listingVariantGalleryCards(updated[0])[0]).toEqual({index:0,role:first,url:"https://example.test/black-optimized-main.jpg",isOptimized:true,isDemoImported:false});
  expect(listingVariantGalleryCards(updated[1]).every(p=>!p.isOptimized)).toBe(true);
  expect(variantGroupReady(updated[0])).toBe(false);
+});
+
+it("never certifies uploaded demonstration media as actual AI output",()=>{
+ const group={id:"black",color:"Black",skuIds:["A"],originalImages:["https://example.test/raw.jpg"],version:1,
+  optimizedImages:listingVariantPhotoRoles.map((role,i)=>({role,url:"shuomi-bundle:demo-"+i,version:1,source:"demo-import" as const,provenance:"color-edited-from-source"}))};
+ expect(variantGroupReady(group)).toBe(false);
+ expect(listingVariantGalleryCards(group)).toHaveLength(6);
+ expect(listingVariantGalleryCards(group).every(x=>x.isDemoImported&&!x.isOptimized)).toBe(true);
 });
