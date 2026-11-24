@@ -11,6 +11,7 @@ import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./showcase-batch-version-picker";
 import styles from "./showcase-listing-stages.module.css";
+import {importAmazonVariantBundle,readVariantBundlePhoto,isVariantBundleUrl} from "./showcase-variant-bundle-import";
 import {ShowcaseListingStageHeader} from "./showcase-listing-stage-header";
 import {parseListingPhoto,listingPhotoAtlasUrl} from "./showcase-listing-ai-images";
 
@@ -160,6 +161,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const [categoryDraft,setCategoryDraft]=useState("");
  const [imagePreview,setImagePreview]=useState(false);
  const [variantPreviewIndex,setVariantPreviewIndex]=useState<number|null>(null);
+ const [bundleImporting,setBundleImporting]=useState(false),[bundlePhotoUrls,setBundlePhotoUrls]=useState<Record<string,string>>({});
  const go=(s:string)=>router.push("/workbench/listing/"+s+"?preview=1");
  const filtered=(items.length?items:taskItems).filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status+" "+(x.batchName||"")).toLowerCase().includes(applied.toLowerCase())&&(!appliedBatch||x.batchKey===appliedBatch));
  const totalPages=Math.max(1,Math.ceil(filtered.length/15));
@@ -172,7 +174,33 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const variantImageGroups=selectedTask?.demoProduct?.variantImageGroups??[];
  const selectedVariantGroup=variantImageGroups.find(g=>g.id===variantColorId)??variantImageGroups[0];
  const selectedVariantSkus=variantDetails.filter(v=>v.color.trim().toLowerCase()===selectedVariantGroup?.id);
- const selectedColorOptimizedImages=selectedVariantGroup?listingVariantPhotoRoles.map(role=>selectedVariantGroup.optimizedImages.find(img=>img.role===role)?.url).filter((src):src is string=>Boolean(src)):[];
+ useEffect(()=>{
+  let cancelled=false;
+  const urls:string[]=[];
+  const referenced=selectedVariantGroup?.optimizedImages.map(x=>x.url).filter(isVariantBundleUrl)??[];
+  setBundlePhotoUrls({});
+  if(referenced.length){
+   Promise.all(referenced.map(async ref=>{
+    const blob=await readVariantBundlePhoto(ref);
+    if(!blob)return [ref,""] as const;
+    const src=URL.createObjectURL(blob);urls.push(src);
+    return [ref,src] as const;
+   })).then(pairs=>{if(!cancelled)setBundlePhotoUrls(Object.fromEntries(pairs));}).catch(()=>{if(!cancelled)setNotice("导入的图片无法从本浏览器读取，请重新导入 ZIP");});
+  }
+  return ()=>{cancelled=true;urls.forEach(src=>URL.revokeObjectURL(src));};
+ },[selectedTask?.id,selectedVariantGroup?.id,taskVersion]);
+ const mediaUrl=(src:string|null|undefined):string|undefined=>src?(isVariantBundleUrl(src)?bundlePhotoUrls[src]:src):undefined;
+ const importBundle=async(file:File|undefined)=>{
+  if(!file)return;
+  setBundleImporting(true);
+  try{
+   const result=await importAmazonVariantBundle(organizationId,memberId,file);
+   setNotice("已从图片包自动关联 "+result.imported+" 张素材到 Crocs 和 Stanley 的六个颜色组；原有人工审核成果保留。演示素材未被视为真实 AI 成品。");
+   setPhotoIndex(0);setVariantPreviewIndex(null);
+  }catch(e){setNotice(e instanceof Error?e.message:"图片包导入失败");}
+  finally{setBundleImporting(false);}
+ };
+ const selectedColorOptimizedImages=selectedVariantGroup?listingVariantPhotoRoles.map(role=>mediaUrl(selectedVariantGroup.optimizedImages.find(img=>img.role===role)?.url)).filter((src):src is string=>Boolean(src)):[];
  const colorPhotoComplete=variantImageGroups.length===0||variantImageGroups.every(variantGroupReady);
  const selectedColorOriginalImages=selectedVariantGroup?.originalImages??(selectedItem?.originalImages??[]);
  const selectedMainImages=selectedVariantGroup?(photoMode==="optimized"?(selectedColorOptimizedImages.length?selectedColorOptimizedImages:selectedColorOriginalImages):selectedColorOriginalImages):(selectedItem?.optimizedImages?.length?selectedItem.optimizedImages:(selectedItem?.originalImages??[]));
@@ -332,19 +360,24 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       </button>)}</div></>:<div className={styles.pictureEmpty}><strong>{selectedVariantGroup&&photoMode==="optimized"?"该颜色尚无 AI 优化图":"尚未保存独立详情图"}</strong><span>{selectedVariantGroup&&photoMode==="optimized"?"必须实际生成并绑定六种不同用途的图。原始实拍图不能视为 AI 成品。":"主图与详情图分开保存。"}</span></div>}
      {selectedColorOriginalImages.length?<div className={styles.productOriginalRow}><strong>{selectedVariantGroup?.color??"商品"} · 原始实拍</strong><div>{selectedColorOriginalImages.slice(0,6).map((src,i)=><img key={src+i} src={src} alt={"原始图片 "+(i+1)}/>)}</div></div>:null}
      {selectedVariantGroup?<div className={styles.variantSixSlots}>
-      <div className={styles.productSectionHeading}><strong>六张图片 · {selectedVariantGroup.color}</strong><small>已生成 {selectedVariantGroup.optimizedImages.length}/6 · 其余为演示预览</small></div>
+      <div className={styles.productSectionHeading}><strong>六张图片 · {selectedVariantGroup.color}</strong><small>已绑定 {selectedVariantGroup.optimizedImages.length}/6 · {selectedVariantGroup.optimizedImages.filter(x=>x.source==="demo-import").length} 张演示素材</small></div>
+      {selectedTask?.id.startsWith("SHUOMI-AMZ-AI-MULTI:")?<label className={styles.variantBundleUpload}>
+       <input type="file" accept=".zip,application/zip" disabled={bundleImporting} onChange={e=>{const file=e.currentTarget.files?.[0];void importBundle(file);e.currentTarget.value="";}}/>
+       <strong>{bundleImporting?"正在导入 36 张图片…":"导入 36 张商品图片包 · 自动关联所有颜色"}</strong>
+       <small>一次选择此前下载的 ZIP，自动匹配 Crocs／Stanley 的 6 个颜色组；在当前浏览器保存，不上传 SHEIN。</small>
+      </label>:null}
       <div className={styles.variantSixGrid}>
        {listingVariantGalleryCards(selectedVariantGroup).map(card=><button className={styles.variantPhotoTile} type="button" key={card.role} aria-label={selectedVariantGroup.color+" "+card.role+(card.isOptimized?" 查看优化成品":" 查看演示预览")} onClick={()=>setVariantPreviewIndex(card.index)}>
          <div className={styles.variantPhotoTileImage} data-preview-role={card.index}>
-          {card.url?<img src={card.url} alt={selectedVariantGroup.color+" "+card.role+(card.isOptimized?" 优化图片":" 商品实拍排版预览")}/>:<span>暂无参考图</span>}
+          {mediaUrl(card.url)?<img src={mediaUrl(card.url)} alt={selectedVariantGroup.color+" "+card.role+(card.isOptimized?" 优化图片":card.isDemoImported?" 已导入演示图片":" 商品实拍排版预览")}/>:<span>{card.isDemoImported?"正在载入图片":"暂无参考图"}</span>}
           <span className={styles.variantPhotoTileIndex}>{String(card.index+1).padStart(2,"0")}</span>
-          {!card.isOptimized?<span className={styles.variantPhotoTileWatermark}>演示预览 · 非 AI 成品</span>:null}
+          {!card.isOptimized?<span className={styles.variantPhotoTileWatermark}>{card.isDemoImported?"已导入素材 · 待复核":"演示预览 · 非 AI 成品"}</span>:null}
          </div>
          <strong>{card.role}</strong>
-         <small>{card.isOptimized?"已保存优化图片":"等待 AI 实际生成"}</small>
+         <small>{card.isOptimized?"已保存优化图片":card.isDemoImported?"已自动绑定 · 演示素材":"等待 AI 实际生成"}</small>
         </button>)}
       </div>
-      <p className={styles.productHint}>自动按当前颜色展示六种图片用途的版式预览。同颜色不同尺码共享图片；预览不写入优化结果，也不会绕过审核。</p>
+      <p className={styles.productHint}>同颜色不同尺码共享对应图片。导入后的素材存于本浏览器，不是跨设备的服务器上传；部分素材为调色或版式处理，不能作为全部独立 AI 重构的证据，审核保护继续生效。</p>
       <details className={styles.variantPhotoAdvanced}><summary>高级：替换为已生成的图片</summary>
        <div className={styles.variantPhotoAdvancedBody}>
         <label>图片用途<select aria-label="手动替换的图片用途" value={editingPhotoRole??listingVariantPhotoRoles[0]} onChange={e=>{setEditingPhotoRole(e.target.value as ListingVariantPhotoRole);setPhotoDraft("")}}>{listingVariantPhotoRoles.map(role=><option key={role} value={role}>{role}</option>)}</select></label>
@@ -418,11 +451,11 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
     {(()=>{
       const role=listingVariantPhotoRoles[variantPreviewIndex];
       const image=selectedVariantGroup.optimizedImages.find(img=>img.role===role);
-      const src=image?.url??selectedVariantGroup.originalImages[0];
+      const src=mediaUrl(image?.url)??selectedVariantGroup.originalImages[0];
       return <div className={styles.variantPreviewLightboxBody}>
        {src?<img src={src} alt={selectedVariantGroup.color+" "+role}/>:null}
        <strong>{selectedVariantGroup.color} · {role}</strong>
-       <span>{image?"已保存优化结果":"演示预览：原始商品实拍，仅展示角色位置，尚未实际 AI 重构"}</span>
+       <span>{image?.source==="demo-import"?"已绑定演示素材，尚未完成独立 AI 重构验收":image?"已保存优化结果":"演示预览：原始商品实拍，尚未实际 AI 重构"}</span>
       </div>;
     })()}
    </div>:null}
