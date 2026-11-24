@@ -5,7 +5,7 @@ import {readOptimizedDatasets,optimizedDatasetsChanged} from "../showcase-optimi
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import {readShowcaseEnabledAgents,readShowcaseAgentTemplates,showcaseAgentId,showcaseAgentStateChanged} from "../showcase-agent-demo-state";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
-import {addShowcaseUploadTask,readShowcaseUploadTasks,showcaseUploadTasksEvent,type ShowcaseUploadTask} from "./showcase-upload-tasks";
+import {addShowcaseUploadTask,readShowcaseUploadTasks,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 import {useRouter} from "next/navigation";
 import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
@@ -13,7 +13,7 @@ import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./showc
 import styles from "./showcase-listing-stages.module.css";
 
 type Stage="waiting"|"missing"|"review";
-type Item={sku:string;name:string;source:string;store:string;status:string;missing:string[];ai:boolean};
+type Item={sku:string;name:string;source:string;store:string;status:string;missing:string[];ai:boolean;batchKey?:string;batchName?:string;sourceVersionId?:string};
 const seed:Item[]=[];
 const names:Record<Stage,string>={waiting:"待上传",missing:"待补全",review:"待审核"};
 const descriptions:Record<Stage,string>={
@@ -44,7 +44,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const demoTemplates=useMemo(()=>chosenAgent?readShowcaseAgentTemplates(organizationId,memberId,chosenAgent.name):[],[organizationId,memberId,chosenAgent?.name,agentDemoVersion]);
  const availableTemplates=[{id:"default",name:"默认配置（演示）"},...demoTemplates];
  const chosenTemplate=availableTemplates.find(t=>t.id===templateId);
- const [filter,setFilter]=useState(""),[applied,setApplied]=useState(""),[sourceFilter,setSourceFilter]=useState("全部来源"),[appliedSource,setAppliedSource]=useState("全部来源"),[storeFilter,setStoreFilter]=useState("全部店铺"),[appliedStore,setAppliedStore]=useState("全部店铺"),[items,setItems]=useState(seed),[selected,setSelected]=useState<Item|null>(null),[notice,setNotice]=useState(""),[ruleDialog,setRuleDialog]=useState(false),[submitted,setSubmitted]=useState(false);
+ const [filter,setFilter]=useState(""),[applied,setApplied]=useState(""),[batchFilter,setBatchFilter]=useState(()=>typeof window==="undefined"?"":sessionStorage.getItem(showcaseUploadBatchPreferenceKey(organizationId,memberId))||""),[appliedBatch,setAppliedBatch]=useState(()=>typeof window==="undefined"?"":sessionStorage.getItem(showcaseUploadBatchPreferenceKey(organizationId,memberId))||""),[items,setItems]=useState(seed),[selected,setSelected]=useState<Item|null>(null),[notice,setNotice]=useState(""),[ruleDialog,setRuleDialog]=useState(false),[submitted,setSubmitted]=useState(false);
  const [form,setForm]=useState<Record<string,string>>({});
  const [dataVersion,setDataVersion]=useState(0);
  const [taskVersion,setTaskVersion]=useState(0);
@@ -81,10 +81,14 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  // First-stage intake is already complete; third-party missing fields are evaluated separately by the platform adapter.
  const missingCount=0;
  const savedTasks=useMemo(()=>readShowcaseUploadTasks(organizationId,memberId),[organizationId,memberId,taskVersion]);
- const taskItems:Item[]=savedTasks.filter(task=>stage==="missing"?task.status==="待补全":task.status==="待审核").flatMap(task=>task.productIds.map((id,i)=>({sku:id+" · "+task.id.slice(-8),name:task.batchName+(task.productCount>1?` · 商品 ${i+1}`:""),source:task.source,store:task.storeName,status:task.status,missing:task.status==="待补全"?["商品必填资料"]:[],ai:Boolean(task.agentId)})));
+ const batchOptions=Array.from(new Map(savedTasks.map(task=>[showcaseUploadBatchKey(task),{key:showcaseUploadBatchKey(task),label:showcaseUploadBatchLabel(task),source:task.source,name:task.batchName,version:task.sourceVersionId||"original"}])).values());
+ const activeBatch=batchOptions.find(option=>option.key===appliedBatch);
+ const taskItems:Item[]=savedTasks.filter(task=>stage==="missing"?task.status==="待补全":task.status==="待审核").flatMap(task=>task.productIds.map((id,i)=>({sku:id+" · "+task.id.slice(-8),name:task.batchName+(task.productCount>1?` · 商品 ${i+1}`:""),source:task.source,store:task.storeName,status:task.status,missing:task.status==="待补全"?["商品必填资料"]:[],ai:Boolean(task.agentId),batchKey:showcaseUploadBatchKey(task),batchName:task.batchName,sourceVersionId:task.sourceVersionId||"original"})));
+ const applyBatchFilter=()=>{const next=batchOptions.some(option=>option.key===batchFilter)?batchFilter:"";setApplied(filter.trim());setAppliedBatch(next);sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),next);};
+ const resetBatchFilter=()=>{setFilter("");setApplied("");setBatchFilter("");setAppliedBatch("");sessionStorage.removeItem(showcaseUploadBatchPreferenceKey(organizationId,memberId));};
  const [reviewChecked,setReviewChecked]=useState(false),[reviewMode,setReviewMode]=useState<"compare"|"edit">("compare");
  const go=(s:string)=>router.push("/workbench/listing/"+s+"?preview=1");
- const filtered=useMemo(()=>(items.length?items:taskItems).filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status).toLowerCase().includes(applied.toLowerCase())&&(appliedSource==="全部来源"||x.source===appliedSource)&&(appliedStore==="全部店铺"||x.store===appliedStore)),[items,taskItems,applied,appliedSource,appliedStore]);
+ const filtered=(items.length?items:taskItems).filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status+" "+(x.batchName||"")).toLowerCase().includes(applied.toLowerCase())&&(!appliedBatch||x.batchKey===appliedBatch));
  const selectedItem=selected?items.find(x=>x.sku===selected.sku)??selected:null;
  const action=(next:string)=>{setNotice(next);setSubmitted(true)};
  const submitUpload=(uploadMode:"平台草稿"|"直接上传到平台"|"定时上传")=>{
@@ -146,12 +150,16 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
    {showTimeSettings?<div className={styles.overlay} role="presentation" onMouseDown={e=>e.target===e.currentTarget&&setShowTimeSettings(false)}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="设置上传时间"><h2>设置上传时间</h2><p>设置本次上传的执行日期与时间。演示模式不执行真实调度。</p><label>日期<input aria-label="定时上传日期" type="date" value={scheduledDate} onChange={e=>setScheduledDate(e.target.value)}/></label><label>时间<input aria-label="定时上传时间" type="time" value={scheduledTime} onChange={e=>setScheduledTime(e.target.value)}/></label><footer><button type="button" onClick={()=>setShowTimeSettings(false)}>取消</button><button type="button" className={styles.primary} disabled={!scheduledDate||!scheduledTime} onClick={()=>{setScheduleEnabled(true);setMode("定时上传");setShowTimeSettings(false)}}>确认</button></footer></section></div>:null}
    <p className={styles.hint}>按照 Figma 保留平台草稿、直接上传和定时上传配置入口；当前展示只创建本账号任务记录，不模拟真实平台提交或智能体执行。</p>
   </>:<>
-   <section className={styles.summary}>{(stage==="missing"?[["0","全部商品"],["0","待补全"],["0","AI已补全"],["0","手动已补全"]]:[["0","待审核"],["0","AI建议待确认"],["0","已应用待继续"],["0","异常"]]).map(([n,label])=><article key={label}><b>{n}</b><span>{label}</span></article>)}</section>
-   <section className={styles.listPanel}><div className={styles.filters}><div className={styles.filterChoices}><label>来源<select aria-label="商品来源" value={sourceFilter} onChange={e=>setSourceFilter(e.target.value)}><option>全部来源</option><option>采集批次</option><option>自有商品库</option></select></label><label>目标店铺<select aria-label="目标店铺筛选" value={storeFilter} onChange={e=>setStoreFilter(e.target.value)}><option>全部店铺</option></select></label></div><div className={styles.filterSearch}><input placeholder="搜索商品名称 / SKU / 批次名称" aria-label="搜索商品" value={filter} onChange={e=>setFilter(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){setApplied(filter);setAppliedSource(sourceFilter);setAppliedStore(storeFilter)}}}/><button type="button" onClick={()=>{setFilter("");setApplied("");setSourceFilter("全部来源");setAppliedSource("全部来源");setStoreFilter("全部店铺");setAppliedStore("全部店铺")}}>重置</button><button type="button" className={styles.primary} onClick={()=>{setApplied(filter);setAppliedSource(sourceFilter);setAppliedStore(storeFilter)}}>确认</button></div></div>
+   <section className={styles.summary}>{(stage==="missing"?[[String(filtered.length),"全部商品"],[String(filtered.filter(item=>item.missing.length>0).length),"待补全"],["0","AI已补全"],["0","手动已补全"]]:[[String(filtered.length),"待审核"],[String(filtered.filter(item=>item.ai).length),"AI建议待确认"],["0","已应用待继续"],["0","异常"]]).map(([n,label])=><article key={label}><b>{n}</b><span>{label}</span></article>)}</section>
+   <section className={styles.listPanel}><div className={styles.filters} data-listing-batch-filter>
+    <div className={styles.filterChoices}><label>商品批次<select aria-label="选择刊登批次" value={batchFilter} onChange={e=>setBatchFilter(e.target.value)}><option value="">全部批次</option>{batchOptions.map(option=><option key={option.key} value={option.key}>{option.label}</option>)}</select></label></div>
+    <div className={styles.filterSearch}><input placeholder="搜索商品名称 / SKU" aria-label="搜索商品" value={filter} onChange={e=>setFilter(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")applyBatchFilter()}}/><button type="button" onClick={resetBatchFilter}>重置</button><button type="button" className={styles.primary} onClick={applyBatchFilter}>确认</button></div>
+   </div>
+   {activeBatch?<div className={styles.batchContext} role="status"><strong>当前批次：{activeBatch.name}</strong><span>{activeBatch.source} · {activeBatch.version==="original"?"原始版本":"所选优化版本"} · 本阶段 {filtered.length} 件商品</span><small>按待上传时选定的来源、批次与数据版本关联；其他阶段的商品仍保留在同一批次中。</small></div>:<p className={styles.batchFilterHint}>按「待上传」已选择的来源、批次和版本追踪商品；切换阶段时保留已确认的批次筛选。</p>}
     <header className={styles.listHeader}><h2>商品列表（共 {filtered.length} 个商品）</h2><button type="button" onClick={()=>action(stage==="missing"?"批量 AI 补全需先选择真实商品、授权与策略；当前未执行。":"批量审核需逐项确认实际建议；当前未执行。")}>{stage==="missing"?"批量AI补全":"批量审核"}</button></header>
-    <div className={styles.tableScroll}><div className={styles.table}><div className={styles.columns}><span>商品 / SKU</span><span>来源</span><span>目标店铺</span><span>状态</span><span>操作</span></div>
-    {filtered.length===0?<div className={styles.item} role="status">暂无商品记录，请先从「我的数据」选择真实商品，并完成目标店铺授权。</div>:null}
-    {filtered.map(item=><div className={styles.item} key={item.sku}><span><strong>{item.name}</strong><small>{item.sku}</small></span><span>{item.source}</span><span>{item.store}</span><span>{item.status}</span><button type="button" onClick={()=>{setSelected(item);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button></div>)}</div></div>
+    <div className={styles.tableScroll}><div className={styles.table}><div className={styles.columns}><span>商品 / SKU</span><span>所属批次</span><span>目标店铺</span><span>状态</span><span>操作</span></div>
+    {filtered.length===0?<div className={styles.item} role="status">{activeBatch?"当前批次在本阶段暂无待处理商品。":"暂无商品记录；请先在「待上传」选择批次并创建刊登任务。"}</div>:null}
+    {filtered.map(item=><div className={styles.item} key={item.sku}><span><strong>{item.name}</strong><small>{item.sku}</small></span><span>{item.batchName??item.source}<small>{item.sourceVersionId==="original"?"原始版本":item.sourceVersionId?"优化版本":"—"}</small></span><span>{item.store}</span><span>{item.status}</span><button type="button" onClick={()=>{setSelected(item);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button></div>)}</div></div>
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
    <section className={styles.explanation}><h2>{stage==="missing"?"为什么需要补全商品信息？":"为什么需要人工审核 AI 建议？"}</h2><p>{stage==="missing"?"补全目标平台必填信息，可减少审核退回并提高发布效率；补全后明确返回原任务继续。":"确认图片、属性、标题、描述等修改与平台要求一致，应用后明确继续上传；未启用智能体的商品不进入待审核。"}</p><button onClick={()=>go(stage==="missing"?"waiting":"uploaded")}>{stage==="missing"?"返回待上传":"查看已上传记录"}</button></section>
