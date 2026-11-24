@@ -30,7 +30,7 @@ import { ShowcaseSkillLibrary } from "./showcase-skill-library";
 import { ShowcaseTaskCenter } from "./showcase-task-center";
 import { ShowcaseProjectCenter } from "./showcase-project-center";
 import { ShowcaseStoreCenter } from "./stores/showcase-store-center";
-import {SectionPageTabs} from "./console/section-page-tabs";
+import {SectionPageTabs,sectionForPath} from "./console/section-page-tabs";
 
 type Row = { title: string; detail: string; value?: string; state?: string };
 type PageSpec = { section: string; title: string; description: string; metrics?: [string, string, string][]; cards?: [string, string, string][]; rows?: Row[]; filters?: string[]; layout?: "supply" | "data" | "ai" | "agents" | "agentMarket" | "agentMine" | "tools" | "services" | "serviceJoin" | "storeCenter" | "plans" | "account" | "accountProfile" | "accountSettings" | "goals" | "storeMatrix" | "alerts" | "advice" | "tasks" | "libraryHub" | "unavailable" };
@@ -110,7 +110,18 @@ function titleFromPath(pathname: string) {
   return parts.at(-1)?.replaceAll("-", " ") ?? "工作台";
 }
 
-export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId=accountTenant.id,organizationName=accountTenant.name }: { pathname: string; memberId?: string; organizationId?: string; organizationName?: string }) {
+type ShowcasePreviewProps={pathname:string;memberId?:string;organizationId?:string;organizationName?:string};
+export function DemoWorkbenchPreview(props:ShowcasePreviewProps) {
+ const [currentPath,setCurrentPath]=useState(props.pathname);
+ useEffect(()=>setCurrentPath(props.pathname),[props.pathname]);
+ const section=sectionForPath(currentPath);
+ const showHelp=currentPath===({listing:"/workbench/listing",chat:"/workbench/ai/chat",tasks:"/workbench/ai/tasks",projects:"/workbench/ai/projects",knowledge:"/workbench/ai/knowledge",skills:"/workbench/agents/skills",reports:"/workbench/ai/reports",catalogs:"/workbench/supply/catalogs"} as Record<string,string>)[section??""];
+ return section ? <div data-inline-section={section}>
+  <SectionPageTabs section={section} showHelp={showHelp} activeHref={currentPath} onSelect={setCurrentPath}/>
+  <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={setCurrentPath}/>
+ </div> : <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={setCurrentPath}/>;
+}
+function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId=accountTenant.id,organizationName=accountTenant.name,onSectionSelect }: ShowcasePreviewProps & {onSectionSelect:(path:string)=>void}) {
   const router = useRouter();
   const {state:accountSuite}=useShowcaseSuite();
   const {purchases:resourcePurchases,totals:resourceTotals}=useDemoPurchases(organizationId);
@@ -234,23 +245,22 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
   if (pathname === "/workbench/tools/official" || pathname === "/workbench/tools/mine") return <ShowcaseToolMarket key={organizationId+"::"+memberId+"::"+pathname} pathname={pathname} navigate={router.push} organizationId={organizationId} memberId={memberId} />;
   if (pathname.startsWith("/workbench/tools/custom")) return <ShowcaseToolCustomization pathname={pathname} navigate={router.push} />;
   if (pathname === "/workbench/services" || pathname === "/workbench/services/market" || pathname === "/workbench/services/mine" || pathname === "/workbench/services/join") return <ShowcaseEcologyServices pathname={pathname} navigate={router.push} />;
-  if (pathname === "/workbench/listing") return <ListingOverview navigate={href=>router.push(`${href}?preview=1`)} />;
+  if (pathname === "/workbench/listing") return <ListingOverview showTabs={false} navigate={onSectionSelect} />;
   if (pathname === "/workbench/listing/waiting") return <ShowcaseListingStage stage="waiting" organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/listing/missing") return <ShowcaseListingStage stage="missing" organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/listing/review") return <ShowcaseListingStage stage="review" organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/account/profile" || pathname === "/workbench/account/profile/settings") return <AccountProfilePreview key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/listing/uploaded") return <ShowcaseUploadedPreview organizationId={organizationId} memberId={memberId} />;
   if (pathname.startsWith("/workbench/account/organization") || pathname.startsWith("/workbench/account/referrals")) return <ShowcaseAccountSuite key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} memberId={memberId} organizationId={organizationId} organizationName={organizationName} />;
-  if (pathname === "/workbench/agents/skills" || ["/workbench/agents/skills/official", "/workbench/agents/skills/mine", "/workbench/agents/skills/team"].includes(pathname)) return <><SectionPageTabs section="skills" showHelp={pathname==="/workbench/agents/skills"}/><ShowcaseSkillLibrary pathname={pathname} organizationId={organizationId} memberId={memberId} /></>;
-  if (["/workbench/ai/tasks","/workbench/ai/tasks/pending","/workbench/ai/tasks/running","/workbench/ai/tasks/completed","/workbench/ai/tasks/errors","/workbench/ai/tasks/scheduled"].includes(pathname)) return <><SectionPageTabs section="tasks" showHelp={pathname==="/workbench/ai/tasks"}/><ShowcaseTaskCenter pathname={pathname} navigate={router.push} /></>;
+  if (pathname === "/workbench/agents/skills" || ["/workbench/agents/skills/official", "/workbench/agents/skills/mine", "/workbench/agents/skills/team"].includes(pathname)) return <ShowcaseSkillLibrary pathname={pathname} organizationId={organizationId} memberId={memberId} />;
+  if (["/workbench/ai/tasks","/workbench/ai/tasks/pending","/workbench/ai/tasks/running","/workbench/ai/tasks/completed","/workbench/ai/tasks/errors","/workbench/ai/tasks/scheduled"].includes(pathname)) return <ShowcaseTaskCenter pathname={pathname} navigate={href=>{if(sectionForPath(href))onSectionSelect(href);else router.push(href)}} />;
   if (["/workbench/store-center","/workbench/stores","/workbench/store-products","/workbench/store-orders"].includes(pathname) || pathname.startsWith("/workbench/store-orders/")) return <ShowcaseStoreCenter key={organizationId+"::"+memberId} pathname={pathname} navigate={router.push} memberId={memberId} organizationId={organizationId} />;
-  if (pathname === "/workbench/ai/projects" || ["/active","/recent","/templates","/archived","/mine"].some(suffix=>pathname === "/workbench/ai/projects"+suffix)) return <><SectionPageTabs section="projects" showHelp={pathname==="/workbench/ai/projects"}/><ShowcaseProjectCenter key={pathname} pathname={pathname} /></>;
+  if (pathname === "/workbench/ai/projects" || ["/active","/recent","/templates","/archived","/mine"].some(suffix=>pathname === "/workbench/ai/projects"+suffix)) return <ShowcaseProjectCenter key={pathname} pathname={pathname} onSectionSelect={onSectionSelect} />;
   if (pathname === "/workbench/supply/selected") return <ShowcaseSelectedMarket organizationId={organizationId} memberId={memberId}/>;
   if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div> : null}
     <header className={styles.header}><div><div className={styles.breadcrumb}>AI工作台 / 硕米Chat</div><h1>硕米Chat</h1><p>发起新会话、继续历史工作、收藏重要成果，协同业务资料与智能执行。</p></div></header>
-    <SectionPageTabs section="chat" showHelp/>
     <ChatIntroduction preview contentTasks={false} createAction={<button className={styles.primary} onClick={() => router.push("/workbench/ai/chat/new?preview=1")}>进入新建会话</button>} />
   </div>;
 
@@ -267,9 +277,6 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
          </div>:null}
        </div>);
   return <div data-intelligent-market={["agents", "agentMarket", "agentMine"].includes(page.layout ?? "") ? page.layout : undefined} data-commerce-unified={unifiedArea} data-library-hub={page.layout === "libraryHub" ? pathname.split("/").at(-1) : undefined} className={`${styles.page} ${isCockpitPreview ? styles.cockpitPreview : ""} ${isAiWorkbenchPreview ? styles.aiWorkbenchPreview : ""} ${page.layout === "goals" ? styles.goalsPreview : ""} ${page.layout === "storeMatrix" ? styles.storeMatrixPreview : ""} ${page.layout === "libraryHub" ? styles.libraryHubPreview : ""} ${pathname.startsWith("/workbench/supply") ? styles.supplyPreview : ""} ${page.layout === "tasks" ? styles.tasksPreview : ""} ${["agents", "agentMarket", "agentMine"].includes(page.layout ?? "") ? styles.agentsPreview : ""} ${page.layout === "agentMarket" ? styles.agentMarketReference : ""}`}>
-    {["/workbench/ai/knowledge","/workbench/ai/knowledge/official","/workbench/ai/knowledge/mine"].includes(pathname)?<SectionPageTabs section="knowledge" showHelp={pathname==="/workbench/ai/knowledge"}/>:null}
-    {pathname.startsWith("/workbench/ai/reports")?<SectionPageTabs section="reports" showHelp={pathname==="/workbench/ai/reports"}/>:null}
-    {pathname.startsWith("/workbench/supply/catalogs")?<SectionPageTabs section="catalogs" showHelp={pathname==="/workbench/supply/catalogs"}/>:null}
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")} aria-label="关闭提示">×</button></div> : null}
     {activeAction ? <ShowcaseActionDialog action={activeAction} detail={selectedDetail} onClose={closeAction} onCreateGoal={createGoal} onCreateDraft={createDraft} /> : null}
     {showcaseDialog ? <ShowcaseAgentDialog key={`${showcaseDialog.kind}:${showcaseDialog.title}`} organizationId={organizationId} memberId={memberId} administrator={organizationAdmin} dialog={showcaseDialog} onClose={() => setShowcaseDialog(null)} onSaveModel={(title,model) => { setModelPreferences(current => {const next={...current,[title]:model};try{window.sessionStorage.setItem("shuomi-demo-agent-models",JSON.stringify(next));}catch{}return next;}); setShowcaseDialog(null); setNotice(`${title}：已保存本地演示模型选择，不影响正式工作台配置。`); }} onSaveTemplate={(title,configuration)=>{try{window.sessionStorage.setItem("shuomi:demo-agent-template-v2:"+organizationId+":"+memberId+":"+title,JSON.stringify(configuration));}catch{}setShowcaseDialog(null);setNotice(`${title}：演示配置已保存为模板，可在已适配业务流程中参考；尚未创建真实任务。`);}} /> : null}
