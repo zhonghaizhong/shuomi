@@ -179,6 +179,73 @@ export async function importSingleColorAIReconstruction(
  return outputs.length;
 }
 
+/** Import one manifest-verified 18-image pack to the existing Crocs task.
+ * This bridges separately generated assets into the original simulated upload
+ * task's three color groups without creating another product or draft version.
+ * Import is explicit: a ChatGPT attachment is not automatically available to the
+ * logged-in browser and must first be selected by that user.
+ */
+export async function importThreeColorAIReconstruction(
+ organizationId:string,memberId:string,taskId:string,file:File
+):Promise<{count:number;colors:number}>{
+ const tasks=readShowcaseUploadTasks(organizationId,memberId);
+ const task=tasks.find(t=>t.id===taskId);
+ const colors=["black","white","navy"] as const;
+ if(!task?.id.startsWith("SHUOMI-AMZ-AI-MULTI:")||!task.productIds.includes("SIM-AMZ-US-CROCS-10001")||
+    !task.demoProduct?.variantImageGroups||!["待补全","待审核"].includes(task.status))
+  throw new Error("请先进入 Crocs 多变体商品的待补全或待审核任务");
+ if(colors.some(c=>!task.demoProduct?.variantImageGroups?.some(g=>g.id===c)))
+  throw new Error("缺少 Black、White 或 Navy 的颜色组，不会写入其他商品");
+ const files=await readZip(file),manifestFile=files.get("manifest.json");
+ if(!manifestFile)throw new Error("缺少 18 张图的 AI 来源清单");
+ let manifest:{count?:number;source?:string;colors?:string[];images?:Array<{path:string;method:string;sha256?:string}>};
+ try{manifest=JSON.parse(new TextDecoder().decode(manifestFile));}
+ catch{throw new Error("图片包 manifest.json 无效");}
+ if(manifest.count!==18||manifest.source!=="ai-generated"||!Array.isArray(manifest.images)||
+    manifest.images.length!==18||colors.some(c=>!manifest.colors?.includes(c)))
+  throw new Error("请选择 Black、White、Navy 各六张的 AI 图片包（共 18 张）");
+ const validated:{color:string;items:ListingVariantImage[]}[]=[];
+ const photos:{key:string;blob:Blob}[]=[];
+ const hashes=new Set<string>();
+ for(const color of colors){
+  const group=task.demoProduct.variantImageGroups.find(g=>g.id===color)!;
+  const outputs:ListingVariantImage[]=[];
+  for(let idx=0;idx<6;idx++){
+   const path="crocs/"+color+"/"+expectedRoles[idx],meta=manifest.images.find(m=>m.path===path),bytes=files.get(path);
+   if(!meta||meta.method!=="ai-generated"||!bytes||bytes.length<1024||
+      bytes[0]!==0xff||bytes[1]!==0xd8)
+    throw new Error("缺少 "+color+" 第 "+(idx+1)+" 张有效图片");
+   const hashInput=new Uint8Array(bytes.length);hashInput.set(bytes);
+   const hashBytes=await crypto.subtle.digest("SHA-256",hashInput);
+   const digest=Array.from(new Uint8Array(hashBytes)).map(v=>v.toString(16).padStart(2,"0")).join("");
+   if(meta.sha256!==digest||hashes.has(digest))
+    throw new Error(color+" 第 "+(idx+1)+" 张校验失败或图片重复");
+   hashes.add(digest);
+   const key=[organizationId,memberId,taskId,color,String(idx)].join("|")+"|generated-"+digest.slice(0,16);
+   photos.push({key,blob:new Blob([bytes as BlobPart],{type:"image/jpeg"})});
+   outputs.push({role:listingVariantPhotoRoles[idx],url:scheme+key,version:group.version,
+    source:"ai-generated",provenance:"已导入生成的 AI 商品图片，待人工核对；SHA256 "+digest});
+  }
+  validated.push({color,items:outputs});
+ }
+ // All checks must pass before any writes; keep source photos and other tasks.
+ const latest=readShowcaseUploadTasks(organizationId,memberId);
+ const current=latest.find(t=>t.id===taskId);
+ if(!current?.demoProduct?.variantImageGroups||!["待补全","待审核"].includes(current.status))
+  throw new Error("导入期间商品状态变化，请重新打开任务");
+ await storePhotos(photos);
+ const groups=current.demoProduct.variantImageGroups.map(group=>{
+  const pack=validated.find(v=>v.color===group.id);
+  if(!pack)return group;
+  const roles=new Set(pack.items.map(i=>i.role));
+  return {...group,optimizedImages:[...group.optimizedImages.filter(i=>!roles.has(i.role)),...pack.items],reviewedAt:undefined};
+ });
+ const next={...current,demoProduct:{...current.demoProduct,variantImageGroups:groups}};
+ persistShowcaseUploadTaskRecords(organizationId,memberId,latest.map(t=>t.id===taskId?next:t));
+ window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId,memberId}}));
+ return {count:photos.length,colors:validated.length};
+}
+
 export type VariantBundleImportResult={imported:number;skipped:number;tasks:number;colors:number};
 /** One ZIP binds 36 images into the existing two Amazon showcase tasks, never creating a real platform upload. */
 export async function importAmazonVariantBundle(organizationId:string,memberId:string,file:File):Promise<VariantBundleImportResult>{
