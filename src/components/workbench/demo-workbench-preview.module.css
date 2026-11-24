@@ -4266,3 +4266,31 @@
  .storeMatrixPreview .matrixFilters.matrixSingleRow{grid-template-columns:repeat(2,minmax(0,1fr))}
  .storeMatrixPreview .matrixSingleRow>input{grid-column:span 2}
 }
+
+
+/* Store matrix desktop: all seven controls share one row, including actions.
+   Keep the date popover un-clipped and retain responsive wrapping on small screens. */
+@media (min-width: 901px) {
+ .storeMatrixPreview .matrixFilters.matrixSingleRow {
+  display:grid;
+  grid-template-columns:minmax(180px,2.3fr) minmax(115px,1.2fr) repeat(3,minmax(100px,1fr)) 76px 76px;
+  gap:9px;
+  align-items:center;
+  overflow:visible;
+ }
+ .storeMatrixPreview .matrixFilters.matrixSingleRow > * {
+  grid-row:1;
+  grid-column:auto;
+  min-width:0;
+  width:100%;
+  max-width:none;
+  margin:0;
+ }
+ .storeMatrixPreview .matrixFilters.matrixSingleRow > :nth-child(1){grid-column:1}
+ .storeMatrixPreview .matrixFilters.matrixSingleRow > :nth-child(2){grid-column:2}
+ .storeMatrixPreview .matrixFilters.matrixSingleRow > :nth-child(3){grid-column:3}
+ .storeMatrixPreview .matrixFilters.matrixSingleRow > :nth-child(4){grid-column:4}
+ .storeMatrixPreview .matrixFilters.matrixSingleRow > :nth-child(5){grid-column:5}
+ .storeMatrixPreview .matrixFilters.matrixSingleRow > :nth-child(6){grid-column:6}
+ .storeMatrixPreview .matrixFilters.matrixSingleRow > :nth-child(7){grid-column:7}
+}
