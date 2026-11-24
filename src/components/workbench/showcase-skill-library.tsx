@@ -14,22 +14,35 @@ export const officialSkills=[
 const enabledKey="shuomi-preview-enabled-skills";
 const personalKey="shuomi-preview-personal-skills";
 export type PersonalPreviewSkill={name:string;description:string};
-export function readEnabledPreviewSkills():string[]{try{const raw=JSON.parse(sessionStorage.getItem(enabledKey)||"[]");return Array.isArray(raw)?raw.filter(x=>typeof x==="string"&&officialSkills.some(s=>s[0]===x)):[]}catch{return []}}
-export function readPersonalPreviewSkills():PersonalPreviewSkill[]{try{const raw=sessionStorage.getItem(personalKey);if(raw){const a=JSON.parse(raw);if(Array.isArray(a))return a.filter(x=>typeof x?.name==="string"&&typeof x?.description==="string")}}catch{}return [{name:"商品标题规范化（示例）",description:"个人整理的商品标题优化方法示例"}]}
-export function savePersonalPreviewSkill(skill:PersonalPreviewSkill){try{sessionStorage.setItem(personalKey,JSON.stringify([...readPersonalPreviewSkills().filter(x=>x.name!==skill.name),skill]))}catch{}}
-export function ShowcaseSkillLibrary({pathname}:{pathname:string}){
+const scopedKey=(base:string,organizationId="SM-ENT-000001",memberId="admin")=>
+ organizationId==="SM-ENT-000001"&&memberId==="admin"?base:base+":"+encodeURIComponent(organizationId)+":"+encodeURIComponent(memberId);
+export function readEnabledPreviewSkills(organizationId="SM-ENT-000001",memberId="admin"):string[]{
+ try{const raw=JSON.parse(sessionStorage.getItem(scopedKey(enabledKey,organizationId,memberId))||"[]");
+  return Array.isArray(raw)?raw.filter(x=>typeof x==="string"&&officialSkills.some(s=>s[0]===x)):[];
+ }catch{return []}
+}
+export function readPersonalPreviewSkills(organizationId="SM-ENT-000001",memberId="admin"):PersonalPreviewSkill[]{
+ try{const raw=sessionStorage.getItem(scopedKey(personalKey,organizationId,memberId));
+  if(raw){const a=JSON.parse(raw);if(Array.isArray(a))return a.filter(x=>typeof x?.name==="string"&&typeof x?.description==="string")}
+ }catch{}
+ return [];
+}
+export function savePersonalPreviewSkill(skill:PersonalPreviewSkill,organizationId="SM-ENT-000001",memberId="admin"){
+ try{sessionStorage.setItem(scopedKey(personalKey,organizationId,memberId),JSON.stringify([...readPersonalPreviewSkills(organizationId,memberId).filter(x=>x.name!==skill.name),skill]))}catch{}
+}
+export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",memberId="admin"}:{pathname:string;organizationId?:string;memberId?:string}){
  const router=useRouter();
  const category=pathname.endsWith("/official")?"official":pathname.endsWith("/mine")?"mine":pathname.endsWith("/team")?"team":"home";
- const [enabled,setEnabled]=useState(readEnabledPreviewSkills);
- const [personal,setPersonal]=useState(readPersonalPreviewSkills);
+ const [enabled,setEnabled]=useState(()=>readEnabledPreviewSkills(organizationId,memberId));
+ const [personal,setPersonal]=useState(()=>readPersonalPreviewSkills(organizationId,memberId));
  const [filter,setFilter]=useState("全部"),[query,setQuery]=useState(""),[search,setSearch]=useState("");
  const [intro,setIntro]=useState<string|null>(null);
  const dialog=useRef<HTMLDialogElement>(null);
- useEffect(()=>{setFilter("全部");setQuery("");setSearch("");setIntro(null);setEnabled(readEnabledPreviewSkills());setPersonal(readPersonalPreviewSkills())},[pathname]);
+ useEffect(()=>{setFilter("全部");setQuery("");setSearch("");setIntro(null);setEnabled(readEnabledPreviewSkills(organizationId,memberId));setPersonal(readPersonalPreviewSkills(organizationId,memberId))},[pathname,organizationId,memberId]);
  useEffect(()=>{if(intro&&!dialog.current?.open)dialog.current?.showModal();else if(!intro&&dialog.current?.open)dialog.current.close()},[intro]);
  const go=(p:string)=>router.push(root+(p?"/"+p:"")+"?preview=1");
  const chat=(mode:string,name="")=>router.push("/workbench/ai/chat/new?preview=1&skillMode="+mode+"&skill="+encodeURIComponent(name));
- const toggle=(name:string)=>{const next=enabled.includes(name)?enabled.filter(x=>x!==name):[...enabled,name];setEnabled(next);try{sessionStorage.setItem(enabledKey,JSON.stringify(next))}catch{}};
+ const toggle=(name:string)=>{const next=enabled.includes(name)?enabled.filter(x=>x!==name):[...enabled,name];setEnabled(next);try{sessionStorage.setItem(scopedKey(enabledKey,organizationId,memberId),JSON.stringify(next))}catch{}};
  const title=category==="home"?"让技能成为可重复使用的工作能力":category==="official"?"官方模板":category==="mine"?"我的技能":"团队技能";
  const desc=category==="home"?"浏览官方模板、管理已启用技能，并在会话中按需调用；重复工作不必反复配置。":category==="official"?"按需查找和启用标准技能，启用后会出现在「我的技能」，使用时再关联到会话或任务。":category==="mine"?"管理已启用的官方技能和自己保存的技能，需要时直接带入会话。":"团队技能暂未开放。你可以先使用官方模板或我的技能。";
  const selected=officialSkills.find(s=>s[0]===intro);
