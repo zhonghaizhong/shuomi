@@ -812,3 +812,13 @@
  outline-offset:2px;
 }
 :global(.light) .page :is(.toolCard,.mineCard){background:var(--tm-card)}
+
+/* Active category must remain purple during mouse hover and keyboard focus.
+   The generic raised-button hover must not override a selected filter. */
+.page :is(.categories,.statusFilter) button[aria-pressed="true"],
+.page :is(.categories,.statusFilter) button[aria-pressed="true"]:hover:not(:disabled),
+.page :is(.categories,.statusFilter) button[aria-pressed="true"]:focus-visible{
+ background:#7367f0;
+ border-color:#7367f0;
+ color:#fff;
+}
