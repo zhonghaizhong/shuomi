@@ -2,6 +2,7 @@
 
 import {useEffect,useId,useRef,useState} from "react";
 import css from "./agent-use-configuration-dialog.module.css";
+import {readPodLibrary,podAssetPreviewSrc,type PodLibraryAsset} from "./pod-asset-library";
 
 export type ConfigurationMode="product-image"|"pod-ai"|"pod-hybrid"|"pod-pattern-split"|"pod-pattern-custom"|"skills"|"knowledge";
 export type ImageTask={id:number;name:string;prompt:string;position?:number;target?:"主图"|"详情图"};
@@ -57,8 +58,8 @@ const podKnowledgeSamples=[
 ];
 const languages=["不设置（默认关闭）","英语","中文","西班牙语","法语","德语","日语"];
 
-export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKind="product"}:{
- agentKind?:"pod"|"product";
+export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKind="product",organizationId="SM-ENT-000001",memberId="admin"}:{
+ agentKind?:"pod"|"product";organizationId?:string;memberId?:string;
  mode:ConfigurationMode;initial:AgentUseConfiguration;onClose:()=>void;onSave:(value:AgentUseConfiguration)=>void;
 }){
  const dialogRef=useRef<HTMLDialogElement>(null);
@@ -94,8 +95,16 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  const [knowledgeTab,setKnowledgeTab]=useState<"我的知识库"|"团队知识库">("我的知识库");
  const [librarySelected,setLibrarySelected]=useState("");
  const [libraryQuery,setLibraryQuery]=useState("");
+ const [libraryCategory,setLibraryCategory]=useState("全部分类");
+ const [libraryPage,setLibraryPage]=useState(1);
+ const [libraryPreview,setLibraryPreview]=useState<number|null>(null);
+ const [libraryAssets,setLibraryAssets]=useState<PodLibraryAsset[]>(()=>readPodLibrary(organizationId,memberId));
  const [multiSelected,setMultiSelected]=useState<number[]>([]);
  const [aiSelected,setAiSelected]=useState<string[]>([]);
+ const showAssetLibrary=()=>{setLibraryAssets(readPodLibrary(organizationId,memberId));setLibraryQuery("");setLibraryCategory("全部分类");setLibraryPage(1);setLibrarySelected("");setLibraryPreview(null);setMessage("");setChild("library");};
+ const filteredLibraryAssets=libraryAssets.filter(asset=>(libraryCategory==="全部分类"||asset.category===libraryCategory)&&[asset.name,asset.category].some(text=>text.toLowerCase().includes(libraryQuery.toLowerCase())));
+ const selectedLibraryAsset=libraryAssets.find(asset=>String(asset.id)===librarySelected);
+ const previewLibraryAsset=libraryAssets.find(asset=>asset.id===libraryPreview);
 
  useEffect(()=>{
   const previous=document.activeElement;
@@ -194,17 +203,29 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  const saveProductImage=()=>{if(optimizationSource==="引用技能"&&!(form.selectedSkills?.length)){setMessage("请先在上一级选择至少一项技能，或改用官方方案。");return;}if(processingScope==="手动选择"&&!currentImages.length){setMessage("请至少勾选一张要处理的"+visibleImageTarget+"。");return;}if(optimizationSource==="自定义指令"&&!customTasksReady){setMessage("请为每条自定义任务选择不同图片位置，并填写独立优化要求。");return;}commit({...form,optimizationSource,imageProcessingScope:processingScope,sharedImageSource:form.sharedImageSource??"主图",selectedImages:currentImages,selectedMainImages:sharedVisual?currentImages:mainImgs,selectedDetailImages:sharedVisual?currentImages:detailImgs,imageTasks:tasks});};
  const choice=(items:string[],value:string,change:(v:string)=>void)=><div className={css.segment}>{items.map(v=><button key={v} type="button" aria-pressed={value===v} onClick={()=>change(v)}>{v}</button>)}</div>;
  const maybeNotice=message?<p role="status" className={css.notice}>{message}</p>:null;
- return <dialog ref={dialogRef} className={`${css.modal} ${mode==="product-image"&&!child?css.productImageModal:""}`} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(exampleZoom){setExampleZoom(false);}else if(example){setExample(null);}else if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
+ return <dialog ref={dialogRef} className={`${css.modal} ${mode==="product-image"&&!child?css.productImageModal:""}`} aria-labelledby={id} onCancel={event=>{event.preventDefault();if(libraryPreview!==null){setLibraryPreview(null);}else if(exampleZoom){setExampleZoom(false);}else if(example){setExample(null);}else if(child){setChild("");setMessage("");}else onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
   <header className={css.head}><div><h2 id={id}>{title}</h2><p>{desc}</p></div>{isProductImage&&!child?<div className={css.optimizerHeaderActions}><button type="button" onClick={()=>setChild("language")}>语言：{form.imageLanguage&&form.imageLanguage!==languages[0]?form.imageLanguage:"已关闭"}</button><button type="button" onClick={()=>setChild("background")}>背景：{form.imageBackground&&form.imageBackground!=="不设置"?form.imageBackground:"已关闭"}</button></div>:null}<button type="button" className={css.close} aria-label="关闭配置弹窗" onClick={()=>child?setChild(""):onClose()}>×</button></header>
   <main className={css.body}>
    {child==="language"?<div className={css.optionGrid}>{languages.map(x=><button key={x} aria-pressed={(form.imageLanguage??languages[0])===x} onClick={()=>{set("imageLanguage",x);setChild("");}}>{x}</button>)}</div>
    :child==="background"?<div className={css.stack}><h3>背景指令</h3>{choice(["不设置","白色背景","自定义背景要求"],form.imageBackground??"不设置",x=>set("imageBackground",x))}{form.imageBackground==="自定义背景要求"?<label>自定义背景要求<textarea aria-label="自定义背景要求" value={form.imageBackgroundCustom??""} onChange={e=>set("imageBackgroundCustom",e.target.value)} placeholder="例如：浅灰摄影棚背景、柔和自然光、保持商品主体不变……" /></label>:null}<p>所有主图和详情图都会遵循此配置。</p></div>
-   :child==="source"?<div className={css.optionGrid}><button type="button" onClick={()=>{set("splitSource","本地上传");setChild("");}}>本地上传 · 从电脑选择图片</button><button type="button" onClick={()=>setChild("library")}>素材库 · 选择已保存图片</button></div>
-   :child==="library"?<div className={css.stack}>
-    <p className={css.tip}>以下为 Figma 原型示例；正式引用需要接入 POD 素材管理工具中真实的「我的素材库」。</p>
-    <input aria-label="搜索素材名称或关键词" placeholder="搜索素材名称或关键词" value={libraryQuery} onChange={e=>setLibraryQuery(e.target.value)} />
-    <div className={css.optionGrid}>{["复古花卉字母","宇宙猫咪图形","复古日落纹理","植物线描","蝴蝶结图案","阳光笑脸字样","波浪渐变装饰","宠物轮廓主题"].filter(x=>x.includes(libraryQuery)).map((x,i)=><button type="button" key={x} aria-pressed={librarySelected===x} onClick={()=>setLibrarySelected(x)}>{String(i+1).padStart(2,"0")} · {x}</button>)}</div>
-    <p>当前已选：{librarySelected||"未选择参考素材"} · 单选 1 张 · 引用不移动或删除原素材</p>
+   :child==="source"?<div className={css.optionGrid}><button type="button" onClick={()=>{set("splitSource","本地上传");setChild("");}}>本地上传 · 从电脑选择图片</button><button type="button" onClick={showAssetLibrary}>素材库 · 选择已保存图片</button></div>
+   :child==="library"?<div className={css.libraryPicker} aria-label="我的素材库图片选择">
+    <div className={css.libraryPickerHeading}><div><h3>我的素材库</h3><p>从 POD 素材管理工具已保存的图片中选择，单选 1 张。素材不会移动或删除。</p></div><small>共 {filteredLibraryAssets.length} 张 · 第 {libraryPage} / {Math.max(1,Math.ceil(filteredLibraryAssets.length/10))} 页</small></div>
+    <div className={css.libraryPickerFilters}>
+     <input aria-label="搜索我的素材" value={libraryQuery} onChange={event=>{setLibraryQuery(event.target.value);setLibraryPage(1)}} placeholder="搜索素材名称或分类"/>
+     <select aria-label="筛选素材分类" value={libraryCategory} onChange={event=>{setLibraryCategory(event.target.value);setLibraryPage(1)}}><option>全部分类</option>{[...new Set(libraryAssets.map(asset=>asset.category))].map(category=><option key={category}>{category}</option>)}</select>
+     <button type="button" onClick={()=>{setLibraryQuery("");setLibraryCategory("全部分类");setLibraryPage(1)}}>重置</button>
+    </div>
+    {filteredLibraryAssets.length?<div className={css.libraryPickerGrid}>{filteredLibraryAssets.slice((libraryPage-1)*10,libraryPage*10).map(asset=><article key={asset.id} className={css.libraryPickerCard} data-selected={librarySelected===String(asset.id)}>
+      <button type="button" className={css.libraryPickerSelect} aria-pressed={librarySelected===String(asset.id)} aria-label={"选择素材 "+asset.name} onClick={()=>{setLibrarySelected(String(asset.id));setMessage("");}}>
+       <img src={podAssetPreviewSrc(asset)} alt={asset.name} loading="lazy"/>
+       <span className={css.libraryPickerCheck} aria-hidden="true">{librarySelected===String(asset.id)?"✓":""}</span>
+      </button>
+      <strong title={asset.name}>{asset.name}</strong><small>{asset.category}</small>
+      <button type="button" className={css.libraryPickerPreviewButton} onClick={()=>setLibraryPreview(asset.id)} aria-label={"预览素材 "+asset.name}>查看大图</button>
+     </article>)}</div>:<div className={css.libraryPickerEmpty}><strong>{libraryAssets.length?"没有符合筛选条件的素材":"我的素材库暂无图片"}</strong><p>{libraryAssets.length?"可以更换关键词或重置筛选。":"先到 POD 素材管理工具的「我的素材库」上传或添加图片，再返回这里选择。"}</p></div>}
+    <div className={css.libraryPickerBottom}><span>已选择：{selectedLibraryAsset?.name??"未选择"}</span><div><button type="button" disabled={libraryPage<=1} onClick={()=>setLibraryPage(page=>page-1)}>上一页</button><button type="button" disabled={libraryPage*10>=filteredLibraryAssets.length} onClick={()=>setLibraryPage(page=>page+1)}>下一页</button></div></div>
+    {previewLibraryAsset?<div className={css.libraryPreviewOverlay} role="dialog" aria-modal="true" aria-label={"预览素材 "+previewLibraryAsset.name}><section className={css.libraryPreviewWindow}><header><strong>{previewLibraryAsset.name}</strong><button type="button" aria-label="关闭素材预览" onClick={()=>setLibraryPreview(null)}>×</button></header><img src={podAssetPreviewSrc(previewLibraryAsset)} alt={previewLibraryAsset.name+"完整图片"}/><small>{previewLibraryAsset.category}</small><button type="button" onClick={()=>{setLibrarySelected(String(previewLibraryAsset.id));setLibraryPreview(null)}}>选择这张图片</button></section></div>:null}
    </div>
    :child==="sort"?<div className={css.stack}>{[["转化优先","把识别、购买理由、场景等高转化图片优先"],["官方图优先","优先展示官方渲染图片，再穿插 AI 图片"],["AI图优先","优先展示 AI 重构图片，再补充官方图片"]].map(([name,desc])=><button key={name} type="button" onClick={()=>{
     const priority=(v:string)=>name==="官方图优先"?(v.startsWith("官方")?0:1):name==="AI图优先"?(v.startsWith("AI")?0:1):/购买理由|场景|识别/.test(v)?0:1;
@@ -322,12 +343,13 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
    </div>
    {exampleZoom?<div className={css.optimizerExampleZoom} role="dialog" aria-modal="true" aria-label="放大示例图片"><button type="button" onClick={()=>setExampleZoom(false)} aria-label="关闭放大图片">关闭放大</button><img src={officialImageExampleUrl(example.target,example.index)} onError={event=>{const img=event.currentTarget;const fallback=officialImageExampleUrl(example.target,example.index,"svg");if(img.src!==new URL(fallback,window.location.href).href)img.src=fallback;}} alt="放大后的1比1中文保温杯示例"/></div>:null}
   </div>:null}
-  <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child==="add-image"?"取消":child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={(isProductImage&&!child&&!productImageReady)||(child==="add-image"&&(sourceTab==="应用技能"?!form.selectedSkills?.length:sourceTab==="从本地上传"?!fileName:sourceTab==="自定义指令"?!assetName.trim():true))} onClick={()=>{
+  <footer className={css.footer}>{isProductImage&&!child?<><span className={css.optimizerFooterHint}>完成当前配置后确认选择</span><span className={css.optimizerFooterValidation}>{productImageReady?"已完成当前图片配置":"请先完成当前图片配置"}</span></>:null}<button type="button" onClick={()=>{if(child){setChild("");setMessage("");}else onClose();}}> {child==="add-image"?"取消":child?"返回":"取消"}</button><button type="button" className={css.primary} disabled={(isProductImage&&!child&&!productImageReady)||(child==="library"&&!selectedLibraryAsset)||(child==="add-image"&&(sourceTab==="应用技能"?!form.selectedSkills?.length:sourceTab==="从本地上传"?!fileName:sourceTab==="自定义指令"?!assetName.trim():true))} onClick={()=>{
    if(child==="restore"){setSlots(initialHybridSlots(hybridShared?initial.hybridSlots:hybridTarget==="主图"?initial.hybridMainSlots??initial.hybridSlots:initial.hybridDetailSlots??initial.hybridSlots));setChild("");return;}
    if(child==="ai-images"){addManyAi();return;}
    if(child==="library"){
-    if(!librarySelected){setMessage("请选择一张参考素材。");return;}
-    setForm(v=>({...v,splitSource:"素材库",splitReference:librarySelected}));setChild("");setMessage("已选择原型素材示例；未读取真实素材库。");return;
+    if(!selectedLibraryAsset){setMessage("请先选择一张素材图片。");return;}
+    setForm(v=>({...v,splitSource:"素材库",splitReference:"asset:"+selectedLibraryAsset.id}));
+    setChild("");setMessage("已引用我的素材库图片："+selectedLibraryAsset.name+"（当前账号演示会话）。");return;
    }
    if(child==="language"||child==="background"){setChild("");return;}
    if(child==="add-image"){
