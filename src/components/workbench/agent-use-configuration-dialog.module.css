@@ -240,3 +240,10 @@
 .libraryPreviewWindow small{font-size:13px;color:var(--muted)}
 @media(max-width:800px){.libraryPickerGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:520px){.libraryPickerFilters{grid-template-columns:minmax(0,1fr) 110px}.libraryPickerFilters button{grid-column:1/-1}.libraryPickerGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.selectedReference{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--raised);min-width:0}
+.selectedReference img{width:90px;height:90px;object-fit:contain;flex:none;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.selectedReference>div{min-width:0;display:grid;gap:8px}
+.selectedReference strong{font-size:14px;color:var(--ink);overflow-wrap:anywhere}
+.selectedReference small{font-size:13px;color:var(--muted)}
+.selectedReference button{justify-self:start}
