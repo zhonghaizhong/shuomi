@@ -199,7 +199,6 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
       <button type="button" aria-expanded={batchMode==="select"} onClick={()=>{setBatchMode(batchMode==="select"?null:"select");setStatus("")}}>选择自有商品批次</button>
     </div>
     <button type="button" className={styles.submit} onClick={validate}>提交检测</button>
-    <button type="button" className={styles.submit} onClick={simulateFive} title="自动选择当前账号的自有商品测试批次与已保存的商品优化智能体测试模板；不调用实际 AI 服务">模拟上传 5 件测试商品</button>
     <button type="button" className={`${styles.intakeAction} ${styles.intakePending}`} onClick={()=>openStage("pending")}>待完善 <b>{pendingRecords.length}</b></button>
     <button type="button" className={`${styles.intakeAction} ${styles.intakeReview}`} onClick={()=>openStage("review")}>待审核 <b>{awaitingRecords.length}</b></button></div>
     {batchMode==="create"?<div className={styles.batchEditor}><label>新批次名称<input aria-label="新建自有商品批次名称" maxLength={60} placeholder="输入批次名称" value={batchName} onChange={e=>setBatchName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveBatch()}}}/></label><button type="button" onClick={saveBatch}>创建并选择</button><button type="button" onClick={()=>setBatchMode(null)}>取消</button></div>:null}
