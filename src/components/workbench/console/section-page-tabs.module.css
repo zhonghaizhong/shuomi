@@ -10,4 +10,4 @@
 :global(.light) .tabs :is(a,button){border-color:#e5e1ed}
 :global(.light) .help{color:#555067}
 
-.tabs button{font:inherit;cursor:pointer;appearance:none;border-top:0;border-bottom:0;border-left:0}
+.tabs button{font-family:inherit;cursor:pointer;appearance:none;border-top:0;border-bottom:0;border-left:0}
