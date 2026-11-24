@@ -155,8 +155,9 @@ export function AgentUseConfigurationDialog({mode,initial,onClose,onSave,agentKi
  const processingScope=optimizationSource==="官方方案"?"手动选择":form.imageProcessingScope??"手动选择";
  const productTarget=form.imageTarget??"主图";
  // In shared mode the image task list follows the selected source, not the configuration tab.
- const visibleImageTarget=sharedVisual?(form.sharedImageSource??"主图"):productTarget;
+
  const sharedVisual=(form.imageUse??"共用视觉素材")==="共用视觉素材";
+ const visibleImageTarget=sharedVisual?(form.sharedImageSource??"主图"):productTarget;
  const currentImages=sharedVisual?((form.sharedImageSource??"主图")==="主图"?mainImgs:detailImgs):(productTarget==="主图"?mainImgs:detailImgs);
  const updateCurrentImages=(next:number[])=>{if(sharedVisual){setMainImgs(next);setDetailImgs(next);}else if(productTarget==="主图"){setMainImgs(next);}else{setDetailImgs(next);}};
  const selectVisualStrategy=(next:"共用视觉素材"|"分别优化")=>{if(next==="共用视觉素材"){const images=(form.sharedImageSource??"主图")==="主图"?mainImgs:detailImgs;setMainImgs(images);setDetailImgs(images);}set("imageUse",next);setMessage("");};
