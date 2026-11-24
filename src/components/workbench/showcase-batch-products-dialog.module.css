@@ -186,3 +186,10 @@
 .dialog .detailStageTop,.dialog .detailMetadata dt,.dialog .detailDescription p,.dialog .detailPanel>footer span{color:var(--bp-muted)}
 .dialog .detailDescription,.dialog .detailCover{background:var(--bp-bg);border-color:var(--bp-line)}
 .dialog .largeImage{background:var(--bp-card);border-color:var(--bp-line)}
+
+/* Selected source variant: keep gallery and source metadata readable in both themes. */
+.dialog .variantCurrentInfo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;padding:8px 11px;border:1px solid var(--bp-line);border-radius:8px;background:var(--bp-card);color:var(--bp-ink);font-size:12px}
+.dialog .variantCurrentInfo strong{color:var(--bp-ink)}
+.dialog .variantCurrentInfo span{color:var(--bp-muted)}
+.dialog .detailMetadata button[aria-pressed="true"]{border-color:var(--bp-primary)!important;background:color-mix(in srgb,var(--bp-primary) 14%,var(--bp-card))!important}
+.dialog .detailMetadata button:focus-visible{outline:2px solid var(--bp-primary);outline-offset:2px}
