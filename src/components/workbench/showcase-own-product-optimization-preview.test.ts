@@ -70,3 +70,16 @@ it("rejects an empty image URL as missing and prevents advancing to review",()=>
  expect(saved.status).toBe("入库待完善");
  expect(()=>approveOwnProductIntake(org,member,pending.id)).toThrow("待审核");
 });
+
+it("never approves a malformed review product with zero SKUs",()=>{
+ const org="empty-org",member="empty-member";
+ const batch=createOwnProductBatch(org,member,"自有商品测试批次");
+ simulateFiveOwnProductIntakes(org,member,batch.id,"测试模板");
+ const review=readOwnProducts(org,member).find(p=>p.status==="待审核")!;
+ expect(checkOwnProductSkus([])).toEqual(["至少添加一个 SKU"]);
+ const key="shuomi:own-product-records-v1:"+org+":"+member;
+ const all=readOwnProducts(org,member).map(p=>p.id===review.id?{...p,skus:[]}:p);
+ sessionStorage.setItem(key,JSON.stringify(all));
+ expect(()=>approveOwnProductIntake(org,member,review.id)).toThrow("禁止空商品入库");
+ expect(readOwnProducts(org,member).find(p=>p.id===review.id)?.status).toBe("待审核");
+});
