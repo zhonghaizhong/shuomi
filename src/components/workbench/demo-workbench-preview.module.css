@@ -4532,3 +4532,37 @@
 @media(max-width:760px){
  .cockpitPreview .cockpitUnifiedFilters{flex-wrap:wrap}
 }
+
+
+/* Deployment gate: force one physical grid row for all nine controls.
+   Unlike a wrapping flex row, this never pushes the action buttons below
+   the filters at 1600px desktop viewport. */
+@media (min-width: 761px) {
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] {
+  display:grid;
+  grid-template-columns:minmax(0,2fr) minmax(0,1.22fr) repeat(5,minmax(0,1fr)) 70px 70px;
+  grid-template-rows:40px;
+  align-items:center;
+  column-gap:8px;
+  row-gap:0;
+  min-width:0;
+  width:100%;
+  box-sizing:border-box;
+ }
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > * {
+  min-width:0;
+  max-width:100%;
+  width:100%;
+  grid-row:1;
+  margin:0;
+ }
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > input[type="search"] {grid-column:1}
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > .matrixTimePicker {grid-column:2}
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > select:nth-child(3) {grid-column:3}
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > select:nth-child(4) {grid-column:4}
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > select:nth-child(5) {grid-column:5}
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > select:nth-child(6) {grid-column:6}
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > select:nth-child(7) {grid-column:7}
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > button:nth-last-child(2) {grid-column:8}
+ .cockpitPreview .cockpitUnifiedFilters[data-cockpit-filter] > button:last-child {grid-column:9}
+}
