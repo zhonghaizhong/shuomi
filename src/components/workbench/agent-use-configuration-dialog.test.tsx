@@ -29,3 +29,24 @@ it("switches official shared-image tasks and example labels to detail images, th
  fireEvent.click(screen.getByRole("button",{name:"确认选择"}));
  expect(save).toHaveBeenCalledWith(expect.objectContaining({imageUse:"共用视觉素材",sharedImageSource:"主图"}));
 });
+
+
+it("product optimization settings follow the chosen official shared source without changing strategies",()=>{
+ const onSave=vi.fn();
+ render(<AgentUseConfigurationDialog mode="product-image" agentKind="product"
+  initial={{optimizationSource:"官方方案",imageUse:"共用视觉素材",imageTarget:"主图",sharedImageSource:"主图",selectedMainImages:[1,2],selectedDetailImages:[1,2]}}
+  onClose={vi.fn()} onSave={onSave}/>);
+ expect(screen.getByRole("button",{name:"查看主图第1张示例"})).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:/以详情图为准/}));
+ expect(screen.getByRole("button",{name:"查看详情图第1张示例"})).toBeTruthy();
+ expect(screen.getByText("核心购买理由 · 查看示例")).toBeTruthy();
+ fireEvent.click(screen.getByRole("checkbox",{name:"详情图第2张"}));
+ expect(screen.getByRole("button",{name:/共用视觉素材/}).getAttribute("aria-pressed")).toBe("true");
+ fireEvent.click(screen.getByRole("button",{name:"查看详情图第1张示例"}));
+ expect(screen.getByText("示例说明 · 详情图第 1 张")).toBeTruthy();
+ fireEvent.click(screen.getByRole("button",{name:"关闭示例"}));
+ fireEvent.click(screen.getByRole("button",{name:"确认选择"}));
+ expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+  imageUse:"共用视觉素材",sharedImageSource:"详情图",selectedMainImages:[1],selectedDetailImages:[1],selectedImages:[1]
+ }));
+});
