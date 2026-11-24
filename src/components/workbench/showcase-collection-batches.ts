@@ -1,7 +1,7 @@
 "use client";
 
 /** Isolated, browser-session-only fixture batches. Never represents a 1688 API response. */
-export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string}>;originalTitle?:string;description?:string;demoSourceLink?:string};
+export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string;images?:string[];price?:string;stock?:string;description?:string;sourceUrl?:string}>;originalTitle?:string;description?:string;demoSourceLink?:string};
 export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
 type CatalogItem={name:string;price:string;variants:string[];description:string;photos:string[]};
 // Public photographic sample references. Not original 1688 product photos or authenticated offers.
