@@ -46,3 +46,30 @@ test("recent/saved action panels inherit light and dark palette",async({page})=>
  const dark=await root.locator('[class*="list"]').first().evaluate(node=>getComputedStyle(node).backgroundColor);
  expect(light).not.toBe(dark);
 });
+
+
+test("Chat home three entry cards are compact and keep links and examples visible",async({page})=>{
+ await page.setViewportSize({width:1600,height:900});
+ await page.goto("/shuomi/#/workbench/ai/chat");
+ const entries=page.getByRole("region",{name:"会话入口"});
+ await expect(entries).toBeVisible();
+ const cards=entries.locator(":scope > *");
+ await expect(cards).toHaveCount(3);
+ const bounds=await cards.evaluateAll(elements=>elements.map(element=>{
+  const rect=element.getBoundingClientRect();
+  return {top:rect.top,height:rect.height,width:rect.width};
+ }));
+ for(const card of bounds){
+  expect(card.height).toBeLessThan(285);
+  expect(card.height).toBeGreaterThan(165);
+  expect(Math.abs(card.top-bounds[0].top)).toBeLessThan(3);
+ }
+ expect(Math.max(...bounds.map(card=>card.height))-Math.min(...bounds.map(card=>card.height))).toBeLessThan(3);
+ for(const name of ["新建会话","最近会话","收藏会话"]){
+  const card=entries.locator('[class*="landingCard"]').filter({has:page.getByRole("heading",{name,exact:true})});
+  await expect(card.getByText("使用示例")).toBeVisible();
+ }
+ await expect(entries.getByRole("button",{name:"进入新建会话"})).toBeVisible();
+ await expect(entries.getByRole("link",{name:/查看最近会话/})).toBeVisible();
+ await expect(entries.getByRole("link",{name:/进入收藏会话/})).toBeVisible();
+});
