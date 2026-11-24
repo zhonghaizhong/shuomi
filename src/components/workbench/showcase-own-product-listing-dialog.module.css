@@ -351,21 +351,21 @@
 
 /* Approved compact full-dialog layout (desktop): preserve all functions and both themes. */
 @media(min-width:1100px) and (min-height:720px){
- .dialog{width:min(1320px,calc(100vw - 36px));height:min(790px,calc(100dvh - 36px));max-height:calc(100dvh - 36px);border-radius:11px}
- .header{min-height:58px;padding:9px 18px}
+ .dialog{width:min(1460px,calc(100vw - 24px));height:min(910px,calc(100dvh - 16px));max-height:calc(100dvh - 16px);border-radius:11px}
+ .header{min-height:63px;padding:12px 21px}
  .header h2{font-size:18px}.header p{margin-top:3px;font-size:11px}
  .header>button{padding:7px 13px}
- .content{padding:10px 12px 12px;gap:9px;overflow-y:auto;scrollbar-gutter:stable}
- .panel{padding:11px 15px;border-radius:9px}
+ .content{padding:13px 16px 16px;gap:12px;overflow-y:auto;scrollbar-gutter:stable}
+ .panel{padding:14px 18px;border-radius:9px}
  .heading{margin-bottom:9px;min-height:20px;gap:10px}
  .heading h3{font-size:15px}
  .heading>span{font-size:11px}
  .sources{gap:9px}
- .sources button{min-height:39px;padding:7px 11px;font-size:13px}
+ .sources button{min-height:43px;padding:9px 13px;font-size:13px}
  .skuSwitch{gap:8px}
  .skuSwitch button{height:29px;min-width:88px}
- .productGrid{grid-template-columns:minmax(250px,.88fr) minmax(360px,1.65fr) minmax(290px,1.22fr);gap:11px;min-height:0}
- .skuList,.images,.details{height:clamp(300px,calc(100dvh - 401px),390px);min-height:300px;max-height:390px;padding:12px}
+ .productGrid{grid-template-columns:minmax(270px,.88fr) minmax(380px,1.65fr) minmax(310px,1.22fr);gap:14px;min-height:0}
+ .skuList,.images,.details{height:clamp(345px,calc(100dvh - 360px),460px);min-height:345px;max-height:460px;padding:15px}
  .skuList{gap:6px}
  .skuItems{gap:6px;scrollbar-gutter:auto}
  .skuItem{padding:7px 8px;gap:4px}
@@ -382,10 +382,10 @@
  .details small{font-size:11px}
  .aiRow{gap:10px}
  .aiOptions{flex:1 1 0;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
- .aiOptions label{height:53px;min-height:53px;max-height:53px;padding:7px 10px;font-size:12px}
+ .aiOptions label{height:57px;min-height:57px;max-height:57px;padding:9px 11px;font-size:13px}
  .batchControls{flex:0 0 240px;max-width:240px;grid-template-rows:24px 24px;gap:5px}
  .dialog .batchControls button{height:24px;min-height:24px;max-height:24px;font-size:11px}
- .dialog .submit{flex:0 0 205px;width:205px;min-width:205px;max-width:205px;height:53px;min-height:53px;max-height:53px;margin-left:0}
+ .dialog .submit{flex:0 0 215px;width:215px;min-width:215px;max-width:215px;height:57px;min-height:57px;max-height:57px;margin-left:0}
  .intakeActions{margin-top:9px;gap:10px}
  .intakeActions button{min-height:58px;padding:10px 15px}
  .intakeActions button strong{font-size:14px}
@@ -395,11 +395,11 @@
  .batchSelected{margin:7px 0 0}
 }
 @media(min-width:1100px) and (min-height:720px) and (max-height:840px){
- .skuList,.images,.details{height:clamp(278px,calc(100dvh - 390px),340px);min-height:278px;max-height:340px}
+ .skuList,.images,.details{height:clamp(315px,calc(100dvh - 360px),400px);min-height:315px;max-height:400px}
  .imageGrid{gap:6px}
- .panel{padding:9px 13px}
+ .panel{padding:12px 16px}
  .heading{margin-bottom:7px}
- .sources button{min-height:34px}
+ .sources button{min-height:39px}
  .intakeActions button{min-height:52px}
 }
 /* Compact status cards, with business-neutral surfaces consistent with the theme. */
