@@ -4378,3 +4378,127 @@
  .storeMatrixPreview .matrixInlineFilters > select{flex:1 1 120px}
  .storeMatrixPreview .matrixInlineFilters > button{flex:1 1 76px}
 }
+
+
+/* Alert/advice cockpit filters: one isolated row, no inherited two-column grids. */
+.cockpitPreview .cockpitUnifiedPanel{
+ padding:0;
+ border:0;
+ background:transparent;
+ min-width:0;
+}
+.cockpitPreview .cockpitUnifiedFilters{
+ display:flex;
+ flex-direction:row;
+ flex-wrap:wrap;
+ align-items:center;
+ gap:8px;
+ min-width:0;
+ padding:12px;
+ border:1px solid #44485e;
+ border-radius:6px;
+ background:#393d55;
+ overflow:visible;
+}
+.cockpitPreview .cockpitUnifiedFilters>input[type="search"]{
+ flex:2 1 220px;
+ min-width:170px;
+ width:auto;
+}
+.cockpitPreview .cockpitUnifiedFilters>.matrixTimePicker{
+ flex:0 1 155px;
+ min-width:132px;
+ width:auto;
+ position:relative;
+ z-index:4;
+}
+.cockpitPreview .cockpitUnifiedFilters>select{
+ flex:1 1 105px;
+ min-width:94px;
+ width:auto;
+}
+.cockpitPreview .cockpitUnifiedFilters>button{
+ flex:0 0 70px;
+ min-width:70px;
+ width:70px;
+ white-space:nowrap;
+}
+.cockpitPreview .cockpitUnifiedFilters>:is(input,select,button),
+.cockpitPreview .cockpitUnifiedFilters>.matrixTimePicker>button{
+ box-sizing:border-box;
+ height:40px;
+ min-height:40px;
+ max-height:40px;
+ margin:0;
+ padding:0 10px;
+ border:1px solid #555a73;
+ border-radius:6px;
+ background:#2f3349;
+ color:#cfcde4;
+ font-size:13px;
+ font-family:inherit;
+}
+.cockpitPreview .cockpitUnifiedFilters>button.primary,
+.cockpitPreview .cockpitUnifiedFilters .matrixDateRange>button.primary{
+ background:#7367f0;
+ border-color:#7367f0;
+ color:#fff;
+}
+.cockpitPreview .cockpitUnifiedFilters>.matrixTimePicker>button{
+ width:100%;
+ text-align:left;
+ overflow:hidden;
+ white-space:nowrap;
+ text-overflow:ellipsis;
+ cursor:pointer;
+}
+.cockpitPreview .cockpitUnifiedFilters .matrixDatePopover{
+ position:absolute;
+ top:calc(100% + 8px);
+ left:0;
+ z-index:50;
+ display:grid;
+ gap:12px;
+ width:min(350px,calc(100vw - 40px));
+ padding:14px;
+ border:1px solid #555a73;
+ border-radius:10px;
+ background:#2f3349;
+ box-shadow:0 14px 36px #080b1a70;
+}
+.cockpitPreview .cockpitUnifiedFilters .matrixDateRange{display:grid;gap:10px}
+.cockpitPreview .cockpitUnifiedFilters .matrixDateRange label{display:grid;gap:5px;font-size:12px;color:#acabc1}
+.cockpitPreview .cockpitUnifiedFilters .matrixDateRange input{
+ box-sizing:border-box;
+ width:100%;
+ min-width:0;
+ min-height:40px;
+ border-radius:6px;
+ padding:7px;
+ border:1px solid #555a73;
+ background:#393d55;
+ color:#cfcde4;
+}
+.cockpitPreview .cockpitUnifiedFilters .matrixDateRange>button{width:100%;min-height:40px}
+:global(.light) .cockpitPreview .cockpitUnifiedFilters{
+ background:#f8f7fa;
+ border-color:#ddd9e9;
+}
+:global(.light) .cockpitPreview .cockpitUnifiedFilters>:is(input,select,button:not(.primary)),
+:global(.light) .cockpitPreview .cockpitUnifiedFilters>.matrixTimePicker>button,
+:global(.light) .cockpitPreview .cockpitUnifiedFilters .matrixDatePopover{
+ background:#fff;
+ border-color:#d9dce6;
+ color:#444050;
+}
+:global(.light) .cockpitPreview .cockpitUnifiedFilters .matrixDateRange input{
+ background:#f8f7fa;
+ border-color:#d9dce6;
+ color:#444050;
+}
+@media(max-width:760px){
+ .cockpitPreview .cockpitUnifiedFilters>input[type="search"]{flex:1 1 100%}
+ .cockpitPreview .cockpitUnifiedFilters>.matrixTimePicker{flex:1 1 140px}
+ .cockpitPreview .cockpitUnifiedFilters>select{flex:1 1 110px}
+ .cockpitPreview .cockpitUnifiedFilters>button{flex:1 1 70px}
+}
