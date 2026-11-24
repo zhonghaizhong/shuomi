@@ -23,6 +23,13 @@ export function buildListingVariantGroups(details:ListingVariantDetail[]):Listin
  }
  return [...groups.values()];
 }
+/** Read-only role previews for the current color. Source photographs are never saved as AI outputs. */
+export function listingVariantGalleryCards(group:ListingVariantImageGroup){
+ return listingVariantPhotoRoles.map((role,index)=>{
+  const optimized=group.optimizedImages.find(img=>img.role===role);
+  return {role,index,url:optimized?.url??group.originalImages[0]??null,isOptimized:Boolean(optimized)};
+ });
+}
 export function variantGroupReady(group:ListingVariantImageGroup):boolean{
  return listingVariantPhotoRoles.every(role=>group.optimizedImages.some(img=>img.role===role&&/^(https:\/\/|\/assets\/)/.test(img.url)&&!group.originalImages.includes(img.url)))&&group.optimizedImages.length===6&&new Set(group.optimizedImages.map(x=>x.url)).size===6;
 }
