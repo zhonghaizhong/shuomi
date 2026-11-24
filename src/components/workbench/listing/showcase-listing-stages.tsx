@@ -5,7 +5,7 @@ import {readOptimizedDatasets,optimizedDatasetsChanged} from "../showcase-optimi
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import {readShowcaseEnabledAgents,readShowcaseAgentTemplates,showcaseAgentId,showcaseAgentStateChanged} from "../showcase-agent-demo-state";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
-import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,completeShowcaseUploadTask,approveShowcaseUploadTask,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
+import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,completeShowcaseUploadTask,approveShowcaseUploadTask,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 import {useRouter} from "next/navigation";
 import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
@@ -118,11 +118,16 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
     storeId:target.id,storeName:target.name,region:target.region,storeType:target.type,
     rule:"硕米规则",agentName:"商品优化智能体",templateId:template.id
    });
+   const extra=simulateAmazonMultiVariantListingWorkflow({
+    organizationId,memberId,batchId:selectedAmazon.id,batchName:selectedAmazon.name,products:selectedAmazon.products,
+    storeId:target.id,storeName:target.name,region:target.region,storeType:target.type,
+    rule:"硕米规则",agentName:"商品优化智能体",templateId:template.id
+   });
    demoTaskInitialized.current=true;
    const preference=JSON.stringify(["采集批次",selectedAmazon.id,"original"]);
    sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),preference);
    setBatchFilter(preference);setAppliedBatch(preference);
-   if(result.created)setNotice("已按测试模板执行 5 件商品的智能体演示：40 张优化示意图已生成，3 件待补全、2 件待审核，审核通过前不会上传 SHEIN。");
+   if(result.created||extra.created)setNotice("已新增两款真实图片多变体商品到原批次：Crocs 待补全、Stanley 待审核；原五款任务状态不变。仅保存模拟任务，未上传 SHEIN。");
   }catch(e){setNotice(e instanceof Error?e.message:"五款商品演示初始化失败");}
  },[organizationId,memberId,dataVersion,agentDemoVersion,availableStoreBindings.length,collectedBatches]);
 
@@ -156,7 +161,8 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const pageItems=filtered.slice((currentPage-1)*15,currentPage*15);
  const selectedItem=selected?items.find(x=>x.sku===selected.sku)??selected:null;
  const selectedTask=selectedItem?.taskId?savedTasks.find(task=>task.id===selectedItem.taskId):undefined;
- const selectedSkuCount=selectedTask?.productIds.length??1;
+ const variantDetails=selectedTask?.demoProduct?.variantDetails??[];
+ const selectedSkuCount=variantDetails.length||(selectedTask?.productIds.length??1);
  const selectedMainImages=selectedItem?.optimizedImages?.length?selectedItem.optimizedImages:(selectedItem?.originalImages??[]);
  // Detail images are a separate data field: never relabel main-gallery images as detail photos.
  const selectedDetailImages=selectedItem?.detailImages??[];
@@ -176,11 +182,17 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
      region:chosenStore.region,storeType:chosenStore.type,
      rule:currentRule.name,agentName:chosenAgent.name,templateId:chosenTemplate.id
     });
+    const extra=simulateAmazonMultiVariantListingWorkflow({
+     organizationId,memberId,batchId:selectedCollectedBatch.id,batchName:selectedCollectedBatch.name,
+     products:selectedCollectedBatch.products,storeId:chosenStore.id,storeName:chosenStore.name,
+     region:chosenStore.region,storeType:chosenStore.type,
+     rule:currentRule.name,agentName:chosenAgent.name,templateId:chosenTemplate.id
+    });
     const picked=JSON.stringify(["采集批次",selectedCollectedBatch.id,"original"]);
     setBatchFilter(picked);setAppliedBatch(picked);
     sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),picked);
     setSubmitted(true);
-    setNotice(report.alreadyInstalled?"本次模拟任务已存在，不重复覆盖原有处理记录。":"智能体已模拟优化 5 件商品并生成 40 张英文白底商品图：3 件待补全、2 件待审核，0 件已上传。审核通过前不会提交 SHEIN。");
+    setNotice(report.alreadyInstalled&&extra.alreadyInstalled?"演示任务已存在，保留已完成的补全与审核记录。":"原五款任务按原状态保留，新增 Crocs 一件待补全、Stanley 一件待审核；未真实执行 SHEIN 上传。");
    }catch(e){setNotice(e instanceof Error?e.message:"智能体模拟执行失败");}
    return;
   }
@@ -326,7 +338,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
      <div className={styles.dialogVariantFacts}>
       <span className={styles.dialogVariantPill}>{selectedSkuCount>1?"多变体":"单变体"}</span>
       <span>共 {selectedSkuCount} 个 SKU</span>
-      <span>沿用原任务的规格结构</span>
+      <span>{variantDetails.length?"颜色/尺码均已建档":"沿用原任务的规格结构"}</span>
      </div>
     </div>
     <div className={styles.productInfoBlock}>
@@ -343,7 +355,11 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
       </>:null}
       <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>选填信息 {optionalOpen?"收起":"展开"}</button>
       {optionalOpen?<p className={styles.productHint}>选填字段以目标平台当前类目规则为准；演示任务暂未提供字段定义，不生成虚构属性。</p>:null}
-     </>:fieldTab==="variant"?<div className={styles.dialogFieldEmpty}>原任务已确认变体结构。当前任务未提供独立的变体公共字段，后续接入平台规则后在此补全，不改变既有 SKU。</div>:<div className={styles.dialogSkuList}>{(selectedTask?.productIds??[selectedItem.sku]).map((code,i)=><div key={code}><strong>SKU {i+1}</strong><span>{code}</span><small>SKU 级独立字段按目标平台类目规则加载</small></div>)}</div>}
+     </>:fieldTab==="variant"?<div className={styles.dialogFieldEmpty}>原任务已确认变体结构。颜色和尺码属于变体维度，每个 SKU 保留各自的颜色、尺码及真实商品图；其他属性仍依据平台规则补全。</div>:<div className={styles.dialogSkuList}>{(variantDetails.length?variantDetails.map(v=>v.sku):(selectedTask?.productIds??[selectedItem.sku])).map((code,i)=><div key={code}>
+       {variantDetails[i]?.image?<img src={variantDetails[i].image} alt={variantDetails[i].label+" 实拍变体图片"} style={{width:64,height:64,objectFit:"contain",background:"#fff",borderRadius:6}}/>:null}
+       <strong>SKU {i+1}</strong><span>{code}</span>
+       {variantDetails[i]?<small>{variantDetails[i].color} · {variantDetails[i].size} · {variantDetails[i].label}</small>:<small>SKU 级独立字段按目标平台类目规则加载</small>}
+      </div>)}</div>}
     </div>
     {stage==="review"?<div className={styles.productInfoBlock}><strong>人工审核</strong>
      <p className={styles.productHint}>检查标题、描述、图片及目标平台规则，审核通过后才可继续平台提交。</p>
