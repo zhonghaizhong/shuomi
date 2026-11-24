@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useRef,useState,type ChangeEvent} from "react";
 import {useRouter} from "next/navigation";
 import {readOwnIntakeNavigation,type OwnIntakeStage} from "./showcase-own-product-intake-navigation";
-import {readOwnProductBatches,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
+import {readOwnProductBatches,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,installSixProductOptimizationDemo,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
 import css from "./showcase-own-product-intake-page.module.css";
 import {previewOwnProductOptimization} from "./showcase-own-product-optimization-preview";
 
@@ -21,6 +21,18 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
  const [imageIndex,setImageIndex]=useState(0),[previewSrc,setPreviewSrc]=useState<string|null>(null);
  useEffect(()=>{setContext(readOwnIntakeNavigation(stage));setSelectedId(null);setNotice("")},[stage]);
  useEffect(()=>{if(!context)return;const refresh=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===context.organizationId&&d.memberId===context.memberId)setVersion(v=>v+1)};window.addEventListener(ownProductUpdated,refresh);return()=>window.removeEventListener(ownProductUpdated,refresh)},[context]);
+ useEffect(()=>{
+  if(!context)return;
+  try{
+   const result=installSixProductOptimizationDemo(context.organizationId,context.memberId);
+   const target=readOwnProductBatches(context.organizationId,context.memberId).find(b=>b.name==="自有商品测试批次");
+   if(target)setBatchFilter(target.id);
+   if(!result.alreadyInstalled){
+    setSelectedId(null);setPage(1);setChecked([]);setNotice("已重建自有商品测试批次：6 款模拟商品经测试模板规则处理，4 款待审核、2 款待完善。原始资料与优化稿分别保留。");
+    setVersion(v=>v+1);
+   }
+  }catch(e){setNotice(e instanceof Error?e.message:"测试批次初始化失败");}
+ },[context]);
  const records=useMemo(()=>context?readOwnProducts(context.organizationId,context.memberId):[],[context,version]);
  const batches=useMemo(()=>context?readOwnProductBatches(context.organizationId,context.memberId):[],[context,version]);
  const list=records.filter(p=>p.status===(stage==="pending"?"入库待完善":"待审核")&&(!batchFilter||p.batchId===batchFilter)&&(p.name+" "+p.id+" "+p.skus.map(s=>(s.name+" "+(s.skuCode??""))).join(" ")+" "+(batches.find(b=>b.id===p.batchId)?.name??"")).toLowerCase().includes(query.trim().toLowerCase()));
@@ -40,10 +52,9 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
   if(!context)return;
   const contextKey=context.organizationId+":"+context.memberId+":"+stage+":"+(context.itemId??"");
   if(initialSelectionContext.current===contextKey)return;
-  initialSelectionContext.current=contextKey;
-  if(!context.itemId)return;
+  if(!context.itemId){initialSelectionContext.current=contextKey;return;}
   const item=records.find(p=>p.id===context.itemId&&p.status===(stage==="pending"?"入库待完善":"待审核"));
-  if(item){const itemIndex=list.findIndex(p=>p.id===item.id);if(itemIndex<0)return;setPage(Math.floor(itemIndex/15)+1);uploadGeneration.current++;setUploading(false);activeUploadProduct.current=item.id;setChecked([]);setImageIndex(0);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1)}
+  if(item){const itemIndex=list.findIndex(p=>p.id===item.id);if(itemIndex<0)return;initialSelectionContext.current=contextKey;setPage(Math.floor(itemIndex/15)+1);uploadGeneration.current++;setUploading(false);activeUploadProduct.current=item.id;setChecked([]);setImageIndex(0);setSelectedId(item.id);setDraft(item.skus.map(s=>({...s,images:[...s.images]})));setSkuId(item.skus[0]?.id??1)}
  },[context,records,stage]);
   const updateSku=(fields:Partial<OwnProductRecord["skus"][number]>)=>setDraft(old=>old.map(s=>s.id===skuId?{...s,...fields}:s));
  const upload=async(e:ChangeEvent<HTMLInputElement>)=>{
