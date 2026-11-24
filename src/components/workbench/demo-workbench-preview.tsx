@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BookOpen, LibraryBig } from "lucide-react";
 import styles from "./demo-workbench-preview.module.css";
 import { plansDemoDisplay, plansDemoFacts } from "./plans-demo-facts";
 import {useDemoPurchases} from "./showcase-purchases";
@@ -371,6 +372,36 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
     </> : page.layout === "unavailable" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>{page.section}</div><h1>{page.title}</h1><p>{page.description}</p></div></header>
       <section className={styles.unavailable}><span>功能筹备中</span><h2>暂未开放</h2><p>{pathname.includes("selected") ? "平台正在审核优质供应商和商品资源。开放后可按品质与供货能力选品，进入我的数据，后续可在刊登管理中管理。" : "正在接入平台自有货源并完善商品质量审核规则。开放后可浏览自营商品，并保存至我的数据，后续从刊登管理处理。"}</p><hr/><small>开放时间以通知中心的正式公告为准。</small></section>
+    </> : pathname === "/workbench/ai/knowledge" ? <>
+      <header className={styles.header}>
+        <div><div className={styles.breadcrumb}>AI工作台 / 知识库</div><h1>知识库</h1><p>查阅官方知识，管理自己的业务资料，为 AI 对话与业务任务提供参考。</p></div>
+      </header>
+      <section className={styles.knowledgeIntroGrid} aria-label="选择知识库">
+        <article className={styles.knowledgeIntroCard} data-knowledge-entry="official">
+          <div className={styles.knowledgeIntroTop}>
+            <span className={styles.knowledgeIntroIcon} aria-hidden="true"><BookOpen size={23}/></span>
+            <span className={styles.knowledgeIntroType}>平台维护</span>
+          </div>
+          <h2>官方知识库</h2>
+          <p>集中查阅平台规则、跨境电商运营方法及合规参考，按需选择知识并应用到会话或任务。</p>
+          <div className={styles.knowledgeIntroTags} aria-label="官方知识库内容">
+            {["平台规则","运营方法","合规参考","AI应用"].map(tag=><span key={tag}>{tag}</span>)}
+          </div>
+          <button type="button" className={styles.primary} onClick={()=>router.push("/workbench/ai/knowledge/official?preview=1")}>浏览官方知识</button>
+        </article>
+        <article className={styles.knowledgeIntroCard} data-knowledge-entry="mine">
+          <div className={styles.knowledgeIntroTop}>
+            <span className={styles.knowledgeIntroIcon} aria-hidden="true"><LibraryBig size={23}/></span>
+            <span className={styles.knowledgeIntroType}>个人资料</span>
+          </div>
+          <h2>我的知识库</h2>
+          <p>管理已启用的官方知识及自行整理的业务资料，需要时关联会话或任务，方便长期复用。</p>
+          <div className={styles.knowledgeIntroTags} aria-label="我的知识库功能">
+            {["资料管理","知识分类","按需引用","知识复用"].map(tag=><span key={tag}>{tag}</span>)}
+          </div>
+          <button type="button" className={styles.primary} onClick={()=>router.push("/workbench/ai/knowledge/mine?preview=1")}>管理我的知识库</button>
+        </article>
+      </section>
     </> : <>
      <header className={styles.header}><div><div className={styles.breadcrumb}>{page.section}</div><h1>{page.title}</h1><p>{page.description}</p></div>{page.layout === "libraryHub" ? <button className={styles.primary} onClick={() => chooseAction(pathname.includes("projects") ? "新建项目" : pathname.includes("knowledge") ? "新增知识" : pathname.includes("skills") ? "新建技能" : "导出成果")}>{pathname.includes("projects") ? "＋ 新建项目" : pathname.includes("knowledge") ? "＋ 添加知识" : pathname.includes("skills") ? "＋ 新建技能" : "导出成果"}</button> : <button className={styles.primary} onClick={() => chooseAction("新建")}>{pathname.includes("goals") ? "新建目标" : "新建记录"}</button>}</header>
     {page.metrics?.length ? <section className={styles.metrics}>{page.metrics.map(([label, value, hint], i) => <article className={styles.metric} key={label} data-step={i}><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>)}</section> : null}

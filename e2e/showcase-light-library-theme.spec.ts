@@ -162,3 +162,26 @@ test("skill pages share the approved tools header and readable dual-theme contro
   }
  }
 });
+
+test("knowledge landing has exactly two compact entries at desktop and mobile widths",async({page})=>{
+ for(const width of [1440,1920,2560,720]){
+  await page.setViewportSize({width,height:900});
+  await page.goto("/shuomi/#/workbench/ai/knowledge");
+  const root=page.locator('[data-library-hub="knowledge"]');
+  await expect(root.getByRole("heading",{name:"知识库",level:1})).toBeVisible();
+  const cards=root.locator('[data-knowledge-entry]');
+  await expect(cards).toHaveCount(2);
+  await expect(root.getByText("官方知识推荐")).toHaveCount(0);
+  await expect(root.getByText("最近更新")).toHaveCount(0);
+  const boxes=await cards.evaluateAll(items=>items.map(el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,right:b.right};}));
+  if(width>800){
+   expect(boxes[0].width).toBeLessThan(575);
+   expect(Math.abs(boxes[0].width-boxes[1].width)).toBeLessThan(3);
+   expect(Math.abs(boxes[0].y-boxes[1].y)).toBeLessThan(3);
+  }else{
+   expect(boxes[1].y).toBeGreaterThan(boxes[0].y+120);
+  }
+ }
+ await page.locator('[data-knowledge-entry="mine"]').getByRole("button",{name:"管理我的知识库"}).click();
+ await expect(page).toHaveURL(/\/workbench\/ai\/knowledge\/mine/);
+});
