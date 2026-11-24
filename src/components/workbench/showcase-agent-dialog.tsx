@@ -125,8 +125,8 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    onCancel={event=>{event.preventDefault();if(saveNameOpen){setSaveNameOpen(false);return;}if(templateManagerOpen){setTemplateManagerOpen(false);return;}onClose();}}
    onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
   {podTaskOpen?<ShowcasePODTaskDialog organizationId={organizationId} memberId={memberId} administrator={administrator} onClose={()=>setPodTaskOpen(false)} onTemplate={()=>setPodTaskOpen(false)}/>:null}
-  {podMaterialsOpen?<PodManagementWorkspace onClose={()=>setPodMaterialsOpen(false)}/>:null}
-  {configMode?<AgentUseConfigurationDialog mode={configMode} agentKind={isPod?"pod":"product"} initial={{...useConfig,selectedSkills:skills,selectedKnowledge:knowledge}} onClose={()=>setConfigMode(null)} onSave={value=>{
+  {podMaterialsOpen?<PodManagementWorkspace organizationId={organizationId} memberId={memberId} onClose={()=>setPodMaterialsOpen(false)}/>:null}
+  {configMode?<AgentUseConfigurationDialog mode={configMode} agentKind={isPod?"pod":"product"} organizationId={organizationId} memberId={memberId} initial={{...useConfig,selectedSkills:skills,selectedKnowledge:knowledge}} onClose={()=>setConfigMode(null)} onSave={value=>{
    setUseConfig(prev=>({...prev,...value}));
    if(value.selectedSkills)setSkills(value.selectedSkills);
    if(value.selectedKnowledge)setKnowledge(value.selectedKnowledge);
