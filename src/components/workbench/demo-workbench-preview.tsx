@@ -417,9 +417,9 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
         <div className={styles.knowledgeIntroFlowHeading}><Info size={20} aria-hidden="true"/><strong>知识如何帮助 AI？</strong></div>
         <div className={styles.knowledgeIntroFlowContent}>
           <ol className={styles.knowledgeIntroFlowSteps}>
-            <li><Layers3 size={17} aria-hidden="true"/><span>选择知识</span></li>
-            <li><MessageSquare size={17} aria-hidden="true"/><span>在 AI 工作中引用</span></li>
-            <li><Zap size={17} aria-hidden="true"/><span>AI 参考知识执行任务</span></li>
+            <li><Layers3 size={19} aria-hidden="true"/><span>选择知识</span><small>从官方预设或我的知识中选择</small></li>
+            <li><MessageSquare size={19} aria-hidden="true"/><span>在 AI 工作中引用</span><small>用于支持的会话、任务或智能体</small></li>
+            <li><Zap size={19} aria-hidden="true"/><span>AI 参考知识执行任务</span><small>结合选中的知识辅助完成工作</small></li>
           </ol>
           <p>官方知识和我的知识库都可以被 AI 引用，区别在于来源和管理方式。</p>
         </div>

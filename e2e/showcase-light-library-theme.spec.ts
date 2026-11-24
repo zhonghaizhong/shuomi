@@ -177,7 +177,21 @@ test("knowledge landing has exactly two compact entries at desktop and mobile wi
   await expect(root.getByText("官方知识和我的知识库都可以被 AI 引用，区别在于来源和管理方式。")).toBeVisible();
   await expect(root.getByText("做 SHEIN 商品优化时，可引用平台规则、运营方法和合规参考。")).toBeVisible();
   await expect(root.getByText("保存品牌规范、商品资料和企业要求，让 AI 结合你的业务规则完成工作。")).toBeVisible();
-  await expect(root.getByRole("listitem")).toHaveCount(3);
+  const steps=root.locator('aside[aria-label="知识引用说明"] ol li');
+  await expect(steps).toHaveCount(3);
+  await expect(steps.nth(0).getByText("从官方预设或我的知识中选择")).toBeVisible();
+  await expect(steps.nth(1).getByText("用于支持的会话、任务或智能体")).toBeVisible();
+  await expect(steps.nth(2).getByText("结合选中的知识辅助完成工作")).toBeVisible();
+  const stepBoxes=await steps.evaluateAll(items=>items.map(el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,right:b.right};}));
+  if(width>760) {
+   // All three stages share the full available width, not just the left half.
+   expect(Math.abs(stepBoxes[0].width-stepBoxes[1].width)).toBeLessThan(4);
+   expect(Math.abs(stepBoxes[1].width-stepBoxes[2].width)).toBeLessThan(4);
+   expect(stepBoxes[2].x).toBeGreaterThan(stepBoxes[0].x+stepBoxes[0].width);
+   expect(stepBoxes[2].right).toBeGreaterThan(stepBoxes[0].x+(width>1500?500:350));
+  } else {
+   expect(stepBoxes[2].y).toBeGreaterThan(stepBoxes[0].y);
+  }
   await expect(root.getByRole("button",{name:"浏览官方知识"})).toBeVisible();
   await expect(root.getByRole("button",{name:"管理我的知识库"})).toBeVisible();
   const header=root.locator(":scope > header");

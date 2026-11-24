@@ -4866,17 +4866,41 @@
 }
 .knowledgeIntroFlowContent {display:grid;gap:8px;min-width:0;}
 .knowledgeIntroFlowSteps {
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  gap:10px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  width:100%;
+  gap:0;
   margin:0;
   padding:0;
   list-style:none;
 }
-.knowledgeIntroFlowSteps li {display:flex;align-items:center;gap:8px;min-width:0;color:#dedbed;font-size:13px;font-weight:550;}
-.knowledgeIntroFlowSteps li svg {flex:none;color:#a99dff;}
-.knowledgeIntroFlowSteps li:not(:last-child)::after {content:"→";margin-left:8px;color:#a8a3c4;}
+.knowledgeIntroFlowSteps li {
+  display:grid;
+  grid-template-columns:21px minmax(0,1fr);
+  align-content:center;
+  align-items:center;
+  column-gap:10px;
+  row-gap:6px;
+  min-width:0;
+  padding:5px 18px;
+  color:#dedbed;
+  font-size:13px;
+  font-weight:600;
+}
+.knowledgeIntroFlowSteps li:first-child {padding-left:0;}
+.knowledgeIntroFlowSteps li:not(:last-child) {border-right:1px solid #4b4e66;}
+.knowledgeIntroFlowSteps li svg {grid-column:1;grid-row:1;flex:none;color:#a99dff;}
+.knowledgeIntroFlowSteps li span {grid-column:2;grid-row:1;white-space:nowrap;}
+.knowledgeIntroFlowSteps li small {
+  grid-column:2;
+  grid-row:2;
+  color:#acabc1;
+  font-size:12px;
+  font-weight:400;
+  line-height:1.45;
+}
+.knowledgeIntroFlowSteps li:not(:last-child)::after {content:none;}
 .knowledgeIntroFlowContent p {margin:0;color:#acabc1;font-size:12px;line-height:1.5;}
 /* Wide cards divide content into introduction and concrete example without extra panels.
    The grid and the footer span exactly the same available width as the title panel. */
@@ -4947,10 +4971,17 @@
 :global(.light) .knowledgeIntroFlowHeading svg,
 :global(.light) .knowledgeIntroFlowSteps li svg {color:#6658ce;}
 :global(.light) .knowledgeIntroFlowSteps li {color:#444050;}
-:global(.light) .knowledgeIntroFlowSteps li:not(:last-child)::after {color:#8f8a9f;}
+:global(.light) .knowledgeIntroFlowSteps li:not(:last-child) {border-right-color:#e6e6f1;}
+:global(.light) .knowledgeIntroFlowSteps li small {color:#6f6b7d;}
 :global(.light) .knowledgeIntroFlowContent p {color:#6f6b7d;}
 @media(max-width:1040px) {
   .knowledgeIntroFlow {grid-template-columns:minmax(0,1fr);gap:11px;}
+}
+@media(max-width:760px) {
+  .knowledgeIntroFlowSteps {grid-template-columns:minmax(0,1fr);}
+  .knowledgeIntroFlowSteps li {padding:11px 0;}
+  .knowledgeIntroFlowSteps li:not(:last-child) {border-right:0;border-bottom:1px solid #4b4e66;}
+  :global(.light) .knowledgeIntroFlowSteps li:not(:last-child) {border-bottom-color:#e6e6f1;}
 }
 @media(max-width:800px) {
   .libraryHubPreview[data-library-hub="knowledge"] {width:calc(100% - 32px);}
@@ -4964,6 +4995,6 @@
   .knowledgeIntroTop {gap:11px;}
   .knowledgeIntroIcon {width:40px;height:40px;flex-basis:40px;}
   .knowledgeIntroFlow {padding:14px;}
-  .knowledgeIntroFlowSteps {gap:6px;}
+  .knowledgeIntroFlowSteps {gap:0;}
   .knowledgeIntroFlowSteps li {font-size:12px;}
 }
