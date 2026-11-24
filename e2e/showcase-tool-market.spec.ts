@@ -190,8 +190,8 @@ test("my tools adopts Vuexy dark/light surfaces and title indicator without cons
  });
  expect(dark.width).toBeGreaterThan(1136);
  expect(dark.bar).toBe("3px");
- expect(dark.header).toBe("rgb(20, 34, 55)");
- expect(dark.card).toBe("rgb(20, 34, 55)");
+ expect(dark.header).toBe("rgb(47, 51, 73)");
+ expect(dark.card).toBe("rgb(57, 61, 85)");
  await page.evaluate(()=>document.documentElement.classList.add("light"));
  const light=await page.evaluate(()=>{
    const area=document.querySelector('[class*="figmaMine"]') as HTMLElement;
