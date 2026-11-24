@@ -73,7 +73,7 @@ test("actual Figma skills pages retain readable Vuexy light and dark surfaces",a
 test("linked Figma home, official catalog, enabled skills and closed team",async({page})=>{
  await page.goto("/shuomi/#/workbench/agents/skills");
  const root=page.locator('[data-skill-showcase="true"]');
- await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
+ await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
  await root.getByRole("button",{name:"浏览官方模板"}).click();
  await expect(root.locator("[data-skill-name]")).toHaveCount(6);
  await root.getByRole("button",{name:"图片制作",exact:true}).click();
@@ -102,7 +102,7 @@ test("linked Figma home, official catalog, enabled skills and closed team",async
  await expect(root.getByRole("button",{name:"新建技能"})).toHaveCount(0);
  await expect(root.getByRole("button",{name:"待审批的个人提交"})).toHaveCount(0);
  await root.getByRole("button",{name:"返回技能库"}).click();
- await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
+ await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
 });
 
 test("clicking the AI workbench skill menu opens the independent introduction and exposes children",async({page})=>{
@@ -111,14 +111,14 @@ test("clicking the AI workbench skill menu opens the independent introduction an
  await nav.getByRole("link",{name:"技能库",exact:true}).click();
  await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
  const root=page.locator('[data-skill-showcase="true"]');
- await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
+ await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
  await expect(nav.getByRole("link",{name:"官方模板",exact:true})).toBeVisible();
  await expect(nav.getByRole("link",{name:"我的技能",exact:true})).toBeVisible();
  await expect(nav.getByRole("link",{name:"团队技能",exact:true})).toBeVisible();
  await nav.getByRole("link",{name:"官方模板",exact:true}).click();
  await expect(root.getByRole("heading",{name:"官方模板",level:1})).toBeVisible();
  await nav.getByRole("link",{name:"技能库",exact:true}).click();
- await expect(root.getByRole("heading",{name:"让技能成为可重复使用的工作能力"})).toBeVisible();
+ await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
 });
 
 test("skill pages share the approved tools header and readable dual-theme controls",async({page})=>{
@@ -244,4 +244,44 @@ test("knowledge landing keeps readable card, header and workflow surfaces in bot
    if(color!=="rgba(0, 0, 0, 0)")expect(isLight(color)).toBe(theme==="light");
   }
  }
+});
+test("skill home matches knowledge layout with three aligned destinations and concise AI usage",async({page})=>{
+ for(const theme of ["dark","light"]){
+  for(const viewport of [{width:1440,height:900},{width:2560,height:1440},{width:720,height:900}]){
+   await page.setViewportSize(viewport);
+   await page.goto("/shuomi/#/workbench/agents/skills");
+   const toggle=page.getByRole("button",{name:theme==="dark"?"切换深色主题":"切换浅色主题"});
+   if(await toggle.isVisible())await toggle.click();
+   const root=page.locator('[data-skill-flow="home"]');
+   const cards=root.locator('[data-skill-entry]');
+   const heading=root.locator(":scope > header");
+   const flow=root.getByRole("complementary",{name:"技能使用说明"});
+   await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
+   await expect(cards).toHaveCount(3);
+   await expect(flow).toBeVisible();
+   for(const removed of ["技能库可以帮你做什么","如何开始使用","使用前需要了解"]){
+    await expect(root.getByRole("heading",{name:removed})).toHaveCount(0);
+   }
+   await expect(cards.nth(0)).toContainText("官方模板");
+   await expect(cards.nth(1)).toContainText("我的技能");
+   await expect(cards.nth(2)).toContainText("暂未开放");
+   await expect(root.getByText("技能告诉 AI 如何处理工作；知识库提供参考资料。两者可以按需配合使用，不会因为启用就自动执行。")).toBeVisible();
+   const a=await heading.boundingBox(),b=await flow.boundingBox();
+   expect(a).not.toBeNull();expect(b).not.toBeNull();
+   expect(Math.abs(a!.x-b!.x)).toBeLessThan(3);
+   expect(Math.abs((a!.x+a!.width)-(b!.x+b!.width))).toBeLessThan(3);
+   const box=await cards.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,right:r.right};}));
+   expect(Math.abs(box[0].x-a!.x)).toBeLessThan(3);
+   if(viewport.width>=1200){
+    expect(Math.abs(box[2].right-(a!.x+a!.width))).toBeLessThan(3);
+    expect(Math.abs(box[0].y-box[1].y)).toBeLessThan(3);
+    expect(Math.abs(box[1].y-box[2].y)).toBeLessThan(3);
+    expect(Math.abs(box[0].width-box[1].width)).toBeLessThan(3);
+    expect(Math.abs(box[1].width-box[2].width)).toBeLessThan(3);
+   }else expect(box[2].y).toBeGreaterThan(box[1].y+50);
+   expect(isLight(await cards.first().evaluate(el=>getComputedStyle(el).backgroundColor))).toBe(theme==="light");
+  }
+ }
+ await page.getByRole("button",{name:"浏览官方模板"}).click();
+ await expect(page).toHaveURL(/agents\/skills\/official/);
 });

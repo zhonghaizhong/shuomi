@@ -1,6 +1,7 @@
 "use client";
 import {useState,useEffect,useRef} from "react";
 import {useRouter} from "next/navigation";
+import {BookOpen, LibraryBig, Users, Info, Layers3, MessageSquare, Zap} from "lucide-react";
 import styles from "./showcase-skill-library.module.css";
 const root="/workbench/agents/skills";
 export const officialSkills=[
@@ -43,24 +44,67 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const go=(p:string)=>router.push(root+(p?"/"+p:"")+"?preview=1");
  const chat=(mode:string,name="")=>router.push("/workbench/ai/chat/new?preview=1&skillMode="+mode+"&skill="+encodeURIComponent(name));
  const toggle=(name:string)=>{const next=enabled.includes(name)?enabled.filter(x=>x!==name):[...enabled,name];setEnabled(next);try{sessionStorage.setItem(scopedKey(enabledKey,organizationId,memberId),JSON.stringify(next))}catch{}};
- const title=category==="home"?"让技能成为可重复使用的工作能力":category==="official"?"官方模板":category==="mine"?"我的技能":"团队技能";
- const desc=category==="home"?"浏览官方模板、管理已启用技能，并在会话中按需调用；重复工作不必反复配置。":category==="official"?"按需查找和启用标准技能，启用后会出现在「我的技能」，使用时再关联到会话或任务。":category==="mine"?"管理已启用的官方技能和自己保存的技能，需要时直接带入会话。":"团队技能暂未开放。你可以先使用官方模板或我的技能。";
+ const title=category==="home"?"技能库":category==="official"?"官方模板":category==="mine"?"我的技能":"团队技能";
+ const desc=category==="home"?"把常用的工作方法保存成技能，需要时让 AI 按要求处理任务。":category==="official"?"按需查找和启用标准技能，启用后会出现在「我的技能」，使用时再关联到会话或任务。":category==="mine"?"管理已启用的官方技能和自己保存的技能，需要时直接带入会话。":"团队技能暂未开放。你可以先使用官方模板或我的技能。";
  const selected=officialSkills.find(s=>s[0]===intro);
  const match=(s:string)=>s.toLowerCase().includes(search.toLowerCase());
  const cards=officialSkills.filter(s=>(category==="official"?(filter==="全部"||s[3]===filter):enabled.includes(s[0])&&filter!=="我的创建")&&match(s.join(" ")));
  const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
  return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
- <header className={styles.hero}><div className={styles.breadcrumb}>AI工作台 / <button onClick={()=>go("")}>技能库</button>{category!=="home"?" / "+title:""}</div><h1>{title}</h1><p>{desc}</p></header>
+ <header className={styles.hero}><div className={styles.breadcrumb}>AI工作台 / <button onClick={()=>go("")}>技能库</button>{category!=="home"?" / "+title:""}</div><h1>{title}</h1><p className={category==="home"?styles.skillIntroLead:undefined}>{desc}</p>{category==="home"?<p className={styles.skillIntroSupporting}>官方模板提供现成的方法，也可以保存自己的方法。需要时在支持的 AI 会话中选择使用，不会自动执行。</p>:null}</header>
  {category==="home"?<>
- <div className={styles.grid}>{[
- ["官方模板","按业务需求选择标准技能，启用后统一管理并供会话引用。","按需启用","当前引用"+enabled.length+"个","浏览官方模板","official"],
- ["我的技能","统一管理已启用及保存的技能，需要时选择并带入会话。","集中管理","不会自动生成","查看我的技能","mine"],
- ["团队技能","团队技能暂未开放，目前不支持创建、管理或引用。","暂未开放","默认不自动引用","查看团队技能","team"]
- ].map(([t,d,a,b,action,p],i)=><article key={p} className={styles.feature}><h3>{t}</h3><p>{d}</p><div className={styles.chips}><span>{a}</span><span>{b}</span></div><button onClick={()=>go(p)}>{action}</button><small>0{i+1}</small></article>)}</div>
- <section className={styles.toolbar}><h2 className={styles.sectionTitle}>技能库可以帮你做什么</h2><p className={styles.sectionSub}>选择现成方法或沉淀个人经验，按任务需要调用</p><div className={styles.fourGrid}>{[["按来源分类","官方与自建技能分类管理，方便查找与使用。"],["启用后统一管理","启用的技能自动进入「我的技能」列表。"],["快速带入会话","点击技能，可自动带入对应会话。"],["持续沉淀方法","把常用工作方法保存为可复用的技能。"]].map(([t,d])=><article key={t}><h3>{t}</h3><p>{d}</p></article>)}</div></section>
- <section className={styles.toolbar}><h2 className={styles.sectionTitle}>如何开始使用</h2><p className={styles.sectionSub}>从找到技能到加入会话，四步完成</p><div className={styles.fourGrid}>{[["选择技能","按业务需要选择适合的官方技能"],["启用或保存","启用模板，或通过会话保存技能"],["去会话引用","点击具体技能，一键带入会话"],["按需管理","按需停用、重新启用或更新技能"]].map(([t,d],i)=><article key={t}><small>0{i+1}</small><h3>{t}</h3><p>{d}</p></article>)}</div></section>
- <section className={styles.toolbar}><h2 className={styles.sectionTitle}>使用前需要了解</h2><div className={styles.grid}>{[["不会自动执行","启用只代表加入我的技能，不会自动执行。"],["只关联所选技能","去会话时自动携带当前所选技能。"],["团队暂未开放","团队技能暂不支持创建、配置或调用。"]].map(([t,d])=><article key={t}><h3>{t}</h3><p>{d}</p></article>)}</div></section>
- </>:category==="team"?<section className={styles.empty} data-skill-management="team"><h2>暂未开放</h2><p>团队技能正在筹备中，暂不支持创建、管理、共享或调用。</p><button className={styles.primary} onClick={()=>go("")}>返回技能库</button><p>功能开放后，可在这里管理团队共享技能。</p></section>:<>
+ <section className={styles.skillIntroGrid} aria-label="选择技能库入口">
+  <article className={styles.skillIntroCard} data-skill-entry="official">
+   <div className={styles.skillIntroTop}>
+    <span className={styles.skillIntroIcon} aria-hidden="true"><BookOpen size={23}/></span>
+    <div className={styles.skillIntroHeading}>
+     <span className={styles.skillIntroType}>平台预设</span>
+     <h2>官方模板</h2>
+     <p>平台已经准备好的商品运营和内容处理方法。选择并启用后，可以在支持的 AI 会话中按需引用。</p>
+    </div>
+   </div>
+   <div className={styles.skillIntroExample}><strong>例如：</strong><p>优化 SHEIN 商品标题时，启用标题整理技能，让 AI 参考固定方法梳理卖点和关键词。</p></div>
+   <div className={styles.skillIntroTags}><span>商品标题</span><span>图片制作</span><span>快速启用</span></div>
+   <button type="button" onClick={()=>go("official")}>浏览官方模板</button>
+  </article>
+  <article className={styles.skillIntroCard} data-skill-entry="mine">
+   <div className={styles.skillIntroTop}>
+    <span className={styles.skillIntroIcon} aria-hidden="true"><LibraryBig size={23}/></span>
+    <div className={styles.skillIntroHeading}>
+     <span className={styles.skillIntroType}>自己管理</span>
+     <h2>我的技能</h2>
+     <p>集中管理已经启用的官方技能，以及自己保存的工作方法，使用时选择并带入 AI 会话。</p>
+    </div>
+   </div>
+   <div className={styles.skillIntroExample}><strong>例如：</strong><p>把常用的品牌文案要求保存成技能，下次处理商品内容时直接选择引用。</p></div>
+   <div className={styles.skillIntroTags}><span>已启用模板</span><span>我的创建</span><span>按需引用</span></div>
+   <button type="button" onClick={()=>go("mine")}>查看我的技能</button>
+  </article>
+  <article className={styles.skillIntroCard} data-skill-entry="team">
+   <div className={styles.skillIntroTop}>
+    <span className={styles.skillIntroIcon} aria-hidden="true"><Users size={23}/></span>
+    <div className={styles.skillIntroHeading}>
+     <span className={styles.skillIntroType}>暂未开放</span>
+     <h2>团队技能</h2>
+     <p>计划用于企业内部共享和管理常用工作方法。目前不支持创建、审批、启用或调用团队技能。</p>
+    </div>
+   </div>
+   <div className={styles.skillIntroExample}><strong>开放后可用于：</strong><p>统一团队商品内容的处理规范，让有权限的成员按同一套方法开展工作。</p></div>
+   <div className={styles.skillIntroTags}><span>团队共享</span><span>统一规则</span><span>规划中</span></div>
+   <button type="button" onClick={()=>go("team")}>查看团队技能</button>
+  </article>
+ </section>
+ <aside className={styles.skillIntroFlow} aria-label="技能使用说明">
+  <div className={styles.skillIntroFlowHeading}><Info size={20} aria-hidden="true"/><strong>技能如何帮助 AI？</strong></div>
+  <div className={styles.skillIntroFlowContent}>
+   <ol className={styles.skillIntroFlowSteps}>
+    <li><Layers3 size={19} aria-hidden="true"/><span>选择或保存技能</span><small>启用官方模板，或保存自己的方法</small></li>
+    <li><MessageSquare size={19} aria-hidden="true"/><span>在会话中引用</span><small>只使用你选择的技能</small></li>
+    <li><Zap size={19} aria-hidden="true"/><span>AI 按方法辅助处理</span><small>在支持的功能中应用所选规则</small></li>
+   </ol>
+   <p>技能告诉 AI 如何处理工作；知识库提供参考资料。两者可以按需配合使用，不会因为启用就自动执行。</p>
+  </div>
+ </aside> </>:category==="team"?<section className={styles.empty} data-skill-management="team"><h2>暂未开放</h2><p>团队技能正在筹备中，暂不支持创建、管理、共享或调用。</p><button className={styles.primary} onClick={()=>go("")}>返回技能库</button><p>功能开放后，可在这里管理团队共享技能。</p></section>:<>
  {category==="mine"&&<div className={styles.actionBar}><button className={styles.secondary} onClick={()=>go("official")}>前往官方模板</button><button className={styles.primary} onClick={()=>chat("create")}>创建我的技能</button></div>}
  <section className={styles.toolbar} data-skill-management={category}>
  <h2 className={styles.sectionTitle}>{category==="official"?"官方技能列表":"已启用技能"}</h2>{category==="official"&&<p className={styles.sectionSub}>按分类浏览技能，查看介绍后启用需要的能力</p>}
