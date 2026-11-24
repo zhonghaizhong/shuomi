@@ -6,7 +6,7 @@ export const listingVariantPhotoRoles=[
  "商品识别主图","核心购买理由","核心需求解决","产品结构确认","核心细节证据","核心使用场景"
 ] as const;
 export type ListingVariantPhotoRole=typeof listingVariantPhotoRoles[number];
-export type ListingVariantImage={role:ListingVariantPhotoRole;url:string;version:number;source:"ai-generated"|"manual-review"};
+export type ListingVariantImage={role:ListingVariantPhotoRole;url:string;version:number;source:"ai-generated"|"manual-review"|"demo-import";provenance?:string};
 export type ListingVariantImageGroup={
  id:string;color:string;skuIds:string[];originalImages:string[];
  optimizedImages:ListingVariantImage[];version:number;reviewedAt?:string;
@@ -27,11 +27,11 @@ export function buildListingVariantGroups(details:ListingVariantDetail[]):Listin
 export function listingVariantGalleryCards(group:ListingVariantImageGroup){
  return listingVariantPhotoRoles.map((role,index)=>{
   const optimized=group.optimizedImages.find(img=>img.role===role);
-  return {role,index,url:optimized?.url??group.originalImages[0]??null,isOptimized:Boolean(optimized)};
+  return {role,index,url:optimized?.url??group.originalImages[0]??null,isOptimized:Boolean(optimized&&optimized.source!=="demo-import"),isDemoImported:optimized?.source==="demo-import"};
  });
 }
 export function variantGroupReady(group:ListingVariantImageGroup):boolean{
- return listingVariantPhotoRoles.every(role=>group.optimizedImages.some(img=>img.role===role&&/^(https:\/\/|\/assets\/)/.test(img.url)&&!group.originalImages.includes(img.url)))&&group.optimizedImages.length===6&&new Set(group.optimizedImages.map(x=>x.url)).size===6;
+ return listingVariantPhotoRoles.every(role=>group.optimizedImages.some(img=>img.role===role&&img.source!=="demo-import"&&/^(https:\/\/|\/assets\/)/.test(img.url)&&!group.originalImages.includes(img.url)))&&group.optimizedImages.length===6&&new Set(group.optimizedImages.map(x=>x.url)).size===6;
 }
 export type ShowcaseUploadTask={
  id:string;organizationId:string;memberId:string;
