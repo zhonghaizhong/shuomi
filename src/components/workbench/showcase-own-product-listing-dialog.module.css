@@ -426,3 +426,42 @@
 .intakeActions button strong{gap:8px;font-size:13px}.intakeActions button b{min-width:26px;height:22px;font-size:12px}
 .intakeActions button small{font-size:11px;text-align:right}
 @media(max-width:680px){.intakeActions button{min-height:50px;gap:10px}.intakeActions button small{max-width:50%}}
+
+
+/* Single aligned action row: narrow inputs on the left, three equal-sized primary workflow buttons. */
+.dialog .aiRow{display:grid;grid-template-columns:minmax(290px,440px) minmax(140px,170px) repeat(3,minmax(116px,1fr));gap:8px;align-items:stretch;width:100%;min-width:0}
+.dialog .aiOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;flex:none;min-width:0}
+.dialog .aiOptions label{box-sizing:border-box;min-width:0;height:53px;min-height:53px;max-height:53px;padding:7px 9px}
+.dialog .aiOptions select{width:100%;min-width:0;text-overflow:ellipsis}
+.dialog .batchControls{box-sizing:border-box;display:grid;grid-template-rows:repeat(2,24px);gap:5px;min-width:0;max-width:none;flex:none}
+.dialog .batchControls button{box-sizing:border-box;width:100%;max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 6px}
+.dialog .submit,.dialog .intakeAction{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-width:0;max-width:none;height:53px;min-height:53px;max-height:53px;margin:0;border-radius:8px;font-size:13px;font-weight:650;white-space:nowrap;cursor:pointer}
+.dialog .intakeAction{background:var(--panel);border:1px solid var(--line);color:var(--ink)}
+.dialog .intakePending{border-color:color-mix(in srgb,#9469da 48%,var(--line))}
+.dialog .intakeReview{border-color:color-mix(in srgb,#16ad83 48%,var(--line))}
+.dialog .intakeAction b{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 5px;border-radius:12px;background:color-mix(in srgb,var(--accent) 13%,var(--panel));color:var(--accent);font-size:12px}
+.dialog .intakeReview b{background:color-mix(in srgb,#16ad83 12%,var(--panel));color:#10a883}
+.dialog .intakeAction:hover{background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+@media(max-width:1100px){
+ .dialog .aiRow{grid-template-columns:minmax(275px,1fr) minmax(145px,175px) repeat(3,minmax(104px,1fr));gap:7px}
+}
+@media(max-width:850px){
+ .dialog .aiRow{grid-template-columns:minmax(0,1fr) minmax(140px,.45fr) repeat(3,minmax(0,.52fr));gap:7px}
+ .dialog .aiOptions{grid-column:1/3}
+ .dialog .batchControls{grid-column:3/6;grid-row:1}
+ .dialog .submit{grid-column:1/2}
+ .dialog .intakePending{grid-column:2/4}
+ .dialog .intakeReview{grid-column:4/6}
+ .dialog .submit,.dialog .intakeAction{height:44px;min-height:44px;max-height:44px}
+}
+@media(max-width:580px){
+ .dialog .aiRow{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .dialog .aiOptions{grid-column:1/-1}
+ .dialog .batchControls{grid-column:1/-1;grid-row:auto;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}
+ .dialog .batchControls button{min-height:34px;max-height:none;height:34px}
+ .dialog .submit{grid-column:1}
+ .dialog .intakePending{grid-column:2}
+ .dialog .intakeReview{grid-column:3}
+ .dialog .aiOptions label{height:49px;min-height:49px;max-height:49px}
+ .dialog .submit,.dialog .intakeAction{font-size:12px;gap:4px}
+}
