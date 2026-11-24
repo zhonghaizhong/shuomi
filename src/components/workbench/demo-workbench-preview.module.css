@@ -4153,18 +4153,17 @@
 }
 
 
-/* Intelligent-agent showcase MUST retain the approved Vuexy panel surface:
-   the filter bar's #2f3349 is the reference, not the unrelated blue #142237.
-   The prior high-specificity override was darkening headers and both agent columns. */
+/* Agent market dark theme follows the approved shared Vuexy blue surfaces.
+   The light overrides below are intentionally retained. */
 .agentsPreview.agentsPreview{
- --agent-surface:#2f3349;
- --agent-raised:#393d55;
- --agent-border:#44485e;
- --agent-text:#cfcde4;
- --agent-muted:#acabc1;
+ --agent-surface:#142237;
+ --agent-raised:#18283c;
+ --agent-border:#31465e;
+ --agent-text:#edf4ff;
+ --agent-muted:#b5c6d8;
  --agent-primary:#7367f0;
- --agent-selected:#474075;
- --agent-muted-chip:#393d55;
+ --agent-selected:#34305f;
+ --agent-muted-chip:#18283c;
 }
 :global(.light) .agentsPreview.agentsPreview{
  --agent-surface:#fff;
