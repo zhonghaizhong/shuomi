@@ -89,6 +89,8 @@ test("Data Services landing uses consistent dark Vuexy card and button paints",a
  await expect(root).toBeVisible();
  const paint=(selector:string)=>root.locator(selector).first().evaluate(el=>getComputedStyle(el).backgroundColor);
  for(const selector of ['.dataCards article','.dataSteps','.dataDetails article']){
+  const actual=await paint(selector);
+  console.log(`[data landing] ${selector}: ${actual}`);
   await expect.poll(()=>paint(selector),selector).toBe("rgb(47, 51, 73)");
  }
  await expect.poll(()=>paint('.dataSteps article')).toBe("rgb(57, 61, 85)");
@@ -118,5 +120,5 @@ test("Data Market, API and My Data have Vuexy dark computed surfaces",async({pag
  const mine=page.locator('[data-my-data-owner]');
  await expect(mine).toBeVisible();
  await expect.poll(()=>mine.locator('[class*="filterBar"]').first().evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(47, 51, 73)");
- await expect.poll(()=>mine.getByRole("region",{name:"采集批次"}).evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(47, 51, 73)");
+ await expect.poll(()=>mine.getByRole("region",{name:"采集批次",exact:true}).evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(47, 51, 73)");
 });
