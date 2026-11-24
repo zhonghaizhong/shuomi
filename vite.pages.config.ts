@@ -47,6 +47,13 @@ const bundledAgentExamples = {
       `${here}/dist-pages/assets/pod-inspiration`,
       { recursive: true }
     );
+    // Own-product demo atlas is consumed directly by the browser after page load.
+    // Vite's showcase/ root does not auto-copy the repository public/ folder.
+    await cp(
+      `${here}/public/assets/own-product-ai-demo`,
+      `${here}/dist-pages/assets/own-product-ai-demo`,
+      { recursive: true }
+    );
   },
 };
 
