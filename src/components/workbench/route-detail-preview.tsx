@@ -94,7 +94,7 @@ const products = ["复古水洗牛仔外套", "便携式户外折叠收纳箱", 
 export function RouteDetailPreview({ pathname, organizationId="SM-ENT-000001", memberId="admin" }: { pathname: string;organizationId?:string;memberId?:string }) {
   const page = routes[pathname];
   if (!page) return null;
-  if (pathname === "/workbench/supply/applications" || pathname.startsWith("/workbench/supply/applications/")) return <PreferredApplicationPreview key={pathname} pathname={pathname} />;
+  if (pathname === "/workbench/supply/applications" || pathname.startsWith("/workbench/supply/applications/")) return <PreferredApplicationPreview key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/account/profile/business" || pathname === "/workbench/account/profile/verification") return <AccountProfilePreview key={pathname+"-"+organizationId+"-"+memberId} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   return <RoutePage key={pathname+"-"+organizationId+"-"+memberId} page={page} pathname={pathname} organizationId={organizationId} memberId={memberId} />;
 }

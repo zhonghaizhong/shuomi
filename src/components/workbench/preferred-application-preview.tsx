@@ -1,142 +1,165 @@
 "use client";
-
 import {useEffect,useMemo,useState,type FormEvent} from "react";
 import {useRouter} from "next/navigation";
+import {BadgeCheck,ClipboardList,Database,Info,PackageCheck,Search,Star,Workflow} from "lucide-react";
+import {
+ emptyPreferredSupply,preferredApplicationChanged,ownProductUpdated,optimizedDatasetsChanged,
+ readPreferredCandidates,readPreferredApplications,submitPreferredDemoApplication,simulatePreferredReview,
+ type PreferredApplicationRecord,type PreferredSupply,type PreferredCandidate
+} from "./preferred-application-store";
 import styles from "./preferred-application-preview.module.css";
 
-type Status="可申请"|"待受理"|"审核中"|"已通过"|"未通过";
-type Product={sku:string;name:string;group:string;source:string;category:string;status:Status};
-type RecordRow={id:string;count:number;date:string;status:Exclude<Status,"可申请">;note:string};
-const items:Product[]=[
- {sku:"OWN-240824-001",name:"轻量防晒连帽外套",group:"新品开发",source:"手动上传",category:"服装",status:"可申请"},
- {sku:"OWN-240824-002",name:"多功能折叠收纳箱",group:"核心商品",source:"企业商品库",category:"家居",status:"审核中"},
- {sku:"OWN-240823-ERP",name:"陶瓷餐具礼盒套装",group:"家居系列",source:"工具市场插件",category:"家居",status:"已通过"},
- {sku:"OWN-240823-PLG",name:"轻奢链条单肩包",group:"箱包配件",source:"手动上传",category:"箱包",status:"未通过"}
-];
-const overviewItems=[
- {sku:"OWN-240824-001",name:"轻量防晒连帽外套",group:"新品开发"},
- {sku:"OWN-240824-002",name:"多功能折叠收纳箱",group:"核心商品"},
- {sku:"OWN-240824-003",name:"轻奢链条单肩包",group:"箱包配件"}
-];
-const pending:RecordRow[]=[
- {id:"SQ-20260824-001",count:4,date:"08月24日 10:30",status:"审核中",note:"平台正在审核，请以正式业务系统反馈为准。"},
- {id:"SQ-20260823-009",count:2,date:"08月23日 16:20",status:"待受理",note:"等待平台处理。"},
- {id:"SQ-20260822-018",count:3,date:"08月22日",status:"未通过",note:"具体审核意见待平台同步。可修改原申请资料后再次申请。"},
- {id:"SQ-20260821-015",count:5,date:"08月21日",status:"未通过",note:"具体审核意见待平台同步。可修改原申请资料后再次申请。"},
- {id:"SQ-20260820-011",count:6,date:"08月20日",status:"已通过",note:"本条为原型演示记录。"}
-];
-const history:RecordRow[]=[
- {id:"SQ-20260820-011",count:6,date:"08月20日",status:"已通过",note:"审核已完成。历史记录只读。"},
- {id:"SQ-20260815-003",count:5,date:"08月15日",status:"未通过",note:"平台详细驳回原因尚未同步。可参考实际审核反馈修改资料，重新提交形成新审核记录。"},
- {id:"SQ-20260812-021",count:3,date:"08月12日",status:"已通过",note:"审核已完成。历史记录只读。"},
- {id:"SQ-20260808-014",count:2,date:"08月08日",status:"已通过",note:"审核已完成。历史记录只读。"},
- {id:"SQ-20260802-006",count:4,date:"08月02日",status:"已通过",note:"审核已完成。历史记录只读。"}
-];
-const base="/workbench/supply/applications";
-const STORAGE="shuomi-preferred-application-draft";
-type Supply={stock:string,moq:string,dispatch:string,origin:string,pricing:string,returns:string};
-const emptySupply:Supply={stock:"",moq:"",dispatch:"",origin:"",pricing:"",returns:""};
-function StatusLabel({status}:{status:Status}){return <span className={styles.status} data-status={status}>{status}</span>;}
-function Tile({number,title,help,tone}:{number:string,title:string,help:string,tone:number}){return <article className={styles.metric} data-tone={tone}><strong>{number}</strong><div><b>{title}</b><small>{help}</small></div></article>;}
-function SectionHead({title,description,children}:{title:string,description:string,children?:React.ReactNode}){return <header className={styles.heading}><div><small>供应市场 / 优选申请 {title==="发起申请"?"":"/ "+title}</small><h1>{title}</h1><p>{description}</p></div><div className={styles.headingActions}>{children}</div></header>;}
-export function PreferredApplicationPreview({pathname}:{pathname:string}){
+type View="products"|"records";
+const formatDate=(value:string)=>{try{return new Date(value).toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})}catch{return value}};
+const displayStatus=(status:PreferredCandidate["status"])=>status==="已入选"?"已入选优选":status==="待首次适配"?"待首次适配":status==="待智能体优化"?"待智能优化":status;
+function Status({value}:{value:string}){return <span className={styles.status} data-status={value}>{value}</span>;}
+function ProductImage({src,name}:{src:string;name:string}){
+ return src?<img className={styles.productImage} src={src} alt={name}/>:<div className={styles.productPlaceholder} aria-label="暂无商品图片"><PackageCheck size={23}/></div>;
+}
+export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000001",memberId="admin"}:{pathname:string;organizationId?:string;memberId?:string}){
  const router=useRouter();
- const isRecord=pathname.endsWith("/records");
- const isProgress=pathname.endsWith("/progress");
- const isNew=pathname.endsWith("/new");
- const [step,setStep]=useState<"select"|"supply">("select");
+ const [revision,setRevision]=useState(0);
+ const [view,setView]=useState<View>(()=>pathname.endsWith("/progress")||pathname.endsWith("/records")?"records":"products");
+ const [query,setQuery]=useState(""),[filter,setFilter]=useState("全部商品");
+ const [recordFilter,setRecordFilter]=useState("全部状态");
  const [selected,setSelected]=useState<string[]>([]);
- const [draft,setDraft]=useState<Supply>(emptySupply);
- const [attachments,setAttachments]=useState<string[]>([]);
- const [notice,setNotice]=useState("");
- const [text,setText]=useState("");
- const [search,setSearch]=useState("");
- const [status,setStatus]=useState("全部状态");
- const [source,setSource]=useState("全部来源");
- const [category,setCategory]=useState("全部分类");
- const [group,setGroup]=useState("全部分组");
- const [filter,setFilter]=useState({search:"",status:"全部状态",source:"全部来源",category:"全部分类",group:"全部分组"});
- const [tab,setTab]=useState("全部");
- const records=isRecord?history:pending;
- const [focusedId,setFocusedId]=useState(isRecord?"SQ-20260815-003":"SQ-20260821-015");
- const [detailOpen,setDetailOpen]=useState<Product|null>(null);
- const [demoSubmitted,setDemoSubmitted]=useState(false);
- useEffect(()=>{try{const raw=sessionStorage.getItem(STORAGE);if(raw){const d=JSON.parse(raw);if(Array.isArray(d.selected))setSelected(d.selected);if(d.draft)setDraft(d.draft)}if(sessionStorage.getItem(STORAGE+"-edit")==="1"){setStep("supply");sessionStorage.removeItem(STORAGE+"-edit");}}catch{}},[]);
- const persist=(nextSelected:string[],nextSupply:Supply)=>{try{sessionStorage.setItem(STORAGE,JSON.stringify({selected:nextSelected,draft:nextSupply}))}catch{}};
- const go=(path:string)=>{setNotice("");router.push(base+path+"?preview=1")};
- const select=(sku:string)=>{const v=selected.includes(sku)?selected.filter(x=>x!==sku):[...selected,sku];setSelected(v);persist(v,draft);};
- const change=(key:keyof Supply,value:string)=>{const v={...draft,[key]:value};setDraft(v);persist(selected,v);};
- const rows=items.filter(p=>(filter.status==="全部状态"||p.status===filter.status)&&(filter.source==="全部来源"||p.source===filter.source)&&(filter.category==="全部分类"||p.category===filter.category)&&(filter.group==="全部分组"||p.group===filter.group)&&[p.name,p.sku,p.group,p.source].join(" ").toLowerCase().includes(filter.search.toLowerCase()));
- const visibleRecords=records.filter(r=>tab==="全部"||r.status===tab);
- const focused=records.find(r=>r.id===focusedId)??visibleRecords[0]??records[0];
- const chooseRecord=(id:string)=>setFocusedId(id);
- const reset=()=>{setSearch("");setStatus("全部状态");setSource("全部来源");setCategory("全部分类");setGroup("全部分组");setFilter({search:"",status:"全部状态",source:"全部来源",category:"全部分类",group:"全部分组"});};
- const advance=()=>{if(!selected.length){setNotice("请至少选择一件可申请商品，再填写供货信息。");return;}setNotice("");setStep("supply");};
- const saveDraft=()=>{persist(selected,draft);setNotice("已保存到当前浏览器的演示草稿，尚未向平台提交申请。");};
- const submit=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();if(!selected.length){setStep("select");setNotice("请先选择申请商品。");return;}setDemoSubmitted(true);setNotice("演示申请已完成表单校验，但未提交到正式业务系统。");};
- const metrics=isRecord?[["9","全部记录","历史审核记录"],["8","已通过","审核已完成"],["1","未通过","可修改后重申"]]:isProgress?[["5","全部申请","申请总记录"],["1","待受理","等待平台处理"],["1","审核中","平台正在审核"],["1","已通过","审核已完成"],["2","未通过","可修改后重申"]]:[["34","可申请商品","符合申请条件"],["3","审核中","平台审核进行中"],["1","未通过","可修改后再申请"],["8","已通过","审核已完成"]];
- const title=isRecord?"申请记录":isProgress?"申请进度":isNew?(step==="select"?"选择申请商品":"填写供货信息"):"发起申请";
- const description=isRecord?"仅记录已完成审核的申请；未通过可查看原因、修改资料后重新申请。":isProgress?"查看每笔申请的审核状态，未通过可修改资料后重新提交。":isNew?(step==="select"?"从「已上传 · 自有商品库」中按合集名称及申请状态查询，选择可申请商品。":"填写供货、交付及合作信息，完成后提交优选申请审核。"):"将「已上传 · 自有商品库」中符合条件的商品提交优选申请。";
- const edit=()=>{try{const current=sessionStorage.getItem(STORAGE);const saved=current?JSON.parse(current):null;const selectedProducts=Array.isArray(saved?.selected)&&saved.selected.length?saved.selected:items.filter(p=>p.status==="可申请").slice(0,Math.min(2,focused.count)).map(p=>p.sku);sessionStorage.setItem(STORAGE,JSON.stringify({selected:selectedProducts,draft:saved?.draft??emptySupply}));sessionStorage.setItem(STORAGE+"-edit","1");}catch{}go("/new");};
- return <div className={styles.page} data-preferred-application={isRecord?"records":isProgress?"progress":isNew?step:"overview"}>
-   <SectionHead title={title} description={description}>
-     {(isRecord||isProgress)?<button className={styles.primary} onClick={()=>{setStep("select");go("/new");}}>发起新申请</button>:
-     isNew?<button onClick={()=>go("")}>返回优选申请</button>:<>
-       <button onClick={()=>go("/records")}>查看申请记录</button>
-       <button className={styles.primary} onClick={()=>{setStep("select");go("/new");}}>选择商品发起申请</button>
-     </>}
-   </SectionHead>
-   {!isNew && <section className={styles.metrics}>{metrics.map(([n,t,h],i)=><Tile key={t} number={n} title={t} help={h} tone={i}/>)}</section>}
-   {!isNew&&!isRecord&&!isProgress&&<>
-      <section className={styles.infoColumns}>
-        <article><h2>申请条件</h2><p>仅展示符合基本申请条件的已优化自有商品</p><div className={styles.conditions}>{["商品属于申请人或企业","已完成商品智能优化","具备稳定库存或生产能力","商品及相关资质符合平台要求"].map(t=><span key={t}><i/> {t}</span>)}</div></article>
-        <article><h2>申请流程</h2><p>提交后由专员联系并完成评估</p><div className={styles.flow}>{["选择商品","供货信息","平台评估","确认合作"].map((t,i)=><div key={t}><b>{String(i+1).padStart(2,"0")}</b><span>{t}</span></div>)}</div></article>
-      </section>
-      <section className={styles.infoBanner}><div><b>服务说明</b><p>如涉及商品资料整理、系统技术对接或上架服务，将由专员确认具体服务内容及费用。</p></div><button onClick={()=>go("/progress")}>查看申请进度</button></section>
-      <section className={styles.panel}><div className={styles.panelHeading}><h2>可申请商品</h2><span>仅显示自有商品库 · 已上传</span></div><div className={styles.tableScroll}><table><thead><tr><th>商品</th><th>所属分组</th><th>商品归属 / 上传状态</th><th>申请状态</th></tr></thead><tbody>{overviewItems.map(p=><tr key={p.sku}><td><strong>{p.name}</strong><small>SKU {p.sku}</small></td><td>{p.group}</td><td>自有商品库 · 已上传</td><td>{items.find(item=>item.sku===p.sku)?.status ? <StatusLabel status={items.find(item=>item.sku===p.sku)!.status}/> : <span>状态待同步</span>}</td></tr>)}</tbody></table></div></section>
+ const [supply,setSupply]=useState<PreferredSupply>(emptyPreferredSupply);
+ const [applicationOpen,setApplicationOpen]=useState(false);
+ const [recordDetail,setRecordDetail]=useState<string|null>(null);
+ const [reviewReason,setReviewReason]=useState("");
+ const [error,setError]=useState(""),[notice,setNotice]=useState("");
+ const [page,setPage]=useState(1),[recordPage,setRecordPage]=useState(1);
+ useEffect(()=>{
+  const refresh=(event:Event)=>{
+   const scope=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;
+   if(scope?.organizationId===organizationId&&scope?.memberId===memberId)setRevision(v=>v+1);
+  };
+  for(const name of [preferredApplicationChanged,ownProductUpdated,optimizedDatasetsChanged])window.addEventListener(name,refresh);
+  return()=>{for(const name of [preferredApplicationChanged,ownProductUpdated,optimizedDatasetsChanged])window.removeEventListener(name,refresh)};
+ },[organizationId,memberId]);
+ useEffect(()=>{setView(pathname.endsWith("/progress")||pathname.endsWith("/records")?"records":"products")},[pathname]);
+ useEffect(()=>{
+  if(!applicationOpen&&!recordDetail)return;
+  const escape=(e:KeyboardEvent)=>{if(e.key==="Escape"){setApplicationOpen(false);setRecordDetail(null);setError("")}};
+  window.addEventListener("keydown",escape);return()=>window.removeEventListener("keydown",escape);
+ },[applicationOpen,recordDetail]);
+ const candidates=useMemo(()=>readPreferredCandidates(organizationId,memberId),[organizationId,memberId,revision]);
+ const records=useMemo(()=>readPreferredApplications(organizationId,memberId),[organizationId,memberId,revision]);
+ const activeRecord=records.find(row=>row.id===recordDetail);
+ const eligible=candidates.filter(c=>c.status==="可申请"),working=candidates.filter(c=>c.status==="审核中"),approved=candidates.filter(c=>c.status==="已入选");
+ const filtered=candidates.filter(c=>{
+  const q=query.trim().toLowerCase();
+  if(q&&![c.product.name,c.product.batchId,...c.product.skus.map(s=>s.skuCode||s.name)].join(" ").toLowerCase().includes(q))return false;
+  return filter==="全部商品"||filter==="可申请"&&c.status==="可申请"||
+   filter==="审核中"&&c.status==="审核中"||filter==="已入选"&&c.status==="已入选"||
+   filter==="待处理"&&["待首次适配","待智能体优化"].includes(c.status);
+ });
+ const visible=filtered.slice((page-1)*8,page*8);
+ const filteredRecords=records.filter(r=>recordFilter==="全部状态"||r.status===recordFilter);
+ const visibleRecords=filteredRecords.slice((recordPage-1)*8,recordPage*8);
+ const pageCount=Math.max(1,Math.ceil(filtered.length/8)),recordPageCount=Math.max(1,Math.ceil(filteredRecords.length/8));
+ const chosen=selected.filter(id=>candidates.some(c=>c.product.id===id&&c.status==="可申请"));
+ const showApply=(ids?:string[])=>{
+  const list=ids??chosen;
+  if(!list.length){setNotice("请先勾选已完成首次适配与智能体优化的商品。");return}
+  setSelected(list);setSupply(emptyPreferredSupply);setNotice("");setError("");setApplicationOpen(true);
+ };
+ const submit=(event:FormEvent<HTMLFormElement>)=>{
+  event.preventDefault();
+  try{
+   const record=submitPreferredDemoApplication(organizationId,memberId,chosen,supply);
+   setApplicationOpen(false);setSelected([]);setSupply(emptyPreferredSupply);
+   setView("records");setRecordFilter("全部状态");setRecordPage(1);setRecordDetail(record.id);
+   setNotice("演示申请 "+record.id+" 已保存为「待审核」，正式审批仍需平台后台完成。");setError("");
+  }catch(e){setError(e instanceof Error?e.message:"申请校验未通过")}
+ };
+ const review=(decision:"已通过"|"未通过")=>{
+  if(!activeRecord)return;
+  try{
+   simulatePreferredReview(organizationId,memberId,activeRecord.id,decision,reviewReason);
+   setReviewReason("");setError("");
+   setNotice(decision==="已通过"?"仅演示审核通过：已同步到本账号的硕米优选页面。":"仅演示审核未通过：保留记录，可修改资料重新申请。");
+  }catch(e){setError(e instanceof Error?e.message:"模拟审核失败")}
+ };
+ const openRecord=(record:PreferredApplicationRecord)=>{setRecordDetail(record.id);setError("");setReviewReason("")};
+ return <main className={styles.page} data-preferred-application="unified" data-organization={organizationId} data-member={memberId} aria-label="优选申请">
+  <header className={styles.heading}>
+   <div><small>供应市场 / 优选申请</small><h1>优选申请</h1><p>自动读取自有商品库中完成首次适配和智能体优化的商品，申请审核通过后可进入硕米优选。</p></div>
+   <button type="button" onClick={()=>router.push("/workbench/supply/selected?preview=1")}>查看硕米优选</button>
+  </header>
+  <section className={styles.benefits} aria-label="加入硕米优选的好处">
+   <div className={styles.benefitHeading}><Star size={20}/><div><h2>加入硕米优选，给好商品更多被发现的机会</h2><p>让商品从自己的资料库走向平台优选展示与潜在合作场景。</p></div></div>
+   <div className={styles.benefitGrid}>
+    <article data-benefit="show"><BadgeCheck size={20}/><div><strong>进入优选展示池</strong><p>审核通过的商品可在硕米优选展示，让平台内选品用户查找。</p></div></article>
+    <article data-benefit="supply"><PackageCheck size={20}/><div><strong>展示供货实力</strong><p>集中呈现商品图片、规格及供货条件，减少反复介绍。</p></div></article>
+    <article data-benefit="connect"><Workflow size={20}/><div><strong>获得潜在对接机会</strong><p>便于有需求的用户了解商品并发起后续合作沟通。</p></div></article>
+   </div>
+   <small>加入优选不保证曝光量、客户询盘或成交；实际推荐、撮合和交易服务以平台正式开通及合作规则为准。</small>
+  </section>
+  <section className={styles.metrics} aria-label="优选申请概况">
+   <article data-tone="cyan"><div><small>自有商品</small><strong>{candidates.length}</strong><span>当前账号商品库</span></div><Database size={22}/></article>
+   <article data-tone="violet"><div><small>可申请</small><strong>{eligible.length}</strong><span>已完成适配和优化</span></div><BadgeCheck size={22}/></article>
+   <article data-tone="orange"><div><small>审核中</small><strong>{working.length}</strong><span>等待审核结果</span></div><ClipboardList size={22}/></article>
+   <article data-tone="green"><div><small>已入选</small><strong>{approved.length}</strong><span>审核通过商品</span></div><Star size={22}/></article>
+  </section>
+  <section className={styles.flowStrip} aria-label="优选申请流程">
+   <div><Workflow size={19}/><strong>入选流程</strong></div>
+   <ol><li><span>01</span>首次适配</li><li><span>02</span>智能体优化</li><li><span>03</span>提交申请</li><li><span>04</span>审核后入选</li></ol>
+  </section>
+  <section className={styles.mainPanel}>
+   <div className={styles.tabs} role="tablist" aria-label="优选申请内容">
+    <button type="button" role="tab" aria-selected={view==="products"} onClick={()=>setView("products")}>商品候选 <span>{candidates.length}</span></button>
+    <button type="button" role="tab" aria-selected={view==="records"} onClick={()=>setView("records")}>申请记录 <span>{records.length}</span></button>
+   </div>
+   {view==="products"?<>
+    <div className={styles.panelHeading}><div><h2>自有商品库 · 申请候选</h2><p>商品自动同步；没有优化版本或首次适配未完成的商品不会开放申请。</p></div><button type="button" className={styles.primary} disabled={!chosen.length} onClick={()=>showApply()}>申请已选商品（{chosen.length}）</button></div>
+    <div className={styles.filters} aria-label="商品筛选">
+     <label className={styles.searchBox}><Search size={17}/><input aria-label="搜索商品名称或SKU" value={query} onChange={e=>{setQuery(e.target.value);setPage(1)}} placeholder="搜索商品名称 / SKU / 批次"/></label>
+     <select aria-label="筛选申请状态" value={filter} onChange={e=>{setFilter(e.target.value);setPage(1)}}>{["全部商品","可申请","待处理","审核中","已入选"].map(x=><option key={x}>{x}</option>)}</select>
+     <button type="button" onClick={()=>{setQuery("");setFilter("全部商品");setPage(1)}}>重置</button>
+    </div>
+    <div className={styles.tableWrap}><table><thead><tr><th>选择</th><th>商品</th><th>适配与优化</th><th>申请状态</th><th>操作</th></tr></thead><tbody>
+     {visible.map(c=><tr key={c.product.id} data-product-id={c.product.id}>
+      <td><input type="checkbox" aria-label={"选择"+c.product.name} disabled={c.status!=="可申请"} checked={chosen.includes(c.product.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,c.product.id]:v.filter(id=>id!==c.product.id))}/></td>
+      <td><div className={styles.productCell}><ProductImage src={c.snapshot?.image||c.product.skus[0]?.images[0]||""} name={c.product.name}/><div><strong>{c.snapshot?.name||c.product.name}</strong><small>SKU {c.product.skus.map(s=>s.skuCode||s.id).join(" / ")}</small><small>自有商品库 · {c.product.batchId}</small></div></div></td>
+      <td><div className={styles.versionCell}><strong>{c.product.status==="已入库"?"首次适配完成":"尚未通过首次适配"}</strong><small>{c.optimized?c.snapshot?.versionName+" · "+c.optimized.platform+" / "+c.optimized.site:"暂无已保存的智能体优化版本"}</small>{c.lastRejected?<small>上次审核反馈：{c.lastRejected}</small>:null}</div></td>
+      <td><Status value={displayStatus(c.status)}/></td>
+      <td>{c.status==="可申请"?<button type="button" className={styles.rowAction} onClick={()=>showApply([c.product.id])}>发起申请</button>:c.status==="审核中"?<button type="button" onClick={()=>setView("records")}>查看记录</button>:c.status==="已入选"?<button type="button" onClick={()=>router.push("/workbench/supply/selected?preview=1")}>查看优选</button>:<span className={styles.muted}>待完成条件</span>}</td>
+     </tr>)}
+     {!visible.length?<tr><td colSpan={5} className={styles.empty}>没有符合条件的商品。请先在「我的数据 · 自有商品库」完成首次入库，并保存对应的智能体优化版本。</td></tr>:null}
+    </tbody></table></div>
+    <footer className={styles.pagination}><span>共 {filtered.length} 件商品</span><div><button type="button" disabled={page<=1} onClick={()=>setPage(p=>p-1)}>上一页</button><span>{Math.min(page,pageCount)} / {pageCount}</span><button type="button" disabled={page>=pageCount} onClick={()=>setPage(p=>p+1)}>下一页</button></div></footer>
+   </>:<>
+    <div className={styles.panelHeading}><div><h2>申请与审核记录</h2><p>提交后保留每次申请，未通过的记录不会被新申请覆盖。</p></div><select aria-label="筛选审核状态" value={recordFilter} onChange={e=>{setRecordFilter(e.target.value);setRecordPage(1)}}>{["全部状态","待审核","已通过","未通过"].map(x=><option key={x}>{x}</option>)}</select></div>
+    <div className={styles.tableWrap}><table><thead><tr><th>申请编号</th><th>商品数量</th><th>提交时间</th><th>审核状态</th><th>操作</th></tr></thead><tbody>
+     {visibleRecords.map(record=><tr key={record.id}><td><strong>{record.id}</strong></td><td>{record.products.length} 件</td><td>{formatDate(record.createdAt)}</td><td><Status value={record.status}/></td><td><button type="button" onClick={()=>openRecord(record)}>查看详情</button></td></tr>)}
+     {!visibleRecords.length?<tr><td colSpan={5} className={styles.empty}>尚无申请记录。可在「商品候选」中选择符合条件的商品。</td></tr>:null}
+    </tbody></table></div>
+    <footer className={styles.pagination}><span>共 {filteredRecords.length} 条申请</span><div><button type="button" disabled={recordPage<=1} onClick={()=>setRecordPage(p=>p-1)}>上一页</button><span>{recordPage} / {recordPageCount}</span><button type="button" disabled={recordPage>=recordPageCount} onClick={()=>setRecordPage(p=>p+1)}>下一页</button></div></footer>
    </>}
-   {isNew && (step==="select"?<>
-     <section className={styles.filterPanel}><div className={styles.filters}><label><select aria-label="筛选申请状态" value={status} onChange={e=>setStatus(e.target.value)}>{["全部状态","可申请","审核中","已通过","未通过"].map(x=><option key={x}>{x}</option>)}</select></label></div><div className={styles.searchActions}><input aria-label="搜索商品名称或SKU" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")setFilter({search,status,source,category,group});}} placeholder="搜索合集名称、商品名称或SKU"/><button onClick={reset}>重置</button><button className={styles.primary} onClick={()=>setFilter({search,status,source,category,group})}>确认</button></div></section>
-     <section className={styles.panel}><div className={styles.panelHeading}><h2>自有商品库 · 已上传</h2><span>符合条件 · 4 件示例</span></div>
-       <div className={styles.selectionSummary}><strong>已选择 {selected.length} 件</strong><span>请点击商品右侧「发起申请」填写供货信息。</span><button className={styles.primary} onClick={advance} disabled={!selected.length}>填写供货信息</button></div>
-       <div className={styles.tableScroll}><table><thead><tr><th className={styles.checkboxCol}><input type="checkbox" aria-label="全选可申请商品" checked={items.filter(p=>p.status==="可申请").every(p=>selected.includes(p.sku))} onChange={e=>{const skus=items.filter(p=>p.status==="可申请").map(p=>p.sku),v=e.target.checked?[...new Set([...selected,...skus])]:selected.filter(x=>!skus.includes(x));setSelected(v);persist(v,draft);}}/></th><th>商品（全选可申请）</th><th>上传状态 / 商品归属</th><th>所属分组</th><th>申请状态</th><th>操作</th></tr></thead>
-       <tbody>{rows.map(p=><tr key={p.sku}><td><input type="checkbox" aria-label={"选择"+p.name} disabled={p.status!=="可申请"} checked={selected.includes(p.sku)} onChange={()=>select(p.sku)}/></td><td><strong>{p.name}</strong><small>SKU {p.sku}</small></td><td>已上传 · 自有商品库</td><td>{p.group}</td><td><StatusLabel status={p.status}/></td><td>{p.status==="可申请"?
- <button className={styles.primary} onClick={()=>{const next=selected.includes(p.sku)?selected:[...selected,p.sku];setSelected(next);persist(next,draft);setNotice("");setStep("supply");}}>发起申请</button>:
- p.status==="审核中"?<button className={styles.textButton} onClick={()=>go("/progress")}>查看进度</button>:
- p.status==="已通过"?<button className={styles.textButton} onClick={()=>go("/records")}>查看结果</button>:
- <><button className={styles.textButton} onClick={()=>setDetailOpen(p)}>查看原因</button><button className={styles.primary} onClick={()=>{const next=selected.includes(p.sku)?selected:[...selected,p.sku];setSelected(next);persist(next,draft);setStep("supply");}}>再次发起申请</button></>}</td></tr>)}</tbody></table>{!rows.length&&<p className={styles.empty}>无符合条件的商品，请重置筛选。</p>}</div>
-     </section>
-   </>:<form className={styles.form} onSubmit={submit}><div className={styles.selectionSummary}><strong>已选择 {selected.length} 件</strong><span>所选商品统一用于本次申请，请继续补充供货与合作信息。</span><button type="button" onClick={()=>setStep("select")}>返回修改商品</button></div>
-     <div className={styles.formColumns}><section className={styles.panel}><h2>供货与交付</h2><p>填写本次申请统一适用的基础供货信息</p><div className={styles.fieldGrid}>
-       <label>可供库存<input required type="number" min="1" value={draft.stock} onChange={e=>change("stock",e.target.value)} placeholder="请输入可供数量"/></label>
-       <label>最小起订量<input required type="number" min="1" value={draft.moq} onChange={e=>change("moq",e.target.value)} placeholder="请输入起订数量"/></label>
-       <label>发货时效<select required value={draft.dispatch} onChange={e=>change("dispatch",e.target.value)}><option value="">请选择，例如48小时内</option><option>24小时内</option><option>48小时内</option><option>3–5天</option></select></label>
-       <label>发货地<input required value={draft.origin} onChange={e=>change("origin",e.target.value)} placeholder="请选择省 / 市"/></label>
-       <label className={styles.full}>供货价说明<textarea value={draft.pricing} onChange={e=>change("pricing",e.target.value)} placeholder="例如：含税 / 不含运费，可由专员进一步确认"/></label>
-     </div></section><section className={styles.panel}><h2>合作与资质</h2><p>只保留平台评估所需的必要信息</p><div className={styles.fieldGrid}>
-       <label className={styles.full}>售后政策<textarea required value={draft.returns} onChange={e=>change("returns",e.target.value)} placeholder="简要说明退换货及质量保障"/></label>
-       <label className={styles.full}>商品资质<input type="file" accept=".jpg,.jpeg,.png,.pdf" multiple onChange={e=>setAttachments(Array.from(e.currentTarget.files??[]).filter(x=>x.size<=20*1024*1024).map(x=>x.name))}/><small>支持 JPG / PNG / PDF，单个文件不超过 20MB</small>{attachments.length>0&&<small>已选择：{attachments.join("、")}</small>}</label>
-       <aside><b>服务说明</b><p>如涉及资料整理、技术对接或上架服务，专员将另行确认内容与费用。</p></aside>
-     </div></section></div>
-     <footer className={styles.formActions}><span>提交前请核对资料；平台需要补充时可在申请进度中处理。</span><button type="button" onClick={saveDraft}>保存草稿</button><button type="button" onClick={()=>setStep("select")}>返回选择商品</button><button className={styles.primary} type="submit">提交申请</button></footer>
-   </form>)}
-   {(isRecord||isProgress)&&<>
-      <section className={styles.recordLayout}>
-        <article className={styles.panel}><div className={styles.panelHeading}><div><h2>{isRecord?"审核历史记录":"申请列表"}</h2>{isProgress&&<p>查看各申请的审核状态与处理事项</p>}</div></div>
-          <div className={styles.tabs}>{(isRecord?["全部","已通过","未通过"]:["全部","待受理","审核中","已通过","未通过"]).map(t=><button key={t} aria-pressed={tab===t} onClick={()=>{setTab(t);const next=records.find(r=>t==="全部"||r.status===t);if(next)setFocusedId(next.id);}}>{t}</button>)}</div>
-          <div className={styles.tableScroll}><table><thead><tr><th>申请编号</th><th>{isRecord?"商品数量":"商品"}</th><th>{isRecord?"审核日期":"提交时间"}</th><th>审核结果</th><th>操作</th></tr></thead><tbody>{visibleRecords.map(r=><tr key={r.id} data-selected={focused.id===r.id} onClick={()=>chooseRecord(r.id)}><td>{r.id}</td><td>{r.count} 件商品</td><td>{r.date}</td><td><StatusLabel status={r.status}/></td><td><button className={styles.textButton} onClick={e=>{e.stopPropagation();chooseRecord(r.id);}}>{r.status==="未通过"?"查看原因":isRecord?"查看结果":"查看进度"}</button></td></tr>)}</tbody></table></div>
-        </article>
-        <aside className={styles.panel}><h2>{isRecord?"申请记录详情":"申请处理"}</h2><p>选择一条{isRecord?"历史记录，直接查看审核结果":"申请即可查看并处理"}</p>
-         <div className={styles.recordSummary}><strong>{focused.id}</strong><span>{focused.count} 件商品 · {focused.date}</span><StatusLabel status={focused.status}/></div>
-         <h3>{isRecord?"审核说明":"审核与处理说明"}</h3><p className={styles.recordNote}>{focused.note}</p>
-         <p className={styles.subtle}>{isRecord?"历史审核记录只读；重新申请保留原审核记录。":"本页为示例进度，实际状态以正式业务系统为准。"}</p>
-         {focused.status==="未通过"&&<button className={styles.primary} onClick={edit}>修改资料并重新申请</button>}
-        </aside>
-      </section>
-   </>}
-   {notice&&<div className={styles.notice} role="status">{notice}<button aria-label="关闭提示" onClick={()=>setNotice("")}>×</button></div>}
-   {demoSubmitted&&<div className={styles.notice} role="status">表单已校验完成，但没有连接正式提交接口。<button onClick={()=>{setDemoSubmitted(false);go("/progress");}}>查看演示申请进度</button><button onClick={()=>setDemoSubmitted(false)}>关闭</button></div>}
-   {detailOpen&&<div className={styles.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setDetailOpen(null);}}><section className={styles.drawer} role="dialog" aria-modal="true" aria-label="商品申请详情"><header><h2>商品申请详情</h2><button onClick={()=>setDetailOpen(null)}>关闭</button></header><h3>{detailOpen.name}</h3><p>SKU {detailOpen.sku}</p><StatusLabel status={detailOpen.status}/><h3>审核反馈</h3><p>当前商品申请进度和审核信息仅供演示，真实状态以平台同步为准。</p><button onClick={()=>setDetailOpen(null)}>返回商品列表</button></section></div>}
-   <small className={styles.disclaimer}>本页为 Figma 业务流程演示；示例数量与状态不代表真实提交或审核结果。</small>
- </div>;
+  </section>
+  <p className={styles.disclaimer}><Info size={14}/> 当前为浏览器会话演示，申请仅保存在当前账号本地会话；正式审核、企业间共享优选和真实询盘仍需连接后台服务。</p>
+  {notice?<p role="status" className={styles.notice}>{notice}</p>:null}
+  {applicationOpen?<div className={styles.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setApplicationOpen(false)}}>
+   <section className={styles.modal} role="dialog" aria-modal="true" aria-label="发起优选申请">
+    <header><div><small>优选合作申请 · {chosen.length} 件商品</small><h2>填写供货与合作信息</h2><p>一次填写本次申请统一的供货条件，提交后进入待审核。</p></div><button type="button" onClick={()=>setApplicationOpen(false)}>关闭</button></header>
+    <form onSubmit={submit}><div className={styles.fields}>
+     <label>可供库存<input aria-label="可供库存" required min="1" type="number" value={supply.stock} onChange={e=>setSupply(v=>({...v,stock:e.target.value}))}/></label>
+     <label>最小起订量<input aria-label="最小起订量" required min="1" type="number" value={supply.moq} onChange={e=>setSupply(v=>({...v,moq:e.target.value}))}/></label>
+     <label>发货时效<select aria-label="发货时效" required value={supply.dispatch} onChange={e=>setSupply(v=>({...v,dispatch:e.target.value}))}><option value="">请选择</option><option>24小时内</option><option>48小时内</option><option>3–5天</option><option>另行协商</option></select></label>
+     <label>发货地<input aria-label="发货地" required value={supply.origin} onChange={e=>setSupply(v=>({...v,origin:e.target.value}))} placeholder="省、市"/></label>
+     <label className={styles.full}>供货价说明<textarea aria-label="供货价说明" value={supply.pricing} onChange={e=>setSupply(v=>({...v,pricing:e.target.value}))} placeholder="例如：含税情况、批量优惠、运费说明"/></label>
+     <label className={styles.full}>售后政策<textarea aria-label="售后政策" required value={supply.returns} onChange={e=>setSupply(v=>({...v,returns:e.target.value}))} placeholder="说明质量问题、退换货及售后安排"/></label>
+    </div><div className={styles.modalTip}>提交不会自动通过审核，也不会产生平台曝光或成交保证。</div>
+    {error?<p role="alert">{error}</p>:null}
+    <footer><button type="button" onClick={()=>setApplicationOpen(false)}>取消</button><button type="submit" className={styles.primary}>提交演示申请</button></footer></form>
+   </section></div>:null}
+  {activeRecord?<div className={styles.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setRecordDetail(null)}}>
+   <section className={styles.modal} role="dialog" aria-modal="true" aria-label="优选申请详情">
+    <header><div><small>{activeRecord.id}</small><h2>申请审核详情</h2><p>申请时间：{formatDate(activeRecord.createdAt)}</p></div><button type="button" onClick={()=>setRecordDetail(null)}>关闭</button></header>
+    <div className={styles.recordDetail}><Status value={activeRecord.status}/><p>{activeRecord.reviewNote}</p><strong>申请商品（{activeRecord.products.length}）</strong>{activeRecord.products.map(p=><div key={p.sourceProductId}><span>{p.name}</span><small>{p.versionName} · {p.platform} / {p.site}</small></div>)}<p>可供库存 {activeRecord.supply.stock} · 起订量 {activeRecord.supply.moq} · {activeRecord.supply.dispatch}</p></div>
+    {activeRecord.status==="待审核"?<div className={styles.demoReview}><strong>仅供验收的模拟审核</strong><p>真实用户不能自行审批商品。这里的操作只演示申请结果如何同步到硕米优选。</p><textarea aria-label="演示驳回原因" value={reviewReason} onChange={e=>setReviewReason(e.target.value)} placeholder="未通过原因（选填）"/><div><button type="button" onClick={()=>review("未通过")}>演示审核不通过</button><button type="button" className={styles.primary} onClick={()=>review("已通过")}>演示审核通过</button></div></div>:null}
+    {error?<p role="alert">{error}</p>:null}
+   </section></div>:null}
+ </main>;
 }

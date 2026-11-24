@@ -49,36 +49,53 @@ test("Figma preferred application submenus have legible dark/light card, text an
   }
  }
 });
-test("preferred application Figma flow: overview, selection, details, supply form, progress and records",async({page})=>{
+test("preferred application reads owned adapted products and promotes only demo-approved items",async({page})=>{
  await page.goto(url("/supply/applications"));
- const root=page.locator("[data-preferred-application]");
- await expect(root.getByRole("heading",{name:"申请条件"})).toBeVisible();
- await expect(root.getByRole("heading",{name:"申请流程"})).toBeVisible();
- await root.getByRole("button",{name:"选择商品发起申请"}).click();
- await expect(page).toHaveURL(/\/applications\/new/);
- const selection=page.locator('[data-preferred-application="select"]');
- await expect(selection.getByText("自有商品库 · 已上传")).toBeVisible();
- await selection.getByRole("checkbox",{name:"选择轻量防晒连帽外套"}).check();
- await selection.getByRole("button",{name:"填写供货信息"}).click();
- const form=page.locator('[data-preferred-application="supply"]');
- await expect(form.getByRole("heading",{name:"供货与交付"})).toBeVisible();
- await form.getByRole("spinbutton",{name:"可供库存"}).fill("100");
- await form.getByRole("spinbutton",{name:"最小起订量"}).fill("1");
- await form.getByRole("combobox",{name:"发货时效"}).selectOption("48小时内");
- await form.getByRole("textbox",{name:"发货地"}).fill("浙江省义乌市");
- await form.getByRole("textbox",{name:"售后政策"}).fill("按质量情况提供退换货处理");
- await form.getByRole("button",{name:"保存草稿"}).click();
- await expect(form.getByRole("status")).toContainText("演示草稿");
- await form.getByRole("button",{name:"提交申请"}).click();
- await expect(form.getByText("没有连接正式提交接口")).toBeVisible();
- await form.getByRole("button",{name:"查看演示申请进度"}).click();
- await expect(page).toHaveURL(/\/applications\/progress/);
- await page.goto(url("/supply/applications/records"));
- await expect(page.getByRole("heading",{name:"审核历史记录"})).toBeVisible();
- await page.locator("[data-preferred-application]").getByRole("button",{name:"未通过",exact:true}).first().click();
- await expect(page.getByText("SQ-20260815-003").first()).toBeVisible();
+ const root=page.locator('[data-preferred-application="unified"]');
+ await expect(root).toBeVisible();
+ await expect(root.getByRole("heading",{name:/加入硕米优选，给好商品更多被发现的机会/})).toBeVisible();
+ await expect(root.getByText(/不保证曝光量、客户询盘或成交/)).toBeVisible();
+ await expect(root.getByRole("tab",{name:/商品候选/})).toBeVisible();
+ await expect(root.getByRole("tab",{name:/申请记录/})).toBeVisible();
+ const scope=await root.evaluate(el=>({org:el.getAttribute("data-organization")!,member:el.getAttribute("data-member")!}));
+ await page.evaluate(({org,member})=>{
+  const now=new Date().toISOString();
+  const own=[
+   {id:"OWN-PREF-A",batchId:"B-PREF",name:"测试优选家居收纳盒",source:"上传资料",createdAt:now,checkedAt:now,status:"已入库",missing:[],skus:[{id:1,name:"家居收纳盒",skuCode:"PREF-A",images:[],description:"收纳盒",price:"29",stock:100}],agent:"SHEIN",template:"测试"},
+   {id:"OWN-PREF-B",batchId:"B-PREF",name:"尚未优化的测试产品",source:"上传资料",createdAt:now,checkedAt:now,status:"已入库",missing:[],skus:[{id:2,name:"待优化",skuCode:"PREF-B",images:[],description:"待优化产品"}],agent:"",template:""},
+   {id:"OWN-PREF-C",batchId:"B-PREF",name:"尚未完成首次适配",source:"上传资料",createdAt:now,checkedAt:now,status:"待审核",missing:[],skus:[{id:3,name:"待适配",skuCode:"PREF-C",images:[],description:"待适配"}],agent:"",template:""}
+  ];
+  const optimized=[{id:"OPT-PREF-TEST",name:"演示优选优化版本",createdAt:now,version:1,sourceKind:"自有商品库",sourceBatchId:"B-PREF",sourceBatchName:"优选测试批次",platform:"SHEIN",site:"美国",language:"英语",storeName:"测试店铺",uploadTaskId:"TASK-PREF",externalReceiptId:"receipt-pref",acceptedAt:now,products:[{sourceProductId:"OWN-PREF-A",name:"AI优化后的家居收纳盒",images:[],description:"优化后的商品说明",skuCodes:["PREF-A"]}]}];
+  sessionStorage.setItem("shuomi:own-product-records-v1:"+org+":"+member,JSON.stringify(own));
+  sessionStorage.setItem("shuomi:optimized-datasets-v1:"+org+":"+member,JSON.stringify(optimized));
+ },scope);
+ await page.reload();
+ const after=page.locator('[data-preferred-application="unified"]');
+ await expect(after.getByRole("checkbox",{name:"选择测试优选家居收纳盒"})).toBeEnabled();
+ await expect(after.getByRole("checkbox",{name:"选择尚未优化的测试产品"})).toBeDisabled();
+ await expect(after.getByRole("checkbox",{name:"选择尚未完成首次适配"})).toBeDisabled();
+ await after.getByRole("button",{name:"发起申请",exact:true}).click();
+ const apply=page.getByRole("dialog",{name:"发起优选申请"});
+ await expect(apply).toBeVisible();
+ await apply.getByRole("spinbutton",{name:"可供库存"}).fill("120");
+ await apply.getByRole("spinbutton",{name:"最小起订量"}).fill("5");
+ await apply.getByRole("combobox",{name:"发货时效"}).selectOption("48小时内");
+ await apply.getByRole("textbox",{name:"发货地"}).fill("浙江义乌");
+ await apply.getByRole("textbox",{name:"售后政策"}).fill("质量问题支持换货");
+ await apply.getByRole("button",{name:"提交演示申请"}).click();
+ const detail=page.getByRole("dialog",{name:"优选申请详情"});
+ await expect(detail).toBeVisible();
+ await expect(detail.getByText("待审核")).toBeVisible();
+ await detail.getByRole("button",{name:"演示审核通过"}).click();
+ await expect(detail.getByText("已通过")).toBeVisible();
+ await detail.getByRole("button",{name:"关闭"}).click();
+ await after.getByRole("button",{name:"查看硕米优选"}).click();
+ await expect(page).toHaveURL(/supply\/selected/);
+ const selected=page.locator('[data-selected-market="true"]');
+ await expect(selected.getByText("AI优化后的家居收纳盒")).toBeVisible();
+ await expect(selected.locator('[data-selected-product="OWN-PREF-A"]')).toBeVisible();
+ await expect(selected.getByText(/不保证订单/)).toBeVisible();
 });
-
 
 test("Supply market has four equal-width entry cards on one desktop row",async({page})=>{
  await page.setViewportSize({width:1600,height:900});

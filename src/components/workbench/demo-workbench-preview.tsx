@@ -9,6 +9,7 @@ import {useDemoPurchases} from "./showcase-purchases";
 import {useDemoStoreBindings,countConsumedStorePeriods,countPoolConsumedStorePeriods,demoStoreServiceActive} from "./store-binding-demo";
 import {getDemoMembership} from "../../../showcase/demo-identity";
 import { hasRouteDetailPreview, RouteDetailPreview } from "./route-detail-preview";
+import {ShowcaseSelectedMarket} from "./showcase-selected-market";
 import { ChatIntroduction } from "./ai-workbench/chat-introduction";
 import { ShowcaseActionDialog, type DemoGoal, type DemoDraft, type DemoDetail } from "./showcase-action-dialog";
 import { ShowcaseUploadedPreview } from "./showcase-uploaded-preview";
@@ -243,6 +244,7 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
   if (["/workbench/ai/tasks","/workbench/ai/tasks/pending","/workbench/ai/tasks/running","/workbench/ai/tasks/completed","/workbench/ai/tasks/errors","/workbench/ai/tasks/scheduled"].includes(pathname)) return <ShowcaseTaskCenter pathname={pathname} navigate={router.push} />;
   if (["/workbench/store-center","/workbench/stores","/workbench/store-products","/workbench/store-orders"].includes(pathname) || pathname.startsWith("/workbench/store-orders/")) return <ShowcaseStoreCenter key={organizationId+"::"+memberId} pathname={pathname} navigate={router.push} memberId={memberId} organizationId={organizationId} />;
   if (pathname === "/workbench/ai/projects" || ["/active","/recent","/templates","/archived","/mine"].some(suffix=>pathname === "/workbench/ai/projects"+suffix)) return <ShowcaseProjectCenter key={pathname} pathname={pathname} />;
+  if (pathname === "/workbench/supply/selected") return <ShowcaseSelectedMarket organizationId={organizationId} memberId={memberId}/>;
   if (hasRouteDetailPreview(pathname)) return <RouteDetailPreview pathname={pathname} organizationId={organizationId} memberId={memberId} />;
   if (pathname === "/workbench/ai/chat") return <div className={`${styles.page} ${styles.chatLandingPreview}`}>
     {notice ? <div className={styles.notice} role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div> : null}
@@ -325,7 +327,7 @@ export function DemoWorkbenchPreview({ pathname, memberId="admin",organizationId
       <section className={styles.supplyFlow}>{[["01","发现货源","浏览硕米自营、硕米优选及第三方货盘"],["02","筛选商品","查看商品类别、供货条件与货盘特点"],["03","货盘对接","尚未接入的货盘可提交申请"],["04","优选合作","符合条件的商品可申请进入硕米优选"]].map(([n,title,detail],i)=><article key={n} data-step={i}><b>{n}</b><div><strong>{title}</strong><span>{detail}</span></div></article>)}</section>
       <section className={styles.supplyCards}>{[
         ["硕米自营","平台自有工厂和自营商品资源，开放后可筛选商品并核验品质。","自营货源","品质核验","暂未开放","#62a9ff","/workbench/supply/official"],
-        ["硕米优选","汇集经审核的第三方商品资源，便于了解供货能力并选择优质商品。","优质供应商","商品筛选","暂未开放","#4fd1bd","/workbench/supply/selected"],
+        ["硕米优选","展示审核通过的优选商品，集中了解供货条件与潜在合作机会。","优选商品","供货信息","进入","#4fd1bd","/workbench/supply/selected"],
         ["货盘集成","查看已接入的第三方货盘并筛选商品；所需货盘未接入时可申请对接。","货盘选品","申请对接","进入","#ad8aff","/workbench/supply/catalogs"],
         ["优选申请","申请让符合条件的商品进入硕米优选，跟进审核状态与申请记录。","优选合作","发起申请 · 申请记录","进入","#f38eb3","/workbench/supply/applications"]
       ].map(([title,body,label,detail,action,accent,href],i)=><article className={styles.supplyCard} key={title} style={{"--accent":accent} as React.CSSProperties}><header><h2>{title}</h2><span>{action==="进入"?"业务入口":action}</span></header><p>{body}</p><div className={styles.supplyPills}><span>{label}</span><span>{detail}</span></div>{action==="进入"?<button onClick={()=>router.push(`${href}?preview=1`)}>进入</button>:null}</article>)}</section>

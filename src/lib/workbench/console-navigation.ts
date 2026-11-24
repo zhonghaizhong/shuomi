@@ -30,7 +30,7 @@ export const consoleNavigation: readonly ConsoleNavNode[] = [
     {label:"项目中心",href:"/workbench/ai/projects",availability:"connected",children:[{label:"进行中项目",href:"/workbench/ai/projects/active",availability:"connected"},{label:"最近访问",href:"/workbench/ai/projects/recent",availability:"connected"},{label:"项目模板",href:"/workbench/ai/projects/templates",availability:"connected"},{label:"已归档",href:"/workbench/ai/projects/archived",availability:"connected"}]}, pending("知识库", "ai/knowledge", [pending("官方知识库", "ai/knowledge/official"), pending("我的知识库", "ai/knowledge/mine")]), {label:"技能库",href:"/workbench/agents/skills",availability:"connected",children:[{label:"官方模板",href:"/workbench/agents/skills/official",availability:"connected"},{label:"我的技能",href:"/workbench/agents/skills/mine",availability:"connected"},{label:"团队技能",href:"/workbench/agents/skills/team",availability:"connected"}]}, pending("我的报告", "ai/reports", [pending("最近报告", "ai/reports/recent"), pending("收藏报告", "ai/reports/favorites"), pending("全部报告", "ai/reports/all")]),
   ]),
   ...researchMenus,
-  // Figma 供应市场：一级展开二级；可展开的二级继续呈现三级。
+  // 供应市场：保留货盘集成三级菜单；优选申请采用单页标签，不显示三级菜单。
   // 在线采集仍可通过原有链接使用，但不是 Figma 供应市场的二级菜单。
   pending("供应市场", "supply", [
     pending("硕米自营", "supply/official"),
@@ -39,11 +39,7 @@ export const consoleNavigation: readonly ConsoleNavNode[] = [
       pending("货盘选品", "supply/catalogs/selection"),
       pending("申请对接", "supply/catalogs/apply"),
     ]),
-    pending("优选申请", "supply/applications", [
-      pending("发起申请", "supply/applications/new"),
-      pending("申请进度", "supply/applications/progress"),
-      pending("申请记录", "supply/applications/records"),
-    ]),
+    pending("优选申请", "supply/applications"),
   ]),
   pending("智能市场", "agents", [{label:"智能体市场",href:"/workbench/agents/market",availability:"connected"},{label:"我的智能体",href:"/workbench/agents/mine",availability:"connected"},{label:"智能体定制",href:"/workbench/agents/custom",availability:"connected"}]),
   pending("工具市场", "tools", [pending("官方工具", "tools/official"), pending("我的工具", "tools/mine"), pending("工具定制", "tools/custom")]),
