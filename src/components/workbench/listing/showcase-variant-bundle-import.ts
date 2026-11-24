@@ -123,6 +123,61 @@ export async function recoverLocalListingPhotos(org:string,member:string,taskId:
  }
  return {found:available.size,restored};
 }
+/** Re-import six freshly generated image outputs into exactly one selected variant color.
+ * This does not restore previous images or touch other colors/tasks.
+ * AI generation provenance is provided with the ZIP and outputs still require review before publication.
+ */
+export async function importSingleColorAIReconstruction(
+ organizationId:string,memberId:string,taskId:string,colorGroupId:string,file:File
+):Promise<number>{
+ const tasks=readShowcaseUploadTasks(organizationId,memberId);
+ const task=tasks.find(t=>t.id===taskId);
+ const group=task?.demoProduct?.variantImageGroups?.find(g=>g.id===colorGroupId);
+ if(!task||!group||!["待补全","待审核"].includes(task.status))throw new Error("当前商品或颜色不可导入图片");
+ const packageFiles=await readZip(file);
+ const manifestBytes=packageFiles.get("manifest.json");
+ if(!manifestBytes)throw new Error("图片包缺少 AI 生成说明");
+ let manifest:{
+  count?:number;source?:string;colorId?:string;
+  product?:string;images?:Array<{path:string;method:string;sha256?:string}>;
+ };
+ try{manifest=JSON.parse(new TextDecoder().decode(manifestBytes));}
+ catch{throw new Error("AI 图片来源说明无法解析");}
+ if(manifest.count!==6||manifest.source!=="ai-generated"||manifest.colorId!==colorGroupId||
+    !Array.isArray(manifest.images)||manifest.images.length!==6)
+  throw new Error("需要当前颜色的六张 AI 重构图片包");
+ const expected=expectedRoles.map(name=>"crocs/"+colorGroupId+"/"+name);
+ const hashes=new Set<string>();
+ const photos:{key:string;blob:Blob}[]=[],outputs:ListingVariantImage[]=[];
+ for(let index=0;index<expected.length;index++){
+  const path=expected[index],details=manifest.images.find(x=>x.path===path),bytes=packageFiles.get(path);
+  if(!details||details.method!=="ai-generated"||!bytes||bytes.length<1024||
+     bytes[0]!==0xff||bytes[1]!==0xd8)throw new Error("图片包缺少有效的 AI 重构图："+path);
+  const hashBytes=await crypto.subtle.digest("SHA-256",bytes.slice().buffer);
+  const digest=Array.from(new Uint8Array(hashBytes)).map(x=>x.toString(16).padStart(2,"0")).join("");
+  if(details.sha256!==digest||hashes.has(digest))throw new Error("图片校验不通过或出现重复成品："+path);
+  hashes.add(digest);
+  const key=[organizationId,memberId,taskId,colorGroupId,String(index)].join("|")+"|generated-"+digest.slice(0,16);
+  photos.push({key,blob:new Blob([bytes as BlobPart],{type:"image/jpeg"})});
+  outputs.push({role:listingVariantPhotoRoles[index],url:scheme+key,version:group.version,
+   source:"ai-generated",provenance:"OpenAI ImageGen 新生成图片包；需核对商品真实性，未自动通过审核；SHA256 "+digest});
+ }
+ await storePhotos(photos);
+ // Re-read task after async validation to retain other edits and user actions.
+ const latest=readShowcaseUploadTasks(organizationId,memberId);
+ const current=latest.find(t=>t.id===taskId);
+ if(!current?.demoProduct?.variantImageGroups)throw new Error("保存前商品任务已改变，请重试");
+ const nextGroups=current.demoProduct.variantImageGroups.map(g=>{
+  if(g.id!==colorGroupId)return g;
+  const replaced=new Set(outputs.map(x=>x.role));
+  return {...g,optimizedImages:[...g.optimizedImages.filter(x=>!replaced.has(x.role)),...outputs],reviewedAt:undefined};
+ });
+ const next={...current,demoProduct:{...current.demoProduct,variantImageGroups:nextGroups}};
+ persistShowcaseUploadTaskRecords(organizationId,memberId,latest.map(t=>t.id===taskId?next:t));
+ window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId,memberId}}));
+ return outputs.length;
+}
+
 export type VariantBundleImportResult={imported:number;skipped:number;tasks:number;colors:number};
 /** One ZIP binds 36 images into the existing two Amazon showcase tasks, never creating a real platform upload. */
 export async function importAmazonVariantBundle(organizationId:string,memberId:string,file:File):Promise<VariantBundleImportResult>{
