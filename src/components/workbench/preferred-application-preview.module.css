@@ -163,3 +163,43 @@
 .candidateSummary .metrics strong{font-size:24px}
 @media(max-width:1050px){.compactHero{flex-wrap:wrap}.heroAction{margin-left:111px}}
 @media(max-width:680px){.compactHero{gap:13px;padding:16px}.heroSymbol{height:55px;width:55px;border-radius:12px}.heroSymbol svg{width:25px}.heroContent{flex-basis:calc(100% - 72px)}.heroTitle h1{font-size:19px}.heroHighlights{gap:9px}.page .heroAction{margin-left:0;width:100%}.candidateSummary{padding:14px 12px 0}.candidateSummary .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.candidateSummary .metrics article{min-height:72px;padding:10px}}
+
+/* 商品候选：四张状态卡片直接切换筛选，不再重复放置状态下拉框。 */
+.candidateSummary .metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.page .candidateSummary .metricCard{
+ --tone:#21c9e7;--tone-surface:color-mix(in srgb,var(--tone) 15%,var(--surface));
+ display:flex;align-items:center;gap:16px;position:relative;text-align:left;
+ width:100%;min-width:0;min-height:94px;padding:15px 16px;
+ border:1px solid color-mix(in srgb,var(--tone) 30%,var(--border));border-radius:7px;
+ background:color-mix(in srgb,var(--tone) 9%,var(--surface));color:var(--text);
+ transition:border-color .15s,background .15s,box-shadow .15s;
+}
+.page .candidateSummary .metricCard[data-tone="violet"]{--tone:#a69cff}
+.page .candidateSummary .metricCard[data-tone="orange"]{--tone:#ff9f43}
+.page .candidateSummary .metricCard[data-tone="green"]{--tone:#28c76f}
+.page .candidateSummary .metricCard[aria-pressed="true"]{
+ border-color:var(--tone);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tone) 55%,transparent);
+ background:color-mix(in srgb,var(--tone) 15%,var(--surface));
+}
+.page .candidateSummary .metricCard:hover{border-color:var(--tone)}
+.candidateSummary .metricValue{
+ display:grid;place-items:center;flex:none;width:64px;height:56px;border-radius:6px;
+ background:color-mix(in srgb,var(--tone) 19%,var(--surface));
+ color:var(--tone);font-size:28px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums;
+}
+.candidateSummary .metricCopy{display:grid;gap:7px;min-width:0}
+.candidateSummary .metricCopy strong{font-size:14px;font-weight:700;line-height:1.25;color:var(--tone);white-space:nowrap}
+.candidateSummary .metricCopy small{color:var(--muted);font-size:12px;line-height:1.35}
+.candidateSummary .metricIcon{display:none}
+.page .confirmSearch{min-width:70px;min-height:40px;padding:8px 18px;border-color:var(--accent);background:var(--accent);color:#fff;font-weight:650}
+.page .confirmSearch:hover{background:#6254d0;color:#fff}
+@media(max-width:1140px){.candidateSummary .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){
+ .candidateSummary .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .page .candidateSummary .metricCard{gap:9px;min-height:84px;padding:10px}
+ .candidateSummary .metricValue{width:48px;height:50px;font-size:24px}
+ .candidateSummary .metricCopy strong{font-size:12px}
+ .candidateSummary .metricCopy small{font-size:10px}
+ .searchBox{min-width:0;max-width:none;flex:1}
+ .page .confirmSearch{flex:none}
+}
