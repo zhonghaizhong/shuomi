@@ -298,3 +298,19 @@
   .sectionTitle { display: block; }
   .sectionTitle p { margin-top: 4px; }
 }
+
+/* Five in-page stages; no duplicate listing submenu or upload-history tab. */
+.stageTabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;overflow:hidden;border:1px solid var(--listing-border);border-radius:8px;background:var(--listing-surface)}
+.stageTabs button{min-width:0;min-height:46px;padding:9px 12px;border:0;border-right:1px solid var(--listing-border);background:transparent;color:var(--listing-text);font:inherit;font-weight:600;cursor:pointer}
+.stageTabs button:last-child{border-right:0}
+.stageTabs button[aria-current="page"]{background:var(--listing-primary);color:#fff}
+.stageTabs button:not([aria-current]):hover{background:var(--listing-soft-primary)}
+.stageTabs button:focus-visible{outline:2px solid var(--listing-primary);outline-offset:-3px}
+.continueTitle{margin:0;padding-left:12px;border-left:3px solid var(--listing-primary);font-size:21px;line-height:1.4;font-weight:600;color:var(--listing-text)}
+.entry{min-height:205px;gap:10px}
+.entry p{margin:8px 0 0}
+.steps article{min-height:125px}
+.steps article > div{border-bottom:0;padding-bottom:0}
+.steps p{margin-top:8px}
+.branches article{min-height:170px}
+@media(max-width:620px){.stageTabs{display:flex;overflow-x:auto}.stageTabs button{flex:0 0 auto;min-width:96px}}
