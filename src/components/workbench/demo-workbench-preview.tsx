@@ -115,10 +115,10 @@ export function DemoWorkbenchPreview(props:ShowcasePreviewProps) {
  const [currentPath,setCurrentPath]=useState(props.pathname);
  useEffect(()=>setCurrentPath(props.pathname),[props.pathname]);
  const section=sectionForPath(currentPath);
- const showHelp=currentPath===({listing:"/workbench/listing",chat:"/workbench/ai/chat",tasks:"/workbench/ai/tasks",projects:"/workbench/ai/projects",knowledge:"/workbench/ai/knowledge",skills:"/workbench/agents/skills",reports:"/workbench/ai/reports",catalogs:"/workbench/supply/catalogs"} as Record<string,string>)[section??""];
+ // The header and tabs remain the same height on every selected view.
  return section ? <div data-inline-section={section}>
-  <SectionPageTabs section={section} showHelp={showHelp} activeHref={currentPath} onSelect={setCurrentPath}/>
-  <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={setCurrentPath}/>
+  <SectionPageTabs section={section} showHelp activeHref={currentPath} onSelect={setCurrentPath}/>
+  <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={href=>setCurrentPath(href.split("?")[0])}/>
  </div> : <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={setCurrentPath}/>;
 }
 function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId=accountTenant.id,organizationName=accountTenant.name,onSectionSelect }: ShowcasePreviewProps & {onSectionSelect:(path:string)=>void}) {
