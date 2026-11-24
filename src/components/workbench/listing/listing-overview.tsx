@@ -1,5 +1,5 @@
-import type {ReactNode} from "react";
 "use client";
+import type {ReactNode} from "react";
 
 import {useRouter} from "next/navigation";
 import styles from "./listing-overview.module.css";
