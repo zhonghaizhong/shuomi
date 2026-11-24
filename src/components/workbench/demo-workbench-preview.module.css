@@ -4195,3 +4195,74 @@
   background: var(--agent-surface);
   border-color: var(--agent-border);
 }
+
+
+/* Store matrix: a single desktop filter row with a compact custom-date popover. */
+.storeMatrixPreview .matrixFilters.matrixSingleRow{
+ display:grid;
+ grid-template-columns:minmax(140px,1.2fr) repeat(3,minmax(115px,1fr)) minmax(200px,2fr) 74px 74px;
+ gap:9px;
+ align-items:center;
+ padding:12px;
+ min-width:0;
+ overflow:visible;
+}
+.storeMatrixPreview .matrixSingleRow>select,
+.storeMatrixPreview .matrixSingleRow>input,
+.storeMatrixPreview .matrixSingleRow>button{
+ box-sizing:border-box;
+ width:100%;
+ height:40px;
+ min-width:0;
+}
+.storeMatrixPreview .matrixTimePicker{position:relative;min-width:0;z-index:3}
+.storeMatrixPreview .matrixSingleRow .matrixTimeTrigger{
+ display:block;
+ text-align:left;
+ box-sizing:border-box;
+ width:100%;
+ min-width:0;
+ height:40px;
+ white-space:nowrap;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ background:#2f3349;
+ border:1px solid #555a73;
+ border-radius:6px;
+ color:#cfcde4;
+ padding:0 12px;
+ cursor:pointer;
+}
+.storeMatrixPreview .matrixDatePopover{
+ position:absolute;
+ top:calc(100% + 8px);
+ left:0;
+ z-index:25;
+ display:grid;
+ gap:12px;
+ width:min(350px,calc(100vw - 40px));
+ padding:14px;
+ border:1px solid #555a73;
+ border-radius:10px;
+ background:#2f3349;
+ box-shadow:0 14px 36px #080b1a70;
+}
+.storeMatrixPreview .matrixDatePresets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.storeMatrixPreview .matrixDatePresets button{padding:0 6px;min-width:0}
+.storeMatrixPreview .matrixDatePresets button[aria-pressed="true"]{border-color:#7367f0;color:#c3bcff}
+.storeMatrixPreview .matrixDateRange{display:grid;gap:10px}
+.storeMatrixPreview .matrixDateRange label{display:grid;gap:5px;font-size:12px;color:#acabc1}
+.storeMatrixPreview .matrixDateRange input{box-sizing:border-box;width:100%;min-width:0;min-height:40px;max-width:100%;background:#393d55;color:#cfcde4;border:1px solid #555a73;border-radius:6px;padding:7px}
+.storeMatrixPreview .matrixDateRange>button{width:100%;min-height:40px}
+:global(.light) .storeMatrixPreview .matrixSingleRow .matrixTimeTrigger,
+:global(.light) .storeMatrixPreview .matrixDatePopover{background:#fff;border-color:#d9dce6;color:#444050}
+:global(.light) .storeMatrixPreview .matrixDateRange input{background:#f8f7fa;border-color:#d9dce6;color:#444050}
+:global(.light) .storeMatrixPreview .matrixDateRange label{color:#6f6b7d}
+@media(max-width:1250px){
+ .storeMatrixPreview .matrixFilters.matrixSingleRow{grid-template-columns:repeat(4,minmax(0,1fr));}
+ .storeMatrixPreview .matrixSingleRow>input{grid-column:span 2}
+}
+@media(max-width:700px){
+ .storeMatrixPreview .matrixFilters.matrixSingleRow{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .storeMatrixPreview .matrixSingleRow>input{grid-column:span 2}
+}
