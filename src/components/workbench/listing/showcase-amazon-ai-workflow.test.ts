@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import {beforeEach,expect,it} from "vitest";
-import {simulateAmazonFiveListingWorkflow,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask} from "./showcase-upload-tasks";
-import {renderListingDemoArt,listingDemoArtSet} from "./showcase-listing-ai-images";
+import {simulateAmazonFiveListingWorkflow,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
+import {listingDemoArtSet} from "./showcase-listing-ai-images";
 beforeEach(()=>sessionStorage.clear());
 const org="SM-ENT-000001",member="admin";
 const items=[
@@ -22,9 +22,9 @@ it("creates 5 separate optimized items, three missing and two review without ext
  expect(all.filter(x=>x.status==="待补全")).toHaveLength(3);
  expect(all.filter(x=>x.status==="待审核")).toHaveLength(2);
  expect(all.every(x=>x.productIds.length===1&&x.mode==="直接上传到平台"&&x.demoProduct?.agentRun==="模拟已优化")).toBe(true);
- expect(all.every(x=>x.demoProduct?.optimizedImages.length===8)).toBe(true);
+ expect(all.every(x=>x.demoProduct?.optimizedImages.length===6)).toBe(true);
  expect(all.every(x=>x.demoProduct?.sourceImages.length===1)).toBe(true);
- expect(new Set(all.flatMap(x=>x.demoProduct!.optimizedImages)).size).toBe(40);
+ expect(new Set(all.flatMap(x=>x.demoProduct!.optimizedImages)).size).toBe(30);
  expect(all.every(x=>x.status!=="待平台提交")).toBe(true);
  expect(simulateAmazonFiveListingWorkflow(args).alreadyInstalled).toBe(true);
  expect(readShowcaseUploadTasks("different-org",member)).toHaveLength(0);
@@ -44,16 +44,30 @@ it("gates missing fields, then review and never fakes upload",()=>{
  expect(()=>approveShowcaseUploadTask(org,member,ready.id)).toThrow();
  expect(readShowcaseUploadTasks(org,member).every(t=>t.demo&&t.demoProduct?.reviewedAt!==undefined?Boolean(t.demoProduct.reviewedAt):true)).toBe(true);
 });
-it("renders individual self-contained English white-background images with no missing URL",()=>{
- for(const kind of ["cream","charger","skillet","ereader","battery"] as const){
+it("references six independent square white-background photos per product",()=>{
+ const kinds=["cream","charger","skillet","ereader","battery"] as const;
+ const all=kinds.flatMap(kind=>{
   const images=listingDemoArtSet(kind);
-  expect(images).toHaveLength(8);
-  expect(new Set(images).size).toBe(8);
-  expect(images.every(x=>x.startsWith("data:image/svg+xml;charset=utf-8,"))).toBe(true);
-  const decoded=decodeURIComponent(images[0].split(",")[1]);
-  expect(decoded).toContain('fill="#fff"');
-  expect(decoded).toContain("ILLUSTRATIVE DEMO");
-  expect(decoded).not.toContain("http://images.");
-  expect(renderListingDemoArt(kind,7)).toContain("8%2F8");
- }
+  expect(images).toHaveLength(6);
+  expect(new Set(images).size).toBe(6);
+  expect(images.every(x=>x.startsWith("/assets/listing-ai-preview/approved/"))).toBe(true);
+  expect(images.every(x=>x.endsWith(".jpg"))).toBe(true);
+  return images;
+ });
+ expect(new Set(all).size).toBe(30);
+});
+it("migrates old generated SVG pictures, without changing source photos or approval status",()=>{
+ simulateAmazonFiveListingWorkflow(args);
+ const before=readShowcaseUploadTasks(org,member);
+ const target=before[0];
+ const old={...target,demoProduct:{...target.demoProduct!,optimizedImages:Array.from({length:8},(_,i)=>"data:image/svg+xml;charset=utf-8,"+i)}};
+ const key="shuomi:listing-upload-tasks-v1:"+org+":"+member;
+ sessionStorage.setItem(key,JSON.stringify([old,...before.slice(1)]));
+ expect(refreshAmazonFiveDemoPhotos(org,member)).toBe(1);
+ const updated=readShowcaseUploadTasks(org,member)[0];
+ expect(updated.status).toBe(target.status);
+ expect(updated.demoProduct?.sourceImages).toEqual(target.demoProduct?.sourceImages);
+ expect(updated.demoProduct?.optimizedImages).toHaveLength(6);
+ expect(updated.demoProduct?.optimizedImages.every(x=>x.endsWith(".jpg"))).toBe(true);
+ expect(refreshAmazonFiveDemoPhotos(org,member)).toBe(0);
 });
