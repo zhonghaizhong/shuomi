@@ -606,7 +606,7 @@ function RoutePage({ page, pathname,organizationId,memberId }: { page: { section
        <div><span className={styles.catalogApplyEyebrow}>01 / 申请资料</span><h2>货盘基本资料</h2><p>填写货盘信息与联系方式，方便专员了解需求并讨论接入方案。</p></div>
        <span className={styles.catalogApplyTag}>基本信息</span>
       </header>
-      <form className={styles.catalogApplyForm} onSubmit={event=>{event.preventDefault();submit("提交对接申请")}}>
+      <form className={styles.catalogApplyForm} onSubmit={event=>{event.preventDefault();const form=event.currentTarget;if(!form.checkValidity()){form.reportValidity();return;}const data=new FormData(form);const required=["catalogName","catalogWebsite","catalogContact","catalogCategory"];if(required.some(name=>!String(data.get(name)??"").trim())){form.reportValidity();return;}submit("提交对接申请")}}>
        <div className={styles.catalogApplyFields}>
         <label>货盘名称 <span aria-hidden="true">*</span><input name="catalogName" required maxLength={200} placeholder="请输入货盘或供应商名称" autoComplete="organization"/></label>
         <label>货盘网址 <span aria-hidden="true">*</span><input name="catalogWebsite" required type="url" maxLength={2048} placeholder="https://example.com" autoComplete="url"/></label>
