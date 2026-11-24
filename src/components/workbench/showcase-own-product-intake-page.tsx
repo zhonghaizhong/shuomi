@@ -156,6 +156,7 @@ export function ShowcaseOwnProductIntakePage({stage,onClose}:{stage:OwnIntakeSta
        <div className={css.sectionHeading}><strong>智能体优化与模板核对</strong><span>规则化模拟 · 非真实 AI 调用</span></div>
        <p className={css.reportIntro}>已引用「{optimization.template}」模板；此处展示模拟整理结果和可核对的配置，不伪造实际模型执行记录。</p>
        <div className={css.agentSteps}>{optimization.steps.map((step,i)=><div className={css.agentStep} key={i}><strong>{step.name}</strong><span className={step.status==="needs-input"?css.warning:step.status==="not-enabled"?css.neutral:css.ready}>{step.status==="needs-input"?"需要处理":step.status==="not-enabled"?"未启用":"模拟检查"}</span><p>{step.result}</p></div>)}</div>
+       {optimization.pictureSettings.length?<div className={css.agentStep} aria-label="测试模板图片设置完整核对"><strong>图片设置 · 按当前账号保存的测试模板</strong>{optimization.pictureSettings.map(item=><p key={item.label}><strong>{item.label}：</strong>{item.value}</p>)}<small>只展示已保存的配置；未指定的参数不会自动假定为英语、白底或 8 张图片。</small></div>:null}
        {optimizedSku?<div className={css.agentOutcome}><strong>优化稿摘要</strong><span>{optimizedSku.title||"标题缺失"} · {optimizedSku.copy||"描述缺失，不能凭空补写"}</span></div>:null}
       </section>:<section className={css.agentReport}><strong>模板来源</strong><p className={css.reportIntro}>当前商品没有可读取的已保存模板；仅保留原始上传资料和必填项检查。</p></section>}
       <section className={css.missingList} aria-label={stage==="pending"?"待完善清单":"审核清单"}>
