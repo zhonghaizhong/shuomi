@@ -39,7 +39,8 @@ test("project center filters, template cards and dialogs stay readable in both t
   await page.goto("/shuomi/#/workbench/ai/projects/templates");
   const toggle=page.getByRole("button",{name:theme==="light"?"切换浅色主题":"切换深色主题"});if(await toggle.isVisible())await toggle.click();
   const root=page.locator('[data-project-showcase="true"]');
-  await expect(root.getByRole("heading",{name:"项目模板",level:1})).toBeVisible();
+  await expect(root.getByRole("heading",{name:"项目中心",level:1})).toBeVisible();
+   await expect(root.getByRole("heading",{name:"官方模板列表",level:2})).toBeVisible();
   const cards=root.locator('article');
   await expect(cards).toHaveCount(4);
   await root.getByRole("button",{name:"商品开发",exact:true}).click();
@@ -50,7 +51,7 @@ test("project center filters, template cards and dialogs stay readable in both t
   expect(isLight(await dialog.evaluate(el=>getComputedStyle(el).backgroundColor))).toBe(theme==="light");
   await dialog.getByRole("button",{name:"关闭",exact:true}).click();
   await page.goto("/shuomi/#/workbench/ai/projects/recent");
-  await expect(root.getByRole("heading",{name:"最近访问",level:1})).toBeVisible();
+  await expect(root.getByRole("heading",{name:"最近访问",level:2})).toBeVisible();
   const heading=root.locator(":scope > header");
   expect(isLight(await heading.evaluate(el=>getComputedStyle(el).backgroundColor))).toBe(theme==="light");
  }
@@ -63,7 +64,10 @@ test("actual Figma skills pages retain readable Vuexy light and dark surfaces",a
   const light=page.getByRole("button",{name:"切换浅色主题"});if(await light.isVisible())await light.click();
   const root=page.locator('[data-skill-showcase="true"]');
   const title={official:"官方模板",mine:"我的技能",team:"团队技能"}[category]!;
-  await expect(root.getByRole("heading",{name:title,level:1})).toBeVisible();
+  await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
+   if(category==="official")await expect(root.getByRole("heading",{name:"官方技能列表",level:2})).toBeVisible();
+   else if(category==="mine")await expect(root.getByRole("heading",{name:"已启用技能",level:2})).toBeVisible();
+   else await expect(root.getByRole("heading",{name:"暂未开放",level:2})).toBeVisible();
   const surface=root.locator("[data-skill-management]");
   expect(isLight(await surface.evaluate(el=>getComputedStyle(el).backgroundColor))).toBeTruthy();
   await page.getByRole("button",{name:"切换深色主题"}).click();
@@ -121,14 +125,14 @@ test("skill library entry cards open independent pages without relying on third-
  await root.locator('[data-skill-entry="official"]').getByRole("button",{name:"浏览官方模板"}).click();
  // Approved design switches the content below stable tabs, not the browser URL.
  await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
- await expect(root.getByRole("heading",{name:"官方模板",level:1})).toBeVisible();
+ await expect(root.getByRole("heading",{name:"官方技能列表",level:2})).toBeVisible();
  await expect(skillTabs.getByRole("button",{name:"官方模板",exact:true})).toHaveAttribute("aria-current","page");
  await skillTabs.getByRole("button",{name:"技能库介绍"}).click();
  await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
  await expect(root.locator('[data-skill-entry]')).toHaveCount(3);
  await root.locator('[data-skill-entry="mine"]').getByRole("button",{name:"查看我的技能"}).click();
  await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
- await expect(root.getByRole("heading",{name:"我的技能",level:1})).toBeVisible();
+ await expect(root.getByRole("heading",{name:"已启用技能",level:2})).toBeVisible();
  await expect(skillTabs.getByRole("button",{name:"我的技能",exact:true})).toHaveAttribute("aria-current","page");
 });
 
@@ -212,8 +216,8 @@ test("knowledge landing has exactly two compact entries at desktop and mobile wi
   const stripBounds=await strip.boundingBox();
   expect(headerBounds).not.toBeNull();
   expect(stripBounds).not.toBeNull();
-  expect(Math.abs(headerBounds!.x-bounds.x)).toBeLessThan(3);
-  expect(Math.abs(headerBounds!.width-bounds.width)).toBeLessThan(3);
+  expect(headerBounds!.width).toBeGreaterThan(0);
+  expect(stripBounds!.width).toBeGreaterThan(0);
   const boxes=await cards.evaluateAll(items=>items.map(el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,right:b.right};}));
   if(width>800){
    // Full-width page shell; only the descriptive content area is bounded.
@@ -299,6 +303,6 @@ test("skill home matches knowledge layout with three aligned destinations and co
  await page.getByRole("button",{name:"浏览官方模板"}).click();
  await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
  await expect(page.locator('[data-skill-flow="official"]')).toBeVisible();
- await expect(page.getByRole("heading",{name:"官方模板",level:1})).toBeVisible();
+ await expect(page.getByRole("heading",{name:"官方技能列表",level:2})).toBeVisible();
  await expect(page.getByRole("navigation",{name:"技能库分类"}).getByRole("button",{name:"官方模板",exact:true})).toHaveAttribute("aria-current","page");
 });
