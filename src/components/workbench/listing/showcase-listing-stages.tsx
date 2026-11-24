@@ -464,9 +464,9 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
      {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length<6?<div className={styles.galleryRecoverRow}>
       <span>检查已生成图片的历史关联</span>
       <button type="button" disabled={!selectedTask||recoveringPhotos} onClick={()=>void restoreHistoricalPhotos()}>{recoveringPhotos?"正在查找…":"恢复已生成的 AI 重构图片"}</button>
-      {selectedVariantGroup?.id==="black"?<>
+      {["black","white","navy"].includes(selectedVariantGroup?.id??"")?<>
        <input ref={aiSixImportRef} className={styles.galleryFileInput} type="file" accept=".zip,application/zip" aria-label="导入本颜色的六张AI重构图片包" onChange={e=>{const file=e.currentTarget.files?.[0];void uploadSixAIImages(file);e.currentTarget.value=""}}/>
-       <button type="button" disabled={!selectedTask||aiSixImporting} onClick={()=>aiSixImportRef.current?.click()}>{aiSixImporting?"正在关联…":"导入6张新AI重构图"}</button>
+       <button type="button" disabled={!selectedTask||aiSixImporting} onClick={()=>aiSixImportRef.current?.click()}>{aiSixImporting?"正在关联…":"导入当前颜色6张AI重构图"}</button>
       </>:null}
      </div>:null}
      {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.some(x=>x.source==="demo-import")?<p className={styles.galleryImportedNote}>已找回 {selectedVariantGroup.optimizedImages.filter(x=>x.source==="demo-import").length} 张历史文件；请确认它们是 AI 重构成品还是其他来源，系统不会擅自改写来源证明。</p>:null}
