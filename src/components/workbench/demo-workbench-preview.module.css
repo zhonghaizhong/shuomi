@@ -4705,6 +4705,21 @@
 }
 
 /* Knowledge landing: approved two-card design, readable example and concise usage flow. */
+/* Inline-section mode makes the knowledge page wrapper layout-transparent.
+   Constrain the rendered sections themselves so wide monitors preserve the
+   approved centered 1600px workspace, including the title above the tabs. */
+.libraryHubPreview[data-library-hub="knowledge"] > :is(.header, .knowledgeIntroGrid, .knowledgeIntroFlow) {
+  box-sizing: border-box;
+  width: calc(100% - 48px);
+  max-width: 1600px;
+  margin-inline: auto;
+}
+@media (max-width: 720px) {
+  .libraryHubPreview[data-library-hub="knowledge"] > :is(.header, .knowledgeIntroGrid, .knowledgeIntroFlow) {
+    width: calc(100% - 24px);
+  }
+}
+
 .libraryHubPreview[data-library-hub="knowledge"] {
   /* Keep the page shell and title aligned with the other library/workbench pages. */
   width: calc(100% - 48px);
