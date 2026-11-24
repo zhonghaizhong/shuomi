@@ -4153,17 +4153,24 @@
 }
 
 
-/* Agent market dark theme follows the approved shared Vuexy blue surfaces.
-   The light overrides below are intentionally retained. */
+/* User-verified Vuexy reference: the My Agents filter toolbar panel (#2f3349)
+   is the source of truth for header and both rows of cards, not #142237.
+   Keep the purple primary buttons and existing Figma layout unchanged. */
 .agentsPreview.agentsPreview{
- --agent-surface:#142237;
- --agent-raised:#18283c;
- --agent-border:#31465e;
- --agent-text:#edf4ff;
- --agent-muted:#b5c6d8;
+ --agent-surface:#2f3349;
+ --agent-raised:#393d55;
+ --agent-border:#44485e;
+ --agent-text:#cfcde4;
+ --agent-muted:#acabc1;
  --agent-primary:#7367f0;
- --agent-selected:#34305f;
- --agent-muted-chip:#18283c;
+ --agent-selected:#474075;
+ --agent-muted-chip:#393d55;
+}
+.agentsPreview.agentsPreview>.header,
+.agentsPreview.agentsPreview .agentMine>article>section,
+.agentsPreview.agentsPreview .agentMine>article>aside{
+ background:#2f3349;
+ border-color:#44485e;
 }
 :global(.light) .agentsPreview.agentsPreview{
  --agent-surface:#fff;
