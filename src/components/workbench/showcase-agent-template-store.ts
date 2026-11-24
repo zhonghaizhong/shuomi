@@ -41,3 +41,16 @@ export function writeAgentPreviewTemplates(org:string,member:string,agent:string
  sessionStorage.setItem(agentPreviewTemplateKey(org,member,agent),JSON.stringify(entries));
  window.dispatchEvent(new CustomEvent(agentPreviewTemplatesChanged,{detail:{organizationId:org,memberId:member,agent}}));
 }
+
+/** Complete, portable template snapshot. Never claim this gives an external assistant browser access.
+ * Do not include account identifiers or unrelated browser storage.
+ */
+export function serializeAgentTemplateForSharing(agent:string,template:AgentPreviewTemplate):string{
+ if(!agent.trim()||!valid(template))throw Error("无法导出无效模板");
+ const payload={
+  format:"shuomi-agent-template",version:1,
+  agent,templateName:template.name,savedAt:template.createdAt,
+  config:template.config??null
+ };
+ return JSON.stringify(payload,null,2);
+}
