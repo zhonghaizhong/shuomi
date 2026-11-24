@@ -10,7 +10,7 @@ export type ShowcaseUploadTask={
  rule:string;ruleConfig?:{id:string;name:string;skuMode:string;prefix:string;suffix:string;priceMode:string;priceValue:string;currencyConversion:boolean;aiFill:boolean};agentId:string|null;agentName:string|null;
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
  status:"待补全"|"待执行智能体"|"待审核"|"待平台提交";
- demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string};
+ demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string}>;imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
  createdAt:string;demo:true;
 };
 export const showcaseUploadTasksEvent="shuomi:listing-upload-tasks-updated";
@@ -41,7 +41,7 @@ export const showcaseUploadBatchPreferenceKey=(organizationId:string,memberId:st
  "shuomi:listing-batch-filter-v1:"+organizationId+":"+memberId;
 
 /** Demo-only, account-scoped product optimization. Generated art is illustrative, not an actual model execution. */
-export type AmazonDemoListingProduct={id:string;sku:string;name:string;description?:string;images?:string[]};
+export type AmazonDemoListingProduct={id:string;sku:string;name:string;description?:string;images?:string[];variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string}>};
 const amazonDemoBatchId="SIM-AMAZON-US-5-20261124";
 const amazonRules:Record<string,{missing:string[];title:string;summary:string;art:string}>={
  "B00TTD9BRC":{missing:["商品成分／合规证明","批次与有效期"],title:"CeraVe Moisturizing Cream for Face and Body, 19 oz",summary:"Face and body moisturizing cream, 19 oz. Ceramides and hyaluronic acid are mentioned in the original product description; claims require verification.",art:"cream"},
@@ -56,17 +56,18 @@ export function simulateAmazonFiveListingWorkflow(args:{
 }):{created:number;missing:number;review:number;alreadyInstalled:boolean}{
  const {organizationId:org,memberId:member}=args;
  const expected=Object.keys(amazonRules);
+ const fiveProducts=args.products.filter(p=>expected.includes(p.sku));
  if(typeof window==="undefined"||!org||!member||args.batchId!==amazonDemoBatchId||
- args.products.length!==5||args.agentName!=="商品优化智能体"||!args.templateId||
+ fiveProducts.length!==5||args.agentName!=="商品优化智能体"||!args.templateId||
  !args.storeId||!args.storeName||!args.rule.trim())throw Error("演示配置不完整，不能执行");
- if(new Set(args.products.map(p=>p.sku)).size!==5||args.products.some(p=>!expected.includes(p.sku)))throw Error("仅支持选定的 Amazon 美国站五款商品批次");
+ if(new Set(fiveProducts.map(p=>p.sku)).size!==5)throw Error("仅支持选定的 Amazon 美国站五款商品批次");
  const existing=readShowcaseUploadTasks(org,member);
  const scopeKey="SHUOMI-AMZ-AI-5:"+args.batchId+":"+args.storeId;
  const previous=existing.filter(task=>task.id.startsWith(scopeKey));
  if(previous.length===5){refreshAmazonFiveDemoPhotos(org,member);return {created:0,missing:previous.filter(t=>t.status==="待补全").length,review:previous.filter(t=>t.status==="待审核").length,alreadyInstalled:true};}
  if(previous.length)throw Error("已存在部分演示任务，请先检查任务记录，避免重复覆盖");
  const now=new Date().toISOString();
- const created:ShowcaseUploadTask[]=args.products.map(product=>{
+ const created:ShowcaseUploadTask[]=fiveProducts.map(product=>{
   const plan=amazonRules[product.sku],missing=[...plan.missing];
   const images=listingDemoArtSet(plan.art as ListingArtKind);
   return {
@@ -88,6 +89,53 @@ export function simulateAmazonFiveListingWorkflow(args:{
   window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
   return {created:5,missing:3,review:2,alreadyInstalled:false};
  }catch{throw Error("当前浏览器无法保存智能体演示任务");}
+}
+/** Two photographed product families are appended to the *same* Amazon demo batch.
+ * Never replaces the five original tasks, makes Amazon API claims or uploads to SHEIN.
+ */
+export function simulateAmazonMultiVariantListingWorkflow(args:{
+ organizationId:string;memberId:string;batchId:string;batchName:string;products:AmazonDemoListingProduct[];
+ storeId:string;storeName:string;region:string;storeType:string;rule:string;agentName:string;templateId:string;
+}):{created:number;missing:number;review:number;alreadyInstalled:boolean}{
+ if(typeof window==="undefined"||!args.organizationId||!args.memberId||args.batchId!==amazonDemoBatchId||
+  !args.storeId||!args.storeName||!args.rule.trim()||args.agentName!=="商品优化智能体"||!args.templateId)throw Error("新增多变体演示配置不完整");
+ const selected=args.products.filter(p=>p.sku==="AMZ-US-CROCS-10001"||p.sku==="AMZ-US-STANLEY-QUENCHER40");
+ if(selected.length!==2||selected.some(p=>!p.variantDetails||p.variantDetails.length<2||!p.images?.length))throw Error("需要两件带完整变体结构及真实商品图片的商品");
+ const current=readShowcaseUploadTasks(args.organizationId,args.memberId);
+ const scope="SHUOMI-AMZ-AI-MULTI:"+args.batchId+":"+args.storeId+":";
+ const previous=current.filter(t=>t.id.startsWith(scope));
+ if(previous.length===2)return {created:0,missing:previous.filter(t=>t.status==="待补全").length,review:previous.filter(t=>t.status==="待审核").length,alreadyInstalled:true};
+ if(previous.length)throw Error("已有部分多变体任务，请检查后再运行，避免覆盖原处理记录");
+ const now=new Date().toISOString();
+ const created:ShowcaseUploadTask[]=selected.map(p=>{
+  const isClog=p.sku==="AMZ-US-CROCS-10001";
+  const missing=isClog?["目标站点鞋类尺码对照表","鞋面及鞋底材质信息（按平台规则确认）"]:[];
+  const realPhotos=[...(p.images??[])];
+  return {
+   id:scope+p.sku,organizationId:args.organizationId,memberId:args.memberId,source:"采集批次",batchId:args.batchId,
+   batchName:args.batchName,sourceVersionId:"original",sourceVersionLabel:"原始版本",
+   productIds:[p.id],productCount:1,missingCount:missing.length,storeId:args.storeId,storeName:args.storeName,
+   platform:"SHEIN",region:args.region,storeType:args.storeType,rule:args.rule,
+   agentId:"product.content.agent",agentName:args.agentName,templateId:args.templateId,mode:"直接上传到平台",
+   status:isClog?"待补全" as const:"待审核" as const,createdAt:now,demo:true,
+   demoProduct:{
+    sourceName:p.name,sourceDescription:p.description??"",sourceImages:realPhotos,
+    optimizedName:isClog?"Crocs Classic Unisex Clog - Color and Size Options":"Stanley Quencher H2.0 FlowState 40 oz Tumbler - Color Options",
+    optimizedDescription:isClog
+     ?"Lightweight classic unisex clogs with ventilation ports, pivoting heel straps, and color/size options. Confirm size chart and category attributes before listing."
+     :"40 oz stainless steel insulated travel tumbler with reusable straw, handle and FlowState rotating lid. Color-specific photos retained for each variant.",
+    // Use original photographic product assets, never falsely call altered or generated photos authentic.
+    optimizedImages:realPhotos,missingFields:missing,agentRun:"模拟已优化" as const,
+    variantDetails:p.variantDetails!.map(v=>({...v})),imageProvenance:"品牌/零售商真实商品照片（未进行图片 AI 重绘）" as const
+   }
+  };
+ });
+ if(created.filter(t=>t.status==="待补全").length!==1||created.filter(t=>t.status==="待审核").length!==1)throw Error("两款商品的分流不正确");
+ try{
+  sessionStorage.setItem(key(args.organizationId,args.memberId),JSON.stringify([...created,...current]));
+  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:args.organizationId,memberId:args.memberId}}));
+  return {created:2,missing:1,review:1,alreadyInstalled:false};
+ }catch{throw Error("无法保存多变体演示数据");}
 }
 export function completeShowcaseUploadTask(org:string,member:string,taskId:string,fields:Record<string,string>):ShowcaseUploadTask{
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
