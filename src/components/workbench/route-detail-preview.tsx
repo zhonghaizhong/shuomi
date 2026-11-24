@@ -619,7 +619,7 @@ function RoutePage({ page, pathname,organizationId,memberId }: { page: { section
        </div>
        <footer className={styles.catalogApplyActions}>
         <p>本页为交互演示，提交按钮不会向服务器发送申请或产生费用。</p>
-        <button type="submit" className={styles.primary} onClick={event=>{const form=event.currentTarget.closest("form");if(form&&!form.checkValidity()){event.preventDefault();event.stopPropagation();form.reportValidity();}}}>提交对接申请</button>
+        <button type="button" className={styles.primary} onClick={event=>{event.preventDefault();event.stopPropagation();const form=event.currentTarget.closest("form");if(!form)return;const required=Array.from(form.querySelectorAll<HTMLInputElement>("input[required]"));const incomplete=required.find(input=>!input.value.trim()||!input.checkValidity());if(incomplete){incomplete.focus();incomplete.reportValidity();return;}submit("提交对接申请");}}>提交对接申请</button>
        </footer>
       </form>
      </article>
