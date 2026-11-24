@@ -108,6 +108,7 @@ test("market cards and customization page do not overflow the desktop viewport",
 
 test("enter use opens Figma-based skill, knowledge and image configuration without creating a real task",async({page})=>{
  await page.goto(base+"/mine");
+ await page.evaluate(()=>sessionStorage.setItem("shuomi-preview-personal-skills",JSON.stringify([{name:"商品标题规范优化",description:"当前账号已保存的个人标题优化技能"}])));
  await page.getByRole("button",{name:"进入使用"}).first().click();
  const dialog=page.getByRole("dialog",{name:"商品优化智能体"});
  await expect(dialog).toContainText("步骤 1 · 选择技能（可选）");
@@ -115,11 +116,13 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(dialog).toContainText("步骤 3 · 配置图片优化（按需）");
  await dialog.getByRole("button",{name:"选择技能"}).click();
  const skillPicker=page.getByRole("dialog",{name:"选择技能"});
- await skillPicker.getByRole("checkbox",{name:/商品标题规范优化/}).check();
+ await expect(skillPicker.getByRole("checkbox",{name:"商品标题规范优化"})).toBeVisible();
+ await skillPicker.getByRole("checkbox",{name:"商品标题规范优化"}).check();
  await skillPicker.getByRole("button",{name:"完成选择"}).click();
  await dialog.getByRole("button",{name:"选择知识库"}).click();
  const knowledgePicker=page.getByRole("dialog",{name:"选择知识库"});
- await knowledgePicker.getByRole("checkbox",{name:"平台规则"}).check();
+ await expect(knowledgePicker).toContainText("当前展示站点尚未连接正式知识库服务");
+ await expect(knowledgePicker.getByRole("checkbox")).toHaveCount(0);
  await knowledgePicker.getByRole("button",{name:"确认选择"}).click();
  await dialog.getByRole("button",{name:"开启"}).click();
  await dialog.getByRole("button",{name:"保存为模板"}).click();
@@ -165,7 +168,7 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  const reopened=page.getByRole("dialog",{name:"商品优化智能体"});
  await expect(reopened).toContainText("已启用 1 项");
  await reopened.getByRole("button",{name:"选择知识库"}).click();
- await expect(page.getByRole("dialog",{name:"选择知识库"}).getByRole("checkbox",{name:"平台规则"})).toBeChecked();
+ await expect(page.getByRole("dialog",{name:"选择知识库"})).toContainText("当前展示站点尚未连接正式知识库服务");
  await page.getByRole("dialog",{name:"选择知识库"}).getByRole("button",{name:"取消"}).click();
  await reopened.getByRole("button",{name:"查看模板"}).click();
  const templates=page.getByRole("dialog",{name:"模板管理"});
