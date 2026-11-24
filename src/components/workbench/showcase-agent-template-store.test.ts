@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {beforeEach,describe,expect,it,vi} from "vitest";
-import {agentPreviewTemplatesChanged,readAgentPreviewTemplates,writeAgentPreviewTemplates,agentPreviewTemplateKey} from "./showcase-agent-template-store";
+import {agentPreviewTemplatesChanged,readAgentPreviewTemplates,writeAgentPreviewTemplates,agentPreviewTemplateKey,serializeAgentTemplateForSharing} from "./showcase-agent-template-store";
 
 describe("saved agent templates in the own-product listing selector",()=>{
  beforeEach(()=>sessionStorage.clear());
@@ -34,4 +34,21 @@ describe("saved agent templates in the own-product listing selector",()=>{
   expect((callback.mock.calls[0][0] as CustomEvent).detail).toEqual({organizationId:org,memberId:member,agent});
   window.removeEventListener(agentPreviewTemplatesChanged,callback);
  });
+});
+
+it("exports the exact saved template including full image settings without organization or member identity",()=>{
+ const config={skills:["sku-skill"],knowledge:["knowledge-1"],imageOptimization:true,
+  imageInstructions:"保留商品主体结构",
+  useConfig:{imageLanguage:"英语",imageBackground:"自定义背景要求",
+   imageBackgroundCustom:"灰色摄影棚",optimizationSource:"自定义指令",
+   selectedMainImages:[1,3],selectedDetailImages:[2,4],
+   imageTasks:[{id:1,target:"主图",position:1,prompt:"主体居中"}]}};
+ const template={id:"saved-1",name:"测试模板",createdAt:"2026-11-24",config};
+ const serialized=serializeAgentTemplateForSharing("商品优化智能体",template);
+ const result=JSON.parse(serialized);
+ expect(result).toEqual({format:"shuomi-agent-template",version:1,
+  agent:"商品优化智能体",templateName:"测试模板",savedAt:"2026-11-24",config});
+ expect(serialized).not.toContain("org-A");
+ expect(serialized).not.toContain("member-1");
+ expect(result.config.useConfig.imageTasks[0].prompt).toBe("主体居中");
 });
