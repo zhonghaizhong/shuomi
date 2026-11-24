@@ -7,8 +7,8 @@ export type PickVersion={id:string;label:string;platform?:string;site?:string;la
 export type PickBatch={id:string;name:string;sourceName:string;date:string;products:{id:string;name:string}[];versions:PickVersion[]};
 export type PickResult={batchId:string;versionId:string};
 
-export function ShowcaseBatchVersionPicker({source,batches,selected,onClose,onConfirm}:{
- source:PickSource;batches:PickBatch[];selected:PickResult|null;onClose:()=>void;onConfirm:(value:PickResult)=>void
+export function ShowcaseBatchVersionPicker({source,batches,selected,onClose,onConfirm,onSourceChange}:{
+ source:PickSource;batches:PickBatch[];selected:PickResult|null;onClose:()=>void;onConfirm:(value:PickResult)=>void;onSourceChange?:(value:PickSource)=>void
 }){
  const dialog=useRef<HTMLDialogElement>(null);
  const [query,setQuery]=useState(""),[applied,setApplied]=useState("");
@@ -25,7 +25,7 @@ export function ShowcaseBatchVersionPicker({source,batches,selected,onClose,onCo
  return <dialog ref={dialog} className={css.dialog} aria-label="选择商品批次与版本" onCancel={e=>{e.preventDefault();onClose()}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
    <header className={css.header}><div><small>我的数据 / {source} / 选择使用版本</small><h2>选择商品批次与版本</h2><p>选择一个商品批次，再确认本次刊登使用的原始或历史优化版本。</p></div><button type="button" aria-label="关闭批次选择" onClick={onClose}>×</button></header>
    <div className={css.content}>
-    <section className={css.topline}><div><h3>{source}</h3><small>共 {batches.length} 个批次 · 当前账号可访问的数据</small></div><div className={css.filters}><input aria-label="搜索批次名称" placeholder="搜索批次名称 / 商品来源" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){setApplied(query.trim());setPage(1)}}}/><button type="button" onClick={()=>{setQuery("");setApplied("");setPage(1)}}>重置</button><button type="button" className={css.primary} onClick={()=>{setApplied(query.trim());setPage(1)}}>确认</button></div></section>
+    <section className={css.topline}><div><h3>{source}</h3><small>共 {batches.length} 个批次 · 当前账号可访问的数据</small>{onSourceChange?<label>商品来源 <select aria-label="选择商品来源" value={source} onChange={e=>{onSourceChange(e.target.value as PickSource);setBatchId("");setVersionId("original");setPage(1)}}><option value="采集批次">采集批次</option><option value="自有商品库">自有商品库</option></select></label>:null}</div><div className={css.filters}><input aria-label="搜索批次名称" placeholder="搜索批次名称 / 商品来源" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){setApplied(query.trim());setPage(1)}}}/><button type="button" onClick={()=>{setQuery("");setApplied("");setPage(1)}}>重置</button><button type="button" className={css.primary} onClick={()=>{setApplied(query.trim());setPage(1)}}>确认</button></div></section>
     <div className={css.columns}><span>选择</span><span>商品批次</span><span>来源</span><span>商品数量</span><span>版本数量</span><span>创建时间</span></div>
     <div className={css.rows}>{rows.map(b=><button type="button" key={b.id} className={css.tableRow} aria-pressed={batchId===b.id} onClick={()=>pickBatch(b.id)}><span className={css.radio} aria-hidden="true"/><strong>{b.name}<small>{b.id}</small></strong><span>{b.sourceName}</span><span>{b.products.length} 件</span><span>{b.versions.length} 个</span><span>{b.date}</span></button>)}{!rows.length?<p className={css.empty}>暂无可选批次，请先在「我的数据」采集或上传商品。</p>:null}</div>
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {pageNum} / {pages} 页</span><div><button type="button" disabled={pageNum===1} onClick={()=>setPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={pageNum>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}>下一页</button></div></div>
