@@ -1,16 +1,14 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import styles from "./showcase-uploaded-preview.module.css";
+import {ShowcaseListingStageHeader} from "./listing/showcase-listing-stage-header";
 import {showcaseUploadBatchPreferenceKey} from "./listing/showcase-upload-tasks";
 import {readOptimizedDatasets,optimizedDatasetsChanged} from "./showcase-optimized-datasets";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./listing/showcase-batch-version-picker";
 
 type Item={sku:string;name:string;batch:string;batchKey:string;site:string;platform:string;time:string;productId:string;reviewStatus:string;listingStatus:string;datasetId:string;receiptId:string};
 
-const stages=[["waiting","待上传"],["missing","待补全"],["review","待审核"],["uploaded","已上传"]] as const;
 export function ShowcaseUploadedPreview({organizationId,memberId}:{organizationId:string;memberId:string}){
- const router=useRouter();
  const readPreferredBatch=()=>typeof window==="undefined"?"":sessionStorage.getItem(showcaseUploadBatchPreferenceKey(organizationId,memberId))||"";
  const [batch,setBatch]=useState(readPreferredBatch),[appliedBatch,setAppliedBatch]=useState(readPreferredBatch);
  const [batchDialog,setBatchDialog]=useState(false),[pickSource,setPickSource]=useState<PickSource>("采集批次");
@@ -55,11 +53,11 @@ export function ShowcaseUploadedPreview({organizationId,memberId}:{organizationI
  const reset=()=>{setBatch("");setAppliedBatch("");setQuery("");setAppliedQuery("");sessionStorage.removeItem(showcaseUploadBatchPreferenceKey(organizationId,memberId));setPage(1);};
 
  return <div className={styles.page} data-showcase-uploaded>
-  <header className={styles.heading}><div><small>店铺中心 / 刊登管理 / 已上传</small><h1>已上传</h1><p>查看原提交版本、目标店铺和真实平台状态；受理、审核、平台草稿及上架分别显示。</p></div></header>
+  <ShowcaseListingStageHeader stage="uploaded"/>
   <section className={styles.metrics}>
    {[[String(records.length),"平台已接收商品","仅来自已验证的平台回执"],[String(records.filter(x=>x.reviewStatus==="审核通过").length),"审核通过","审核通过不等于已上架"],[String(records.filter(x=>x.listingStatus==="已上架").length),"已上架","以平台状态回执为准"]].map(([value,title,sub],i)=><article key={title} data-tone={i}><strong>{value}</strong><span><b>{title}</b><small>{sub}</small></span></article>)}
   </section>
-  <nav className={styles.stages} aria-label="刊登管理阶段">{stages.map(([id,label])=><button key={id} type="button" aria-current={id==="uploaded"?"page":undefined} onClick={()=>id==="uploaded"?undefined:router.push("/workbench/listing/"+id+"?preview=1")}>{label}</button>)}</nav>
+
   <section className={styles.panel}>
    <div className={styles.toolbar}>
     <div className={styles.filters}><label>商品批次<button type="button" aria-label="选择刊登批次" onClick={()=>{setPickSource(activeBatch?.source==="自有商品库"?"自有商品库":"采集批次");setBatchDialog(true)}}>{activeBatch?.label||"全部批次"} · 选择批次与版本</button></label></div>
