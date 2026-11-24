@@ -177,3 +177,33 @@
 .hybridBothSelected{display:inline-flex;align-items:center;justify-content:center;min-height:38px;min-width:90px;padding:7px 12px;box-sizing:border-box;border:1px solid var(--primary);border-radius:7px;background:color-mix(in srgb,var(--primary) 16%,var(--raised));color:var(--ink);font-size:14px;font-weight:650}
 .hybridControlRow small{color:var(--muted);font-size:13px;line-height:1.45}
 @media(max-width:600px){.hybridControlRow{align-items:flex-start}.hybridControlRow>strong{width:100%}}
+
+/* Figma '添加图片' layout: four equal-weight source cards + mapped-skill detail.
+   Keep the user's approved dark/light theme variables instead of Figma's palette. */
+.imageSourceCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;min-width:0}
+.body .imageSourceCards>button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;justify-content:flex-start;gap:9px;min-width:0;min-height:86px;padding:13px 15px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.imageSourceCards>button strong{font-size:14px;line-height:1.4;font-weight:700}
+.imageSourceCards>button small{font-size:13px;line-height:1.45;color:var(--muted);font-weight:400}
+.body .imageSourceCards>button[aria-pressed="true"]{background:var(--surface);border-color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
+.imageSourcePanel{display:grid;gap:12px;border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--raised);min-width:0}
+.imageSourcePanel h3{font-size:15px;line-height:1.35;color:var(--ink);margin:0}
+.imageSourcePanel p{margin:0;font-size:13px;line-height:1.55;color:var(--muted)}
+.imageSourcePanel label{display:grid;gap:9px;min-width:0}
+.imageSourcePanelHeading{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.imageSourcePanelHeading>div{display:grid;gap:7px;min-width:0}
+.imageSkillStatus{display:inline-flex;align-items:center;white-space:nowrap;font-size:12px;font-weight:650;border-radius:8px;padding:9px 12px;background:var(--surface);color:var(--muted)}
+.imageSkillStatus[data-enabled="true"]{color:#21caaa}
+.imageAutoMatch{border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:13px 15px;display:grid;gap:10px}
+.imageAutoMatch>strong{font-size:14px;color:var(--ink)}
+.imageAutoMatchGrid{display:grid;grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr);align-items:center;gap:12px}
+.imageAutoMatchGrid>div{display:grid;gap:8px;min-width:0;padding:13px 15px;background:var(--raised);border:1px solid var(--line);border-radius:8px}
+.imageAutoMatchGrid small{font-size:13px;line-height:1.3;color:var(--muted)}
+.imageAutoMatchGrid strong{font-size:15px;color:var(--ink);line-height:1.4;overflow-wrap:anywhere}
+.imageAutoArrow{display:grid;place-items:center;border-radius:50%;height:34px;width:34px;background:var(--raised);color:var(--muted);font-size:21px}
+.imageAutoMatchGrid .imageAutoResult{background:color-mix(in srgb,#16a085 13%,var(--raised));border-color:color-mix(in srgb,#16a085 32%,var(--line))}
+.imageAutoResult strong{color:#25c5a4}
+:global(.light) .imageAutoResult strong{color:#087f6c}
+.imageSourceHelper{border-top:1px solid var(--line);padding-top:9px}
+.imageOtherSources{display:flex;flex-wrap:wrap;gap:9px;padding-top:9px;border-top:1px solid var(--line)}
+@media(max-width:760px){.imageSourceCards{grid-template-columns:repeat(2,minmax(0,1fr))}.imageAutoMatchGrid{grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr);gap:6px}.imageAutoMatchGrid>div{padding:9px}.imageSourcePanel{padding:12px}}
+@media(max-width:410px){.imageSourceCards{grid-template-columns:1fr 1fr;gap:7px}.body .imageSourceCards>button{padding:11px;min-height:100px}.imageAutoMatchGrid{grid-template-columns:1fr}.imageAutoArrow{transform:rotate(90deg);justify-self:center}}
