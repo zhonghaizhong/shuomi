@@ -412,3 +412,22 @@
 .page[data-listing-stage="waiting"] .configuration article header{min-width:0}
 .page[data-listing-stage="waiting"] .configuration article header h2{min-width:0;overflow-wrap:anywhere}
 .page[data-listing-stage="waiting"] .configuration :is(input,select,button){max-width:100%}
+
+/* The chosen source batch + data version is the same grouping key in every downstream stage. */
+.page[data-listing-stage="missing"] .filters,
+.page[data-listing-stage="review"] .filters{display:grid;grid-template-columns:minmax(220px,.88fr) minmax(0,1.65fr);align-items:end;gap:12px;padding:13px 14px}
+.page[data-listing-stage="missing"] .filterChoices,
+.page[data-listing-stage="review"] .filterChoices{display:block;min-width:0}
+.page[data-listing-stage="missing"] .filterChoices>label,
+.page[data-listing-stage="review"] .filterChoices>label{display:grid;gap:6px;width:100%;min-width:0}
+.page[data-listing-stage="missing"] .filterSearch,
+.page[data-listing-stage="review"] .filterSearch{display:flex;align-items:center;gap:9px;min-width:0}
+.page[data-listing-stage="missing"] .filterSearch>input,
+.page[data-listing-stage="review"] .filterSearch>input{flex:1;min-width:0}
+.batchContext{display:flex;align-items:center;flex-wrap:wrap;gap:7px 16px;padding:12px 16px;border:1px solid var(--stroke);border-radius:7px;background:var(--surface-alt);font-size:13px}
+.batchContext strong{font-weight:650;color:var(--ink)}
+.batchContext span,.batchContext small{color:var(--muted)}
+.batchContext small{flex-basis:100%;font-size:12px}
+.batchFilterHint{margin:0 14px 2px;font-size:12px;color:var(--muted)}
+.page .item>span:nth-child(2) small{display:block;margin-top:4px;color:var(--muted);font-size:12px}
+@media(max-width:760px){.page[data-listing-stage="missing"] .filters,.page[data-listing-stage="review"] .filters{grid-template-columns:minmax(0,1fr)}}
