@@ -76,7 +76,7 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
  };
  const selectedVersion=versions.find(d=>d.id===versionDetailId);
  const viewBatches=useMemo<BatchProductView[]>(()=>batches.map(b=>({
-  id:b.id,organizationId,ownerMemberId:memberId,source:"自有商品",method:"自有商品刊登工具",name:b.name,createdAt:b.createdAt,
+  id:b.id,organizationId,ownerMemberId:memberId,source:"自有商品",method:"自有商品刊登工具",name:b.name,createdAt:b.createdAt,status:"已采集 · 待上传" as const,demo:true,
   products:allProducts.filter(p=>p.batchId===b.id).map(p=>({
    id:p.id,name:p.name,sku:p.skus.map(x=>x.skuCode||String(x.id)).join(" / ")||p.id,
    source:p.source,price:p.skus.find(x=>x.price)?.price||"—",status:p.status,
