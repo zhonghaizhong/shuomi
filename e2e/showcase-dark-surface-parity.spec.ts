@@ -78,3 +78,19 @@ test("Tool Market landing background matches Vuexy dark cards and raised actions
   .toBe("rgb(57, 61, 85)");
  await expect.poll(()=>color('li[class*="step"]')).toBe("rgb(57, 61, 85)");
 });
+
+
+/* Data landing is rendered by demo-workbench-preview, not the independent
+   Next.js data-services overview. Guard the actual card and button surfaces. */
+test("Data Services landing uses consistent dark Vuexy card and button paints",async({page})=>{
+ await page.goto("/shuomi/#/workbench/data");
+ await ensureDark(page);
+ const root=page.locator('[data-commerce-unified="data"]');
+ await expect(root).toBeVisible();
+ const paint=(selector:string)=>root.locator(selector).first().evaluate(el=>getComputedStyle(el).backgroundColor);
+ for(const selector of ['.dataCards article','.dataSteps','.dataDetails article']){
+  await expect.poll(()=>paint(selector),selector).toBe("rgb(47, 51, 73)");
+ }
+ await expect.poll(()=>paint('.dataSteps article')).toBe("rgb(57, 61, 85)");
+ await expect.poll(()=>paint('.dataCards article button')).toBe("rgb(57, 61, 85)");
+});
