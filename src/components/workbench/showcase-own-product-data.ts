@@ -1,4 +1,5 @@
 "use client";
+import {readAgentPreviewTemplates,writeAgentPreviewTemplates} from "./showcase-agent-template-store";
 
 /** Browser-session showcase only. This is not a production inventory API. */
 export type OwnProductSku={id:number;name:string;description:string;images:string[];price?:string;stock?:number;skuCode?:string};
@@ -66,6 +67,61 @@ export function simulateFiveOwnProductIntakes(org:string,member:string,batchId:s
  sessionStorage.setItem(productKey(org,member),JSON.stringify([...newEntries,...existing]));
  notify(org,member);
  return {created:newEntries.length,pending:newEntries.filter(p=>p.status==="入库待完善").length,review:newEntries.filter(p=>p.status==="待审核").length};
+}
+
+
+/** One-time, per-account showroom refresh requested for 自有商品测试批次.
+ * This is realistic-looking fixture data, NOT real merchant inventory or a completed AI API call.
+ * Existing approved products and other batches are retained.
+ */
+export function installSixProductOptimizationDemo(org:string,member:string):{created:number;pending:number;review:number;alreadyInstalled:boolean}{
+ if(typeof window==="undefined"||!org||!member)throw Error("演示账号信息不完整");
+ const marker="shuomi:own-product-six-demo-v1:"+org+":"+member;
+ if(sessionStorage.getItem(marker)==="ready")return {created:0,pending:0,review:0,alreadyInstalled:true};
+ const existingBatches=readOwnProductBatches(org,member);
+ let batch=existingBatches.find(b=>b.name==="自有商品测试批次");
+ // Prepare in-memory first; only replace data after the full new batch is constructed.
+ const batchId=batch?.id??"OWN-"+crypto.randomUUID();
+ const now=new Date().toLocaleString("zh-CN",{hour12:false});
+ const photo=(id:string)=>"https://images.unsplash.com/"+id+"?auto=format&fit=crop&w=1200&q=85";
+ type Fixture={code:string;name:string;price:string;stock:number;photo:string;raw:string;optimized:string;title:string;pending?:boolean;secondSku?:boolean};
+ const catalog:Fixture[]=[
+  {code:"SH-OPT-TEE-001",name:"纯棉圆领短袖 T 恤",price:"49.90",stock:86,photo:"photo-1521572163474-6864f9cf17ab",raw:"圆领短袖T恤，棉质面料，黑色，M码。",title:"纯棉圆领短袖 T 恤｜黑色 M 码｜休闲基础款",optimized:"商品简介：纯棉圆领短袖 T 恤，黑色 M 码，圆领短袖设计；适合日常休闲搭配。已将原始材质、颜色及尺码信息整理为易读商品描述。"},
+  {code:"SH-OPT-HOOD-002",name:"宽松连帽卫衣",price:"129.00",stock:52,photo:"photo-1556821840-3a63f95609a7",raw:"灰色L码连帽卫衣，宽松款，带抽绳。",title:"宽松连帽卫衣｜灰色 L 码｜抽绳连帽款",optimized:"商品简介：灰色 L 码宽松连帽卫衣，采用连帽抽绳设计。将版型、尺码与颜色信息分层呈现，方便核对及上架使用。"},
+  {code:"SH-OPT-TOTE-003",name:"帆布购物托特包",price:"39.00",stock:118,photo:"photo-1544816155-12df9643f363",raw:"原色帆布手提包，购物用，可收纳。",title:"原色帆布手提托特包｜购物收纳两用",optimized:"商品简介：原色帆布手提托特包，可用于日常购物与物品收纳。按产品名称、面料和用途整理了结构化卖点，没有补充未提供的容量与尺寸。"},
+  {code:"SH-OPT-BOTTLE-004",name:"不锈钢保温水杯",price:"79.00",stock:64,photo:"photo-1602143407151-7111542de6e8",raw:"不锈钢水杯，蓝色，带杯盖。",title:"不锈钢随行水杯｜蓝色｜带盖款",optimized:"商品简介：蓝色不锈钢随行水杯，配有杯盖，适合日常携带。保温时长、具体容量及食品接触认证没有来源，不在模拟优化稿中添加。"},
+  {code:"SH-OPT-MUG-005",name:"陶瓷咖啡马克杯",price:"45.00",stock:37,photo:"photo-1514228742587-6b1558fcca3d",raw:"",title:"陶瓷咖啡马克杯｜日常饮水杯",optimized:"",pending:true},
+  {code:"SH-OPT-TRAVEL-006",name:"旅行洗漱收纳包",price:"59.00",stock:43,photo:"photo-1553062407-98eeb64c6a62",raw:"旅行洗漱包，黑色，拉链开合，附另一色可选。",title:"旅行洗漱收纳包｜黑色｜拉链开合",optimized:"商品简介：旅行用洗漱收纳包，黑色主款，拉链开合；将用途、颜色和闭合方式整理成可审核的商品资料。另一色变体缺少独立商品图片，需补充真实图片后才能审核。",pending:true,secondSku:true}
+ ];
+ const created:OwnProductRecord[]=catalog.map(item=>{
+  const original:OwnProductSku[]=[{id:1,name:item.name,description:item.raw,images:[photo(item.photo)],price:item.price,stock:item.stock,skuCode:item.code}];
+  const optimized:OwnProductSku[]=[{...original[0],name:item.title,description:item.optimized||"",images:[...original[0].images]}];
+  if(item.secondSku){
+   original.push({id:2,name:"旅行洗漱收纳包｜另一色",description:"同款旅行洗漱包，另一颜色，拉链开合。",images:[],price:item.price,stock:21,skuCode:"SH-OPT-TRAVEL-006-B"});
+   optimized.push({...original[1],name:"旅行洗漱收纳包｜另一色｜拉链开合",description:"商品简介：旅行洗漱收纳包，拉链开合，另一颜色变体。缺少该变体的独立实拍图片，禁止使用主款图片冒充。"});
+  }
+  const missing=checkOwnProductSkus(optimized);
+  return {id:"OWN-SIX-DEMO-"+item.code,batchId,name:item.name,source:"上传资料",createdAt:now,checkedAt:now,status:missing.length?"入库待完善":"待审核",missing,skus:optimized,originalSkus:cloneSkus(original),agent:"商品优化智能体",template:"测试模板"};
+ });
+ if(created.filter(x=>x.status==="待审核").length!==4||created.filter(x=>x.status==="入库待完善").length!==2)throw Error("模拟商品分流数量异常");
+ const prior=readOwnProducts(org,member);
+ // Only replace unfinished products IN THE NAMED DEMO BATCH; preserve all real/other-batch records and approved data.
+ const retained=prior.filter(p=>p.batchId!==batchId||p.status==="已入库");
+ const templates=readAgentPreviewTemplates(org,member,"商品优化智能体");
+ const needsTemplate=!templates.some(t=>t.name==="测试模板");
+ const nextBatches=batch?existingBatches:[{id:batchId,name:"自有商品测试批次",createdAt:now,productCount:0},...existingBatches];
+ // Persist product data before writing marker. Failures must not report success.
+ if(!batch)sessionStorage.setItem(batchKey(org,member),JSON.stringify(nextBatches));
+ sessionStorage.setItem(productKey(org,member),JSON.stringify([...created,...retained]));
+ if(needsTemplate)writeAgentPreviewTemplates(org,member,"商品优化智能体",[...templates,{
+  id:"own-six-demo-test-template",name:"测试模板",createdAt:now,config:{
+   skills:["标题结构整理","商品卖点提炼","信息完整性检测"],knowledge:[],
+   imageOptimization:true,imageInstructions:"保留可信商品原图；检查变体图是否齐全；没有生成的新图不得冒充 AI 优化图。"
+  }
+ }]);
+ sessionStorage.setItem(marker,"ready");
+ notify(org,member);
+ return {created:6,pending:2,review:4,alreadyInstalled:false};
 }
 
 /** First-stage Shuomi intake: incomplete drafts stay inside the tool, never in third-party listing 待补全. */
