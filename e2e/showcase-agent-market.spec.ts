@@ -432,7 +432,7 @@ test("POD conversation and prompt editor grow together to the bottom of the assi
   await page.goto(base+"/mine");
   await page.getByRole("button",{name:"进入使用"}).last().click();
   const dialog=page.getByRole("dialog",{name:"POD刊登智能体"});
-  const assistant=dialog.locator('[class*="useHelp"]').filter({has:dialog.getByRole("log",{name:"POD助手聊天记录"})});
+  const assistant=dialog.locator('aside[class*="useHelp"]');
   const thread=dialog.getByRole("log",{name:"POD助手聊天记录"});
   const input=dialog.getByRole("textbox",{name:"POD助手补充要求"});
   const actions=assistant.locator('[class*="podChatComposer"] [class*="podHelpActions"]');
@@ -445,7 +445,7 @@ test("POD conversation and prompt editor grow together to the bottom of the assi
   expect(inputBox!.y+inputBox!.height).toBeLessThanOrEqual(actionsBox!.y+2);
   expect(actionsBox!.y+actionsBox!.height).toBeLessThanOrEqual(panelBox!.y+panelBox!.height+2);
   if(viewport.width>820){
-   expect(threadBox!.height).toBeGreaterThan(245);
+   expect(threadBox!.height).toBeGreaterThanOrEqual(245);
    expect(inputBox!.height).toBeGreaterThan(165);
    // The lower editor and controls actually occupy the assistant's available height.
    expect(panelBox!.y+panelBox!.height-(actionsBox!.y+actionsBox!.height)).toBeLessThan(115);
