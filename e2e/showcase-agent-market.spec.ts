@@ -131,6 +131,8 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(imageSettings).toContainText("图片策略");
  await expect(imageSettings).toContainText("配置对象");
  await expect(imageSettings).toContainText("共用来源");
+ // Official task examples are only rendered when the official plan is selected.
+ await imageSettings.getByRole("button",{name:"官方方案",exact:true}).click();
  await imageSettings.getByRole("button",{name:"清空"}).click();
  await expect(imageSettings.getByRole("checkbox",{name:"主图第1张"})).not.toBeChecked();
  await imageSettings.getByRole("button",{name:"全选"}).click();
@@ -346,7 +348,7 @@ test("product optimizer knowledge picker opens its Figma second-level selector",
 });
 
 
-test("my agents header and both card columns use the filter-bar Vuexy surface in dark mode",async({page})=>{
+test("my agents header and both card columns use the approved deep-blue Vuexy surface in dark mode",async({page})=>{
  await page.setViewportSize({width:1700,height:900});
  await page.goto(base+"/mine");
  const dark=page.getByRole("button",{name:"切换深色主题"});
@@ -361,7 +363,7 @@ test("my agents header and both card columns use the filter-bar Vuexy surface in
  await expect(asides).toHaveCount(2);
  for(const item of [header,...await sections.all(),...await asides.all()]){
   const background=await item.evaluate(el=>getComputedStyle(el).backgroundColor);
-  expect(background).toBe("rgb(47, 51, 73)");
+  expect(background).toBe("rgb(20, 34, 55)");
  }
  const light=page.getByRole("button",{name:"切换浅色主题"});
  if(await light.isVisible())await light.click();
