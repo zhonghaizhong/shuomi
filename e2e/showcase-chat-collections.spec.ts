@@ -69,9 +69,8 @@ test("Chat home three entry cards are compact and keep links and examples visibl
   const card=entries.locator('[class*="landingCard"]').filter({has:page.getByRole("heading",{name,exact:true})});
   await expect(card.getByText("使用示例")).toBeVisible();
  }
- const create=entries.getByRole("button",{name:/进入新建会话/});
- if(await create.count())await expect(create).toBeVisible();
- else await expect(entries.getByText("当前企业仅可查看已有会话。")).toBeVisible();
+ // The create action can live in the page header; entry-card copy must not imply edit permission.
+ await expect(entries.getByRole("heading",{name:"新建会话",exact:true})).toBeVisible();
  await expect(entries.getByRole("link",{name:/查看最近会话/})).toBeVisible();
  await expect(entries.getByRole("link",{name:/进入收藏会话/})).toBeVisible();
 });
