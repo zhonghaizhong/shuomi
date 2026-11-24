@@ -975,3 +975,14 @@
 .productDetailFooter>div{flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:1050px){.dialogFieldTabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.variantSelectionPanel .variantColorPicker{grid-template-columns:repeat(3,minmax(0,1fr))}.aiFieldToolbar{align-items:flex-start}.aiBatchTrigger{width:100%}}
+
+/* Gallery hierarchy: image purpose first, version selector only within main photos. */
+.productPhotoPanel .pictureTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.productPhotoPanel .pictureTabs button{min-width:0;text-align:center}
+.productPhotoPanel .variantImageMode{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.productPhotoPanel .photoVersionLabel{font-size:12px;white-space:nowrap;color:var(--muted);margin-right:2px}
+.productPhotoPanel .variantImageMode button{min-height:30px;padding:5px 10px;font-size:12px}
+.productPhotoPanel .variantImageMode button[aria-pressed="true"]{
+ background:color-mix(in srgb,var(--listing-primary) 15%,var(--surface));
+ border-color:var(--listing-primary);color:var(--ink);font-weight:650;
+}
