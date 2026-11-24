@@ -5,7 +5,7 @@ import {readOptimizedDatasets,optimizedDatasetsChanged} from "../showcase-optimi
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import {readShowcaseEnabledAgents,readShowcaseAgentTemplates,showcaseAgentId,showcaseAgentStateChanged} from "../showcase-agent-demo-state";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
-import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,completeShowcaseUploadTask,approveShowcaseUploadTask,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
+import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,variantGroupReady,type ListingVariantPhotoRole,completeShowcaseUploadTask,approveShowcaseUploadTask,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 import {useRouter} from "next/navigation";
 import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
@@ -150,6 +150,10 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const resetBatchFilter=()=>{setListPage(1);setFilter("");setApplied("");setBatchFilter("");setAppliedBatch("");sessionStorage.removeItem(showcaseUploadBatchPreferenceKey(organizationId,memberId));};
  const [reviewChecked,setReviewChecked]=useState(false),[reviewMode,setReviewMode]=useState<"compare"|"edit">("compare");
  const [pictureTab,setPictureTab]=useState<"main"|"detail">("main");
+ const [variantColorId,setVariantColorId]=useState("");
+ const [photoMode,setPhotoMode]=useState<"optimized"|"original">("optimized");
+ const [editingPhotoRole,setEditingPhotoRole]=useState<ListingVariantPhotoRole|null>(null);
+ const [photoDraft,setPhotoDraft]=useState("");
  const [fieldTab,setFieldTab]=useState<"common"|"variant"|"sku">("common");
  const [optionalOpen,setOptionalOpen]=useState(false);
  const [categoryEdit,setCategoryEdit]=useState(false);
@@ -164,10 +168,21 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  const selectedTask=selectedItem?.taskId?savedTasks.find(task=>task.id===selectedItem.taskId):undefined;
  const variantDetails=selectedTask?.demoProduct?.variantDetails??[];
  const selectedSkuCount=variantDetails.length||(selectedTask?.productIds.length??1);
- const selectedMainImages=selectedItem?.optimizedImages?.length?selectedItem.optimizedImages:(selectedItem?.originalImages??[]);
+ const variantImageGroups=selectedTask?.demoProduct?.variantImageGroups??[];
+ const selectedVariantGroup=variantImageGroups.find(g=>g.id===variantColorId)??variantImageGroups[0];
+ const selectedVariantSkus=variantDetails.filter(v=>v.color.trim().toLowerCase()===selectedVariantGroup?.id);
+ const selectedColorOptimizedImages=selectedVariantGroup?listingVariantPhotoRoles.map(role=>selectedVariantGroup.optimizedImages.find(img=>img.role===role)?.url).filter((src):src is string=>Boolean(src)):[];
+ const colorPhotoComplete=variantImageGroups.length===0||variantImageGroups.every(variantGroupReady);
+ const selectedColorOriginalImages=selectedVariantGroup?.originalImages??(selectedItem?.originalImages??[]);
+ const selectedMainImages=selectedVariantGroup?(photoMode==="optimized"?selectedColorOptimizedImages:selectedColorOriginalImages):(selectedItem?.optimizedImages?.length?selectedItem.optimizedImages:(selectedItem?.originalImages??[]));
  // Detail images are a separate data field: never relabel main-gallery images as detail photos.
  const selectedDetailImages=selectedItem?.detailImages??[];
  const galleryImages=pictureTab==="main"?selectedMainImages:selectedDetailImages;
+ const saveColorPhoto=(role:ListingVariantPhotoRole)=>{
+  if(!selectedTask||!selectedVariantGroup)return;
+  try{saveListingVariantPhoto(organizationId,memberId,selectedTask.id,selectedVariantGroup.id,role,photoDraft);setEditingPhotoRole(null);setPhotoDraft("");setNotice("已保存 "+selectedVariantGroup.color+" 的「"+role+"」图片链接；其同色不同尺码 SKU 自动继承。");}
+  catch(error){setNotice(error instanceof Error?error.message:"保存变体图片失败");}
+ };
  const classChanged=Boolean(categoryDraft.trim());
  const action=(next:string)=>{setNotice(next);setSubmitted(true)};
  const submitUpload=(uploadMode:"平台草稿"|"直接上传到平台"|"定时上传")=>{
