@@ -384,3 +384,44 @@ test("my agents header and both card columns match the user-marked Vuexy filter 
   expect(background).toBe("rgb(255, 255, 255)");
  }
 });
+test("POD assistant keeps generated images and copied prompts inside chat with image zoom",async({page,context})=>{
+ await context.grantPermissions(["clipboard-read","clipboard-write"]);
+ await page.goto(base+"/mine");
+ await page.getByRole("button",{name:"进入使用"}).last().click();
+ const pod=page.getByRole("dialog",{name:"POD刊登智能体"});
+ const chat=pod.getByRole("log",{name:"POD助手聊天记录"});
+ const draft=pod.getByRole("textbox",{name:"POD助手补充要求"});
+ await expect(chat).toBeVisible();
+ await draft.fill("111");
+ await pod.getByRole("button",{name:"生成印花图（演示）"}).click();
+ await expect(chat.locator('[data-pod-message="artwork"]')).toHaveCount(1);
+ await expect(chat.getByRole("img",{name:/本地示意印花图/})).toBeVisible();
+ await expect(pod.locator('[class*="podArtworkPreview"]')).toHaveCount(0);
+ await chat.getByRole("button",{name:/放大印花图/}).click();
+ const zoom=pod.getByRole("dialog",{name:"POD图片放大预览"});
+ await expect(zoom.getByRole("img",{name:"本地演示印花图"})).toBeVisible();
+ await zoom.getByRole("button",{name:"关闭图片预览"}).click();
+ await expect(zoom).toHaveCount(0);
+ await expect(chat.getByRole("img",{name:/本地示意印花图/})).toBeVisible();
+ await chat.getByRole("button",{name:"加入我的素材库"}).click();
+ await expect(chat.getByRole("button",{name:"已加入我的素材库"})).toBeDisabled();
+ await chat.getByRole("button",{name:"重新设计"}).click();
+ await expect(draft).toHaveValue("111");
+ await pod.getByLabel("上传POD印花参考图").setInputFiles({
+  name:"reference.png",mimeType:"image/png",
+  buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9oO3Vd0AAAAASUVORK5CYII=","base64")
+ });
+ await expect(chat.locator('[data-pod-message="reference"]')).toHaveCount(1);
+ await pod.getByRole("button",{name:"整理图片指令"}).click();
+ const prompt=chat.locator('[data-pod-message="prompt"]');
+ await expect(prompt).toHaveCount(1);
+ await expect(prompt).toContainText("111");
+ await prompt.getByRole("button",{name:"复制指令"}).click();
+ await expect(pod.getByRole("status")).toContainText("指令已复制");
+ expect(await page.evaluate(()=>navigator.clipboard.readText())).toBe("111");
+ await prompt.getByRole("button",{name:"继续编辑"}).click();
+ await expect(draft).toHaveValue("111");
+ await prompt.getByRole("button",{name:"应用到步骤 4"}).click();
+ await expect(pod.getByRole("status")).toContainText("已将指令应用");
+ await expect(chat.locator('[data-pod-message="artwork"]')).toHaveCount(1);
+});

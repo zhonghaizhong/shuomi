@@ -13,6 +13,15 @@ export type AgentPreviewDialog =
  | {kind:"model";title:string;model:"official"|"custom"}
  | {kind:"use";title:string};
 type CustomForm={provider:string;model:string;apiKey:string;endpoint:string};
+type PodChatMessage={
+ id:number;
+ role:"user"|"assistant";
+ kind:"text"|"reference"|"prompt"|"artwork";
+ text:string;
+ src?:string;
+ prompt?:string;
+ saved?:boolean;
+};
 function readableReference(value:string){
  if(value.startsWith("preview:personal:"))return value.slice("preview:personal:".length);
  if(value.startsWith("preview:official:"))return value.slice("preview:official:".length);
@@ -70,11 +79,14 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  const [podQuantity,setPodQuantity]=useState(3);
  const [podTransparent,setPodTransparent]=useState(false);
  const [podChatDraft,setPodChatDraft]=useState("");
- const [podChatPrompt,setPodChatPrompt]=useState("");
  const [podChatImage,setPodChatImage]=useState("");
  const [podChatNotice,setPodChatNotice]=useState("");
- const [podArtworkPreview,setPodArtworkPreview]=useState<{src:string;prompt:string}|null>(null);
- const [podArtworkSaved,setPodArtworkSaved]=useState(false);
+ const [podMessages,setPodMessages]=useState<PodChatMessage[]>([]);
+ const [podZoom,setPodZoom]=useState<{src:string;alt:string}|null>(null);
+ const podMessageId=useRef(0);
+ const podInputRef=useRef<HTMLTextAreaElement>(null);
+ const podThreadRef=useRef<HTMLDivElement>(null);
+ const podObjectUrls=useRef<string[]>([]);
  const [configMode,setConfigMode]=useState<ConfigurationMode|null>(null);
  const [useConfig,setUseConfig]=useState<AgentUseConfiguration>({});
 
@@ -102,28 +114,80 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
    if(data.useConfig&&typeof data.useConfig==="object"){setUseConfig(data.useConfig);const cfg=data.useConfig as Record<string,unknown>;if(["optimizationSource","imageLanguage","imageBackground","selectedMainImages","selectedDetailImages","imageTasks"].some(key=>cfg[key]!==undefined))setImageConfigured(true);}
   }catch{/* A missing or malformed browser draft never prevents opening the dialog. */}
  },[info,organizationId,memberId]);
+ useEffect(()=>()=>{for(const url of podObjectUrls.current)URL.revokeObjectURL(url);podObjectUrls.current=[];},[]);
+ useEffect(()=>{if(podMessages.length)podThreadRef.current?.scrollTo({top:podThreadRef.current.scrollHeight,behavior:"smooth"});},[podMessages]);
  const isModel=info.kind==="model",isUse=info.kind==="use",isPod=info.title.includes("POD");
- const applyPodChatPrompt=()=>{if(!podChatPrompt.trim()){setPodChatNotice("请先填写希望用于贴图生成的指令。");return;}setPodPatternMode("自定义指令模式");setUseConfig(old=>({...old,patternPrompt:podChatPrompt.trim()}));setPodChatNotice("已将指令应用到贴图素材配置，可打开「自定义指令模式」继续编辑。")};
- const handlePodReference=(file?:File)=>{if(!file)return;if(!file.type.startsWith("image/")){setPodChatNotice("请上传图片文件。");return;}setPodChatImage(file.name);setPodChatNotice("已上传参考图「"+file.name+"」。请描述画面内容，点击「整理图片指令」；当前尚未接入 AI 图片识别。")};
+ const appendPodMessages=(entries:Omit<PodChatMessage,"id">[])=>{
+  const next=entries.map(entry=>({...entry,id:++podMessageId.current}));
+  setPodMessages(previous=>[...previous,...next]);
+ };
+ const applyPodChatPrompt=(prompt:string)=>{
+  if(!prompt.trim()){setPodChatNotice("请先填写希望用于贴图生成的指令。");return;}
+  setPodPatternMode("自定义指令模式");
+  setUseConfig(old=>({...old,patternPrompt:prompt.trim()}));
+  setPodChatNotice("已将指令应用到步骤 4 的自定义指令模式。");
+ };
+ const handlePodReference=(file?:File)=>{
+  if(!file)return;
+  if(!file.type.startsWith("image/")){setPodChatNotice("请上传图片文件。");return;}
+  if(file.size>10*1024*1024){setPodChatNotice("参考图不能超过 10 MB。");return;}
+  const url=URL.createObjectURL(file);
+  podObjectUrls.current.push(url);
+  setPodChatImage(file.name);
+  appendPodMessages([{role:"user",kind:"reference",text:file.name,src:url}]);
+  setPodChatNotice("已添加参考图。请描述图案、颜色与风格后整理指令；当前不支持自动识图。");
+ };
  const organizeImagePrompt=()=>{
   if(!podChatImage){setPodChatNotice("请先上传印花参考图片。");return;}
-  if(!podChatDraft.trim()){setPodChatNotice("图片已上传，请填写图片中的图案、颜色和风格后整理为指令；暂不支持自动识图。");return;}
-  setPodChatPrompt(podChatDraft.trim());setPodChatNotice("已整理你填写的参考图描述，可应用到步骤 4；未执行 AI 图片识别。");
- };
- const generatePodArtwork=()=>{
   const prompt=podChatDraft.trim();
-  if(!prompt){setPodChatNotice("请先输入印花设计指令。");return;}
-  setPodArtworkPreview({src:makePodDemoArtwork(prompt),prompt});
-  setPodArtworkSaved(false);
-  setPodChatNotice("已创建本地印花示意预览（非 AI 生成）。确认后可加入个人素材库；正式生图需接入模型。");
+  if(!prompt){setPodChatNotice("图片已上传，请描述图案、颜色和风格后整理指令；当前不支持自动识图。");return;}
+  appendPodMessages([
+   {role:"user",kind:"text",text:prompt},
+   {role:"assistant",kind:"prompt",text:prompt}
+  ]);
+  setPodChatDraft("");
+  setPodChatNotice("已将你填写的参考图描述整理为可复制的指令，尚未执行 AI 图片识别。");
  };
- const savePodArtwork=()=>{
-  if(!podArtworkPreview||podArtworkSaved)return;
+ const generatePodArtwork=(input?:string)=>{
+  const prompt=(input??podChatDraft).trim();
+  if(!prompt){setPodChatNotice("请先输入印花设计指令。");return;}
+  appendPodMessages([
+   {role:"user",kind:"text",text:prompt},
+   {role:"assistant",kind:"artwork",text:"印花图 · 本地演示（非 AI 生成）",src:makePodDemoArtwork(prompt),prompt,saved:false}
+  ]);
+  setPodChatDraft("");
+  setPodChatNotice("已在聊天记录中显示本地印花示意。正式生图服务尚未接入。");
+ };
+ const savePodArtwork=(entry:PodChatMessage)=>{
+  if(entry.kind!=="artwork"||!entry.src||!entry.prompt||entry.saved)return;
   const existing=readPodLibrary(organizationId,memberId);
-  const asset={id:Date.now(),name:"POD本地示意图-"+new Date().toLocaleDateString("zh-CN"),category:"我的自定义分类",style:0,prompt:podArtworkPreview.prompt,dataUrl:podArtworkPreview.src,status:"演示预览"};
+  const asset={id:Date.now(),name:"POD本地示意图-"+new Date().toLocaleDateString("zh-CN"),category:"我的自定义分类",style:0,prompt:entry.prompt,dataUrl:entry.src,status:"演示预览"};
   const ok=savePodLibrary(organizationId,memberId,[...existing,asset]);
-  setPodArtworkSaved(ok);
+  if(ok)setPodMessages(previous=>previous.map(message=>message.id===entry.id?{...message,saved:true}:message));
   setPodChatNotice(ok?"已加入当前企业及成员的「我的素材库」（浏览器会话演示数据）。":"保存失败：浏览器会话存储空间不足或不可用。");
+ };
+ const copyPodPrompt=async(prompt:string)=>{
+  try{
+   if(!navigator.clipboard?.writeText)throw new Error("Clipboard unavailable");
+   await navigator.clipboard.writeText(prompt);
+   setPodChatNotice("指令已复制到剪贴板。");
+  }catch{
+   const input=document.createElement("textarea");
+   input.value=prompt;
+   input.setAttribute("readonly","");
+   input.style.position="fixed";
+   input.style.left="-9999px";
+   document.body.appendChild(input);
+   input.select();
+   const copied=document.execCommand("copy");
+   input.remove();
+   setPodChatNotice(copied?"指令已复制到剪贴板。":"复制失败，请手动选择指令文本复制。");
+  }
+ };
+ const editPodPrompt=(prompt:string)=>{
+  setPodChatDraft(prompt);
+  podInputRef.current?.focus();
+  setPodChatNotice("已将指令放回输入框，可以继续修改。");
  };
  const toggle=(items:string[],set:(value:string[])=>void,item:string)=>set(items.includes(item)?items.filter(v=>v!==item):[...items,item]);
  const validCustom=custom.provider.trim()&&custom.model.trim()&&custom.apiKey.trim();
@@ -204,8 +268,9 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
  const renameTemplate=(id:string)=>{const next=templateItems.map(x=>x.id===id?{...x,name:templateRenameValue.trim()||x.name}:x);setTemplateItems(next);try{writeAgentPreviewTemplates(organizationId,memberId,info.title,next);}catch{setMessage("模板重命名未保存。");return;}setTemplateRename(null);};
  const deleteTemplate=(id:string)=>{const next=templateItems.filter(x=>x.id!==id);setTemplateItems(next);try{writeAgentPreviewTemplates(organizationId,memberId,info.title,next);}catch{setMessage("模板删除未保存。");return;}setTemplateDelete(null);setTemplateDetails(null);};
  return <dialog ref={ref} className={`${styles.dialog} ${isUse?styles.useDialog:""}`} aria-labelledby={id}
-   onCancel={event=>{event.preventDefault();if(saveNameOpen){setSaveNameOpen(false);return;}if(templateManagerOpen){setTemplateManagerOpen(false);return;}onClose();}}
+   onCancel={event=>{event.preventDefault();if(podZoom){setPodZoom(null);return;}if(saveNameOpen){setSaveNameOpen(false);return;}if(templateManagerOpen){setTemplateManagerOpen(false);return;}onClose();}}
    onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
+  {podZoom?<div className={styles.podZoomOverlay} onClick={event=>{if(event.target===event.currentTarget)setPodZoom(null);}}><section className={styles.podZoomPanel} role="dialog" aria-modal="true" aria-label="POD图片放大预览"><header><strong>图片预览</strong><button type="button" aria-label="关闭图片预览" onClick={()=>setPodZoom(null)}>关闭</button></header><img src={podZoom.src} alt={podZoom.alt}/><small>点击关闭返回聊天记录，演示图不是 AI 生成结果。</small></section></div>:null}
   {podTaskOpen?<ShowcasePODTaskDialog organizationId={organizationId} memberId={memberId} administrator={administrator} onClose={()=>setPodTaskOpen(false)} onTemplate={()=>setPodTaskOpen(false)}/>:null}
   {podMaterialsOpen?<PodManagementWorkspace organizationId={organizationId} memberId={memberId} onClose={()=>setPodMaterialsOpen(false)}/>:null}
   {configMode?<AgentUseConfigurationDialog mode={configMode} agentKind={isPod?"pod":"product"} organizationId={organizationId} memberId={memberId} initial={{...useConfig,selectedSkills:skills,selectedKnowledge:knowledge}} onClose={()=>setConfigMode(null)} onSave={value=>{
@@ -260,16 +325,26 @@ export function ShowcaseAgentDialog({dialog:info,onClose,onSaveModel,onSaveTempl
     <section className={styles.useStep}><h3>步骤 3 · 启用技能</h3><div className={styles.productConfigRow}><div className={styles.productRowText}><strong>启用执行技能</strong><small>只应用实际选择的我的技能或团队技能，未选择时不自动运行。</small></div><span className={styles.productStatus}>● {skills.length?"已选 "+skills.length+" 项":"未启用"}</span><button type="button" className={styles.primary} onClick={()=>setConfigMode("skills")}>选择技能</button></div></section>
     <section className={styles.useStep}><h3>步骤 4 · 贴图素材</h3><p>选择本次贴图素材的生成方式，点击模式卡进入配置。</p><div className={styles.podModes}>{[["AI自动模式","AI自动确定主题、风格、元素与排版"],["图片裂变模式","根据参考图片裂变多套新贴图"],["自定义指令模式","依据创作指令生成个性化贴图"]].map(([name,desc])=><button type="button" key={name} aria-pressed={podPatternMode===name} onClick={()=>{setPodPatternMode(name);if(name==="图片裂变模式")setConfigMode("pod-pattern-split");else if(name==="自定义指令模式")setConfigMode("pod-pattern-custom");}}><strong>{name}</strong><small>{desc}</small></button>)}</div><div className={styles.imageInstructions}><p>当前配置：{podPatternMode}{useConfig.splitStrength&&podPatternMode==="图片裂变模式"?" · "+useConfig.splitStrength:""}{useConfig.patternPrompt&&podPatternMode==="自定义指令模式"?" · 自定义指令已填写":""}</p>{podPatternMode!=="AI自动模式"?<button className={styles.secondary} type="button" onClick={()=>setConfigMode(podPatternMode==="图片裂变模式"?"pod-pattern-split":"pod-pattern-custom")}>配置当前模式</button>:null}</div><label className={styles.podCheck}><input type="checkbox" checked={podTransparent} onChange={e=>setPodTransparent(e.target.checked)}/>生成透明背景</label></section>
     <section className={styles.useStep}><h3>步骤 5 · 生成数量</h3><p>执行时按批次商品数量自动计算。</p><div className={styles.podCount}><span>每个商品生成</span><button aria-label="减少生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.max(1,v-1))}>−</button><strong>{podQuantity}</strong><button aria-label="增加生成数量" type="button" onClick={()=>setPodQuantity(v=>Math.min(20,v+1))}>+</button><span>个</span></div><div className={styles.actionsRow}><button type="button" className={styles.secondary} onClick={()=>setShowPreview(v=>!v)}>预览配置</button><button type="button" className={styles.primary} onClick={saveTemplate}>保存为模板</button></div>{showPreview?<p role="status" className={styles.inlineNotice}>{podImageMode} · {podPatternMode} · {podQuantity} 个 · {podTransparent?"透明 PNG":"普通背景"} · 已选技能 {skills.length} 项 · 已选知识 {knowledge.length} 项</p>:null}</section>
-   </div><aside className={styles.useHelp}><h3>硕米POD助手</h3><p>上传图片并补充描述来整理指令，或直接输入指令生成印花示意图。真实识图与生图服务尚未接入。</p>
+   </div><aside className={styles.useHelp}><h3>硕米POD助手</h3><p>上传参考图并描述图案，或直接输入印花指令。图片与指令统一在聊天记录中展示。</p>
      <div className={styles.podHelpChat}>
-      {podChatImage?<p>参考图片：{podChatImage}</p>:<p>可上传参考印花图，或者直接填写创作要求。</p>}
-      <label>贴图生成指令<textarea aria-label="POD助手补充要求" value={podChatDraft} onChange={e=>setPodChatDraft(e.target.value)} placeholder="例如：美式手绘猫咪印花、简洁线条、透明背景、适合服装印制……" rows={4}/></label>
-      <div className={styles.podHelpActions}><label className={styles.secondary}>上传参考图<input type="file" accept="image/*" aria-label="上传POD印花参考图" onChange={e=>handlePodReference(e.target.files?.[0])}/></label><button type="button" className={styles.secondary} onClick={organizeImagePrompt}>整理图片指令</button><button type="button" className={styles.primary} onClick={generatePodArtwork}>生成印花图（演示）</button></div>
-      {podArtworkPreview?<section className={styles.podArtworkPreview}><strong>印花图预览 · 本地示意（非 AI 生成）</strong><img src={podArtworkPreview.src} alt="根据输入主题绘制的本地示意印花图，不是 AI 生成图片"/><div className={styles.podHelpActions}><button type="button" className={styles.primary} disabled={podArtworkSaved} onClick={savePodArtwork}>{podArtworkSaved?"已加入我的素材库":"加入我的素材库"}</button><button type="button" className={styles.secondary} onClick={()=>{setPodArtworkPreview(null);setPodArtworkSaved(false)}}>重新设计</button></div></section>:null}
-      {podChatPrompt?<section className={styles.podHelpResult}><strong>待应用的贴图指令</strong><p>{podChatPrompt}</p><button type="button" onClick={applyPodChatPrompt}>应用到步骤 4</button></section>:null}
-      {podChatNotice?<p role="status">{podChatNotice}</p>:null}
+      <div className={styles.podChatThread} ref={podThreadRef} role="log" aria-label="POD助手聊天记录" aria-live="polite">
+       {podMessages.length===0?<p className={styles.podChatEmpty}>在下方输入指令，生成结果会显示在这里。图片可放大，指令可复制。</p>:podMessages.map(entry=>
+        <article key={entry.id} className={`${styles.podChatBubble} ${entry.role==="user"?styles.podChatUser:styles.podChatAssistant}`} data-pod-message={entry.kind}>
+         <small>{entry.role==="user"?"我":"硕米POD助手"}</small>
+         {entry.kind==="reference"?<><span>上传了参考图：{entry.text}</span><button type="button" className={styles.podChatImageButton} aria-label={"放大参考图："+entry.text} onClick={()=>entry.src&&setPodZoom({src:entry.src,alt:"参考图片："+entry.text})}><img src={entry.src} alt={"参考图片："+entry.text}/></button></>
+         :entry.kind==="artwork"?<><strong>{entry.text}</strong><button type="button" className={styles.podChatImageButton} aria-label={"放大印花图："+entry.id} onClick={()=>entry.src&&setPodZoom({src:entry.src,alt:"本地演示印花图"})}><img src={entry.src} alt="本地示意印花图（非 AI 生成），点击放大"/></button><div className={styles.podChatMessageActions}><button type="button" disabled={entry.saved} onClick={()=>savePodArtwork(entry)}>{entry.saved?"已加入我的素材库":"加入我的素材库"}</button><button type="button" onClick={()=>editPodPrompt(entry.prompt??"")}>重新设计</button></div></>
+         :entry.kind==="prompt"?<div className={styles.podChatPrompt}><div><strong>整理后的印花指令</strong><button type="button" onClick={()=>void copyPodPrompt(entry.text)}>复制指令</button></div><p>{entry.text}</p><div className={styles.podChatMessageActions}><button type="button" onClick={()=>editPodPrompt(entry.text)}>继续编辑</button><button type="button" onClick={()=>applyPodChatPrompt(entry.text)}>应用到步骤 4</button></div></div>
+         :<p>{entry.text}</p>}
+        </article>
+       )}
+      </div>
+      <div className={styles.podChatComposer}>
+       <label>贴图生成指令<textarea ref={podInputRef} aria-label="POD助手补充要求" value={podChatDraft} onChange={e=>setPodChatDraft(e.target.value)} placeholder="例如：美式手绘猫咪印花、简洁线条、透明背景……" rows={4}/></label>
+       <div className={styles.podHelpActions}><label className={styles.secondary}>上传参考图<input type="file" accept="image/*" aria-label="上传POD印花参考图" onChange={e=>{handlePodReference(e.target.files?.[0]);e.target.value="";}}/></label><button type="button" className={styles.secondary} onClick={organizeImagePrompt}>整理图片指令</button><button type="button" className={styles.primary} onClick={()=>generatePodArtwork()}>生成印花图（演示）</button></div>
+       {podChatNotice?<p role="status" className={styles.podChatNotice}>{podChatNotice}</p>:null}
+      </div>
      </div>
-     <p>示意图可保存到当前账号的演示素材库。真实 AI 识图、生图、扣积分及刊登尚未执行。</p>
+     <p>图片为本地示意，非 AI 生成；真实识图、生图和扣积分尚未接入。</p>
     </aside>
   </div></>
   :<div className={styles.productLayout}>
