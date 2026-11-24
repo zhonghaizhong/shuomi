@@ -2,7 +2,19 @@ import {expect,test} from "@playwright/test";
 const catalogRoutes=["/supply/catalogs","/supply/catalogs/selection","/supply/catalogs/apply"];
 const preferredRoutes=["/supply/applications","/supply/applications/new","/supply/applications/progress","/supply/applications/records"];
 const url=(route:string)=>"/shuomi/#/workbench"+route;
-const channels=(color:string)=>color.match(/\d+(?:\.\d+)?/g)?.slice(0,3).map(Number)??[];
+/** Computed colors may serialize as rgb(221, 247, 251) or color(srgb .867 .969 .984).
+ * Normalize to 0–255 RGB channels before checking pale backgrounds and contrast.
+ */
+const channels=(color:string)=>{
+ const raw=color.trim().toLowerCase();
+ if(raw.startsWith("color(srgb ")){
+  const values=raw.slice("color(srgb ".length).replace(/\)$/, "").split("/")[0]
+   .trim().split(/\s+/).slice(0,3).map(Number);
+  return values.length===3&&values.every(Number.isFinite)?values.map(n=>n*255):[];
+ }
+ const matches=raw.match(/-?(?:\d*\.\d+|\d+)/g)?.slice(0,3).map(Number)??[];
+ return matches.length===3&&matches.every(Number.isFinite)?matches:[];
+};
 const pale=(color:string)=>{const c=channels(color);return c.length===3&&c.every(n=>n>=220);};
 const turnLight=async(page:any)=>{const b=page.getByRole("button",{name:"切换浅色主题"});if(await b.count())await b.click();};
 const turnDark=async(page:any)=>{const b=page.getByRole("button",{name:"切换深色主题"});if(await b.count())await b.click();};
