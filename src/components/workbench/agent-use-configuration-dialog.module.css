@@ -168,3 +168,12 @@
 .optimizerExampleZoom>button{position:absolute;right:24px;top:18px;min-height:34px;color:#fff;border:1px solid #ffffff55;background:#25344b;padding:5px 14px;border-radius:7px;cursor:pointer}
 .optimizerExampleZoom>img{width:min(85vw,calc(100dvh - 90px));height:min(85vw,calc(100dvh - 90px));max-width:100%;max-height:100%;object-fit:contain;border-radius:9px;background:#fff}
 @media(max-width:660px){.optimizerExampleOverlay{padding:8px}.optimizerExampleWindow{padding:14px;max-height:calc(100dvh - 16px)}.optimizerExampleLayout{grid-template-columns:1fr;gap:12px}.optimizerExampleHead strong{font-size:17px}.optimizerExampleNotes{padding:12px}}
+
+/* Hybrid image configuration: show strategy before the paired/independent targets. */
+.hybridControls{display:grid;gap:12px;min-width:0}
+.hybridControlRow{display:flex;align-items:center;gap:13px;flex-wrap:wrap;min-width:0}
+.hybridControlRow>strong{font-size:14px;font-weight:650;color:var(--ink);min-width:70px}
+.hybridControlRow>.segment{min-width:0}
+.hybridBothSelected{display:inline-flex;align-items:center;justify-content:center;min-height:38px;min-width:90px;padding:7px 12px;box-sizing:border-box;border:1px solid var(--primary);border-radius:7px;background:color-mix(in srgb,var(--primary) 16%,var(--raised));color:var(--ink);font-size:14px;font-weight:650}
+.hybridControlRow small{color:var(--muted);font-size:13px;line-height:1.45}
+@media(max-width:600px){.hybridControlRow{align-items:flex-start}.hybridControlRow>strong{width:100%}}
