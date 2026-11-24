@@ -77,6 +77,7 @@ export function listOwnReadyProducts(org:string,member:string):OwnProductRecord[
 }
 export function checkOwnProductSkus(skus:OwnProductSku[]):string[]{
  const missing:string[]=[];
+ if(!skus.length)return ["至少添加一个 SKU"];
  skus.forEach((sku,i)=>{
   const label=sku.name.trim()||"SKU "+(i+1);
   if(!sku.name.trim())missing.push("SKU "+(i+1)+" 名称");
@@ -107,6 +108,7 @@ export function approveOwnProductIntake(org:string,member:string,id:string):OwnP
  const current=all.find(p=>p.id===id);
  if(!current)throw Error("无权审核或商品已不存在");
  if(current.status!=="待审核")throw Error("商品未处于首次入库待审核状态");
+ if(!current.skus.length)throw Error("至少需要一个 SKU，禁止空商品入库");
  if(checkOwnProductSkus(current.skus).length)throw Error("资料缺失，请先在待完善补齐");
  const updated:OwnProductRecord={...current,status:"已入库",missing:[],checkedAt:new Date().toLocaleString("zh-CN",{hour12:false})};
  sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===id?updated:p)));
