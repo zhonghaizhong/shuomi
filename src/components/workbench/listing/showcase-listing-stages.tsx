@@ -1,3 +1,4 @@
+import type {ReactNode} from "react";
 "use client";
 import {useEffect,useMemo,useRef,useState} from "react";
 import {readOwnProductBatches,listOwnReadyProducts,ownProductUpdated} from "../showcase-own-product-data";
@@ -30,7 +31,7 @@ function ListingProductPhoto({src,alt,size}:{src:string;alt:string;size:number})
  }}/>;
 }
 
-export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stage;organizationId:string;memberId:string}){
+export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigation}:{stage:Stage;organizationId:string;memberId:string;tabNavigation?:ReactNode}){
  const router=useRouter();
  const [source,setSource]=useState<PickSource>("采集批次"),[batch,setBatch]=useState(""),[selectedVersionId,setSelectedVersionId]=useState("original"),[batchDialog,setBatchDialog]=useState(false),[store,setStore]=useState(""),[agent,setAgent]=useState(false),[agentId,setAgentId]=useState(""),[templateId,setTemplateId]=useState(""),[rules,setRules]=useState(true),[mode,setMode]=useState<"平台草稿"|"直接上传到平台"|"定时上传">("平台草稿");
  const [scheduledDate,setScheduledDate]=useState(""),[scheduledTime,setScheduledTime]=useState("");
@@ -359,6 +360,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId}:{stage:Stag
  };
  return <div className={styles.page} data-listing-stage={stage}>
   <ShowcaseListingStageHeader stage={stage}/>
+  {tabNavigation}
   {notice?<div className={styles.notice} role="status">{notice}<button type="button" onClick={()=>setNotice("")} aria-label="关闭提示">×</button></div>:null}
   {stage==="waiting"?<>
    <section className={styles.flowHeader}><div><h2>商品上传流程</h2><p>商品 · 规则必选 · 智能体按需 · 平台上传</p></div><div className={styles.flowSteps}>{[["选择商品","待选择"],["平台与店铺","当前"],["启用智能体","按需"],["启用规则","必选"]].map(([name,state],i)=><span key={name}><b>{i+1}</b><strong>{name}</strong><small>{state}</small></span>)}</div></section>
