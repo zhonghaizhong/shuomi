@@ -51,7 +51,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const cards=officialSkills.filter(s=>(category==="official"?(filter==="全部"||s[3]===filter):enabled.includes(s[0])&&filter!=="我的创建")&&match(s.join(" ")));
  const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
  return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
- <header className={styles.hero}><div className={styles.breadcrumb}>AI工作台 / <button onClick={()=>go("")}>技能库</button>{category!=="home"?" / "+title:""}</div><h1>{title}</h1><p className={category==="home"?styles.skillIntroLead:undefined}>{desc}</p>{category==="home"?<p className={styles.skillIntroSupporting}>官方模板提供现成的方法，也可以保存自己的方法。需要时在支持的 AI 会话中选择使用，不会自动执行。</p>:null}</header>
+ <header className={styles.hero}><div className={styles.breadcrumb}>AI工作台 / 技能库</div><h1>技能库</h1><p className={category==="home"?styles.skillIntroLead:undefined}>{desc}</p>{category==="home"?<p className={styles.skillIntroSupporting}>官方模板提供现成的方法，也可以保存自己的方法。需要时在支持的 AI 会话中选择使用，不会自动执行。</p>:null}</header>
  {category==="home"?<>
  <section className={styles.skillIntroGrid} aria-label="选择技能库入口">
   <article className={styles.skillIntroCard} data-skill-entry="official">
