@@ -167,8 +167,11 @@ export async function installGeneratedOwnProductDemoImages(org:string,member:str
  const reviewCount=demo.filter(p=>p.status==="待审核").length;
  const pendingCount=demo.filter(p=>p.status==="入库待完善").length;
  // Never undo a user's completed approvals or manual edits on subsequent visits.
- if(demo.some(p=>p.status==="已入库")||demo.every(p=>p.demoImageSource&&p.skus[0]?.images.length===8))
-  return {products:6,images:demo.reduce((n,p)=>n+Math.min(8,p.skus[0]?.images.length??0),0),review:reviewCount,pending:pendingCount,alreadyInstalled:true};
+ // An approved or manually edited product must not block the other demo products.
+ const needsPreview=(p:OwnProductRecord)=>p.status!=="已入库"&&!p.demoImageSource&&
+  p.skus[0]?.images.length===1&&/^https:\/\/images\.unsplash\.com\//.test(p.skus[0].images[0]??"");
+ if(!demo.some(needsPreview))
+  return {products:6,images:demo.reduce((n,p)=>n+(p.demoImageSource?Math.min(8,p.skus[0]?.images.length??0):0),0),review:reviewCount,pending:pendingCount,alreadyInstalled:true};
  const img=await new Promise<HTMLImageElement>((resolve,reject)=>{
   const source=new Image();
   source.onload=()=>resolve(source);
@@ -192,7 +195,7 @@ export async function installGeneratedOwnProductDemoImages(org:string,member:str
  // Re-read after async load: never revert a product that was approved or edited in another tab.
  const fresh=readOwnProducts(org,member);
  const changed=fresh.map(p=>{
-  if(p.batchId!==batch.id||p.status==="已入库"||!codes.includes(p.skus[0]?.skuCode??"")||p.demoImageSource)return p;
+  if(p.batchId!==batch.id||!codes.includes(p.skus[0]?.skuCode??"")||!needsPreview(p))return p;
   const images=imagesByCode.get(p.skus[0].skuCode??"");if(!images)return p;
   const skus=p.skus.map((sku,i)=>i===0?{...sku,images:images.slice()}:sku);
   return {...p,skus,missing:checkOwnProductSkus(skus),demoImageSource:"ChatGPT 英语白底 8 张图片模拟"} as OwnProductRecord;
@@ -200,10 +203,10 @@ export async function installGeneratedOwnProductDemoImages(org:string,member:str
  const selected=changed.filter(p=>p.batchId===batch.id&&p.status!=="已入库"&&codes.includes(p.skus[0]?.skuCode??""));
  const review=selected.filter(p=>p.status==="待审核").length;
  const pending=selected.filter(p=>p.status==="入库待完善").length;
- if(review!==4||pending!==2)throw Error("批次状态已变化，已中止自动覆盖图片以保护人工修改");
+ // Approved products and manually edited statuses are preserved, even if counts differ from the original 4/2 fixture.
  try{sessionStorage.setItem(productKey(org,member),JSON.stringify(changed));}catch{throw Error("本次会话存储空间不足，无法保存 48 张图片")}
  notify(org,member);
- return {products:6,images:48,review,pending,alreadyInstalled:false};
+ return {products:6,images:changed.filter(p=>p.batchId===batch.id&&codes.includes(p.skus[0]?.skuCode??"")&&p.demoImageSource).reduce((n,p)=>n+Math.min(8,p.skus[0]?.images.length??0),0),review,pending,alreadyInstalled:false};
 }
 
 /** First-stage Shuomi intake: incomplete drafts stay inside the tool, never in third-party listing 待补全. */
