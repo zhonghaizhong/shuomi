@@ -125,6 +125,12 @@ test("cargo application page uses aligned, colorful yet theme-consistent workflo
    expect(xs[1].x).toBeGreaterThan(xs[0].x+xs[0].width);
   }else expect(xs[1].y).toBeGreaterThan(xs[0].y+40);
   const submit=root.getByRole("button",{name:"提交对接申请"});
+  // The same hash route can preserve the mounted React form between viewport runs.
+  // Explicitly establish an empty-form precondition before testing validation.
+  for(const field of [/货盘名称/,/货盘网址/,/对接联系人/,/主要商品类目/]){
+   await root.getByRole("textbox",{name:field}).fill("");
+  }
+  await expect(page.getByRole("dialog",{name:"提交对接申请"})).toHaveCount(0);
   await submit.click();
   await expect(page.getByRole("dialog",{name:"提交对接申请"})).toHaveCount(0);
   await root.getByRole("textbox",{name:/货盘名称/}).fill("示例货盘");
