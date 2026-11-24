@@ -36,22 +36,21 @@
 .supplyPreview .supplyFlow b { width: 42px; height: 42px; border-radius: 6px; background: color-mix(in srgb, var(--accent), #2f3349 84%); font-size: 16px; font-weight: 700; }
 .supplyPreview .supplyFlow strong { font-size: 16px; }
 .supplyPreview .supplyFlow span { color: #acabc1; font-size: 14px; }
-.supplyPreview .supplyCards { gap: 16px; }
+.supplyPreview .supplyCards { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
 .supplyPreview .supplyCard,
-.supplyPreview .supplyCard:nth-child(n) { min-height: 208px; padding: 20px 22px; border-color: #44485e; border-radius: 6px; background: #2f3349; box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent), transparent 8%); }
-.supplyPreview .supplyCard:nth-child(4),
-.supplyPreview .supplyCard:nth-child(5) { min-height: 190px; }
-.supplyPreview .supplyCard h2 { font-size: 21px; }
-.supplyPreview .supplyCard header span { padding: 5px 12px; border-color: #44485e; border-radius: 4px; color: #acabc1; font-size: 13px; }
-.supplyPreview .supplyCard p { margin: 22px 0 16px; color: #cfcde4; font-size: 16px; line-height: 1.6; }
+.supplyPreview .supplyCard:nth-child(n) { grid-column: span 1; min-width: 0; min-height: 224px; padding: 16px 16px; border-color: #44485e; border-radius: 6px; background: #2f3349; box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent), transparent 8%); }
+.supplyPreview .supplyCard h2 { font-size: 19px; }
+.supplyPreview .supplyCard header span { padding: 4px 8px; border-color: #44485e; border-radius: 4px; color: #acabc1; font-size: 12px; white-space: nowrap; }
+.supplyPreview .supplyCard p { margin: 14px 0 10px; color: #cfcde4; font-size: 14px; line-height: 1.55; }
 .supplyPreview .supplyFoot { gap: 5px; padding: 12px 14px; border-color: #44485e; border-radius: 6px; background: #393d55; }
 .supplyPreview .supplyFoot strong { color: #cfcde4; font-size: 15px; }
 .supplyPreview .supplyFoot span { color: #acabc1; font-size: 14px; }
-.supplyPreview .supplyPills { gap: 10px; }
-.supplyPreview .supplyPills span { min-height: 36px; border-radius: 4px; color: #cfcde4; background: #393d55; font-size: 14px; }
-.supplyPreview .supplyCard button { min-height: 40px; margin-top: 12px; padding: 0 16px; border-color: #7367f0; border-radius: 6px; color: #fff; background: #7367f0; font-size: 15px; }
+.supplyPreview .supplyPills { gap: 6px; }
+.supplyPreview .supplyPills span { min-width: 0; min-height: 34px; padding: 4px 6px; border-radius: 4px; color: #cfcde4; background: #393d55; font-size: 12px; line-height: 1.35; }
+.supplyPreview .supplyCard button { min-height: 36px; margin-top: 9px; padding: 0 16px; border-color: #7367f0; border-radius: 6px; color: #fff; background: #7367f0; font-size: 14px; }
 .supplyPreview .supplyCard button:hover { background: #8175f5; }
 .supplyPreview .unavailable { border-color: #44485e; border-radius: 6px; background: #2f3349; }
+@media (max-width: 1250px) and (min-width: 721px) { .supplyPreview .supplyCards { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 1100px) { .supplyPreview { width: calc(100% - 32px); } }
 @media (max-width: 720px) { .supplyPreview { width: calc(100% - 24px); padding-top: 14px; gap: 12px; } .supplyPreview .supplyFlow { grid-template-columns: 1fr 1fr; } .supplyPreview .supplyFlow article { padding: 8px 5px; } .supplyPreview .supplyFlow span { font-size: 12px; } .supplyPreview .supplyCards { grid-template-columns: 1fr; gap: 10px; } .supplyPreview .supplyCard, .supplyPreview .supplyCard:nth-child(n) { min-height: 180px; grid-column: span 1; padding: 16px; } .supplyPreview .supplyCard p { margin: 16px 0; font-size: 15px; } }
 .unavailable { display: grid; justify-items: center; gap: 15px; min-height: 238px; padding: 22px; border: 1px solid #31445c; border-radius: 14px; background: #142238; text-align: center; }
