@@ -16,3 +16,25 @@
 .imagePreview{position:fixed;inset:0;z-index:150;background:#000e;display:flex;align-items:center;justify-content:center;padding:45px}.imagePreview img{max-width:95%;max-height:95%;object-fit:contain}.imagePreview button{position:absolute;top:15px;right:20px;padding:9px 15px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:7px;cursor:pointer}
 :global(.light) .library{--bg:#fff;--panel:#f7fafd;--line:#dbe3ec;--ink:#333c4c;--muted:#667589;--accent:#087f6c}
 @media(max-width:700px){.library>header{align-items:flex-start;flex-direction:column}.filters{grid-template-columns:1fr}.modal{padding:12px}}
+
+/* Batch rows and header share one table grid, matching 采集批次. */
+.batchSection{min-width:0;display:grid;gap:12px}
+.batchHeading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.batchHeading h3{margin:0;font-size:14px;color:var(--ink);padding-left:9px;border-left:3px solid var(--accent)}
+.batchHeading span{font-size:12px;color:var(--muted)}
+.batchTable{border-collapse:separate!important;border-spacing:0!important;min-width:790px}
+.batchTable th{padding:11px 14px!important;border-block:1px solid var(--line)}
+.batchTable td{padding:12px 14px!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;background:var(--bg)!important;vertical-align:middle}
+.batchTable tbody>tr:nth-child(4n+1)>td{background:var(--panel)!important}
+.batchTable th:first-child{border-left:1px solid var(--line);border-radius:7px 0 0 7px}
+.batchTable th:last-child{border-right:1px solid var(--line);border-radius:0 7px 7px 0}
+.batchTable td button{border:1px solid var(--line);border-radius:7px;padding:7px 12px;background:var(--bg);color:var(--ink);cursor:pointer;white-space:nowrap}
+.batchTable td button[aria-expanded=true]{color:var(--accent);border-color:var(--accent)}
+.batchName{display:grid;gap:5px}.batchName strong{font-size:13px}.batchName small{font-size:12px;color:var(--muted)}
+.metric{display:inline-block;padding:5px 9px;border-radius:6px;background:var(--panel)}
+.batchTable .expandedRow>td{padding:12px!important;background:var(--bg)!important}
+.batchDetails{padding:12px;border:1px solid var(--line);border-radius:8px;display:grid;gap:10px;min-width:0}
+.batchDetailHeading{display:flex;justify-content:space-between;gap:12px;font-size:13px}.batchDetailHeading span,.pendingNote{color:var(--muted);font-size:12px}
+.innerScroll{max-width:100%;overflow-x:auto}.productTable{min-width:660px!important;border-spacing:0!important}
+.productTable td{background:var(--panel)!important}
+.pendingNote{margin:0;padding:8px 0}
