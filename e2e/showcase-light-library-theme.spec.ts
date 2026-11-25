@@ -355,3 +355,36 @@ test("project archive restores shared create action and My Projects manages cust
  await expect(dialog.getByText("重点项目")).toHaveCount(0);
  await dialog.getByRole("button",{name:"完成"}).click();
 });
+
+test("knowledge creation stays visible on all tabs; personal groups manage enabled knowledge",async({page})=>{
+ for(const route of ["/ai/knowledge","/ai/knowledge/official","/ai/knowledge/mine"]){
+  await page.goto("/shuomi/#/workbench"+route);
+  await expect(page.getByRole("button",{name:"去创建知识库"})).toBeVisible();
+ }
+ await page.goto("/shuomi/#/workbench/ai/knowledge/official");
+ await page.locator('[data-library-page="knowledge-official"]').getByRole("button",{name:"启用",exact:true}).first().click();
+ await expect(page.getByRole("status")).toContainText("已加入我的知识库");
+ await page.goto("/shuomi/#/workbench/ai/knowledge/mine");
+ const root=page.locator("[data-my-knowledge-groups]");
+ await expect(root).toBeVisible();
+ await expect(root.getByText("跨境平台规则")).toBeVisible();
+ await root.getByRole("button",{name:"管理分组"}).click();
+ const dialog=page.getByRole("dialog",{name:"管理知识库分组"});
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole("textbox",{name:"分组名称"}).fill("运营资料");
+ await dialog.getByRole("button",{name:"创建分组"}).click();
+ await expect(dialog.getByText("运营资料")).toBeVisible();
+ await dialog.getByRole("button",{name:"完成"}).click();
+ await root.getByRole("combobox",{name:"跨境平台规则的所属分组"}).selectOption("运营资料");
+ await root.getByRole("combobox",{name:"按知识库分组筛选"}).selectOption("运营资料");
+ await expect(root.getByText("跨境平台规则")).toBeVisible();
+ await page.reload();
+ await expect(root.getByRole("combobox",{name:"按知识库分组筛选"}).getByRole("option",{name:"运营资料"})).toHaveCount(1);
+ await root.getByRole("button",{name:"管理分组"}).click();
+ await dialog.getByRole("button",{name:"删除分组"}).click();
+ await dialog.getByRole("button",{name:"完成"}).click();
+ await expect(root.getByText("跨境平台规则")).toBeVisible();
+ await root.getByRole("button",{name:"去创建知识库"}).click();
+ await expect(page).toHaveURL(/chat\/new/);
+ await expect(page.getByRole("button",{name:"加入我的知识库",exact:true})).toHaveAttribute("aria-pressed","true");
+});
