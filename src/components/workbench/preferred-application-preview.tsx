@@ -61,7 +61,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const chosen=selected.filter(id=>candidates.some(c=>c.product.id===id&&c.status==="可申请"));
  const showApply=(ids?:string[])=>{
   const list=ids??chosen;
-  if(!list.length){setNotice("请先勾选已完成首次适配与智能体优化的商品。");return}
+  if(!list.length){setNotice("请先选择已完成适配且有优化版本的商品；未满足条件的商品可点击右侧操作前往我的数据。");return}
   setSelected(list);setSupply(emptyPreferredSupply);setNotice("");setError("");setApplicationOpen(true);
  };
  const submit=(event:FormEvent<HTMLFormElement>)=>{
@@ -116,7 +116,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
       )}
      </div>
     </section>
-    <div className={styles.panelHeading}><div><h2>自有商品库 · 申请候选</h2><p>商品自动同步；仅完成首次适配与智能体优化的商品可以申请。</p></div><button type="button" className={styles.primary} disabled={!chosen.length} onClick={()=>showApply()}>申请已选商品（{chosen.length}）</button></div>
+    <div className={styles.panelHeading}><div><h2>自有商品库 · 申请候选</h2><p>商品自动同步；完成首次适配并保存优化版本后即可申请；本地优化草稿仅用于演示申请。</p></div><button type="button" className={styles.primary} disabled={!chosen.length} onClick={()=>showApply()}>申请已选商品（{chosen.length}）</button></div>
     <form className={styles.filters} aria-label="商品筛选" onSubmit={e=>{e.preventDefault();setAppliedQuery(query);setPage(1)}}>
      <label className={styles.searchBox}><Search size={17}/><input aria-label="搜索商品名称或SKU" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索商品名称 / SKU / 批次"/></label>
      <button type="submit" className={styles.confirmSearch}>确定</button>
@@ -125,9 +125,9 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
      {visible.map(c=><tr key={c.product.id} data-product-id={c.product.id}>
       <td><input type="checkbox" aria-label={"选择"+c.product.name} disabled={c.status!=="可申请"} checked={chosen.includes(c.product.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,c.product.id]:v.filter(id=>id!==c.product.id))}/></td>
       <td><div className={styles.productCell}><ProductImage src={c.snapshot?.image||c.product.skus[0]?.images[0]||""} name={c.product.name}/><div><strong>{c.snapshot?.name||c.product.name}</strong><small>SKU {c.product.skus.map(s=>s.skuCode||s.id).join(" / ")}</small><small>自有商品库 · {c.product.batchId}</small></div></div></td>
-      <td><div className={styles.versionCell}><strong>{c.product.status==="已入库"?"首次适配完成":"尚未通过首次适配"}</strong><small>{c.optimized?c.snapshot?.versionName+" · "+c.optimized.platform+" / "+c.optimized.site:"暂无已保存的智能体优化版本"}</small>{c.lastRejected?<small>上次审核反馈：{c.lastRejected}</small>:null}</div></td>
+      <td><div className={styles.versionCell}><strong>{c.product.status==="已入库"?"首次适配完成":"尚未通过首次适配"}</strong><small>{c.snapshot?c.snapshot.versionName+" · "+c.snapshot.platform+" / "+c.snapshot.site:"暂无符合申请条件的优化版本"}</small>{c.lastRejected?<small>上次审核反馈：{c.lastRejected}</small>:null}</div></td>
       <td><Status value={displayStatus(c.status)}/></td>
-      <td>{c.status==="可申请"?<button type="button" className={styles.rowAction} onClick={()=>showApply([c.product.id])}>发起申请</button>:c.status==="审核中"?<button type="button" onClick={()=>setView("records")}>查看记录</button>:c.status==="已入选"?<button type="button" onClick={()=>router.push("/workbench/supply/selected?preview=1")}>查看优选</button>:<span className={styles.muted}>待完成条件</span>}</td>
+      <td>{c.status==="可申请"?<button type="button" className={styles.rowAction} onClick={()=>showApply([c.product.id])}>发起申请</button>:c.status==="审核中"?<button type="button" onClick={()=>setView("records")}>查看记录</button>:c.status==="已入选"?<button type="button" onClick={()=>router.push("/workbench/supply/selected?preview=1")}>查看优选</button>:<button type="button" className={styles.rowAction} onClick={()=>router.push("/workbench/data/mine?preview=1")}>{c.status==="待首次适配"?"去完成适配":"去查看优化"}</button>}</td>
      </tr>)}
      {!visible.length?<tr><td colSpan={5} className={styles.empty}>没有符合条件的商品。请先在「我的数据 · 自有商品库」完成首次入库，并保存对应的智能体优化版本。</td></tr>:null}
     </tbody></table></div>
