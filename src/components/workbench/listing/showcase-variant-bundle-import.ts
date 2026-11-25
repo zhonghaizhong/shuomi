@@ -94,34 +94,86 @@ export async function recoverLocalListingPhotos(org:string,member:string,taskId:
  const tasks=readShowcaseUploadTasks(org,member),task=tasks.find(t=>t.id===taskId);
  if(!task?.demoProduct?.variantImageGroups?.length)throw new Error("当前商品没有可恢复的多变体图片记录");
  const db=await openDatabase();
- let keys:IDBValidKey[];
+ let entries:Array<{key:string;blob:Blob}>=[];
  try{
-  keys=await new Promise<IDBValidKey[]>((resolve,reject)=>{
-   const tx=db.transaction(storeName,"readonly"),request=tx.objectStore(storeName).getAllKeys();
-   request.onsuccess=()=>resolve(request.result);
+  entries=await new Promise<Array<{key:string;blob:Blob}>>((resolve,reject)=>{
+   const tx=db.transaction(storeName,"readonly"),request=tx.objectStore(storeName).openCursor();
+   const found:Array<{key:string;blob:Blob}>=[];
+   const prefix=[org,member,taskId].join("|")+"|";
+   request.onsuccess=()=>{
+    const cursor=request.result;
+    if(!cursor){resolve(found);return;}
+    if(typeof cursor.key==="string"&&cursor.key.startsWith(prefix)&&cursor.value instanceof Blob)
+     found.push({key:cursor.key,blob:cursor.value});
+    cursor.continue();
+   };
    request.onerror=()=>reject(request.error??new Error("读取历史图片目录失败"));
+   tx.onerror=()=>reject(tx.error??new Error("读取历史图片目录失败"));
   });
  }finally{db.close();}
  const base=[org,member,taskId].join("|")+"|";
- const available=new Set(keys.filter((k):k is string=>typeof k==="string"&&k.startsWith(base)));
+ // New AI ZIP imports use `|generated-<sha256 prefix>`; older imports used a bare index.
+ // Validate the content hash before restoring AI provenance; never classify legacy imports as AI.
+ const validGenerated=new Map<string,string>();
+ const legacy=new Set<string>();
+ for(const {key,blob} of entries){
+  const suffix=key.slice(base.length);
+  const match=/^([^|]+)\|(\d+)\|generated-([a-f0-9]{16})$/.exec(suffix);
+  if(match){
+   if(blob.type!=="image/jpeg"||blob.size<1024)continue;
+   const bytes=await blob.arrayBuffer();
+   const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)))
+    .map(b=>b.toString(16).padStart(2,"0")).join("");
+   if(hash.startsWith(match[3]))validGenerated.set(match[1]+"|"+match[2],key);
+  }else if(/^([^|]+)\|(\d+)$/.test(suffix))legacy.add(key);
+ }
  const groups=task.demoProduct.variantImageGroups.map(group=>{
-  const existing=new Set(group.optimizedImages.map(img=>img.role));
   const recovered:ListingVariantImage[]=[];
   for(let i=0;i<listingVariantPhotoRoles.length;i++){
-   const role=listingVariantPhotoRoles[i],savedKey=base+group.id+"|"+i;
-   if(available.has(savedKey)&&!existing.has(role)){
-    recovered.push({role,url:scheme+savedKey,version:group.version,source:"demo-import",provenance:"在当前浏览器找回的历史导入素材，未验证为 AI 重构成品"});
+   const role=listingVariantPhotoRoles[i],legacyKey=base+group.id+"|"+i;
+   const generatedKey=validGenerated.get(group.id+"|"+i);
+   const prior=group.optimizedImages.find(img=>img.role===role);
+   // Protect previously saved AI or user-reviewed images; only replace absent or demo links.
+   if(prior&&prior.source!=="demo-import")continue;
+   if(generatedKey){
+    recovered.push({role,url:scheme+generatedKey,version:group.version,source:"ai-generated",
+     provenance:"从当前浏览器恢复已校验 SHA-256 的 AI 图片导入记录，需人工核对"});
+   }else if(!prior&&legacy.has(legacyKey)){
+    recovered.push({role,url:scheme+legacyKey,version:group.version,source:"demo-import",
+     provenance:"在当前浏览器找回的历史导入素材，未验证为 AI 重构成品"});
    }
   }
-  return {...group,optimizedImages:[...group.optimizedImages,...recovered]};
+  const replaced=new Set(recovered.map(img=>img.role));
+  return {...group,optimizedImages:[...group.optimizedImages.filter(img=>!replaced.has(img.role)),...recovered],
+   ...(recovered.length?{reviewedAt:undefined}:{})};
  });
- const restored=groups.reduce((n,g,i)=>n+g.optimizedImages.length-task.demoProduct!.variantImageGroups![i].optimizedImages.length,0);
+ const restored=groups.reduce((n,g,i)=>n+g.optimizedImages.filter(img=>{
+  const previous=task.demoProduct!.variantImageGroups![i].optimizedImages.find(old=>old.role===img.role);
+  return !previous||previous.url!==img.url;
+ }).length,0);
  if(restored){
-  const next={...task,demoProduct:{...task.demoProduct,variantImageGroups:groups}};
-  persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
+  const latest=readShowcaseUploadTasks(org,member),current=latest.find(t=>t.id===taskId);
+  if(!current?.demoProduct?.variantImageGroups)throw new Error("恢复时任务发生变化，请重试");
+  // Reconcile against the latest task metadata rather than overwriting concurrent edits.
+  const merged=current.demoProduct.variantImageGroups.map(group=>{
+   const recoveredGroup=groups.find(g=>g.id===group.id);
+   if(!recoveredGroup)return group;
+   const additions=recoveredGroup.optimizedImages.filter(img=>{
+    const original=task.demoProduct!.variantImageGroups!.find(g=>g.id===group.id)?.optimizedImages.find(old=>old.role===img.role);
+    return !original||original.url!==img.url;
+   }).filter(img=>{
+    const currentImage=group.optimizedImages.find(old=>old.role===img.role);
+    return !currentImage||currentImage.source==="demo-import";
+   });
+   if(!additions.length)return group;
+   const roles=new Set(additions.map(img=>img.role));
+   return {...group,optimizedImages:[...group.optimizedImages.filter(img=>!roles.has(img.role)),...additions],reviewedAt:undefined};
+  });
+  const next={...current,demoProduct:{...current.demoProduct,variantImageGroups:merged}};
+  persistShowcaseUploadTaskRecords(org,member,latest.map(t=>t.id===taskId?next:t));
   window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  }
- return {found:available.size,restored};
+ return {found:entries.length,restored};
 }
 /** Re-import six freshly generated image outputs into exactly one selected variant color.
  * This does not restore previous images or touch other colors/tasks.
