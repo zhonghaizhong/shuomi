@@ -414,17 +414,19 @@ test("archived project categories come from archived records and are hidden when
  await expect(root.getByText("广告复盘")).toBeVisible();
 });
 
-test("empty My Knowledge keeps only the global create entry and one official-knowledge link",async({page})=>{
+test("empty My Knowledge retains fixed search, group tools and table header",async({page})=>{
  await page.goto("/shuomi/#/workbench/ai/knowledge/mine");
  const root=page.locator("[data-my-knowledge-groups]");
  await expect(root).toBeVisible();
  await expect(page.getByRole("heading",{name:"我的知识库"})).toBeVisible();
  await expect(page.getByRole("button",{name:"去创建知识库"})).toBeVisible();
- await expect(root.getByRole("button",{name:"去官方知识库添加"})).toBeVisible();
- await expect(root.locator('[class*="toolbar"]')).toHaveCount(0);
- await expect(root.getByRole("button",{name:"管理分组"})).toHaveCount(0);
- await expect(root.getByRole("button",{name:"添加官方知识",exact:true})).toHaveCount(0);
+ await expect(root.getByRole("combobox",{name:"按知识库分组筛选"})).toBeVisible();
+ await expect(root.getByRole("textbox",{name:"搜索知识库名称"})).toBeVisible();
+ await expect(root.getByRole("button",{name:"管理分组"})).toBeVisible();
+ await expect(root.getByRole("table")).toBeVisible();
+ await expect(root.getByRole("columnheader")).toHaveCount(5);
  await expect(root.getByText("暂无知识库")).toBeVisible();
+ await expect(root.getByRole("button",{name:"添加官方知识",exact:true})).toHaveCount(0);
 });
 
 test("My Knowledge toolbar stays in one row and its table has no vertical scrollbar",async({page})=>{
