@@ -1,6 +1,6 @@
 import {beforeEach,describe,expect,it,vi} from "vitest";
 import {bindPodPrintToVariant,findPodPrintForOrderLine,freezePodOrderLine,
- readPodPrintLineage,registerPodPrint,reviewPodPrint,type PodPrintVersion} from "./pod-print-lineage";
+ readPodPrintLineage,registerPodPrint,reviewPodPrint,searchPodPrints,type PodPrintVersion} from "./pod-print-lineage";
 const org="POD-ORG-TEST",member="member-1";
 const image=(id:string,hash:string):PodPrintVersion=>({
  printId:id,version:1,originPrintId:"butterfly-peony-original",
@@ -37,6 +37,24 @@ describe("POD print identity and fulfillment lineage",()=>{
   expect(freezePodOrderLine(org,member,{orderId:"O-12",orderLineId:"L-1",
    platform:"SHEIN",externalOrderId:"S-123",productId:"tee",variantId:"black-m"})).toEqual(before);
   expect(readPodPrintLineage(org,member).bindings[0].printId).toBe("warm");
+ });
+ it("retrieves a frozen print from platform order number, SKU, batch, name and print ID",()=>{
+  registerPodPrint(org,member,{...image("mono","a"),name:"牡丹蝴蝶黑白"});
+  registerPodPrint(org,member,{...image("warm","b"),name:"牡丹蝴蝶暖色"});
+  reviewPodPrint(org,member,"mono",1,"审核通过");
+  reviewPodPrint(org,member,"warm",1,"审核通过");
+  bindPodPrintToVariant(org,member,"P-TEE","VARIANT-RED-M","mono",1,"SH-TEE-RED-M");
+  freezePodOrderLine(org,member,{orderId:"internal-order-1",orderLineId:"line-1",platform:"SHEIN",
+    externalOrderId:"SHEIN-20261126-001",productId:"P-TEE",variantId:"VARIANT-RED-M",sku:"SH-TEE-RED-M"});
+  bindPodPrintToVariant(org,member,"P-TEE","VARIANT-RED-M","warm",1,"SH-TEE-RED-M");
+  const search=(query:string)=>searchPodPrints(org,member,query).map(x=>x.print.printId);
+  expect(search("SHEIN-20261126-001")).toEqual(["mono"]);
+  expect(search("internal-order-1")).toEqual(["mono"]);
+  expect(search("SH-TEE-RED-M")).toEqual(["mono","warm"]);
+  expect(search("POD 服装演示批次")).toEqual(["mono","warm"]);
+  expect(search("牡丹蝴蝶黑白")).toEqual(["mono"]);
+  expect(search("mono@1")).toEqual(["mono"]);
+  expect(searchPodPrints("OTHER",member,"SH-TEE-RED-M")).toEqual([]);
  });
  it("keeps two organizations isolated and fails closed on unknown order",()=>{
   registerPodPrint(org,member,image("mono","f"));
