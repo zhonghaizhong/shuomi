@@ -106,7 +106,7 @@ test("preferred application reads owned adapted products and promotes only demo-
  await after.getByRole("button",{name:"查看硕米优选"}).click();
  await expect(page).toHaveURL(/supply\/selected/);
  const selected=page.locator('[data-selected-market="true"]');
- await expect(selected.getByText("AI优化后的家居收纳盒")).toBeVisible();
+ await expect(selected.getByText("AI优化家居收纳盒")).toBeVisible();
  await expect(selected.locator('[data-selected-product="OWN-PREF-A"]')).toBeVisible();
  await expect(selected.getByText(/不保证订单/)).toBeVisible();
 });
