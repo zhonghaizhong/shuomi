@@ -258,7 +258,7 @@ export function saveShowcaseListingTextEdits(
  const codes=knownSkus.map(id=>cleaned.merchantSkuCodes[id]??id).map(v=>v.trim().toLocaleLowerCase());
  if(codes.some(v=>!v)||new Set(codes).size!==codes.length)throw Error("商家SKU编码不能为空，且同一商品内必须唯一");
  if(Object.values(cleaned.skuNames).some(name=>!name.trim()))throw Error("SKU显示名称不能为空");
- if(cleaned.categoryRulePending===false&&cleaned.categoryPath!==existing.categoryPath)throw Error("分类变更须先完成目标平台规则复核");
+ if(cleaned.categoryRulePending===false&&cleaned.categoryPath!==(existing.categoryPath??""))throw Error("分类变更须先完成目标平台规则复核");
  const next={...task,textEdits:cleaned};
  persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
@@ -267,6 +267,7 @@ export function saveShowcaseListingTextEdits(
 export function completeShowcaseUploadTask(org:string,member:string,taskId:string,fields:Record<string,string>):ShowcaseUploadTask{
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
  if(!task||task.status!=="待补全"||!task.demoProduct)throw Error("没有可补全的演示任务");
+ if(task.textEdits?.categoryRulePending)throw Error("目标分类变更后尚未核对平台规则，不允许提交审核");
  if(task.demoProduct.missingFields.some(f=>!fields[f]?.trim()))throw Error("请先补齐所有缺失资料");
  const next={...task,status:"待审核" as const,missingCount:0,demoProduct:{...task.demoProduct,missingFields:[]}};
  persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
@@ -276,6 +277,7 @@ export function completeShowcaseUploadTask(org:string,member:string,taskId:strin
 export function approveShowcaseUploadTask(org:string,member:string,taskId:string):ShowcaseUploadTask{
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
  if(!task||task.status!=="待审核"||!task.demoProduct||task.demoProduct.missingFields.length)throw Error("智能体优化结果尚未完成资料检查与人工审核");
+ if(task.textEdits?.categoryRulePending)throw Error("目标分类规则尚未重新验证，不能审核通过");
  if(task.demoProduct.variantImageGroups?.length&&!task.demoProduct.variantImageGroups.every(variantGroupReady))throw Error("每个颜色组需要六张不同用途的真实优化图后才能审核通过");
  const next={...task,status:"待平台提交" as const,demoProduct:{...task.demoProduct,reviewedAt:new Date().toISOString()}};
  persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
