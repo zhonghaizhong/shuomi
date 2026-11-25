@@ -110,3 +110,36 @@ export function findPodPrintForOrderLine(organizationId:string,memberId:string,o
   throw Error("原始印花版本无法校验，请停止履约并核对存档");
  return {order,print};
 }
+
+
+/** Search a print by its fixed ID, exact version, name, source batch, originating
+ * artwork, associated product/variant, or frozen platform order numbers.
+ * Order references resolve the ORIGINAL purchased print version, even if the
+ * current SKU now points to a different design.
+ */
+export type PodPrintSearchHit={
+ print:PodPrintVersion;reviewStatus:PodPrintReviewStatus|"未知";
+ productIds:string[];variantIds:string[];orderIds:string[];
+ externalOrderIds:string[];platforms:string[];
+};
+export function searchPodPrints(organizationId:string,memberId:string,query:string):PodPrintSearchHit[]{
+ const state=readPodPrintLineage(organizationId,memberId);
+ const needle=query.trim().toLocaleLowerCase();
+ return state.prints.map(print=>{
+  const bindings=state.bindings.filter(x=>x.printId===print.printId&&x.printVersion===print.version);
+  const orders=state.orders.filter(x=>x.printId===print.printId&&x.printVersion===print.version);
+  const review=state.reviews.find(x=>x.printId===print.printId&&x.version===print.version);
+  const hit:PodPrintSearchHit={
+   print,reviewStatus:review?.status??"未知",
+   productIds:[...new Set([...bindings.map(x=>x.productId),...orders.map(x=>x.productId)])],
+   variantIds:[...new Set([...bindings.map(x=>x.variantId),...orders.map(x=>x.variantId)])],
+   orderIds:[...new Set(orders.map(x=>x.orderId))],
+   externalOrderIds:[...new Set(orders.map(x=>x.externalOrderId))],
+   platforms:[...new Set(orders.map(x=>x.platform))]
+  };
+  const fields=[print.printId,print.printId+"@"+print.version,print.name,
+   print.originPrintId,print.sourceBatchId,print.assetPath,print.sha256,
+   ...hit.productIds,...hit.variantIds,...hit.orderIds,...hit.externalOrderIds,...hit.platforms];
+  return {hit,matches:!needle||fields.some(value=>value.toLocaleLowerCase().includes(needle))};
+ }).filter(x=>x.matches).map(x=>x.hit);
+}
