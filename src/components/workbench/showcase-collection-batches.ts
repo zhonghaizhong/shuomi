@@ -1,8 +1,8 @@
 "use client";
 
 /** Isolated, browser-session-only fixture batches. Never represents a 1688 API response. */
-export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string;images?:string[];price?:string;stock?:string;description?:string;sourceUrl?:string}>;originalTitle?:string;description?:string;demoSourceLink?:string};
-export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
+export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";supplyProductId?:string;supplierId?:string;supplierName?:string;supplyVersion?:string;supplySkuId?:string;images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string;images?:string[];price?:string;stock?:string;description?:string;sourceUrl?:string}>;originalTitle?:string;description?:string;demoSourceLink?:string};
+export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon"|"硕米优选";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
 type CatalogItem={name:string;price:string;variants:string[];description:string;photos:string[]};
 // Public photographic sample references. Not original 1688 product photos or authenticated offers.
 const demoCatalog:CatalogItem[]=[
@@ -169,4 +169,39 @@ export function deleteDemoCollectionBatch(organizationId:string,memberId:string,
   window.dispatchEvent(new CustomEvent("shuomi:demo-batches-updated",{detail:{organizationId}}));
   return true;
  }catch{return false;}
+}
+
+/** Collect approved shared-catalog fixture snapshots into the active member's
+ * own batch. This operation never changes the supplier listing or other
+ * members' batches. The supplier identity and version stay attached to SKU.
+ */
+export function addSelectedCatalogProducts(
+ org:string,member:string,entries:DemoCollectedProduct[],
+ target:{kind:"new";name:string}|{kind:"existing";id:string}
+):DemoCollectionBatch{
+ if(typeof window==="undefined")throw Error("当前浏览器无法保存演示采集批次");
+ if(entries.length===0)throw Error("请至少选择一件商品");
+ const stored=sessionStorage.getItem(key(org));
+ const raw:unknown=stored===null?(org==="SM-ENT-000001"?[initialBatch(org)]:[]):JSON.parse(stored);
+ const batches=Array.isArray(raw)?raw.filter(valid):[];
+ const permitted=batches.filter(b=>b.organizationId===org&&b.ownerMemberId===member);
+ const batch=target.kind==="existing"?permitted.find(b=>b.id===target.id):undefined;
+ if(target.kind==="existing"&&!batch)throw Error("批次不存在或无权操作");
+ if(batch&&batch.source!=="硕米优选")throw Error("请选择硕米优选采集批次，避免混淆原始数据来源");
+ const name=target.kind==="new"?target.name.trim():"";
+ if(target.kind==="new"&&(!name||name.length>80))throw Error("请输入有效的批次名称");
+ if(target.kind==="new"&&permitted.some(b=>b.name===name))throw Error("批次名称已存在");
+ const copy=(p:DemoCollectedProduct):DemoCollectedProduct=>({...p,images:[...(p.images??[])],variants:[...(p.variants??[])],variantDetails:p.variantDetails?.map(v=>({...v,images:[...(v.images??[])]}))});
+ const existing=new Set((batch?.products??[]).map(p=>p.supplyProductId||p.id));
+ const additions=entries.filter(p=>!existing.has(p.supplyProductId||p.id)).map(copy);
+ if(!additions.length)throw Error("选择的商品都已经存在于此采集批次");
+ const now=new Date().toLocaleString("zh-CN",{hour12:false});
+ const next:DemoCollectionBatch=batch?{...batch,products:[...batch.products,...additions]}:{
+  id:"SIM-SHUOMI-"+crypto.randomUUID(),organizationId:org,ownerMemberId:member,
+  source:"硕米优选",method:"共享货盘选品（演示）",name,createdAt:now,products:additions,
+  status:"已采集 · 待上传",demo:true
+ };
+ sessionStorage.setItem(key(org),JSON.stringify(batch?batches.map(b=>b.id===batch.id?next:b):[next,...batches]));
+ window.dispatchEvent(new CustomEvent("shuomi:demo-batches-updated",{detail:{organizationId:org}}));
+ return next;
 }
