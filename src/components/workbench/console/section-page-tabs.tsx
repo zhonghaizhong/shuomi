@@ -10,21 +10,22 @@ const groups:Record<string,{title:string;description:string;tabs:Tab[]}>={
  projects:{title:"项目中心",description:"先了解如何创建项目、关联工作和保存成果，再进入我的项目查看实际进度。",tabs:[{label:"项目指南",href:"/workbench/ai/projects"},{label:"项目模板",href:"/workbench/ai/projects/templates"},{label:"我的项目",href:"/workbench/ai/projects/mine"},{label:"已归档",href:"/workbench/ai/projects/archived"}]},
  knowledge:{title:"知识库",description:"官方规则与自有资料统一管理；使用 AI 时按需选择引用。",tabs:[{label:"知识库介绍",href:"/workbench/ai/knowledge"},{label:"官方知识库",href:"/workbench/ai/knowledge/official"},{label:"我的知识库",href:"/workbench/ai/knowledge/mine"}]},
  skills:{title:"技能库",description:"先了解技能用途，再选择官方模板、个人或团队技能；技能不会自动执行。",tabs:[{label:"技能库介绍",href:"/workbench/agents/skills"},{label:"官方模板",href:"/workbench/agents/skills/official"},{label:"我的技能",href:"/workbench/agents/skills/mine"},{label:"团队技能",href:"/workbench/agents/skills/team"}]},
- reports:{title:"我的报告",description:"查阅业务成果、收藏常用报告；详情与下载继续使用原页面。",tabs:[{label:"报告概览",href:"/workbench/ai/reports"},{label:"最近报告",href:"/workbench/ai/reports/recent"},{label:"收藏报告",href:"/workbench/ai/reports/favorites"},{label:"全部报告",href:"/workbench/ai/reports/all"}]},
+ reports:{title:"我的报告",description:"查阅业务成果、收藏常用报告；详情与下载继续使用原页面。",tabs:[{label:"全部报告",href:"/workbench/ai/reports"},{label:"收藏报告",href:"/workbench/ai/reports/favorites"},{label:"最近报告",href:"/workbench/ai/reports/recent"}]},
  catalogs:{title:"货盘集成",description:"先浏览可用货盘；需要新的货盘时再发起对接申请。",tabs:[{label:"货盘总览",href:"/workbench/supply/catalogs"},{label:"货盘选品",href:"/workbench/supply/catalogs/selection"},{label:"申请对接",href:"/workbench/supply/catalogs/apply"}]}
 };
 export type SectionTabsKey=keyof typeof groups;
-export function sectionForPath(path:string):SectionTabsKey|undefined {return (Object.keys(groups) as SectionTabsKey[]).find(key=>groups[key].tabs.some(tab=>path===tab.href));}
+export function sectionForPath(path:string):SectionTabsKey|undefined {if(path==="/workbench/ai/reports/all")return "reports";return (Object.keys(groups) as SectionTabsKey[]).find(key=>groups[key].tabs.some(tab=>path===tab.href));}
 export function SectionPageTabs({section,showHelp=false,activeHref,onSelect}:{section:SectionTabsKey;showHelp?:boolean;activeHref?:string;onSelect?:(href:string)=>void}){
  const pathname=usePathname(),query=useSearchParams();
  const group=groups[section];
+ const activePath=(activeHref??pathname)==="/workbench/ai/reports/all"?"/workbench/ai/reports":(activeHref??pathname);
  const preview=query?.get("preview")==="1";
  return <section className={styles.shell} data-section={section} aria-label={group.title+"页面导航"}>
   {showHelp?<p className={styles.help}>{group.description}</p>:null}
   <nav className={styles.tabs} aria-label={group.title+"分类"}>
    {group.tabs.map(tab=>onSelect
-    ?<button key={tab.href} data-section-tab type="button" onClick={()=>onSelect(tab.href)} aria-current={(activeHref??pathname)===tab.href?"page":undefined}>{tab.label}</button>
-    :<Link key={tab.href} href={tab.href+(preview?"?preview=1":"")} prefetch={false} aria-current={pathname===tab.href?"page":undefined}>{tab.label}</Link>)}
+    ?<button key={tab.href} data-section-tab type="button" onClick={()=>onSelect(tab.href)} aria-current={activePath===tab.href?"page":undefined}>{tab.label}</button>
+    :<Link key={tab.href} href={tab.href+(preview?"?preview=1":"")} prefetch={false} aria-current={activePath===tab.href?"page":undefined}>{tab.label}</Link>)}
   </nav>
  </section>;
 }
