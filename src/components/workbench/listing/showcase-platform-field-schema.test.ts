@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {expect,it} from "vitest";
-import {categoryFieldImpact,fieldSchemaMatches,scopedFieldKey,validatePlatformFields,type PlatformFieldSchema} from "./showcase-platform-field-schema";
+import {categoryFieldImpact,fieldSchemaMatches,scopedFieldKey,validatePlatformFields,findUnambiguousEnumOption,validateAiEnumSelection,type PlatformFieldSchema} from "./showcase-platform-field-schema";
 const base:PlatformFieldSchema={
  platform:"SHEIN",region:"美国站",storeType:"全托店",categoryPath:"Shoes / Clogs",ruleVersion:"verified-2026-11",source:"verified-import",
  fields:[
@@ -39,4 +39,14 @@ it("previews category migrations without erasing incompatible historical values"
   expect(diff.removed).toEqual(["theme","shade","size"]);
  }
  expect(categoryFieldImpact(base,undefined).ready).toBe(false);
+});
+
+it("permits AI to choose ONLY an allowed platform dropdown option with evidence",()=>{
+ const field={id:"package",label:"包装",scope:"common" as const,requirement:"optional" as const,kind:"enum" as const,aiEditable:true,options:["Single Pack","Bundle Pack"]};
+ expect(validateAiEnumSelection(field,"Bundle Pack")).toBe("Bundle Pack");
+ expect(validateAiEnumSelection(field,"Invented Pack")).toBe(null);
+ expect(findUnambiguousEnumOption(field,"Product ships as Bundle Pack in a box")).toBe("Bundle Pack");
+ expect(findUnambiguousEnumOption(field,"Single Pack and Bundle Pack both available")).toBe(null);
+ expect(findUnambiguousEnumOption(field,"No packaging information")).toBe(null);
+ expect(findUnambiguousEnumOption({...field,aiEditable:false},"Bundle Pack")).toBe(null);
 });
