@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import {beforeEach,describe,expect,it} from "vitest";
-import {addDemoCollectionBatch,readDemoCollectionBatches} from "./showcase-collection-batches";
+import {addDemoCollectionBatch,addSelectedCatalogProducts,readDemoCollectionBatches} from "./showcase-collection-batches";
+import {selectedCatalogFixtures} from "./showcase-selected-catalog-fixtures";
 
 describe("demo marketplace collection batches are private to each account and company",()=>{
  beforeEach(()=>sessionStorage.clear());
@@ -34,4 +35,29 @@ describe("demo marketplace collection batches are private to each account and co
   expect(readDemoCollectionBatches("SM-ENT-000002","admin").map(x=>x.id)).toEqual([b?.id]);
   expect(readDemoCollectionBatches("SM-ENT-000002","colleague01")).toHaveLength(0);
  });
+ it("collects selected approved-catalog demos into this member's batch while keeping source and SKU identifiers",()=>{
+  const p=selectedCatalogFixtures[0];
+  const entry={
+   id:"COLLECT-"+p.id,sku:p.skus[0].id,name:p.name,source:"硕米优选（演示） · "+p.supplierName,
+   price:"¥"+p.price.toFixed(2)+" 起",status:"演示数据" as const,
+   supplyProductId:p.id,supplySkuId:p.skus[0].id,supplierId:p.supplierId,supplierName:p.supplierName,
+   supplyVersion:p.version,images:[] as string[],variants:p.skus.map(v=>v.label)
+  };
+  const first=addSelectedCatalogProducts("tenant-A","seller-1",[entry],{kind:"new",name:"我的优选采集批次"});
+  expect(first.source).toBe("硕米优选");
+  expect(first.products[0]).toMatchObject({supplyProductId:p.id,supplierId:p.supplierId,supplySkuId:p.skus[0].id});
+  expect(first.products[0].images).toEqual([]);
+  expect(readDemoCollectionBatches("tenant-A","seller-1").map(b=>b.id)).toContain(first.id);
+  expect(readDemoCollectionBatches("tenant-A","seller-2")).toHaveLength(0);
+  expect(readDemoCollectionBatches("tenant-B","seller-1")).toHaveLength(0);
+  expect(()=>addSelectedCatalogProducts("tenant-A","seller-1",[entry],{kind:"existing",id:first.id})).toThrow("已经存在");
+  expect(()=>addSelectedCatalogProducts("tenant-A","seller-2",[entry],{kind:"existing",id:first.id})).toThrow("无权操作");
+  const second=selectedCatalogFixtures[1];
+  const copied={...entry,id:"COLLECT-"+second.id,name:second.name,sku:second.skus[0].id,
+   supplyProductId:second.id,supplySkuId:second.skus[0].id};
+  const next=addSelectedCatalogProducts("tenant-A","seller-1",[copied],{kind:"existing",id:first.id});
+  expect(next.products).toHaveLength(2);
+  expect(readDemoCollectionBatches("tenant-A","seller-1")).toHaveLength(1);
+ });
+
 });
