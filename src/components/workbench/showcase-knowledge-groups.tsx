@@ -72,7 +72,7 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
    <div className={styles.actions}><button type="button" onClick={()=>setOpen(true)}>管理分组</button><span className={styles.count}>共 {visible.length} 项</span></div>
   </section>
   {notice&&<p className={styles.notice} role="status">{notice}</p>}
-  {visible.length?<div className={styles.tableWrap}><table className={styles.table}>
+  <div className={styles.tableWrap}><table className={styles.table}>
    <thead><tr><th>知识库名称</th><th>来源</th><th>所属分组</th><th>最近更新</th><th>操作</th></tr></thead>
    <tbody>{visible.map(item=><tr key={item.id}>
     <td><strong>{item.name}</strong></td><td>{item.origin}</td><td><select aria-label={item.name+"的所属分组"} value={item.group} onChange={e=>updateItem(item,{group:e.target.value},"分组已更新")}><option value="">未分组</option>{state.groups.map(g=><option key={g} value={g}>{g}</option>)}</select></td>
@@ -84,11 +84,8 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
 }
     </div></td>
    </tr>)}</tbody>
-  </table></div>:<section className={styles.empty}>
-   <strong>{hasKnowledge?"没有符合条件的知识库":"暂无知识库"}</strong>
-   {!hasKnowledge&&<><p>你还没有启用或创建知识库。</p><button type="button" onClick={onBrowse}>去官方知识库添加</button></>}
-   {hasKnowledge&&<button type="button" onClick={()=>{setSearch("");setFilter("全部分组")}}>清空筛选</button>}
-  </section>}
+   {!visible.length&&<tr><td colSpan={5} className={styles.emptyCell}>{hasKnowledge?"没有符合条件的知识库":"暂无知识库"}</td></tr>}
+  </table></div>
   {more&&state.items.some(x=>x.id===more)&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setMore(null)}}>
    <section className={styles.dialog} role="dialog" aria-modal="true" aria-label="知识库更多操作">
     <header><h2>知识库操作</h2><button type="button" aria-label="关闭更多操作" onClick={()=>setMore(null)}>×</button></header>
