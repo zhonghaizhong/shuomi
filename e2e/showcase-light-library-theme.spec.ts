@@ -564,3 +564,22 @@ test("My Projects and My Reports omit group filter but keep group management",as
  await expect(reports.getByRole("combobox",{name:"报告分组"})).toHaveCount(0);
  await expect(reports.getByRole("button",{name:"管理分组"})).toBeVisible();
 });
+
+test("report date range follows the shared click-to-select calendar and filters stay lean",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/reports");
+ const root=page.locator('[data-report-center]');
+ await expect(root.getByRole("combobox",{name:"报告分组"})).toHaveCount(0);
+ await root.getByRole("button",{name:"选择报告日期"}).click();
+ const calendar=page.getByRole("group",{name:"报告日期范围"});
+ await expect(calendar).toBeVisible();
+ await calendar.getByRole("textbox",{name:"开始日期"}).count().then(async count=>{
+  if(count===0)await expect(calendar.getByLabel("开始日期")).toHaveAttribute("type","date");
+ });
+ await calendar.getByLabel("开始日期").fill("2026-11-01");
+ await calendar.getByLabel("结束日期").fill("2026-11-25");
+ await calendar.getByRole("button",{name:"确定"}).click();
+ await expect(root.getByRole("button",{name:"选择报告日期"})).toContainText("2026-11-01 至 2026-11-25");
+ await root.getByRole("button",{name:"选择报告日期"}).click();
+ await calendar.getByRole("button",{name:"全部时间"}).click();
+ await expect(root.getByRole("button",{name:"选择报告日期"})).toContainText("全部时间");
+});
