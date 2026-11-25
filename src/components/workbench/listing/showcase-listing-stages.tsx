@@ -178,7 +178,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const [batchAiOpen,setBatchAiOpen]=useState(false),[batchAiScope,setBatchAiScope]=useState<"current"|"all">("current");
  const [batchAiRequired,setBatchAiRequired]=useState(true),[batchAiOptional,setBatchAiOptional]=useState(false);
  const [batchAiInstructions,setBatchAiInstructions]=useState(""),[aiTargetField,setAiTargetField]=useState<string|null>(null),[aiFeedback,setAiFeedback]=useState("");
- const [aiGroupTarget,setAiGroupTarget]=useState<{scope:FieldScope;kind:"missing"|"filled"|"optional";fields:string[]}|null>(null);
+ const [aiGroupTarget,setAiGroupTarget]=useState<{scope:FieldScope;kind:"missing"|"filled"|"optional"|"required";fields:string[]}|null>(null);
  const [selectedQualification,setSelectedQualification]=useState<Record<string,string>>({});
  const [demoPackaging,setDemoPackaging]=useState("");
  const [demoSellingPoint,setDemoSellingPoint]=useState("");
@@ -367,13 +367,13 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const scopedValue=(scope:FieldScope,id:string)=>textDraft.fieldValues[scopedFieldKey(scope,id,scopeEntity(scope))]??"";
  const editScopedValue=(scope:FieldScope,id:string,value:string)=>setTextDraft(d=>({...d,fieldValues:{...d.fieldValues,[scopedFieldKey(scope,id,scopeEntity(scope))]:value}}));
  const scopedValueFor=(scope:FieldScope,id:string)=>textDraft.fieldValues[scopedFieldKey(scope,id,scopeEntity(scope))]??"";
- const eligibleGroupFields=(scope:FieldScope,kind:"missing"|"filled"|"optional")=>{
+ const eligibleGroupFields=(scope:FieldScope,kind:"missing"|"filled"|"optional"|"required")=>{
   const fields=(schemaValid?schema!.fields:[]).filter(f=>f.scope===scope&&(f.kind==="text"||f.kind==="enum")&&f.aiEditable&&
-   (kind==="optional"?f.requirement==="optional":f.requirement==="required"&&(kind==="filled"?!!scopedValueFor(scope,f.id).trim():!scopedValueFor(scope,f.id).trim())))
+   (kind==="optional"?f.requirement==="optional":f.requirement==="required"&&(kind==="required"|| (kind==="filled"?!!scopedValueFor(scope,f.id).trim():!scopedValueFor(scope,f.id).trim()))))
    .map(f=>f.label);
   if(scope==="common"&&kind!=="optional"){
-   if(kind==="missing"?!textDraft.title.trim():!!textDraft.title.trim())fields.push("商品标题");
-   if(kind==="missing"?!textDraft.description.trim():!!textDraft.description.trim())fields.push("商品描述");
+   if(kind==="required"||(kind==="missing"?!textDraft.title.trim():!!textDraft.title.trim()))fields.push("商品标题");
+   if(kind==="required"||(kind==="missing"?!textDraft.description.trim():!!textDraft.description.trim()))fields.push("商品描述");
   }
   if(selectedTask?.demo&&!schemaValid&&kind==="optional"){
    if(scope==="common")fields.push("补充卖点（演示）");
@@ -382,14 +382,14 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   }
   return fields;
  };
- const launchGroupAi=(scope:FieldScope,kind:"missing"|"filled"|"optional",fields:string[])=>{
+ const launchGroupAi=(scope:FieldScope,kind:"missing"|"filled"|"optional"|"required",fields:string[])=>{
   setAiGroupTarget({scope,kind,fields});setAiTargetField(null);setBatchAiOpen(true);
   setAiFeedback(fields.length?"当前演示尚未接入可执行的AI服务；不会自动填写或覆盖资料。":"当前分组暂无平台明确允许AI处理的字段。按钮仍可使用，待平台规则接入后自动筛选。");
  };
- const scopedGroup=(scope:FieldScope,kind:"missing"|"filled"|"optional",extra?:ReactNode)=>{
-  const fields=schemaValid?schema!.fields.filter(field=>field.scope===scope&&(kind==="optional"?field.requirement==="optional":field.requirement==="required"&&(kind==="filled"?Boolean(scopedValueFor(scope,field.id).trim()):!scopedValueFor(scope,field.id).trim()))):[];
+ const scopedGroup=(scope:FieldScope,kind:"missing"|"filled"|"optional"|"required",extra?:ReactNode)=>{
+  const fields=schemaValid?schema!.fields.filter(field=>field.scope===scope&&(kind==="optional"?field.requirement==="optional":field.requirement==="required"&&(kind==="required"||(kind==="filled"?Boolean(scopedValueFor(scope,field.id).trim()):!scopedValueFor(scope,field.id).trim())))):[];
   if(!fields.length&&!extra)return null;
-  const label=kind==="missing"?"必填信息（缺失）":kind==="filled"?"必填信息（已填）":"可填信息";
+  const label=kind==="required"?"必填信息":kind==="missing"?"必填信息（缺失）":kind==="filled"?"必填信息（已填）":"可填信息";
   const id=scope+":"+kind;
   return <div className={styles.fieldFold} key={id}>
    <div className={styles.fieldFoldHeading}>
@@ -502,7 +502,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
    const sourceEvidence=[selectedItem?.originalName??"",selectedItem?.optimizedDescription??"",textDraft.title,textDraft.description].filter(Boolean).join(" ");
    const eligible=schema!.fields.filter(f=>f.scope===aiGroupTarget.scope&&f.kind==="enum"&&f.aiEditable&&f.options?.length&&
     (aiGroupTarget.kind==="optional"?f.requirement==="optional":f.requirement==="required"&&
-    (aiGroupTarget.kind==="filled"?!!scopedValueFor(f.scope,f.id).trim():!scopedValueFor(f.scope,f.id).trim())));
+    (aiGroupTarget.kind==="required"||(aiGroupTarget.kind==="filled"?!!scopedValueFor(f.scope,f.id).trim():!scopedValueFor(f.scope,f.id).trim()))));
    const matched=eligible.flatMap(f=>{const selected=findUnambiguousEnumOption(f,sourceEvidence);return selected?[{field:f,value:selected}]:[]});
    if(matched.length){
     setTextDraft(old=>({...old,fieldValues:{...old.fieldValues,...Object.fromEntries(matched.map(x=>[scopedFieldKey(x.field.scope,x.field.id,scopeEntity(x.field.scope)),x.value]))}}));
@@ -726,6 +726,11 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <button type="button" className={styles.aiBatchSubmit} disabled={aiGroupTarget?!aiGroupTarget.fields.length:!aiTargetField&&!selectedAiFields.length} onClick={requestAiSuggestions}>生成重构建议</button>
      </section>:null}
      {fieldTab==="common"?<>
+      {stage==="review"?scopedGroup("common","required",<>
+       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题</label></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>
+       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述</label></div><textarea id="listing-edit-desc" rows={3} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>
+       {selectedItem?.missing.length?demoLegacyFields():null}
+      </>):<>
       {scopedGroup("common","missing",
        (selectedItem?.missing?.some(field=>!(form[field]??textDraft.legacyMissingValues[field]??"").trim())||!textDraft.title.trim()||!textDraft.description.trim())?<>
         {!textDraft.title.trim()?<div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题</label></div><input id="listing-edit-title" value={textDraft.title} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>:null}
@@ -736,13 +741,15 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
        {textDraft.title.trim()?<div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题</label></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>:null}
        {textDraft.description.trim()?<div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述</label></div><textarea id="listing-edit-desc" rows={3} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>:null}
       </>:undefined)}
+      </>}
       {scopedGroup("common","optional",demoOptionalFields)}
      </>:fieldTab==="shared"?<div className={styles.aiVariantEditor}>
-       {scopedGroup("shared","missing",selectedTask?.demo&&!schemaValid&&!demoSharedRequired.trim()?<div className={styles.individualField}><strong>变体公共补充属性（演示）</strong><input aria-label="变体公共补充属性（演示）" value={demoSharedRequired} placeholder="输入演示资料" onChange={e=>setDemoSharedRequired(e.target.value)}/></div>:undefined)}
-       {scopedGroup("shared","filled",selectedTask?.demo&&!schemaValid?<div className={styles.demoOptionalFields}>
+       {stage==="review"?scopedGroup("shared","required",selectedTask?.demo&&!schemaValid?<div className={styles.individualField}><strong>已填公共属性（演示）</strong><input aria-label="已填公共属性（演示）" value={demoSharedFilled} onChange={e=>setDemoSharedFilled(e.target.value)}/></div>:undefined):<>}
+       {stage==="missing"?scopedGroup("shared","missing",selectedTask?.demo&&!schemaValid&&!demoSharedRequired.trim()?<div className={styles.individualField}><strong>变体公共补充属性（演示）</strong><input aria-label="变体公共补充属性（演示）" value={demoSharedRequired} placeholder="输入演示资料" onChange={e=>setDemoSharedRequired(e.target.value)}/></div>:undefined)}
+       {stage==="missing"?scopedGroup("shared","filled",selectedTask?.demo&&!schemaValid?<div className={styles.demoOptionalFields}>
         <div className={styles.individualField}><strong>已填公共属性（演示）</strong><input aria-label="已填公共属性（演示）" value={demoSharedFilled} onChange={e=>setDemoSharedFilled(e.target.value)}/></div>
         {demoSharedRequired.trim()?<div className={styles.individualField}><strong>变体公共补充属性（演示）</strong><input aria-label="变体公共补充属性已填（演示）" value={demoSharedRequired} onChange={e=>setDemoSharedRequired(e.target.value)}/></div>:null}
-       </div>:undefined)}
+       </div>:undefined):null}
        {scopedGroup("shared","optional",selectedTask?.demo&&!schemaValid?<div className={styles.individualField}><div className={styles.individualFieldHeading}><strong>变体公共备注（演示）</strong></div><textarea rows={2} aria-label="变体公共备注（演示）" value={demoSharedOptional} onChange={e=>setDemoSharedOptional(e.target.value)}/></div>:undefined)}
       </div>
      :fieldTab==="variant"?<div className={styles.variantStructureEditor}>
@@ -769,11 +776,12 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
        {variantDetails.length>0?<div className={styles.aiSkuPills} role="group" aria-label="切换SKU">
         {variantDetails.map(v=><button type="button" key={v.sku} aria-label={"选择SKU："+displayVariantColor(v.color)+" / "+displayVariantSize(v.size)} aria-pressed={editingSkuKey===v.sku} onClick={()=>{setVariantColorId(v.color.trim().toLowerCase());setActiveSkuId(v.sku);setAiTargetField(null);setBatchAiOpen(false)}}>{displayVariantColor(v.color)} / {displayVariantSize(v.size)}</button>)}
        </div>:null}
-       {scopedGroup("sku","missing",selectedTask?.demo&&!schemaValid&&!scopedValueFor("sku","demo-required").trim()?<div className={styles.individualField}><strong>SKU补充规格（演示）</strong><input aria-label="SKU补充规格（演示）" placeholder="填写当前SKU的演示资料" value={scopedValueFor("sku","demo-required")} onChange={e=>editScopedValue("sku","demo-required",e.target.value)}/></div>:undefined)}
-       {scopedGroup("sku","filled",<div className={styles.demoOptionalFields}>
+       {stage==="missing"?scopedGroup("sku","missing",selectedTask?.demo&&!schemaValid&&!scopedValueFor("sku","demo-required").trim()?<div className={styles.individualField}><strong>SKU补充规格（演示）</strong><input aria-label="SKU补充规格（演示）" placeholder="填写当前SKU的演示资料" value={scopedValueFor("sku","demo-required")} onChange={e=>editScopedValue("sku","demo-required",e.target.value)}/></div>:undefined)}
+       {stage==="missing"?scopedGroup("sku","filled",<div className={styles.demoOptionalFields}>
         {selectedTask?.demo&&!schemaValid&&scopedValueFor("sku","demo-required").trim()?<div className={styles.individualField}><strong>SKU补充规格（演示）</strong><input aria-label="SKU已填补充规格（演示）" value={scopedValueFor("sku","demo-required")} onChange={e=>editScopedValue("sku","demo-required",e.target.value)}/></div>:null}
         <div className={styles.aiEditableField}><label htmlFor="listing-merchant-sku">商家SKU编码</label><input id="listing-merchant-sku" aria-label="商家SKU编码" maxLength={100} value={skuIdentityDraft} onChange={e=>setTextDraft(d=>({...d,merchantSkuCodes:{...d.merchantSkuCodes,[editingSkuKey]:e.target.value}}))}/>{invalidSkuCode?<p role="alert">编码不能为空或重复。</p>:null}</div>
-       </div>)}
+       </div>):null}
+       {stage==="review"?scopedGroup("sku","required",<div className={styles.aiEditableField}><label htmlFor="listing-merchant-sku">商家SKU编码</label><input id="listing-merchant-sku" aria-label="商家SKU编码" maxLength={100} value={skuIdentityDraft} onChange={e=>setTextDraft(d=>({...d,merchantSkuCodes:{...d.merchantSkuCodes,[editingSkuKey]:e.target.value}}))}/>{invalidSkuCode?<p role="alert">编码不能为空或重复。</p>:null}</div>):null}
        {scopedGroup("sku","optional",selectedTask?.demo&&!schemaValid?<div className={styles.individualField}><div className={styles.individualFieldHeading}><strong>SKU备注（演示）</strong></div><textarea rows={2} aria-label="SKU备注（演示）" value={scopedValueFor("sku","demo-note")} onChange={e=>editScopedValue("sku","demo-note",e.target.value)}/></div>:undefined)}
       </div>}
     </div>
