@@ -411,3 +411,15 @@ test("archived project categories come from archived records and are hidden when
  await expect(root.locator("tbody tr")).toHaveCount(1);
  await expect(root.getByText("广告复盘")).toBeVisible();
 });
+
+test("empty My Knowledge shows one creation action and no irrelevant group filters",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/knowledge/mine");
+ const root=page.locator("[data-my-knowledge-groups]");
+ await expect(root).toBeVisible();
+ await expect(root.getByRole("heading",{name:"我的知识库"})).toBeVisible();
+ await expect(root.getByRole("button",{name:"＋ 添加官方知识"})).toBeVisible();
+ await expect(root.locator('[class*="filters"]')).toHaveCount(0);
+ await expect(root.getByRole("button",{name:"浏览官方知识"})).toHaveCount(0);
+ await expect(root.getByRole("button",{name:"管理分组"})).toHaveCount(0);
+ await expect(root.getByText("暂时没有知识库")).toBeVisible();
+});
