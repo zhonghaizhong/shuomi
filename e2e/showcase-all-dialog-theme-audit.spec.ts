@@ -81,6 +81,8 @@ for(const c of cases){
    // Only the browser-local test page receives a conversation fixture.
    // The user's actual cleared chat history must remain empty.
    if(c.menu){
+    await expect(page.locator('[data-chat-collection-preview="recent"]')).toBeVisible();
+    await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem("shuomi-ai-workbench-reset-20261125-v1"))).toBe("done");
     await page.evaluate(()=>{
      sessionStorage.setItem("shuomi-showcase-chat-collections-v1",JSON.stringify([
       {id:"e2e-dialog-conversation",title:"一号店转化率下降分析",description:"测试弹窗",time:"刚刚",favorite:false}
