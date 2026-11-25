@@ -43,3 +43,20 @@ it("renders new conversation as a fourth equal-status tab and switches locally w
  expect(screen.getAllByRole("button")).toHaveLength(4);
  expect(screen.getByRole("button",{name:"＋ 新建会话"})).toHaveAttribute("aria-current","page");
 });
+
+it("shows six equal-status project tabs including 我的项目 and switches within the page",()=>{
+ const select=vi.fn();
+ const {rerender}=render(<SectionPageTabs section="projects" activeHref="/workbench/ai/projects" onSelect={select}/>);
+ const navigation=screen.getByRole("navigation",{name:"项目中心分类"});
+ const buttons=withinProjectButtons(navigation);
+ expect(buttons.map(tab=>tab.textContent)).toEqual(["项目总览","我的项目","进行中项目","最近访问","项目模板","已归档"]);
+ expect(buttons).toHaveLength(6);
+ expect(buttons[0]).toHaveAttribute("aria-current","page");
+ fireEvent.click(screen.getByRole("button",{name:"我的项目"}));
+ expect(select).toHaveBeenCalledWith("/workbench/ai/projects/mine");
+ expect(sectionForPath("/workbench/ai/projects/mine")).toBe("projects");
+ rerender(<SectionPageTabs section="projects" activeHref="/workbench/ai/projects/mine" onSelect={select}/>);
+ expect(screen.getByRole("navigation",{name:"项目中心分类"})).toBe(navigation);
+ expect(screen.getByRole("button",{name:"我的项目"})).toHaveAttribute("aria-current","page");
+});
+function withinProjectButtons(navigation:HTMLElement){return Array.from(navigation.querySelectorAll("button"));}
