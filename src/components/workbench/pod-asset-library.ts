@@ -7,6 +7,7 @@
 export type PodLibraryAsset={
  id:number;name:string;category:string;style:number;prompt:string;
  image?:string;dataUrl?:string;status?:string;
+ archivePath?:string;lineagePrintId?:string;lineageVersion?:number;
 };
 const libraryKey=(organizationId:string,memberId:string)=>
  "shuomi:pod:asset-library:v1:"+encodeURIComponent(organizationId)+":"+encodeURIComponent(memberId);
@@ -45,6 +46,10 @@ export async function readPodAssetImage(file:File):Promise<string>{
 }
 export function podAssetPreviewSrc(asset:PodLibraryAsset):string{
  if(asset.dataUrl?.startsWith("data:image/"))return asset.dataUrl;
+ if(asset.archivePath && /^\\/assets\\/pod-prints\\/[a-zA-Z0-9_/-]+\\.(png|webp)$/.test(asset.archivePath) && !asset.archivePath.includes("..")){
+  const prefix=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
+  return prefix+asset.archivePath;
+ }
  if(asset.image){
   const prefix=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
   return prefix+"/assets/pod-inspiration/"+asset.image+".svg";
