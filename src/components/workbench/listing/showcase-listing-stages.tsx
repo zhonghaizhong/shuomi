@@ -624,11 +624,6 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题 · 可修改</label><button type="button" onClick={()=>openAiForField("title")}>✦ AI 重构</button></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述 · 可修改</label><button type="button" onClick={()=>openAiForField("description")}>✦ AI 重构</button></div><textarea id="listing-edit-desc" rows={4} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>
       <div className={styles.productSectionHeading}><strong>商品公共必填属性</strong></div>{renderScopedFields("common","required")}
-      {stage==="missing"?<><div className={styles.productSectionHeading}><strong>商品公共必填信息（当前任务已识别）</strong><small>缺少 {selectedItem.missing.length} 项必填</small></div>
-       {selectedItem.missing.map(field=>/(资质|认证|证书|检测|报告|文件|许可)/.test(field)?<div className={styles.qualificationField} key={field}><strong>{field} · 必填</strong><label>选择资质文件<input type="file" accept=".pdf,.png,.jpg,.jpeg" aria-label={"上传"+field} onChange={e=>setSelectedQualification(x=>({...x,[field]:e.target.files?.[0]?.name??""}))}/></label><small>{selectedQualification[field]?"已选择本地文件："+selectedQualification[field]+"（未上传服务器）":"需要真实资质，AI 不生成或伪造文件。"}</small></div>
-       :<label className={styles.productMissingField} key={field}>{field}<span>必填 · 人工核对</span><input aria-label={field} placeholder={"请输入"+field} value={form[field]??""} onChange={e=>setForm(prev=>({...prev,[field]:e.target.value}))}/></label>)}
-       {!selectedItem.missing.length?<p className={styles.productHint}>本商品当前没有未完成的必填资料。</p>:null}
-      </>:null}
       <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>商品公共选填信息 {optionalOpen?"收起":"展开"}</button>
       {optionalOpen?renderScopedFields("common","optional"):null}
      </>:fieldTab==="shared"?<div className={styles.aiVariantEditor}>
@@ -651,7 +646,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
        <div className={styles.productSectionHeading}><strong>当前SKU必填信息</strong></div>{renderScopedFields("sku","required")}
        <div className={styles.productSectionHeading}><strong>SKU名称与编码（商家管理）</strong></div>
        {variantDetails.length>1?<div className={styles.aiEditableField}><div><label htmlFor="listing-sku-pattern">批量SKU名称模板（不修改原始编码）</label></div>
-        <div className={styles.variantSelectorLine}><input id="listing-sku-pattern" aria-label="批量SKU名称模板" value={batchSkuPattern} placeholder="{color}-{size}，支持 {sku}" onChange={e=>setBatchSkuPattern(e.target.value)}/><button type="button" onClick={applyBatchSkuNames}>应用到全部SKU</button></div>
+        <div className={styles.batchSkuRow}><input id="listing-sku-pattern" aria-label="批量SKU名称模板" value={batchSkuPattern} placeholder="{color}-{size}，支持 {sku}" onChange={e=>setBatchSkuPattern(e.target.value)}/><button type="button" onClick={applyBatchSkuNames}>应用到全部SKU</button></div>
        </div>:null}
        {selectedVariantSkus.length>1?<div className={styles.aiSkuPills}>{selectedVariantSkus.map(v=><button type="button" key={v.sku} title={textDraft.skuNames[v.sku]??v.label??v.sku} aria-label={"选择SKU："+(textDraft.skuNames[v.sku]??v.label??v.sku)} aria-pressed={editingSkuKey===v.sku} onClick={()=>setActiveSkuId(v.sku)}>{textDraft.skuNames[v.sku]??v.label??v.size}</button>)}</div>:null}
        <div className={styles.aiEditableField}>
@@ -670,6 +665,13 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
        <p>已确认规格：{activeSku?activeSku.color+" / "+activeSku.size:"沿用原任务 SKU"}。价格、库存、尺码代码等真实字段不能由 AI 重构。</p>
       </div>}
     </div>
+    {stage==="missing"&&selectedItem.missing.length?<div className={styles.productInfoBlock}>
+     <div className={styles.productSectionHeading}><strong>历史待归类必填资料</strong><small>共 {selectedItem.missing.length} 项</small></div>
+     <p className={styles.productHint}>旧任务尚未记录这些字段属于商品公共、变体公共或SKU层级，暂不擅自归类；接入已验证的分类规则后按实际层级重新显示。</p>
+     {selectedItem.missing.map(field=>/(资质|认证|证书|检测|报告|文件|许可)/.test(field)?<div className={styles.qualificationField} key={field}><strong>{field} · 必填</strong><label>选择资质文件<input type="file" accept=".pdf,.png,.jpg,.jpeg" aria-label={"上传"+field} onChange={e=>setSelectedQualification(x=>({...x,[field]:e.target.files?.[0]?.name??""}))}/></label><small>{selectedQualification[field]?"已选择本地文件："+selectedQualification[field]+"（未上传服务器）":"需要真实资质，AI 不生成或伪造文件。"}</small></div>
+       :<label className={styles.productMissingField} key={field}>{field}<span>必填 · 人工核对</span><input aria-label={field} placeholder={"请输入"+field} value={form[field]??""} onChange={e=>setForm(prev=>({...prev,[field]:e.target.value}))}/></label>)}
+
+    </div>:null}
     {stage==="review"?<div className={styles.productInfoBlock}><strong>人工审核</strong>
      <p className={styles.productHint}>检查标题、描述、图片及目标平台规则，审核通过后才可继续平台提交。</p>
      {reviewMode==="edit"?<label className={styles.productMissingField}>审核意见<input aria-label="审核意见" value={form.reviewNotes??""} placeholder="输入修改意见" onChange={e=>setForm(prev=>({...prev,reviewNotes:e.target.value}))}/></label>:null}
