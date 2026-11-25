@@ -733,8 +733,8 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
         {demoLegacyFields()}
        </>:undefined)}
       {scopedGroup("common","filled",(textDraft.title.trim()||textDraft.description.trim())?<>
-       {textDraft.title.trim()?<div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题</label><button type="button" onClick={()=>openAiForField("title")}>✦ AI补全</button></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>:null}
-       {textDraft.description.trim()?<div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述</label><button type="button" onClick={()=>openAiForField("description")}>✦ AI补全</button></div><textarea id="listing-edit-desc" rows={3} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>:null}
+       {textDraft.title.trim()?<div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题</label></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>:null}
+       {textDraft.description.trim()?<div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述</label></div><textarea id="listing-edit-desc" rows={3} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>:null}
       </>:undefined)}
       {scopedGroup("common","optional",demoOptionalFields)}
      </>:fieldTab==="shared"?<div className={styles.aiVariantEditor}>
