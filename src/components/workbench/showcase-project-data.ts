@@ -1,5 +1,5 @@
 export type ProjectStatus="进行中"|"待确认"|"已完成"|"已归档";
-export type PreviewProject={id:string;name:string;goal:string;scope:string;category:string;milestone:string;progress:number;status:ProjectStatus;updated:number;visited:number;archivedAt?:number;previousStatus?:Exclude<ProjectStatus,"已归档">;reports:string[];resources:string[];template?:string};
+export type PreviewProject={id:string;name:string;goal:string;scope:string;category:string;milestone:string;progress:number;status:ProjectStatus;updated:number;visited:number;archivedAt?:number;previousStatus?:Exclude<ProjectStatus,"已归档">;reports:string[];resources:string[];template?:string;group?:string};
 export const PROJECT_ROOT="/workbench/ai/projects";
 const KEY="shuomi-preview-projects-v1";
 const seed:PreviewProject[]=[];
@@ -14,3 +14,8 @@ export function writePreviewProjects(p:PreviewProject[]){sessionStorage.setItem(
 export function savePreviewProject(p:PreviewProject){const records=readPreviewProjects();writePreviewProjects(records.some(x=>x.id===p.id)?records.map(x=>x.id===p.id?p:x):[p,...records]);return p}
 export function createPreviewProject(input:{name:string;goal:string;scope:string;template?:string;resources:string[]}){const template=projectTemplates.find(x=>x.name===input.template);const now=Date.now();return savePreviewProject({id:crypto.randomUUID(),name:input.name.trim(),goal:input.goal.trim(),scope:input.scope||"通用业务",category:template?.category||"自定义项目",milestone:template?.milestones[0]||"明确目标和执行计划",progress:0,status:"进行中",updated:now,visited:now,reports:[],resources:input.resources,template:template?.name})}
 export function projectChatUrl(mode:"create"|"reference",value=""){return "/workbench/ai/chat/new?preview=1&projectMode="+mode+(mode==="create"?"&projectTemplate=":"&projectId=")+encodeURIComponent(value)}
+
+/** Browser-local project groups are independent of business template categories. */
+const GROUP_KEY="shuomi-preview-project-groups-v1";
+export function readPreviewProjectGroups():string[]{try{const x=JSON.parse(sessionStorage.getItem(GROUP_KEY)||"[]");if(Array.isArray(x))return x.filter((v):v is string=>typeof v==="string"&&v.trim().length>0&&v.length<=40).slice(0,100)}catch{}return []}
+export function writePreviewProjectGroups(groups:string[]){sessionStorage.setItem(GROUP_KEY,JSON.stringify(groups))}
