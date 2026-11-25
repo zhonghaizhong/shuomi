@@ -22,7 +22,7 @@ export type PreferredApplicationRecord={
 export type PreferredCandidate={
  product:OwnProductRecord;optimized?:OptimizedDataset;
  snapshot?:PreferredProductSnapshot;
- status:"可申请"|"待首次适配"|"待智能体优化"|"待平台适配"|"待平台审核"|"平台审核未通过"|"审核中"|"已入选";
+ status:"可申请"|"待首次适配"|"待智能体优化"|"审核中"|"已入选";
  lastRejected?:string;
 };
 const key=(org:string,member:string)=>"shuomi:preferred-applications-demo-v2:"+encodeURIComponent(org)+":"+encodeURIComponent(member);
@@ -56,35 +56,40 @@ export function readPreferredCandidates(org:string,member:string):PreferredCandi
  return own.map(product=>{
   const latest=applications.filter(record=>record.products.some(p=>p.sourceProductId===product.id))
    .sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
-  const completed=product.status==="已入库"&&!product.missing.length&&product.skus.length>0;
-  // Eligibility requires ALL stages: own-product intake approval, agent
-  // optimization, platform-adapted dataset, and that dataset's review approval.
-  // An edited local draft alone is never sufficient.
-  const agentOptimized=Boolean(product.agent?.trim()&&product.template?.trim());
-  const optimized=completed&&agentOptimized?findOptimizedProduct(product,versions):undefined;
-  const platformAdapted=Boolean(optimized?.dataset.platform?.trim()&&optimized?.dataset.site?.trim()&&optimized?.dataset.storeName?.trim()&&optimized?.dataset.externalReceiptId?.trim()&&optimized?.dataset.uploadTaskId?.trim());
-  const platformApproved=platformAdapted&&optimized?.dataset.reviewStatus==="审核通过";
-  const snapshot:PreferredProductSnapshot|undefined=platformApproved&&optimized?{
+  // “待审核” is the Shuomi own-product intake review, NOT an external
+  // marketplace review. “已入库” means that in-app review passed.
+  const intakeApproved=product.status==="已入库"&&!product.missing.length&&product.skus.length>0;
+  const originals=product.originalSkus??[];
+  const originalBySku=new Map(originals.map(sku=>[sku.id,sku]));
+  const contentOptimized=originals.length>0&&product.skus.some(sku=>{
+   const before=originalBySku.get(sku.id);
+   return before&&(before.name.trim()!==sku.name.trim()||before.description.trim()!==sku.description.trim()||
+    sku.images.some((src,i)=>src!==before.images[i]));
+  });
+  const agentOptimized=Boolean(product.agent?.trim()&&product.template?.trim()&&contentOptimized);
+  // The Shuomi adaptation is the completed, validated own-product intake:
+  // all SKU essentials are present and the in-app review has passed.
+  const shuomiAdapted=intakeApproved&&product.skus.every(sku=>Boolean(sku.name.trim()&&sku.description.trim()&&sku.images.some(Boolean)));
+  // A verified external dataset is optional, never a prerequisite.
+  const optimized=agentOptimized?findOptimizedProduct(product,versions):undefined;
+  const snapshot:PreferredProductSnapshot|undefined=agentOptimized&&shuomiAdapted?{
    sourceProductId:product.id,
    sku:product.skus.map(p=>p.skuCode||String(p.id)).join(" / "),
-   name:optimized.entry.name||product.name,
-   image:optimized.entry.images?.[0]||product.skus.flatMap(p=>p.images)[0]||"",
-   category:product.skus[0]?.name||"未分类",
+   name:product.skus[0].name,
+   image:product.skus[0].images.find(Boolean)||"",
+   category:product.name,
    batchId:product.batchId,
-   versionId:optimized.dataset.id,
-   versionName:"V"+optimized.dataset.version,
-   platform:optimized.dataset.platform,
-   site:optimized.dataset.site,
-   description:optimized.entry.description||product.skus[0]?.description||"",
+   versionId:optimized?.dataset.id??"shuomi-intake:"+product.id,
+   versionName:optimized?"V"+optimized.dataset.version:"硕米适配版本（演示）",
+   platform:"硕米平台",
+   site:"自有商品库",
+   description:product.skus[0].description,
    skuCount:product.skus.length
   }:undefined;
   const status:PreferredCandidate["status"]=latest?.status==="已通过"?"已入选":
     latest?.status==="待审核"?"审核中":
-    !completed?"待首次适配":
-    !agentOptimized||!optimized?"待智能体优化":
-    !platformAdapted?"待平台适配":
-    optimized.dataset.reviewStatus==="审核驳回"?"平台审核未通过":
-    !platformApproved?"待平台审核":"可申请";
+    !agentOptimized?"待智能体优化":
+    !shuomiAdapted?"待首次适配":"可申请";
   return {product,optimized:optimized?.dataset,snapshot,status,lastRejected:latest?.status==="未通过"?latest.reviewNote:undefined};
  });
 }
@@ -101,7 +106,7 @@ export function submitPreferredDemoApplication(org:string,member:string,productI
  validateSupply(supply);
  const candidates=readPreferredCandidates(org,member);
  const eligible=ids.map(id=>candidates.find(c=>c.product.id===id));
- if(eligible.some(c=>!c||c.status!=="可申请"||!c.snapshot))throw Error("所选商品已变化或尚未完成智能体优化、目标平台适配及审核通过，请刷新商品列表");
+ if(eligible.some(c=>!c||c.status!=="可申请"||!c.snapshot))throw Error("所选商品已变化或尚未完成智能体优化、硕米平台适配及自有商品入库审核，请刷新商品列表");
  const now=new Date().toISOString();
  const row:PreferredApplicationRecord={
   id:"SQ-DEMO-"+Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,6).toUpperCase(),
