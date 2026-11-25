@@ -388,7 +388,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   const record:ShowcaseUploadTask={id:"LIST-"+crypto.randomUUID(),organizationId,memberId,source:source,batchId:batch,batchName:chosenBatch?.name??batch,sourceVersionId:selectedVersionId,sourceVersionLabel:selectedVersion?.label??"原始版本",productIds:selectedProductIds,productCount:selectedCount,missingCount,storeId:chosenStore.id,storeName:chosenStore.name,platform:"SHEIN",region:chosenStore.region,storeType:chosenStore.type,rule:currentRule.name,ruleConfig:{...currentRule},agentId:agent?agentId:null,agentName:agent?chosenAgent?.name??null:null,templateId:agent?templateId:null,mode:uploadMode,status,createdAt:new Date().toISOString(),demo:true};
   if(addShowcaseUploadTask(record)){sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),showcaseUploadBatchKey(record));setBatchFilter(showcaseUploadBatchKey(record));setAppliedBatch(showcaseUploadBatchKey(record));setSubmitted(true);setNotice("已保存本次演示刊登任务（"+selectedCount+" 件，"+chosenStore.name+"，"+status+"）。已记住本次来源、批次与版本，后续阶段按同一批次筛选；未执行真实平台上传。")}else setNotice("演示任务保存失败，请检查会话存储。");
  };
- const persistText=()=>{if(!selectedTask)return false;try{saveShowcaseListingTextEdits(organizationId,memberId,selectedTask.id,{...textDraft,categoryPath:categoryDraft.trim(),categoryRulePending:classChanged?true:selectedTask.textEdits?.categoryRulePending??false});return true}catch(e){setNotice(e instanceof Error?e.message:"保存文本资料失败");return false}};
+ const persistText=()=>{if(!selectedTask)return false;try{saveShowcaseListingTextEdits(organizationId,memberId,selectedTask.id,{...textDraft,categoryPath:categoryDraft.trim(),categoryRulePending:classChanged?true:selectedTask.textEdits?.categoryRulePending??false,legacyMissingValues:{...textDraft.legacyMissingValues,...form}});return true}catch(e){setNotice(e instanceof Error?e.message:"保存文本资料失败");return false}};
  const saveTextOnly=()=>{if(invalidSkuCode||!skuDisplayName.trim()){setNotice("请先检查SKU显示名称和商家SKU编码，编码不可重复。");return}if(categoryNeedsReview&&!categoryImpactConfirmed){setNotice("请先确认分类变更影响。");return}if(persistText())setNotice(categoryNeedsReview?"已保存分类变更和SKU编辑的新草稿版本；原资料完整保留，等待平台分类规则复核。":"已保存商品、颜色及SKU名称和编码修改；原始数据保持不变。")};
  const openAiForField=(field:string)=>{setAiTargetField(field);setBatchAiScope("current");setBatchAiOpen(true);setAiFeedback("")};
  const requestAiSuggestions=()=>{
@@ -466,7 +466,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <span className={styles.compactStoreType}>{item.targetStoreType||"—"}</span>
       <span className={styles.compactPlainCell} title={item.store}>{item.store||"—"}</span>
       <span className={styles.compactStatus}>{item.status}</span>
-      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes},fieldValues:{...record?.textEdits?.fieldValues},legacyMissingValues:{...record?.textEdits?.legacyMissingValues}}})());setBatchAiOpen(false);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setBatchSkuPattern("");setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
+      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes},fieldValues:{...record?.textEdits?.fieldValues},legacyMissingValues:{...record?.textEdits?.legacyMissingValues}}})());setBatchAiOpen(false);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setBatchSkuPattern("");setImagePreview(false);setForm({...savedTasks.find(t=>t.id===item.taskId)?.textEdits?.legacyMissingValues});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
      </div>})}</div></div>{filtered.length>15?<nav className={styles.listPagination} aria-label="商品分页"><span>共 {filtered.length} 条 · 每页 15 条 · 第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setListPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setListPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></nav>:null}
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
@@ -623,32 +623,36 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <div className={styles.productInfoComparison}><small>原始标题（只读，永久保留）</small><p>{selectedItem.originalName??selectedItem.name}</p></div>
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题 · 可修改</label><button type="button" onClick={()=>openAiForField("title")}>✦ AI 重构</button></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述 · 可修改</label><button type="button" onClick={()=>openAiForField("description")}>✦ AI 重构</button></div><textarea id="listing-edit-desc" rows={4} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>
+      <div className={styles.productSectionHeading}><strong>商品公共必填属性</strong></div>{renderScopedFields("common","required")}
       {stage==="missing"?<><div className={styles.productSectionHeading}><strong>商品公共必填信息（当前任务已识别）</strong><small>缺少 {selectedItem.missing.length} 项必填</small></div>
        {selectedItem.missing.map(field=>/(资质|认证|证书|检测|报告|文件|许可)/.test(field)?<div className={styles.qualificationField} key={field}><strong>{field} · 必填</strong><label>选择资质文件<input type="file" accept=".pdf,.png,.jpg,.jpeg" aria-label={"上传"+field} onChange={e=>setSelectedQualification(x=>({...x,[field]:e.target.files?.[0]?.name??""}))}/></label><small>{selectedQualification[field]?"已选择本地文件："+selectedQualification[field]+"（未上传服务器）":"需要真实资质，AI 不生成或伪造文件。"}</small></div>
        :<label className={styles.productMissingField} key={field}>{field}<span>必填 · 人工核对</span><input aria-label={field} placeholder={"请输入"+field} value={form[field]??""} onChange={e=>setForm(prev=>({...prev,[field]:e.target.value}))}/></label>)}
        {!selectedItem.missing.length?<p className={styles.productHint}>本商品当前没有未完成的必填资料。</p>:null}
       </>:null}
       <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>商品公共选填信息 {optionalOpen?"收起":"展开"}</button>
-      {optionalOpen?<p className={styles.productHint}>选填字段以目标平台真实类目规则为准；未接入前不虚构字段和可选值。</p>:null}
+      {optionalOpen?renderScopedFields("common","optional"):null}
      </>:fieldTab==="shared"?<div className={styles.aiVariantEditor}>
        <strong>变体公用信息 · {selectedItem.targetPlatform??selectedTask?.platform??"目标平台"}</strong>
        <p>此处仅管理该平台、站点、类目允许全部变体共用的字段。不同平台的字段名、范围和枚举不能复用。</p>
-       <div className={styles.dialogFieldEmpty}><strong>必填信息</strong><p>等待目标平台分类规则返回该层级必填属性。未获取规则时不会把商品公共字段当作变体公用字段，也不会伪造属性。</p></div>
-       <div className={styles.dialogFieldEmpty}><strong>选填信息</strong><p>根据目标平台分类规则动态显示可选属性；规则尚未接入，当前暂无可确认的选填项。</p></div>
+       <div className={styles.productSectionHeading}><strong>必填信息</strong></div>{renderScopedFields("shared","required")}
+       <div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("shared","optional")}
        <div className={styles.aiRuleNote}>分类变更后，必填、选填、适用层级、可选值均重新校验。旧字段及已填写资料保留在原版本中，固定选项仅允许平台认可的值。</div>
       </div>
      :fieldTab==="variant"?<div className={styles.aiVariantEditor}>
        <strong>{selectedVariantGroup?.color??"当前变体"} · 当前颜色资料</strong>
-       <div className={styles.dialogFieldEmpty}><strong>当前变体必填信息</strong><p>仅显示目标平台类目规则明确分配到此变体层级的必填项；规则未接入时不将其他层级字段挪到这里。</p></div>
-       <div className={styles.productSectionHeading}><strong>当前变体选填信息</strong></div>
+       <div className={styles.productSectionHeading}><strong>当前变体必填信息</strong></div>{renderScopedFields("variant","required")}
+       <div className={styles.productSectionHeading}><strong>当前变体选填信息</strong></div>{renderScopedFields("variant","optional")}
        <p>当前颜色下有 {selectedVariantSkus.length} 个 SKU。修改颜色描述只作用于这一颜色组。</p>
        <div className={styles.aiEditableField}><div><label htmlFor="listing-color-desc">颜色描述 · 选填</label><button type="button" onClick={()=>openAiForField("colorDescription")}>✦ AI 重构</button></div>
        <textarea id="listing-color-desc" rows={3} value={textDraft.colorDescriptions[editingColorKey]??""} maxLength={2000} placeholder="输入该颜色共用的描述" onChange={e=>setTextDraft(d=>({...d,colorDescriptions:{...d.colorDescriptions,[editingColorKey]:e.target.value}}))}/></div>
        <div className={styles.aiRuleNote}>颜色代码等平台枚举值不能由 AI 自行生成；图片在左侧独立管理。</div>
       </div>:<div className={styles.aiVariantEditor}>
        <strong>当前 SKU · {skuDisplayName}</strong>
-       <div className={styles.dialogFieldEmpty}><strong>当前SKU必填信息</strong><p>此处预留该分类的SKU级必填属性；商家SKU编码是业务管理字段，不冒充平台必填。分类规则未确认前不补造字段。</p></div>
+       <div className={styles.productSectionHeading}><strong>当前SKU必填信息</strong></div>{renderScopedFields("sku","required")}
        <div className={styles.productSectionHeading}><strong>SKU名称与编码（商家管理）</strong></div>
+       {variantDetails.length>1?<div className={styles.aiEditableField}><div><label htmlFor="listing-sku-pattern">批量SKU名称模板（不修改原始编码）</label></div>
+        <div className={styles.variantSelectorLine}><input id="listing-sku-pattern" aria-label="批量SKU名称模板" value={batchSkuPattern} placeholder="{color}-{size}，支持 {sku}" onChange={e=>setBatchSkuPattern(e.target.value)}/><button type="button" onClick={applyBatchSkuNames}>应用到全部SKU</button></div>
+       </div>:null}
        {selectedVariantSkus.length>1?<div className={styles.aiSkuPills}>{selectedVariantSkus.map(v=><button type="button" key={v.sku} title={textDraft.skuNames[v.sku]??v.label??v.sku} aria-label={"选择SKU："+(textDraft.skuNames[v.sku]??v.label??v.sku)} aria-pressed={editingSkuKey===v.sku} onClick={()=>setActiveSkuId(v.sku)}>{textDraft.skuNames[v.sku]??v.label??v.size}</button>)}</div>:null}
        <div className={styles.aiEditableField}>
         <div><label htmlFor="listing-sku-name">SKU显示名称 · 可修改</label></div>
@@ -660,7 +664,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
         {invalidSkuCode?<p role="alert">商家SKU编码不能为空，且同一商品内不得重复。</p>:null}
        </div>
        <p>原始SKU：{editingSkuKey}（只读） · 当前商家编码：{skuIdentityDraft}。名称和编码单独保存，不改变原始SKU、图片和历史记录的内部关联。</p>
-       <div className={styles.productSectionHeading}><strong>当前SKU选填信息</strong></div>
+       <div className={styles.productSectionHeading}><strong>当前SKU选填信息</strong></div>{renderScopedFields("sku","optional")}
        <div className={styles.aiEditableField}><div><label htmlFor="listing-sku-desc">SKU 补充描述 · 选填</label><button type="button" onClick={()=>openAiForField("skuDescription")}>✦ AI 重构</button></div>
        <textarea id="listing-sku-desc" rows={3} value={textDraft.skuDescriptions[editingSkuKey]??""} maxLength={2000} placeholder="仅对当前 SKU 生效" onChange={e=>setTextDraft(d=>({...d,skuDescriptions:{...d.skuDescriptions,[editingSkuKey]:e.target.value}}))}/></div>
        <p>已确认规格：{activeSku?activeSku.color+" / "+activeSku.size:"沿用原任务 SKU"}。价格、库存、尺码代码等真实字段不能由 AI 重构。</p>
