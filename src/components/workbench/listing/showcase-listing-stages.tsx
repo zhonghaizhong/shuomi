@@ -600,24 +600,15 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
      </div>:null}
     </div>
     <div className={styles.productInfoBlock}>
-     <div className={styles.productSectionHeading}><strong>变体信息（首次上传已确认）</strong><small>不在补全阶段重新识别</small></div>
-     <div className={styles.dialogVariantFacts}>{selectedVariantGroup?<span>{selectedVariantGroup.color} · {selectedVariantSkus.length} SKU</span>:null}
-      <span className={styles.dialogVariantPill}>{selectedSkuCount>1?"多变体":"单变体"}</span>
-      <span>共 {selectedSkuCount} 个 SKU</span>
-      <span>{variantDetails.length?"颜色/尺码均已建档":"沿用原任务的规格结构"}</span>
-     </div>
-    </div>
-    <div className={styles.productInfoBlock}>
 
      <div className={styles.dialogFieldTabs} role="tablist" aria-label="商品资料分组">
       <button type="button" role="tab" aria-selected={fieldTab==="common"} onClick={()=>{setFieldTab("common");setAiTargetField(null)}}>商品公共信息</button>
       <button type="button" role="tab" aria-selected={fieldTab==="shared"} onClick={()=>{setFieldTab("shared");setAiTargetField(null)}}>变体公用信息</button>
-      <button type="button" role="tab" aria-selected={fieldTab==="variant"} onClick={()=>{setFieldTab("variant");setAiTargetField(null)}}>当前变体（{selectedVariantGroup?.color??"无"}）</button>
-      <button type="button" role="tab" aria-selected={fieldTab==="sku"} onClick={()=>{setFieldTab("sku");setAiTargetField(null)}}>当前 SKU（{activeSku?.size??"单 SKU"}）</button>
+      <button type="button" role="tab" aria-selected={fieldTab==="variant"} onClick={()=>{setFieldTab("variant");setAiTargetField(null)}}>变体结构</button>
+      <button type="button" role="tab" aria-selected={fieldTab==="sku"} onClick={()=>{setFieldTab("sku");setAiTargetField(null)}}>当前SKU</button>
      </div>
      <div className={styles.aiFieldToolbar}>
-      <div className={styles.aiFieldFilters}><span>资料字段</span><span>平台 / 站点 / 分类决定必填与选填</span></div>
-      <button type="button" className={styles.aiBatchTrigger} aria-expanded={batchAiOpen} onClick={()=>{setBatchAiOpen(v=>!v);setAiTargetField(null);setAiFeedback("")}}>✦ AI 批量重构 · 仅信息字段</button>
+      <button type="button" className={styles.aiBatchTrigger} aria-expanded={batchAiOpen} onClick={()=>{setBatchAiOpen(v=>!v);setAiTargetField(null);setAiFeedback("")}}>✦ AI优化</button>
      </div>
      {batchAiOpen?<section className={styles.aiBatchPanel} aria-label="AI 批量重构配置">
       <header><strong>✦ {aiTargetField?"AI 字段重构":"AI 批量重构"}</strong><span>不包含图片</span><button type="button" aria-label="收起重构配置" onClick={()=>{setBatchAiOpen(false);setAiTargetField(null)}}>×</button></header>
@@ -642,29 +633,36 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <div className={styles.productInfoComparison}><small>原始标题（只读，永久保留）</small><p>{selectedItem.originalName??selectedItem.name}</p></div>
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题 · 可修改</label><button type="button" onClick={()=>openAiForField("title")}>✦ AI 重构</button></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述 · 可修改</label><button type="button" onClick={()=>openAiForField("description")}>✦ AI 重构</button></div><textarea id="listing-edit-desc" rows={4} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>
-      <div className={styles.productSectionHeading}><strong>商品公共必填属性</strong></div>{renderScopedFields("common","required")}
-      <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>商品公共选填信息 {optionalOpen?"收起":"展开"}</button>
-      {optionalOpen?renderScopedFields("common","optional"):null}
+      {hasScopedFields("common","required")?<><div className={styles.productSectionHeading}><strong>必填信息</strong></div>{renderScopedFields("common","required")}</>:null}
+      {hasScopedFields("common","optional")?<><div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("common","optional")}</>:null}
      </>:fieldTab==="shared"?<div className={styles.aiVariantEditor}>
-       <strong>变体公用信息 · {selectedItem.targetPlatform??selectedTask?.platform??"目标平台"}</strong>
-       <p>此处仅管理该平台、站点、类目允许全部变体共用的字段。不同平台的字段名、范围和枚举不能复用。</p>
-       <div className={styles.productSectionHeading}><strong>必填信息</strong></div>{renderScopedFields("shared","required")}
-       <div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("shared","optional")}
-       <div className={styles.aiRuleNote}>分类变更后，必填、选填、适用层级、可选值均重新校验。旧字段及已填写资料保留在原版本中，固定选项仅允许平台认可的值。</div>
+       {hasScopedFields("shared","required")?<><div className={styles.productSectionHeading}><strong>必填信息</strong></div>{renderScopedFields("shared","required")}</>:null}
+       {hasScopedFields("shared","optional")?<><div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("shared","optional")}</>:null}
       </div>
-     :fieldTab==="variant"?<div className={styles.aiVariantEditor}>
-       <strong>{selectedVariantGroup?.color??"当前变体"} · 当前颜色资料</strong>
-       <div className={styles.productSectionHeading}><strong>当前变体必填信息</strong></div>{renderScopedFields("variant","required")}
-       <div className={styles.productSectionHeading}><strong>当前变体选填信息</strong></div>{renderScopedFields("variant","optional")}
-       <p>当前颜色下有 {selectedVariantSkus.length} 个 SKU。修改颜色描述只作用于这一颜色组。</p>
-       <div className={styles.aiEditableField}><div><label htmlFor="listing-color-desc">颜色描述 · 选填</label><button type="button" onClick={()=>openAiForField("colorDescription")}>✦ AI 重构</button></div>
-       <textarea id="listing-color-desc" rows={3} value={textDraft.colorDescriptions[editingColorKey]??""} maxLength={2000} placeholder="输入该颜色共用的描述" onChange={e=>setTextDraft(d=>({...d,colorDescriptions:{...d.colorDescriptions,[editingColorKey]:e.target.value}}))}/></div>
-       <div className={styles.aiRuleNote}>颜色代码等平台枚举值不能由 AI 自行生成；图片在左侧独立管理。</div>
+     :fieldTab==="variant"?<div className={styles.variantStructureEditor}>
+      {variantDraft.dimensions.map((group,index)=><section className={styles.variantStructureGroup} key={group.id}>
+       <div className={styles.variantStructureHeading}><strong>第{index+1}层变体</strong><button type="button" onClick={()=>addVariantValue(group.id)}>＋ 添加</button></div>
+       <label className={styles.variantStructureLabel}>变体名称<input aria-label={"第"+(index+1)+"层变体名称"} maxLength={60} value={group.name} onChange={e=>changeVariantName(group.id,e.target.value)}/></label>
+       <div className={styles.variantStructureLabel}>变体值<div className={styles.variantStructureValues}>
+        {group.values.map(value=><div className={styles.variantStructureValueRow} key={value.id}>
+         <input aria-label={group.name+"变体值"} placeholder="输入变体值" maxLength={100} value={value.label} onChange={e=>changeVariantValue(group.id,value.id,e.target.value)}/>
+         <button type="button" aria-label={"删除变体值 "+value.label} onClick={()=>removeVariantValue(group.id,value.id)}>删除</button>
+        </div>)}
+       </div></div>
+      </section>)}
+      {!variantDraft.dimensions.length?<p className={styles.productHint}>当前商品没有多变体结构。</p>:null}
+      {variantDraft.dimensions.length>0?<div className={styles.variantStructureSummary}><span>SKU组合</span><strong>{variantDraft.dimensions.reduce((n,g)=>n*g.values.length,1)} 个</strong></div>:null}
+      {structureChanged?<div className={styles.variantStructureReview} role="status">
+       <strong>保存前确认</strong>
+       <p>保留 {structureImpact.retained} 个原组合 · 新增 {structureImpact.added.length} 个 · 待停用 {structureImpact.removed.length} 个SKU。</p>
+       {structureImpact.removed.length>0?<p>受影响原SKU：{structureImpact.removed.join("、")}。原图和历史数据不会删除。</p>:null}
+       {structureIssues.map((message,i)=><p key={i} role="alert">{message}</p>)}
+       <label><input type="checkbox" checked={confirmVariantChange} onChange={e=>setConfirmVariantChange(e.target.checked)}/> 确认影响，保存为待平台复核草稿</label>
+      </div>:null}
       </div>:<div className={styles.aiVariantEditor}>
-       <strong>当前 SKU · {skuDisplayName}</strong>
-       <div className={styles.productSectionHeading}><strong>当前SKU必填信息</strong></div>{renderScopedFields("sku","required")}
-       <div className={styles.productSectionHeading}><strong>SKU名称与编码（商家管理）</strong></div>
-       {variantDetails.length>1?<div className={styles.aiEditableField}><div><label htmlFor="listing-sku-pattern">批量SKU名称模板（不修改原始编码）</label></div>
+       {hasScopedFields("sku","required")?<><div className={styles.productSectionHeading}><strong>必填信息</strong></div>{renderScopedFields("sku","required")}</>:null}
+       {variantDetails.length>1?<button type="button" className={styles.compactAction} onClick={()=>setBulkSkuOpen(v=>!v)}>批量修改</button>:null}
+       {bulkSkuOpen&&variantDetails.length>1?<div className={styles.aiEditableField}><div><label htmlFor="listing-sku-pattern">批量SKU名称模板</label></div>
         <div className={styles.batchSkuRow}><input id="listing-sku-pattern" aria-label="批量SKU名称模板" value={batchSkuPattern} placeholder="{color}-{size}，支持 {sku}" onChange={e=>setBatchSkuPattern(e.target.value)}/><button type="button" onClick={applyBatchSkuNames}>应用到全部SKU</button></div>
        </div>:null}
        {selectedVariantSkus.length>1?<div className={styles.aiSkuPills}>{selectedVariantSkus.map(v=><button type="button" key={v.sku} title={textDraft.skuNames[v.sku]??v.label??v.sku} aria-label={"选择SKU："+(textDraft.skuNames[v.sku]??v.label??v.sku)} aria-pressed={editingSkuKey===v.sku} onClick={()=>setActiveSkuId(v.sku)}>{textDraft.skuNames[v.sku]??v.label??v.size}</button>)}</div>:null}
@@ -677,11 +675,10 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
         <input id="listing-merchant-sku" aria-label="商家SKU编码" maxLength={100} value={skuIdentityDraft} onChange={e=>setTextDraft(d=>({...d,merchantSkuCodes:{...d.merchantSkuCodes,[editingSkuKey]:e.target.value}}))}/>
         {invalidSkuCode?<p role="alert">商家SKU编码不能为空，且同一商品内不得重复。</p>:null}
        </div>
-       <p>原始SKU：{editingSkuKey}（只读） · 当前商家编码：{skuIdentityDraft}。名称和编码单独保存，不改变原始SKU、图片和历史记录的内部关联。</p>
-       <div className={styles.productSectionHeading}><strong>当前SKU选填信息</strong></div>{renderScopedFields("sku","optional")}
+       {hasScopedFields("sku","optional")?<><div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("sku","optional")}</>:null}
        <div className={styles.aiEditableField}><div><label htmlFor="listing-sku-desc">SKU 补充描述 · 选填</label><button type="button" onClick={()=>openAiForField("skuDescription")}>✦ AI 重构</button></div>
        <textarea id="listing-sku-desc" rows={3} value={textDraft.skuDescriptions[editingSkuKey]??""} maxLength={2000} placeholder="仅对当前 SKU 生效" onChange={e=>setTextDraft(d=>({...d,skuDescriptions:{...d.skuDescriptions,[editingSkuKey]:e.target.value}}))}/></div>
-       <p>已确认规格：{activeSku?activeSku.color+" / "+activeSku.size:"沿用原任务 SKU"}。价格、库存、尺码代码等真实字段不能由 AI 重构。</p>
+
       </div>}
     </div>
     {stage==="missing"&&selectedItem.missing.length?<div className={styles.productInfoBlock}>
