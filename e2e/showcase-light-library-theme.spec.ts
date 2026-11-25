@@ -498,3 +498,33 @@ test("Create My Skill remains in the shared header on every Skill Library tab",a
  await page.locator('[data-skill-showcase="true"] header').first().getByRole("button",{name:"创建我的技能"}).click();
  await expect(page).toHaveURL(/\/workbench\/ai\/chat\/new/);
 });
+
+test("Generate research report opens selected Chat mode, saves an approved demo draft, and groups it",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/reports");
+ const reports=page.locator("[data-report-center]");
+ await expect(reports.getByRole("button",{name:"生成调研报告"})).toBeVisible();
+ await expect(reports.getByRole("button",{name:"管理分组"})).toBeVisible();
+ await expect(reports.getByRole("table")).toBeVisible();
+ await reports.getByRole("button",{name:"选择报告日期"}).click();
+ await expect(page.getByRole("group",{name:"报告日期范围"})).toBeVisible();
+ await expect(page.getByLabel("开始日期")).toHaveAttribute("type","date");
+ await page.getByRole("group",{name:"报告日期范围"}).getByRole("button",{name:"全部时间"}).click();
+ await reports.getByRole("button",{name:"生成调研报告"}).click();
+ await expect(page).toHaveURL(/chat\/new/);
+ await expect(page.getByRole("button",{name:"加入我的报告",exact:true})).toHaveAttribute("aria-pressed","true");
+ await page.getByRole("textbox",{name:"描述你的业务目标"}).fill("美国站商品市场调研演示");
+ await page.getByRole("button",{name:"生成报告草案"}).click();
+ await expect(page.getByRole("button",{name:"确认加入报告"})).toBeVisible();
+ await page.getByRole("button",{name:"确认加入报告"}).click();
+ await page.goto("/shuomi/#/workbench/ai/reports");
+ await expect(reports.getByText("美国站商品市场调研演示")).toBeVisible();
+ await reports.getByRole("button",{name:"管理分组"}).click();
+ const dialog=page.getByRole("dialog",{name:"管理报告分组"});
+ await dialog.getByRole("textbox",{name:"新分组名称"}).fill("市场分析");
+ await dialog.getByRole("button",{name:"创建分组"}).click();
+ await dialog.getByRole("button",{name:"完成"}).click();
+ await reports.getByRole("combobox",{name:"美国站商品市场调研演示所属分组"}).selectOption("市场分析");
+ await reports.getByRole("button",{name:"收藏",exact:true}).click();
+ await page.goto("/shuomi/#/workbench/ai/reports/favorites");
+ await expect(page.locator("[data-report-center]").getByText("美国站商品市场调研演示")).toBeVisible();
+});
