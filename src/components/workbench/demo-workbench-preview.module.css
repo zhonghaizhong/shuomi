@@ -2547,6 +2547,13 @@
 :global(.light) .libraryHubPreview .secondary:hover {color:#5144bb;background:#eae6ff;}
 
 
+/* Report workflow has white surfaces; replace the legacy dark-theme light-gray
+   helper text to meet contrast requirements on white cards. */
+:global(.light) .libraryHubPreview[data-library-hub="reports"] .listHeading p,
+:global(.light) .libraryHubPreview[data-library-hub="reports"] .step small {
+  color:#625d70;
+}
+
 /* Focused light audit for 硕米Chat, Task Center, and Project Center. */
 :global(.light) .chatLandingPreview :global([class*="landingCard"]) :is(h2,strong),
 :global(.light) .chatLandingPreview :global([class*="stepHeading"]) h3 {color:#444050;}
