@@ -132,7 +132,7 @@ it("stores six independently versioned image roles per color, inherits across si
  expect(()=>saveListingVariantPhoto(org,member,stanley.id,"unknown",listingVariantPhotoRoles[0],"https://example.test/black.jpg")).toThrow();
  expect(()=>saveListingVariantPhoto(org,member,stanley.id,"cream 2.0",listingVariantPhotoRoles[0],stanley.demoProduct!.variantImageGroups![0].originalImages[0])).toThrow();
  for(const group of stanley.demoProduct!.variantImageGroups!){
-  listingVariantPhotoRoles.forEach((role,i)=>saveListingVariantPhoto(org,member,stanley.id,group.id,role,"https://example.test/"+group.id+"-"+i+".jpg"));
+  listingVariantPhotoRoles.forEach((role,i)=>saveListingVariantPhoto(org,member,stanley.id,group.id,role,"https://example.test/"+encodeURIComponent(group.id)+"-"+i+".jpg"));
  }
  const completed=readShowcaseUploadTasks(org,member).find(t=>t.id===stanley.id)!;
  expect(completed.demoProduct?.variantImageGroups?.every(variantGroupReady)).toBe(true);
