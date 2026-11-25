@@ -56,7 +56,7 @@ export function ShowcaseProjectCenter({pathname,onSectionSelect,tabNavigation}:{
     ["02","关联工作","关联AI会话、任务和相关资源"],
     ["03","持续推进","查看进度、处理确认并保存成果"]
    ].map(([number,title,description])=><article key={number}><b>{number}</b><h3>{title}</h3><p>{description}</p></article>)}</div>
-   <div className={s.guideActions}><button type="button" className={s.primary} onClick={()=>chat("create")}><Plus size={16}/>新建项目</button><button type="button" onClick={()=>go("templates")}>查看项目模板</button></div>
+   <div className={s.guideActions}><button type="button" onClick={()=>go("templates")}>查看项目模板</button></div>
   </section>
  </div>}
  {tab!=="home"&& <section className={s.panel}><header className={s.sectionHead}><div><h2>{tab==="home"?"最近项目":tab==="templates"?"官方模板列表":tab==="archived"?"项目列表":tab==="recent"?"最近访问":"我的项目列表"}</h2><p>{tab==="templates"?"按分类查找模板，先查看介绍，再决定使用。":tab==="home"?"按最近更新排序 · 显示 "+visible.length+" 项":visible.length+" 个项目 · 点击查看详情"}</p></div>{tab==="home"&&<div className={s.actions}><button onClick={()=>go("templates")}>项目模板</button><button onClick={()=>go("mine")}>查看全部项目</button></div>}</header>
