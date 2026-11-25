@@ -12,7 +12,7 @@ import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./showcase-batch-version-picker";
 import styles from "./showcase-listing-stages.module.css";
-import {importAmazonVariantBundle,importSingleColorAIReconstruction,importThreeColorAIReconstruction,recoverLocalListingPhotos,readVariantBundlePhoto,saveListingLocalPhoto,isVariantBundleUrl} from "./showcase-variant-bundle-import";
+import {importAmazonVariantBundle,importSingleColorAIReconstruction,importThreeColorAIReconstruction,recoverLocalListingPhotos,linkHostedCrocsDemoPhotos,readVariantBundlePhoto,saveListingLocalPhoto,isVariantBundleUrl} from "./showcase-variant-bundle-import";
 import {ShowcaseListingStageHeader} from "./showcase-listing-stage-header";
 import {parseListingPhoto,listingPhotoAtlasUrl} from "./showcase-listing-ai-images";
 
@@ -107,6 +107,11 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   refreshAmazonFiveDemoPhotos(organizationId,memberId);
  },[organizationId,memberId]);
 
+ // Existing and freshly seeded demo tasks auto-link only after all public images load.
+ useEffect(()=>{
+  if(organizationId!=="SM-ENT-000001"||memberId!=="admin")return;
+  void linkHostedCrocsDemoPhotos(organizationId,memberId).catch(()=>{/* A partial deploy must not affect the demo task. */});
+ },[organizationId,memberId,taskVersion]);
  const demoTaskInitialized=useRef(false);
  useEffect(()=>{
   if(demoTaskInitialized.current||organizationId!=="SM-ENT-000001"||memberId!=="admin")return;
@@ -216,7 +221,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   }
   return ()=>{cancelled=true;urls.forEach(src=>URL.revokeObjectURL(src));};
  },[selectedTask?.id,selectedVariantGroup?.id,taskVersion]);
- const mediaUrl=(src:string|null|undefined):string|undefined=>src?(isVariantBundleUrl(src)?bundlePhotoUrls[src]:src):undefined;
+ const mediaUrl=(src:string|null|undefined):string|undefined=>src?(isVariantBundleUrl(src)?bundlePhotoUrls[src]:src.startsWith("/assets/")&&typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi"+src:src):undefined;
  const importBundle=async(file:File|undefined)=>{
   if(!file)return;
   setBundleImporting(true);
