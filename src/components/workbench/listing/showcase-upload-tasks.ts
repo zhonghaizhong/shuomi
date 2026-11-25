@@ -1,5 +1,6 @@
 "use client";
 import {listingDemoArtSet,type ListingArtKind} from "./showcase-listing-ai-images";
+import {fieldSchemaMatches,validatePlatformFields,type PlatformFieldSchema,type ScopedFieldValues} from "./showcase-platform-field-schema";
 
 /** Local showcase task ledger. This is not platform submission, AI execution or an order. */
 export const listingVariantPhotoRoles=[
@@ -42,7 +43,10 @@ export type ShowcaseUploadTask={
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
  status:"待补全"|"待执行智能体"|"待审核"|"待平台提交";
  demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:ListingVariantDetail[];variantImageGroups?:ListingVariantImageGroup[];imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
- textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>;skuNames?:Record<string,string>;merchantSkuCodes?:Record<string,string>;categoryPath?:string;categoryRulePending?:boolean;revision?:number;updatedAt?:string};
+ textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>;skuNames?:Record<string,string>;merchantSkuCodes?:Record<string,string>;categoryPath?:string;categoryRulePending?:boolean;revision?:number;updatedAt?:string;fieldValues?:ScopedFieldValues;legacyMissingValues?:Record<string,string>};
+ /** Authoritative schema only; no guessed marketplace categories. */
+ platformFieldSchema?:PlatformFieldSchema;
+ editHistory?:Array<{revision:number;updatedAt:string;categoryPath:string;ruleVersion:string;changedFields:string[]}>;
  /** User-managed display gallery; never replaces preserved source evidence. Key is color group id or "default". */
  imageEdits?:Record<string,{main?:string[];detail?:string[]}>;
 
@@ -248,7 +252,9 @@ export function saveShowcaseListingTextEdits(
   categoryPath:safe(updates.categoryPath,300)??existing.categoryPath,
   categoryRulePending:updates.categoryRulePending??existing.categoryRulePending,
   revision:(existing.revision??0)+1,
-  updatedAt:new Date().toISOString()
+  updatedAt:new Date().toISOString(),
+  fieldValues:{...existing.fieldValues,...updates.fieldValues},
+  legacyMissingValues:{...existing.legacyMissingValues,...updates.legacyMissingValues}
  };
  const knownSkus=task.demoProduct.variantDetails?.map(v=>v.sku)??task.productIds;
  const allowed=new Set(knownSkus);
@@ -258,8 +264,11 @@ export function saveShowcaseListingTextEdits(
  const codes=knownSkus.map(id=>cleaned.merchantSkuCodes[id]??id).map(v=>v.trim().toLocaleLowerCase());
  if(codes.some(v=>!v)||new Set(codes).size!==codes.length)throw Error("商家SKU编码不能为空，且同一商品内必须唯一");
  if(Object.values(cleaned.skuNames).some(name=>!name.trim()))throw Error("SKU显示名称不能为空");
+ if(Object.entries(cleaned.fieldValues).some(([key,value])=>key.length>500||typeof value!=="string"||value.length>6000))throw Error("平台属性输入格式或长度不正确");
+ if(Object.entries(cleaned.legacyMissingValues).some(([key,value])=>key.length>300||typeof value!=="string"||value.length>6000))throw Error("历史必填资料格式或长度不正确");
  if(cleaned.categoryRulePending===false&&cleaned.categoryPath!==(existing.categoryPath??""))throw Error("分类变更须先完成目标平台规则复核");
- const next={...task,textEdits:cleaned};
+ const record={revision:cleaned.revision,updatedAt:cleaned.updatedAt,categoryPath:cleaned.categoryPath??"",ruleVersion:task.platformFieldSchema?.ruleVersion??"unverified",changedFields:[...Object.keys(updates.fieldValues??{}),...Object.keys(updates.skuNames??{}),...Object.keys(updates.merchantSkuCodes??{})]};
+ const next={...task,textEdits:cleaned,editHistory:[...(task.editHistory??[]),record].slice(-60)};
  persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
@@ -268,8 +277,15 @@ export function completeShowcaseUploadTask(org:string,member:string,taskId:strin
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
  if(!task||task.status!=="待补全"||!task.demoProduct)throw Error("没有可补全的演示任务");
  if(task.textEdits?.categoryRulePending)throw Error("目标分类变更后尚未核对平台规则，不允许提交审核");
- if(task.demoProduct.missingFields.some(f=>!fields[f]?.trim()))throw Error("请先补齐所有缺失资料");
- const next={...task,status:"待审核" as const,missingCount:0,demoProduct:{...task.demoProduct,missingFields:[]}};
+ const category=task.textEdits?.categoryPath??"";
+ if(category){
+  if(!fieldSchemaMatches(task.platformFieldSchema,{platform:task.platform,region:task.region,storeType:task.storeType,categoryPath:category}))throw Error("目标分类没有经过验证的完整平台字段规则，不能提交审核");
+  const detail=task.demoProduct.variantDetails??[];
+  const errors=validatePlatformFields(task.platformFieldSchema!,task.textEdits?.fieldValues??{},{variantIds:[...new Set(detail.map(v=>v.color.trim().toLowerCase()))],skuIds:detail.length?detail.map(v=>v.sku):task.productIds});
+  if(errors.length)throw Error("目标平台必填字段不完整："+errors.slice(0,4).join("；"));
+ }
+ if(task.demoProduct.missingFields.some(f=>!(fields[f]??task.textEdits?.legacyMissingValues?.[f])?.trim()))throw Error("请先补齐所有缺失资料");
+ const next={...task,status:"待审核" as const,missingCount:0,textEdits:{...task.textEdits,legacyMissingValues:{...task.textEdits?.legacyMissingValues,...fields}},demoProduct:{...task.demoProduct,missingFields:[]}};
  persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
@@ -278,6 +294,11 @@ export function approveShowcaseUploadTask(org:string,member:string,taskId:string
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
  if(!task||task.status!=="待审核"||!task.demoProduct||task.demoProduct.missingFields.length)throw Error("智能体优化结果尚未完成资料检查与人工审核");
  if(task.textEdits?.categoryRulePending)throw Error("目标分类规则尚未重新验证，不能审核通过");
+ if(task.textEdits?.categoryPath){
+  if(!fieldSchemaMatches(task.platformFieldSchema,{platform:task.platform,region:task.region,storeType:task.storeType,categoryPath:task.textEdits.categoryPath}))throw Error("缺少已验证的平台分类规则");
+  const detail=task.demoProduct.variantDetails??[];
+  if(validatePlatformFields(task.platformFieldSchema!,task.textEdits.fieldValues??{},{variantIds:[...new Set(detail.map(v=>v.color.trim().toLowerCase()))],skuIds:detail.length?detail.map(v=>v.sku):task.productIds}).length)throw Error("平台必填属性尚未补齐");
+ }
  if(task.demoProduct.variantImageGroups?.length&&!task.demoProduct.variantImageGroups.every(variantGroupReady))throw Error("每个颜色组需要六张不同用途的真实优化图后才能审核通过");
  const next={...task,status:"待平台提交" as const,demoProduct:{...task.demoProduct,reviewedAt:new Date().toISOString()}};
  persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
