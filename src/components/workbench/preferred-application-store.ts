@@ -94,7 +94,7 @@ export function submitPreferredDemoApplication(org:string,member:string,productI
  validateSupply(supply);
  const candidates=readPreferredCandidates(org,member);
  const eligible=ids.map(id=>candidates.find(c=>c.product.id===id));
- if(eligible.some(c=>!c||c.status!=="待申请"||!c.snapshot))throw Error("所选商品已变化或尚未完成自有商品入库审核或已发起优选申请，请刷新商品列表");
+ if(eligible.some(c=>!c||!["待申请","审核未通过"].includes(c.status)||!c.snapshot))throw Error("所选商品已变化或尚未完成自有商品入库审核或已发起优选申请，请刷新商品列表");
  const now=new Date().toISOString();
  const row:PreferredApplicationRecord={
   id:"SQ-DEMO-"+Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,6).toUpperCase(),
