@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {beforeEach,describe,expect,it,vi} from "vitest";
-import {agentPreviewTemplatesChanged,readAgentPreviewTemplates,writeAgentPreviewTemplates,agentPreviewTemplateKey,serializeAgentTemplateForSharing} from "./showcase-agent-template-store";
+import {agentPreviewTemplatesChanged,readAgentPreviewTemplates,writeAgentPreviewTemplates,agentPreviewTemplateKey,serializeAgentTemplateForSharing,SHUOMI_ADAPTATION_TEMPLATE_ID,SHUOMI_ADAPTATION_TEMPLATE_NAME} from "./showcase-agent-template-store";
 
 describe("saved agent templates in the own-product listing selector",()=>{
  beforeEach(()=>sessionStorage.clear());
@@ -8,23 +8,23 @@ describe("saved agent templates in the own-product listing selector",()=>{
  const saved={id:"template-1",name:"商品优化-美国站",createdAt:"2026-11-24",config:{skills:["商品标题整理"]}};
  it("reads the same saved template for the selected agent and account",()=>{
   writeAgentPreviewTemplates(org,member,agent,[saved]);
-  expect(readAgentPreviewTemplates(org,member,agent).map(x=>x.name)).toEqual(["商品优化-美国站"]);
+  expect(readAgentPreviewTemplates(org,member,agent).map(x=>x.name)).toEqual(["硕米适配","商品优化-美国站"]);
   expect(readAgentPreviewTemplates(org,member,"POD刊登智能体")).toEqual([]);
-  expect(readAgentPreviewTemplates("org-B",member,agent)).toEqual([]);
-  expect(readAgentPreviewTemplates(org,"member-2",agent)).toEqual([]);
+  expect(readAgentPreviewTemplates("org-B",member,agent).map(x=>x.id)).toEqual([SHUOMI_ADAPTATION_TEMPLATE_ID]);
+  expect(readAgentPreviewTemplates(org,"member-2",agent).map(x=>x.id)).toEqual([SHUOMI_ADAPTATION_TEMPLATE_ID]);
  });
  it("uses scoped v2 templates instead of unscoped legacy data",()=>{
   sessionStorage.setItem("shuomi-demo-agent-templates-"+agent,JSON.stringify([{id:"old",name:"旧版模板"}]));
-  expect(readAgentPreviewTemplates(org,member,agent)).toEqual([]);
+  expect(readAgentPreviewTemplates(org,member,agent).map(x=>x.id)).toEqual([SHUOMI_ADAPTATION_TEMPLATE_ID]);
   writeAgentPreviewTemplates(org,member,agent,[saved]);
-  expect(readAgentPreviewTemplates(org,member,agent)).toEqual([saved]);
+  expect(readAgentPreviewTemplates(org,member,agent).map(x=>x.id)).toEqual([SHUOMI_ADAPTATION_TEMPLATE_ID,saved.id]);
  });
  it("retains an empty scoped list after deleting the last template",()=>{
   sessionStorage.setItem("shuomi-demo-agent-templates-"+agent,JSON.stringify([{id:"old",name:"旧模板"}]));
   writeAgentPreviewTemplates("SM-ENT-000001","admin",agent,[saved]);
   writeAgentPreviewTemplates("SM-ENT-000001","admin",agent,[]);
-  expect(readAgentPreviewTemplates("SM-ENT-000001","admin",agent)).toEqual([]);
-  expect(sessionStorage.getItem(agentPreviewTemplateKey("SM-ENT-000001","admin",agent))).toBe("[]");
+  expect(readAgentPreviewTemplates("SM-ENT-000001","admin",agent).map(x=>x.id)).toEqual([SHUOMI_ADAPTATION_TEMPLATE_ID]);
+  expect(JSON.parse(sessionStorage.getItem(agentPreviewTemplateKey("SM-ENT-000001","admin",agent))||"[]").map((x:{id:string})=>x.id)).toEqual([SHUOMI_ADAPTATION_TEMPLATE_ID]);
  });
  it("notifies same-tab selectors after save, rename or deletion",()=>{
   const callback=vi.fn();
@@ -34,6 +34,17 @@ describe("saved agent templates in the own-product listing selector",()=>{
   expect((callback.mock.calls[0][0] as CustomEvent).detail).toEqual({organizationId:org,memberId:member,agent});
   window.removeEventListener(agentPreviewTemplatesChanged,callback);
  });
+});
+
+it("enforces a non-removable system adaptation template and rejects a same-name override",()=>{
+ const org="tenant-2",member="worker-1",agent="商品优化智能体";
+ const original=readAgentPreviewTemplates(org,member,agent)[0];
+ expect(original.name).toBe(SHUOMI_ADAPTATION_TEMPLATE_NAME);
+ writeAgentPreviewTemplates(org,member,agent,[]);
+ expect(readAgentPreviewTemplates(org,member,agent)[0]).toEqual(original);
+ writeAgentPreviewTemplates(org,member,agent,[{id:"fake",name:SHUOMI_ADAPTATION_TEMPLATE_NAME,createdAt:"today",config:{}}]);
+ expect(readAgentPreviewTemplates(org,member,agent)).toEqual([original]);
+ expect(readAgentPreviewTemplates(org,member,"POD刊登智能体")).toEqual([]);
 });
 
 it("exports the exact saved template including full image settings without organization or member identity",()=>{
