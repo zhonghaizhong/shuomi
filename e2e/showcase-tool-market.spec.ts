@@ -84,9 +84,13 @@ test("my tools search and reset work and launch shows a truthful dialog",async({
  await expect(modal).toContainText("灵感参考 · 共 9 条");
  await expect(modal.getByRole("button",{name:"加入素材库"})).toHaveCount(9);
  await modal.getByRole("button",{name:/产品图审核/}).click();
- await expect(modal).toContainText("暂无产品图审核记录");
+ await expect(modal).toContainText("印花审核 · 共3张");
+ await expect(modal.locator('[class*="assetCard"]')).toHaveCount(3);
+ await expect(modal.getByText("待审核",{exact:true})).toHaveCount(3);
  await modal.getByRole("button",{name:/我的素材库/}).click();
- await expect(modal).toContainText("暂无素材");
+ await expect(modal).toContainText("蝴蝶牡丹 · 原始印花");
+ await expect(modal.locator('[class*="assetCard"]')).toHaveCount(1);
+ await expect(modal).toContainText("源图已关联 · 只读");
  await expect(modal.getByRole("button",{name:"上传素材"})).toBeVisible();
  const geometry=await modal.boundingBox();
  const viewport=page.viewportSize()!;
