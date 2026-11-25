@@ -388,3 +388,23 @@ test("knowledge creation stays visible on all tabs; personal groups manage enabl
  await expect(page).toHaveURL(/chat\/new/);
  await expect(page.getByRole("button",{name:"加入我的知识库",exact:true})).toHaveAttribute("aria-pressed","true");
 });
+
+test("archived project categories come from archived records and are hidden when no records exist",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/projects/archived");
+ const root=page.locator('[data-project-showcase="true"]');
+ await expect(root.getByRole("heading",{name:"已归档项目"})).toBeVisible();
+ await expect(root.locator('form[class*="filters"] [class*="tabs"] button')).toHaveCount(0);
+ await page.evaluate(()=>{
+  sessionStorage.setItem("shuomi-preview-projects-v1",JSON.stringify([
+   {id:"test-archived-one",name:"广告复盘",goal:"复盘",scope:"美国站",category:"自定义运营",milestone:"归档",progress:100,status:"已归档",updated:1,visited:1,archivedAt:1,reports:[],resources:[]},
+   {id:"test-archived-two",name:"商品改版",goal:"改版",scope:"美国站",category:"新商品实验",milestone:"归档",progress:100,status:"已归档",updated:2,visited:2,archivedAt:2,reports:[],resources:[]}
+  ]));
+ });
+ await page.reload();
+ await expect(root.getByRole("button",{name:"自定义运营"})).toBeVisible();
+ await expect(root.getByRole("button",{name:"新商品实验"})).toBeVisible();
+ await expect(root.getByRole("button",{name:"店铺经营"})).toHaveCount(0);
+ await root.getByRole("button",{name:"自定义运营"}).click();
+ await expect(root.locator("tbody tr")).toHaveCount(1);
+ await expect(root.getByText("广告复盘")).toBeVisible();
+});
