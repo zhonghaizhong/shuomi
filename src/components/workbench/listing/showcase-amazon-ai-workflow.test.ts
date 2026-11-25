@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {beforeEach,expect,it} from "vitest";
-import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
+import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
 import {listingDemoArtSet} from "./showcase-listing-ai-images";
 import {readDemoCollectionBatches,amazonMultiVariantPhotoFixtures} from "../showcase-collection-batches";
 beforeEach(()=>sessionStorage.clear());
@@ -182,4 +182,27 @@ it("never certifies uploaded demonstration media as actual AI output",()=>{
  expect(variantGroupReady(group)).toBe(false);
  expect(listingVariantGalleryCards(group)).toHaveLength(6);
  expect(listingVariantGalleryCards(group).every(x=>x.isDemoImported&&!x.isOptimized)).toBe(true);
+});
+
+it("preserves source SKU identities and versions while validating names, codes and category changes",()=>{
+ simulateAmazonFiveListingWorkflow(args);
+ const task=readShowcaseUploadTasks(org,member).find(x=>x.status==="待补全")!;
+ const sku=task.productIds[0];
+ const first=saveShowcaseListingTextEdits(org,member,task.id,{
+  skuNames:{[sku]:"New merchant display name"},merchantSkuCodes:{[sku]:"MERCHANT-NEW-001"},
+  categoryPath:"",categoryRulePending:false
+ });
+ expect(first.textEdits?.skuNames?.[sku]).toBe("New merchant display name");
+ expect(first.textEdits?.merchantSkuCodes?.[sku]).toBe("MERCHANT-NEW-001");
+ expect(first.productIds).toEqual(task.productIds);
+ expect(first.demoProduct?.sourceName).toBe(task.demoProduct?.sourceName);
+ const second=saveShowcaseListingTextEdits(org,member,task.id,{
+  categoryPath:"Shoes / Clogs",categoryRulePending:true
+ });
+ expect(second.textEdits?.categoryRulePending).toBe(true);
+ expect(second.textEdits?.revision).toBeGreaterThan(first.textEdits?.revision??0);
+ expect(second.textEdits?.skuNames?.[sku]).toBe("New merchant display name");
+ const entries=Object.fromEntries(task.demoProduct!.missingFields.map(field=>[field,"Reviewed"]));
+ expect(()=>completeShowcaseUploadTask(org,member,task.id,entries)).toThrow(/分类变更/);
+ expect(readShowcaseUploadTasks(org,member).find(x=>x.id===task.id)?.status).toBe("待补全");
 });
