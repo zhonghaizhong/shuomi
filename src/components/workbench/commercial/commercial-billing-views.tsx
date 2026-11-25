@@ -7,6 +7,7 @@ import type { CommercialOrder, CommercialOrderPage, CommercialOrderSummary, Comm
 import { ConsoleState } from "../console/console-page";
 import styles from "./commercial.module.css";
 import { WalletTopUpEntry } from "./wallet-topup";
+import {WorkbenchDateRange} from "../workbench-date-picker";
 
 const entryLabels: Record<string, string> = { TOP_UP_CREDIT: "钱包充值", PURCHASE_RESERVE: "资源购买预留", PURCHASE_COMMIT: "资源购买", PURCHASE_RELEASE: "购买释放", REFUND_RESERVE: "退款冻结", REFUND_CONFIRM: "退款确认", REFUND_RELEASE: "退款冻结释放", REFUND_REVERSAL: "退款冲正", CHARGEBACK_REVERSAL: "拒付冲正", DEBT_REPAYMENT: "欠款偿还" };
 const orderKindLabels: Record<CommercialOrder["kind"], string> = { WALLET_TOP_UP: "钱包充值", RESOURCE_PURCHASE: "资源购买", STORAGE_CAPACITY_PURCHASE:"存储扩容" };
@@ -78,8 +79,7 @@ export function OrdersView({ summary, page, form, onFormChange, onFilter, onNext
     <Panel title="账单与订单" className={styles.billingPanel}>
       <form className={styles.billingFilters} onSubmit={submit}>
         <label>搜索订单<input aria-label="搜索订单" maxLength={128} value={query} onChange={event => setQuery(event.target.value)} placeholder="订单号或内容" /></label>
-        <label>开始日期<input aria-label="开始日期" type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>
-        <label>结束日期<input aria-label="结束日期" type="date" value={until} onChange={event => setUntil(event.target.value)} /></label>
+        <WorkbenchDateRange label="选择订单日期" from={from} to={until} onChange={(start,end)=>{setFrom(start);setUntil(end)}} />
         <label>订单类型<select aria-label="订单类型" value={kind} onChange={event => setKind(event.target.value)}><option value="">全部类型</option><option value="RESOURCE_PURCHASE">资源购买</option><option value="STORAGE_CAPACITY_PURCHASE">存储扩容</option><option value="WALLET_TOP_UP">钱包充值</option></select></label>
         <label>订单状态<select aria-label="订单状态" value={status} onChange={event => setStatus(event.target.value)}><option value="">全部状态</option>{Object.entries(orderStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <Button type="submit">筛选</Button><Button type="button" variant="outline" onClick={() => { const empty={query:"",kind:"",status:"",from:"",until:""};onFormChange(empty);onFilter(empty); }}>重置</Button>
