@@ -426,3 +426,27 @@ test("empty My Knowledge keeps only the global create entry and one official-kno
  await expect(root.getByRole("button",{name:"添加官方知识",exact:true})).toHaveCount(0);
  await expect(root.getByText("暂无知识库")).toBeVisible();
 });
+
+test("My Knowledge toolbar stays in one row and its table has no vertical scrollbar",async({page})=>{
+ await page.setViewportSize({width:1650,height:900});
+ await page.goto("/shuomi/#/workbench/ai/knowledge/official");
+ await page.locator('[data-library-page="knowledge-official"]').getByRole("button",{name:"启用",exact:true}).first().click();
+ await page.goto("/shuomi/#/workbench/ai/knowledge/mine");
+ const root=page.locator("[data-my-knowledge-groups]");
+ await expect(root.getByRole("table")).toBeVisible();
+ const toolbar=root.locator('[aria-label="知识库操作"]');
+ const group=toolbar.getByRole("combobox",{name:"按知识库分组筛选"});
+ const search=toolbar.getByRole("textbox",{name:"搜索知识库名称"});
+ const manage=toolbar.getByRole("button",{name:"管理分组"});
+ await expect(group).toBeVisible();await expect(search).toBeVisible();await expect(manage).toBeVisible();
+ const positions=await Promise.all([group.boundingBox(),search.boundingBox(),manage.boundingBox()]);
+ for(const pos of positions)expect(pos).not.toBeNull();
+ const center=(box:NonNullable<typeof positions[number]>)=>box.y+box.height/2;
+ expect(Math.max(...positions.map(p=>center(p!)))-Math.min(...positions.map(p=>center(p!)))).toBeLessThan(6);
+ const table=root.getByRole("table");
+ const dimensions=await table.evaluate(el=>({height:el.getBoundingClientRect().height,rows:el.querySelectorAll("tbody tr").length}));
+ expect(dimensions.rows).toBe(1);expect(dimensions.height).toBeGreaterThan(85);
+ const scroll=await root.locator('[class*="tableWrap"]').evaluate(el=>({height:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY}));
+ expect(scroll.scrollHeight-scroll.height).toBeLessThanOrEqual(2);
+ expect(scroll.overflowY).not.toBe("scroll");
+});
