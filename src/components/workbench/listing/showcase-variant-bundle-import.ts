@@ -175,6 +175,54 @@ export async function recoverLocalListingPhotos(org:string,member:string,taskId:
  }
  return {found:entries.length,restored};
 }
+/** Bind one immutable, public demo photo set to the original Crocs task.
+ * Probe all 18 static assets before changing anything; a missing GitHub Pages
+ * deploy must never overwrite local AI reconstructions or original photos.
+ */
+export async function linkHostedCrocsDemoPhotos(org:string,member:string):Promise<number>{
+ const tasks=readShowcaseUploadTasks(org,member);
+ const task=tasks.find(t=>t.id.startsWith("SHUOMI-AMZ-AI-MULTI:")&&t.productIds.includes("SIM-AMZ-US-CROCS-10001"));
+ if(!task?.demoProduct?.variantImageGroups)return 0;
+ const base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
+ const colors=["black","white","navy"] as const;
+ const images=colors.flatMap(color=>expectedRoles.map((file,index)=>({
+  color,role:listingVariantPhotoRoles[index],url:"/assets/demo-products/crocs/"+color+"/"+file
+ })));
+ // A static 404 or partial deployment must not create broken galleries.
+ const available=await Promise.all(images.map(async image=>{
+  try{
+   const result=await fetch(base+image.url,{method:"HEAD",cache:"no-store"});
+   return result.ok&&result.headers.get("content-type")?.startsWith("image/");
+  }catch{return false;}
+ }));
+ if(available.some(v=>!v))return 0;
+ const latest=readShowcaseUploadTasks(org,member);
+ const current=latest.find(t=>t.id===task.id);
+ if(!current?.demoProduct?.variantImageGroups)return 0;
+ let attached=0;
+ const groups=current.demoProduct.variantImageGroups.map(group=>{
+  if(!colors.some(c=>c===group.id))return group;
+  const additions=images.filter(image=>image.color===group.id).filter(image=>{
+   // Never replace existing genuinely generated or manually reviewed photos.
+   const existing=group.optimizedImages.find(item=>item.role===image.role);
+   return !existing||existing.source==="demo-import";
+  }).map(image=>({
+   role:image.role,url:image.url,version:group.version,source:"demo-import" as const,
+   provenance:"GitHub 静态公开演示图片，供跨浏览器展示；不可作为正式 AI 生成或人工审核证明"
+  }));
+  if(!additions.length)return group;
+  attached+=additions.length;
+  const replaced=new Set(additions.map(image=>image.role));
+  return {...group,optimizedImages:[...group.optimizedImages.filter(image=>!replaced.has(image.role)),...additions]};
+ });
+ if(attached){
+  const next={...current,demoProduct:{...current.demoProduct,variantImageGroups:groups}};
+  persistShowcaseUploadTaskRecords(org,member,latest.map(t=>t.id===task.id?next:t));
+  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
+ }
+ return attached;
+}
+
 /** Re-import six freshly generated image outputs into exactly one selected variant color.
  * This does not restore previous images or touch other colors/tasks.
  * AI generation provenance is provided with the ZIP and outputs still require review before publication.
