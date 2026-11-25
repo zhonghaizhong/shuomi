@@ -71,7 +71,7 @@ test("Figma preferred application submenus have legible dark/light card, text an
   const c=await panel.evaluate(async el=>({bg:getComputedStyle(el).backgroundColor,fg:getComputedStyle(document.querySelector('[data-preferred-application] h1')!).color}));
   expect(pale(c.bg),route+" light bg").toBeTruthy();
   expect(contrast(c.bg,c.fg),route+" heading contrast").toBeGreaterThanOrEqual(4.5);
-  const cards=root.locator('[class*="metric"],[class*="panel"],[class*="infoColumns"]>article');
+  const cards=root.locator('[class*="metricCard"],[class*="mainPanel"],[class*="infoColumns"]>article');
   for(let i=0;i<Math.min(4,await cards.count());i++){
    const e=cards.nth(i);if(!await e.isVisible())continue;
    const bg=await e.evaluate(el=>getComputedStyle(el).backgroundColor);
