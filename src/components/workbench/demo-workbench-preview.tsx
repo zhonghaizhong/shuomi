@@ -112,12 +112,37 @@ function titleFromPath(pathname: string) {
 
 type ShowcasePreviewProps={pathname:string;memberId?:string;organizationId?:string;organizationName?:string};
 export function DemoWorkbenchPreview(props:ShowcasePreviewProps) {
+ // One-time, browser-local AI Workbench data reset. Do not touch store, product,
+ // billing or other modules' records. Run before demo children mount, so stale
+ // task/conversation effects cannot write the old example data back.
+ const [aiResetReady,setAiResetReady]=useState(false);
+ useEffect(()=>{
+  try{
+   const marker="shuomi-ai-workbench-reset-20261125-v1";
+   if(sessionStorage.getItem(marker)!=="done"){
+    const prefixes=[
+     "shuomi-task-center-demo-v1",
+     "shuomi-preview-projects-v1",
+     "shuomi-showcase-chat-collections-v1",
+     "shuomi-preview-enabled-skills",
+     "shuomi-preview-personal-skills"
+    ];
+    for(let i=sessionStorage.length-1;i>=0;i--){
+     const key=sessionStorage.key(i);
+     if(key&&prefixes.some(prefix=>key===prefix||key.startsWith(prefix+":")))sessionStorage.removeItem(key);
+    }
+    sessionStorage.setItem(marker,"done");
+   }
+  }catch{/* Browser storage may be disabled; empty demo defaults remain available. */}
+  setAiResetReady(true);
+ },[]);
  const [currentPath,setCurrentPath]=useState(props.pathname);
  useEffect(()=>setCurrentPath(props.pathname),[props.pathname]);
  const section=sectionForPath(currentPath);
  // The header and tabs remain the same height on every selected view.
  const onSectionSelect=(href:string)=>setCurrentPath(href.split("?")[0]);
  const tabNavigation=section?<SectionPageTabs section={section} activeHref={currentPath} onSelect={onSectionSelect}/>:null;
+ if(!aiResetReady)return null;
  return <DemoWorkbenchPreviewContent {...props} pathname={currentPath} onSectionSelect={onSectionSelect} tabNavigation={tabNavigation}/>;
 }
 function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId=accountTenant.id,organizationName=accountTenant.name,onSectionSelect,tabNavigation }: ShowcasePreviewProps & {onSectionSelect:(path:string)=>void;tabNavigation?:React.ReactNode}) {
