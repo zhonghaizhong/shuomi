@@ -46,7 +46,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const candidates=useMemo(()=>readPreferredCandidates(organizationId,memberId),[organizationId,memberId,revision]);
  const records=useMemo(()=>readPreferredApplications(organizationId,memberId),[organizationId,memberId,revision]);
  const activeRecord=records.find(row=>row.id===recordDetail);
- const eligible=candidates.filter(c=>c.status==="待申请"),working=candidates.filter(c=>c.status==="审核中"),approved=candidates.filter(c=>c.status==="已入选");
+ const eligible=candidates.filter(c=>["待申请","审核未通过"].includes(c.status)),working=candidates.filter(c=>c.status==="审核中"),approved=candidates.filter(c=>c.status==="已入选");
  const filtered=candidates.filter(c=>{
   const q=appliedQuery.trim().toLowerCase();
   if(q&&![c.product.name,c.product.batchId,...c.product.skus.map(s=>s.skuCode||s.name)].join(" ").toLowerCase().includes(q))return false;
@@ -128,7 +128,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
     </form>
     <div className={styles.tableWrap}><table><thead><tr><th>选择</th><th>商品</th><th>适配与优化</th><th>申请状态</th><th>操作</th></tr></thead><tbody>
      {visible.map(c=><tr key={c.product.id} data-product-id={c.product.id}>
-      <td><input type="checkbox" aria-label={"选择"+c.product.name} disabled={c.status!=="可申请"} checked={chosen.includes(c.product.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,c.product.id]:v.filter(id=>id!==c.product.id))}/></td>
+      <td><input type="checkbox" aria-label={"选择"+c.product.name} disabled={c.status!=="待申请"&&c.status!=="审核未通过"} checked={chosen.includes(c.product.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,c.product.id]:v.filter(id=>id!==c.product.id))}/></td>
       <td><div className={styles.productCell}><ProductImage src={c.snapshot?.image||c.product.skus[0]?.images[0]||""} name={c.product.name}/><div><strong>{c.snapshot?.name||c.product.name}</strong><small>SKU {c.product.skus.map(s=>s.skuCode||s.id).join(" / ")}</small><small>自有商品库 · {c.product.batchId}</small></div></div></td>
       <td><div className={styles.versionCell}><strong>自有商品已入库</strong><small>{c.status==="待二次优化"?"优选审核通过 · 待官方模板二次优化":c.status==="已入选"?"官方模板二次优化已完成":c.status==="审核中"?"优选申请审核中":c.status==="审核未通过"?"上次申请未通过，可重新申请":"审核通过后再进行二次智能体优化"}</small>{c.lastRejected?<small>上次优选审核反馈：{c.lastRejected}</small>:null}</div></td>
       <td><Status value={displayStatus(c.status)}/></td>
@@ -146,7 +146,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
     <footer className={styles.pagination}><span>共 {filteredRecords.length} 条申请</span><div><button type="button" disabled={recordPage<=1} onClick={()=>setRecordPage(p=>p-1)}>上一页</button><span>{recordPage} / {recordPageCount}</span><button type="button" disabled={recordPage>=recordPageCount} onClick={()=>setRecordPage(p=>p+1)}>下一页</button></div></footer>
    </>}
   </section>
-  <p className={styles.disclaimer}><Info size={14}/> 当前为浏览器会话演示，申请仅保存在当前账号本地会话；正式审核、企业间共享优选和真实询盘仍需连接后台服务。</p>
+  <p className={styles.disclaimer}><Info size={14}/> 当前为浏览器会话演示：优选申请、审核和官方模板二次整理均为本地操作，不代表真实 AI 执行或正式入选。</p>
   {notice?<p role="status" className={styles.notice}>{notice}</p>:null}
   {applicationOpen?<div className={styles.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setApplicationOpen(false)}}>
    <section className={styles.modal} role="dialog" aria-modal="true" aria-label="发起优选申请">
@@ -167,7 +167,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
     <header><div><small>{activeRecord.id}</small><h2>申请审核详情</h2><p>申请时间：{formatDate(activeRecord.createdAt)}</p></div><button type="button" onClick={()=>setRecordDetail(null)}>关闭</button></header>
     <div className={styles.recordDetail}><Status value={activeRecord.status}/><p>{activeRecord.reviewNote}</p><strong>申请商品（{activeRecord.products.length}）</strong>{activeRecord.products.map(p=><div key={p.sourceProductId}><span>{p.name}</span><small>{p.versionName} · {p.platform} / {p.site}</small></div>)}<p>可供库存 {activeRecord.supply.stock} · 起订量 {activeRecord.supply.moq} · {activeRecord.supply.dispatch}</p></div>
     {activeRecord.status==="已通过"&&activeRecord.secondaryOptimization!=="已完成"?<div className={styles.demoReview}><strong>通过审核后 · 二次优化</strong><p>使用官方「硕米适配」模板进行演示字段整理，完成后才进入硕米优选。真实模型执行尚未接入。</p><button type="button" className={styles.primary} onClick={runSecondary}>执行官方模板二次优化（演示）</button></div>:null}
-    {activeRecord.status==="待审核"?<div className={styles.demoReview}><strong>仅供验收的模拟审核</strong><p>真实用户不能自行审批商品。这里的操作只演示申请结果如何同步到硕米优选。</p><textarea aria-label="演示驳回原因" value={reviewReason} onChange={e=>setReviewReason(e.target.value)} placeholder="未通过原因（选填）"/><div><button type="button" onClick={()=>review("未通过")}>演示审核不通过</button><button type="button" className={styles.primary} onClick={()=>review("已通过")}>演示审核通过</button></div></div>:null}
+    {activeRecord.status==="待审核"?<div className={styles.demoReview}><strong>仅供验收的模拟审核</strong><p>真实用户不能自行审批商品。此操作仅演示优选申请审核，审核通过后仍须完成官方模板二次优化。</p><textarea aria-label="演示驳回原因" value={reviewReason} onChange={e=>setReviewReason(e.target.value)} placeholder="未通过原因（选填）"/><div><button type="button" onClick={()=>review("未通过")}>演示审核不通过</button><button type="button" className={styles.primary} onClick={()=>review("已通过")}>演示审核通过</button></div></div>:null}
     {error?<p role="alert">{error}</p>:null}
    </section></div>:null}
  </main>;
