@@ -39,7 +39,7 @@ export function ShowcaseReportCenter({pathname,organizationId,memberId,tabNaviga
  const save=(next:ReportStore,message:string)=>{try{writePreviewReports(organizationId,memberId,next);setStore(next);setNotice(message)}catch{setNotice("演示数据保存失败，请检查浏览器存储权限")}};
  const updateReport=(id:string,changes:Partial<PreviewReport>)=>save({...store,reports:store.reports.map(r=>r.id===id?{...r,...changes}:r)},"已更新报告");
  const kind=pathname.endsWith("/favorites")?"favorites":pathname.endsWith("/recent")?"recent":"all";
- const visible=store.reports.filter(r=>(kind!=="favorites"||r.favorite)&&(type==="全部类型"||r.type===type)&&(group==="全部分组"||(group==="未分组"?!r.group:group===r.group))&&(!from||new Date(r.createdAt).toLocaleDateString("en-CA")>=from)&&(!to||new Date(r.createdAt).toLocaleDateString("en-CA")<=to)&&(r.title+" "+r.summary).toLowerCase().includes(query.trim().toLowerCase())).sort((a,b)=>b.createdAt-a.createdAt);
+ const visible=store.reports.filter(r=>(kind!=="favorites"||r.favorite)&&(type==="全部类型"||r.type===type)&&(!from||new Date(r.createdAt).toLocaleDateString("en-CA")>=from)&&(!to||new Date(r.createdAt).toLocaleDateString("en-CA")<=to)&&(r.title+" "+r.summary).toLowerCase().includes(query.trim().toLowerCase())).sort((a,b)=>b.createdAt-a.createdAt);
  const reset=()=>{setQuery("");setType("全部类型");setGroup("全部分组");setFrom("");setTo("");setShowDate(false)};
  const chosen=store.reports.find(r=>r.id===detail);
  return <main className={styles.page} data-report-center={kind}>
@@ -54,7 +54,7 @@ export function ShowcaseReportCenter({pathname,organizationId,memberId,tabNaviga
      <label>结束日期<input aria-label="结束日期" type="date" value={to} min={from||undefined} onChange={e=>setTo(e.target.value)}/></label>
      <div><button type="button" onClick={()=>{setFrom("");setTo("");setShowDate(false)}}>全部时间</button><button type="button" className={styles.primary} onClick={()=>setShowDate(false)} disabled={Boolean(from)!==Boolean(to)||!!(from&&to&&from>to)}>确定</button></div>
     </div>}</div>
-    <select aria-label="报告分组" value={group} onChange={e=>setGroup(e.target.value)}><option>全部分组</option><option>未分组</option>{store.groups.map(g=><option key={g}>{g}</option>)}</select>
+    
     <button type="button" onClick={()=>setShowGroups(true)}>管理分组</button>
     <button type="button" onClick={reset}>重置</button>
    </div>
