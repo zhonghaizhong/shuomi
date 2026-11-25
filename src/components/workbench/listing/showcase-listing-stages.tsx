@@ -277,7 +277,9 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const galleryEditKey=galleryKey+":"+(pictureTab==="detail"?"detail":photoMode);
  const originalMain=photoMode==="optimized"?(selectedVariantGroup?selectedColorOptimizedImages:(selectedItem?.optimizedImages?.length?selectedItem.optimizedImages:selectedColorOriginalImages)):selectedColorOriginalImages;
 
- const selectedMainImages=selectedTask?.imageEdits?.[galleryKey+":"+photoMode]?.main??originalMain;
+ const savedMainImages=selectedTask?.imageEdits?.[galleryKey+":"+photoMode]?.main;
+ // An older empty gallery edit must not hide recovered AI images after refresh.
+ const selectedMainImages=savedMainImages?.length?savedMainImages:originalMain;
  const selectedDetailImages=selectedTask?.imageEdits?.[galleryKey+":detail"]?.detail??(selectedItem?.detailImages??[]);
  // Do not silently substitute source photos when the optimized gallery has no saved results.
  const rawGalleryImages=pictureTab==="main"?selectedMainImages:selectedDetailImages;
