@@ -27,6 +27,14 @@ export function enableKnowledge(org:string,member:string,name:string,description
  writeKnowledgeState(org,member,{...value,items:[...value.items,{id:"official:"+name,name,description,origin:"官方",group:""}]});
  return true;
 }
+export function savePersonalKnowledge(org:string,member:string,name:string,description:string){
+ const value=readKnowledgeState(org,member);
+ const cleaned=name.trim().slice(0,80);
+ if(!cleaned)return false;
+ if(value.items.some(x=>x.origin==="我的"&&x.name===cleaned))return false;
+ writeKnowledgeState(org,member,{...value,items:[...value.items,{id:"personal:"+crypto.randomUUID(),name:cleaned,description,origin:"我的",group:""}]});
+ return true;
+}
 export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organizationId:string;memberId:string;onBrowse:()=>void}){
  const [state,setState]=useState<KnowledgeState>(blank);
  const [filter,setFilter]=useState("全部分组");
