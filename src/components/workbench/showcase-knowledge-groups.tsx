@@ -64,13 +64,13 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
  const editItem=state.items.find(x=>x.id===editor);
  const updateItem=(item:KnowledgeItem,changes:Partial<KnowledgeItem>,message:string)=>save({...state,items:state.items.map(x=>x.id===item.id?{...x,...changes,updated:Date.now()}:x)},message);
  return <div className={styles.root} data-my-knowledge-groups>
-  {hasKnowledge&&<section className={styles.toolbar} aria-label="知识库操作">
+  <section className={styles.toolbar} aria-label="知识库操作">
    <div className={styles.leftFilters}>
     <label>分组 <select aria-label="按知识库分组筛选" value={filter} onChange={e=>setFilter(e.target.value)}><option>全部分组</option><option>未分组</option>{state.groups.map(g=><option key={g}>{g}</option>)}</select></label>
     <input aria-label="搜索知识库名称" placeholder="搜索知识库名称" value={search} onChange={e=>setSearch(e.target.value)}/>
    </div>
    <div className={styles.actions}><button type="button" onClick={()=>setOpen(true)}>管理分组</button><span className={styles.count}>共 {visible.length} 项</span></div>
-  </section>}
+  </section>
   {notice&&<p className={styles.notice} role="status">{notice}</p>}
   {visible.length?<div className={styles.tableWrap}><table className={styles.table}>
    <thead><tr><th>知识库名称</th><th>来源</th><th>所属分组</th><th>最近更新</th><th>操作</th></tr></thead>
