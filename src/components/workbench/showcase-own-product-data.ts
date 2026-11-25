@@ -315,3 +315,36 @@ export function applyConfirmedSourceOptimization(
  return {product:existing,updated:false,reason:"原始资料保留不覆盖；请将优化结果保存到独立的数据集版本"};
 
 }
+
+/** Explicit POD demonstration intake; source products are real catalogue models,
+ * while price, stock and ownership are illustrative. No platform publishing occurs. */
+export function installPodApparelIntakeDemo(org:string,member:string):{batchId:string;created:number;approved:number}{
+ if(typeof window==="undefined"||!org||!member)throw Error("演示账号信息不完整");
+ const batchName="POD 服装演示批次";
+ const batch=readOwnProductBatches(org,member).find(b=>b.name===batchName)??createOwnProductBatch(org,member,batchName);
+ const base="https://www.prodigi.com/img/products/additional/";
+ const items=[
+  {code:"HOOD-18500",name:"Gildan 18500 纯色连帽卫衣",material:"50%棉、50%聚酯纤维，270gsm，抽绳连帽，袋鼠口袋，未印花",price:"69.00",colors:[
+   {name:"运动灰",code:"GY",images:[base+"gildan-18500/gildan-18500-front_sport-grey.webp",base+"gildan-18500/gildan-18500-back_sport-grey.webp"]},
+   {name:"紫色",code:"PU",images:[base+"gildan-18500/gildan-18500-plain_purple.webp"]}]},
+  {code:"TEE-5000",name:"Gildan 5000 纯棉圆领短袖",material:"100%棉，180gsm，圆领短袖，经典版型，未印花",price:"29.00",colors:[
+   {name:"黑色",code:"BK",images:[base+"gildan-5000/gildan-5000-front_black.webp",base+"gildan-5000/gildan-5000-back_black.webp"]},
+   {name:"玫粉色",code:"PK",images:[base+"gildan-5000/gildan-5000-plain_azalea.webp"]}]}
+ ];
+ let created=0;
+ for(const item of items){
+  const prefix="POD-DEMO-"+item.code+"-";
+  const existing=readOwnProducts(org,member).find(p=>p.batchId===batch.id&&p.skus.some(s=>s.skuCode?.startsWith(prefix)));
+  if(existing)continue;
+  const skus:OwnProductSku[]=item.colors.flatMap((color,ci)=>["M","L"].map((size,si)=>({
+   id:ci*2+si+1,name:item.name+" · "+color.name+" · "+size,
+   description:item.material+"；颜色："+color.name+"；尺码："+size+"；演示价格 ¥"+item.price+"；演示库存 100。供应商目录参考图，非本企业实物库存。",
+   images:[...color.images],price:item.price,stock:100,skuCode:prefix+color.code+"-"+size
+  })));
+  const missing=checkOwnProductSkus(skus);
+  const saved=saveOwnProduct(org,member,batch.id,{name:item.name,source:"上传资料",status:missing.length?"入库待完善":"待审核",missing,skus,agent:"",template:"",demoImageSource:"Prodigi 商品目录参考图（演示）"});
+  if(!missing.length)approveOwnProductIntake(org,member,saved.id);
+  created++;
+ }
+ return {batchId:batch.id,created,approved:readOwnProducts(org,member).filter(p=>p.batchId===batch.id&&p.status==="已入库"&&p.skus.some(s=>s.skuCode?.startsWith("POD-DEMO-"))).length};
+}

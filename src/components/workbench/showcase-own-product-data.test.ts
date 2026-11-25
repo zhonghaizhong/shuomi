@@ -2,7 +2,7 @@
 import {beforeEach,describe,expect,it} from "vitest";
 import {readPreferredCandidates,submitPreferredDemoApplication,simulatePreferredReview,completePreferredSecondaryOptimizationDemo,readDemoSelectedCatalog} from "./preferred-application-store";
 import {SHUOMI_ADAPTATION_TEMPLATE_NAME,SHUOMI_ADAPTATION_TEMPLATE_ID} from "./showcase-agent-template-store";
-import {createOwnProductBatch,readOwnProductBatches,readOwnProducts,saveOwnProduct,listOwnPendingProducts,listOwnReadyProducts,updateOwnProductAfterReview,approveOwnProductIntake,mergeOptimizedOwnProduct,applyConfirmedSourceOptimization} from "./showcase-own-product-data";
+import {installPodApparelIntakeDemo,createOwnProductBatch,readOwnProductBatches,readOwnProducts,saveOwnProduct,listOwnPendingProducts,listOwnReadyProducts,updateOwnProductAfterReview,approveOwnProductIntake,mergeOptimizedOwnProduct,applyConfirmedSourceOptimization} from "./showcase-own-product-data";
 describe("own product intake and batch visibility",()=>{
  beforeEach(()=>sessionStorage.clear());
  it("creates a batch, saves a multi-SKU product, and reads it through the same store",()=>{
@@ -135,4 +135,22 @@ describe("own product intake and batch visibility",()=>{
   expect(readOwnProducts("org-A","user-1")[0].skus[0]).toMatchObject({price:"99",stock:4,description:"99元",images:["original"]});
  });
 
+});
+
+describe("POD apparel demo intake",()=>{
+ it("creates two approved products with eight unique color-size SKUs without duplicating or crossing accounts",()=>{
+  sessionStorage.clear();
+  const first=installPodApparelIntakeDemo("pod-org","pod-member");
+  expect(first).toMatchObject({created:2,approved:2});
+  const records=listOwnReadyProducts("pod-org","pod-member");
+  expect(records).toHaveLength(2);
+  expect(records.map(p=>p.skus.length)).toEqual([4,4]);
+  const skus=records.flatMap(p=>p.skus);
+  expect(new Set(skus.map(s=>s.skuCode)).size).toBe(8);
+  expect(skus.every(s=>s.images.length>0&&s.description.includes("未印花"))).toBe(true);
+  expect(records.every(p=>p.originalSkus?.length===4)).toBe(true);
+  expect(installPodApparelIntakeDemo("pod-org","pod-member").created).toBe(0);
+  expect(readOwnProducts("pod-org","other")).toEqual([]);
+  expect(readOwnProducts("other","pod-member")).toEqual([]);
+ });
 });
