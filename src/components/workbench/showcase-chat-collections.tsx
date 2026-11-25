@@ -5,17 +5,7 @@ import styles from "./showcase-chat-collections.module.css";
 type Conversation={id:string;title:string;description:string;time:string;favorite:boolean;deleted?:boolean};
 type Dialog={kind:"rename"|"delete"|"detail";id:string}|null;
 const key="shuomi-showcase-chat-collections-v1";
-const initial:Conversation[]=[
- {id:"c1",title:"一号店转化率下降分析",description:"一号店 · 已完成诊断，可继续讨论优化计划",time:"刚刚",favorite:false},
- {id:"c2",title:"美国宠物用品选品分析",description:"宠物用品选品项目 · 机会品和利润标准待确认",time:"今天 10:32",favorite:false},
- {id:"c3",title:"28个Listing批量优化",description:"北美家居店 · 21项已完成，7项待处理",time:"昨天",favorite:false},
- {id:"c4",title:"北美家居店广告预算调整",description:"北美家居店 · 广告预算调整建议已生成",time:"8月12日",favorite:false},
- {id:"c5",title:"加拿大站市场进入方案",description:"加拿大站 · 市场进入方案已整理",time:"8月10日",favorite:false},
- {id:"s1",title:"一号店转化率分析",description:"店铺经营 · 一号店 · 关键诊断结论与增长建议",time:"今天 09:40",favorite:true},
- {id:"s2",title:"美国站夏季女装选品建议",description:"商品开发 · 通用业务 · 市场机会与开发方向",time:"8月12日",favorite:true},
- {id:"s3",title:"OPC跨境创业方案讨论",description:"创业项目 · 通用业务 · 平台选择与首月计划",time:"8月10日",favorite:true},
- {id:"s4",title:"广告预算优化策略",description:"店铺经营 · 二号店 · 不同预算方案与预期回报",time:"8月8日",favorite:true},
-];
+const initial:Conversation[]=[];
 function validRows(value:unknown):value is Conversation[]{
  return Array.isArray(value)&&value.length<=100&&value.every(v=>v&&typeof v==="object"&&typeof v.id==="string"&&typeof v.title==="string"&&typeof v.description==="string"&&typeof v.time==="string"&&typeof v.favorite==="boolean"&&(v.deleted===undefined||typeof v.deleted==="boolean"));
 }
