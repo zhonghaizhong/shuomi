@@ -54,6 +54,17 @@ const bundledAgentExamples = {
       `${here}/dist-pages/assets/own-product-ai-demo`,
       { recursive: true }
     );
+    // Demo-only hosted products, if the verified image pack has been committed.
+    // Do not fail earlier deployments when the binary assets are not yet present.
+    try {
+      await cp(
+        `${here}/public/assets/demo-products`,
+        `${here}/dist-pages/assets/demo-products`,
+        { recursive: true }
+      );
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
     // Include the approved real-photography atlas; no external image host required.
     await cp(
       `${here}/public/assets/listing-ai-preview`,
