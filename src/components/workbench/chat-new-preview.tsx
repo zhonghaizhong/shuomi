@@ -14,6 +14,7 @@ const modes = [
   { title: "加入我的知识库", detail: "描述资料用途，保存前确认", action: "整理知识条目", placeholder: "例如：把平台刊登要求整理成知识库内容，供运营团队使用…", examples: [["把商品适配规则整理成知识条目", "供后续刊登与审核时引用"], ["沉淀客服高频问题与标准回复", "整理成便于查找的规范"], ["将跨境选品培训资料加入知识库", "提炼要点并保留来源"], ["整理平台刊登要求作为知识规范", "按平台和站点归类"]] },
   { title: "保存为我的技能", detail: "描述流程和触发条件", action: "生成技能草案", placeholder: "例如：把商品标题优化流程做成可重复使用的技能…", examples: [["保存商品标题优化步骤为技能", "归纳判断标准和输出格式"], ["制作图片重构的标准操作流程", "列出检查步骤和交付要求"], ["整理商品利润测算的自动化技能", "明确成本、费用和利润口径"], ["制作店铺经营周报的自动化技能", "设定数据范围和报告结构"]] },
   { title: "加入我的报告", detail: "描述范围和周期，预览后再确认", action: "生成报告草案", placeholder: "例如：结合近30天销售、广告和利润数据生成经营分析报告…", examples: [["生成本月店铺利润分析报告", "按店铺拆分利润和变化"], ["汇总项目阶段进度与风险", "整理里程碑、延误和待办"], ["制作新品选品结果评估报告", "对照市场机会与利润目标"], ["分析各平台商品刊登效率", "汇总处理量、耗时和异常"]] },
+  { title: "发起任务", detail: "描述需要执行的工作，核对后加入任务中心", action: "确认任务草案", placeholder: "例如：检查美国站商品的待补全问题，整理异常原因并提出处理建议…", examples: [["检查待补全商品", "汇总缺失信息并给出处理建议"], ["分析店铺经营问题", "结合已有资料明确待确认事项"], ["整理商品上新任务", "梳理需要处理的商品和业务范围"], ["跟进近期异常", "汇总异常原因及需要人工确认的事项"]] },
 ];
 
 const resourceGroups: Record<string, string[]> = {
@@ -41,7 +42,8 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
   const [linkedProjectId,setLinkedProjectId]=useState(projectEntry.project?.id||"");
   const [projectName,setProjectName]=useState(projectEntry.template?.name||"");
   const [skillEntry] = useState(()=>{const query=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const mode=query.get("skillMode");const name=query.get("skill")||"";return {mode,name}});
-  const [modeIndex, setModeIndex] = useState(projectEntry.mode==="create"?2:skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
+  const [taskEntry] = useState(()=>new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?")).get("taskMode"));
+  const [modeIndex, setModeIndex] = useState(taskEntry==="task"?6:taskEntry==="scheduled"?1:projectEntry.mode==="create"?2:skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
   const [draft, setDraft] = useState(skillEntry.mode==="edit"&&readPersonalPreviewSkills(organizationId,memberId).some(s=>s.name===skillEntry.name)?"编辑技能："+skillEntry.name:projectEntry.template?projectEntry.template.description:projectEntry.project?"继续推进："+projectEntry.project.name:"");
   const [drawer, setDrawer] = useState<"resources" | "stores" | null>(null);
   const [resourceTab, setResourceTab] = useState("我的知识库");
@@ -167,6 +169,17 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
     const request = draft.trim();
     const storeLabel = selectedStores.length ? selectedStores.join("、") : "未指定店铺";
     const resourceLabel = selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配";
+    if(modeIndex===6){
+      try{
+        const key="shuomi-task-center-demo-v1";
+        const existing=JSON.parse(sessionStorage.getItem(key)||"[]");
+        const rows=Array.isArray(existing)?existing:[];
+        const item={id:crypto.randomUUID(),name:request.slice(0,60),description:"通过硕米Chat创建的任务草案，待人工确认执行",scope:selectedStores.join("、")||"通用业务",state:"pending",time:"刚刚创建"};
+        sessionStorage.setItem(key,JSON.stringify([item,...rows]));
+        setMessages([{id:Date.now(),role:"user",text:request},{id:Date.now()+1,role:"assistant",text:"已保存任务草案至任务中心「待确认」。当前仅为本地演示数据，尚未实际执行。可前往任务中心查看并确认。"}]);
+        setChatActive(true);setConfirmation(false);setDraft("");onAction("任务草案已加入任务中心待确认（演示）");return;
+      }catch{onAction("演示任务保存失败，请检查浏览器存储权限");return;}
+    }
     if(modeIndex===2){
       if(linkedProjectId){onAction("当前会话已经关联项目，请继续描述工作或新建会话。");setConfirmation(false);return;}
       if(!projectName.trim()){onAction("请填写项目名称");return;}
