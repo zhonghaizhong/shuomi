@@ -1,6 +1,7 @@
 "use client";
 import {listingDemoArtSet,type ListingArtKind} from "./showcase-listing-ai-images";
 import {categoryFieldImpact,fieldSchemaMatches,validatePlatformFields,type PlatformFieldSchema,type ScopedFieldValues} from "./showcase-platform-field-schema";
+import {variantStructureImpact,variantStructureValidation,type VariantStructureDraft} from "./showcase-variant-structure";
 
 /** Local showcase task ledger. This is not platform submission, AI execution or an order. */
 export const listingVariantPhotoRoles=[
@@ -43,7 +44,7 @@ export type ShowcaseUploadTask={
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
  status:"待补全"|"待执行智能体"|"待审核"|"待平台提交";
  demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:ListingVariantDetail[];variantImageGroups?:ListingVariantImageGroup[];imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
- textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>;skuNames?:Record<string,string>;merchantSkuCodes?:Record<string,string>;categoryPath?:string;categoryRulePending?:boolean;revision?:number;updatedAt?:string;fieldValues?:ScopedFieldValues;legacyMissingValues?:Record<string,string>};
+ textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>;skuNames?:Record<string,string>;merchantSkuCodes?:Record<string,string>;categoryPath?:string;categoryRulePending?:boolean;revision?:number;updatedAt?:string;fieldValues?:ScopedFieldValues;legacyMissingValues?:Record<string,string>;variantStructure?:VariantStructureDraft;variantStructurePending?:boolean};
  /** Authoritative schema only; no guessed marketplace categories. */
  platformFieldSchema?:PlatformFieldSchema;
  fieldVersionArchive?:Record<string,ScopedFieldValues>;
@@ -256,7 +257,9 @@ export function saveShowcaseListingTextEdits(
   revision:(existing.revision??0)+1,
   updatedAt:new Date().toISOString(),
   fieldValues:{...existing.fieldValues,...updates.fieldValues},
-  legacyMissingValues:{...existing.legacyMissingValues,...updates.legacyMissingValues}
+  legacyMissingValues:{...existing.legacyMissingValues,...updates.legacyMissingValues},
+  variantStructure:updates.variantStructure??existing.variantStructure,
+  variantStructurePending:updates.variantStructure?variantStructureImpact(task.demoProduct.variantDetails??[],updates.variantStructure).changed:existing.variantStructurePending
  };
  const knownSkus=task.demoProduct.variantDetails?.map(v=>v.sku)??task.productIds;
  const allowed=new Set(knownSkus);
@@ -266,10 +269,17 @@ export function saveShowcaseListingTextEdits(
  const codes=knownSkus.map(id=>cleaned.merchantSkuCodes[id]??id).map(v=>v.trim().toLocaleLowerCase());
  if(codes.some(v=>!v)||new Set(codes).size!==codes.length)throw Error("商家SKU编码不能为空，且同一商品内必须唯一");
  if(Object.values(cleaned.skuNames).some(name=>!name.trim()))throw Error("SKU显示名称不能为空");
+ if(updates.variantStructure){
+  if(!task.demoProduct.variantDetails?.length)throw Error("当前商品没有可编辑的变体结构");
+  const issues=variantStructureValidation(updates.variantStructure);
+  if(issues.length)throw Error(issues[0]);
+  const impacts=variantStructureImpact(task.demoProduct.variantDetails,updates.variantStructure);
+  if(impacts.added.length+impacts.retained>200)throw Error("变体组合不能超过200个");
+ }
  if(Object.entries(cleaned.fieldValues).some(([key,value])=>key.length>500||typeof value!=="string"||value.length>6000))throw Error("平台属性输入格式或长度不正确");
  if(Object.entries(cleaned.legacyMissingValues).some(([key,value])=>key.length>300||typeof value!=="string"||value.length>6000))throw Error("历史必填资料格式或长度不正确");
  if(cleaned.categoryRulePending===false&&cleaned.categoryPath!==(existing.categoryPath??""))throw Error("分类变更须先完成目标平台规则复核");
- const record={revision:cleaned.revision,updatedAt:cleaned.updatedAt,categoryPath:cleaned.categoryPath??"",ruleVersion:task.platformFieldSchema?.ruleVersion??"unverified",changedFields:[...Object.keys(updates.fieldValues??{}),...Object.keys(updates.skuNames??{}),...Object.keys(updates.merchantSkuCodes??{})]};
+ const record={revision:cleaned.revision,updatedAt:cleaned.updatedAt,categoryPath:cleaned.categoryPath??"",ruleVersion:task.platformFieldSchema?.ruleVersion??"unverified",changedFields:[...Object.keys(updates.fieldValues??{}),...Object.keys(updates.skuNames??{}),...Object.keys(updates.merchantSkuCodes??{}),...(updates.variantStructure?["variantStructure"]:[])]};
  const next={...task,textEdits:cleaned,editHistory:[...(task.editHistory??[]),record].slice(-60),editSnapshots:existing.revision?[...(task.editSnapshots??[]),{revision:existing.revision,updatedAt:existing.updatedAt??task.createdAt,previous:existing}].slice(-20):task.editSnapshots};
  persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
@@ -305,6 +315,7 @@ export function completeShowcaseUploadTask(org:string,member:string,taskId:strin
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
  if(!task||task.status!=="待补全"||!task.demoProduct)throw Error("没有可补全的演示任务");
  if(task.textEdits?.categoryRulePending)throw Error("目标分类变更后尚未核对平台规则，不允许提交审核");
+ if(task.textEdits?.variantStructurePending)throw Error("变体结构变更尚未完成SKU组合及平台规则复核，不能提交审核");
  const category=task.textEdits?.categoryPath??"";
  if(category){
   if(!fieldSchemaMatches(task.platformFieldSchema,{platform:task.platform,region:task.region,storeType:task.storeType,categoryPath:category}))throw Error("目标分类没有经过验证的完整平台字段规则，不能提交审核");
@@ -322,6 +333,7 @@ export function approveShowcaseUploadTask(org:string,member:string,taskId:string
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
  if(!task||task.status!=="待审核"||!task.demoProduct||task.demoProduct.missingFields.length)throw Error("智能体优化结果尚未完成资料检查与人工审核");
  if(task.textEdits?.categoryRulePending)throw Error("目标分类规则尚未重新验证，不能审核通过");
+ if(task.textEdits?.variantStructurePending)throw Error("变体结构变更尚未完成SKU关联核验，不能审核通过");
  if(task.textEdits?.categoryPath){
   if(!fieldSchemaMatches(task.platformFieldSchema,{platform:task.platform,region:task.region,storeType:task.storeType,categoryPath:task.textEdits.categoryPath}))throw Error("缺少已验证的平台分类规则");
   const detail=task.demoProduct.variantDetails??[];
