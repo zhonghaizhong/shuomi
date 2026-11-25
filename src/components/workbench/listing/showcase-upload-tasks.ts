@@ -46,6 +46,7 @@ export type ShowcaseUploadTask={
  textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>;skuNames?:Record<string,string>;merchantSkuCodes?:Record<string,string>;categoryPath?:string;categoryRulePending?:boolean;revision?:number;updatedAt?:string;fieldValues?:ScopedFieldValues;legacyMissingValues?:Record<string,string>};
  /** Authoritative schema only; no guessed marketplace categories. */
  platformFieldSchema?:PlatformFieldSchema;
+ fieldVersionArchive?:Record<string,ScopedFieldValues>;
  editHistory?:Array<{revision:number;updatedAt:string;categoryPath:string;ruleVersion:string;changedFields:string[]}>;
  /** User-managed display gallery; never replaces preserved source evidence. Key is color group id or "default". */
  imageEdits?:Record<string,{main?:string[];detail?:string[]}>;
@@ -292,7 +293,9 @@ export function applyVerifiedListingFieldSchema(org:string,member:string,taskId:
  const currentValues=Object.fromEntries(Object.entries(oldValues).filter(([key])=>{
   try{const scopeField=JSON.parse(key) as unknown;return Array.isArray(scopeField)&&typeof scopeField[2]==="string"&&compatible.has(scopeField[2]);}catch{return false}
  }));
- const next={...task,platformFieldSchema:schema,textEdits:{...task.textEdits,categoryRulePending:false,fieldValues:currentValues,revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString()},editHistory:[...(task.editHistory??[]),{revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString(),categoryPath:schema.categoryPath,ruleVersion:schema.ruleVersion,changedFields:impact.ready?impact.added: schema.fields.map(x=>x.id)}].slice(-60)};
+ const archiveKey=current?JSON.stringify([current.platform,current.region,current.storeType,current.categoryPath,current.ruleVersion]):"";
+ const archive=archiveKey?{...task.fieldVersionArchive,[archiveKey]:{...(task.fieldVersionArchive?.[archiveKey]??{}),...oldValues}}:task.fieldVersionArchive;
+ const next={...task,fieldVersionArchive:archive,platformFieldSchema:schema,textEdits:{...task.textEdits,categoryRulePending:false,fieldValues:currentValues,revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString()},editHistory:[...(task.editHistory??[]),{revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString(),categoryPath:schema.categoryPath,ruleVersion:schema.ruleVersion,changedFields:impact.ready?impact.added: schema.fields.map(x=>x.id)}].slice(-60)};
  persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
