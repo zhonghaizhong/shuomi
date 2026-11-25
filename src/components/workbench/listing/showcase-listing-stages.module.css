@@ -1073,3 +1073,19 @@
 .batchSkuRow input{min-width:0;width:100%;min-height:38px;background:var(--surface);border:1px solid var(--stroke);border-radius:7px;color:var(--ink);padding:7px 10px;font:inherit}
 .batchSkuRow button{min-height:38px;padding:7px 12px;border:1px solid var(--stroke);border-radius:7px;background:var(--surface-alt);color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}
 @media(max-width:700px){.batchSkuRow{grid-template-columns:minmax(0,1fr)}}
+
+/* Compact direct-edit variant structure; scoped colors inherit both established themes. */
+.variantStructureEditor{display:grid;gap:12px;min-width:0}
+.variantStructureGroup{display:grid;gap:12px;border:1px solid var(--stroke);background:var(--surface);border-radius:10px;padding:14px;min-width:0}
+.variantStructureHeading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.variantStructureHeading strong{font-size:14px;color:var(--ink)}
+.variantStructureHeading button,.variantStructureValueRow button{min-height:34px;border:1px solid var(--stroke);border-radius:7px;background:var(--surface-alt);color:var(--ink);padding:6px 12px;font:inherit;cursor:pointer;white-space:nowrap}
+.variantStructureLabel{display:grid;gap:7px;color:var(--ink);font-size:13px;min-width:0}
+.variantStructureLabel>input,.variantStructureValueRow input{display:block;width:100%;min-width:0;min-height:38px;border:1px solid var(--stroke);border-radius:8px;background:var(--surface);color:var(--ink);padding:7px 10px;font:inherit}
+.variantStructureValues{display:grid;gap:8px;min-width:0}
+.variantStructureValueRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.variantStructureSummary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--stroke);border-radius:8px;color:var(--ink)}
+.variantStructureReview{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--stroke);border-radius:8px;color:var(--ink)}
+.variantStructureReview p{margin:0;font-size:12px;color:var(--ink-muted,var(--ink));line-height:1.6}
+.variantStructureReview label{display:flex;gap:8px;align-items:center;font-size:12px}
+@media(max-width:600px){.variantStructureGroup{padding:10px}.variantStructureValueRow button{padding:6px 8px}}
