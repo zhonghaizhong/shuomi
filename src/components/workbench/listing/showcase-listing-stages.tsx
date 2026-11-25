@@ -547,10 +547,16 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <div><small>目标店铺</small><strong>{selectedItem.store}</strong></div>
      </div>
      <div className={styles.categoryEditor}><div><span>商品分类</span><small>{classChanged?"修改草稿 · 需要重新适配":"当前任务尚未保存已确认的平台类目路径"}</small></div>
-      {categoryEdit?<input aria-label="修改目标商品分类" placeholder="输入目标平台分类路径（演示草稿）" value={categoryDraft} onChange={e=>setCategoryDraft(e.target.value)}/>:<span>{categoryDraft||"等待平台类目数据接入"}</span>}
+      {categoryEdit?<input aria-label="修改目标商品分类" placeholder="输入目标平台分类路径（演示草稿）" value={categoryDraft} onChange={e=>{setCategoryDraft(e.target.value);setCategoryImpactConfirmed(false)}}/>:<span>{categoryDraft||"等待平台类目数据接入"}</span>}
       <button type="button" onClick={()=>setCategoryEdit(v=>!v)}>{categoryEdit?"完成编辑":"修改分类"}</button>
      </div>
-     {classChanged?<p className={styles.categoryNotice}>分类修改需要重新匹配新分类的规则字段，原商品、变体和已优化图片保持不变。未重新适配前不可提交审核。</p>:null}
+     {classChanged?<p className={styles.categoryNotice}>分类改变后商品公共、变体公共、当前变体和SKU字段都需要重新匹配。旧资料及历史版本保留；未验证规则前不能送审。</p>:null}
+     {categoryNeedsReview?<div className={styles.aiRuleNote} role="status">
+      <strong>分类影响预览 · 等待平台规则复核</strong>
+      <p>目标分类：{categoryDraft||"未设置"}。可能影响：公共属性、变体主题、颜色字段、SKU属性及其合法选项。</p>
+      <p>演示站点尚未接入该分类的官方规则，不会伪造新必填字段。原图、SKU内部ID、旧分类资料和历史版本都将保留。</p>
+      <label><input type="checkbox" checked={categoryImpactConfirmed} onChange={e=>setCategoryImpactConfirmed(e.target.checked)}/> 确认影响并保存待适配草稿</label>
+     </div>:null}
     </div>
     <div className={styles.productInfoBlock}>
      <div className={styles.productSectionHeading}><strong>变体信息（首次上传已确认）</strong><small>不在补全阶段重新识别</small></div>
@@ -569,7 +575,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <button type="button" role="tab" aria-selected={fieldTab==="sku"} onClick={()=>{setFieldTab("sku");setAiTargetField(null)}}>当前 SKU（{activeSku?.size??"单 SKU"}）</button>
      </div>
      <div className={styles.aiFieldToolbar}>
-      <div className={styles.aiFieldFilters}><span>资料字段</span><span>必填 / 选填依平台规则判断</span></div>
+      <div className={styles.aiFieldFilters}><span>资料字段</span><span>平台 / 站点 / 分类决定必填与选填</span></div>
       <button type="button" className={styles.aiBatchTrigger} aria-expanded={batchAiOpen} onClick={()=>{setBatchAiOpen(v=>!v);setAiTargetField(null);setAiFeedback("")}}>✦ AI 批量重构 · 仅信息字段</button>
      </div>
      {batchAiOpen?<section className={styles.aiBatchPanel} aria-label="AI 批量重构配置">
@@ -612,6 +618,16 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       </div>:<div className={styles.aiVariantEditor}>
        <strong>当前 SKU · {activeSku?.sku??editingSkuKey}</strong>
        {selectedVariantSkus.length>1?<div className={styles.aiSkuPills}>{selectedVariantSkus.map(v=><button type="button" key={v.sku} aria-pressed={editingSkuKey===v.sku} onClick={()=>setActiveSkuId(v.sku)}>{v.size}</button>)}</div>:null}
+       <div className={styles.aiEditableField}>
+        <div><label htmlFor="listing-sku-name">SKU显示名称 · 可修改</label></div>
+        <input id="listing-sku-name" aria-label="SKU显示名称" maxLength={160} value={skuDisplayName} onChange={e=>setTextDraft(d=>({...d,skuNames:{...d.skuNames,[editingSkuKey]:e.target.value}}))}/>
+       </div>
+       <div className={styles.aiEditableField}>
+        <div><label htmlFor="listing-merchant-sku">商家SKU编码 · 可修改</label></div>
+        <input id="listing-merchant-sku" aria-label="商家SKU编码" maxLength={100} value={skuIdentityDraft} onChange={e=>setTextDraft(d=>({...d,merchantSkuCodes:{...d.merchantSkuCodes,[editingSkuKey]:e.target.value}}))}/>
+        {invalidSkuCode?<p role="alert">商家SKU编码不能为空，且同一商品内不得重复。</p>:null}
+       </div>
+       <p>内部SKU标识：{editingSkuKey}（只读）。修改商家编码不改变图片、库存和历史记录的内部关联。</p>
        <div className={styles.aiEditableField}><div><label htmlFor="listing-sku-desc">SKU 补充描述 · 选填</label><button type="button" onClick={()=>openAiForField("skuDescription")}>✦ AI 重构</button></div>
        <textarea id="listing-sku-desc" rows={3} value={textDraft.skuDescriptions[editingSkuKey]??""} maxLength={2000} placeholder="仅对当前 SKU 生效" onChange={e=>setTextDraft(d=>({...d,skuDescriptions:{...d.skuDescriptions,[editingSkuKey]:e.target.value}}))}/></div>
        <p>已确认规格：{activeSku?activeSku.color+" / "+activeSku.size:"沿用原任务 SKU"}。价格、库存、尺码代码等真实字段不能由 AI 重构。</p>
@@ -643,9 +659,9 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
     <ListingProductPhoto src={galleryImages[Math.min(photoIndex,galleryImages.length-1)]} alt="商品放大图片" size={640}/>
    </div>:null}
   <footer className={styles.productDetailFooter}>
-   <span>{stage==="missing"?(classChanged?"分类变更草稿需要重新适配，不能直接送审":"保存完整必填资料后进入待审核"):"人工审核通过后进入待平台提交；此处不执行真实上传"}</span>
+   <span>{stage==="missing"?(categoryNeedsReview?"分类变更需保存草稿并通过平台规则复核，不能直接送审":"保存完整必填资料后进入待审核"):"人工审核通过后进入待平台提交；此处不执行真实上传"}</span>
    <div><button type="button" onClick={()=>setSelected(null)}>取消</button><button type="button" onClick={saveTextOnly}>保存补全资料</button>
-   <button type="button" className={styles.primary} disabled={(stage==="review"&&(!reviewChecked||!colorPhotoComplete))||(stage==="missing"&&(categoryNeedsReview||invalidSkuCode||!skuDisplayName.trim()))} onClick={stage==="missing"?(selectedItem.missing.length?save:()=>{setSelected(null);action("已补全。请确认继续原任务。")}):()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"重新检查并提交审核":"审核通过"}</button></div>
+   <button type="button" className={styles.primary} disabled={(stage==="review"&&(!reviewChecked||!colorPhotoComplete))||(stage==="missing"&&(categoryNeedsReview||invalidSkuCode||!skuDisplayName.trim()))} onClick={stage==="missing"?save:()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"重新检查并提交审核":"审核通过"}</button></div>
   </footer>
  </section>
 </div>:null}
