@@ -452,3 +452,29 @@ test("My Knowledge toolbar stays in one row and its table has no vertical scroll
  expect(scroll.scrollHeight-scroll.height).toBeLessThanOrEqual(2);
  expect(scroll.overflowY).not.toBe("scroll");
 });
+
+test("My Knowledge shows read-only group and moves it only through More",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/knowledge/official");
+ const official=page.locator('[data-library-page="knowledge-official"]');
+ await official.getByRole("button",{name:"启用",exact:true}).first().click();
+ await page.goto("/shuomi/#/workbench/ai/knowledge/mine");
+ const root=page.locator("[data-my-knowledge-groups]");
+ const row=root.locator("tbody tr").first();
+ await expect(row.getByText("未分组")).toBeVisible();
+ await expect(row.getByRole("combobox")).toHaveCount(0);
+ await root.getByRole("button",{name:"管理分组"}).click();
+ const manager=page.getByRole("dialog",{name:"管理知识库分组"});
+ await manager.getByRole("textbox",{name:"分组名称"}).fill("平台规则");
+ await manager.getByRole("button",{name:"创建分组"}).click();
+ await manager.getByRole("button",{name:"完成"}).click();
+ await row.getByRole("button",{name:/更多操作/}).click();
+ const menu=page.getByRole("dialog",{name:"知识库更多操作"});
+ await menu.getByRole("combobox",{name:"移动到分组"}).selectOption("平台规则");
+ await menu.getByRole("button",{name:"确认移动"}).click();
+ await expect(row.getByText("平台规则")).toBeVisible();
+ await expect(row.getByRole("combobox")).toHaveCount(0);
+ await row.getByRole("button",{name:/更多操作/}).click();
+ await menu.getByRole("combobox",{name:"移动到分组"}).selectOption("");
+ await menu.getByRole("button",{name:"确认移动"}).click();
+ await expect(row.getByText("未分组")).toBeVisible();
+});
