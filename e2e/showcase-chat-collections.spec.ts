@@ -1,17 +1,16 @@
 import {expect,test} from "@playwright/test";
 /** Populate only the isolated Playwright tab; the actual workspace stays empty. */
 async function seedCollections(page:import("@playwright/test").Page){
- // Set a fixture before React's hydration reads sessionStorage. Seeding
- // after navigation races the empty-state persistence effect and is flaky.
- await page.addInitScript(()=>{
-  const marker="shuomi:e2e-chat-collections-seeded";
-  if(sessionStorage.getItem(marker))return;
-  sessionStorage.setItem("shuomi-showcase-chat-collections-v1",JSON.stringify([
-   {id:"e2e-conversation-1",title:"一号店转化率下降分析",description:"演示会话",time:"刚刚",favorite:true}
-  ]));
-  sessionStorage.setItem(marker,"1");
- });
+ // Open the showcase first so the app can complete its empty-state hydration.
+ // Seed the isolated Playwright browser afterwards, then reload so React reads
+ // the fixture before any persistence effects run. This never touches user data.
  await page.goto("/shuomi/#/workbench/ai/chat/recent");
+ await page.evaluate(()=>{
+  sessionStorage.setItem("shuomi-showcase-chat-collections-v1",JSON.stringify([
+   {id:"e2e-conversation-1",title:"一号店转化率下降分析",description:"演示会话",time:"刚刚",favorite:false}
+  ]));
+ });
+ await page.reload();
  await expect(page.getByRole("button",{name:"更多操作：一号店转化率下降分析"})).toBeVisible();
 }
 
@@ -52,6 +51,9 @@ test("Figma recent/saved three-dot actions keep demonstration rows in sync",asyn
 
 test("recent/saved action panels inherit light and dark palette",async({page})=>{
  await seedCollections(page);
+ // The saved tab must contain an explicitly favorited fixture.
+ await page.getByRole("button",{name:"更多操作：一号店转化率下降分析"}).click();
+ await page.getByRole("menuitem",{name:"加入收藏会话"}).click();
  await page.goto("/shuomi/#/workbench/ai/chat/saved");
  const root=page.locator('[data-chat-collection-preview="saved"]');
  const toggleLight=page.getByRole("button",{name:"切换浅色主题"});
