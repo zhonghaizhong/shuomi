@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { cockpitRequest, cockpitErrorText, CockpitError, type CockpitScope } from "@/lib/api/operations-cockpit";
 import { cockpitCapabilities, cockpitDetail, cockpitEndpoint, cockpitGoal, cockpitGoals, cockpitHead, cockpitMatrix, cockpitRecord, cockpitReceipt, cockpitRules, centsInput, moneyCents, moneyText, ratioText, type CockpitCapabilities, type CockpitGoalConfig, type CockpitRecord, type CockpitRule } from "@/lib/contracts/operations-cockpit";
 import styles from "./cockpit.module.css";
+import {WorkbenchDateRange} from "../workbench-date-picker";
 
 type Mode = "goals" | "settings" | "stores" | "alerts" | "advice";
 type Period = { startDate: string; endDate: string };
@@ -160,7 +161,7 @@ function PeriodToolbar({ period, setPeriod, today, children }: { period: Period;
  const active = custom ? -1 : presets.findIndex(p => p.startDate === period.startDate && p.endDate === period.endDate);
  return <Card className={styles.toolbar}>
   <div className={styles.periodBar}><span>统计周期</span><div className={styles.segments}>{["近7个完整日","近30个完整日","本月至昨日"].map((label,i) => <button key={label} type="button" aria-pressed={active===i} disabled={presets[i].startDate>presets[i].endDate} onClick={()=>{setCustom(false);setPeriod(presets[i]);}}>{label}</button>)}<button type="button" aria-pressed={active<0} onClick={()=>setCustom(true)}>自定义</button></div><span className={styles.periodCaption}>{period.startDate} 至 {period.endDate}</span></div>
-  {(custom || active < 0) && <div className={styles.inline}><label>开始日期<Input type="date" max={period.endDate} value={period.startDate} onChange={e => setPeriod({ ...period, startDate: e.target.value })} /></label><label>结束日期<Input type="date" min={period.startDate} max={addDays(today,-1)} value={period.endDate} onChange={e => setPeriod({ ...period, endDate: e.target.value })} /></label></div>}
+  {(custom || active < 0) && <div className={styles.inline}><WorkbenchDateRange label="选择经营统计日期" from={period.startDate} to={period.endDate} maxDate={addDays(today,-1)} onChange={(start,end)=>{if(start&&end)setPeriod({startDate:start,endDate:end})}}/></div>}
   <div className={styles.filters}>{children}</div>
  </Card>;
 }
@@ -199,7 +200,7 @@ function Matrix({ scope, capabilities, commands, linked }: { scope: CockpitScope
      <Button type="button" variant="outline" onClick={resetFilters}>重置</Button>
      <Button type="submit">确认</Button>
     </div>
-    {periodOption==="custom"&&<div className={styles.matrixCustomDates}><label>开始日期<Input type="date" value={draft.period.startDate} max={draft.period.endDate} onChange={e=>setDraft(v=>({...v,period:{...v.period,startDate:e.target.value}}))}/></label><label>结束日期<Input type="date" value={draft.period.endDate} min={draft.period.startDate} max={addDays(capabilities.today,-1)} onChange={e=>setDraft(v=>({...v,period:{...v.period,endDate:e.target.value}}))}/></label><small>自定义日期最多查询至昨日，点击确认后生效。</small></div>}
+    {periodOption==="custom"&&<div className={styles.matrixCustomDates}><WorkbenchDateRange label="选择店铺矩阵日期" from={draft.period.startDate} to={draft.period.endDate} maxDate={addDays(capabilities.today,-1)} onChange={(start,end)=>{if(start&&end)setDraft(v=>({...v,period:{startDate:start,endDate:end}}))}}/><small>自定义日期最多查询至昨日，点击确认后生效。</small></div>}
    </form>
   {matrix.isPending ? <ConsoleState kind="loading" title="正在读取同周期经营事实" /> : matrix.error ? <ConsoleState kind="error" title={cockpitErrorText(matrix.error)} /> : matrix.data ? <>
    <div className={styles.fourStats}>{[ ["当前授权店铺", Object.values(matrix.data.states).reduce((a, b) => a + b, 0),"当前平台与站点范围"], ["录入完整", matrix.data.states.loss + matrix.data.states.break_even + matrix.data.states.recorded_complete,"完整覆盖所选期间"], ["本期亏损", matrix.data.states.loss,"完整数据下净利润为负"], ["数据不完整", matrix.data.states.data_incomplete,"补齐期间后再评判"] ].map(([label,value,note],i) => <Card data-stat key={label} className={styles.stat}><span><i className={styles.statDot} data-tone={i}/>{label}</span><div><strong>{value}</strong><small>{note}</small></div></Card>)}</div><p className={styles.scopeNote}>统计覆盖当前店铺、平台与站点范围；名称和数据状态筛选只影响下方列表。</p>
