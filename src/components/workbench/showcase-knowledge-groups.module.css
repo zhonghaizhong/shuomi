@@ -32,3 +32,8 @@
 .group>div:first-child{display:grid;gap:4px}
 @media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.cards{grid-template-columns:1fr}.toolbar,.group,.create{flex-wrap:wrap}.filters label{flex-wrap:wrap}.dialog{padding:16px}}
+
+/* Empty state stays compact; creation remains a single header action. */
+.empty{padding:24px 18px;gap:8px;min-height:116px}
+.empty strong{font-size:15px}
+.empty p{font-size:13px;text-align:center}
