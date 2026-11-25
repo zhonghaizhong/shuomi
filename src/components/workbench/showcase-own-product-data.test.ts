@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import {beforeEach,describe,expect,it} from "vitest";
+import {readPreferredCandidates} from "./preferred-application-store";
+import {SHUOMI_ADAPTATION_TEMPLATE_NAME,SHUOMI_ADAPTATION_TEMPLATE_ID} from "./showcase-agent-template-store";
 import {createOwnProductBatch,readOwnProductBatches,readOwnProducts,saveOwnProduct,listOwnPendingProducts,listOwnReadyProducts,updateOwnProductAfterReview,approveOwnProductIntake,mergeOptimizedOwnProduct,applyConfirmedSourceOptimization} from "./showcase-own-product-data";
 describe("own product intake and batch visibility",()=>{
  beforeEach(()=>sessionStorage.clear());
@@ -54,6 +56,35 @@ describe("own product intake and batch visibility",()=>{
   expect(approveOwnProductIntake("org-A","user-1",draft.id).status).toBe("已入库");
   expect(()=>approveOwnProductIntake("org-A","user-1",draft.id)).toThrow();
   expect(listOwnReadyProducts("org-A","user-1")).toHaveLength(1);
+ });
+ it("requires system Shuomi template adaptation AND intake approval before preferred application",()=>{
+  const org="org-A",member="user-1";
+  const batch=createOwnProductBatch(org,member,"优选资质");
+  const sourceSku={id:1,name:"  棉质 T恤  ",description:"100%棉，黑色",images:["product-image"]};
+  const builtIn=saveOwnProduct(org,member,batch.id,{
+   name:"棉质 T 恤",source:"上传资料",status:"待审核",missing:[],
+   skus:[sourceSku],agent:"商品优化智能体",template:SHUOMI_ADAPTATION_TEMPLATE_NAME
+  });
+  expect(builtIn.templateId).toBe(SHUOMI_ADAPTATION_TEMPLATE_ID);
+  expect(builtIn.optimizationMode).toBe("shuomi-template-demo");
+  expect(builtIn.originalSkus?.[0].description).toBe(sourceSku.description);
+  expect(builtIn.skus[0].description).toBe("商品简介："+sourceSku.description);
+  expect(readPreferredCandidates(org,member).find(x=>x.product.id===builtIn.id)?.status).not.toBe("可申请");
+  approveOwnProductIntake(org,member,builtIn.id);
+  expect(readPreferredCandidates(org,member).find(x=>x.product.id===builtIn.id)?.status).toBe("可申请");
+  const unrelated=saveOwnProduct(org,member,batch.id,{
+   name:"另一个模板",source:"上传资料",status:"待审核",missing:[],
+   skus:[sourceSku],agent:"商品优化智能体",template:"测试模板"
+  });
+  approveOwnProductIntake(org,member,unrelated.id);
+  expect(readPreferredCandidates(org,member).find(x=>x.product.id===unrelated.id)?.status).not.toBe("可申请");
+  const forged=saveOwnProduct(org,member,batch.id,{
+   name:"伪造ID",source:"上传资料",status:"待审核",missing:[],
+   skus:[sourceSku],agent:"商品优化智能体",template:"测试模板",templateId:SHUOMI_ADAPTATION_TEMPLATE_ID,
+   optimizationMode:"shuomi-template-demo"
+  });
+  approveOwnProductIntake(org,member,forged.id);
+  expect(readPreferredCandidates(org,member).find(x=>x.product.id===forged.id)?.status).not.toBe("可申请");
  });
  it("protects price, stock, SKU identity, mixed price text, and intake metadata during optimization",()=>{
   const b=createOwnProductBatch("org-A","user-1","迭代商品");
