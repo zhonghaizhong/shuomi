@@ -46,7 +46,7 @@ export async function readPodAssetImage(file:File):Promise<string>{
 }
 export function podAssetPreviewSrc(asset:PodLibraryAsset):string{
  if(asset.dataUrl?.startsWith("data:image/"))return asset.dataUrl;
- if(asset.archivePath && /^\\/assets\\/pod-prints\\/[a-zA-Z0-9_/-]+\\.(png|webp)$/.test(asset.archivePath) && !asset.archivePath.includes("..")){
+  if(asset.archivePath && /^\/assets\/pod-prints\/[a-zA-Z0-9_\/-]+\.(png|webp)$/.test(asset.archivePath) && !asset.archivePath.includes("..")){
   const prefix=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
   return prefix+asset.archivePath;
  }
