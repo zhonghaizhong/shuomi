@@ -1,7 +1,18 @@
 import {expect,test} from "@playwright/test";
+/** Populate only the isolated Playwright tab; the actual workspace stays empty. */
+async function seedCollections(page:import("@playwright/test").Page){
+ await page.goto("/shuomi/#/workbench/ai/chat/recent");
+ await page.evaluate(()=>{
+  sessionStorage.setItem("shuomi-showcase-chat-collections-v1",JSON.stringify([
+   {id:"e2e-conversation-1",title:"一号店转化率下降分析",description:"演示会话",time:"刚刚",favorite:true}
+  ]));
+ });
+ await page.reload();
+}
+
 
 test("Figma recent/saved three-dot actions keep demonstration rows in sync",async({page})=>{
- await page.goto("/shuomi/#/workbench/ai/chat/recent");
+ await seedCollections(page);
  const recent=page.locator('[data-chat-collection-preview="recent"]');
  await expect(recent).toBeVisible();
  await recent.getByRole("button",{name:"更多操作：一号店转化率下降分析"}).click();
@@ -35,6 +46,7 @@ test("Figma recent/saved three-dot actions keep demonstration rows in sync",asyn
 });
 
 test("recent/saved action panels inherit light and dark palette",async({page})=>{
+ await seedCollections(page);
  await page.goto("/shuomi/#/workbench/ai/chat/saved");
  const root=page.locator('[data-chat-collection-preview="saved"]');
  const toggleLight=page.getByRole("button",{name:"切换浅色主题"});
