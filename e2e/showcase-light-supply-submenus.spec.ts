@@ -102,8 +102,8 @@ test("preferred application reads owned adapted products and promotes only demo-
  await page.reload();
  const after=page.locator('[data-preferred-application="unified"]');
  await expect(after.getByRole("checkbox",{name:"选择测试优选家居收纳盒"})).toBeEnabled();
- await expect(after.getByRole("checkbox",{name:"选择尚未优化的测试产品"})).toBeDisabled();
- await expect(after.getByRole("checkbox",{name:"选择尚未完成首次适配"})).toBeDisabled();
+ await expect(after.getByRole("checkbox",{name:"选择尚未优化的测试产品"})).toBeEnabled();
+ await expect(after.locator('[data-product-id="OWN-PREF-C"]')).toHaveCount(0);
  await after.getByRole("button",{name:"发起申请",exact:true}).click();
  const apply=page.getByRole("dialog",{name:"发起优选申请"});
  await expect(apply).toBeVisible();
@@ -118,6 +118,8 @@ test("preferred application reads owned adapted products and promotes only demo-
  await expect(detail.locator('[data-status="待审核"]')).toBeVisible();
  await detail.getByRole("button",{name:"演示审核通过"}).click();
  await expect(detail.locator('[data-status="已通过"]')).toBeVisible();
+ await expect(detail.getByRole("button",{name:/执行官方模板二次优化/})).toBeVisible();
+ await detail.getByRole("button",{name:/执行官方模板二次优化/}).click();
  await detail.getByRole("button",{name:"关闭"}).click();
  await after.getByRole("button",{name:"查看硕米优选"}).click();
  await expect(page).toHaveURL(/supply\/selected/);
@@ -198,7 +200,7 @@ test("cargo application page uses aligned, colorful yet theme-consistent workflo
  }
 });
 
-test("preferred application is unlocked by Shuomi own-product intake review, not external platform review",async({page})=>{
+test("preferred application lists only approved own products regardless of initial agent template",async({page})=>{
  await page.goto(url("/supply/applications"));
  const root=page.locator('[data-preferred-application="unified"]');
  const scope=await root.evaluate(el=>({org:el.getAttribute("data-organization")!,member:el.getAttribute("data-member")!}));
@@ -223,10 +225,9 @@ test("preferred application is unlocked by Shuomi own-product intake review, not
  const pending=root.locator('[data-product-id="SHUOMI-REVIEW-PENDING"]');
  const noOptimization=root.locator('[data-product-id="SHUOMI-NOT-OPTIMIZED"]');
  await expect(approved.getByRole("checkbox")).toBeEnabled();
- await expect(approved.getByText("硕米入库审核通过")).toBeVisible();
- await expect(pending.getByRole("checkbox")).toBeDisabled();
- await expect(pending.getByText("硕米入库待审核")).toBeVisible();
- await expect(noOptimization.getByRole("checkbox")).toBeDisabled();
+ await expect(approved.getByText("自有商品已入库")).toBeVisible();
+ await expect(pending).toHaveCount(0);
+ await expect(noOptimization.getByRole("checkbox")).toBeEnabled();
  // External-platform receipts or review states are NOT required.
  await approved.getByRole("button",{name:"发起申请"}).click();
  await expect(page.getByRole("dialog",{name:"发起优选申请"})).toBeVisible();
