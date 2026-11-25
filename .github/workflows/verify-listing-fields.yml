@@ -35,4 +35,4 @@ jobs:
       - name: Typecheck field adapter integration
         run: pnpm run typecheck
       - name: Validate platform field schema, SKU and completion persistence
-        run: pnpm exec vitest run src/components/workbench/listing/showcase-platform-field-schema.test.ts src/components/workbench/listing/showcase-amazon-ai-workflow.test.ts
+        run: pnpm exec vitest run src/components/workbench/listing/showcase-platform-field-schema.test.ts src/components/workbench/listing/showcase-amazon-ai-workflow.test.ts src/components/workbench/listing/showcase-variant-structure.test.ts
