@@ -166,7 +166,8 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  <div className={styles.grid}>{cards.map(s=><article key={s[0]} className={styles.feature} data-skill-name={s[0]}><h3>{s[0]}</h3>{category==="mine"&&<small>来源：官方模板 · {s[4]}</small>}<p>{s[1]}</p><div className={styles.chips}><span>{s[2]}</span></div><div className={styles.cardActions}><span className={enabled.includes(s[0])?styles.enabled:styles.status}>{enabled.includes(s[0])?"已启用":"未启用"}</span><button className={styles.primary} onClick={()=>toggle(s[0])}>{enabled.includes(s[0])?"停用":"启用"}</button><button className={styles.secondary} onClick={()=>category==="official"?setIntro(s[0]):chat("reference",s[0])}>{category==="official"?"介绍":"去会话引用"}</button></div></article>)}
  {mine.map(s=><article key={s.name} className={styles.feature} data-skill-name={s.name}><h3>{s.name}</h3><small>来源：我的技能 · 示例技能可继续编辑</small><p>{s.description}</p><div className={styles.chips}><span>我的技能</span></div><div className={styles.cardActions}><span className={styles.enabled}>已启用</span><button onClick={()=>chat("edit",s.name)}>编辑技能</button><button onClick={()=>chat("reference",s.name)}>去会话引用</button></div></article>)}</div>
  {!cards.length&&!mine.length&&<p className={styles.emptyText}>{search?"未找到匹配技能":filter==="我的创建"?"还没有自建技能":"暂无已启用的技能"}</p>}
- </section></>}
+ </section>}
+ </>}
  <dialog ref={dialog} className={styles.introDialog} onClose={()=>setIntro(null)} aria-label="官方技能介绍">{selected&&<><header><h2>官方技能介绍</h2><button onClick={()=>setIntro(null)} aria-label="关闭">×</button></header><h3>{selected[0]}</h3><p>{selected[1]}</p><dl><dt>技能来源</dt><dd>硕米官方</dd><dt>适用范围</dt><dd>{selected[2]}</dd><dt>使用提醒</dt><dd>{selected[4]}</dd></dl></>}</dialog>
  </main>
 }
