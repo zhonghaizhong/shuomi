@@ -70,7 +70,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const match=(s:string)=>s.toLowerCase().includes(search.toLowerCase());
  const cards=officialSkills.filter(s=>(category==="official"?(filter==="全部"||s[3]===filter):enabled.includes(s[0])&&filter!=="我的创建")&&match(s.join(" ")));
  const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
- const mySkillRows=[...cards.map(s=>({key:"official:"+s[0],name:s[0],description:s[1],source:"官方技能",enabled:true})),...mine.map(s=>({key:"personal:"+s.name,name:s.name,description:s.description,source:"我的创建",enabled:true}))].filter(s=>groupFilter==="全部分组"||(groupFilter==="未分组"?!groupState.assignments[s.key]:groupState.assignments[s.key]===groupFilter));
+ const mySkillRows=[...officialSkills.filter(item=>enabled.includes(item[0])).map(item=>({key:"official:"+item[0],name:item[0],description:item[1],source:"官方技能",enabled:true})),...personal.map(item=>({key:"personal:"+item.name,name:item.name,description:item.description,source:"我的创建",enabled:true}))].filter(item=>(item.name+" "+item.description).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
  return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
  <header className={styles.hero}><div className={styles.heroCopy}><div className={styles.breadcrumb}>AI工作台 / 技能库</div><h1>技能库</h1><p>选择官方模板、我的技能或团队技能；需要时再在 AI 会话中调用。</p></div><button type="button" className={styles.primary} onClick={()=>chat("create")}>创建我的技能</button></header>
  {tabNavigation}
@@ -130,12 +130,11 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
 
  {category==="mine"?<>
   <section className={styles.mineToolbar} data-skill-management="mine" aria-label="我的技能筛选">
-   <div className={styles.mineFilters}>
-    <nav className={styles.mineTypeTabs} aria-label="技能来源筛选">{["全部","官方技能","我的创建"].map(x=><button type="button" key={x} aria-pressed={filter===x} className={filter===x?styles.active:styles.tab} onClick={()=>setFilter(x)}>{x}</button>)}</nav>
-    <label>分组 <select aria-label="按技能分组筛选" value={groupFilter} onChange={e=>setGroupFilter(e.target.value)}><option>全部分组</option><option>未分组</option>{groupState.groups.map(g=><option key={g}>{g}</option>)}</select></label>
-    <input aria-label="搜索技能名称" value={query} placeholder="搜索技能名称" onChange={e=>{setQuery(e.target.value);setSearch(e.target.value.trim())}}/>
-   </div>
-   <div className={styles.mineActions}><button type="button" onClick={()=>{setGroupNotice("");setGroupOpen(true)}}>管理分组</button><span>共 {mySkillRows.length} 项</span></div>
+   <form className={styles.mineFilters} onSubmit={e=>{e.preventDefault();setSearch(query.trim())}}>
+    <input aria-label="搜索技能名称" value={query} placeholder="搜索技能名称" onChange={e=>setQuery(e.target.value)}/>
+    <button type="submit" className={styles.primary}>确定</button>
+   </form>
+   <div className={styles.mineActions}><button type="button" onClick={()=>{setGroupNotice("");setGroupOpen(true)}}>管理分组</button></div>
   </section>
   <section className={styles.mineTableWrap}><table className={styles.mineTable}>
    <thead><tr><th>技能名称</th><th>来源</th><th>所属分组</th><th>状态</th><th>操作</th></tr></thead>
@@ -148,7 +147,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
      {item.source==="我的创建"?<button type="button" onClick={()=>chat("edit",item.name)}>编辑</button>:<button type="button" onClick={()=>toggle(item.name)}>停用</button>}
     </div></td>
    </tr>)}
-   {!mySkillRows.length&&<tr><td colSpan={5} className={styles.mineEmpty}>{search||filter!=="全部"||groupFilter!=="全部分组"?"没有符合条件的技能":"暂无已启用的技能"}</td></tr>}
+   {!mySkillRows.length&&<tr><td colSpan={5} className={styles.mineEmpty}>{search?"没有符合条件的技能":"暂无已启用的技能"}</td></tr>}
    </tbody>
   </table></section>
   {groupOpen&&<div className={styles.groupOverlay} onMouseDown={e=>{if(e.target===e.currentTarget)setGroupOpen(false)}}>
