@@ -326,7 +326,7 @@ test("knowledge landing navigation aligns with cards and opens Chat new conversa
  expect(Math.abs(bounds[0]!.width-bounds[1]!.width)).toBeLessThanOrEqual(2);
  const widths=await tabs.evaluateAll(nodes=>nodes.map(x=>x.getBoundingClientRect().width));
  expect(Math.max(...widths)-Math.min(...widths)).toBeLessThanOrEqual(1);
- await root.getByRole("button",{name:"去创建知识库"}).click();
+ await page.getByRole("button",{name:"去创建知识库"}).click();
  await expect(page).toHaveURL(/\/workbench\/ai\/chat\/new\?preview=1/);
 });
 
