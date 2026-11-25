@@ -177,8 +177,12 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await templates.getByRole("textbox",{name:"重命名模板"}).fill("已修改商品优化模板");
  await templates.getByRole("button",{name:"保存",exact:true}).click();
  await expect(templates).toContainText("已修改商品优化模板");
- await templates.getByRole("button",{name:"查看配置"}).click();
- await expect(templates).toContainText("商品标题规范优化");
+ // Built-in and user-created templates both expose "查看配置".
+ // Scope to the renamed user template instead of relying on document order.
+ const renamedTemplate=templates.locator("article").filter({has:templates.getByText("已修改商品优化模板",{exact:true})});
+ await expect(renamedTemplate).toHaveCount(1);
+ await renamedTemplate.getByRole("button",{name:"查看配置",exact:true}).click();
+ await expect(templates.getByRole("region",{name:"配置详情：已修改商品优化模板"})).toContainText("商品标题规范优化");
  await templates.getByRole("button",{name:"关闭",exact:true}).click();
  await expect(reopened.getByRole("status")).toContainText("商品标题规范优化");
  await page.keyboard.press("Escape");
