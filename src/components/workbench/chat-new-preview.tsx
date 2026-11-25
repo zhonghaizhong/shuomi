@@ -7,6 +7,7 @@ import {readPreviewProjects, createPreviewProject, savePreviewProject, projectTe
 import {useRouter} from "next/navigation";
 import {readEnabledPreviewSkills,readPersonalPreviewSkills,savePersonalPreviewSkill} from "./showcase-skill-library";
 import {savePersonalKnowledge} from "./showcase-knowledge-groups";
+import {savePreviewReport} from "./showcase-report-center";
 
 const modes = [
   { title: "创建会话", detail: "描述目标，硕米协助整理", action: "发送消息", placeholder: "向硕米提问，或描述你想完成的任务…", examples: [["每周汇总商品适配与上传进展", "进度、阻塞问题、关键变更与待决策事项"], ["找出可以退订的邮件", "识别订阅邮件及重复通知（需邮箱授权）"], ["准备下一场会议", "梳理议题、讨论重点与待确认事项"], ["分析最近店铺经营情况", "诊断利润、广告和订单异常并提出建议"]] },
@@ -45,7 +46,8 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
   const [skillEntry] = useState(()=>{const query=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const mode=query.get("skillMode");const name=query.get("skill")||"";return {mode,name}});
   const [taskEntry] = useState(()=>new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?")).get("taskMode"));
   const [knowledgeEntry] = useState(()=>new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?")).get("knowledgeMode"));
-  const [modeIndex, setModeIndex] = useState(taskEntry==="task"?6:taskEntry==="scheduled"?1:knowledgeEntry==="create"?3:projectEntry.mode==="create"?2:skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
+  const [reportEntry] = useState(()=>new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?")).get("reportMode"));
+  const [modeIndex, setModeIndex] = useState(taskEntry==="task"?6:taskEntry==="scheduled"?1:reportEntry==="create"?5:knowledgeEntry==="create"?3:projectEntry.mode==="create"?2:skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
   const [draft, setDraft] = useState(skillEntry.mode==="edit"&&readPersonalPreviewSkills(organizationId,memberId).some(s=>s.name===skillEntry.name)?"编辑技能："+skillEntry.name:projectEntry.template?projectEntry.template.description:projectEntry.project?"继续推进："+projectEntry.project.name:"");
   const [drawer, setDrawer] = useState<"resources" | "stores" | null>(null);
   const [resourceTab, setResourceTab] = useState("我的知识库");
@@ -150,7 +152,7 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
     if (index === 5) return {
       role: "assistant",
       approval: "report",
-      text: ["【经营报告草案】", "报告主题：" + request, "统计范围：" + (selectedStores.length ? selectedStores.join("、") : "全部关联店铺") + " · 近30天", "报告章节：经营概览、销售与利润表现、异常变化及建议", "当前状态：待确认加入我的报告", "本页为交互演示，不含真实业务数据，也不会保存报告。"].join("\n"),
+      text: ["【经营报告草案】", "报告主题：" + request, "统计范围：" + (selectedStores.length ? selectedStores.join("、") : "全部关联店铺") + " · 近30天", "报告章节：经营概览、销售与利润表现、异常变化及建议", "当前状态：待确认加入我的报告", "本页为交互演示，不含真实业务数据；确认后会保存演示报告草案。"].join("\n"),
     };
     return null;
   };
@@ -158,6 +160,13 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
     if (!message.approval) return;
     const labels: Record<ApprovalKind, string> = { knowledge: "知识库", skill: "技能", report: "报告" };
     const label = labels[message.approval];
+    if(confirm&&message.approval==="report"){
+      const title=message.text.split("\n").find(line=>line.startsWith("报告主题："))?.slice(5).trim();
+      if(title){try{
+        const saved=savePreviewReport(organizationId,memberId,title,"报告需求："+title+"。当前仅生成演示结构与待确认事项，没有检索或分析真实业务数据。",linkedProjectId||undefined);
+        if(!saved){onAction("报告主题为空，未保存演示报告");return;}
+      }catch{onAction("报告演示数据保存失败，请检查浏览器存储权限");return}}
+    }
     if(confirm&&message.approval==="report"&&linkedProjectId){const p=readPreviewProjects().find(p=>p.id===linkedProjectId&&p.status!=="已归档");const name=message.text.split("\n").find(x=>x.startsWith("报告主题："))?.slice(5).trim();if(p&&name){try{savePreviewProject({...p,reports:[...p.reports,name],updated:Date.now()})}catch{onAction("本地成果保存失败");return}}}
     if(confirm&&message.approval==="knowledge"){
       const name=message.text.split("\n").find(line=>line.startsWith("主题：")||line.startsWith("整理主题："))?.replace(/^(主题：|整理主题：)/,"").trim();
