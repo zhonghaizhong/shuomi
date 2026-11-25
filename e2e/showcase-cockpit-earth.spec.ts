@@ -148,7 +148,7 @@ const lightModules: Array<[string,string]> = [
   // Check a solid surfaced tag inside the new card (the card itself uses a gradient).
   ["/workbench/ai/knowledge",'[data-library-hub="knowledge"] [class*="knowledgeIntroTags"] > span'],
   // Reports now use a single results panel instead of redundant metric cards.
-  ["/workbench/ai/reports",'section[class*="_list_"]:has(p[class*="_empty_"])'],
+  ["/workbench/ai/reports",'[data-report-center] [class*="results"]'],
   ["/workbench/tools",'[class*="entry"]'],
   ["/workbench/tools/official",'[class*="toolCard"]'],
   ["/workbench/services",'[class*="homeCard"]:not([class*="homeCards"])'],
@@ -206,7 +206,7 @@ const standardPageHeaders = [
   ["/workbench/agents/market",'[class*="page"] > header[class*="header"]'],
   ["/workbench/ai/tasks",'[class*="page"] > header[class*="header"]'],
   ["/workbench/ai/projects",'[data-project-showcase] > header[class*="hero"]'],
-  ["/workbench/ai/reports",'[class*="page"] > header[class*="header"]'],
+  ["/workbench/ai/reports",'[data-report-center] > header[class*="hero"]'],
   ["/workbench/store-products",'[class*="page"] > header[class*="header"]'],
   ["/workbench/data/api",'[class*="page"] > header[class*="header"]'],
   ["/workbench/tools",'[class*="page"] > header[class*="hero"]'],
