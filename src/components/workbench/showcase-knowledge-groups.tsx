@@ -46,6 +46,7 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
  const [rename,setRename]=useState("");
  const [notice,setNotice]=useState("");
  const [search,setSearch]=useState("");
+ const [appliedSearch,setAppliedSearch]=useState("");
  const [editor,setEditor]=useState<string|null>(null);
  const [editName,setEditName]=useState("");
  const [editDescription,setEditDescription]=useState("");
@@ -60,17 +61,17 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
  const create=()=>{const name=draft.trim();if(!name||name.length>40||state.groups.includes(name))return;save({...state,groups:[...state.groups,name]},"分组已创建");setDraft("")};
  const changeName=(old:string)=>{const next=rename.trim();if(!next||next.length>40||(next!==old&&state.groups.includes(next)))return;save({groups:state.groups.map(g=>g===old?next:g),items:state.items.map(i=>i.group===old?{...i,group:next}:i)},"分组已重命名");if(filter===old)setFilter(next);setEditing("");setRename("")};
  const removeGroup=(name:string)=>{save({groups:state.groups.filter(g=>g!==name),items:state.items.map(i=>i.group===name?{...i,group:""}:i)},"已删除分组；知识库内容保留为未分组");if(filter===name)setFilter("全部分组")};
- const visible=state.items.filter(x=>(filter==="全部分组"||(filter==="未分组"?!x.group:x.group===filter))&&(x.name+" "+x.description).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+ const visible=state.items.filter(x=>(x.name+" "+x.description).toLocaleLowerCase().includes(appliedSearch.toLocaleLowerCase()));
  const hasKnowledge=state.items.length>0;
  const editItem=state.items.find(x=>x.id===editor);
  const updateItem=(item:KnowledgeItem,changes:Partial<KnowledgeItem>,message:string)=>save({...state,items:state.items.map(x=>x.id===item.id?{...x,...changes,updated:Date.now()}:x)},message);
  return <div className={styles.root} data-my-knowledge-groups>
   <section className={styles.toolbar} aria-label="知识库操作">
-   <div className={styles.leftFilters}>
-    <label>分组 <select aria-label="按知识库分组筛选" value={filter} onChange={e=>setFilter(e.target.value)}><option>全部分组</option><option>未分组</option>{state.groups.map(g=><option key={g}>{g}</option>)}</select></label>
+   <form className={styles.leftFilters} onSubmit={e=>{e.preventDefault();setAppliedSearch(search.trim())}}>
     <input aria-label="搜索知识库名称" placeholder="搜索知识库名称" value={search} onChange={e=>setSearch(e.target.value)}/>
-   </div>
-   <div className={styles.actions}><button type="button" onClick={()=>setOpen(true)}>管理分组</button><span className={styles.count}>共 {visible.length} 项</span></div>
+    <button type="submit" className={styles.primary}>确定</button>
+   </form>
+   <div className={styles.actions}><button type="button" onClick={()=>setOpen(true)}>管理分组</button></div>
   </section>
   {notice&&<p className={styles.notice} role="status">{notice}</p>}
   <div className={styles.tableWrap}><table className={styles.table}>
