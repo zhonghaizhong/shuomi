@@ -79,13 +79,19 @@ test("light-mode chat collections never retain dark background colors", async ({
     await expect(page.locator("html")).toHaveClass(/light/);
     const input = page.getByPlaceholder(/搜索.*标题或内容/);
     await expect(input).toBeVisible();
-    const listRow = page.locator("main.showcase-content article").first();
-    await expect(listRow).toBeVisible();
+    const list = page.locator('[data-chat-collection-preview] [aria-label$="会话列表"]');
+    await expect(list).toBeVisible();
+    const rows = list.locator("article");
+    if(await rows.count()===0){
+      await expect(list.getByText(route.includes("saved")?"没有找到符合条件的收藏会话":"没有找到符合条件的最近会话")).toBeVisible();
+    }else{
+      await expect(rows.first()).toBeVisible();
+    }
     const surfaces = await page.evaluate(() => {
       const input = document.querySelector("main.showcase-content input[placeholder]")!;
       const search = input.parentElement!;
-      const list = document.querySelector("main.showcase-content article")!.parentElement!;
-      const title = list.querySelector("article strong")!;
+      const list = document.querySelector('[data-chat-collection-preview] [aria-label$="会话列表"]')!;
+      const title = list.querySelector("article strong, [class*=_empty_] strong")!;
       const parse = (s: string) => (s.match(/[0-9.]+/g) ?? []).slice(0,3).map(Number);
       return {
         search: parse(getComputedStyle(search).backgroundColor),
@@ -275,8 +281,9 @@ test("listing four subpages share aligned Vuexy typography, cards and controls",
       expect(Math.max(...tops)-Math.min(...tops)).toBeLessThan(2);
     }
     if(route==="missing"||route==="review"){
-      const cards=root.locator('section[class*="summary"]');
-      if(route==="missing")await expect(cards.locator("article")).toHaveCount(4);
+      // Current missing-stage layout uses batch selection and a product list,
+      // not the removed four-card summary.
+      if(route==="missing")await expect(root.getByRole("heading",{name:/商品列表/})).toBeVisible();
       const batch=root.getByRole("button",{name:"选择刊登批次"});
       await expect(batch).toBeVisible();
       await batch.click();
