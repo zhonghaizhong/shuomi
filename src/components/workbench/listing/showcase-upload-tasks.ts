@@ -48,6 +48,7 @@ export type ShowcaseUploadTask={
  platformFieldSchema?:PlatformFieldSchema;
  fieldVersionArchive?:Record<string,ScopedFieldValues>;
  editHistory?:Array<{revision:number;updatedAt:string;categoryPath:string;ruleVersion:string;changedFields:string[]}>;
+ editSnapshots?:Array<{revision:number;updatedAt:string;previous:NonNullable<ShowcaseUploadTask["textEdits"]>}>;
  /** User-managed display gallery; never replaces preserved source evidence. Key is color group id or "default". */
  imageEdits?:Record<string,{main?:string[];detail?:string[]}>;
 
@@ -269,7 +270,7 @@ export function saveShowcaseListingTextEdits(
  if(Object.entries(cleaned.legacyMissingValues).some(([key,value])=>key.length>300||typeof value!=="string"||value.length>6000))throw Error("历史必填资料格式或长度不正确");
  if(cleaned.categoryRulePending===false&&cleaned.categoryPath!==(existing.categoryPath??""))throw Error("分类变更须先完成目标平台规则复核");
  const record={revision:cleaned.revision,updatedAt:cleaned.updatedAt,categoryPath:cleaned.categoryPath??"",ruleVersion:task.platformFieldSchema?.ruleVersion??"unverified",changedFields:[...Object.keys(updates.fieldValues??{}),...Object.keys(updates.skuNames??{}),...Object.keys(updates.merchantSkuCodes??{})]};
- const next={...task,textEdits:cleaned,editHistory:[...(task.editHistory??[]),record].slice(-60)};
+ const next={...task,textEdits:cleaned,editHistory:[...(task.editHistory??[]),record].slice(-60),editSnapshots:existing.revision?[...(task.editSnapshots??[]),{revision:existing.revision,updatedAt:existing.updatedAt??task.createdAt,previous:existing}].slice(-20):task.editSnapshots};
  persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
@@ -295,7 +296,7 @@ export function applyVerifiedListingFieldSchema(org:string,member:string,taskId:
  }));
  const archiveKey=current?JSON.stringify([current.platform,current.region,current.storeType,current.categoryPath,current.ruleVersion]):"";
  const archive=archiveKey?{...task.fieldVersionArchive,[archiveKey]:{...(task.fieldVersionArchive?.[archiveKey]??{}),...oldValues}}:task.fieldVersionArchive;
- const next={...task,fieldVersionArchive:archive,platformFieldSchema:schema,textEdits:{...task.textEdits,categoryRulePending:false,fieldValues:currentValues,revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString()},editHistory:[...(task.editHistory??[]),{revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString(),categoryPath:schema.categoryPath,ruleVersion:schema.ruleVersion,changedFields:impact.ready?impact.added: schema.fields.map(x=>x.id)}].slice(-60)};
+ const next={...task,fieldVersionArchive:archive,editSnapshots:task.textEdits?.revision?[...(task.editSnapshots??[]),{revision:task.textEdits.revision,updatedAt:task.textEdits.updatedAt??task.createdAt,previous:task.textEdits}].slice(-20):task.editSnapshots,platformFieldSchema:schema,textEdits:{...task.textEdits,categoryRulePending:false,fieldValues:currentValues,revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString()},editHistory:[...(task.editHistory??[]),{revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString(),categoryPath:schema.categoryPath,ruleVersion:schema.ruleVersion,changedFields:impact.ready?impact.added: schema.fields.map(x=>x.id)}].slice(-60)};
  persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
