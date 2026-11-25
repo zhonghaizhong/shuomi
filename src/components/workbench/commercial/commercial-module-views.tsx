@@ -10,6 +10,7 @@ import type {
 import { resourceDefinitions } from "./resource-purchase-panel";
 import styles from "./commercial.module.css";
 import { PlansOverview } from "./plans-overview";
+import {WorkbenchDateRange} from "../workbench-date-picker";
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Card role="region" aria-label={title} className={styles.panel}>
@@ -94,24 +95,7 @@ export function UsageDetailsView({
             });
           }}
         >
-          <label>
-            开始日期（UTC）
-            <input
-              type="date"
-              aria-label="开始日期（UTC）"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </label>
-          <label>
-            结束日期（UTC）
-            <input
-              type="date"
-              aria-label="结束日期（UTC）"
-              value={until}
-              onChange={(e) => setUntil(e.target.value)}
-            />
-          </label>
+          <WorkbenchDateRange label="选择资源流水日期" utc from={from} to={until} onChange={(start,end)=>{setFrom(start);setUntil(end)}} />
           <label>
             类型
             <select
