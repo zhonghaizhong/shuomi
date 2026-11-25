@@ -474,7 +474,7 @@
 .productInfoComparison p{font-size:13px;line-height:1.5;color:var(--ink);overflow-wrap:anywhere}
 .productMissingField{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;font-size:13px;font-weight:600}
 .productMissingField>span{font-size:11px;color:var(--listing-warning)}
-.productMissingField input{grid-column:1/-1;min-height:40px;width:100%;background:var(--surface);border:1px solid var(--stroke);border-radius:6px;color:var(--ink);padding:8px 10px}
+.productMissingField input,.productMissingField select{grid-column:1/-1;min-height:40px;width:100%;background:var(--surface);border:1px solid var(--stroke);border-radius:6px;color:var(--ink);padding:8px 10px}
 .productInfoBlock .productHint{color:var(--muted);font-size:12px;line-height:1.5}
 .productReviewCheck{display:flex;align-items:flex-start;gap:9px;font-size:13px}
 .productReviewCheck input{margin-top:3px}
@@ -1067,3 +1067,9 @@
 .page>.listPanel .columns{min-height:46px;align-items:center;font-size:14px}
 .page>.listPanel .listHeader button{background:var(--surface-alt);color:var(--ink);border:1px solid var(--stroke)}
 .page>.listPanel .filters .primary,.page>.submit>.primary{background:#7367f0;border-color:#7367f0;color:#fff}
+
+/* Shared SKU naming actions stay aligned regardless of theme or viewport. */
+.batchSkuRow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;min-width:0}
+.batchSkuRow input{min-width:0;width:100%;min-height:38px;background:var(--surface);border:1px solid var(--stroke);border-radius:7px;color:var(--ink);padding:7px 10px;font:inherit}
+.batchSkuRow button{min-height:38px;padding:7px 12px;border:1px solid var(--stroke);border-radius:7px;background:var(--surface-alt);color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}
+@media(max-width:700px){.batchSkuRow{grid-template-columns:minmax(0,1fr)}}
