@@ -5078,3 +5078,6 @@
   .knowledgeIntroFlowSteps {gap:0;}
   .knowledgeIntroFlowSteps li {font-size:12px;}
 }
+
+/* Empty reports and library states must remain readable in both themes. */
+:global(.light) .libraryHubPreview .empty{color:#64748b}
