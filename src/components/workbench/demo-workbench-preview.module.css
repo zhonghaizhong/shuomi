@@ -4735,6 +4735,64 @@
   padding-block: 20px 32px;
   gap: 18px;
 }
+/* Knowledge: the title, equal-width tabs, and cards share one grid edge. */
+.libraryHubPreview[data-library-hub="knowledge"] > .knowledgeTabRow {
+  box-sizing:border-box;
+  width:calc(100% - 48px);
+  max-width:1600px;
+  min-width:0;
+  margin-inline:auto;
+}
+.libraryHubPreview[data-library-hub="knowledge"] .knowledgeTabRow > section {
+  width:100%;
+  margin:0;
+}
+.libraryHubPreview[data-library-hub="knowledge"] .knowledgeTabRow nav {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  width:100%;
+  overflow:hidden;
+}
+.libraryHubPreview[data-library-hub="knowledge"] .knowledgeTabRow nav > :is(button,a) {
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:46px;
+  padding-inline:12px;
+  white-space:nowrap;
+}
+.libraryHubPreview[data-library-hub="knowledge"] > .header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:24px;
+}
+.libraryHubPreview[data-library-hub="knowledge"] .knowledgeCreateAction {
+  flex:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 20px;
+  min-height:42px;
+  border:1px solid #7367f0;
+  border-radius:7px;
+  background:#7367f0;
+  color:#fff;
+  font:inherit;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.libraryHubPreview[data-library-hub="knowledge"] .knowledgeCreateAction:hover {background:#8175f5;}
+.libraryHubPreview[data-library-hub="knowledge"] .knowledgeCreateAction:focus-visible {outline:2px solid #aba4f6;outline-offset:3px;}
+:global(.light) .libraryHubPreview[data-library-hub="knowledge"] .knowledgeCreateAction {color:#fff;}
+@media(max-width:720px) {
+  .libraryHubPreview[data-library-hub="knowledge"] > .knowledgeTabRow {width:calc(100% - 24px);}
+  .libraryHubPreview[data-library-hub="knowledge"] > .header {align-items:stretch;flex-direction:column;gap:14px;}
+  .libraryHubPreview[data-library-hub="knowledge"] .knowledgeCreateAction {align-self:flex-start;}
+  .libraryHubPreview[data-library-hub="knowledge"] .knowledgeTabRow nav > :is(button,a) {font-size:12px;padding-inline:5px;}
+}
 .libraryHubPreview[data-library-hub="knowledge"] > .header {
   min-height: 139px;
   padding: 22px 26px;
