@@ -47,6 +47,12 @@ const bundledAgentExamples = {
       `${here}/dist-pages/assets/pod-inspiration`,
       { recursive: true }
     );
+    // Publish the committed original POD apparel supplier photos.
+    await cp(
+      `${here}/public/assets/pod-demo`,
+      `${here}/dist-pages/assets/pod-demo`,
+      { recursive: true }
+    );
     // Own-product demo atlas is consumed directly by the browser after page load.
     // Vite's showcase/ root does not auto-copy the repository public/ folder.
     await cp(
