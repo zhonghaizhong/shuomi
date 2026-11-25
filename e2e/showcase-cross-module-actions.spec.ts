@@ -4,11 +4,12 @@ const base="/shuomi/#/workbench";
 test("task and project creation produce visible local drafts",async({page})=>{
  await page.goto(base+"/ai/tasks");
  await page.getByRole("button",{name:/新建任务/}).click();
- const task=page.getByRole("dialog",{name:"新建任务"});
- await expect(task).toBeVisible();
- await task.getByRole("textbox",{name:"任务名称"}).fill("演示自定义任务");
- await task.getByRole("button",{name:"创建演示草稿"}).click();
- await expect(page.getByText("演示自定义任务", {exact:true})).toBeVisible();
+ await expect(page).toHaveURL(/chat\/new\?preview=1&taskMode=task/);
+ await page.locator("#chat-new-prompt").fill("演示自定义任务");
+ await page.getByRole("button",{name:"确认任务草案",exact:true}).click();
+ await page.getByRole("dialog",{name:"确认发起任务"}).getByRole("button",{name:"确认并继续"}).click();
+ await page.goto(base+"/ai/tasks/pending");
+ await expect(page.getByText("演示自定义任务",{exact:true})).toBeVisible();
  await page.goto(base+"/ai/projects");
  await page.getByRole("button",{name:/新建项目/}).click();
  await expect(page).toHaveURL(/chat\/new\?preview=1&projectMode=create/);

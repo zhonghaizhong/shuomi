@@ -5,7 +5,7 @@ import { expect, test, type Page, type Locator } from "@playwright/test";
 const base="/shuomi/#/workbench";
 type Case={name:string;route:string;trigger:string;dialog:string;scope?:string;menu?:string;kind?:"dialog"|"alertdialog"};
 const cases:Case[]=[
- {name:"AI tasks new task",route:"/ai/tasks",trigger:"新建任务",dialog:"新建任务"},
+
  {name:"Agent model configuration",route:"/agents/mine",trigger:"模型设置",dialog:"模型设置"},
  {name:"Official skill introduction",route:"/agents/skills/official",trigger:"介绍",dialog:"官方技能介绍",scope:"[data-skill-name]"},
  {name:"Project template introduction",route:"/ai/projects/templates",trigger:"介绍",dialog:"模板介绍",scope:"article"},
@@ -107,4 +107,17 @@ for(const c of cases){
    await expect(page.locator("main.showcase-content")).toBeVisible();
   });
  }
+}
+
+for(const theme of ["dark","light"] as const){
+ test("AI task creation Chat confirmation / "+theme,async({page})=>{
+  await page.goto(base+"/ai/tasks");await setTheme(page,theme);
+  await page.getByRole("button",{name:/新建任务/}).click();
+  await expect(page).toHaveURL(/chat\/new\?preview=1&taskMode=task/);
+  await page.locator("#chat-new-prompt").fill("检查商品资料");
+  await page.getByRole("button",{name:"确认任务草案",exact:true}).click();
+  const dialog=page.getByRole("dialog",{name:"确认发起任务"});
+  await checkDialog(page,dialog,theme,"AI task creation Chat confirmation");
+  await dialog.getByRole("button",{name:"返回修改"}).click();await expect(dialog).not.toBeVisible();
+ });
 }

@@ -27,6 +27,13 @@ test("task center dual theme surfaces, grid alignment and modal visibility",asyn
    if(await toggle.isVisible())await toggle.click();
    const root=page.locator("[data-task-center-preview]");
    await expect(root).toBeVisible();
+   if(route===""){
+    await expect(root.getByRole("heading",{name:"让硕米帮你执行任务，而不只是回答问题"})).toBeVisible();
+    const cards=root.locator('[class*="guideCapabilities"] > article');
+    await expect(cards).toHaveCount(4);
+    await expect(root.locator('[class*="taskTable"]')).toHaveCount(0);
+    continue;
+   }
    const header=root.locator('[class*="taskColumns"]').first(), row=root.locator('[class*="taskRow"]').first();
    await expect(header).toBeVisible();await expect(row).toBeVisible();
    // Fractional CSS grid pixels may differ by <0.1px between row and header

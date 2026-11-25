@@ -414,12 +414,6 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
     await expect(page.locator(".light .showcase-shell")).toBeVisible();
     for(const selector of screen.surfaces){
       const card=page.locator(selector).first();
-      // Task lists are legitimately empty until a user creates a task.
-      // Validate the visible empty state instead of requiring fabricated rows.
-      if(screen.route==="/workbench/ai/tasks" && selector==='[class*="taskRow"]' && await card.count()===0){
-        await expect(page.getByText("没有符合条件的任务。")).toBeVisible();
-        continue;
-      }
       await expect(card,screen.route+" "+selector).toBeVisible();
       const result=await card.evaluate(el=>{
         const styles=getComputedStyle(el);
