@@ -139,7 +139,7 @@ const lightModules: Array<[string,string]> = [
   ["/workbench/plans",'[class*="planOverview"]'],
   ["/workbench/account",'[class*="accountOverview"]'],
   ["/workbench/ai",'[class*="aiCards"] article'],
-  ["/workbench/ai/tasks",'[class*="taskTable"]'],
+  ["/workbench/ai/tasks",'[data-task-center-preview="all"] [class*="guideIntro"]'],
   ["/workbench/agents",'[class*="dataCard"]:not([class*="dataCards"])'],
   ["/workbench/agents/market",'[class*="agentCards"] article'],
   ["/workbench/agents/mine",'[class*="agentMine"] > article > section'],
@@ -406,7 +406,7 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
   await page.getByRole("button",{name:"切换浅色主题"}).click();
   const screens=[
     {route:"/workbench/ai/chat",surfaces:['[class*="landingCard"]','[class*="example"]','[class*="steps"] > li > *']},
-    {route:"/workbench/ai/tasks",surfaces:['[class*="taskStats"] > button','[class*="taskSearch"]','[class*="taskTable"]','[class*="taskRow"]']},
+    {route:"/workbench/ai/tasks",surfaces:['[data-task-center-preview="all"] [class*="guideIntro"]','[data-task-center-preview="all"] [class*="guideCapabilities"] > article','[data-task-center-preview="all"] [class*="guideSteps"] > article']},
     {route:"/workbench/ai/projects",surfaces:['[data-project-showcase] [class*="guideIntro"]','[data-project-showcase] [class*="guideCapabilities"] article','[data-project-showcase] [class*="guideSteps"] article']},
   ] as const;
   for(const screen of screens) {
