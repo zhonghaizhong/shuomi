@@ -13,6 +13,7 @@ import {errorText} from "./task-presentation";
 import {ConsoleState} from "../console/console-page";
 import {DailyReportStoreSelect} from "./daily-report-store-select";
 import styles from "./schedules.module.css";
+import {WorkbenchDateTime} from "../workbench-date-picker";
 
 export function schedulePoints(micros:string){const n=BigInt(micros),unit=BigInt(1000000);return `${n/unit}${n%unit?`.${String(n%unit).padStart(6,"0").replace(/0+$/,"")}`:""}`;}
 export function scheduleTime(at:string,zone:string){return new Intl.DateTimeFormat("zh-CN",{timeZone:zone,dateStyle:"medium",timeStyle:"short"}).format(new Date(at));}
@@ -60,18 +61,18 @@ export function ScheduleForm({scope,authorizationKey,plan,copyFrom,disabled,onSa
    <fieldset className={styles.formSection} disabled={locked}><legend>执行时间</legend><div className={styles.fields}>
     <label className={styles.field}>频率<Select value={frequency} onChange={event=>change(()=>setFrequency(event.target.value as typeof frequency))}><option value="once" disabled={!!plan&&plan.consumedOccurrences!=="0"}>仅一次</option><option value="daily">每天</option>{!report?<option value="weekly">每周</option>:null}</Select></label>
     <label className={styles.field}>计划时区<Input value={report?"Asia/Shanghai":zone} disabled={report} placeholder="Asia/Shanghai" onChange={event=>change(()=>setZone(event.target.value))}/></label>
-    {frequency==="once"?<label className={`${styles.field} ${styles.dateField}`}>执行日期与时间（本机时区）<Input type="datetime-local" value={at} onChange={event=>change(()=>setAt(event.target.value))}/></label>:<>
-     <label className={styles.field}>执行时刻（计划时区）<Input type="time" value={time} onChange={event=>change(()=>setTime(event.target.value))}/></label>
+    {frequency==="once"?<label className={`${styles.field} ${styles.dateField}`}>执行日期与时间（本机时区）<WorkbenchDateTime label="执行日期与时间" value={at} onChange={value=>change(()=>setAt(value))}/></label>:<>
+     <label className={styles.field}>执行时刻（计划时区）<WorkbenchDateTime label="执行时刻" kind="time" value={time} onChange={value=>change(()=>setTime(value))}/></label>
      {frequency==="weekly"?<label className={styles.field}>星期<Select value={weekday} onChange={event=>change(()=>setWeekday(Number(event.target.value)))}>{["日","一","二","三","四","五","六"].map((day,i)=><option value={i} key={i}>星期{day}</option>)}</Select></label>:null}
      {!report?<><label className={styles.field}>最多执行次数<Input inputMode="numeric" value={count} onChange={event=>change(()=>setCount(event.target.value))}/></label>
-     <label className={`${styles.field} ${styles.dateField}`}>截止时间（可选，本机时区）<Input type="datetime-local" value={until?new Date(until).toLocaleString("sv-SE").slice(0,16).replace(" ","T"):""} onChange={event=>change(()=>setUntil(event.target.value?new Date(event.target.value).toISOString():""))}/></label></>:null}
+     <label className={`${styles.field} ${styles.dateField}`}>截止时间（可选，本机时区）<WorkbenchDateTime label="截止时间" optional value={until?new Date(until).toLocaleString("sv-SE").slice(0,16).replace(" ","T"):""} onChange={value=>change(()=>setUntil(value?new Date(value).toISOString():""))}/></label></>:null}
     </>}
    </div></fieldset>
    {report&&frequency==="daily"?<fieldset className={styles.formSection} disabled={locked}><legend>执行期限</legend>
     <div className={styles.termChoices} role="group" aria-label="快速选择执行次数">{["7","30"].map(value=><Button key={value} type="button" variant="outline" aria-label={`最多${value}次`} aria-pressed={count===value} onClick={()=>change(()=>setCount(value))}>最多 {value} 次</Button>)}</div>
     <div className={styles.fields}>
      <label className={styles.field}>最多执行次数<Input inputMode="numeric" value={count} onChange={event=>change(()=>setCount(event.target.value))}/></label>
-     <label className={`${styles.field} ${styles.dateField}`}>截止时间（可选，本机时区）<Input type="datetime-local" value={until?new Date(until).toLocaleString("sv-SE").slice(0,16).replace(" ","T"):""} onChange={event=>change(()=>setUntil(event.target.value?new Date(event.target.value).toISOString():""))}/></label>
+     <label className={`${styles.field} ${styles.dateField}`}>截止时间（可选，本机时区）<WorkbenchDateTime label="截止时间" optional value={until?new Date(until).toLocaleString("sv-SE").slice(0,16).replace(" ","T"):""} onChange={value=>change(()=>setUntil(value?new Date(value).toISOString():""))}/></label>
     </div><p className={styles.hint}>按实际启动次数计数，暂停和跳过不计次数。先达到次数上限或截止时间时结束</p>
    </fieldset>:null}
    {plan?<p className={styles.hint}>已执行 {plan.consumedOccurrences} 次，次数上限应大于已执行次数。{plan.state==="PAUSED"?"保存后仍保持暂停。":""}</p>:null}
