@@ -50,6 +50,7 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
  const [editName,setEditName]=useState("");
  const [editDescription,setEditDescription]=useState("");
  const [more,setMore]=useState<string|null>(null);
+ const [moveTarget,setMoveTarget]=useState("");
  useEffect(()=>{
   const refresh=()=>setState(readKnowledgeState(organizationId,memberId));
   refresh();setFilter("全部分组");window.addEventListener("shuomi-knowledge-changed",refresh);
@@ -75,12 +76,12 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
   <div className={styles.tableWrap}><table className={styles.table}>
    <thead><tr><th>知识库名称</th><th>来源</th><th>所属分组</th><th>最近更新</th><th>操作</th></tr></thead>
    <tbody>{visible.map(item=><tr key={item.id}>
-    <td><strong>{item.name}</strong></td><td>{item.origin}</td><td><select aria-label={item.name+"的所属分组"} value={item.group} onChange={e=>updateItem(item,{group:e.target.value},"分组已更新")}><option value="">未分组</option>{state.groups.map(g=><option key={g} value={g}>{g}</option>)}</select></td>
+    <td><strong>{item.name}</strong></td><td>{item.origin}</td><td><span className={styles.groupLabel}>{item.group||"未分组"}</span></td>
     <td>{item.updated?new Date(item.updated).toLocaleDateString("zh-CN"):"—"}</td>
     <td><div className={styles.rowActions}>
      <button type="button" onClick={()=>router.push("/workbench/ai/chat/new?preview=1&knowledgeMode=reference&knowledgeName="+encodeURIComponent(item.name))}>使用</button>
      {item.origin==="我的"&&<button type="button" onClick={()=>{setEditor(item.id);setEditName(item.name);setEditDescription(item.description)}}>编辑</button>}
-     <button type="button" aria-label={item.name+"的更多操作"} onClick={()=>setMore(more===item.id?null:item.id)}>更多</button>
+     <button type="button" aria-label={item.name+"的更多操作"} onClick={()=>{setMore(more===item.id?null:item.id);setMoveTarget(item.group)}}>更多</button>
     </div></td>
    </tr>)}
    {!visible.length&&<tr><td colSpan={5} className={styles.emptyCell}>{hasKnowledge?"没有符合条件的知识库":"暂无知识库"}</td></tr>}
@@ -89,7 +90,22 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
    <section className={styles.dialog} role="dialog" aria-modal="true" aria-label="知识库更多操作">
     <header><h2>知识库操作</h2><button type="button" aria-label="关闭更多操作" onClick={()=>setMore(null)}>×</button></header>
     <p>{state.items.find(x=>x.id===more)?.name}</p>
-    <footer><button type="button" onClick={()=>setMore(null)}>取消</button><button type="button" onClick={()=>{save({...state,items:state.items.filter(x=>x.id!==more)},"已移出我的知识库");setMore(null)}}>移出我的知识库</button></footer>
+    <label className={styles.editField}>移动到分组
+     <select aria-label="移动到分组" value={moveTarget} onChange={e=>setMoveTarget(e.target.value)}>
+      <option value="">未分组</option>{state.groups.map(g=><option key={g} value={g}>{g}</option>)}
+     </select>
+    </label>
+    <footer>
+     <button type="button" onClick={()=>setMore(null)}>取消</button>
+     <button type="button" className={styles.primary} disabled={state.items.find(x=>x.id===more)?.group===moveTarget} onClick={()=>{
+      if(moveTarget!==""&&!state.groups.includes(moveTarget)){setNotice("分组已不存在，请重新选择");return;}
+      const item=state.items.find(x=>x.id===more);
+      if(!item)return;
+      updateItem(item,{group:moveTarget},"已移动到"+(moveTarget||"未分组"));
+      setMore(null);
+     }}>确认移动</button>
+     <button type="button" onClick={()=>{save({...state,items:state.items.filter(x=>x.id!==more)},"已移出我的知识库");setMore(null)}}>移出我的知识库</button>
+    </footer>
    </section>
   </div>}
   {editItem&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setEditor(null)}}>
