@@ -111,7 +111,7 @@ test("schedule creates a separate execution record and exposes it in plan histor
  await expect(dialog.getByText("执行结果",{exact:true})).toBeVisible();
 });
 
-test("task center premium layout keeps overview cards equal and task content within its canvas",async({page})=>{
+test("task guide keeps four capability cards aligned and task content within its canvas",async({page})=>{
  test.setTimeout(120000);
  const base="/shuomi/#/workbench/ai/tasks";
  for(const theme of ["dark","light"]){
@@ -122,8 +122,9 @@ test("task center premium layout keeps overview cards equal and task content wit
    if(await toggle.isVisible())await toggle.click();
    const root=page.locator("[data-task-center-preview]");
    await expect(root).toBeVisible();
-   const cards=root.locator('[class*="taskStats"]>button');
-   await expect(cards).toHaveCount(5);
+   await expect(root.getByRole("heading",{name:"让硕米帮你执行任务，而不只是回答问题"})).toBeVisible();
+   const cards=root.locator('[class*="guideCapabilities"] > article');
+   await expect(cards).toHaveCount(4);
    const sizes=await cards.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height}}));
    expect(Math.max(...sizes.map(x=>x.w))-Math.min(...sizes.map(x=>x.w))).toBeLessThanOrEqual(2);
    expect(Math.max(...sizes.map(x=>x.h))-Math.min(...sizes.map(x=>x.h))).toBeLessThanOrEqual(2);
@@ -132,4 +133,17 @@ test("task center premium layout keeps overview cards equal and task content wit
    expect(await root.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(3);
   }
  }
+});
+
+test("new task opens the task-specific new Chat conversation and keeps task guide free of duplicate lists",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/tasks");
+ const root=page.locator("[data-task-center-preview='all']");
+ await expect(root.getByRole("heading",{name:"任务中心",exact:true})).toBeVisible();
+ await expect(root.getByRole("heading",{name:"发起任务，只需要三步"})).toBeVisible();
+ await expect(root.locator('[class*="taskStats"]')).toHaveCount(0);
+ await expect(root.locator('[class*="taskSearch"]')).toHaveCount(0);
+ await expect(root.locator('[class*="taskTable"]')).toHaveCount(0);
+ await root.getByRole("button",{name:/新建任务/}).click();
+ await expect(page).toHaveURL(/workbench\/ai\/chat\/new/);
+ await expect(page.getByRole("button",{name:"发起任务",exact:true})).toHaveAttribute("aria-pressed","true");
 });
