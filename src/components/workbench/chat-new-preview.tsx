@@ -58,7 +58,7 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
   const [scheduleTime, setScheduleTime] = useState("09:00");
   const [scheduleWeekday, setScheduleWeekday] = useState("1");
   const [scheduleMonthday, setScheduleMonthday] = useState("1");
-  const [selectedResources, setSelectedResources] = useState<string[]>(()=>skillEntry.mode==="reference"&&[...readEnabledPreviewSkills(organizationId,memberId),...readPersonalPreviewSkills(organizationId,memberId).map(s=>s.name)].includes(skillEntry.name)?[skillEntry.name]:projectEntry.project?[projectEntry.project.name]:[]);
+  const [selectedResources, setSelectedResources] = useState<string[]>(()=>{const params=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const linkedKnowledge=params.get("knowledgeMode")==="reference"?params.get("knowledgeName"):null;return linkedKnowledge?[linkedKnowledge]:skillEntry.mode==="reference"&&[...readEnabledPreviewSkills(organizationId,memberId),...readPersonalPreviewSkills(organizationId,memberId).map(s=>s.name)].includes(skillEntry.name)?[skillEntry.name]:projectEntry.project?[projectEntry.project.name]:[]});
   const [selectedStores, setSelectedStores] = useState<string[]>(projectEntry.project&&projectEntry.project.scope!=="通用业务"?projectEntry.project.scope.split("、"):[]);
   const [pendingResources, setPendingResources] = useState<string[]>([]);
   const [pendingStores, setPendingStores] = useState<string[]>([]);
