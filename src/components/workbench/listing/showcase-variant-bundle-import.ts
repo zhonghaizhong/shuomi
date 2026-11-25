@@ -205,7 +205,7 @@ export async function linkHostedCrocsDemoPhotos(org:string,member:string):Promis
   const additions=images.filter(image=>image.color===group.id).filter(image=>{
    // Never replace existing genuinely generated or manually reviewed photos.
    const existing=group.optimizedImages.find(item=>item.role===image.role);
-   return !existing||existing.source==="demo-import";
+   return !existing||(existing.source==="demo-import"&&existing.url!==image.url);
   }).map(image=>({
    role:image.role,url:image.url,version:group.version,source:"demo-import" as const,
    provenance:"GitHub 静态公开演示图片，供跨浏览器展示；不可作为正式 AI 生成或人工审核证明"
