@@ -13,7 +13,7 @@ export function WorkbenchDateRange({label="选择日期",from,to,onChange,utc=fa
  const valid=(!draftFrom&&!draftTo)||Boolean(draftFrom&&draftTo&&draftFrom<=draftTo&&(!maxDate||draftTo<=maxDate));
  return <div className={styles.control} data-workbench-date-range>
   <button type="button" className={styles.trigger} aria-label={label} aria-expanded={open} onClick={show}>{from&&to?from+" 至 "+to:"全部时间"}</button>
-  {open&&<div className={styles.popover} role="group" aria-label={label+"范围"}>
+  {open&&<div className={styles.popover} role="group" aria-label={(label.startsWith("选择")?label.slice(2):label)+"范围"}>
    <label>开始日期<input type="date" aria-label={utc?"开始日期（UTC）":"开始日期"} value={draftFrom} max={draftTo||maxDate||undefined} onChange={e=>setDraftFrom(e.target.value)}/></label>
    <label>结束日期<input type="date" aria-label={utc?"结束日期（UTC）":"结束日期"} value={draftTo} min={draftFrom||undefined} max={maxDate||undefined} onChange={e=>setDraftTo(e.target.value)}/></label>
    {!valid&&<p role="alert">请选择完整的日期范围，结束日期不能早于开始日期。</p>}
