@@ -385,10 +385,11 @@ test("knowledge creation stays visible on all tabs; personal groups manage enabl
  await moveDialog.getByRole("combobox",{name:"移动到分组"}).selectOption("运营资料");
  await moveDialog.getByRole("button",{name:"确认移动"}).click();
  await expect(knowledgeRow.getByText("运营资料",{exact:true})).toBeVisible();
- await root.getByRole("combobox",{name:"按知识库分组筛选"}).selectOption("运营资料");
+ await root.getByRole("textbox",{name:"搜索知识库名称"}).fill("跨境平台规则");
+ await root.getByRole("button",{name:"确定"}).click();
  await expect(root.getByText("跨境平台规则")).toBeVisible();
  await page.reload();
- await expect(root.getByRole("combobox",{name:"按知识库分组筛选"}).getByRole("option",{name:"运营资料"})).toHaveCount(1);
+ await expect(root.getByRole("textbox",{name:"搜索知识库名称"})).toBeVisible();
  await root.getByRole("button",{name:"管理分组"}).click();
  await dialog.getByRole("button",{name:"删除分组"}).click();
  await dialog.getByRole("button",{name:"完成"}).click();
@@ -427,7 +428,8 @@ test("empty My Knowledge retains fixed search, group tools and table header",asy
  await expect(root).toBeVisible();
  await expect(page.getByRole("heading",{name:"我的知识库"})).toBeVisible();
  await expect(page.getByRole("button",{name:"去创建知识库"})).toBeVisible();
- await expect(root.getByRole("combobox",{name:"按知识库分组筛选"})).toBeVisible();
+ await expect(root.getByRole("button",{name:"确定"})).toBeVisible();
+ await expect(root.getByRole("combobox",{name:"按知识库分组筛选"})).toHaveCount(0);
  await expect(root.getByRole("textbox",{name:"搜索知识库名称"})).toBeVisible();
  await expect(root.getByRole("button",{name:"管理分组"})).toBeVisible();
  await expect(root.getByRole("table")).toBeVisible();
@@ -444,11 +446,11 @@ test("My Knowledge toolbar stays in one row and its table has no vertical scroll
  const root=page.locator("[data-my-knowledge-groups]");
  await expect(root.getByRole("table")).toBeVisible();
  const toolbar=root.locator('[aria-label="知识库操作"]');
- const group=toolbar.getByRole("combobox",{name:"按知识库分组筛选"});
+ const confirm=toolbar.getByRole("button",{name:"确定"});
  const search=toolbar.getByRole("textbox",{name:"搜索知识库名称"});
  const manage=toolbar.getByRole("button",{name:"管理分组"});
- await expect(group).toBeVisible();await expect(search).toBeVisible();await expect(manage).toBeVisible();
- const positions=await Promise.all([group.boundingBox(),search.boundingBox(),manage.boundingBox()]);
+ await expect(confirm).toBeVisible();await expect(search).toBeVisible();await expect(manage).toBeVisible();
+ const positions=await Promise.all([confirm.boundingBox(),search.boundingBox(),manage.boundingBox()]);
  for(const pos of positions)expect(pos).not.toBeNull();
  const center=(box:NonNullable<typeof positions[number]>)=>box.y+box.height/2;
  expect(Math.max(...positions.map(p=>center(p!)))-Math.min(...positions.map(p=>center(p!)))).toBeLessThan(6);
@@ -535,7 +537,8 @@ test("My Skills keeps filtering and group management visible even when no skills
  const root=page.locator('[data-skill-showcase="true"]');
  const toolbar=root.getByRole("region",{name:"我的技能筛选"});
  await expect(toolbar.getByRole("button",{name:"管理分组"})).toBeVisible();
- await expect(toolbar.getByRole("combobox",{name:"按技能分组筛选"})).toBeVisible();
+ await expect(toolbar.getByRole("button",{name:"确定"})).toBeVisible();
+ await expect(toolbar.getByRole("combobox",{name:"按技能分组筛选"})).toHaveCount(0);
  await expect(toolbar.getByRole("textbox",{name:"搜索技能名称"})).toBeVisible();
  await expect(root.getByRole("table")).toBeVisible();
  await expect(root.getByText("暂无已启用的技能")).toBeVisible();
@@ -546,5 +549,7 @@ test("My Skills keeps filtering and group management visible even when no skills
  await dialog.getByRole("button",{name:"创建分组"}).click();
  await expect(dialog.getByText("我的运营技能")).toBeVisible();
  await dialog.getByRole("button",{name:"完成"}).click();
- await expect(toolbar.getByRole("combobox",{name:"按技能分组筛选"}).getByRole("option",{name:"我的运营技能"})).toHaveCount(1);
+ await toolbar.getByRole("button",{name:"管理分组"}).click();
+ await expect(dialog.getByText("我的运营技能")).toBeVisible();
+ await dialog.getByRole("button",{name:"完成"}).click();
 });
