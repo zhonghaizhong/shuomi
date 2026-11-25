@@ -23,7 +23,8 @@ test("light theme uses readable pale surfaces on every library subpage",async({p
    if(await enableLight.isVisible())await enableLight.click();
    const isSkills=route.startsWith("/agents/skills/");
    const isProjects=route.startsWith("/ai/projects/");
-   const canvas=isSkills?page.locator('[data-skill-showcase="true"]'):isProjects?page.locator('[data-project-showcase="true"]'):page.locator('[class*="libraryDetailPreview"]');
+   const isReports=route.startsWith("/ai/reports/");
+   const canvas=isSkills?page.locator('[data-skill-showcase="true"]'):isProjects?page.locator('[data-project-showcase="true"]'):isReports?page.locator('[class*="libraryHubPreview"]'):page.locator('[class*="libraryDetailPreview"]');
    await expect(canvas).toBeVisible();
    const surfaces=isSkills?canvas.locator(':scope > section[class*="toolbar"], :scope > section[class*="empty"], :scope > aside'):isProjects?canvas.locator(':scope > header, :scope > section[class*="panel"]'):canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
    const count=Math.min(await surfaces.count(),5);
