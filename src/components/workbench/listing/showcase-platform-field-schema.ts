@@ -41,3 +41,23 @@ export function categoryFieldImpact(oldSchema:PlatformFieldSchema|undefined,newS
  removed:oldSchema.fields.filter(f=>{const next=dest.get(f.id);return !next||!compatible(f,next)}).map(f=>f.id),
  added:newSchema.fields.filter(f=>{const old=source.get(f.id);return !old||!compatible(old,f)}).map(f=>f.id)};
 }
+
+/** Accept an AI-proposed dropdown value only if that exact option is supplied by
+ * the verified platform schema. A label, invented option or partial match is not valid. */
+export function validateAiEnumSelection(field:PlatformField,proposal:string):string|null{
+ if(field.kind!=="enum"||field.aiEditable!==true||!field.options?.length)return null;
+ return field.options.includes(proposal)?proposal:null;
+}
+/** Demo-only, evidence-bound matching: not a generative AI call. Never choose an
+ * option from an ambiguous or unrelated source text. */
+export function findUnambiguousEnumOption(field:PlatformField,sourceText:string):string|null{
+ if(field.kind!=="enum"||!field.aiEditable||!field.options?.length)return null;
+ const haystack=sourceText.toLocaleLowerCase();
+ const matches=field.options.filter(option=>{
+  const needle=option.trim().toLocaleLowerCase();
+  if(needle.length<3)return false;
+  const escaped=needle.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  return new RegExp("(^|[^\\p{L}\\p{N}])"+escaped+"(?=$|[^\\p{L}\\p{N}])","u").test(haystack);
+ });
+ return matches.length===1?validateAiEnumSelection(field,matches[0]):null;
+}
