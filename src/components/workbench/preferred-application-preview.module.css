@@ -208,3 +208,10 @@
 :global(.light) .page .candidateSummary .metricCard{background:#f8f7fa;border-color:#e3e1ed}
 :global(.light) .page .candidateSummary .metricCard[aria-pressed="true"]{background:#f1efff;border-color:#7367f0}
 :global(.light) .page .candidateSummary .metricValue{background:#eeebff}
+
+/* Light theme is applied instantly: avoid a transitional dark color-mix frame
+   when Playwright or a user switches themes on the application page. */
+:global(.light) .page .candidateSummary .metricCard,
+:global(.light) .page .candidateSummary .metricCard[aria-pressed="true"]{
+ transition:none;
+}
