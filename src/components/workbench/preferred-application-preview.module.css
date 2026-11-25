@@ -84,12 +84,12 @@
 .productPlaceholder{display:grid;place-items:center;color:var(--muted)}
 .status{display:inline-flex;justify-content:center;align-items:center;padding:5px 9px;min-width:70px;font-size:12px;font-weight:650;border-radius:6px;background:color-mix(in srgb,var(--status-color) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--status-color) 40%,var(--border));color:var(--status-color);white-space:nowrap}
 .status[data-status="可申请"],.status[data-status="已通过"],.status[data-status="已入选优选"]{--status-color:#4eca97}
-.status[data-status="待首次适配"],.status[data-status="待智能优化"]{--status-color:#e6aa69}
-.status[data-status="审核中"],.status[data-status="待审核"]{--status-color:#9e92ff}
+.status[data-status="待首次适配"],.status[data-status="待智能优化"],.status[data-status="待平台适配"],.status[data-status="平台审核未通过"]{--status-color:#e6aa69}
+.status[data-status="审核中"],.status[data-status="待审核"],.status[data-status="待平台审核"]{--status-color:#9e92ff}
 .status[data-status="未通过"]{--status-color:#ee8587}
 :global(.light) .status[data-status="可申请"],:global(.light) .status[data-status="已通过"],:global(.light) .status[data-status="已入选优选"]{--status-color:#087f6c}
-:global(.light) .status[data-status="待首次适配"],:global(.light) .status[data-status="待智能优化"]{--status-color:#985b07}
-:global(.light) .status[data-status="审核中"],:global(.light) .status[data-status="待审核"]{--status-color:#6658ce}
+:global(.light) .status[data-status="待首次适配"],:global(.light) .status[data-status="待智能优化"],:global(.light) .status[data-status="待平台适配"],:global(.light) .status[data-status="平台审核未通过"]{--status-color:#985b07}
+:global(.light) .status[data-status="审核中"],:global(.light) .status[data-status="待审核"],:global(.light) .status[data-status="待平台审核"]{--status-color:#6658ce}
 :global(.light) .status[data-status="未通过"]{--status-color:#b53b42}
 .rowAction{border-color:#7367f0!important;color:#fff!important;background:#7367f0!important}
 .muted{font-size:12px;color:var(--muted)}
