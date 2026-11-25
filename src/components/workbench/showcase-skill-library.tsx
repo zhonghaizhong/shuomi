@@ -32,6 +32,14 @@ export function readPersonalPreviewSkills(organizationId="SM-ENT-000001",memberI
 export function savePersonalPreviewSkill(skill:PersonalPreviewSkill,organizationId="SM-ENT-000001",memberId="admin"){
  try{sessionStorage.setItem(scopedKey(personalKey,organizationId,memberId),JSON.stringify([...readPersonalPreviewSkills(organizationId,memberId).filter(x=>x.name!==skill.name),skill]))}catch{}
 }
+const groupKey=(organizationId:string,memberId:string)=>"shuomi-preview-skill-groups-v1:"+encodeURIComponent(organizationId)+":"+encodeURIComponent(memberId);
+type SkillGroups={groups:string[];assignments:Record<string,string>};
+const emptyGroups=():SkillGroups=>({groups:[],assignments:{}});
+function readSkillGroups(org:string,member:string):SkillGroups{
+ try{const raw=JSON.parse(sessionStorage.getItem(groupKey(org,member))||"null");if(raw&&Array.isArray(raw.groups)&&raw.assignments&&typeof raw.assignments==="object"){return {groups:raw.groups.filter((g:unknown):g is string=>typeof g==="string"&&!!g.trim()).slice(0,100),assignments:raw.assignments}}}catch{}
+ return emptyGroups();
+}
+function saveSkillGroups(org:string,member:string,value:SkillGroups){sessionStorage.setItem(groupKey(org,member),JSON.stringify(value))}
 export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",memberId="admin",onSectionSelect,tabNavigation}:{pathname:string;organizationId?:string;memberId?:string;onSectionSelect?:(path:string)=>void;tabNavigation?:ReactNode}){
  const router=useRouter();
  const category=pathname.endsWith("/official")?"official":pathname.endsWith("/mine")?"mine":pathname.endsWith("/team")?"team":"home";
@@ -39,18 +47,30 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const [personal,setPersonal]=useState(()=>readPersonalPreviewSkills(organizationId,memberId));
  const [filter,setFilter]=useState("全部"),[query,setQuery]=useState(""),[search,setSearch]=useState("");
  const [intro,setIntro]=useState<string|null>(null);
+ const [groupState,setGroupState]=useState<SkillGroups>(()=>readSkillGroups(organizationId,memberId));
+ const [groupFilter,setGroupFilter]=useState("全部分组");
+ const [groupOpen,setGroupOpen]=useState(false);
+ const [groupDraft,setGroupDraft]=useState("");
+ const [groupEditing,setGroupEditing]=useState("");
+ const [groupRename,setGroupRename]=useState("");
+ const [groupNotice,setGroupNotice]=useState("");
  const dialog=useRef<HTMLDialogElement>(null);
- useEffect(()=>{setFilter("全部");setQuery("");setSearch("");setIntro(null);setEnabled(readEnabledPreviewSkills(organizationId,memberId));setPersonal(readPersonalPreviewSkills(organizationId,memberId))},[pathname,organizationId,memberId]);
+ useEffect(()=>{setFilter("全部");setQuery("");setSearch("");setIntro(null);setEnabled(readEnabledPreviewSkills(organizationId,memberId));setPersonal(readPersonalPreviewSkills(organizationId,memberId));setGroupState(readSkillGroups(organizationId,memberId));setGroupFilter("全部分组")},[pathname,organizationId,memberId]);
  useEffect(()=>{if(intro&&!dialog.current?.open)dialog.current?.showModal();else if(!intro&&dialog.current?.open)dialog.current.close()},[intro]);
  const go=(p:string)=>{const href=root+(p?"/"+p:"");if(onSectionSelect)onSectionSelect(href);else router.push(href+"?preview=1")};
  const chat=(mode:string,name="")=>router.push("/workbench/ai/chat/new?preview=1&skillMode="+mode+"&skill="+encodeURIComponent(name));
  const toggle=(name:string)=>{const next=enabled.includes(name)?enabled.filter(x=>x!==name):[...enabled,name];setEnabled(next);try{sessionStorage.setItem(scopedKey(enabledKey,organizationId,memberId),JSON.stringify(next))}catch{}};
+ const commitGroups=(next:SkillGroups,notice:string)=>{try{saveSkillGroups(organizationId,memberId,next);setGroupState(next);setGroupNotice(notice)}catch{setGroupNotice("保存分组失败，请检查浏览器存储权限")}};
+ const addGroup=()=>{const n=groupDraft.trim();if(!n||n.length>40||groupState.groups.includes(n))return;commitGroups({...groupState,groups:[...groupState.groups,n]},"分组已创建");setGroupDraft("")};
+ const renameGroup=(old:string)=>{const n=groupRename.trim();if(!n||n.length>40||(n!==old&&groupState.groups.includes(n)))return;commitGroups({groups:groupState.groups.map(g=>g===old?n:g),assignments:Object.fromEntries(Object.entries(groupState.assignments).map(([key,val])=>[key,val===old?n:val]))},"分组已重命名");if(groupFilter===old)setGroupFilter(n);setGroupEditing("")};
+ const deleteGroup=(name:string)=>{commitGroups({groups:groupState.groups.filter(g=>g!==name),assignments:Object.fromEntries(Object.entries(groupState.assignments).map(([key,val])=>[key,val===name?"":val]))},"分组已删除，技能仍然保留");if(groupFilter===name)setGroupFilter("全部分组")};
  const title=category==="home"?"技能库":category==="official"?"官方模板":category==="mine"?"我的技能":"团队技能";
  const desc=category==="home"?"把常用的工作方法保存成技能，需要时让 AI 按要求处理任务。":category==="official"?"按需查找和启用标准技能，启用后会出现在「我的技能」，使用时再关联到会话或任务。":category==="mine"?"管理已启用的官方技能和自己保存的技能，需要时直接带入会话。":"团队技能暂未开放。你可以先使用官方模板或我的技能。";
  const selected=officialSkills.find(s=>s[0]===intro);
  const match=(s:string)=>s.toLowerCase().includes(search.toLowerCase());
  const cards=officialSkills.filter(s=>(category==="official"?(filter==="全部"||s[3]===filter):enabled.includes(s[0])&&filter!=="我的创建")&&match(s.join(" ")));
  const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
+ const mySkillRows=[...cards.map(s=>({key:"official:"+s[0],name:s[0],description:s[1],source:"官方技能",enabled:true})),...mine.map(s=>({key:"personal:"+s.name,name:s.name,description:s.description,source:"我的创建",enabled:true}))].filter(s=>groupFilter==="全部分组"||(groupFilter==="未分组"?!groupState.assignments[s.key]:groupState.assignments[s.key]===groupFilter));
  return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
  <header className={styles.hero}><div className={styles.heroCopy}><div className={styles.breadcrumb}>AI工作台 / 技能库</div><h1>技能库</h1><p>选择官方模板、我的技能或团队技能；需要时再在 AI 会话中调用。</p></div><button type="button" className={styles.primary} onClick={()=>chat("create")}>创建我的技能</button></header>
  {tabNavigation}
@@ -108,7 +128,39 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
   </div>
  </aside> </>:category==="team"?<section className={styles.empty} data-skill-management="team"><h2>暂未开放</h2><p>团队技能正在筹备中，暂不支持创建、管理、共享或调用。</p><button className={styles.primary} onClick={()=>go("")}>返回技能库</button><p>功能开放后，可在这里管理团队共享技能。</p></section>:<>
 
- <section className={styles.toolbar} data-skill-management={category}>
+ {category==="mine"?<>
+  <section className={styles.mineToolbar} data-skill-management="mine" aria-label="我的技能筛选">
+   <div className={styles.mineFilters}>
+    <nav className={styles.mineTypeTabs} aria-label="技能来源筛选">{["全部","官方技能","我的创建"].map(x=><button type="button" key={x} aria-pressed={filter===x} className={filter===x?styles.active:styles.tab} onClick={()=>setFilter(x)}>{x}</button>)}</nav>
+    <label>分组 <select aria-label="按技能分组筛选" value={groupFilter} onChange={e=>setGroupFilter(e.target.value)}><option>全部分组</option><option>未分组</option>{groupState.groups.map(g=><option key={g}>{g}</option>)}</select></label>
+    <input aria-label="搜索技能名称" value={query} placeholder="搜索技能名称" onChange={e=>{setQuery(e.target.value);setSearch(e.target.value.trim())}}/>
+   </div>
+   <div className={styles.mineActions}><button type="button" onClick={()=>{setGroupNotice("");setGroupOpen(true)}}>管理分组</button><span>共 {mySkillRows.length} 项</span></div>
+  </section>
+  <section className={styles.mineTableWrap} data-skill-management="mine-table"><table className={styles.mineTable}>
+   <thead><tr><th>技能名称</th><th>来源</th><th>所属分组</th><th>状态</th><th>操作</th></tr></thead>
+   <tbody>{mySkillRows.map(item=><tr key={item.key}>
+    <td><strong>{item.name}</strong><small>{item.description}</small></td><td>{item.source}</td>
+    <td><select aria-label={item.name+"所属分组"} value={groupState.assignments[item.key]||""} onChange={e=>commitGroups({...groupState,assignments:{...groupState.assignments,[item.key]:e.target.value}},"所属分组已更新")}><option value="">未分组</option>{groupState.groups.map(g=><option key={g}>{g}</option>)}</select></td>
+    <td><span className={styles.enabled}>已启用</span></td>
+    <td><div className={styles.mineRowActions}>
+     <button type="button" onClick={()=>chat("reference",item.name)}>去会话引用</button>
+     {item.source==="我的创建"?<button type="button" onClick={()=>chat("edit",item.name)}>编辑</button>:<button type="button" onClick={()=>toggle(item.name)}>停用</button>}
+    </div></td>
+   </tr>)}
+   {!mySkillRows.length&&<tr><td colSpan={5} className={styles.mineEmpty}>{search||filter!=="全部"||groupFilter!=="全部分组"?"没有符合条件的技能":"暂无已启用的技能"}</td></tr>}
+   </tbody>
+  </table></section>
+  {groupOpen&&<div className={styles.groupOverlay} onMouseDown={e=>{if(e.target===e.currentTarget)setGroupOpen(false)}}>
+   <section className={styles.groupDialog} role="dialog" aria-modal="true" aria-label="管理技能分组">
+    <header><h2>管理技能分组</h2><button type="button" aria-label="关闭技能分组管理" onClick={()=>setGroupOpen(false)}>×</button></header>
+    <form className={styles.groupCreate} onSubmit={e=>{e.preventDefault();addGroup()}}><input aria-label="新技能分组名称" maxLength={40} placeholder="输入分组名称" value={groupDraft} onChange={e=>setGroupDraft(e.target.value)}/><button type="submit" className={styles.primary} disabled={!groupDraft.trim()||groupState.groups.includes(groupDraft.trim())}>创建分组</button></form>
+    {groupNotice&&<p role="status">{groupNotice}</p>}
+    <div className={styles.groupList}>{groupState.groups.length?groupState.groups.map(g=><div key={g} className={styles.groupRow}>{groupEditing===g?<form className={styles.groupCreate} onSubmit={e=>{e.preventDefault();renameGroup(g)}}><input aria-label={"重命名"+g} value={groupRename} maxLength={40} onChange={e=>setGroupRename(e.target.value)}/><button className={styles.primary}>保存</button><button type="button" onClick={()=>setGroupEditing("")}>取消</button></form>:<><span>{g} · {Object.values(groupState.assignments).filter(v=>v===g).length} 项</span><div><button type="button" onClick={()=>{setGroupEditing(g);setGroupRename(g)}}>重命名</button><button type="button" onClick={()=>deleteGroup(g)}>删除分组</button></div></>}</div>):<p>暂无自定义分组</p>}</div>
+    <footer><button className={styles.primary} type="button" onClick={()=>setGroupOpen(false)}>完成</button></footer>
+   </section>
+  </div>}
+ </>:<section className={styles.toolbar} data-skill-management={category}>
  <h2 className={styles.sectionTitle}>{category==="official"?"官方技能列表":"已启用技能"}</h2>{category==="official"&&<p className={styles.sectionSub}>按分类浏览技能，查看介绍后启用需要的能力</p>}
  <div className={styles.filterRow}><nav className={styles.filterTabs} aria-label="技能筛选">{(category==="official"?["全部","标题优化","图片制作"]:["全部","官方技能","我的创建"]).map(x=><button key={x} className={filter===x?styles.active:styles.tab} aria-pressed={filter===x} onClick={()=>setFilter(x)}>{x}</button>)}</nav><form className={styles.searchForm} onSubmit={e=>{e.preventDefault();setSearch(query.trim())}}><input className={styles.search} aria-label="技能名称或关键词" placeholder="输入技能名称或关键词…" value={query} onChange={e=>setQuery(e.target.value)}/><button type="button" className={styles.secondary} onClick={()=>{setFilter("全部");setQuery("");setSearch("")}}>重置</button><button className={styles.primary}>搜索</button></form></div>
  <div className={styles.grid}>{cards.map(s=><article key={s[0]} className={styles.feature} data-skill-name={s[0]}><h3>{s[0]}</h3>{category==="mine"&&<small>来源：官方模板 · {s[4]}</small>}<p>{s[1]}</p><div className={styles.chips}><span>{s[2]}</span></div><div className={styles.cardActions}><span className={enabled.includes(s[0])?styles.enabled:styles.status}>{enabled.includes(s[0])?"已启用":"未启用"}</span><button className={styles.primary} onClick={()=>toggle(s[0])}>{enabled.includes(s[0])?"停用":"启用"}</button><button className={styles.secondary} onClick={()=>category==="official"?setIntro(s[0]):chat("reference",s[0])}>{category==="official"?"介绍":"去会话引用"}</button></div></article>)}
