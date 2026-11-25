@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import css from "./showcase-pod-management-dialog.module.css";
 import {readPodLibrary,savePodLibrary,readPodAssetImage,podAssetPreviewSrc,type PodLibraryAsset} from "./pod-asset-library";
-import {readPodPrintLineage,reviewPodPrint} from "./pod-print-lineage";
+import {readPodPrintLineage,reviewPodPrint,searchPodPrints} from "./pod-print-lineage";
 
 type Tab="我的素材库"|"产品图审核"|"灵感市场";
 type Asset=PodLibraryAsset;
@@ -50,11 +50,20 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  useEffect(()=>{if(!savePodLibrary(organizationId,memberId,assets))setNotice("浏览器会话存储空间不足，素材未能持久保存。请减少图片数量。")},[assets,organizationId,memberId]);
  useEffect(()=>{const d=ref.current;const prev=document.activeElement;d?.showModal();return()=>{d?.close();if(prev instanceof HTMLElement&&prev.isConnected)prev.focus()}},[]);
  const data=tab==="我的素材库"?assets:tab==="产品图审核"?reviews:ideas;
- const filtered=useMemo(()=>data.filter(x=>{
-  if(applied&&![x.name,x.category].join(" ").toLowerCase().includes(applied.toLowerCase()))return false;
-  if(tab==="产品图审核")return status==="全部状态"||x.status===status;
-  return category==="全部分类"||x.category===category;
- }),[data,applied,category,status,tab]);
+ const filtered=useMemo(()=>{
+  const matchedPrintKeys=tab==="产品图审核"&&applied
+   ?new Set(searchPodPrints(organizationId,memberId,applied).map(hit=>hit.print.printId+"@"+hit.print.version))
+   :null;
+  return data.filter(x=>{
+   if(applied){
+    const basic=[x.name,x.category].join(" ").toLocaleLowerCase().includes(applied.toLocaleLowerCase());
+    const linked=!!matchedPrintKeys&&!!x.lineagePrintId&&matchedPrintKeys.has(x.lineagePrintId+"@"+x.lineageVersion);
+    if(!basic&&!linked)return false;
+   }
+   if(tab==="产品图审核")return status==="全部状态"||x.status===status;
+   return category==="全部分类"||x.category===category;
+  });
+ },[data,applied,category,status,tab,organizationId,memberId]);
  const displayed=filtered.slice((page-1)*perPage,page*perPage);
  const selectTab=(next:Tab)=>{setTab(next);setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1);setPanel(null);setNotice("")};
  const open=(p:typeof panel,a?:Asset)=>{setPanel(p);setChosen(a??null);setNotice("")};
@@ -76,7 +85,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
    <div className={css.content}>
     <div className={css.topline}><div><h3>{tab}</h3><small>{tab==="我的素材库"?"上传、分类、复用个人素材":tab==="产品图审核"?"待审核 / 审核通过 / 退回重做 / 驳回":"官方创意参考与可复制生图提示词"}</small></div>{tab==="我的素材库"?<div className={css.topactions}><button type="button" onClick={()=>open("分类管理")}>分类管理</button><button type="button" className={css.primary} onClick={()=>open("上传素材")}>上传素材</button></div>:null}</div>
     <form className={css.filters} onSubmit={e=>{e.preventDefault();setApplied(search.trim());setPage(1)}}>
-      <input aria-label="搜索素材" placeholder={tab==="灵感市场"?"搜索风格 / 主题 / 元素":tab==="产品图审核"?"搜索图片名称":"搜索素材名称或分类"} value={search} onChange={e=>setSearch(e.target.value)}/>
+      <input aria-label="搜索素材" placeholder={tab==="灵感市场"?"搜索风格 / 主题 / 元素":tab==="产品图审核"?"搜索印花编号、订单号、SKU、商品、批次或名称":"搜索素材名称或分类"} value={search} onChange={e=>setSearch(e.target.value)}/>
       {tab==="产品图审核"?<select aria-label="审核状态" value={status} onChange={e=>{setStatus(e.target.value);setPage(1)}}>{["全部状态","待审核","审核通过","退回重做","驳回"].map(s=><option key={s}>{s}</option>)}</select>:<select aria-label="素材分类" value={category} onChange={e=>{setCategory(e.target.value);setPage(1)}}><option>全部分类</option>{(tab==="我的素材库"?["未分类",...categories]:[...inspirationCategories]).map(s=><option key={s}>{s}</option>)}</select>}
       <button type="button" onClick={reset}>重置</button><button type="submit" className={css.primary}>确认</button>
     </form>
@@ -84,7 +93,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
     <div className={css.libraryHint}>{tab==="我的素材库"?"我的素材库 · 共 "+filtered.length+" 张图片（当前账号演示会话）":tab==="产品图审核"?"印花审核 · 共"+filtered.length+"张（留存原图版本，暂不生成产品图）":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
     {displayed.length?<div className={css.grid}>{displayed.map(asset=><article className={css.assetCard} key={asset.id}>
        <button type="button" className={css.imageButton} onClick={()=>open("预览图片",asset)} aria-label={"预览"+asset.name}>{inspirationImageSrc(asset)?<img className={css.patternImage} src={inspirationImageSrc(asset)} alt={asset.name+"原创图案"} loading="lazy"/>:<div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div>}</button>
-       <strong title={asset.name}>{asset.name}</strong><small>{asset.status??asset.category}</small>
+       <strong title={asset.name}>{asset.name}</strong><small>{asset.status??asset.category}</small>{tab==="产品图审核"&&asset.lineagePrintId?<small title={asset.lineagePrintId+" · V"+asset.lineageVersion}>编号：{asset.lineagePrintId} · V{asset.lineageVersion}</small>:null}
        {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>{setNotice("演示入口：请在正式POD刊登工具中引用此素材。")}}>用于POD</button><button type="button" onClick={()=>removeAsset(asset.id)}>删除</button></div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
