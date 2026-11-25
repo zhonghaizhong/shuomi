@@ -137,7 +137,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
    </div>
    <div className={styles.mineActions}><button type="button" onClick={()=>{setGroupNotice("");setGroupOpen(true)}}>管理分组</button><span>共 {mySkillRows.length} 项</span></div>
   </section>
-  <section className={styles.mineTableWrap} data-skill-management="mine-table"><table className={styles.mineTable}>
+  <section className={styles.mineTableWrap}><table className={styles.mineTable}>
    <thead><tr><th>技能名称</th><th>来源</th><th>所属分组</th><th>状态</th><th>操作</th></tr></thead>
    <tbody>{mySkillRows.map(item=><tr key={item.key}>
     <td><strong>{item.name}</strong><small>{item.description}</small></td><td>{item.source}</td>
