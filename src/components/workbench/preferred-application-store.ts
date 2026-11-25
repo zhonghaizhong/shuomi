@@ -22,7 +22,7 @@ export type PreferredApplicationRecord={
 export type PreferredCandidate={
  product:OwnProductRecord;optimized?:OptimizedDataset;
  snapshot?:PreferredProductSnapshot;
- status:"可申请"|"待首次适配"|"待智能体优化"|"审核中"|"已入选";
+ status:"可申请"|"待首次适配"|"待智能体优化"|"待平台适配"|"待平台审核"|"平台审核未通过"|"审核中"|"已入选";
  lastRejected?:string;
 };
 const key=(org:string,member:string)=>"shuomi:preferred-applications-demo-v2:"+encodeURIComponent(org)+":"+encodeURIComponent(member);
@@ -51,43 +51,20 @@ function findOptimizedProduct(own:OwnProductRecord,versions:OptimizedDataset[]){
  matches.sort((a,b)=>b.dataset.version-a.dataset.version||String(b.dataset.createdAt).localeCompare(String(a.dataset.createdAt)));
  return matches[0];
 }
-/** A locally reviewed own-product demo may already contain an agent-assisted
- * optimization draft without a platform upload receipt. Keep it explicitly
- * labelled as a browser-only draft, never as a verified platform dataset. */
-function localDemoOptimizationSnapshot(product:OwnProductRecord):PreferredProductSnapshot|undefined{
- if(product.status!=="已入库"||product.missing.length||!product.skus.length||
-    product.agent!=="商品优化智能体"||!product.template.trim()||!product.originalSkus?.length)return;
- const originals=new Map(product.originalSkus.map(s=>[s.id,s]));
- const changed=product.skus.some(s=>{
-  const raw=originals.get(s.id);
-  return raw&&(raw.name.trim()!==s.name.trim()||raw.description.trim()!==s.description.trim()||
-   s.images.some((image,i)=>image!==raw.images[i]));
- });
- if(!changed||product.skus.some(s=>!s.name.trim()||!s.description.trim()||!s.images.some(Boolean)))return;
- return {
-  sourceProductId:product.id,
-  sku:product.skus.map(s=>s.skuCode||String(s.id)).join(" / "),
-  name:product.skus[0].name,
-  image:product.skus[0].images.find(Boolean)||"",
-  category:product.name,
-  batchId:product.batchId,
-  versionId:"local-demo:"+product.id,
-  versionName:"本地优化草稿（仅演示）",
-  platform:"自有商品库",
-  site:"本地演示",
-  description:product.skus[0].description,
-  skuCount:product.skus.length
- };
-}
-
 export function readPreferredCandidates(org:string,member:string):PreferredCandidate[]{
  const own=readOwnProducts(org,member),versions=readOptimizedDatasets(org,member),applications=readPreferredApplications(org,member);
  return own.map(product=>{
   const latest=applications.filter(record=>record.products.some(p=>p.sourceProductId===product.id))
    .sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
   const completed=product.status==="已入库"&&!product.missing.length&&product.skus.length>0;
-  const optimized=completed?findOptimizedProduct(product,versions):undefined;
-  const snapshot:PreferredProductSnapshot|undefined=optimized?{
+  // Eligibility requires ALL stages: own-product intake approval, agent
+  // optimization, platform-adapted dataset, and that dataset's review approval.
+  // An edited local draft alone is never sufficient.
+  const agentOptimized=Boolean(product.agent?.trim()&&product.template?.trim());
+  const optimized=completed&&agentOptimized?findOptimizedProduct(product,versions):undefined;
+  const platformAdapted=Boolean(optimized?.dataset.platform?.trim()&&optimized?.dataset.site?.trim()&&optimized?.dataset.storeName?.trim()&&optimized?.dataset.externalReceiptId?.trim()&&optimized?.dataset.uploadTaskId?.trim());
+  const platformApproved=platformAdapted&&optimized?.dataset.reviewStatus==="审核通过";
+  const snapshot:PreferredProductSnapshot|undefined=platformApproved&&optimized?{
    sourceProductId:product.id,
    sku:product.skus.map(p=>p.skuCode||String(p.id)).join(" / "),
    name:optimized.entry.name||product.name,
@@ -100,10 +77,14 @@ export function readPreferredCandidates(org:string,member:string):PreferredCandi
    site:optimized.dataset.site,
    description:optimized.entry.description||product.skus[0]?.description||"",
    skuCount:product.skus.length
-  }:completed?localDemoOptimizationSnapshot(product):undefined;
+  }:undefined;
   const status:PreferredCandidate["status"]=latest?.status==="已通过"?"已入选":
     latest?.status==="待审核"?"审核中":
-    !completed?"待首次适配":!snapshot?"待智能体优化":"可申请";
+    !completed?"待首次适配":
+    !agentOptimized||!optimized?"待智能体优化":
+    !platformAdapted?"待平台适配":
+    optimized.dataset.reviewStatus==="审核驳回"?"平台审核未通过":
+    !platformApproved?"待平台审核":"可申请";
   return {product,optimized:optimized?.dataset,snapshot,status,lastRejected:latest?.status==="未通过"?latest.reviewNote:undefined};
  });
 }
@@ -120,7 +101,7 @@ export function submitPreferredDemoApplication(org:string,member:string,productI
  validateSupply(supply);
  const candidates=readPreferredCandidates(org,member);
  const eligible=ids.map(id=>candidates.find(c=>c.product.id===id));
- if(eligible.some(c=>!c||c.status!=="可申请"||!c.snapshot))throw Error("所选商品已变化或尚未完成首次适配及智能优化，请刷新商品列表");
+ if(eligible.some(c=>!c||c.status!=="可申请"||!c.snapshot))throw Error("所选商品已变化或尚未完成智能体优化、目标平台适配及审核通过，请刷新商品列表");
  const now=new Date().toISOString();
  const row:PreferredApplicationRecord={
   id:"SQ-DEMO-"+Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,6).toUpperCase(),
