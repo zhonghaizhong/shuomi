@@ -377,7 +377,13 @@ test("knowledge creation stays visible on all tabs; personal groups manage enabl
  await dialog.getByRole("button",{name:"创建分组"}).click();
  await expect(dialog.getByText("运营资料")).toBeVisible();
  await dialog.getByRole("button",{name:"完成"}).click();
- await root.getByRole("combobox",{name:"跨境平台规则的所属分组"}).selectOption("运营资料");
+ const knowledgeRow=root.getByRole("row").filter({has:root.getByText("跨境平台规则",{exact:true})});
+ await expect(knowledgeRow.getByRole("combobox")).toHaveCount(0);
+ await knowledgeRow.getByRole("button",{name:"跨境平台规则的更多操作"}).click();
+ const moveDialog=page.getByRole("dialog",{name:"知识库更多操作"});
+ await moveDialog.getByRole("combobox",{name:"移动到分组"}).selectOption("运营资料");
+ await moveDialog.getByRole("button",{name:"确认移动"}).click();
+ await expect(knowledgeRow.getByText("运营资料",{exact:true})).toBeVisible();
  await root.getByRole("combobox",{name:"按知识库分组筛选"}).selectOption("运营资料");
  await expect(root.getByText("跨境平台规则")).toBeVisible();
  await page.reload();
@@ -471,7 +477,7 @@ test("My Knowledge shows read-only group and moves it only through More",async({
  const menu=page.getByRole("dialog",{name:"知识库更多操作"});
  await menu.getByRole("combobox",{name:"移动到分组"}).selectOption("平台规则");
  await menu.getByRole("button",{name:"确认移动"}).click();
- await expect(row.getByText("平台规则")).toBeVisible();
+ await expect(row.getByText("平台规则",{exact:true})).toBeVisible();
  await expect(row.getByRole("combobox")).toHaveCount(0);
  await row.getByRole("button",{name:/更多操作/}).click();
  await menu.getByRole("combobox",{name:"移动到分组"}).selectOption("");
