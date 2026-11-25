@@ -29,8 +29,12 @@ test("task center dual theme surfaces, grid alignment and modal visibility",asyn
    await expect(root).toBeVisible();
    const header=root.locator('[class*="taskColumns"]').first(), row=root.locator('[class*="taskRow"]').first();
    await expect(header).toBeVisible();await expect(row).toBeVisible();
-   const layout=await header.evaluate(el=>getComputedStyle(el).gridTemplateColumns);
-   expect(await row.evaluate(el=>getComputedStyle(el).gridTemplateColumns)).toBe(layout);
+   // Fractional CSS grid pixels may differ by <0.1px between row and header
+   // due to browser subpixel rounding; compare geometry, not formatted strings.
+   const layout=await header.evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(" ").map(Number.parseFloat));
+   const rowLayout=await row.evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(" ").map(Number.parseFloat));
+   expect(rowLayout).toHaveLength(layout.length);
+   for(let i=0;i<layout.length;i++)expect(Math.abs(rowLayout[i]-layout[i])).toBeLessThan(0.5);
    for(const cell of [header,row,root.locator('[class*="taskSearch"]').first()]){
     const bg=await cell.evaluate(el=>getComputedStyle(el).backgroundColor);
     const rgb=bg.match(/\d+/g)?.slice(0,3).map(Number)??[];
