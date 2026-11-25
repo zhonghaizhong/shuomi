@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import {beforeEach,expect,it} from "vitest";
-import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
+import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,applyVerifiedListingFieldSchema,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
 import {listingDemoArtSet} from "./showcase-listing-ai-images";
+import {scopedFieldKey,type PlatformFieldSchema} from "./showcase-platform-field-schema";
 import {readDemoCollectionBatches,amazonMultiVariantPhotoFixtures} from "../showcase-collection-batches";
 beforeEach(()=>sessionStorage.clear());
 const org="SM-ENT-000001",member="admin";
@@ -216,4 +217,25 @@ it("saves historical missing fields for later edits instead of discarding them w
  const completed=completeShowcaseUploadTask(org,member,record.id,{});
  expect(completed.textEdits?.legacyMissingValues).toEqual(entries);
  expect(readShowcaseUploadTasks(org,member).find(x=>x.id===record.id)?.textEdits?.legacyMissingValues).toEqual(entries);
+});
+
+it("activates a matching verified category schema, checks scoped values and archives prior edits",()=>{
+ simulateAmazonFiveListingWorkflow(args);
+ const task=readShowcaseUploadTasks(org,member).find(x=>x.status==="待补全")!;
+ const categoryPath="Shoes / Clogs";
+ const draft=saveShowcaseListingTextEdits(org,member,task.id,{categoryPath,categoryRulePending:true,skuNames:{[task.productIds[0]]:"Candidate name"}});
+ const schema:PlatformFieldSchema={platform:task.platform,region:task.region,storeType:task.storeType,categoryPath,ruleVersion:"validated-fixture-v1",source:"verified-import",
+  fields:[{id:"title-attribute",label:"平台必填标题属性",scope:"common",requirement:"required",kind:"text"}]};
+ expect(()=>completeShowcaseUploadTask(org,member,task.id,{})).toThrow();
+ const activated=applyVerifiedListingFieldSchema(org,member,task.id,schema);
+ expect(activated.textEdits?.categoryRulePending).toBe(false);
+ expect(activated.textEdits?.skuNames?.[task.productIds[0]]).toBe("Candidate name");
+ expect(activated.editSnapshots?.length).toBeGreaterThan(0);
+ expect(()=>completeShowcaseUploadTask(org,member,task.id,{})).toThrow(/平台必填/);
+ saveShowcaseListingTextEdits(org,member,task.id,{fieldValues:{[scopedFieldKey("common","title-attribute")]:"Verified text"}});
+ const entries=Object.fromEntries(task.demoProduct!.missingFields.map(f=>[f,"Reviewed"]));
+ expect(completeShowcaseUploadTask(org,member,task.id,entries).status).toBe("待审核");
+ const incompatible:PlatformFieldSchema={...schema,categoryPath:"Elsewhere"};
+ expect(()=>applyVerifiedListingFieldSchema(org,member,task.id,incompatible)).toThrow(/不一致/);
+ expect(draft.demoProduct?.sourceName).toBe(activated.demoProduct?.sourceName);
 });
