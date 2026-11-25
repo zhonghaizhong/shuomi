@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {beforeEach,describe,expect,it} from "vitest";
-import {readPreferredCandidates} from "./preferred-application-store";
+import {readPreferredCandidates,submitPreferredDemoApplication,simulatePreferredReview,completePreferredSecondaryOptimizationDemo,readDemoSelectedCatalog} from "./preferred-application-store";
 import {SHUOMI_ADAPTATION_TEMPLATE_NAME,SHUOMI_ADAPTATION_TEMPLATE_ID} from "./showcase-agent-template-store";
 import {createOwnProductBatch,readOwnProductBatches,readOwnProducts,saveOwnProduct,listOwnPendingProducts,listOwnReadyProducts,updateOwnProductAfterReview,approveOwnProductIntake,mergeOptimizedOwnProduct,applyConfirmedSourceOptimization} from "./showcase-own-product-data";
 describe("own product intake and batch visibility",()=>{
@@ -85,6 +85,30 @@ describe("own product intake and batch visibility",()=>{
   });
   approveOwnProductIntake(org,member,forged.id);
   expect(readPreferredCandidates(org,member).find(x=>x.product.id===forged.id)?.status).toBe("待申请");
+ });
+ it("only promotes approved application after its separate official secondary optimization",()=>{
+  const org="org-second",member="user-1";
+  const batch=createOwnProductBatch(org,member,"二次优化测试");
+  const product=saveOwnProduct(org,member,batch.id,{
+   name:"待申请商品",source:"上传资料",status:"待审核",missing:[],
+   agent:"",template:"",skus:[{id:1,name:"商品主款",description:"商品资料",images:["image"]}]
+  });
+  approveOwnProductIntake(org,member,product.id);
+  expect(readPreferredCandidates(org,member).find(c=>c.product.id===product.id)?.status).toBe("待申请");
+  const application=submitPreferredDemoApplication(org,member,[product.id],{
+   stock:"200",moq:"1",dispatch:"48小时内",origin:"浙江",pricing:"",returns:"质量问题可换货"
+  });
+  expect(readPreferredCandidates(org,member).find(c=>c.product.id===product.id)?.status).toBe("审核中");
+  expect(readDemoSelectedCatalog(org,member)).toHaveLength(0);
+  simulatePreferredReview(org,member,application.id,"已通过");
+  expect(readPreferredCandidates(org,member).find(c=>c.product.id===product.id)?.status).toBe("待二次优化");
+  expect(readDemoSelectedCatalog(org,member)).toHaveLength(0);
+  const optimized=completePreferredSecondaryOptimizationDemo(org,member,application.id);
+  expect(optimized.secondaryOptimization).toBe("已完成");
+  expect(optimized.products[0].versionName).toContain("硕米适配");
+  expect(readPreferredCandidates(org,member).find(c=>c.product.id===product.id)?.status).toBe("已入选");
+  expect(readDemoSelectedCatalog(org,member)).toHaveLength(1);
+  expect(readOwnProducts(org,member)[0].skus[0].description).toBe("商品资料");
  });
  it("protects price, stock, SKU identity, mixed price text, and intake metadata during optimization",()=>{
   const b=createOwnProductBatch("org-A","user-1","迭代商品");
