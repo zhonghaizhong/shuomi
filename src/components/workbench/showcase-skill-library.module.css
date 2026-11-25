@@ -215,3 +215,46 @@
 .heroCopy{display:block;flex:1 1 auto;min-width:0}
 .shell>.hero>.primary{flex:0 0 auto;min-height:38px;padding:8px 16px;white-space:nowrap}
 @media(max-width:700px){.shell>.hero{align-items:flex-start;flex-wrap:wrap;gap:12px}.shell>.hero>.primary{margin-left:auto}}
+
+/* My Skills: fixed single-row controls and data-driven table (including empty state). */
+.mineToolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;min-height:66px;padding:12px 16px;background:var(--s-bg);border:1px solid var(--s-line);border-radius:7px;min-width:0}
+.mineFilters,.mineActions{display:flex;align-items:center;gap:10px;min-width:0}
+.mineFilters{flex-wrap:nowrap}
+.mineTypeTabs{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.mineTypeTabs button{min-height:36px;padding:6px 11px}
+.mineFilters label{display:flex;align-items:center;gap:7px;white-space:nowrap;color:var(--s-muted)}
+.mineFilters select,.mineFilters input,.groupDialog input,.mineTable td select{border:1px solid var(--s-line);border-radius:6px;background:var(--s-panel);color:var(--s-txt);font:inherit;font-size:14px;min-height:36px;padding:6px 9px;min-width:0}
+.mineFilters select{width:132px}
+.mineFilters input{width:220px;max-width:100%}
+.mineFilters input::placeholder{color:var(--s-muted)}
+.mineActions{justify-content:flex-end;white-space:nowrap}
+.mineActions button,.mineRowActions button{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--s-line);background:var(--s-panel);color:var(--s-txt);font:inherit;font-size:14px;min-height:36px;padding:7px 12px;border-radius:6px;cursor:pointer}
+.mineActions span{font-size:13px;color:var(--s-muted)}
+.mineTableWrap{min-width:0;border:1px solid var(--s-line);border-radius:7px;background:var(--s-bg);overflow:visible}
+.mineTable{width:100%;border-collapse:collapse;table-layout:fixed;text-align:left;min-width:0;font-size:14px}
+.mineTable th{padding:12px 15px;white-space:nowrap;background:var(--s-panel);font-weight:650;color:var(--s-txt)}
+.mineTable td{padding:12px 15px;border-top:1px solid var(--s-line);vertical-align:middle;color:var(--s-txt)}
+.mineTable tbody tr:nth-child(even){background:var(--s-panel)}
+.mineTable th:nth-child(1){width:34%}.mineTable th:nth-child(2){width:13%}.mineTable th:nth-child(3){width:20%}.mineTable th:nth-child(4){width:10%}.mineTable th:nth-child(5){width:23%}
+.mineTable td:first-child strong{display:block;line-height:1.5;color:var(--s-txt)}
+.mineTable td:first-child small{display:block;margin-top:4px;color:var(--s-muted);font-size:12px;overflow-wrap:anywhere}
+.mineTable td select{width:100%;max-width:190px}
+.mineRowActions{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.mineEmpty{text-align:center;color:var(--s-muted)!important;padding:28px 14px!important}
+.groupOverlay{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:16px;background:#080a17ba}
+.groupDialog{display:grid;gap:14px;box-sizing:border-box;width:min(600px,100%);max-height:90dvh;overflow-y:auto;background:var(--s-bg);border:1px solid var(--s-line);border-radius:8px;padding:22px;color:var(--s-txt);box-shadow:0 18px 50px #0005}
+.groupDialog header,.groupDialog footer{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.groupDialog footer{justify-content:flex-end}
+.groupDialog h2{margin:0;font-size:19px}
+.groupDialog button{border:1px solid var(--s-line);border-radius:6px;padding:7px 12px;min-height:36px;background:var(--s-panel);color:var(--s-txt);font:inherit;font-size:14px;cursor:pointer}
+.groupDialog button.primary{background:#7367f0;border-color:#7367f0;color:#fff}
+.groupDialog button:disabled{opacity:.5;cursor:not-allowed}
+.groupCreate{display:flex;gap:9px;align-items:center;min-width:0}
+.groupCreate input{flex:1;min-width:0}
+.groupList{display:grid;gap:8px;max-height:42dvh;overflow-y:auto}
+.groupList>p,.groupDialog>p{margin:0;color:var(--s-muted);font-size:13px}
+.groupRow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--s-line);border-radius:6px;background:var(--s-panel)}
+.groupRow>div{display:flex;gap:8px;align-items:center}
+.groupRow form{width:100%}
+@media(max-width:1260px){.mineToolbar{grid-template-columns:minmax(0,1fr)}.mineActions{justify-content:flex-end}.mineTableWrap{overflow-x:auto}.mineTable{min-width:790px}}
+@media(max-width:700px){.mineFilters{flex-wrap:wrap;gap:8px}.mineFilters input{width:100%;flex:1 1 100%}.mineTypeTabs{width:100%}.groupRow,.groupCreate{flex-wrap:wrap}.groupDialog{padding:16px}}
