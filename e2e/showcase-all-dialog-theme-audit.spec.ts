@@ -87,11 +87,13 @@ for(const c of cases){
      ]));
     });
     await page.reload();
+    // Confirm test-only conversation hydration before switching themes.
+    await expect(page.locator(c.scope??"main.showcase-content").getByRole("button",{name:c.menu})).toBeVisible();
    }
    await setTheme(page,theme);
    let root:Locator=page.locator("main.showcase-content");
    if(c.scope)root=root.locator(c.scope).first();
-   if(c.menu)await root.getByRole("button",{name:c.menu}).click();
+   if(c.menu){await expect(root.getByRole("button",{name:c.menu})).toBeVisible();await root.getByRole("button",{name:c.menu}).click();}
    await root.getByRole(c.menu?"menuitem":"button",{name:c.trigger,exact:!["新建任务"].includes(c.trigger)}).first().click();
    const dialog=c.dialog?page.getByRole(c.kind??"dialog",{name:c.dialog}):page.getByRole(c.kind??"dialog").first();
    const evidence=await checkDialog(page,dialog,theme,c.name);
