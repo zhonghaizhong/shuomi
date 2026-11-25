@@ -1,6 +1,23 @@
 import {expect,test} from "@playwright/test";
 const routes=["","/running","/pending","/completed","/errors","/scheduled"];
+// Seed only the isolated Playwright browser session. Real user data remains empty.
+async function seedTaskTestData(page:import("@playwright/test").Page){
+ await page.goto("/shuomi/#/workbench/ai/tasks");
+ await page.evaluate(()=>{
+  const now="演示时间";
+  const rows=[
+   {id:"e2e-pending",name:"美国站潜力商品分析",description:"等待审核",scope:"美国站",state:"pending",time:now},
+   {id:"e2e-running",name:"测试进行中任务",description:"执行中",scope:"演示店铺",state:"running",progress:30,time:now},
+   {id:"e2e-completed",name:"测试已完成任务",description:"已完成",scope:"演示店铺",state:"completed",progress:100,time:now},
+   {id:"e2e-error",name:"测试异常任务",description:"授权异常",scope:"演示店铺",state:"errors",time:now},
+   {id:"e2e-plan",name:"每日店铺经营简报",description:"演示定时计划",scope:"演示店铺",state:"scheduled",frequency:"每天 08:30",time:now}
+  ];
+  sessionStorage.setItem("shuomi-task-center-demo-v1",JSON.stringify(rows));
+ });
+ await page.reload();
+}
 test("task center dual theme surfaces, grid alignment and modal visibility",async({page})=>{
+ await seedTaskTestData(page);
  test.setTimeout(120000);
  for(const theme of ["dark","light"]){
   for(const route of routes){
@@ -37,6 +54,7 @@ test("task center dual theme surfaces, grid alignment and modal visibility",asyn
 });
 
 test("task lifecycle preserves review conversation, handles retry and retains completed result",async({page})=>{
+ await seedTaskTestData(page);
  const base="/shuomi/#/workbench/ai/tasks";
  await page.goto(base+"/pending");
  await page.getByRole("button",{name:"去确认",exact:true}).first().click();
@@ -70,6 +88,7 @@ test("task lifecycle preserves review conversation, handles retry and retains co
  await expect(dialog.getByText("处理记录",{exact:true})).toBeVisible();
 });
 test("schedule creates a separate execution record and exposes it in plan history",async({page})=>{
+ await seedTaskTestData(page);
  const base="/shuomi/#/workbench/ai/tasks";
  await page.goto(base+"/scheduled");
  const plan=page.locator('[class*="taskRow"]').filter({hasText:"每日店铺经营简报"});
