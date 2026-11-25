@@ -75,7 +75,7 @@ test("preferred application reads owned adapted products and promotes only demo-
  await page.evaluate(({org,member})=>{
   const now=new Date().toISOString();
   const own=[
-   {id:"OWN-PREF-A",batchId:"B-PREF",name:"测试优选家居收纳盒",source:"上传资料",createdAt:now,checkedAt:now,status:"已入库",missing:[],skus:[{id:1,name:"家居收纳盒",skuCode:"PREF-A",images:[],description:"收纳盒",price:"29",stock:100}],agent:"SHEIN",template:"测试"},
+   {id:"OWN-PREF-A",batchId:"B-PREF",name:"测试优选家居收纳盒",source:"上传资料",createdAt:now,checkedAt:now,status:"已入库",missing:[],originalSkus:[{id:1,name:"原家居收纳盒",skuCode:"PREF-A",images:["https://example.com/a.jpg"],description:"收纳盒",price:"29",stock:100}],skus:[{id:1,name:"AI优化家居收纳盒",skuCode:"PREF-A",images:["https://example.com/a.jpg"],description:"优化后的收纳盒",price:"29",stock:100}],agent:"商品优化智能体",template:"测试模板"},
    {id:"OWN-PREF-B",batchId:"B-PREF",name:"尚未优化的测试产品",source:"上传资料",createdAt:now,checkedAt:now,status:"已入库",missing:[],skus:[{id:2,name:"待优化",skuCode:"PREF-B",images:[],description:"待优化产品"}],agent:"",template:""},
    {id:"OWN-PREF-C",batchId:"B-PREF",name:"尚未完成首次适配",source:"上传资料",createdAt:now,checkedAt:now,status:"待审核",missing:[],skus:[{id:3,name:"待适配",skuCode:"PREF-C",images:[],description:"待适配"}],agent:"",template:""}
   ];
@@ -182,54 +182,36 @@ test("cargo application page uses aligned, colorful yet theme-consistent workflo
  }
 });
 
-test("preferred application requires platform adaptation and approval after agent optimization",async({page})=>{
+test("preferred application is unlocked by Shuomi own-product intake review, not external platform review",async({page})=>{
  await page.goto(url("/supply/applications"));
  const root=page.locator('[data-preferred-application="unified"]');
  const scope=await root.evaluate(el=>({org:el.getAttribute("data-organization")!,member:el.getAttribute("data-member")!}));
  await page.evaluate(({org,member})=>{
-  const key="shuomi:own-product-records-v1:"+org+":"+member;
   const now=new Date().toISOString();
-  const make=(id:string,approved:boolean)=>({
-   id,batchId:"B-LOCAL-TEST",name:id,source:"上传资料",createdAt:now,checkedAt:now,
-   status:approved?"已入库":"待审核",missing:[],
-   agent:"商品优化智能体",template:"测试模板",
+  const make=(id:string,status:"已入库"|"待审核",optimized:boolean)=>({
+   id,batchId:"B-SHUOMI-TEST",name:id,source:"上传资料",createdAt:now,checkedAt:now,
+   status,missing:[],agent:optimized?"商品优化智能体":"",template:optimized?"测试模板":"",
    originalSkus:[{id:1,name:"原始标题",description:"原始商品描述",images:["https://example.com/product.jpg"],skuCode:id}],
-   skus:[{id:1,name:"已优化标题",description:"整理后的商品描述",images:["https://example.com/product.jpg"],skuCode:id}]
+   skus:[{id:1,name:optimized?"优化标题":"原始标题",description:optimized?"优化商品描述":"原始商品描述",images:["https://example.com/product.jpg"],skuCode:id}]
   });
-  sessionStorage.setItem(key,JSON.stringify([make("LOCAL-READY",true),make("LOCAL-PENDING",false)]));
+  sessionStorage.setItem("shuomi:own-product-records-v1:"+org+":"+member,JSON.stringify([
+   make("SHUOMI-REVIEW-PENDING","待审核",true),
+   make("SHUOMI-READY","已入库",true),
+   make("SHUOMI-NOT-OPTIMIZED","已入库",false)
+  ]));
   sessionStorage.removeItem("shuomi:optimized-datasets-v1:"+org+":"+member);
   sessionStorage.removeItem("shuomi:preferred-applications-demo-v2:"+encodeURIComponent(org)+":"+encodeURIComponent(member));
  },scope);
  await page.reload();
- const ready=root.locator('[data-product-id="LOCAL-READY"]');
- await expect(ready.getByRole("checkbox")).toBeDisabled();
- await expect(ready.getByText("待智能优化")).toBeVisible();
- await expect(root.locator('[data-product-id="LOCAL-PENDING"]').getByRole("checkbox")).toBeDisabled();
- // A persisted optimized version alone does not prove platform review approval.
- await page.evaluate(({org,member})=>{
-  const key="shuomi:optimized-datasets-v1:"+org+":"+member;
-  const now=new Date().toISOString();
-  const record={
-   id:"OPT-LOCAL",name:"商品优化智能体版本",createdAt:now,version:1,
-   sourceKind:"自有商品库",sourceBatchId:"B-LOCAL-TEST",sourceBatchName:"测试批次",
-   platform:"SHEIN",site:"美国站",language:"英语",storeName:"测试店铺",
-   uploadTaskId:"TASK-LOCAL",externalReceiptId:"RECEIPT-LOCAL",acceptedAt:now,
-   reviewStatus:"待审核",listingStatus:"未上架",
-   products:[{sourceProductId:"LOCAL-READY",name:"平台适配后商品",images:[],description:"商品描述",skuCodes:["LOCAL-READY"]}]
-  };
-  sessionStorage.setItem(key,JSON.stringify([record]));
- },scope);
- await page.reload();
- await expect(ready.getByText("待平台审核")).toBeVisible();
- await expect(ready.getByRole("checkbox")).toBeDisabled();
- await page.evaluate(({org,member})=>{
-  const key="shuomi:optimized-datasets-v1:"+org+":"+member;
-  const entries=JSON.parse(sessionStorage.getItem(key)||"[]");
-  entries[0].reviewStatus="审核通过";
-  sessionStorage.setItem(key,JSON.stringify(entries));
- },scope);
- await page.reload();
- await expect(ready.getByRole("checkbox")).toBeEnabled();
- await ready.getByRole("button",{name:"发起申请"}).click();
+ const approved=root.locator('[data-product-id="SHUOMI-READY"]');
+ const pending=root.locator('[data-product-id="SHUOMI-REVIEW-PENDING"]');
+ const noOptimization=root.locator('[data-product-id="SHUOMI-NOT-OPTIMIZED"]');
+ await expect(approved.getByRole("checkbox")).toBeEnabled();
+ await expect(approved.getByText("硕米入库审核通过")).toBeVisible();
+ await expect(pending.getByRole("checkbox")).toBeDisabled();
+ await expect(pending.getByText("硕米入库待审核")).toBeVisible();
+ await expect(noOptimization.getByRole("checkbox")).toBeDisabled();
+ // External-platform receipts or review states are NOT required.
+ await approved.getByRole("button",{name:"发起申请"}).click();
  await expect(page.getByRole("dialog",{name:"发起优选申请"})).toBeVisible();
 });
