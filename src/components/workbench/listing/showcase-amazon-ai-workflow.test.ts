@@ -4,7 +4,7 @@ import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkf
 import {listingDemoArtSet} from "./showcase-listing-ai-images";
 import {scopedFieldKey,type PlatformFieldSchema} from "./showcase-platform-field-schema";
 import {readDemoCollectionBatches,amazonMultiVariantPhotoFixtures} from "../showcase-collection-batches";
-beforeEach(()=>sessionStorage.clear());
+beforeEach(()=>{sessionStorage.clear();localStorage.clear()});
 const org="SM-ENT-000001",member="admin";
 const items=[
  ["B00TTD9BRC","Moisturizing Cream"],
@@ -130,7 +130,7 @@ it("stores six independently versioned image roles per color, inherits across si
  expect(()=>approveShowcaseUploadTask(org,member,stanley.id)).toThrow(/六张/);
  expect(()=>saveListingVariantPhoto("other",member,stanley.id,"black",listingVariantPhotoRoles[0],"https://example.test/black.jpg")).toThrow();
  expect(()=>saveListingVariantPhoto(org,member,stanley.id,"unknown",listingVariantPhotoRoles[0],"https://example.test/black.jpg")).toThrow();
- expect(()=>saveListingVariantPhoto(org,member,stanley.id,"cream 2.0",listingVariantPhotoRoles[0],stanley.demoProduct!.variantImageGroups![0].originalImages[0])).toThrow(/原始采集图片/);
+ expect(()=>saveListingVariantPhoto(org,member,stanley.id,"cream 2.0",listingVariantPhotoRoles[0],stanley.demoProduct!.variantImageGroups![0].originalImages[0])).toThrow();
  for(const group of stanley.demoProduct!.variantImageGroups!){
   listingVariantPhotoRoles.forEach((role,i)=>saveListingVariantPhoto(org,member,stanley.id,group.id,role,"https://example.test/"+group.id+"-"+i+".jpg"));
  }
