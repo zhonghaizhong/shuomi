@@ -43,7 +43,8 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
   const [projectName,setProjectName]=useState(projectEntry.template?.name||"");
   const [skillEntry] = useState(()=>{const query=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const mode=query.get("skillMode");const name=query.get("skill")||"";return {mode,name}});
   const [taskEntry] = useState(()=>new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?")).get("taskMode"));
-  const [modeIndex, setModeIndex] = useState(taskEntry==="task"?6:taskEntry==="scheduled"?1:projectEntry.mode==="create"?2:skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
+  const [knowledgeEntry] = useState(()=>new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?")).get("knowledgeMode"));
+  const [modeIndex, setModeIndex] = useState(taskEntry==="task"?6:taskEntry==="scheduled"?1:knowledgeEntry==="create"?3:projectEntry.mode==="create"?2:skillEntry.mode==="create"||skillEntry.mode==="edit"?4:0);
   const [draft, setDraft] = useState(skillEntry.mode==="edit"&&readPersonalPreviewSkills(organizationId,memberId).some(s=>s.name===skillEntry.name)?"编辑技能："+skillEntry.name:projectEntry.template?projectEntry.template.description:projectEntry.project?"继续推进："+projectEntry.project.name:"");
   const [drawer, setDrawer] = useState<"resources" | "stores" | null>(null);
   const [resourceTab, setResourceTab] = useState("我的知识库");
