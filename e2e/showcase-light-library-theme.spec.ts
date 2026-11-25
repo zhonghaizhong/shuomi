@@ -367,6 +367,8 @@ test("knowledge creation stays visible on all tabs; personal groups manage enabl
  await page.goto("/shuomi/#/workbench/ai/knowledge/mine");
  const root=page.locator("[data-my-knowledge-groups]");
  await expect(root).toBeVisible();
+ await expect(root.getByRole("table")).toBeVisible();
+ await expect(root.getByRole("textbox",{name:"搜索知识库名称"})).toBeVisible();
  await expect(root.getByText("跨境平台规则")).toBeVisible();
  await root.getByRole("button",{name:"管理分组"}).click();
  const dialog=page.getByRole("dialog",{name:"管理知识库分组"});
@@ -412,14 +414,15 @@ test("archived project categories come from archived records and are hidden when
  await expect(root.getByText("广告复盘")).toBeVisible();
 });
 
-test("empty My Knowledge shows one creation action and no irrelevant group filters",async({page})=>{
+test("empty My Knowledge keeps only the global create entry and one official-knowledge link",async({page})=>{
  await page.goto("/shuomi/#/workbench/ai/knowledge/mine");
  const root=page.locator("[data-my-knowledge-groups]");
  await expect(root).toBeVisible();
- await expect(root.getByRole("heading",{name:"我的知识库"})).toBeVisible();
- await expect(root.getByRole("button",{name:"＋ 添加官方知识"})).toBeVisible();
- await expect(root.locator('[class*="filters"]')).toHaveCount(0);
- await expect(root.getByRole("button",{name:"浏览官方知识"})).toHaveCount(0);
+ await expect(page.getByRole("heading",{name:"我的知识库"})).toBeVisible();
+ await expect(page.getByRole("button",{name:"去创建知识库"})).toBeVisible();
+ await expect(root.getByRole("button",{name:"去官方知识库添加"})).toBeVisible();
+ await expect(root.locator('[class*="toolbar"]')).toHaveCount(0);
  await expect(root.getByRole("button",{name:"管理分组"})).toHaveCount(0);
- await expect(root.getByText("暂时没有知识库")).toBeVisible();
+ await expect(root.getByRole("button",{name:"添加官方知识",exact:true})).toHaveCount(0);
+ await expect(root.getByText("暂无知识库")).toBeVisible();
 });
