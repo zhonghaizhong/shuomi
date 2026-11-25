@@ -6,7 +6,7 @@ export type OwnProductSku={id:number;name:string;description:string;images:strin
 export type OwnProductRecord={
  id:string;batchId:string;name:string;source:"上传资料"|"导入表格"|"商品链接"|"API 接入";
  createdAt:string;checkedAt:string;status:"入库待完善"|"待审核"|"已入库";
- missing:string[];skus:OwnProductSku[];originalSkus?:OwnProductSku[];agent:string;template:string;templateId?:string;demoImageSource?:string;
+ missing:string[];skus:OwnProductSku[];originalSkus?:OwnProductSku[];agent:string;template:string;templateId?:string;optimizationMode?:"shuomi-template-demo";demoImageSource?:string;
 };
 export type OwnProductBatch={id:string;name:string;createdAt:string;productCount:number};
 const batchKey=(org:string,member:string)=>"shuomi:own-product-batches-v1:"+org+":"+member;
@@ -37,7 +37,15 @@ export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omi
  if(!entry.skus.length)throw Error("请至少添加一个 SKU");
  const time=new Date().toLocaleString("zh-CN",{hour12:false});
  const templateId=entry.agent===SHUOMI_ADAPTATION_AGENT&&entry.template===SHUOMI_ADAPTATION_TEMPLATE_NAME&&readAgentPreviewTemplates(org,member,entry.agent).some(t=>t.id===SHUOMI_ADAPTATION_TEMPLATE_ID)?SHUOMI_ADAPTATION_TEMPLATE_ID:undefined;
-  const product:OwnProductRecord={...entry,templateId,skus:cloneSkus(entry.skus),originalSkus:cloneSkus(entry.skus),id:"OWN-P-"+crypto.randomUUID(),batchId,createdAt:time,checkedAt:time};
+  // Preview-only deterministic Shuomi field adaptation. This is NOT an AI
+  // inference or a verified production run. Keep the untouched source SKUs.
+  const originalSkus=cloneSkus(entry.skus);
+  const adaptedSkus=templateId===SHUOMI_ADAPTATION_TEMPLATE_ID?originalSkus.map(sku=>{
+   const description=sku.description.trim().replace(/^商品简介[：:]\\s*/,"");
+   return {...sku,name:sku.name.trim().replace(/\\s+/g," "),description:description?"商品简介："+description:""};
+  }):cloneSkus(entry.skus);
+  const optimizationMode=templateId===SHUOMI_ADAPTATION_TEMPLATE_ID?"shuomi-template-demo" as const:undefined;
+  const product:OwnProductRecord={...entry,templateId,optimizationMode,skus:adaptedSkus,originalSkus,id:"OWN-P-"+crypto.randomUUID(),batchId,createdAt:time,checkedAt:time};
  const current=readOwnProducts(org,member);
  // Keep prior products intact if session storage is full; no success without the actual data.
  sessionStorage.setItem(productKey(org,member),JSON.stringify([product,...current]));
