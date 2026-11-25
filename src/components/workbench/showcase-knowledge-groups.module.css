@@ -29,7 +29,9 @@
 .table th:nth-child(4),.table td:nth-child(4){width:17%}
 .table th:nth-child(5),.table td:nth-child(5){width:23%}
 .table td strong{display:block;font-weight:650;color:var(--kg-text)}
-.table td select{height:36px;min-height:36px;max-width:190px;width:100%;padding:5px 8px}
+.groupLabel{display:inline-flex;align-items:center;max-width:100%;font-weight:500;color:var(--kg-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dialog .editField select{width:100%;height:38px;padding:6px 10px}
+
 .rowActions{display:flex;align-items:center;justify-content:flex-start;gap:7px;min-width:0}
 .rowActions button{min-height:34px;padding:6px 11px}
 .empty{display:grid;justify-items:center;gap:10px;padding:26px 16px;border:1px solid var(--kg-line);border-radius:7px;background:var(--kg-surface);text-align:center}
