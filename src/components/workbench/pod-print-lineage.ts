@@ -18,12 +18,12 @@ export type PodPrintReview={
   status:PodPrintReviewStatus;updatedAt:string;reviewNote?:string;
 };
 export type PodProductPrintBinding={
-  productId:string;variantId:string;printId:string;printVersion:number;
+  productId:string;variantId:string;sku?:string;printId:string;printVersion:number;
   assetPath:string;sha256:string;createdAt:string;
 };
 export type PodOrderLinePrintSnapshot={
   orderId:string;orderLineId:string;platform:string;externalOrderId:string;
-  productId:string;variantId:string;printId:string;printVersion:number;
+  productId:string;variantId:string;sku?:string;printId:string;printVersion:number;
   assetPath:string;sha256:string;frozenAt:string;
 };
 export type PodPrintLineageState={
@@ -75,28 +75,28 @@ export function reviewPodPrint(organizationId:string,memberId:string,printId:str
  return store(organizationId,memberId,{...current,reviews:current.reviews.map(x=>x===review?
   {...x,status,reviewNote:note,updatedAt:new Date().toISOString()}:x)});
 }
-export function bindPodPrintToVariant(organizationId:string,memberId:string,productId:string,variantId:string,printId:string,version:number){
+export function bindPodPrintToVariant(organizationId:string,memberId:string,productId:string,variantId:string,printId:string,version:number,sku?:string){
  const current=readPodPrintLineage(organizationId,memberId);
  const print=current.prints.find(x=>x.printId===printId&&x.version===version);
  const review=current.reviews.find(x=>x.printId===printId&&x.version===version);
  if(!print||review?.status!=="审核通过")throw Error("印花尚未通过审核，不能绑定商品变体");
  if(!productId.trim()||!variantId.trim())throw Error("商品和变体编号不能为空");
- const binding:PodProductPrintBinding={productId,variantId,printId,printVersion:version,
+ const binding:PodProductPrintBinding={productId,variantId,sku,printId,printVersion:version,
   assetPath:print.assetPath,sha256:print.sha256,createdAt:new Date().toISOString()};
  const bindings=current.bindings.filter(x=>x.productId!==productId||x.variantId!==variantId);
  return store(organizationId,memberId,{...current,bindings:[...bindings,binding]});
 }
 /** On order creation, freeze the precise file/version so later product edits do not rewrite history. */
 export function freezePodOrderLine(organizationId:string,memberId:string,ids:{
- orderId:string;orderLineId:string;platform:string;externalOrderId:string;productId:string;variantId:string;
+ orderId:string;orderLineId:string;platform:string;externalOrderId:string;productId:string;variantId:string;sku?:string;
 }):PodOrderLinePrintSnapshot{
  const current=readPodPrintLineage(organizationId,memberId);
  const exists=current.orders.find(x=>x.orderId===ids.orderId&&x.orderLineId===ids.orderLineId);
  if(exists)return exists;
- if(Object.values(ids).some(x=>!x.trim()))throw Error("订单、平台、商品和变体编号不能为空");
+ if(["orderId","orderLineId","platform","externalOrderId","productId","variantId"].some(k=>!ids[k as keyof typeof ids]?.trim()))throw Error("订单、平台、商品和变体编号不能为空");
  const binding=current.bindings.find(x=>x.productId===ids.productId&&x.variantId===ids.variantId);
  if(!binding)throw Error("该商品变体未绑定审核通过的印花，不能创建印花履约记录");
- const snapshot:PodOrderLinePrintSnapshot={...ids,printId:binding.printId,printVersion:binding.printVersion,
+ const snapshot:PodOrderLinePrintSnapshot={...ids,sku:ids.sku||binding.sku,printId:binding.printId,printVersion:binding.printVersion,
   assetPath:binding.assetPath,sha256:binding.sha256,frozenAt:new Date().toISOString()};
  store(organizationId,memberId,{...current,orders:[...current.orders,snapshot]});
  return snapshot;
@@ -119,7 +119,7 @@ export function findPodPrintForOrderLine(organizationId:string,memberId:string,o
  */
 export type PodPrintSearchHit={
  print:PodPrintVersion;reviewStatus:PodPrintReviewStatus|"未知";
- productIds:string[];variantIds:string[];orderIds:string[];
+ productIds:string[];variantIds:string[];skus:string[];orderIds:string[];
  externalOrderIds:string[];platforms:string[];
 };
 export function searchPodPrints(organizationId:string,memberId:string,query:string):PodPrintSearchHit[]{
@@ -133,13 +133,14 @@ export function searchPodPrints(organizationId:string,memberId:string,query:stri
    print,reviewStatus:review?.status??"未知",
    productIds:[...new Set([...bindings.map(x=>x.productId),...orders.map(x=>x.productId)])],
    variantIds:[...new Set([...bindings.map(x=>x.variantId),...orders.map(x=>x.variantId)])],
+   skus:[...new Set([...bindings.map(x=>x.sku),...orders.map(x=>x.sku)].filter((x):x is string=>!!x))],
    orderIds:[...new Set(orders.map(x=>x.orderId))],
    externalOrderIds:[...new Set(orders.map(x=>x.externalOrderId))],
    platforms:[...new Set(orders.map(x=>x.platform))]
   };
   const fields=[print.printId,print.printId+"@"+print.version,print.name,
    print.originPrintId,print.sourceBatchId,print.assetPath,print.sha256,
-   ...hit.productIds,...hit.variantIds,...hit.orderIds,...hit.externalOrderIds,...hit.platforms];
+   ...hit.productIds,...hit.variantIds,...hit.skus,...hit.orderIds,...hit.externalOrderIds,...hit.platforms];
   return {hit,matches:!needle||fields.some(value=>value.toLocaleLowerCase().includes(needle))};
  }).filter(x=>x.matches).map(x=>x.hit);
 }
