@@ -78,6 +78,16 @@ for(const c of cases){
   test(c.name+" / "+theme,async({page},testInfo)=>{
    await page.setViewportSize({width:1440,height:900});
    await page.goto(base+c.route);
+   // Only the browser-local test page receives a conversation fixture.
+   // The user's actual cleared chat history must remain empty.
+   if(c.menu){
+    await page.evaluate(()=>{
+     sessionStorage.setItem("shuomi-showcase-chat-collections-v1",JSON.stringify([
+      {id:"e2e-dialog-conversation",title:"一号店转化率下降分析",description:"测试弹窗",time:"刚刚",favorite:false}
+     ]));
+    });
+    await page.reload();
+   }
    await setTheme(page,theme);
    let root:Locator=page.locator("main.showcase-content");
    if(c.scope)root=root.locator(c.scope).first();
