@@ -2,7 +2,7 @@
 import type {ReactNode} from "react";
 import {useEffect,useState,type FormEvent} from "react";
 import {createPortal} from "react-dom";
-import {ListChecks,Activity,CheckCircle2,AlertTriangle,CalendarClock,MessageSquare,Workflow,Target,FileCheck2} from "lucide-react";
+import {ListChecks,MessageSquare,Workflow,Target,FileCheck2} from "lucide-react";
 import styles from "./demo-workbench-preview.module.css";
 import extra from "./showcase-task-center.module.css";
 import chat from "./chat-new-preview.module.css";
