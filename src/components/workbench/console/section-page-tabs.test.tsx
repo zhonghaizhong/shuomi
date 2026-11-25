@@ -44,13 +44,13 @@ it("renders new conversation as a fourth equal-status tab and switches locally w
  expect(screen.getByRole("button",{name:"＋ 新建会话"})).toHaveAttribute("aria-current","page");
 });
 
-it("shows six equal-status project tabs including 我的项目 and switches within the page",()=>{
+it("shows four project tabs and switches within the page",()=>{
  const select=vi.fn();
  const {rerender}=render(<SectionPageTabs section="projects" activeHref="/workbench/ai/projects" onSelect={select}/>);
  const navigation=screen.getByRole("navigation",{name:"项目中心分类"});
  const buttons=withinProjectButtons(navigation);
- expect(buttons.map(tab=>tab.textContent)).toEqual(["项目总览","我的项目","进行中项目","最近访问","项目模板","已归档"]);
- expect(buttons).toHaveLength(6);
+ expect(buttons.map(tab=>tab.textContent)).toEqual(["项目指南","项目模板","我的项目","已归档"]);
+ expect(buttons).toHaveLength(4);
  expect(buttons[0]).toHaveAttribute("aria-current","page");
  fireEvent.click(screen.getByRole("button",{name:"我的项目"}));
  expect(select).toHaveBeenCalledWith("/workbench/ai/projects/mine");
