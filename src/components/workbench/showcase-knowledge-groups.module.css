@@ -52,3 +52,6 @@
 .editField textarea{min-height:100px;resize:vertical;padding:10px}
 @media(max-width:1050px){.toolbar{grid-template-columns:minmax(0,1fr)}.actions{justify-content:flex-end}.tableWrap{overflow-x:auto!important;overflow-y:visible!important}.table{min-width:760px}}
 @media(max-width:650px){.toolbar{padding:12px}.leftFilters{flex-wrap:wrap;gap:8px}.leftFilters input{flex:1 1 100%;width:100%;min-width:0}.actions{justify-content:flex-end}.group,.create{flex-wrap:wrap}.dialog{padding:16px}}
+
+/* Keep the table header visible in both empty and populated states. */
+.emptyCell{text-align:center!important;color:var(--kg-muted)!important;padding:26px 14px!important;font-size:14px}
