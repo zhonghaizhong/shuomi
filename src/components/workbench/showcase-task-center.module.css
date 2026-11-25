@@ -170,3 +170,21 @@
 .root .taskRow:nth-of-type(even){background:var(--task-row-alt)}
 .root .stats>button[data-task-metric]{background:var(--task-surface);border-color:var(--task-line)}
 :global(.light) .root .stats>button[data-task-metric]{background:var(--task-surface);border-color:var(--task-line)}
+
+/* Task guide shares the same compact Vuexy geometry as Project guide. */
+.guide{display:grid;gap:16px;min-width:0}
+.guideIntro,.guideSection{min-width:0;border:1px solid var(--task-line);background:var(--task-surface);border-radius:7px;padding:22px 24px;color:var(--task-text)}
+.guideIntro h2{font-size:20px;line-height:1.4;margin:0 0 8px;font-weight:650;color:var(--task-text)}
+.guideIntro p,.guideSection p{font-size:14px;line-height:1.65;color:var(--task-muted);margin:0}
+.guideSection>h2{font-size:19px;font-weight:650;margin:0 0 16px;padding-left:12px;border-left:3px solid #7367f0;line-height:1.4;color:var(--task-text)}
+.guideCapabilities{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.guideCapabilities article,.guideSteps article{min-width:0;padding:17px 18px;background:var(--task-raised);border:1px solid var(--task-line);border-radius:7px}
+.guideCapabilityTitle{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.guideCapabilityTitle svg{flex:none;color:#978af5}
+.guideCapabilities h3,.guideSteps h3{font-size:16px;font-weight:650;margin:0;color:var(--task-text);line-height:1.4}
+.guideSteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.guideSteps b{display:inline-block;font-size:16px;color:#978af5;margin-bottom:10px}
+.guideSteps h3{margin-bottom:7px}
+:global(.light) .root .guideCapabilityTitle svg,:global(.light) .root .guideSteps b{color:#6254c8}
+@media(max-width:1100px){.guideCapabilities{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.guideCapabilities,.guideSteps{grid-template-columns:minmax(0,1fr)}.guideIntro,.guideSection{padding:16px}}
