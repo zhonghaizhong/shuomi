@@ -596,13 +596,22 @@ test("task center modes retain readable light/dark surfaces and functional task 
  // than silently adding a fixture to the user's workspace.
  if(await root.locator('[data-task-state]').count()){
   await root.locator('[data-task-state]').first().getByRole("button").first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
  }else{
   await expect(root.getByText("没有符合条件的任务。")).toBeVisible();
   await root.getByRole("button",{name:/新建任务/}).click();
+  await expect(page).toHaveURL(/chat\/new\?preview=1&taskMode=task/);
+  await expect(page.getByRole("button",{name:"发起任务",exact:true})).toHaveAttribute("aria-pressed","true");
+  await page.locator("#chat-new-prompt").fill("检查商品资料");
+  await page.getByRole("button",{name:"确认任务草案",exact:true}).click();
+  const dialog=page.getByRole("dialog",{name:"确认发起任务"});
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button",{name:"返回修改"}).click();
+  await expect(dialog).not.toBeVisible();
+  await page.goto("/shuomi/#/workbench/ai/tasks/running");
  }
- await expect(page.getByRole("dialog")).toBeVisible();
- await page.keyboard.press("Escape");
- await expect(page.getByRole("dialog")).toHaveCount(0);
  await page.getByRole("button",{name:"切换深色主题"}).click();
  await expect(page.locator(".dark .showcase-shell")).toBeVisible();
  await expect(root.locator('[class*="taskTable"]').first()).toBeVisible();
