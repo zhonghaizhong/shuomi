@@ -601,22 +601,32 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <div className={styles.productInfoComparison}><small>原始标题（只读，永久保留）</small><p>{selectedItem.originalName??selectedItem.name}</p></div>
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题 · 可修改</label><button type="button" onClick={()=>openAiForField("title")}>✦ AI 重构</button></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述 · 可修改</label><button type="button" onClick={()=>openAiForField("description")}>✦ AI 重构</button></div><textarea id="listing-edit-desc" rows={4} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>
-      {stage==="missing"?<><div className={styles.productSectionHeading}><strong>平台待补全资料</strong><small>缺少 {selectedItem.missing.length} 项必填</small></div>
+      {stage==="missing"?<><div className={styles.productSectionHeading}><strong>商品公共必填信息（当前任务已识别）</strong><small>缺少 {selectedItem.missing.length} 项必填</small></div>
        {selectedItem.missing.map(field=>/(资质|认证|证书|检测|报告|文件|许可)/.test(field)?<div className={styles.qualificationField} key={field}><strong>{field} · 必填</strong><label>选择资质文件<input type="file" accept=".pdf,.png,.jpg,.jpeg" aria-label={"上传"+field} onChange={e=>setSelectedQualification(x=>({...x,[field]:e.target.files?.[0]?.name??""}))}/></label><small>{selectedQualification[field]?"已选择本地文件："+selectedQualification[field]+"（未上传服务器）":"需要真实资质，AI 不生成或伪造文件。"}</small></div>
        :<label className={styles.productMissingField} key={field}>{field}<span>必填 · 人工核对</span><input aria-label={field} placeholder={"请输入"+field} value={form[field]??""} onChange={e=>setForm(prev=>({...prev,[field]:e.target.value}))}/></label>)}
        {!selectedItem.missing.length?<p className={styles.productHint}>本商品当前没有未完成的必填资料。</p>:null}
       </>:null}
-      <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>平台选填信息 {optionalOpen?"收起":"展开"}</button>
+      <button type="button" className={styles.optionalToggle} aria-expanded={optionalOpen} onClick={()=>setOptionalOpen(v=>!v)}>商品公共选填信息 {optionalOpen?"收起":"展开"}</button>
       {optionalOpen?<p className={styles.productHint}>选填字段以目标平台真实类目规则为准；未接入前不虚构字段和可选值。</p>:null}
-     </>:fieldTab==="shared"?<div className={styles.dialogFieldEmpty}><strong>变体公用信息</strong><p>适用于同一商品的所有变体，如平台允许共用的品牌、材质或公共规格。当前演示任务未保存独立的变体公用属性，待接入目标平台类目字段后显示必填与选填项。</p><span>平台规定的固定选项只能从平台合法值中选择，不开放自由 AI 重构。</span></div>
+     </>:fieldTab==="shared"?<div className={styles.aiVariantEditor}>
+       <strong>变体公用信息 · {selectedItem.targetPlatform??selectedTask?.platform??"目标平台"}</strong>
+       <p>此处仅管理该平台、站点、类目允许全部变体共用的字段。不同平台的字段名、范围和枚举不能复用。</p>
+       <div className={styles.dialogFieldEmpty}><strong>必填信息</strong><p>等待目标平台分类规则返回该层级必填属性。未获取规则时不会把商品公共字段当作变体公用字段，也不会伪造属性。</p></div>
+       <div className={styles.dialogFieldEmpty}><strong>选填信息</strong><p>根据目标平台分类规则动态显示可选属性；规则尚未接入，当前暂无可确认的选填项。</p></div>
+       <div className={styles.aiRuleNote}>分类变更后，必填、选填、适用层级、可选值均重新校验。旧字段及已填写资料保留在原版本中，固定选项仅允许平台认可的值。</div>
+      </div>
      :fieldTab==="variant"?<div className={styles.aiVariantEditor}>
        <strong>{selectedVariantGroup?.color??"当前变体"} · 当前颜色资料</strong>
+       <div className={styles.dialogFieldEmpty}><strong>当前变体必填信息</strong><p>仅显示目标平台类目规则明确分配到此变体层级的必填项；规则未接入时不将其他层级字段挪到这里。</p></div>
+       <div className={styles.productSectionHeading}><strong>当前变体选填信息</strong></div>
        <p>当前颜色下有 {selectedVariantSkus.length} 个 SKU。修改颜色描述只作用于这一颜色组。</p>
        <div className={styles.aiEditableField}><div><label htmlFor="listing-color-desc">颜色描述 · 选填</label><button type="button" onClick={()=>openAiForField("colorDescription")}>✦ AI 重构</button></div>
        <textarea id="listing-color-desc" rows={3} value={textDraft.colorDescriptions[editingColorKey]??""} maxLength={2000} placeholder="输入该颜色共用的描述" onChange={e=>setTextDraft(d=>({...d,colorDescriptions:{...d.colorDescriptions,[editingColorKey]:e.target.value}}))}/></div>
        <div className={styles.aiRuleNote}>颜色代码等平台枚举值不能由 AI 自行生成；图片在左侧独立管理。</div>
       </div>:<div className={styles.aiVariantEditor}>
        <strong>当前 SKU · {activeSku?.sku??editingSkuKey}</strong>
+       <div className={styles.dialogFieldEmpty}><strong>当前SKU必填信息</strong><p>此处预留该分类的SKU级必填属性；商家SKU编码是业务管理字段，不冒充平台必填。分类规则未确认前不补造字段。</p></div>
+       <div className={styles.productSectionHeading}><strong>SKU名称与编码（商家管理）</strong></div>
        {selectedVariantSkus.length>1?<div className={styles.aiSkuPills}>{selectedVariantSkus.map(v=><button type="button" key={v.sku} aria-pressed={editingSkuKey===v.sku} onClick={()=>setActiveSkuId(v.sku)}>{v.size}</button>)}</div>:null}
        <div className={styles.aiEditableField}>
         <div><label htmlFor="listing-sku-name">SKU显示名称 · 可修改</label></div>
@@ -628,6 +638,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
         {invalidSkuCode?<p role="alert">商家SKU编码不能为空，且同一商品内不得重复。</p>:null}
        </div>
        <p>内部SKU标识：{editingSkuKey}（只读）。修改商家编码不改变图片、库存和历史记录的内部关联。</p>
+       <div className={styles.productSectionHeading}><strong>当前SKU选填信息</strong></div>
        <div className={styles.aiEditableField}><div><label htmlFor="listing-sku-desc">SKU 补充描述 · 选填</label><button type="button" onClick={()=>openAiForField("skuDescription")}>✦ AI 重构</button></div>
        <textarea id="listing-sku-desc" rows={3} value={textDraft.skuDescriptions[editingSkuKey]??""} maxLength={2000} placeholder="仅对当前 SKU 生效" onChange={e=>setTextDraft(d=>({...d,skuDescriptions:{...d.skuDescriptions,[editingSkuKey]:e.target.value}}))}/></div>
        <p>已确认规格：{activeSku?activeSku.color+" / "+activeSku.size:"沿用原任务 SKU"}。价格、库存、尺码代码等真实字段不能由 AI 重构。</p>
