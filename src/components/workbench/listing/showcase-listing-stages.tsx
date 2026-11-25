@@ -9,7 +9,7 @@ import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo
 import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,saveShowcaseGalleryEdits,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,type ListingVariantPhotoRole,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 import {useRouter} from "next/navigation";
 import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
-import {fieldSchemaMatches,scopedFieldKey,type FieldScope} from "./showcase-platform-field-schema";
+import {fieldSchemaMatches,scopedFieldKey,findUnambiguousEnumOption,type FieldScope} from "./showcase-platform-field-schema";
 import {initialVariantStructure,variantStructureImpact,variantStructureValidation,type VariantStructureDraft} from "./showcase-variant-structure";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./showcase-batch-version-picker";
@@ -368,7 +368,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const editScopedValue=(scope:FieldScope,id:string,value:string)=>setTextDraft(d=>({...d,fieldValues:{...d.fieldValues,[scopedFieldKey(scope,id,scopeEntity(scope))]:value}}));
  const scopedValueFor=(scope:FieldScope,id:string)=>textDraft.fieldValues[scopedFieldKey(scope,id,scopeEntity(scope))]??"";
  const eligibleGroupFields=(scope:FieldScope,kind:"missing"|"filled"|"optional")=>{
-  const fields=(schemaValid?schema!.fields:[]).filter(f=>f.scope===scope&&f.kind==="text"&&f.aiEditable&&
+  const fields=(schemaValid?schema!.fields:[]).filter(f=>f.scope===scope&&(f.kind==="text"||f.kind==="enum")&&f.aiEditable&&
    (kind==="optional"?f.requirement==="optional":f.requirement==="required"&&(kind==="filled"?!!scopedValueFor(scope,f.id).trim():!scopedValueFor(scope,f.id).trim())))
    .map(f=>f.label);
   if(scope==="common"&&kind!=="optional"){
@@ -412,7 +412,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  };
  const openAiForField=(field:string)=>{
   const candidate=field.startsWith("platform:")?schema?.fields.find(f=>field==="platform:"+f.scope+":"+f.id):undefined;
-  if(candidate&&(!candidate.aiEditable||candidate.kind!=="text")){setNotice("该字段需要使用平台允许的真实属性值，不能由AI编造。");return}
+  if(candidate&&(!candidate.aiEditable||!["text","enum"].includes(candidate.kind))){setNotice("该字段需要使用平台允许的真实属性值，不能由AI编造。");return}
   setAiTargetField(field);setBatchAiScope("current");setBatchAiOpen(true);
   setAiFeedback("已选择字段："+(candidate?.label??aiEligibleFields.find(x=>x.key===field)?.label??field)+"。当前演示没有接入AI文本生成服务，尚未自动填写。");
  };
@@ -498,7 +498,19 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const saveTextOnly=()=>{if(structureBlocked){setNotice(structureIssues[0]??"请确认变体结构变更及受影响的SKU后再保存");return}if(invalidSkuCode||!skuDisplayName.trim()){setNotice("请先检查SKU显示名称和商家SKU编码，编码不可重复。");return}if(categoryNeedsReview&&!categoryImpactConfirmed){setNotice("请先确认分类变更影响。");return}if(persistText())setNotice(categoryNeedsReview?"已保存分类变更和SKU编辑的新草稿版本；原资料完整保留，等待平台分类规则复核。":"已保存商品、颜色及SKU名称和编码修改；原始数据保持不变。")};
  const requestAiSuggestions=()=>{
   if(!aiGroupTarget&&!selectedAiFields.length&&!aiTargetField){setAiFeedback("当前分组没有可重构的文本字段。");return}
-  setAiFeedback("已筛选 "+(aiGroupTarget?.fields.length??selectedAiFields.length)+" 个允许重构的文本字段；演示版尚未接入AI生成服务，因此没有生成或覆盖任何内容。下拉选项、认证、图片和真实数值不在范围内。");
+  if(aiGroupTarget&&schemaValid){
+   const sourceEvidence=[selectedItem?.originalName??"",selectedItem?.optimizedDescription??"",textDraft.title,textDraft.description].filter(Boolean).join(" ");
+   const eligible=schema!.fields.filter(f=>f.scope===aiGroupTarget.scope&&f.kind==="enum"&&f.aiEditable&&f.options?.length&&
+    (aiGroupTarget.kind==="optional"?f.requirement==="optional":f.requirement==="required"&&
+    (aiGroupTarget.kind==="filled"?!!scopedValueFor(f.scope,f.id).trim():!scopedValueFor(f.scope,f.id).trim())));
+   const matched=eligible.flatMap(f=>{const selected=findUnambiguousEnumOption(f,sourceEvidence);return selected?[{field:f,value:selected}]:[]});
+   if(matched.length){
+    setTextDraft(old=>({...old,fieldValues:{...old.fieldValues,...Object.fromEntries(matched.map(x=>[scopedFieldKey(x.field.scope,x.field.id,scopeEntity(x.field.scope)),x.value]))}}));
+   }
+   setAiFeedback(matched.length?"已根据商品原始资料中的明确匹配，从平台合法选项中预选 "+matched.length+" 项，请核对后保存。其余无充分依据的选项未自动选择。":"暂未在商品原始资料中找到唯一且有依据的合法选项，保持待确认。当前尚未连接真实AI服务。");
+   return;
+  }
+  setAiFeedback("已筛选可由AI处理的文本及平台许可的下拉字段；尚未接入真实AI服务，未生成或覆盖内容。资质、图片、价格、库存等真实资料不会猜测。");
  };
  const save=()=>{
   if(!selectedItem)return;
@@ -572,7 +584,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <span className={styles.compactStoreType}>{item.targetStoreType||"—"}</span>
       <span className={styles.compactPlainCell} title={item.store}>{item.store||"—"}</span>
       <span className={styles.compactStatus}>{item.status}</span>
-      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes},fieldValues:{...record?.textEdits?.fieldValues},legacyMissingValues:{...record?.textEdits?.legacyMissingValues}}})());setBatchAiOpen(false);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setDemoPackaging("");setDemoSellingPoint("");setDemoUploadedName("");setDemoSharedRequired("");setDemoSharedFilled("演示已填资料");setDemoSharedOptional("");setFieldSectionsOpen({});setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setBatchSkuPattern("");setBulkSkuOpen(false);setVariantDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return record?.textEdits?.variantStructure??initialVariantStructure(record?.demoProduct?.variantDetails??[])})());setConfirmVariantChange(false);setImagePreview(false);setForm({...savedTasks.find(t=>t.id===item.taskId)?.textEdits?.legacyMissingValues});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
+      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes},fieldValues:{...record?.textEdits?.fieldValues},legacyMissingValues:{...record?.textEdits?.legacyMissingValues}}})());setBatchAiOpen(false);setAiGroupTarget(null);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setDemoPackaging("");setDemoSellingPoint("");setDemoUploadedName("");setDemoSharedRequired("");setDemoSharedFilled("演示已填资料");setDemoSharedOptional("");setFieldSectionsOpen({});setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setBatchSkuPattern("");setBulkSkuOpen(false);setVariantDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return record?.textEdits?.variantStructure??initialVariantStructure(record?.demoProduct?.variantDetails??[])})());setConfirmVariantChange(false);setImagePreview(false);setForm({...savedTasks.find(t=>t.id===item.taskId)?.textEdits?.legacyMissingValues});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
      </div>})}</div></div>{filtered.length>15?<nav className={styles.listPagination} aria-label="商品分页"><span>共 {filtered.length} 条 · 每页 15 条 · 第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setListPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setListPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></nav>:null}
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
@@ -696,7 +708,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
      </div>
           {batchAiOpen?<section className={styles.aiBatchPanel} aria-label="AI 批量重构配置">
       <header><strong>✦ {aiGroupTarget?"AI重构":aiTargetField?"AI字段重构":"AI批量重构"}</strong><button type="button" aria-label="收起重构配置" onClick={()=>{setBatchAiOpen(false);setAiTargetField(null);setAiGroupTarget(null)}}>×</button></header>
-      {aiGroupTarget?<p>仅处理当前分组允许AI重构的文本字段：{aiGroupTarget.fields.join("、")}</p>:aiTargetField?<p>指定字段：{(aiTargetField?.startsWith("platform:")?schema?.fields.find(f=>aiTargetField==="platform:"+f.scope+":"+f.id)?.label:aiEligibleFields.find(f=>f.key===aiTargetField)?.label)??aiTargetField}。仅在符合平台规则时允许重构。</p>:<>
+      {aiGroupTarget?<p>仅处理当前分组允许AI处理的文本和下拉字段：{aiGroupTarget.fields.join("、")}</p>:aiTargetField?<p>指定字段：{(aiTargetField?.startsWith("platform:")?schema?.fields.find(f=>aiTargetField==="platform:"+f.scope+":"+f.id)?.label:aiEligibleFields.find(f=>f.key===aiTargetField)?.label)??aiTargetField}。仅在符合平台规则时允许重构。</p>:<>
        <label>重构范围
         <select aria-label="重构信息范围" value={batchAiScope} onChange={e=>setBatchAiScope(e.target.value as "current"|"all")}><option value="current">当前信息标签</option><option value="all">整个商品的可编辑文字字段</option></select>
        </label>
