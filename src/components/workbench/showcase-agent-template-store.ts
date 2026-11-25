@@ -46,7 +46,7 @@ export function readAgentPreviewTemplates(org:string,member:string,agent:string)
   const old=sessionStorage.getItem("shuomi-demo-agent-templates-"+agent);
   if(old!==null){
    const parsed:unknown=JSON.parse(old);
-   return Array.isArray(parsed)?parsed.filter(valid):[];
+   return withOfficialTemplate(agent,Array.isArray(parsed)?parsed.filter(valid):[]);
   }
   const legacy=sessionStorage.getItem("shuomi-demo-agent-template-"+agent);
   if(!legacy)return withOfficialTemplate(agent,[]);
