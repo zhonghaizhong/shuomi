@@ -104,7 +104,7 @@ test("preferred application reads owned adapted products and promotes only demo-
  await expect(after.getByRole("checkbox",{name:"选择测试优选家居收纳盒"})).toBeEnabled();
  await expect(after.getByRole("checkbox",{name:"选择尚未优化的测试产品"})).toBeEnabled();
  await expect(after.locator('[data-product-id="OWN-PREF-C"]')).toHaveCount(0);
- await after.getByRole("button",{name:"发起申请",exact:true}).click();
+ await after.locator('[data-product-id="OWN-PREF-A"]').getByRole("button",{name:"发起申请",exact:true}).click();
  const apply=page.getByRole("dialog",{name:"发起优选申请"});
  await expect(apply).toBeVisible();
  await apply.getByRole("spinbutton",{name:"可供库存"}).fill("120");
