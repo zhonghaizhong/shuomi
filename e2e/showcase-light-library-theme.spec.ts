@@ -306,3 +306,25 @@ test("skill home matches knowledge layout with three aligned destinations and co
  await expect(page.getByRole("heading",{name:"官方技能列表",level:2})).toBeVisible();
  await expect(page.getByRole("navigation",{name:"技能库分类"}).getByRole("button",{name:"官方模板",exact:true})).toHaveAttribute("aria-current","page");
 });
+
+test("knowledge landing navigation aligns with cards and opens Chat new conversation",async({page})=>{
+ await page.setViewportSize({width:1600,height:900});
+ await page.goto("/shuomi/#/workbench/ai/knowledge");
+ const root=page.locator('[data-library-hub="knowledge"]');
+ const nav=root.getByRole("navigation",{name:"知识库分类"});
+ const tabs=nav.getByRole("button");
+ await expect(tabs).toHaveCount(3);
+ const bounds=await Promise.all([
+  root.locator('header').first().boundingBox(),
+  nav.boundingBox(),
+  root.locator('[aria-label="选择知识库"]').boundingBox()
+ ]);
+ for(const box of bounds)expect(box).not.toBeNull();
+ expect(Math.abs(bounds[0]!.x-bounds[1]!.x)).toBeLessThanOrEqual(2);
+ expect(Math.abs(bounds[1]!.x-bounds[2]!.x)).toBeLessThanOrEqual(2);
+ expect(Math.abs(bounds[0]!.width-bounds[1]!.width)).toBeLessThanOrEqual(2);
+ const widths=await tabs.evaluateAll(nodes=>nodes.map(x=>x.getBoundingClientRect().width));
+ expect(Math.max(...widths)-Math.min(...widths)).toBeLessThanOrEqual(1);
+ await root.getByRole("button",{name:"去创建知识库"}).click();
+ await expect(page).toHaveURL(/\/workbench\/ai\/chat\/new\?preview=1/);
+});
