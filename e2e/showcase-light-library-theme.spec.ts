@@ -384,7 +384,10 @@ test("knowledge creation stays visible on all tabs; personal groups manage enabl
  await dialog.getByRole("button",{name:"删除分组"}).click();
  await dialog.getByRole("button",{name:"完成"}).click();
  await expect(root.getByText("跨境平台规则")).toBeVisible();
- await root.getByRole("button",{name:"去创建知识库"}).click();
+ // The persistent create action belongs to the page header, outside the personal groups panel.
+ const createKnowledge=page.getByRole("button",{name:"去创建知识库",exact:true});
+ await expect(createKnowledge).toBeVisible();
+ await createKnowledge.click();
  await expect(page).toHaveURL(/chat\/new/);
  await expect(page.getByRole("button",{name:"加入我的知识库",exact:true})).toHaveAttribute("aria-pressed","true");
 });
