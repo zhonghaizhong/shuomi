@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import css from "./showcase-pod-management-dialog.module.css";
 import {readPodLibrary,savePodLibrary,readPodAssetImage,podAssetPreviewSrc,type PodLibraryAsset} from "./pod-asset-library";
+import {readPodPrintLineage,reviewPodPrint} from "./pod-print-lineage";
 
 type Tab="我的素材库"|"产品图审核"|"灵感市场";
 type Asset=PodLibraryAsset;
@@ -24,6 +25,20 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const [tab,setTab]=useState<Tab>("我的素材库");
  const [assets,setAssets]=useState<Asset[]>(()=>readPodLibrary(organizationId,memberId));
  const [reviews,setReviews]=useState<Asset[]>([]);
+ useEffect(()=>{
+  const refresh=()=>{
+   const source=readPodPrintLineage(organizationId,memberId);
+   setReviews(source.reviews.map((r,i)=>{
+    const print=source.prints.find(p=>p.printId===r.printId&&p.version===r.version);
+    if(!print)return null;
+    return {id:i+1,name:print.name,category:"裂变印花 · "+print.printId+" · v"+print.version,
+     style:i%6,prompt:"关联原图："+print.originPrintId+"；批次："+print.sourceBatchId,
+     archivePath:print.assetPath,lineagePrintId:print.printId,lineageVersion:print.version,status:r.status};
+   }).filter((x):x is Asset=>x!==null));
+  };
+  refresh();window.addEventListener("shuomi:pod:print-lineage:change",refresh);
+  return()=>window.removeEventListener("shuomi:pod:print-lineage:change",refresh);
+ },[organizationId,memberId]);
  const [categories,setCategories]=useState(["我的自定义分类"]);
  const [search,setSearch]=useState("");const [applied,setApplied]=useState("");
  const [category,setCategory]=useState("全部分类");const [status,setStatus]=useState("全部状态");
@@ -46,7 +61,15 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const reset=()=>{setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1)};
  const promptFor=(asset:Asset)=>{setChosen(asset);setPanel("素材提示词")};
  const removeAsset=(id:number)=>{setAssets(v=>v.filter(x=>x.id!==id));setNotice("已从当前演示素材库删除。")};
- const audit=(id:number,next:string)=>{setReviews(v=>v.map(x=>x.id===id?{...x,status:next}:x));setNotice(next==="审核通过"?"审核通过，已回传 POD 刊登流程":next==="退回重做"?"退回重做 · 等待重新生成":"已驳回 · 不再重做")};
+ const audit=(id:number,next:string)=>{
+  const record=reviews.find(x=>x.id===id);
+  if(!record?.lineagePrintId||!record.lineageVersion){setNotice("印花缺少可追溯编号，禁止直接审核");return;}
+  try{
+   reviewPodPrint(organizationId,memberId,record.lineagePrintId,record.lineageVersion,
+    next as "审核通过"|"退回重做"|"驳回");
+   setNotice(next==="审核通过"?"印花审核通过，已保留原图编号与文件版本；后续商品须引用该版本":next+" · 原印花记录已保留");
+  }catch(error){setNotice(error instanceof Error?error.message:"审核未保存")}
+ };
  return <dialog ref={ref} className={css.dialog} aria-label="POD素材管理" onCancel={e=>{e.preventDefault();if(panel)setPanel(null);else onClose()}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
    <header className={css.header}><div><small>工具市场 / 我的工具 / POD素材管理</small><h2>POD 素材管理</h2><p>素材沉淀、生成图审核与创作灵感，形成可复用的 POD 创作闭环。</p></div><button type="button" aria-label="关闭POD素材管理" onClick={onClose} className={css.close}>×</button></header>
    <nav className={css.tabs} aria-label="POD素材管理模块">{([["我的素材库","上传、分类、复用素材"],["产品图审核","校验 POD 生成结果"],["灵感市场","趋势参考与生图提示词"]] as const).map(([t,sub])=><button type="button" key={t} className={tab===t?css.active:""} aria-current={tab===t?"page":undefined} onClick={()=>selectTab(t)}><strong>{t}</strong><small>{sub}</small></button>)}</nav>
@@ -58,12 +81,12 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
       <button type="button" onClick={reset}>重置</button><button type="submit" className={css.primary}>确认</button>
     </form>
     {notice?<p className={css.notice} role="status">{notice}</p>:null}
-    <div className={css.libraryHint}>{tab==="我的素材库"?"我的素材库 · 共 "+filtered.length+" 张图片（当前账号演示会话）":tab==="产品图审核"?"产品图审核 · 共"+filtered.length+"张":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
+    <div className={css.libraryHint}>{tab==="我的素材库"?"我的素材库 · 共 "+filtered.length+" 张图片（当前账号演示会话）":tab==="产品图审核"?"印花审核 · 共"+filtered.length+"张（留存原图版本，暂不生成产品图）":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
     {displayed.length?<div className={css.grid}>{displayed.map(asset=><article className={css.assetCard} key={asset.id}>
        <button type="button" className={css.imageButton} onClick={()=>open("预览图片",asset)} aria-label={"预览"+asset.name}>{inspirationImageSrc(asset)?<img className={css.patternImage} src={inspirationImageSrc(asset)} alt={asset.name+"原创图案"} loading="lazy"/>:<div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div>}</button>
        <strong title={asset.name}>{asset.name}</strong><small>{asset.status??asset.category}</small>
        {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>{setNotice("演示入口：请在正式POD刊登工具中引用此素材。")}}>用于POD</button><button type="button" onClick={()=>removeAsset(asset.id)}>删除</button></div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
-      </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无审核记录，请重置筛选。":"暂无产品图审核记录，待 POD 刊登生成图片后将在此显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
+      </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
    </div>
    {panel?<div className={css.overlay} onClick={e=>{if(e.target===e.currentTarget)setPanel(null)}}><section className={css.subDialog} role="dialog" aria-modal="true" aria-label={panel}>
