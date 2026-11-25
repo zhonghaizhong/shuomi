@@ -3,6 +3,7 @@ import type {ReactNode} from "react";
 import {useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
 import styles from "./showcase-report-center.module.css";
+import {WorkbenchDateRange} from "./workbench-date-picker";
 
 export type PreviewReport={id:string;title:string;type:string;createdAt:number;favorite:boolean;group:string;summary:string;projectId?:string};
 type ReportStore={groups:string[];reports:PreviewReport[]};
@@ -28,7 +29,6 @@ export function ShowcaseReportCenter({pathname,organizationId,memberId,tabNaviga
  const [group,setGroup]=useState("全部分组");
  const [from,setFrom]=useState("");
  const [to,setTo]=useState("");
- const [showDate,setShowDate]=useState(false);
  const [showGroups,setShowGroups]=useState(false);
  const [groupName,setGroupName]=useState("");
  const [renaming,setRenaming]=useState("");
@@ -40,7 +40,7 @@ export function ShowcaseReportCenter({pathname,organizationId,memberId,tabNaviga
  const updateReport=(id:string,changes:Partial<PreviewReport>)=>save({...store,reports:store.reports.map(r=>r.id===id?{...r,...changes}:r)},"已更新报告");
  const kind=pathname.endsWith("/favorites")?"favorites":pathname.endsWith("/recent")?"recent":"all";
  const visible=store.reports.filter(r=>(kind!=="favorites"||r.favorite)&&(type==="全部类型"||r.type===type)&&(!from||new Date(r.createdAt).toLocaleDateString("en-CA")>=from)&&(!to||new Date(r.createdAt).toLocaleDateString("en-CA")<=to)&&(r.title+" "+r.summary).toLowerCase().includes(query.trim().toLowerCase())).sort((a,b)=>b.createdAt-a.createdAt);
- const reset=()=>{setQuery("");setType("全部类型");setGroup("全部分组");setFrom("");setTo("");setShowDate(false)};
+ const reset=()=>{setQuery("");setType("全部类型");setGroup("全部分组");setFrom("");setTo("")};
  const chosen=store.reports.find(r=>r.id===detail);
  return <main className={styles.page} data-report-center={kind}>
   <header className={styles.hero}><div><span>AI工作台 / 我的报告</span><h1>我的报告</h1><p>管理、收藏与复用 AI 生成的报告成果。</p></div><button type="button" className={styles.primary} onClick={()=>router.push("/workbench/ai/chat/new?preview=1&reportMode=create")}>生成调研报告</button></header>
@@ -49,13 +49,8 @@ export function ShowcaseReportCenter({pathname,organizationId,memberId,tabNaviga
    <input aria-label="搜索报告" placeholder="搜索报告名称或关键词" value={query} onChange={e=>setQuery(e.target.value)}/>
    <div className={styles.controls}>
     <select aria-label="报告类型" value={type} onChange={e=>setType(e.target.value)}><option>全部类型</option><option>调研报告</option><option>经营报告</option><option>其他报告</option></select>
-    <div className={styles.dateControl}><button type="button" aria-label="选择报告日期" aria-expanded={showDate} onClick={()=>setShowDate(!showDate)}>{from&&to?from+" 至 "+to:"全部时间"}</button>{showDate&&<div className={styles.calendar} role="group" aria-label="报告日期范围">
-     <label>开始日期<input aria-label="开始日期" type="date" value={from} max={to||undefined} onChange={e=>setFrom(e.target.value)}/></label>
-     <label>结束日期<input aria-label="结束日期" type="date" value={to} min={from||undefined} onChange={e=>setTo(e.target.value)}/></label>
-     <div><button type="button" onClick={()=>{setFrom("");setTo("");setShowDate(false)}}>全部时间</button><button type="button" className={styles.primary} onClick={()=>setShowDate(false)} disabled={Boolean(from)!==Boolean(to)||!!(from&&to&&from>to)}>确定</button></div>
-    </div>}</div>
-    
-    <button type="button" onClick={()=>setShowGroups(true)}>管理分组</button>
+    <WorkbenchDateRange label="选择报告日期" from={from} to={to} onChange={(start,end)=>{setFrom(start);setTo(end)}}/>
+        <button type="button" onClick={()=>setShowGroups(true)}>管理分组</button>
     <button type="button" onClick={reset}>重置</button>
    </div>
   </section>
