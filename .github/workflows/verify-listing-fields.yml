@@ -1,0 +1,38 @@
+name: Verify Listing Field Adaptation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/components/workbench/listing/**"
+      - ".github/workflows/verify-listing-fields.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: listing-field-adaptation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck field adapter integration
+        run: pnpm run typecheck
+      - name: Validate platform field schema, SKU and completion persistence
+        run: pnpm exec vitest run src/components/workbench/listing/showcase-platform-field-schema.test.ts src/components/workbench/listing/showcase-amazon-ai-workflow.test.ts
