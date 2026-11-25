@@ -24,9 +24,9 @@ test("light theme uses readable pale surfaces on every library subpage",async({p
    const isSkills=route.startsWith("/agents/skills/");
    const isProjects=route.startsWith("/ai/projects/");
    const isReports=route.startsWith("/ai/reports/");
-   const canvas=isSkills?page.locator('[data-skill-showcase="true"]'):isProjects?page.locator('[data-project-showcase="true"]'):isReports?page.locator('[class*="libraryHubPreview"]'):page.locator('[class*="libraryDetailPreview"]');
+   const canvas=isSkills?page.locator('[data-skill-showcase="true"]'):isProjects?page.locator('[data-project-showcase="true"]'):isReports?page.locator('[data-report-center]'):page.locator('[class*="libraryDetailPreview"]');
    await expect(canvas).toBeVisible();
-   const surfaces=isSkills?canvas.locator(':scope > section[class*="toolbar"], :scope > section[class*="empty"], :scope > aside'):isProjects?canvas.locator(':scope > header, :scope > section[class*="panel"]'):canvas.locator('[class*="header"],[class*="table"],[class*="toolbar"],[class*="category"]');
+   const surfaces=isSkills?canvas.locator(':scope > section[class*="toolbar"], :scope > section[class*="empty"], :scope > aside'):isProjects?canvas.locator(':scope > header, :scope > section[class*="panel"]'):canvas.locator(':scope > header, :scope > section[class*="toolbar"], :scope > section[class*="results"]');
    const count=Math.min(await surfaces.count(),5);
    for(let i=0;i<count;i++){
      if(!(await surfaces.nth(i).isVisible()))continue;
