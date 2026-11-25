@@ -67,7 +67,7 @@ export function readPreferredCandidates(org:string,member:string):PreferredCandi
    return before&&(before.name.trim()!==sku.name.trim()||before.description.trim()!==sku.description.trim()||
     sku.images.some((src,i)=>src!==before.images[i]));
   });
-  const agentOptimized=Boolean(product.agent===SHUOMI_ADAPTATION_AGENT&&product.template===SHUOMI_ADAPTATION_TEMPLATE_NAME&&product.templateId===SHUOMI_ADAPTATION_TEMPLATE_ID&&contentOptimized);
+  const agentOptimized=Boolean(product.agent===SHUOMI_ADAPTATION_AGENT&&product.template===SHUOMI_ADAPTATION_TEMPLATE_NAME&&product.templateId===SHUOMI_ADAPTATION_TEMPLATE_ID&&product.optimizationMode==="shuomi-template-demo"&&contentOptimized);
   // The Shuomi adaptation is the completed, validated own-product intake:
   // all SKU essentials are present and the in-app review has passed.
   const shuomiAdapted=intakeApproved&&product.skus.every(sku=>Boolean(sku.name.trim()&&sku.description.trim()&&sku.images.some(Boolean)));
