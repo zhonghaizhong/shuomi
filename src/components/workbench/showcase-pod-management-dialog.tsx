@@ -26,6 +26,14 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const [assets,setAssets]=useState<Asset[]>(()=>readPodLibrary(organizationId,memberId));
  const [reviews,setReviews]=useState<Asset[]>([]);
  useEffect(()=>{
+  if(isShowcasePODScope(organizationId,memberId)){
+   // Seed only the approved demonstration tenant. The archive files are
+   // checked into GitHub; browser session storage holds review state only.
+   for(const print of showcasePODReviewPrints){
+    try{registerPodPrint(organizationId,memberId,print)}
+    catch(error){setNotice(error instanceof Error?error.message:"印花审核记录初始化失败")}
+   }
+  }
   const refresh=()=>{
    const source=readPodPrintLineage(organizationId,memberId);
    setReviews(source.reviews.map((r,i)=>{
@@ -69,7 +77,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const open=(p:typeof panel,a?:Asset)=>{setPanel(p);setChosen(a??null);setNotice("")};
  const reset=()=>{setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1)};
  const promptFor=(asset:Asset)=>{setChosen(asset);setPanel("素材提示词")};
- const removeAsset=(id:number)=>{setAssets(v=>v.filter(x=>x.id!==id));setNotice("已从当前演示素材库删除。")};
+ const removeAsset=(id:number)=>{if(assets.some(x=>x.id===id&&x.readonly)){setNotice("原始印花已关联三张待审核裂变图，不能删除源文件。");return;}setAssets(v=>v.filter(x=>x.id!==id));setNotice("已从当前演示素材库删除。")};
  const audit=(id:number,next:string)=>{
   const record=reviews.find(x=>x.id===id);
   if(!record?.lineagePrintId||!record.lineageVersion){setNotice("印花缺少可追溯编号，禁止直接审核");return;}
@@ -90,11 +98,11 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
       <button type="button" onClick={reset}>重置</button><button type="submit" className={css.primary}>确认</button>
     </form>
     {notice?<p className={css.notice} role="status">{notice}</p>:null}
-    <div className={css.libraryHint}>{tab==="我的素材库"?"我的素材库 · 共 "+filtered.length+" 张图片（当前账号演示会话）":tab==="产品图审核"?"印花审核 · 共"+filtered.length+"张（留存原图版本，暂不生成产品图）":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
+    <div className={css.libraryHint}>{tab==="我的素材库"?"我的素材库 · 共 "+filtered.length+" 张图片（当前账号演示会话）":tab==="产品图审核"?"印花审核 · 共"+filtered.length+"张（3张裂变图，GitHub存档；此阶段不生成产品图）":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
     {displayed.length?<div className={css.grid}>{displayed.map(asset=><article className={css.assetCard} key={asset.id}>
        <button type="button" className={css.imageButton} onClick={()=>open("预览图片",asset)} aria-label={"预览"+asset.name}>{inspirationImageSrc(asset)?<img className={css.patternImage} src={inspirationImageSrc(asset)} alt={asset.name+"原创图案"} loading="lazy"/>:<div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div>}</button>
-       <strong title={asset.name}>{asset.name}</strong><small>{asset.status??asset.category}</small>{tab==="产品图审核"&&asset.lineagePrintId?<small title={asset.lineagePrintId+" · V"+asset.lineageVersion}>编号：{asset.lineagePrintId} · V{asset.lineageVersion}</small>:null}
-       {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>{setNotice("演示入口：请在正式POD刊登工具中引用此素材。")}}>用于POD</button><button type="button" onClick={()=>removeAsset(asset.id)}>删除</button></div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
+       <strong title={asset.name}>{asset.name}</strong><small>{asset.status??asset.category}</small>{asset.originPrintId?<small title={asset.originPrintId}>原图编号：{asset.originPrintId}</small>:null}{tab==="产品图审核"&&asset.lineagePrintId?<small title={asset.lineagePrintId+" · V"+asset.lineageVersion}>编号：{asset.lineagePrintId} · V{asset.lineageVersion}</small>:null}
+       {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>{setNotice("演示入口：请在正式POD刊登工具中引用此素材。")}}>用于POD</button>{asset.readonly?<span className={css.sourceLocked}>源图已关联 · 只读</span>:<button type="button" onClick={()=>removeAsset(asset.id)}>删除</button>}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
    </div>

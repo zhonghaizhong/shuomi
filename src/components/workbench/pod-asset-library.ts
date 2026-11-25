@@ -1,4 +1,5 @@
 "use client";
+import {isShowcasePODScope,showcasePODOriginalAsset} from "./pod-showcase-print-demo";
 
 /** Browser-only demo asset library shared by POD management and image pickers.
  * Scope to the active organization AND member. No cross-tenant fallback.
@@ -7,29 +8,34 @@
 export type PodLibraryAsset={
  id:number;name:string;category:string;style:number;prompt:string;
  image?:string;dataUrl?:string;status?:string;
- archivePath?:string;lineagePrintId?:string;lineageVersion?:number;
+ archivePath?:string;archiveSha256?:string;originPrintId?:string;readonly?:boolean;
+ lineagePrintId?:string;lineageVersion?:number;
 };
 const libraryKey=(organizationId:string,memberId:string)=>
  "shuomi:pod:asset-library:v1:"+encodeURIComponent(organizationId)+":"+encodeURIComponent(memberId);
 export function readPodLibrary(organizationId:string,memberId:string):PodLibraryAsset[]{
  if(typeof window==="undefined")return [];
+ // Checked-in demo art stays visible in every browser, not sessionStorage.
+ const builtins=isShowcasePODScope(organizationId,memberId)?[showcasePODOriginalAsset]:[];
  try {
   const saved=sessionStorage.getItem(libraryKey(organizationId,memberId));
-  if(!saved)return [];
+  if(!saved)return builtins;
   const parsed:unknown=JSON.parse(saved);
-  if(!Array.isArray(parsed))return [];
-  return parsed.filter((x):x is PodLibraryAsset=>{
+  if(!Array.isArray(parsed))return builtins;
+  const personal=parsed.filter((x):x is PodLibraryAsset=>{
    if(!x||typeof x!=="object")return false;
    const item=x as Record<string,unknown>;
    return typeof item.id==="number"&&typeof item.name==="string"&&typeof item.category==="string"
-     &&typeof item.style==="number"&&(typeof item.dataUrl==="string"||typeof item.image==="string");
-  });
- }catch{return [];}
+     &&typeof item.style==="number"&&(typeof item.dataUrl==="string"||typeof item.image==="string"||typeof item.archivePath==="string");
+  }).filter(asset=>!builtins.some(b=>b.id===asset.id));
+  return [...builtins,...personal];
+ }catch{return builtins;}
 }
 export function savePodLibrary(organizationId:string,memberId:string,assets:PodLibraryAsset[]):boolean{
  if(typeof window==="undefined")return false;
  try{
-  sessionStorage.setItem(libraryKey(organizationId,memberId),JSON.stringify(assets));
+  const personal=assets.filter(asset=>!isShowcasePODScope(organizationId,memberId)||asset.id!==showcasePODOriginalAsset.id);
+  sessionStorage.setItem(libraryKey(organizationId,memberId),JSON.stringify(personal));
   window.dispatchEvent(new CustomEvent("shuomi:pod:asset-library:change",{detail:{organizationId,memberId}}));
   return true;
  }catch{return false;}

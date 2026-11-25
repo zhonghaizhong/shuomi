@@ -166,3 +166,6 @@
  .tabs button small {font-size:12px}
  .filters select {flex-basis:165px;width:165px!important}
 }
+
+.sourceLocked{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:6px 8px;border:1px solid #52617b;border-radius:6px;color:#b6c4dc;font-size:11px;white-space:nowrap}
+:global(.light) .sourceLocked{color:#53657d;border-color:#d9e2ed}

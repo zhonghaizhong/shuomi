@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "groupId": "POD-BUTTERFLY-20261126",
+  "originPrintId": "POD-BUTTERFLY-ORIGINAL-001",
+  "sourceBatch": "POD 服装演示批次",
+  "imageWidth": 1254,
+  "imageHeight": 1254,
+  "stage": "print_review_only",
+  "productMockupsGenerated": false,
+  "note": "Permanent cross-browser demo artwork in GitHub. Review decisions are browser-local demo data until a real backend is connected.",
+  "origin": {
+    "id": "POD-BUTTERFLY-ORIGINAL-001",
+    "name": "蝴蝶牡丹 · 原始印花",
+    "file": "butterfly-peony-original.webp",
+    "sha256": "914875b2b35fe39403c87224ebe401c191eb3127801b845ef6ea4400a2a7cbe8",
+    "role": "my_assets",
+    "sourcePng": "vintage_butterfly_and_peony_wreath.png"
+  },
+  "fissions": [
+    {
+      "id": "POD-BUTTERFLY-FISSION-A",
+      "name": "蝴蝶牡丹 · 黑白雕刻",
+      "file": "butterfly-peony-monochrome.webp",
+      "sha256": "0dc57360fa9f1c96f8095b7434c1664f75d4abf69cfba41ca37b841d299184e0",
+      "status": "待审核",
+      "originPrintId": "POD-BUTTERFLY-ORIGINAL-001",
+      "sourcePng": "monochrome_butterfly_peony_engraving.png"
+    },
+    {
+      "id": "POD-BUTTERFLY-FISSION-B",
+      "name": "蝴蝶牡丹 · 暖色复古",
+      "file": "butterfly-peony-warm.webp",
+      "sha256": "d54d27896e0ee6916843682527e1187a7e9ff6eb34cf351c5260ed028750ecce",
+      "status": "待审核",
+      "originPrintId": "POD-BUTTERFLY-ORIGINAL-001",
+      "sourcePng": "vintage_fission_butterfly_peony_bouquet.png"
+    },
+    {
+      "id": "POD-BUTTERFLY-FISSION-C",
+      "name": "蝴蝶牡丹 · 花卉裂变",
+      "file": "butterfly-peony-cluster.webp",
+      "sha256": "b73e6c490c7caf3d27ac2f3498aa3d56d425fdc2f63d3fe03986590160a0779c",
+      "status": "待审核",
+      "originPrintId": "POD-BUTTERFLY-ORIGINAL-001",
+      "sourcePng": "vintage_butterfly_and_peony_botanical_cluster.png"
+    }
+  ]
+}
