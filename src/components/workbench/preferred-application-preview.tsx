@@ -52,7 +52,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
   if(q&&![c.product.name,c.product.batchId,...c.product.skus.map(s=>s.skuCode||s.name)].join(" ").toLowerCase().includes(q))return false;
   return filter==="全部商品"||filter==="可申请"&&c.status==="可申请"||
    filter==="审核中"&&c.status==="审核中"||filter==="已入选"&&c.status==="已入选"||
-   filter==="待处理"&&["待首次适配","待智能体优化"].includes(c.status);
+   filter==="待处理"&&["待首次适配","待智能体优化","待平台适配","待平台审核","平台审核未通过"].includes(c.status);
  });
  const visible=filtered.slice((page-1)*8,page*8);
  const filteredRecords=records.filter(r=>recordFilter==="全部状态"||r.status===recordFilter);
@@ -61,7 +61,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const chosen=selected.filter(id=>candidates.some(c=>c.product.id===id&&c.status==="可申请"));
  const showApply=(ids?:string[])=>{
   const list=ids??chosen;
-  if(!list.length){setNotice("请先选择已完成适配且有优化版本的商品；未满足条件的商品可点击右侧操作前往我的数据。");return}
+  if(!list.length){setNotice("请先选择智能体优化、目标平台适配和审核均已完成的商品。");return}
   setSelected(list);setSupply(emptyPreferredSupply);setNotice("");setError("");setApplicationOpen(true);
  };
  const submit=(event:FormEvent<HTMLFormElement>)=>{
@@ -104,7 +104,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
      <div className={styles.metrics} aria-label="按状态筛选商品">
       {([
        {key:"全部商品",tone:"cyan",label:"自有商品",count:candidates.length,description:"当前账号商品库",Icon:Database},
-       {key:"可申请",tone:"violet",label:"可申请",count:eligible.length,description:"已完成适配和优化",Icon:BadgeCheck},
+       {key:"可申请",tone:"violet",label:"可申请",count:eligible.length,description:"智能体优化、平台适配且审核通过",Icon:BadgeCheck},
        {key:"审核中",tone:"orange",label:"审核中",count:working.length,description:"等待审核结果",Icon:ClipboardList},
        {key:"已入选",tone:"green",label:"已入选",count:approved.length,description:"审核通过商品",Icon:Star}
       ] as const).map(({key,tone,label,count,description,Icon})=>
@@ -116,7 +116,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
       )}
      </div>
     </section>
-    <div className={styles.panelHeading}><div><h2>自有商品库 · 申请候选</h2><p>商品自动同步；完成首次适配并保存优化版本后即可申请；本地优化草稿仅用于演示申请。</p></div><button type="button" className={styles.primary} disabled={!chosen.length} onClick={()=>showApply()}>申请已选商品（{chosen.length}）</button></div>
+    <div className={styles.panelHeading}><div><h2>自有商品库 · 申请候选</h2><p>申请条件：自有商品入库审核通过 → 智能体优化 → 适配目标平台 → 平台审核通过。</p></div><button type="button" className={styles.primary} disabled={!chosen.length} onClick={()=>showApply()}>申请已选商品（{chosen.length}）</button></div>
     <form className={styles.filters} aria-label="商品筛选" onSubmit={e=>{e.preventDefault();setAppliedQuery(query);setPage(1)}}>
      <label className={styles.searchBox}><Search size={17}/><input aria-label="搜索商品名称或SKU" value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索商品名称 / SKU / 批次"/></label>
      <button type="submit" className={styles.confirmSearch}>确定</button>
@@ -125,11 +125,11 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
      {visible.map(c=><tr key={c.product.id} data-product-id={c.product.id}>
       <td><input type="checkbox" aria-label={"选择"+c.product.name} disabled={c.status!=="可申请"} checked={chosen.includes(c.product.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,c.product.id]:v.filter(id=>id!==c.product.id))}/></td>
       <td><div className={styles.productCell}><ProductImage src={c.snapshot?.image||c.product.skus[0]?.images[0]||""} name={c.product.name}/><div><strong>{c.snapshot?.name||c.product.name}</strong><small>SKU {c.product.skus.map(s=>s.skuCode||s.id).join(" / ")}</small><small>自有商品库 · {c.product.batchId}</small></div></div></td>
-      <td><div className={styles.versionCell}><strong>{c.product.status==="已入库"?"首次适配完成":"尚未通过首次适配"}</strong><small>{c.snapshot?c.snapshot.versionName+" · "+c.snapshot.platform+" / "+c.snapshot.site:"暂无符合申请条件的优化版本"}</small>{c.lastRejected?<small>上次审核反馈：{c.lastRejected}</small>:null}</div></td>
+      <td><div className={styles.versionCell}><strong>{c.product.status==="已入库"?"商品已入库":"待完成商品入库审核"}</strong><small>{c.optimized?"优化版本 V"+c.optimized.version+" · "+c.optimized.platform+" / "+c.optimized.site:"尚无已适配平台的智能体优化版本"}</small>{c.optimized?<small>平台审核：{c.optimized.reviewStatus??"待审核"}</small>:null}{c.lastRejected?<small>上次优选审核反馈：{c.lastRejected}</small>:null}</div></td>
       <td><Status value={displayStatus(c.status)}/></td>
-      <td>{c.status==="可申请"?<button type="button" className={styles.rowAction} onClick={()=>showApply([c.product.id])}>发起申请</button>:c.status==="审核中"?<button type="button" onClick={()=>setView("records")}>查看记录</button>:c.status==="已入选"?<button type="button" onClick={()=>router.push("/workbench/supply/selected?preview=1")}>查看优选</button>:<button type="button" className={styles.rowAction} onClick={()=>router.push("/workbench/data/mine?preview=1")}>{c.status==="待首次适配"?"去完成适配":"去查看优化"}</button>}</td>
+      <td>{c.status==="可申请"?<button type="button" className={styles.rowAction} onClick={()=>showApply([c.product.id])}>发起申请</button>:c.status==="审核中"?<button type="button" onClick={()=>setView("records")}>查看记录</button>:c.status==="已入选"?<button type="button" onClick={()=>router.push("/workbench/supply/selected?preview=1")}>查看优选</button>:<button type="button" className={styles.rowAction} onClick={()=>router.push(["待平台适配","待平台审核","平台审核未通过"].includes(c.status)?"/workbench/listing?preview=1":"/workbench/data/mine?preview=1")}>{c.status==="待首次适配"?"去完成入库":c.status==="待智能体优化"?"去智能优化":c.status==="待平台适配"?"去平台适配":c.status==="待平台审核"?"查看审核进度":"查看驳回原因"}</button>}</td>
      </tr>)}
-     {!visible.length?<tr><td colSpan={5} className={styles.empty}>没有符合条件的商品。请先在「我的数据 · 自有商品库」完成首次入库，并保存对应的智能体优化版本。</td></tr>:null}
+     {!visible.length?<tr><td colSpan={5} className={styles.empty}>没有符合条件的商品。请核对商品入库、智能体优化、目标平台适配及平台审核状态。</td></tr>:null}
     </tbody></table></div>
     <footer className={styles.pagination}><span>共 {filtered.length} 件商品</span><div><button type="button" disabled={page<=1} onClick={()=>setPage(p=>p-1)}>上一页</button><span>{Math.min(page,pageCount)} / {pageCount}</span><button type="button" disabled={page>=pageCount} onClick={()=>setPage(p=>p+1)}>下一页</button></div></footer>
    </>:<>
