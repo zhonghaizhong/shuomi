@@ -1,0 +1,37 @@
+name: Freeze POD demo catalogue assets
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/freeze-pod-demo-assets.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download and validate original supplier images
+        run: |
+          set -eu
+          mkdir -p public/assets/pod-demo
+          base=https://www.prodigi.com/img/products/additional
+          for item in gildan-18500/gildan-18500-front_sport-grey.webp gildan-18500/gildan-18500-back_sport-grey.webp gildan-18500/gildan-18500-plain_purple.webp gildan-5000/gildan-5000-front_black.webp gildan-5000/gildan-5000-back_black.webp gildan-5000/gildan-5000-plain_azalea.webp; do
+            curl --fail --location --retry 2 --max-time 25 "$base/$item" -o "public/assets/pod-demo/${item##*/}"
+          done
+          python - <<'PY'
+          from pathlib import Path
+          files=list(Path('public/assets/pod-demo').glob('*.webp'))
+          assert len(files)==6
+          for p in files:
+              b=p.read_bytes()
+              assert len(b)>1000 and b[:4]==b'RIFF' and b[8:12]==b'WEBP', p
+              print(p, len(b))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/pod-demo
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "assets(pod): freeze six original supplier catalogue images"
+          git push origin HEAD:main
