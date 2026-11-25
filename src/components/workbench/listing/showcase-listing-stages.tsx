@@ -480,7 +480,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <button type="button" aria-pressed={photoMode==="optimized"} onClick={()=>{setPhotoMode("optimized");setPhotoIndex(0);setPhotoAiOpen(false)}}>优化图区（{selectedColorOptimizedImages.length}/6）</button>
       <button type="button" aria-pressed={photoMode==="original"} onClick={()=>{setPhotoMode("original");setPhotoIndex(0);setPhotoAiOpen(false)}}>原始图片（{selectedColorOriginalImages.length}）</button>
      </div>:null}
-     {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.filter(x=>x.source!=="demo-import").length<6?<div className={styles.galleryRecoverRow}>
+     {selectedVariantGroup&&pictureTab==="main"&&photoMode==="optimized"&&selectedVariantGroup.optimizedImages.length<6?<div className={styles.galleryRecoverRow}>
       <span>此次模拟已优化文字，图片须单独导入到本任务</span>
       <button type="button" disabled={!selectedTask||recoveringPhotos} onClick={()=>void restoreHistoricalPhotos()}>{recoveringPhotos?"正在查找…":"恢复已生成的 AI 重构图片"}</button>
       {selectedTask?.id.startsWith("SHUOMI-AMZ-AI-MULTI:")&&["black","white","navy"].includes(selectedVariantGroup?.id??"")?<>
