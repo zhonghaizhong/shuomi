@@ -1,5 +1,6 @@
 "use client";
 import {readOwnProducts,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
+import {SHUOMI_ADAPTATION_AGENT,SHUOMI_ADAPTATION_TEMPLATE_ID,SHUOMI_ADAPTATION_TEMPLATE_NAME} from "./showcase-agent-template-store";
 import {readOptimizedDatasets,optimizedDatasetsChanged,type OptimizedDataset,type OptimizedDatasetProduct} from "./showcase-optimized-datasets";
 
 /** Showcase-only, tenant/member scoped preferred-supplier application records.
@@ -66,7 +67,7 @@ export function readPreferredCandidates(org:string,member:string):PreferredCandi
    return before&&(before.name.trim()!==sku.name.trim()||before.description.trim()!==sku.description.trim()||
     sku.images.some((src,i)=>src!==before.images[i]));
   });
-  const agentOptimized=Boolean(product.agent?.trim()&&product.template?.trim()&&contentOptimized);
+  const agentOptimized=Boolean(product.agent===SHUOMI_ADAPTATION_AGENT&&product.template===SHUOMI_ADAPTATION_TEMPLATE_NAME&&product.templateId===SHUOMI_ADAPTATION_TEMPLATE_ID&&contentOptimized);
   // The Shuomi adaptation is the completed, validated own-product intake:
   // all SKU essentials are present and the in-app review has passed.
   const shuomiAdapted=intakeApproved&&product.skus.every(sku=>Boolean(sku.name.trim()&&sku.description.trim()&&sku.images.some(Boolean)));
@@ -106,7 +107,7 @@ export function submitPreferredDemoApplication(org:string,member:string,productI
  validateSupply(supply);
  const candidates=readPreferredCandidates(org,member);
  const eligible=ids.map(id=>candidates.find(c=>c.product.id===id));
- if(eligible.some(c=>!c||c.status!=="可申请"||!c.snapshot))throw Error("所选商品已变化或尚未完成智能体优化、硕米平台适配及自有商品入库审核，请刷新商品列表");
+ if(eligible.some(c=>!c||c.status!=="可申请"||!c.snapshot))throw Error("所选商品已变化或尚未通过系统「硕米适配」模板优化及自有商品入库审核，请刷新商品列表");
  const now=new Date().toISOString();
  const row:PreferredApplicationRecord={
   id:"SQ-DEMO-"+Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,6).toUpperCase(),
