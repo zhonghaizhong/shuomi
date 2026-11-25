@@ -478,3 +478,17 @@ test("My Knowledge shows read-only group and moves it only through More",async({
  await menu.getByRole("button",{name:"确认移动"}).click();
  await expect(row.getByText("未分组")).toBeVisible();
 });
+
+test("Create My Skill remains in the shared header on every Skill Library tab",async({page})=>{
+ for(const route of ["/workbench/agents/skills","/workbench/agents/skills/official","/workbench/agents/skills/mine","/workbench/agents/skills/team"]){
+  await page.goto("/shuomi/#"+route);
+  const root=page.locator('[data-skill-showcase="true"]');
+  const create=root.locator('header').first().getByRole("button",{name:"创建我的技能"});
+  await expect(create).toBeVisible();
+  await expect(root.getByRole("button",{name:"创建我的技能"})).toHaveCount(1);
+  await expect(root.getByRole("button",{name:"前往官方模板"})).toHaveCount(0);
+ }
+ await page.goto("/shuomi/#/workbench/agents/skills/mine");
+ await page.locator('[data-skill-showcase="true"] header').first().getByRole("button",{name:"创建我的技能"}).click();
+ await expect(page).toHaveURL(/\/workbench\/ai\/chat\/new/);
+});
