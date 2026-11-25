@@ -6,6 +6,7 @@ import styles from "./chat-new-preview.module.css";
 import {readPreviewProjects, createPreviewProject, savePreviewProject, projectTemplates} from "./showcase-project-data";
 import {useRouter} from "next/navigation";
 import {readEnabledPreviewSkills,readPersonalPreviewSkills,savePersonalPreviewSkill} from "./showcase-skill-library";
+import {savePersonalKnowledge} from "./showcase-knowledge-groups";
 
 const modes = [
   { title: "创建会话", detail: "描述目标，硕米协助整理", action: "发送消息", placeholder: "向硕米提问，或描述你想完成的任务…", examples: [["每周汇总商品适配与上传进展", "进度、阻塞问题、关键变更与待决策事项"], ["找出可以退订的邮件", "识别订阅邮件及重复通知（需邮箱授权）"], ["准备下一场会议", "梳理议题、讨论重点与待确认事项"], ["分析最近店铺经营情况", "诊断利润、广告和订单异常并提出建议"]] },
@@ -158,6 +159,10 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
     const labels: Record<ApprovalKind, string> = { knowledge: "知识库", skill: "技能", report: "报告" };
     const label = labels[message.approval];
     if(confirm&&message.approval==="report"&&linkedProjectId){const p=readPreviewProjects().find(p=>p.id===linkedProjectId&&p.status!=="已归档");const name=message.text.split("\n").find(x=>x.startsWith("报告主题："))?.slice(5).trim();if(p&&name){try{savePreviewProject({...p,reports:[...p.reports,name],updated:Date.now()})}catch{onAction("本地成果保存失败");return}}}
+    if(confirm&&message.approval==="knowledge"){
+      const name=message.text.split("\n").find(line=>line.startsWith("主题：")||line.startsWith("整理主题："))?.replace(/^(主题：|整理主题：)/,"").trim();
+      if(name){try{savePersonalKnowledge(organizationId,memberId,name,"经硕米Chat确认保存的演示知识条目，可在我的知识库中分组管理。")}catch{onAction("知识库演示记录保存失败");return}}
+    }
     if(confirm&&message.approval==="skill"){const goal=message.text.split("\n").find(line=>line.startsWith("技能目标："))?.slice(5).trim();if(goal)savePersonalPreviewSkill({name:skillEntry.mode==="edit"&&skillEntry.name?skillEntry.name:goal,description:goal},organizationId,memberId);}
     setMessages(current => current.map(item => item.id === message.id ? { ...item, approval: undefined } : item).concat({
       id: Date.now(),
