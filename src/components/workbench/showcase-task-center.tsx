@@ -9,25 +9,7 @@ import chat from "./chat-new-preview.module.css";
 
 type Mode="all"|"pending"|"running"|"completed"|"errors"|"scheduled";
 type Task={id:string;name:string;description:string;scope:string;state:"pending"|"running"|"completed"|"errors"|"scheduled"|"revision";time:string;progress?:number;frequency?:string;paused?:boolean;history?:{time:string;event:string}[];conversation?:{role:"user"|"assistant";text:string}[];result?:string;planId?:string};
-const base:Task[]=[
-{id:"p1",name:"美国站潜力商品分析",description:"已找到20个候选商品，等待优先筛选规则",scope:"通用业务",state:"pending",time:"10分钟前"},
-{id:"r1",name:"一号店经营诊断",description:"分析流量、广告、转化率与商品表现",scope:"一号店",state:"running",time:"30分钟前"},
-{id:"c1",name:"商品详情页优化",description:"已生成新标题、五点卖点及详情内容",scope:"二号店",state:"completed",time:"今天 10:12"},
-{id:"e1",name:"同步二号店商品数据",description:"店铺授权已过期，需要重新授权",scope:"二号店",state:"errors",time:"10分钟前"},
-{id:"s1",name:"每日店铺经营简报",description:"每天 08:30 自动生成经营简报",scope:"一号店 · 运营数据",state:"scheduled",frequency:"每天 08:30",time:"10月26日 08:30"},
-{id:"p2",name:"确认广告预算调整方案",description:"等待选择建议方案",scope:"一号店",state:"pending",time:"剩余5小时"},
-{id:"p3",name:"确认新品开发方向",description:"已筛选5个候选方向",scope:"美国站夏季女装开发",state:"pending",time:"剩余1天"},
-{id:"r2",name:"美国宠物用品机会与供应匹配",description:"收集市场与供应信息",scope:"通用业务",state:"running",progress:5,time:"预计20分钟完成"},
-{id:"r3",name:"春季广告投放优化",description:"优化广告投放方案",scope:"一号店",state:"running",progress:68,time:"预计18:30完成"},
-{id:"r4",name:"美国站夏季新品机会分析",description:"评估新品机会",scope:"美国站夏季女装开发",state:"running",progress:42,time:"预计明日10:00完成"},
-{id:"r5",name:"竞品价格与评价监测",description:"监测竞品价格和评价",scope:"Temu美国站",state:"running",progress:81,time:"预计16:20完成"},
-{id:"r6",name:"商品详情页批量优化",description:"处理商品资料",scope:"TikTok Shop英国站",state:"running",progress:24,time:"预计明日14:00完成"},
-{id:"c2",name:"生成店铺经营诊断报告",description:"查看已生成的诊断报告摘要",scope:"一号店",state:"completed",time:"今天 10:12"},
-{id:"c3",name:"完成12个商品标题优化",description:"商品标题优化已完成",scope:"二号店",state:"completed",time:"昨天 18:40"},
-{id:"c4",name:"分析美国站夏季女装趋势",description:"市场趋势分析已完成",scope:"通用业务",state:"completed",time:"8月11日"},
-{id:"s2",name:"每周商品适配与上传进展",description:"定期汇总适配与刊登进展",scope:"商品中心 · 团队",state:"scheduled",frequency:"每周一 09:00",time:"10月26日 09:00"},
-{id:"s3",name:"店铺订单异常提醒",description:"定期检查异常订单",scope:"二号店 · 订单",state:"scheduled",frequency:"每2小时",time:"10月25日 20:00"},
-{id:"s4",name:"每月选品复盘",description:"复盘商品选择策略",scope:"选品项目 · 我的项目",state:"scheduled",frequency:"每月1日 10:00",time:"暂停中",paused:true}];
+const base:Task[]=[];
 const modes:Mode[]=["pending","running","completed","errors","scheduled"];
 const labels:Record<Mode,string>={all:"任务中心",pending:"待确认",running:"进行中",completed:"已完成",errors:"异常任务",scheduled:"定时任务"};
 const subtitles:Record<Mode,string>={all:"统一查看 AI 发起的任务、处理待确认事项，并追踪执行结果。",pending:"只显示需要人工决定或补充信息的事项，避免误执行。",running:"按当前执行阶段查看任务进度与预计完成时间。",completed:"查看执行结果、报告和同步记录；完成任务保持只读。",errors:"集中查看失败原因、权限问题及恢复建议。",scheduled:"按设定时间自动运行；统一管理频率、授权范围与执行结果。"};
