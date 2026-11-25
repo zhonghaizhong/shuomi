@@ -5,6 +5,8 @@ async function seedCollections(page:import("@playwright/test").Page){
  // Seed the isolated Playwright browser afterwards, then reload so React reads
  // the fixture before any persistence effects run. This never touches user data.
  await page.goto("/shuomi/#/workbench/ai/chat/recent");
+ await expect(page.locator('[data-chat-collection-preview="recent"]')).toBeVisible();
+ await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem("shuomi-ai-workbench-reset-20261125-v1"))).toBe("done");
  await page.evaluate(()=>{
   sessionStorage.setItem("shuomi-showcase-chat-collections-v1",JSON.stringify([
    {id:"e2e-conversation-1",title:"一号店转化率下降分析",description:"演示会话",time:"刚刚",favorite:false}
