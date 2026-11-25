@@ -2,7 +2,8 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import css from "./showcase-pod-management-dialog.module.css";
 import {readPodLibrary,savePodLibrary,readPodAssetImage,podAssetPreviewSrc,type PodLibraryAsset} from "./pod-asset-library";
-import {readPodPrintLineage,reviewPodPrint,searchPodPrints} from "./pod-print-lineage";
+import {readPodPrintLineage,registerPodPrint,reviewPodPrint,searchPodPrints} from "./pod-print-lineage";
+import {isShowcasePODScope,showcasePODReviewPrints} from "./pod-showcase-print-demo";
 
 type Tab="我的素材库"|"产品图审核"|"灵感市场";
 type Asset=PodLibraryAsset;
