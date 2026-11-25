@@ -412,7 +412,6 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  };
  const persistText=()=>{if(!selectedTask)return false;try{saveShowcaseListingTextEdits(organizationId,memberId,selectedTask.id,{...textDraft,categoryPath:categoryDraft.trim(),categoryRulePending:classChanged?true:selectedTask.textEdits?.categoryRulePending??false,legacyMissingValues:{...textDraft.legacyMissingValues,...form},variantStructure:variantDetails.length?variantDraft:undefined});return true}catch(e){setNotice(e instanceof Error?e.message:"保存文本资料失败");return false}};
  const saveTextOnly=()=>{if(structureBlocked){setNotice(structureIssues[0]??"请确认变体结构变更及受影响的SKU后再保存");return}if(invalidSkuCode||!skuDisplayName.trim()){setNotice("请先检查SKU显示名称和商家SKU编码，编码不可重复。");return}if(categoryNeedsReview&&!categoryImpactConfirmed){setNotice("请先确认分类变更影响。");return}if(persistText())setNotice(categoryNeedsReview?"已保存分类变更和SKU编辑的新草稿版本；原资料完整保留，等待平台分类规则复核。":"已保存商品、颜色及SKU名称和编码修改；原始数据保持不变。")};
- const openAiForField=(field:string)=>{setAiTargetField(field);setBatchAiScope("current");setBatchAiOpen(true);setAiFeedback("")};
  const requestAiSuggestions=()=>{
   if(!selectedAiFields.length&&!aiTargetField){setAiFeedback("当前选择没有符合条件的可重构字段，请调整范围或勾选内容。");return}
   setAiFeedback("已识别可处理的文本字段，但当前 Showcase 尚未接入可执行的 AI 文本重构服务，因此没有生成或覆盖任何内容。平台固定枚举、认证文件、图片及真实数值均已排除。");
@@ -634,9 +633,8 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <button type="button" className={styles.aiBatchSubmit} disabled={!aiTargetField&&!selectedAiFields.length} onClick={requestAiSuggestions}>生成重构建议</button>
      </section>:null}
      {fieldTab==="common"?<>
-      <div className={styles.productInfoComparison}><small>原始标题（只读，永久保留）</small><p>{selectedItem.originalName??selectedItem.name}</p></div>
-      <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题 · 可修改</label><button type="button" onClick={()=>openAiForField("title")}>✦ AI 重构</button></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>
-      <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述 · 可修改</label><button type="button" onClick={()=>openAiForField("description")}>✦ AI 重构</button></div><textarea id="listing-edit-desc" rows={4} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>
+      <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题</label></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>
+      <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述</label></div><textarea id="listing-edit-desc" rows={4} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>
       {hasScopedFields("common","required")?<><div className={styles.productSectionHeading}><strong>必填信息</strong></div>{renderScopedFields("common","required")}</>:null}
       {hasScopedFields("common","optional")?<><div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("common","optional")}</>:null}
      </>:fieldTab==="shared"?<div className={styles.aiVariantEditor}>
@@ -680,9 +678,6 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
         {invalidSkuCode?<p role="alert">商家SKU编码不能为空，且同一商品内不得重复。</p>:null}
        </div>
        {hasScopedFields("sku","optional")?<><div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("sku","optional")}</>:null}
-       <div className={styles.aiEditableField}><div><label htmlFor="listing-sku-desc">SKU 补充描述 · 选填</label><button type="button" onClick={()=>openAiForField("skuDescription")}>✦ AI 重构</button></div>
-       <textarea id="listing-sku-desc" rows={3} value={textDraft.skuDescriptions[editingSkuKey]??""} maxLength={2000} placeholder="仅对当前 SKU 生效" onChange={e=>setTextDraft(d=>({...d,skuDescriptions:{...d.skuDescriptions,[editingSkuKey]:e.target.value}}))}/></div>
-
       </div>}
     </div>
     {stage==="missing"&&selectedItem.missing.length?<div className={styles.productInfoBlock}>
