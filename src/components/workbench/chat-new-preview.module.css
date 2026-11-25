@@ -369,3 +369,16 @@
     justify-content:flex-end;
   }
 }
+
+/* Theme switches must not leave briefly dark mode options in the light UI.
+   Instant surface colors also avoid intermediate low-contrast frames. */
+:global(.light) .workspace .modeList button,
+:global(.light) .workspace .modeList .modeSelected{
+  transition:none;
+  background-color:#f8f7fb;
+  color:#444050;
+}
+:global(.light) .workspace .modeList .modeSelected{
+  background-color:#eeebff;
+  border-color:#7367f0;
+}
