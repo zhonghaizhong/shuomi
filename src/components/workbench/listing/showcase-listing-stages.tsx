@@ -340,6 +340,10 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const skuCodes=variantDetails.length?variantDetails.map(v=>v.sku):selectedTask?.productIds??[];
  const invalidSkuCode=!skuIdentityDraft.trim()||skuCodes.some(id=>id!==editingSkuKey&&(textDraft.merchantSkuCodes[id]??id).trim().toLowerCase()===skuIdentityDraft.trim().toLowerCase());
  const skuDisplayName=textDraft.skuNames[editingSkuKey]??activeSku?.label??editingSkuKey;
+ const firstValues=variantDraft.dimensions.find(d=>d.id==="first")?.values??[];
+ const secondValues=variantDraft.dimensions.find(d=>d.id==="second")?.values??[];
+ const displayVariantColor=(color:string)=>firstValues.find(v=>v.sourceId===color.trim().toLowerCase())?.label??color;
+ const displayVariantSize=(size:string)=>secondValues.find(v=>v.sourceId===size)?.label??size;
  const structureImpact=variantStructureImpact(variantDetails,variantDraft);
  const structureIssues=variantStructureValidation(variantDraft);
  const structureChanged=variantDetails.length>0&&structureImpact.changed;
@@ -516,10 +520,10 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
      <div className={styles.productSectionHeading}><strong>图片管理{selectedVariantGroup?" · "+selectedVariantGroup.color+(activeSku?" / "+activeSku.size:""):""}</strong></div>
      {variantImageGroups.length?<div className={styles.variantSelectionPanel}>
       <div className={styles.variantSelectorLine}><strong>颜色</strong><div className={styles.variantColorPicker} role="group" aria-label="选择颜色变体">
-       {variantImageGroups.map(group=><button type="button" key={group.id} aria-pressed={selectedVariantGroup?.id===group.id} onClick={()=>{setVariantColorId(group.id);setActiveSkuId("");setPhotoIndex(0);setPictureTab("main");setPhotoMode("optimized");setPhotoAiOpen(false)}}><span>{group.color}</span></button>)}
+       {variantImageGroups.map(group=><button type="button" key={group.id} aria-pressed={selectedVariantGroup?.id===group.id} onClick={()=>{setVariantColorId(group.id);setActiveSkuId("");setPhotoIndex(0);setPictureTab("main");setPhotoMode("optimized");setPhotoAiOpen(false)}}><span>{displayVariantColor(group.color)}</span></button>)}
       </div></div>
       <div className={styles.variantSelectorLine}><strong>尺码</strong><div className={styles.variantSizePicker} role="group" aria-label="选择尺码变体">
-       {selectedVariantSkus.map(v=><button type="button" key={v.sku} aria-pressed={activeSku?.sku===v.sku} onClick={()=>{setActiveSkuId(v.sku);setFieldTab("sku")}}>{v.size}</button>)}
+       {selectedVariantSkus.map(v=><button type="button" key={v.sku} aria-pressed={activeSku?.sku===v.sku} onClick={()=>{setActiveSkuId(v.sku);setFieldTab("sku")}}>{displayVariantSize(v.size)}</button>)}
       </div></div>
      </div>:null}
      <div className={styles.pictureTabs} role="tablist" aria-label="商品图片区">
