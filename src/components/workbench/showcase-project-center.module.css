@@ -1,5 +1,5 @@
 /* Project center: approved Vuexy page geometry and independent light palette. */
-.page{--bg:#2f3349;--panel:#393d55;--text:#e5e4f4;--muted:#c7c4df;--line:#44485e;--control:#555a73;--accent:#00cfe8;--primary:#7367f0;--blue:#8ebbff;--green:#74ddcb;--amber:#f4bf64;--title:#f2f0fb;box-sizing:border-box;width:calc(100% - 48px);max-width:1600px;margin:auto;padding:20px 0 36px;display:grid;gap:12px;color:var(--text);font-size:14px;min-width:0}
+.page{--bg:#2f3349;--panel:#393d55;--text:#e5e4f4;--muted:#c7c4df;--line:#44485e;--control:#555a73;--accent:#00cfe8;--primary:#7367f0;--blue:#8ebbff;--green:#74ddcb;--amber:#f4bf64;--title:#f2f0fb;box-sizing:border-box;width:calc(100% - 48px);max-width:1600px;margin:auto;padding:20px 0 36px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;color:var(--text);font-size:14px;min-width:0}
 .page *{box-sizing:border-box}
 .hero,.panel,.metrics>button,.note{background:var(--bg);border:1px solid var(--line);border-radius:6px;min-width:0}
 .hero{min-height:130px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
@@ -9,7 +9,7 @@
 .hero h1{font-size:26px;line-height:34px;font-weight:700;letter-spacing:-.02em;border-left:3px solid var(--accent);padding-left:12px;margin:0 0 5px;color:var(--title)}
 .hero p,.sectionHead p{font-size:14px;line-height:22px;margin:0;color:var(--muted)}
 .page button:not(.metrics>button){cursor:pointer}
-.page button:not(.breadcrumb button):not(.metrics>button){display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 14px;border:1px solid var(--control);border-radius:6px;background:var(--panel);color:var(--text);font:inherit;font-weight:550;white-space:nowrap}
+.page button:not(.breadcrumb button):not(.metrics>button):not([data-section-tab]){display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 14px;border:1px solid var(--control);border-radius:6px;background:var(--panel);color:var(--text);font:inherit;font-weight:550;white-space:nowrap}
 .page button.primary{background:var(--primary)!important;border-color:var(--primary)!important;color:white!important}
 .page button:disabled{opacity:.45;cursor:not-allowed!important}
 .page button:focus-visible,.page input:focus-visible,.page select:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
@@ -70,3 +70,9 @@
 .page :is(input,select){border-color:var(--line);color:var(--text);background:var(--panel)}
 .page :is(.dialog){background:var(--bg);color:var(--text);border-color:var(--line)}
 .page .hero h1{color:var(--title)}
+
+/* 项目中心页内导航与标题、内容同宽；标签保持统一的一行六等分。 */
+.page :global([data-section="projects"]){width:100%;min-width:0;max-width:100%;margin:0;justify-self:stretch}
+.page :global([data-section="projects"] nav){width:100%;max-width:100%;display:flex;align-items:stretch;min-width:0}
+.page :global([data-section="projects"] [data-section-tab]){flex:1 1 0;min-width:0;min-height:46px;border-radius:0;white-space:nowrap}
+@media(max-width:720px){.page :global([data-section="projects"] nav){overflow-x:auto}.page :global([data-section="projects"] [data-section-tab]){min-width:110px}}
