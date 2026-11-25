@@ -383,9 +383,8 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   return fields;
  };
  const launchGroupAi=(scope:FieldScope,kind:"missing"|"filled"|"optional",fields:string[])=>{
-  if(!fields.length)return;
   setAiGroupTarget({scope,kind,fields});setAiTargetField(null);setBatchAiOpen(true);
-  setAiFeedback("当前演示尚未接入可执行的AI服务；不会自动填写或覆盖资料。");
+  setAiFeedback(fields.length?"当前演示尚未接入可执行的AI服务；不会自动填写或覆盖资料。":"当前分组暂无平台明确允许AI处理的字段。按钮仍可使用，待平台规则接入后自动筛选。");
  };
  const scopedGroup=(scope:FieldScope,kind:"missing"|"filled"|"optional",extra?:ReactNode)=>{
   const fields=schemaValid?schema!.fields.filter(field=>field.scope===scope&&(kind==="optional"?field.requirement==="optional":field.requirement==="required"&&(kind==="filled"?Boolean(scopedValueFor(scope,field.id).trim()):!scopedValueFor(scope,field.id).trim()))):[];
@@ -397,7 +396,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
     <button type="button" className={styles.fieldFoldToggle} aria-expanded={sectionOpen(id,kind!=="optional")} onClick={()=>toggleSection(id,kind!=="optional")}>
      <strong>{label}</strong>
     </button>
-    {eligibleGroupFields(scope,kind).length?<button type="button" className={styles.fieldFoldAi} onClick={()=>launchGroupAi(scope,kind,eligibleGroupFields(scope,kind))}>✦ AI重构</button>:null}
+    <button type="button" className={styles.fieldFoldAi} onClick={()=>launchGroupAi(scope,kind,eligibleGroupFields(scope,kind))}>✦ AI重构</button>
     <button type="button" className={styles.fieldFoldExpand} aria-label={label+(sectionOpen(id,kind!=="optional")?"收起":"展开")} onClick={()=>toggleSection(id,kind!=="optional")}>{sectionOpen(id,kind!=="optional")?"收起":"展开"}</button>
    </div>
    {sectionOpen(id,kind!=="optional")?<div className={styles.fieldFoldBody}>
@@ -497,7 +496,8 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const persistText=()=>{if(!selectedTask)return false;try{saveShowcaseListingTextEdits(organizationId,memberId,selectedTask.id,{...textDraft,categoryPath:categoryDraft.trim(),categoryRulePending:classChanged?true:selectedTask.textEdits?.categoryRulePending??false,legacyMissingValues:{...textDraft.legacyMissingValues,...form},variantStructure:variantDetails.length?variantDraft:undefined});return true}catch(e){setNotice(e instanceof Error?e.message:"保存文本资料失败");return false}};
  const saveTextOnly=()=>{if(structureBlocked){setNotice(structureIssues[0]??"请确认变体结构变更及受影响的SKU后再保存");return}if(invalidSkuCode||!skuDisplayName.trim()){setNotice("请先检查SKU显示名称和商家SKU编码，编码不可重复。");return}if(categoryNeedsReview&&!categoryImpactConfirmed){setNotice("请先确认分类变更影响。");return}if(persistText())setNotice(categoryNeedsReview?"已保存分类变更和SKU编辑的新草稿版本；原资料完整保留，等待平台分类规则复核。":"已保存商品、颜色及SKU名称和编码修改；原始数据保持不变。")};
  const requestAiSuggestions=()=>{
-  if(!aiGroupTarget&&!selectedAiFields.length&&!aiTargetField){setAiFeedback("当前分组没有可重构的文本字段。");return}
+  if(aiGroupTarget&&!aiGroupTarget.fields.length){setAiFeedback("当前分组没有经平台规则确认可由AI处理的字段，不会修改任何资料。");return}
+  if(!aiGroupTarget&&!selectedAiFields.length&&!aiTargetField){setAiFeedback("当前分组没有可重构的字段。");return}
   if(aiGroupTarget&&schemaValid){
    const sourceEvidence=[selectedItem?.originalName??"",selectedItem?.optimizedDescription??"",textDraft.title,textDraft.description].filter(Boolean).join(" ");
    const eligible=schema!.fields.filter(f=>f.scope===aiGroupTarget.scope&&f.kind==="enum"&&f.aiEditable&&f.options?.length&&
@@ -708,7 +708,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
      </div>
           {batchAiOpen?<section className={styles.aiBatchPanel} aria-label="AI 批量重构配置">
       <header><strong>✦ {aiGroupTarget?"AI重构":aiTargetField?"AI字段重构":"AI批量重构"}</strong><button type="button" aria-label="收起重构配置" onClick={()=>{setBatchAiOpen(false);setAiTargetField(null);setAiGroupTarget(null)}}>×</button></header>
-      {aiGroupTarget?<p>仅处理当前分组允许AI处理的文本和下拉字段：{aiGroupTarget.fields.join("、")}</p>:aiTargetField?<p>指定字段：{(aiTargetField?.startsWith("platform:")?schema?.fields.find(f=>aiTargetField==="platform:"+f.scope+":"+f.id)?.label:aiEligibleFields.find(f=>f.key===aiTargetField)?.label)??aiTargetField}。仅在符合平台规则时允许重构。</p>:<>
+      {aiGroupTarget?<p>{aiGroupTarget.fields.length?"仅处理当前分组允许AI处理的文本和下拉字段："+aiGroupTarget.fields.join("、"):"当前分组暂无已验证可由AI处理的字段，等待平台规则，不会擅自修改资料。"}</p>:aiTargetField?<p>指定字段：{(aiTargetField?.startsWith("platform:")?schema?.fields.find(f=>aiTargetField==="platform:"+f.scope+":"+f.id)?.label:aiEligibleFields.find(f=>f.key===aiTargetField)?.label)??aiTargetField}。仅在符合平台规则时允许重构。</p>:<>
        <label>重构范围
         <select aria-label="重构信息范围" value={batchAiScope} onChange={e=>setBatchAiScope(e.target.value as "current"|"all")}><option value="current">当前信息标签</option><option value="all">整个商品的可编辑文字字段</option></select>
        </label>
@@ -723,7 +723,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       </label>
       <div className={styles.aiRuleNote}>平台固定枚举、类目、认证资料、真实参数、价格、库存和所有图片均不会进入批量重构；AI 结果需要人工确认才能应用。</div>
       {aiFeedback?<p role="status" className={styles.aiFeedback}>{aiFeedback}</p>:null}
-      <button type="button" className={styles.aiBatchSubmit} disabled={!aiGroupTarget&&!aiTargetField&&!selectedAiFields.length} onClick={requestAiSuggestions}>生成重构建议</button>
+      <button type="button" className={styles.aiBatchSubmit} disabled={aiGroupTarget?!aiGroupTarget.fields.length:!aiTargetField&&!selectedAiFields.length} onClick={requestAiSuggestions}>生成重构建议</button>
      </section>:null}
      {fieldTab==="common"?<>
       {scopedGroup("common","missing",
