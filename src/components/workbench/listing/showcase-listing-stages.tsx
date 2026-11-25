@@ -624,10 +624,10 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
        <textarea id="listing-color-desc" rows={3} value={textDraft.colorDescriptions[editingColorKey]??""} maxLength={2000} placeholder="输入该颜色共用的描述" onChange={e=>setTextDraft(d=>({...d,colorDescriptions:{...d.colorDescriptions,[editingColorKey]:e.target.value}}))}/></div>
        <div className={styles.aiRuleNote}>颜色代码等平台枚举值不能由 AI 自行生成；图片在左侧独立管理。</div>
       </div>:<div className={styles.aiVariantEditor}>
-       <strong>当前 SKU · {activeSku?.sku??editingSkuKey}</strong>
+       <strong>当前 SKU · {skuDisplayName}</strong>
        <div className={styles.dialogFieldEmpty}><strong>当前SKU必填信息</strong><p>此处预留该分类的SKU级必填属性；商家SKU编码是业务管理字段，不冒充平台必填。分类规则未确认前不补造字段。</p></div>
        <div className={styles.productSectionHeading}><strong>SKU名称与编码（商家管理）</strong></div>
-       {selectedVariantSkus.length>1?<div className={styles.aiSkuPills}>{selectedVariantSkus.map(v=><button type="button" key={v.sku} aria-pressed={editingSkuKey===v.sku} onClick={()=>setActiveSkuId(v.sku)}>{v.size}</button>)}</div>:null}
+       {selectedVariantSkus.length>1?<div className={styles.aiSkuPills}>{selectedVariantSkus.map(v=><button type="button" key={v.sku} title={textDraft.skuNames[v.sku]??v.label??v.sku} aria-label={"选择SKU："+(textDraft.skuNames[v.sku]??v.label??v.sku)} aria-pressed={editingSkuKey===v.sku} onClick={()=>setActiveSkuId(v.sku)}>{textDraft.skuNames[v.sku]??v.label??v.size}</button>)}</div>:null}
        <div className={styles.aiEditableField}>
         <div><label htmlFor="listing-sku-name">SKU显示名称 · 可修改</label></div>
         <input id="listing-sku-name" aria-label="SKU显示名称" maxLength={160} value={skuDisplayName} onChange={e=>setTextDraft(d=>({...d,skuNames:{...d.skuNames,[editingSkuKey]:e.target.value}}))}/>
@@ -637,7 +637,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
         <input id="listing-merchant-sku" aria-label="商家SKU编码" maxLength={100} value={skuIdentityDraft} onChange={e=>setTextDraft(d=>({...d,merchantSkuCodes:{...d.merchantSkuCodes,[editingSkuKey]:e.target.value}}))}/>
         {invalidSkuCode?<p role="alert">商家SKU编码不能为空，且同一商品内不得重复。</p>:null}
        </div>
-       <p>内部SKU标识：{editingSkuKey}（只读）。修改商家编码不改变图片、库存和历史记录的内部关联。</p>
+       <p>原始SKU：{editingSkuKey}（只读） · 当前商家编码：{skuIdentityDraft}。名称和编码单独保存，不改变原始SKU、图片和历史记录的内部关联。</p>
        <div className={styles.productSectionHeading}><strong>当前SKU选填信息</strong></div>
        <div className={styles.aiEditableField}><div><label htmlFor="listing-sku-desc">SKU 补充描述 · 选填</label><button type="button" onClick={()=>openAiForField("skuDescription")}>✦ AI 重构</button></div>
        <textarea id="listing-sku-desc" rows={3} value={textDraft.skuDescriptions[editingSkuKey]??""} maxLength={2000} placeholder="仅对当前 SKU 生效" onChange={e=>setTextDraft(d=>({...d,skuDescriptions:{...d.skuDescriptions,[editingSkuKey]:e.target.value}}))}/></div>
