@@ -9,6 +9,7 @@ import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo
 import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,saveShowcaseGalleryEdits,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,type ListingVariantPhotoRole,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 import {useRouter} from "next/navigation";
 import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
+import {fieldSchemaMatches,scopedFieldKey,type FieldScope} from "./showcase-platform-field-schema";
 import {readAdaptationRules,type AdaptationRule} from "./showcase-adaptation-rules";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./showcase-batch-version-picker";
 import styles from "./showcase-listing-stages.module.css";
@@ -172,7 +173,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const autoRecoveryAttempted=useRef<Set<string>>(new Set());
  const [fieldTab,setFieldTab]=useState<"common"|"shared"|"variant"|"sku">("common");
  const [activeSkuId,setActiveSkuId]=useState("");
- const [textDraft,setTextDraft]=useState<{title:string;description:string;colorDescriptions:Record<string,string>;skuDescriptions:Record<string,string>;skuNames:Record<string,string>;merchantSkuCodes:Record<string,string>}>({title:"",description:"",colorDescriptions:{},skuDescriptions:{},skuNames:{},merchantSkuCodes:{}});
+ const [textDraft,setTextDraft]=useState<{title:string;description:string;colorDescriptions:Record<string,string>;skuDescriptions:Record<string,string>;skuNames:Record<string,string>;merchantSkuCodes:Record<string,string>;fieldValues:Record<string,string>;legacyMissingValues:Record<string,string>}>({title:"",description:"",colorDescriptions:{},skuDescriptions:{},skuNames:{},merchantSkuCodes:{},fieldValues:{},legacyMissingValues:{}});
  const [batchAiOpen,setBatchAiOpen]=useState(false),[batchAiScope,setBatchAiScope]=useState<"current"|"all">("current");
  const [batchAiRequired,setBatchAiRequired]=useState(true),[batchAiOptional,setBatchAiOptional]=useState(false);
  const [batchAiInstructions,setBatchAiInstructions]=useState(""),[aiTargetField,setAiTargetField]=useState<string|null>(null),[aiFeedback,setAiFeedback]=useState("");
@@ -181,6 +182,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const [categoryEdit,setCategoryEdit]=useState(false);
  const [categoryDraft,setCategoryDraft]=useState("");
  const [categoryImpactConfirmed,setCategoryImpactConfirmed]=useState(false);
+ const [batchSkuPattern,setBatchSkuPattern]=useState("");
  const [imagePreview,setImagePreview]=useState(false);
  const [variantPreviewIndex,setVariantPreviewIndex]=useState<number|null>(null);
  const [bundleImporting,setBundleImporting]=useState(false),[bundlePhotoUrls,setBundlePhotoUrls]=useState<Record<string,string>>({});
@@ -334,6 +336,26 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const skuCodes=variantDetails.length?variantDetails.map(v=>v.sku):selectedTask?.productIds??[];
  const invalidSkuCode=!skuIdentityDraft.trim()||skuCodes.some(id=>id!==editingSkuKey&&(textDraft.merchantSkuCodes[id]??id).trim().toLowerCase()===skuIdentityDraft.trim().toLowerCase());
  const skuDisplayName=textDraft.skuNames[editingSkuKey]??activeSku?.label??editingSkuKey;
+ const schema=selectedTask?.platformFieldSchema;
+ const schemaValid=fieldSchemaMatches(schema,{platform:selectedTask?.platform??"",region:selectedTask?.region??"",storeType:selectedTask?.storeType??"",categoryPath:categoryDraft.trim()});
+ const scopeEntity=(scope:FieldScope)=>scope==="variant"?editingColorKey:scope==="sku"?editingSkuKey:"all";
+ const scopedValue=(scope:FieldScope,id:string)=>textDraft.fieldValues[scopedFieldKey(scope,id,scopeEntity(scope))]??"";
+ const editScopedValue=(scope:FieldScope,id:string,value:string)=>setTextDraft(d=>({...d,fieldValues:{...d.fieldValues,[scopedFieldKey(scope,id,scopeEntity(scope))]:value}}));
+ const renderScopedFields=(scope:FieldScope,requirement:"required"|"optional")=>{
+  const fields=schemaValid?schema!.fields.filter(x=>x.scope===scope&&x.requirement===requirement):[];
+  return fields.length?fields.map(field=><label className={styles.productMissingField} key={field.id}>{field.label}<span>{requirement==="required"?"必填":"选填"} · {schema!.ruleVersion}</span>
+   {field.kind==="enum"?<select aria-label={field.label} value={scopedValue(scope,field.id)} onChange={e=>editScopedValue(scope,field.id,e.target.value)}><option value="">请选择</option>{field.options?.map(option=><option key={option} value={option}>{option}</option>)}</select>
+   :<input aria-label={field.label} type={field.kind==="number"?"number":"text"} maxLength={field.maxLength??500} value={scopedValue(scope,field.id)} onChange={e=>editScopedValue(scope,field.id,e.target.value)}/>}</label>)
+   :<p className={styles.productHint}>{schemaValid?"该层级暂无"+(requirement==="required"?"必填":"选填")+"字段。":"目标平台、站点和分类的已验证字段规则尚未接入，不会虚构属性及必填要求。"}</p>;
+ };
+ const applyBatchSkuNames=()=>{
+  if(!batchSkuPattern.trim()){setNotice("请输入批量命名模板，例如 {color}-{size}");return}
+  if(!variantDetails.length){setNotice("当前商品没有可批量命名的变体SKU");return}
+  const values=Object.fromEntries(variantDetails.map(v=>[v.sku,batchSkuPattern.replace(/\{color\}/gi,v.color).replace(/\{size\}/gi,v.size).replace(/\{sku\}/gi,v.sku).trim()]));
+  if(Object.values(values).some(v=>!v||v.length>160)){setNotice("批量命名存在空名称或超过160字符，请调整模板");return}
+  setTextDraft(d=>({...d,skuNames:{...d.skuNames,...values}}));
+  setNotice("已预览应用 "+variantDetails.length+" 个SKU名称；点击保存补全资料后写入编辑版本。");
+ };
  const action=(next:string)=>{setNotice(next);setSubmitted(true)};
  const submitUpload=(uploadMode:"平台草稿"|"直接上传到平台"|"定时上传")=>{
   if(!selectedCount||!chosenStore||!rules){setNotice("请先选择商品、有效目标店铺及适配规则。");return}
@@ -379,9 +401,9 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   if(!skuDisplayName.trim()){setNotice("SKU显示名称不能为空。");return}
   if(categoryNeedsReview){if(!categoryImpactConfirmed){setNotice("请确认分类变更影响，然后保存草稿。");return}persistText();setNotice("分类变更保存为新草稿。目标平台类目规则未接入，原数据保留，必须完成规则校验才能提交审核。");return}
   if(selectedTask&&!persistText())return;
-  const allFilled=selectedItem.missing.every(field=>(form[field]??"").trim().length>0);
+  const allFilled=selectedItem.missing.every(field=>(form[field]??textDraft.legacyMissingValues[field]??"").trim().length>0);
   if(!allFilled){setNotice("请补齐所有必填字段后保存。");return}
-  if(selectedItem.taskId){try{completeShowcaseUploadTask(organizationId,memberId,selectedItem.taskId,form);setSelected(null);setForm({});setNotice("资料已补齐，进入待审核；必须审核智能体结果后才能提交目标店铺。");}catch(e){setNotice(e instanceof Error?e.message:"保存失败");}return;}
+  if(selectedItem.taskId){try{completeShowcaseUploadTask(organizationId,memberId,selectedItem.taskId,{...textDraft.legacyMissingValues,...form});setSelected(null);setForm({});setNotice("资料已补齐，进入待审核；必须审核智能体结果后才能提交目标店铺。");}catch(e){setNotice(e instanceof Error?e.message:"保存失败");}return;}
   setItems(arr=>arr.map(x=>x.sku===selectedItem.sku?{...x,missing:[],status:"手动已补全"}:x));
   setSelected(null);setForm({});action("资料已保存到演示记录。请核对原任务，确认继续上传；启用智能体时先进入待审核。");
  };
@@ -444,7 +466,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <span className={styles.compactStoreType}>{item.targetStoreType||"—"}</span>
       <span className={styles.compactPlainCell} title={item.store}>{item.store||"—"}</span>
       <span className={styles.compactStatus}>{item.status}</span>
-      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes}}})());setBatchAiOpen(false);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
+      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes},fieldValues:{...record?.textEdits?.fieldValues},legacyMissingValues:{...record?.textEdits?.legacyMissingValues}}})());setBatchAiOpen(false);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setBatchSkuPattern("");setImagePreview(false);setForm({});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
      </div>})}</div></div>{filtered.length>15?<nav className={styles.listPagination} aria-label="商品分页"><span>共 {filtered.length} 条 · 每页 15 条 · 第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setListPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setListPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></nav>:null}
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
