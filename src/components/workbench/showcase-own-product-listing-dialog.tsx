@@ -5,7 +5,7 @@ import {saveOwnIntakeNavigation,type OwnIntakeStage} from "./showcase-own-produc
 import {ShowcaseOwnProductIntakeModal} from "./showcase-own-product-intake-modal";
 import {agentPreviewTemplatesChanged,readAgentPreviewTemplates} from "./showcase-agent-template-store";
 import styles from "./showcase-own-product-listing-dialog.module.css";
-import {readOwnProductBatches,createOwnProductBatch,saveOwnProduct,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,simulateFiveOwnProductIntakes,installPodApparelIntakeDemo,type OwnProductBatch,type OwnProductRecord} from "./showcase-own-product-data";
+import {readOwnProductBatches,createOwnProductBatch,saveOwnProduct,readOwnProducts,checkOwnProductSkus,updateOwnProductAfterReview,approveOwnProductIntake,simulateFiveOwnProductIntakes,type OwnProductBatch,type OwnProductRecord} from "./showcase-own-product-data";
 
 type Source="img"|"sheet"|"link"|"api";
 type Sku={id:number;name:string;draft:string;description:string;images:string[]};
@@ -76,7 +76,6 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
   }catch(e){setStatus(e instanceof Error?e.message:"模拟导入失败");}
  };
 
- const simulatePod=()=>{try{const result=installPodApparelIntakeDemo(organizationId,memberId);setBatches(readOwnProductBatches(organizationId,memberId));setBatchId(result.batchId);setIntakeRefresh(v=>v+1);setStatus("POD 服装演示批次：新增 "+result.created+" 款，已入库 "+result.approved+" 款。前往我的数据 → 自有商品库查看；未刊登到第三方平台。")}catch(e){setStatus(e instanceof Error?e.message:"POD 演示入库失败")}};
  const saveBatch=()=>{try{const next=createOwnProductBatch(organizationId,memberId,batchName);setBatches(readOwnProductBatches(organizationId,memberId));setBatchId(next.id);setBatchMode(null);setBatchName("");setStatus("已创建批次「"+next.name+"」，可以提交商品检测。")}catch(e){setStatus(e instanceof Error?e.message:"无法创建批次")}};
 
  useEffect(()=>{const el=ref.current,previous=document.activeElement;el?.showModal();return()=>{el?.close();if(previous instanceof HTMLElement&&previous.isConnected)previous.focus()}},[]);
@@ -158,7 +157,7 @@ export function ShowcaseOwnProductListingDialog({onClose,organizationId,memberId
      <button type="button" className={styles.reviewCheck} onClick={completeReview}>完成硕米入库检查</button>
     </>:reviewProduct.status==="待审核"?<div className={styles.reviewSuccess}><p>首次入库检查已通过，等待确认入库；不属于第三方平台「待审核」。</p><button type="button" className={styles.reviewCheck} onClick={()=>confirmIntake(reviewProduct.id)}>确认入库</button></div>:<p className={styles.reviewSuccess}>已确认入库，可在「我的数据 → 自有商品库」查看。后续第三方平台适配缺项才进入「刊登管理 → 待补全」。</p>}
    </section>:null}
-   {!reviewProduct?<><section className={styles.panel}><div className={styles.heading}><h3>01&nbsp; 选择导入方式</h3><button type="button" className={styles.intakeAction} onClick={simulatePod}>模拟上传 POD 服装</button></div>
+   {!reviewProduct?<><section className={styles.panel}><div className={styles.heading}><h3>01&nbsp; 选择导入方式</h3></div>
     <div className={styles.sources} role="radiogroup" aria-label="选择导入方式">{sourceOptions.map(x=><button type="button" key={x.value} role="radio" aria-checked={source===x.value} onClick={()=>onSource(x.value)}>{x.label}<span className={styles.selectDot}/></button>)}</div>
    </section>
    <section className={styles.panel}>
