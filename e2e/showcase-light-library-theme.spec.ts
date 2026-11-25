@@ -345,7 +345,7 @@ test("project archive restores shared create action and My Projects manages cust
  await expect(dialog.getByText("美国站业务")).toBeVisible();
  await dialog.getByRole("button",{name:"完成"}).click();
  await expect(dialog).not.toBeVisible();
- await expect(root.getByRole("combobox",{name:"按项目分组筛选"}).getByRole("option",{name:"美国站业务"})).toHaveCount(1);
+ await expect(root.getByRole("combobox",{name:"按项目分组筛选"})).toHaveCount(0);
  await root.getByRole("button",{name:"管理分组"}).click();
  await dialog.getByRole("button",{name:"重命名"}).click();
  await dialog.getByRole("textbox",{name:"重命名美国站业务"}).fill("重点项目");
@@ -552,4 +552,15 @@ test("My Skills keeps filtering and group management visible even when no skills
  await toolbar.getByRole("button",{name:"管理分组"}).click();
  await expect(dialog.getByText("我的运营技能")).toBeVisible();
  await dialog.getByRole("button",{name:"完成"}).click();
+});
+
+test("My Projects and My Reports omit group filter but keep group management",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/projects/mine");
+ const projects=page.locator('[data-project-showcase="true"]');
+ await expect(projects.getByRole("combobox",{name:"按项目分组筛选"})).toHaveCount(0);
+ await expect(projects.getByRole("button",{name:"管理分组"})).toBeVisible();
+ await page.goto("/shuomi/#/workbench/ai/reports");
+ const reports=page.locator('[data-report-center]');
+ await expect(reports.getByRole("combobox",{name:"报告分组"})).toHaveCount(0);
+ await expect(reports.getByRole("button",{name:"管理分组"})).toBeVisible();
 });
