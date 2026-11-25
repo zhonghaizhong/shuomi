@@ -42,7 +42,7 @@ export type ShowcaseUploadTask={
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
  status:"待补全"|"待执行智能体"|"待审核"|"待平台提交";
  demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:ListingVariantDetail[];variantImageGroups?:ListingVariantImageGroup[];imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
- textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>};
+ textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>;skuNames?:Record<string,string>;merchantSkuCodes?:Record<string,string>;categoryPath?:string;categoryRulePending?:boolean;revision?:number;updatedAt?:string};
  /** User-managed display gallery; never replaces preserved source evidence. Key is color group id or "default". */
  imageEdits?:Record<string,{main?:string[];detail?:string[]}>;
 
@@ -242,8 +242,23 @@ export function saveShowcaseListingTextEdits(
   title:safe(updates.title,500)??existing.title,
   description:safe(updates.description,6000)??existing.description,
   colorDescriptions:{...existing.colorDescriptions,...Object.fromEntries(Object.entries(updates.colorDescriptions??{}).filter(([key,value])=>key.length<=100&&typeof value==="string").map(([key,value])=>[key,value.trim().slice(0,2000)]))},
-  skuDescriptions:{...existing.skuDescriptions,...Object.fromEntries(Object.entries(updates.skuDescriptions??{}).filter(([key,value])=>key.length<=160&&typeof value==="string").map(([key,value])=>[key,value.trim().slice(0,2000)]))}
+  skuDescriptions:{...existing.skuDescriptions,...Object.fromEntries(Object.entries(updates.skuDescriptions??{}).filter(([key,value])=>key.length<=160&&typeof value==="string").map(([key,value])=>[key,value.trim().slice(0,2000)]))},
+  skuNames:{...existing.skuNames,...Object.fromEntries(Object.entries(updates.skuNames??{}).filter(([key,value])=>key.length<=160&&typeof value==="string"&&!!value.trim()).map(([key,value])=>[key,value.trim().slice(0,160)]))},
+  merchantSkuCodes:{...existing.merchantSkuCodes,...Object.fromEntries(Object.entries(updates.merchantSkuCodes??{}).filter(([key,value])=>key.length<=160&&typeof value==="string"&&!!value.trim()).map(([key,value])=>[key,value.trim().slice(0,100)]))},
+  categoryPath:safe(updates.categoryPath,300)??existing.categoryPath,
+  categoryRulePending:updates.categoryRulePending??existing.categoryRulePending,
+  revision:(existing.revision??0)+1,
+  updatedAt:new Date().toISOString()
  };
+ const knownSkus=task.demoProduct.variantDetails?.map(v=>v.sku)??task.productIds;
+ const allowed=new Set(knownSkus);
+ for(const id of [...Object.keys(updates.skuNames??{}),...Object.keys(updates.merchantSkuCodes??{})]){
+  if(!allowed.has(id))throw Error("SKU记录不存在，不能修改");
+ }
+ const codes=knownSkus.map(id=>cleaned.merchantSkuCodes[id]??id).map(v=>v.trim().toLocaleLowerCase());
+ if(codes.some(v=>!v)||new Set(codes).size!==codes.length)throw Error("商家SKU编码不能为空，且同一商品内必须唯一");
+ if(Object.values(cleaned.skuNames).some(name=>!name.trim()))throw Error("SKU显示名称不能为空");
+ if(cleaned.categoryRulePending===false&&cleaned.categoryPath!==existing.categoryPath)throw Error("分类变更须先完成目标平台规则复核");
  const next={...task,textEdits:cleaned};
  persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
