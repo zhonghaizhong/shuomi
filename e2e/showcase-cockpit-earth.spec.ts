@@ -143,7 +143,7 @@ const lightModules: Array<[string,string]> = [
   ["/workbench/agents",'[class*="dataCard"]:not([class*="dataCards"])'],
   ["/workbench/agents/market",'[class*="agentCards"] article'],
   ["/workbench/agents/mine",'[class*="agentMine"] > article > section'],
-  ["/workbench/ai/projects",'[data-project-showcase] [class*="metrics"] > button'],
+  ["/workbench/ai/projects",'[data-project-showcase] [class*="guideCapabilities"] article'],
   // The knowledge landing intentionally has two intro cards instead of obsolete metric cards.
   // Check a solid surfaced tag inside the new card (the card itself uses a gradient).
   ["/workbench/ai/knowledge",'[data-library-hub="knowledge"] [class*="knowledgeIntroTags"] > span'],
@@ -406,7 +406,7 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
   const screens=[
     {route:"/workbench/ai/chat",surfaces:['[class*="landingCard"]','[class*="example"]','[class*="steps"] > li > *']},
     {route:"/workbench/ai/tasks",surfaces:['[class*="taskStats"] > button','[class*="taskSearch"]','[class*="taskTable"]','[class*="taskRow"]']},
-    {route:"/workbench/ai/projects",surfaces:['[data-project-showcase] [class*="metrics"] > button','[class*="filters"]','[class*="list"]','[data-project-showcase] [class*="tableWrap"]']},
+    {route:"/workbench/ai/projects",surfaces:['[data-project-showcase] [class*="guideIntro"]','[data-project-showcase] [class*="guideCapabilities"] article','[data-project-showcase] [class*="guideSteps"] article']},
   ] as const;
   for(const screen of screens) {
     await page.goto("/shuomi/#"+screen.route);
