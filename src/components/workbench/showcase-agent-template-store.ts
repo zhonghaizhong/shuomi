@@ -10,10 +10,10 @@ export const SHUOMI_ADAPTATION_TEMPLATE_ID="shuomi-official-adaptation-v1";
 export const SHUOMI_ADAPTATION_TEMPLATE_NAME="硕米适配";
 export const isShuomiAdaptationTemplate=(agent:string,id:string)=>agent===SHUOMI_ADAPTATION_AGENT&&id===SHUOMI_ADAPTATION_TEMPLATE_ID;
 const officialAdaptationTemplate:AgentPreviewTemplate={
- id:SHUOMI_ADAPTATION_TEMPLATE_ID,name:SHUOMI_ADAPTATION_TEMPLATE_NAME,createdAt:"系统内置",
+ id:SHUOMI_ADAPTATION_TEMPLATE_ID,name:SHUOMI_ADAPTATION_TEMPLATE_NAME,createdAt:"官方模板",
  config:{
   systemTemplate:true,targetPlatform:"硕米平台",
-  purpose:"将自有商品规范化为硕米可审核的商品资料；通过自有商品待审核后方可申请硕米优选。",
+  purpose:"优选申请审核通过后，对已入库自有商品开展二次规范化适配；完成后进入硕米优选。正式处理需要服务端执行记录。",
   skills:["商品标题与描述规范化","SKU和变体一致性检测","图片与资料完整性检测","硕米平台字段适配"],
   knowledge:[],imageOptimization:false,imageInstructions:"",
   useConfig:{optimizationSource:"官方方案",imageLanguage:"按原商品语言",imageBackground:"保持原始来源"}
