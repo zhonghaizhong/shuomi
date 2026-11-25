@@ -367,7 +367,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   if(addShowcaseUploadTask(record)){sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),showcaseUploadBatchKey(record));setBatchFilter(showcaseUploadBatchKey(record));setAppliedBatch(showcaseUploadBatchKey(record));setSubmitted(true);setNotice("已保存本次演示刊登任务（"+selectedCount+" 件，"+chosenStore.name+"，"+status+"）。已记住本次来源、批次与版本，后续阶段按同一批次筛选；未执行真实平台上传。")}else setNotice("演示任务保存失败，请检查会话存储。");
  };
  const persistText=()=>{if(!selectedTask)return false;try{saveShowcaseListingTextEdits(organizationId,memberId,selectedTask.id,{...textDraft,categoryPath:categoryDraft.trim(),categoryRulePending:classChanged?true:selectedTask.textEdits?.categoryRulePending??false});return true}catch(e){setNotice(e instanceof Error?e.message:"保存文本资料失败");return false}};
- const saveTextOnly=()=>{if(persistText())setNotice(categoryNeedsReview?"已保存分类变更和SKU编辑的新草稿版本；原资料完整保留，等待平台分类规则复核。":"已保存商品、颜色及SKU名称和编码修改；原始数据保持不变。")};
+ const saveTextOnly=()=>{if(invalidSkuCode||!skuDisplayName.trim()){setNotice("请先检查SKU显示名称和商家SKU编码，编码不可重复。");return}if(categoryNeedsReview&&!categoryImpactConfirmed){setNotice("请先确认分类变更影响。");return}if(persistText())setNotice(categoryNeedsReview?"已保存分类变更和SKU编辑的新草稿版本；原资料完整保留，等待平台分类规则复核。":"已保存商品、颜色及SKU名称和编码修改；原始数据保持不变。")};
  const openAiForField=(field:string)=>{setAiTargetField(field);setBatchAiScope("current");setBatchAiOpen(true);setAiFeedback("")};
  const requestAiSuggestions=()=>{
   if(!selectedAiFields.length&&!aiTargetField){setAiFeedback("当前选择没有符合条件的可重构字段，请调整范围或勾选内容。");return}
@@ -661,7 +661,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   <footer className={styles.productDetailFooter}>
    <span>{stage==="missing"?(categoryNeedsReview?"分类变更需保存草稿并通过平台规则复核，不能直接送审":"保存完整必填资料后进入待审核"):"人工审核通过后进入待平台提交；此处不执行真实上传"}</span>
    <div><button type="button" onClick={()=>setSelected(null)}>取消</button><button type="button" onClick={saveTextOnly}>保存补全资料</button>
-   <button type="button" className={styles.primary} disabled={(stage==="review"&&(!reviewChecked||!colorPhotoComplete))||(stage==="missing"&&(categoryNeedsReview||invalidSkuCode||!skuDisplayName.trim()))} onClick={stage==="missing"?save:()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"重新检查并提交审核":"审核通过"}</button></div>
+   <button type="button" className={styles.primary} disabled={(stage==="review"&&(!reviewChecked||!colorPhotoComplete||categoryNeedsReview||invalidSkuCode||!skuDisplayName.trim()))||(stage==="missing"&&(categoryNeedsReview||invalidSkuCode||!skuDisplayName.trim()))} onClick={stage==="missing"?save:()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"重新检查并提交审核":"审核通过"}</button></div>
   </footer>
  </section>
 </div>:null}
