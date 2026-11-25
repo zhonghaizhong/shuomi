@@ -1,12 +1,12 @@
 "use client";
-import {readAgentPreviewTemplates,writeAgentPreviewTemplates} from "./showcase-agent-template-store";
+import {readAgentPreviewTemplates,writeAgentPreviewTemplates,SHUOMI_ADAPTATION_AGENT,SHUOMI_ADAPTATION_TEMPLATE_ID,SHUOMI_ADAPTATION_TEMPLATE_NAME} from "./showcase-agent-template-store";
 
 /** Browser-session showcase only. This is not a production inventory API. */
 export type OwnProductSku={id:number;name:string;description:string;images:string[];price?:string;stock?:number;skuCode?:string};
 export type OwnProductRecord={
  id:string;batchId:string;name:string;source:"上传资料"|"导入表格"|"商品链接"|"API 接入";
  createdAt:string;checkedAt:string;status:"入库待完善"|"待审核"|"已入库";
- missing:string[];skus:OwnProductSku[];originalSkus?:OwnProductSku[];agent:string;template:string;demoImageSource?:string;
+ missing:string[];skus:OwnProductSku[];originalSkus?:OwnProductSku[];agent:string;template:string;templateId?:string;demoImageSource?:string;
 };
 export type OwnProductBatch={id:string;name:string;createdAt:string;productCount:number};
 const batchKey=(org:string,member:string)=>"shuomi:own-product-batches-v1:"+org+":"+member;
@@ -36,7 +36,8 @@ export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omi
  if(!readOwnProductBatches(org,member).some(b=>b.id===batchId))throw Error("该批次不属于当前账号或已不存在");
  if(!entry.skus.length)throw Error("请至少添加一个 SKU");
  const time=new Date().toLocaleString("zh-CN",{hour12:false});
- const product:OwnProductRecord={...entry,skus:cloneSkus(entry.skus),originalSkus:cloneSkus(entry.skus),id:"OWN-P-"+crypto.randomUUID(),batchId,createdAt:time,checkedAt:time};
+ const templateId=entry.agent===SHUOMI_ADAPTATION_AGENT&&entry.template===SHUOMI_ADAPTATION_TEMPLATE_NAME&&readAgentPreviewTemplates(org,member,entry.agent).some(t=>t.id===SHUOMI_ADAPTATION_TEMPLATE_ID)?SHUOMI_ADAPTATION_TEMPLATE_ID:undefined;
+  const product:OwnProductRecord={...entry,templateId,skus:cloneSkus(entry.skus),originalSkus:cloneSkus(entry.skus),id:"OWN-P-"+crypto.randomUUID(),batchId,createdAt:time,checkedAt:time};
  const current=readOwnProducts(org,member);
  // Keep prior products intact if session storage is full; no success without the actual data.
  sessionStorage.setItem(productKey(org,member),JSON.stringify([product,...current]));
