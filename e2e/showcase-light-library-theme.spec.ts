@@ -329,3 +329,29 @@ test("knowledge landing navigation aligns with cards and opens Chat new conversa
  await root.getByRole("button",{name:"去创建知识库"}).click();
  await expect(page).toHaveURL(/\/workbench\/ai\/chat\/new\?preview=1/);
 });
+
+test("project archive restores shared create action and My Projects manages custom groups without deleting projects",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/projects/archived");
+ const archived=page.locator('[data-project-showcase="true"]');
+ await expect(archived.getByRole("button",{name:"新建项目"})).toBeVisible();
+ await page.goto("/shuomi/#/workbench/ai/projects/mine");
+ const root=page.locator('[data-project-showcase="true"]');
+ await expect(root.getByRole("button",{name:"管理分组"})).toBeVisible();
+ await root.getByRole("button",{name:"管理分组"}).click();
+ const dialog=page.getByRole("dialog",{name:"管理项目分组"});
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole("textbox",{name:"新分组名称"}).fill("美国站业务");
+ await dialog.getByRole("button",{name:"创建分组"}).click();
+ await expect(dialog.getByText("美国站业务")).toBeVisible();
+ await dialog.getByRole("button",{name:"完成"}).click();
+ await expect(dialog).not.toBeVisible();
+ await expect(root.getByRole("combobox",{name:"按项目分组筛选"}).getByRole("option",{name:"美国站业务"})).toHaveCount(1);
+ await root.getByRole("button",{name:"管理分组"}).click();
+ await dialog.getByRole("button",{name:"重命名"}).click();
+ await dialog.getByRole("textbox",{name:"重命名美国站业务"}).fill("重点项目");
+ await dialog.getByRole("button",{name:"保存"}).click();
+ await expect(dialog.getByText("重点项目")).toBeVisible();
+ await dialog.getByRole("button",{name:"删除分组"}).click();
+ await expect(dialog.getByText("重点项目")).toHaveCount(0);
+ await dialog.getByRole("button",{name:"完成"}).click();
+});
