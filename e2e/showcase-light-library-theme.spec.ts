@@ -377,7 +377,8 @@ test("knowledge creation stays visible on all tabs; personal groups manage enabl
  await dialog.getByRole("button",{name:"创建分组"}).click();
  await expect(dialog.getByText("运营资料")).toBeVisible();
  await dialog.getByRole("button",{name:"完成"}).click();
- const knowledgeRow=root.getByRole("row").filter({has:root.getByText("跨境平台规则",{exact:true})});
+ const knowledgeRow=root.locator("tbody tr").filter({has:page.getByText("跨境平台规则",{exact:true})});
+ await expect(knowledgeRow).toHaveCount(1);
  await expect(knowledgeRow.getByRole("combobox")).toHaveCount(0);
  await knowledgeRow.getByRole("button",{name:"跨境平台规则的更多操作"}).click();
  const moveDialog=page.getByRole("dialog",{name:"知识库更多操作"});

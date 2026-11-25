@@ -7,9 +7,9 @@
 .page input,.page select{height:40px;min-width:0;padding:8px 11px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text)}
 .page input::placeholder{color:var(--muted)}
 .hero,.toolbar,.results{border:1px solid var(--line);border-radius:7px;background:var(--bg)}
-.hero{min-height:146px;padding:20px 26px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.hero{min-height:146px;padding:20px 24px;border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .hero span{color:var(--muted);font-size:14px}
-.hero h1{font-size:29px;font-weight:700;line-height:1.35;margin:7px 0 5px;border-left:3px solid #7367f0;padding-left:12px;color:var(--text)}
+.hero h1{font-size:26px;font-weight:700;line-height:34px;margin:7px 0 5px;border-left:3px solid #7367f0;padding-left:12px;color:var(--text)}
 .hero p{margin:0;color:var(--muted)}
 .toolbar{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:68px}
 .toolbar>input{flex:0 1 420px;width:100%;max-width:420px}
