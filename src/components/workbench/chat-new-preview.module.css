@@ -46,6 +46,7 @@
 }
 :global(.light) .workspace .composer textarea {color:#444050;caret-color:#7367f0;}
 :global(.light) .workspace .composer textarea::placeholder {color:#6f6b7d;opacity:1;}
+:global(.light) .workspace .modeList button {background:#f8f7fb;color:#444050;border-color:#e3dfed;}
 :global(.light) .workspace .modeList .modeSelected {background:#eeebff;border-color:#7367f0;}
 :global(.light) .workspace .modeList .modeSelected strong {color:#5144b9;}
 :global(.light) .workspace .modeList button:hover,
