@@ -179,7 +179,7 @@ test("enter use opens Figma-based skill, knowledge and image configuration witho
  await expect(templates).toContainText("已修改商品优化模板");
  // Built-in and user-created templates both expose "查看配置".
  // Scope to the renamed user template instead of relying on document order.
- const renamedTemplate=templates.locator("article").filter({has:templates.getByText("已修改商品优化模板",{exact:true})});
+ const renamedTemplate=templates.locator("article").filter({hasText:"已修改商品优化模板"});
  await expect(renamedTemplate).toHaveCount(1);
  await renamedTemplate.getByRole("button",{name:"查看配置",exact:true}).click();
  await expect(templates.getByRole("region",{name:"配置详情：已修改商品优化模板"})).toContainText("商品标题规范优化");
