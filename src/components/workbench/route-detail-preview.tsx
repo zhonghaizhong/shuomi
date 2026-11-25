@@ -4,6 +4,7 @@ import type {ReactNode} from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./route-detail-preview.module.css";
+import {WorkbenchDateRange} from "./workbench-date-picker";
 import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit, plansDemoPurchases, plansDemoRates } from "./plans-demo-facts";
 import {readDemoPurchases,writeDemoPurchases,useDemoPurchases,type DemoPurchase} from "./showcase-purchases";
 import {useShowcaseSuite} from "./account/showcase-account-state";
@@ -360,7 +361,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
       <div className={styles.billingFilterSection}>
         <span className={styles.billingFilterLabel}>时间范围</span>
         <div className={styles.billingTimePresets} role="group" aria-label="用量快捷时间">{["全部时间","今天","近7天","近30天","本月","自定义"].map(t=><button key={t} type="button" aria-pressed={usageTime===t} onClick={()=>{setUsageTime(t);setUsageFilterError("")}}>{t}</button>)}</div>
-        {usageTime==="自定义"?<div className={styles.billingDateRange}><label>开始日期<input aria-label="用量开始日期" type="date" max={usageUntil||undefined} value={usageFrom} onChange={e=>{setUsageFrom(e.target.value);setUsageFilterError("")}}/></label><span>至</span><label>结束日期<input aria-label="用量结束日期" type="date" min={usageFrom||undefined} value={usageUntil} onChange={e=>{setUsageUntil(e.target.value);setUsageFilterError("")}}/></label></div>:null}
+        {usageTime==="自定义"?<div className={styles.billingDateRange}><WorkbenchDateRange label="选择用量日期" from={usageFrom} to={usageUntil} onChange={(start,end)=>{setUsageFrom(start);setUsageUntil(end);setUsageFilterError("")}}/></div>:null}
       </div>
       <div className={styles.billingFilterSection}>
         <span className={styles.billingFilterLabel}>变动类型</span>
@@ -411,11 +412,7 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
         <div className={styles.billingTimePresets} role="group" aria-label="快捷时间">
           {["全部时间","今天","近7天","近30天","本月","自定义"].map(t=><button type="button" key={t} aria-pressed={orderDraft.time===t} onClick={()=>{setOrderDraft(v=>({...v,time:t}));setBillFilterError("")}}>{t}</button>)}
         </div>
-        {orderDraft.time==="自定义"?<div className={styles.billingDateRange}>
-          <label>开始日期<input aria-label="账单开始日期" type="date" value={orderDraft.from} max={orderDraft.until||undefined} onChange={e=>{setOrderDraft(v=>({...v,from:e.target.value}));setBillFilterError("")}}/></label>
-          <span aria-hidden="true">至</span>
-          <label>结束日期<input aria-label="账单结束日期" type="date" min={orderDraft.from||undefined} value={orderDraft.until} onChange={e=>{setOrderDraft(v=>({...v,until:e.target.value}));setBillFilterError("")}}/></label>
-        </div>:null}
+        {orderDraft.time==="自定义"?<div className={styles.billingDateRange}><WorkbenchDateRange label="选择账单日期" from={orderDraft.from} to={orderDraft.until} onChange={(start,end)=>{setOrderDraft(v=>({...v,from:start,until:end}));setBillFilterError("")}}/>        </div>:null}
       </div>
       <div className={styles.billingFilterSection}>
         <span className={styles.billingFilterLabel}>费用类型 <small>{orderDraft.types.length?`已选 ${orderDraft.types.length} 项`:"可多选"}</small></span>
