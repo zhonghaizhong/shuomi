@@ -50,7 +50,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const filtered=candidates.filter(c=>{
   const q=appliedQuery.trim().toLowerCase();
   if(q&&![c.product.name,c.product.batchId,...c.product.skus.map(s=>s.skuCode||s.name)].join(" ").toLowerCase().includes(q))return false;
-  return filter==="全部商品"||filter==="待申请"&&c.status==="待申请"||
+  return filter==="全部商品"||filter==="待申请"&&["待申请","审核未通过"].includes(c.status)||
    filter==="审核中"&&c.status==="审核中"||filter==="已入选"&&c.status==="已入选"||
    filter==="待处理"&&["审核未通过","待二次优化"].includes(c.status);
  });
@@ -140,7 +140,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
    </>:<>
     <div className={styles.panelHeading}><div><h2>申请与审核记录</h2><p>审核通过后执行官方模板二次优化，所有申请历史均保留。</p></div><select aria-label="筛选审核状态" value={recordFilter} onChange={e=>{setRecordFilter(e.target.value);setRecordPage(1)}}>{["全部状态","待审核","已通过","未通过"].map(x=><option key={x}>{x}</option>)}</select></div>
     <div className={styles.tableWrap}><table><thead><tr><th>申请编号</th><th>商品数量</th><th>提交时间</th><th>审核状态</th><th>操作</th></tr></thead><tbody>
-     {visibleRecords.map(record=><tr key={record.id}><td><strong>{record.id}</strong></td><td>{record.products.length} 件</td><td>{formatDate(record.createdAt)}</td><td><Status value={record.status}/></td><td><button type="button" onClick={()=>openRecord(record)}>查看详情</button></td></tr>)}
+     {visibleRecords.map(record=><tr key={record.id}><td><strong>{record.id}</strong></td><td>{record.products.length} 件</td><td>{formatDate(record.createdAt)}</td><td><Status value={record.status}/>{record.status==="已通过"?<small>{record.secondaryOptimization==="已完成"?"已完成官方模板二次优化":"待官方模板二次优化"}</small>:null}</td><td><button type="button" onClick={()=>openRecord(record)}>查看详情</button></td></tr>)}
      {!visibleRecords.length?<tr><td colSpan={5} className={styles.empty}>尚无申请记录。可从已入库商品中发起申请。</td></tr>:null}
     </tbody></table></div>
     <footer className={styles.pagination}><span>共 {filteredRecords.length} 条申请</span><div><button type="button" disabled={recordPage<=1} onClick={()=>setRecordPage(p=>p-1)}>上一页</button><span>{recordPage} / {recordPageCount}</span><button type="button" disabled={recordPage>=recordPageCount} onClick={()=>setRecordPage(p=>p+1)}>下一页</button></div></footer>
