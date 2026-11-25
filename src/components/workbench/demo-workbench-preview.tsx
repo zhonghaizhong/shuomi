@@ -429,7 +429,7 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
           <p className={styles.knowledgeIntroLead}>让 AI 有知识可参考，更准确地理解你的业务需求。</p>
           <p className={styles.knowledgeIntroSupporting}>无论是平台预设的官方知识，还是你自己的业务资料，都可以在使用 AI 时按需引用。</p>
         </div>
-        <button type="button" className={styles.knowledgeCreateAction} onClick={()=>navigateInline("/workbench/ai/chat/new?preview=1")}>去创建知识库</button>
+        <button type="button" className={styles.knowledgeCreateAction} onClick={()=>navigateInline("/workbench/ai/chat/new?preview=1&knowledgeMode=create")}>去创建知识库</button>
       </header>
       <div className={styles.knowledgeTabRow}>{tabNavigation}</div>
       <section className={styles.knowledgeIntroGrid} aria-label="选择知识库">
