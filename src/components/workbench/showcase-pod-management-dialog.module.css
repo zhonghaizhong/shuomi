@@ -111,3 +111,58 @@
 }
 .dialog .tabs .active{border-color:#7367f0;background:color-mix(in srgb,#7367f0 14%,var(--podassets-card))}
 .dialog :is(button,input,select,textarea):focus-visible,.subDialog :is(button,input,select,textarea):focus-visible{outline:2px solid #7367f0;outline-offset:2px}
+
+/* POD management dialog: proportional 7/6 enlargement and single-line navigation. */
+@media (min-width: 701px) {
+ .dialog {
+  width:min(1353.333px,calc(100vw - 24px));
+  max-width:1353.333px;
+  height:min(95dvh,956.667px);
+  max-height:calc(100dvh - 16px);
+  font-size:116.667%;
+ }
+ .header {padding:22.167px 28px 17.5px;gap:14px}
+ .header>div {gap:4.667px}
+ .header small {font-size:14px}
+ .header h2 {font-size:24.5px}
+ .header p {font-size:15.167px;line-height:23.333px}
+ .close {width:42px;height:42px;font-size:26.833px}
+ .tabs {gap:14px;padding:19.833px 28px 14px}
+ .tabs button {
+  display:flex;align-items:center;justify-content:flex-start;flex-wrap:nowrap;
+  gap:9.333px;min-width:0;min-height:89.833px;padding:15.167px 18.667px;
+  white-space:nowrap;
+ }
+ .tabs button strong {font-size:17.5px;flex:none}
+ .tabs button small {font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .content {padding:9.333px 28px 21px}
+ .topline {gap:11.667px;margin-bottom:15.167px}
+ .topline>div:first-child {gap:4.667px}
+ .topline h3 {font-size:19.833px}
+ .topline small,.libraryHint {font-size:14px}
+ .topactions,.pagination>div {gap:9.333px}
+ .dialog input,.dialog select,.dialog textarea {min-height:45.5px;padding:9.333px 14px}
+ .topactions button,.filters button,.pagination button,.cardActions button,.foot button {min-height:42px;padding:8.167px 15.167px;font-size:15.167px}
+ .filters {gap:11.667px;padding:10.5px;margin-bottom:16.333px}
+ .filters input,.filters select,.filters button {min-height:46.667px!important}
+ .filters select {flex-basis:221.667px;width:221.667px!important;min-width:0}
+ .filters button {min-width:87.5px}
+ .libraryHint {margin-bottom:12.833px}
+ .grid {gap:12.833px}
+ .assetCard {gap:7px;padding:9.333px}
+ .assetCard>strong {font-size:15.167px}
+ .assetCard>small {font-size:14px}
+ .empty {min-height:186.667px}
+ .pagination {gap:14px;font-size:14px;padding-top:14px}
+ .pagination button {min-height:37.333px;padding:5.833px 11.667px}
+ .foot {gap:11.667px;padding:14px 28px}
+ .foot span {font-size:14px}
+ .foot button {min-width:105px}
+}
+@media (min-width:701px) and (max-width:1100px) {
+ .tabs {gap:8px}
+ .tabs button {gap:5px;padding-inline:10px}
+ .tabs button strong {font-size:15px}
+ .tabs button small {font-size:12px}
+ .filters select {flex-basis:165px;width:165px!important}
+}
