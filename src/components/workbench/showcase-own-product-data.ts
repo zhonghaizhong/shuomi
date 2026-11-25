@@ -18,7 +18,7 @@ export function readOwnProductBatches(org:string,member:string):OwnProductBatch[
  return readArray(batchKey(org,member)).filter((p):p is OwnProductBatch=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"name"in p&&typeof p.name==="string"&&"createdAt"in p&&typeof p.createdAt==="string")).map(p=>({...p,productCount:readOwnProducts(org,member).filter(x=>x.batchId===p.id).length}));
 }
 export function readOwnProducts(org:string,member:string):OwnProductRecord[]{
- return readArray(productKey(org,member)).filter((p):p is OwnProductRecord=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"batchId"in p&&typeof p.batchId==="string"&&"skus"in p&&Array.isArray(p.skus))).map(p=>{const legacy:string=p.status;return {...p,status:(legacy==="待补全"?"入库待完善":legacy==="待上传"?"已入库":p.status) as OwnProductRecord["status"]}});
+ return readArray(productKey(org,member)).filter((p):p is OwnProductRecord=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"batchId"in p&&typeof p.batchId==="string"&&"skus"in p&&Array.isArray(p.skus))).map(p=>{const legacy:string=p.status;return {...p,skus:localizePodImages(p.skus),originalSkus:p.originalSkus?localizePodImages(p.originalSkus):undefined,status:(legacy==="待补全"?"入库待完善":legacy==="待上传"?"已入库":p.status) as OwnProductRecord["status"]}});
 }
 function notify(org:string,member:string){window.dispatchEvent(new CustomEvent(ownProductUpdated,{detail:{organizationId:org,memberId:member}}))}
 export function createOwnProductBatch(org:string,member:string,name:string):OwnProductBatch{
@@ -322,14 +322,14 @@ export function installPodApparelIntakeDemo(org:string,member:string):{batchId:s
  if(typeof window==="undefined"||!org||!member)throw Error("演示账号信息不完整");
  const batchName="POD 服装演示批次";
  const batch=readOwnProductBatches(org,member).find(b=>b.name===batchName)??createOwnProductBatch(org,member,batchName);
- const base="https://www.prodigi.com/img/products/additional/";
+ const base=podAssetBase();
  const items=[
   {code:"HOOD-18500",name:"Gildan 18500 纯色连帽卫衣",material:"50%棉、50%聚酯纤维，270gsm，抽绳连帽，袋鼠口袋，未印花",price:"69.00",colors:[
-   {name:"运动灰",code:"GY",images:[base+"gildan-18500/gildan-18500-front_sport-grey.webp",base+"gildan-18500/gildan-18500-back_sport-grey.webp"]},
-   {name:"紫色",code:"PU",images:[base+"gildan-18500/gildan-18500-plain_purple.webp"]}]},
+   {name:"运动灰",code:"GY",images:[base+"gildan-18500-front_sport-grey.webp",base+"gildan-18500-back_sport-grey.webp"]},
+   {name:"紫色",code:"PU",images:[base+"gildan-18500-plain_purple.webp"]}]},
   {code:"TEE-5000",name:"Gildan 5000 纯棉圆领短袖",material:"100%棉，180gsm，圆领短袖，经典版型，未印花",price:"29.00",colors:[
-   {name:"黑色",code:"BK",images:[base+"gildan-5000/gildan-5000-front_black.webp",base+"gildan-5000/gildan-5000-back_black.webp"]},
-   {name:"玫粉色",code:"PK",images:[base+"gildan-5000/gildan-5000-plain_azalea.webp"]}]}
+   {name:"黑色",code:"BK",images:[base+"gildan-5000-front_black.webp",base+"gildan-5000-back_black.webp"]},
+   {name:"玫粉色",code:"PK",images:[base+"gildan-5000-plain_azalea.webp"]}]}
  ];
  let created=0;
  for(const item of items){
@@ -348,3 +348,7 @@ export function installPodApparelIntakeDemo(org:string,member:string):{batchId:s
  }
  return {batchId:batch.id,created,approved:readOwnProducts(org,member).filter(p=>p.batchId===batch.id&&p.status==="已入库"&&p.skus.some(s=>s.skuCode?.startsWith("POD-DEMO-"))).length};
 }
+
+const podAssetBase=()=> (typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"")+"/assets/pod-demo/";
+const podImageNames=new Set(["gildan-18500-front_sport-grey.webp","gildan-18500-back_sport-grey.webp","gildan-18500-plain_purple.webp","gildan-5000-front_black.webp","gildan-5000-back_black.webp","gildan-5000-plain_azalea.webp"]);
+function localizePodImages(skus:OwnProductSku[]):OwnProductSku[]{return skus.map(s=>s.skuCode?.startsWith("POD-DEMO-")?{...s,images:s.images.map(src=>{const name=src.split("/").at(-1)??"";return podImageNames.has(name)?podAssetBase()+name:src})}:s)}
