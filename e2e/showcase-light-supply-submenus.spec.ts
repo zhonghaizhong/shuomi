@@ -75,7 +75,7 @@ test("preferred application reads owned adapted products and promotes only demo-
  await page.evaluate(({org,member})=>{
   const now=new Date().toISOString();
   const own=[
-   {id:"OWN-PREF-A",batchId:"B-PREF",name:"测试优选家居收纳盒",source:"上传资料",createdAt:now,checkedAt:now,status:"已入库",missing:[],originalSkus:[{id:1,name:"原家居收纳盒",skuCode:"PREF-A",images:["https://example.com/a.jpg"],description:"收纳盒",price:"29",stock:100}],skus:[{id:1,name:"AI优化家居收纳盒",skuCode:"PREF-A",images:["https://example.com/a.jpg"],description:"优化后的收纳盒",price:"29",stock:100}],agent:"商品优化智能体",template:"测试模板"},
+   {id:"OWN-PREF-A",batchId:"B-PREF",name:"测试优选家居收纳盒",source:"上传资料",createdAt:now,checkedAt:now,status:"已入库",missing:[],originalSkus:[{id:1,name:"原家居收纳盒",skuCode:"PREF-A",images:["https://example.com/a.jpg"],description:"收纳盒",price:"29",stock:100}],skus:[{id:1,name:"AI优化家居收纳盒",skuCode:"PREF-A",images:["https://example.com/a.jpg"],description:"优化后的收纳盒",price:"29",stock:100}],agent:"商品优化智能体",template:"硕米适配",templateId:"shuomi-official-adaptation-v1"},
    {id:"OWN-PREF-B",batchId:"B-PREF",name:"尚未优化的测试产品",source:"上传资料",createdAt:now,checkedAt:now,status:"已入库",missing:[],skus:[{id:2,name:"待优化",skuCode:"PREF-B",images:[],description:"待优化产品"}],agent:"",template:""},
    {id:"OWN-PREF-C",batchId:"B-PREF",name:"尚未完成首次适配",source:"上传资料",createdAt:now,checkedAt:now,status:"待审核",missing:[],skus:[{id:3,name:"待适配",skuCode:"PREF-C",images:[],description:"待适配"}],agent:"",template:""}
   ];
@@ -190,7 +190,7 @@ test("preferred application is unlocked by Shuomi own-product intake review, not
   const now=new Date().toISOString();
   const make=(id:string,status:"已入库"|"待审核",optimized:boolean)=>({
    id,batchId:"B-SHUOMI-TEST",name:id,source:"上传资料",createdAt:now,checkedAt:now,
-   status,missing:[],agent:optimized?"商品优化智能体":"",template:optimized?"测试模板":"",
+   status,missing:[],agent:optimized?"商品优化智能体":"",template:optimized?"硕米适配":"",templateId:optimized?"shuomi-official-adaptation-v1":undefined,
    originalSkus:[{id:1,name:"原始标题",description:"原始商品描述",images:["https://example.com/product.jpg"],skuCode:id}],
    skus:[{id:1,name:optimized?"优化标题":"原始标题",description:optimized?"优化商品描述":"原始商品描述",images:["https://example.com/product.jpg"],skuCode:id}]
   });
