@@ -1115,3 +1115,10 @@
 .demoUploadButton{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:fit-content;max-width:100%;padding:7px 10px;border:1px solid var(--stroke);border-radius:7px;color:var(--ink);background:var(--surface-alt);font-size:12px;cursor:pointer}
 .demoUploadButton input{max-width:220px;color:var(--muted);font-size:11px}
 .demoUploadButton span{font-size:11px;color:var(--muted)}
+
+/* One contextual AI action per field group; field-row buttons are intentionally removed. */
+.fieldFoldHeading{display:flex;align-items:center;gap:8px;min-width:0;background:var(--surface-alt);padding:0 10px}
+.fieldFoldHeading .fieldFoldToggle{flex:1;min-width:0;width:auto;padding:9px 2px;text-align:left}
+.fieldFoldAi,.fieldFoldExpand{flex:none;border:1px solid var(--stroke);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-size:12px;min-height:31px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.fieldFoldAi{border-color:#7367f0;color:#a99fff}
+.fieldFoldExpand{border:0;background:transparent;color:var(--muted)}
