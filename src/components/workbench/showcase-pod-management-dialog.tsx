@@ -34,7 +34,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
     return {id:i+1,name:print.name,category:"裂变印花 · "+print.printId+" · v"+print.version,
      style:i%6,prompt:"关联原图："+print.originPrintId+"；批次："+print.sourceBatchId,
      archivePath:print.assetPath,lineagePrintId:print.printId,lineageVersion:print.version,status:r.status};
-   }).filter((x):x is Asset=>x!==null));
+   }).filter(x=>x!==null) as Asset[]);
   };
   refresh();window.addEventListener("shuomi:pod:print-lineage:change",refresh);
   return()=>window.removeEventListener("shuomi:pod:print-lineage:change",refresh);
