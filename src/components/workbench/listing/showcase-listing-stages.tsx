@@ -187,7 +187,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const [variantPreviewIndex,setVariantPreviewIndex]=useState<number|null>(null);
  const [bundleImporting,setBundleImporting]=useState(false),[bundlePhotoUrls,setBundlePhotoUrls]=useState<Record<string,string>>({});
  const go=(s:string)=>router.push("/workbench/listing/"+s+"?preview=1");
- const filtered=(items.length?items:taskItems).filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status+" "+(x.batchName||"")).toLowerCase().includes(applied.toLowerCase())&&(!appliedBatch||x.batchKey===appliedBatch));
+ const filtered=(items.length?items:taskItems).filter(x=>(x.name+" "+x.sku+" "+x.source+" "+x.status+" "+(x.batchName||"")+" "+(x.taskId?Object.values(savedTasks.find(t=>t.id===x.taskId)?.textEdits?.skuNames??{}).join(" ")+" "+Object.values(savedTasks.find(t=>t.id===x.taskId)?.textEdits?.merchantSkuCodes??{}).join(" "):"")).toLowerCase().includes(applied.toLowerCase())&&(!appliedBatch||x.batchKey===appliedBatch));
  const totalPages=Math.max(1,Math.ceil(filtered.length/15));
  const currentPage=Math.min(listPage,totalPages);
  const pageItems=filtered.slice((currentPage-1)*15,currentPage*15);
@@ -459,7 +459,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
     <div className={styles.tableScroll}><div className={`${styles.table} ${styles.compactListingTable}`}><div className={styles.columns}><span>商品 / SKU</span><span>所属批次</span><span>目标平台</span><span>站点</span><span>店铺类型</span><span>目标店铺</span><span>状态</span><span>操作</span></div>
     {filtered.length===0?<div className={styles.emptyListingRow} role="status">{activeBatch?"当前批次在本阶段暂无待处理商品。":"暂无商品记录；请先在「待上传」选择批次并创建刊登任务。"}</div>:null}
     {pageItems.map(item=>{const data=optimizedSets.find(d=>d.id===item.sourceVersionId);const product=data?.products.find(p=>item.sku.startsWith(p.sourceProductId+" · "));const image=item.optimizedImages?.[0]??item.originalImages?.[0];return <div className={styles.item} key={item.sku}>
-      <div className={styles.compactProductCell}>{image?<ListingProductPhoto src={image} alt={item.name+"商品图片"} size={46}/>:<span className={styles.compactProductPlaceholder}>暂无图片</span>}<div className={styles.compactProductText}><strong title={product?.name||item.name}>{product?.name||item.name}</strong><small title={item.sku}>{item.sku}</small></div></div>
+      <div className={styles.compactProductCell}>{image?<ListingProductPhoto src={image} alt={item.name+"商品图片"} size={46}/>:<span className={styles.compactProductPlaceholder}>暂无图片</span>}<div className={styles.compactProductText}><strong title={product?.name||item.name}>{product?.name||item.name}</strong><small title={item.sku}>{item.taskId?(()=>{const task=savedTasks.find(t=>t.id===item.taskId);const names=Object.values(task?.textEdits?.skuNames??{});const codes=Object.values(task?.textEdits?.merchantSkuCodes??{});return names.length?names[0]+(names.length>1?" 等"+names.length+"个SKU":"")+(codes.length?" · "+codes[0]:""):item.sku})():item.sku}</small></div></div>
       <div className={styles.compactBatchCell}><strong title={item.batchName??item.source}>{item.batchName??item.source}</strong><small>{item.sourceVersionId==="original"?"原始版本":item.sourceVersionId?"优化版本":"—"}</small></div>
       <span className={styles.compactPlainCell}>{item.targetPlatform||"—"}</span>
       <span className={styles.compactPlainCell}>{item.targetRegion||"—"}</span>
