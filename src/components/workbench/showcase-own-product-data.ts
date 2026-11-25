@@ -41,8 +41,8 @@ export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omi
   // inference or a verified production run. Keep the untouched source SKUs.
   const originalSkus=cloneSkus(entry.skus);
   const adaptedSkus=templateId===SHUOMI_ADAPTATION_TEMPLATE_ID?originalSkus.map(sku=>{
-   const description=sku.description.trim().replace(/^商品简介[：:]\\s*/,"");
-   return {...sku,name:sku.name.trim().replace(/\\s+/g," "),description:description?"商品简介："+description:""};
+   const description=sku.description.trim().replace(/^商品简介[：:]\s*/,"");
+   return {...sku,name:sku.name.trim().replace(/\s+/g," "),description:description?"商品简介："+description:""};
   }):cloneSkus(entry.skus);
   const optimizationMode=templateId===SHUOMI_ADAPTATION_TEMPLATE_ID?"shuomi-template-demo" as const:undefined;
   const product:OwnProductRecord={...entry,templateId,optimizationMode,skus:adaptedSkus,originalSkus,id:"OWN-P-"+crypto.randomUUID(),batchId,createdAt:time,checkedAt:time};
