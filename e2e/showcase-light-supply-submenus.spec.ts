@@ -10,7 +10,7 @@ const channels=(color:string)=>{
  // Chrome may serialize CSS color-mix() as oklab(), not rgb().
  // Convert to sRGB instead of treating OKLab coordinates as RGB bytes.
  if(raw.startsWith("oklab(")){
-  const values=raw.match(/-?(?:\\d*\\.\\d+|\\d+)/g)?.slice(0,3).map(Number)??[];
+  const values=raw.match(/-?(?:\d*\.\d+|\d+)/g)?.slice(0,3).map(Number)??[];
   if(values.length!==3||!values.every(Number.isFinite))return [];
   const [L,a,b]=values;
   const l=(L+0.3963377774*a+0.2158037573*b)**3;
@@ -24,11 +24,11 @@ const channels=(color:string)=>{
   return linear.map(n=>Math.max(0,Math.min(255,255*(n<=0.0031308?12.92*n:1.055*n**(1/2.4)-0.055))));
  }
  if(raw.startsWith("color(srgb ")){
-  const values=raw.slice("color(srgb ".length).replace(/\\)$/, "").split("/")[0]
-   .trim().split(/\\s+/).slice(0,3).map(Number);
+  const values=raw.slice("color(srgb ".length).replace(/\)$/, "").split("/")[0]
+   .trim().split(/\s+/).slice(0,3).map(Number);
   return values.length===3&&values.every(Number.isFinite)?values.map(n=>n*255):[];
  }
- const matches=raw.match(/-?(?:\\d*\\.\\d+|\\d+)/g)?.slice(0,3).map(Number)??[];
+ const matches=raw.match(/-?(?:\d*\.\d+|\d+)/g)?.slice(0,3).map(Number)??[];
  return matches.length===3&&matches.every(Number.isFinite)?matches:[];
 };
 const pale=(color:string)=>{const c=channels(color);return c.length===3&&c.every(n=>n>=220);};
