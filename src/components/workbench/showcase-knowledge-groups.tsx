@@ -55,17 +55,16 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
  const visible=state.items.filter(x=>filter==="全部分组"||(filter==="未分组"?!x.group:x.group===filter));
  const hasKnowledge=state.items.length>0;
  return <div className={styles.root} data-my-knowledge-groups>
-  <section className={styles.toolbar}>
-   <div><h2>我的知识库</h2><p>管理已启用的官方知识与自己的资料，按分组整理，供会话或任务引用。</p></div>
+  <section className={styles.toolbar} aria-label="知识库操作">
    <div className={styles.actions}>{hasKnowledge&&<button type="button" onClick={()=>setOpen(true)}>管理分组</button>}<button type="button" className={styles.primary} onClick={onBrowse}>＋ 添加官方知识</button></div>
+   {hasKnowledge&&<label>分组 <select aria-label="按知识库分组筛选" value={filter} onChange={e=>setFilter(e.target.value)}><option>全部分组</option><option>未分组</option>{state.groups.map(g=><option key={g}>{g}</option>)}</select></label>}
   </section>
-  {hasKnowledge&&<section className={styles.filters}><label>知识库分组 <select aria-label="按知识库分组筛选" value={filter} onChange={e=>setFilter(e.target.value)}><option>全部分组</option><option>未分组</option>{state.groups.map(g=><option key={g}>{g}</option>)}</select></label><span>共 {visible.length} 项</span></section>}
   {notice&&<p className={styles.notice} role="status">{notice}</p>}
   {visible.length?<div className={styles.cards}>{visible.map(item=><article key={item.id}>
     <div><strong>{item.name}</strong><span>{item.origin}知识 · {item.group||"未分组"}</span></div><p>{item.description}</p>
     <label>所属分组 <select aria-label={item.name+"的所属分组"} value={item.group} onChange={e=>save({...state,items:state.items.map(x=>x.id===item.id?{...x,group:e.target.value}:x)},"分组已更新")}><option value="">未分组</option>{state.groups.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
     <button type="button" onClick={()=>save({...state,items:state.items.filter(x=>x.id!==item.id)},"已从我的知识库移除，原始官方知识仍可再次启用")}>移出我的知识库</button>
-   </article>)}</div>:<section className={styles.empty}><strong>{filter==="全部分组"?"暂时没有知识库":"该分组暂无知识库"}</strong><p>{filter==="全部分组"?"点击右上角「添加官方知识」，或通过硕米Chat创建自己的知识库。":"可以切换到其他分组，或调整现有知识库的所属分组。"}</p>{filter!=="全部分组"&&<button type="button" onClick={()=>setFilter("全部分组")}>查看全部知识库</button>}</section>}
+   </article>)}</div>:<section className={styles.empty}><strong>{filter==="全部分组"?"暂无知识库":"该分组暂无知识库"}</strong>{filter!=="全部分组"&&<button type="button" onClick={()=>setFilter("全部分组")}>查看全部</button>}</section>}
   {open&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setOpen(false)}}>
     <section className={styles.dialog} role="dialog" aria-modal="true" aria-label="管理知识库分组">
       <header><h2>管理知识库分组</h2><button type="button" aria-label="关闭分组管理" onClick={()=>setOpen(false)}>×</button></header>
