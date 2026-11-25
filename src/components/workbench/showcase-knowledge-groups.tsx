@@ -81,7 +81,7 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
      <button type="button" onClick={()=>router.push("/workbench/ai/chat/new?preview=1&knowledgeMode=reference&knowledgeName="+encodeURIComponent(item.name))}>使用</button>
      {item.origin==="我的"&&<button type="button" onClick={()=>{setEditor(item.id);setEditName(item.name);setEditDescription(item.description)}}>编辑</button>}
      <button type="button" aria-label={item.name+"的更多操作"} onClick={()=>setMore(more===item.id?null:item.id)}>更多</button>
-     {more===item.id&&<div className={styles.moreMenu}><button type="button" onClick={()=>{save({...state,items:state.items.filter(x=>x.id!==item.id)},"已移出我的知识库");setMore(null)}}>移出我的知识库</button></div>}
+}
     </div></td>
    </tr>)}</tbody>
   </table></div>:<section className={styles.empty}>
@@ -89,6 +89,13 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
    {!hasKnowledge&&<><p>你还没有启用或创建知识库。</p><button type="button" onClick={onBrowse}>去官方知识库添加</button></>}
    {hasKnowledge&&<button type="button" onClick={()=>{setSearch("");setFilter("全部分组")}}>清空筛选</button>}
   </section>}
+  {more&&state.items.some(x=>x.id===more)&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setMore(null)}}>
+   <section className={styles.dialog} role="dialog" aria-modal="true" aria-label="知识库更多操作">
+    <header><h2>知识库操作</h2><button type="button" aria-label="关闭更多操作" onClick={()=>setMore(null)}>×</button></header>
+    <p>{state.items.find(x=>x.id===more)?.name}</p>
+    <footer><button type="button" onClick={()=>setMore(null)}>取消</button><button type="button" onClick={()=>{save({...state,items:state.items.filter(x=>x.id!==more)},"已移出我的知识库");setMore(null)}}>移出我的知识库</button></footer>
+   </section>
+  </div>}
   {editItem&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setEditor(null)}}>
    <form className={styles.dialog} role="dialog" aria-modal="true" aria-label="编辑知识库" onSubmit={e=>{e.preventDefault();const name=editName.trim();if(!name)return;updateItem(editItem,{name,description:editDescription.trim()},"知识库信息已更新");setEditor(null)}}>
     <header><h2>编辑知识库</h2><button type="button" aria-label="关闭编辑" onClick={()=>setEditor(null)}>×</button></header>
