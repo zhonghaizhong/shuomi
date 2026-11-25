@@ -1,13 +1,18 @@
 import {expect,test} from "@playwright/test";
 /** Populate only the isolated Playwright tab; the actual workspace stays empty. */
 async function seedCollections(page:import("@playwright/test").Page){
- await page.goto("/shuomi/#/workbench/ai/chat/recent");
- await page.evaluate(()=>{
+ // Set a fixture before React's hydration reads sessionStorage. Seeding
+ // after navigation races the empty-state persistence effect and is flaky.
+ await page.addInitScript(()=>{
+  const marker="shuomi:e2e-chat-collections-seeded";
+  if(sessionStorage.getItem(marker))return;
   sessionStorage.setItem("shuomi-showcase-chat-collections-v1",JSON.stringify([
    {id:"e2e-conversation-1",title:"一号店转化率下降分析",description:"演示会话",time:"刚刚",favorite:true}
   ]));
+  sessionStorage.setItem(marker,"1");
  });
- await page.reload();
+ await page.goto("/shuomi/#/workbench/ai/chat/recent");
+ await expect(page.getByRole("button",{name:"更多操作：一号店转化率下降分析"})).toBeVisible();
 }
 
 
