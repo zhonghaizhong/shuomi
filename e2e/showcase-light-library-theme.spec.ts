@@ -67,7 +67,7 @@ test("actual Figma skills pages retain readable Vuexy light and dark surfaces",a
   const title={official:"官方模板",mine:"我的技能",team:"团队技能"}[category]!;
   await expect(root.getByRole("heading",{name:"技能库",level:1})).toBeVisible();
    if(category==="official")await expect(root.getByRole("heading",{name:"官方技能列表",level:2})).toBeVisible();
-   else if(category==="mine")await expect(root.getByRole("heading",{name:"已启用技能",level:2})).toBeVisible();
+   else if(category==="mine")await expect(root.getByRole("table")).toBeVisible();
    else await expect(root.getByRole("heading",{name:"暂未开放",level:2})).toBeVisible();
   const surface=root.locator("[data-skill-management]");
   expect(isLight(await surface.evaluate(el=>getComputedStyle(el).backgroundColor))).toBeTruthy();
@@ -133,7 +133,7 @@ test("skill library entry cards open independent pages without relying on third-
  await expect(root.locator('[data-skill-entry]')).toHaveCount(3);
  await root.locator('[data-skill-entry="mine"]').getByRole("button",{name:"查看我的技能"}).click();
  await expect(page).toHaveURL(/#\/workbench\/agents\/skills(?:\?.*)?$/);
- await expect(root.getByRole("heading",{name:"已启用技能",level:2})).toBeVisible();
+ await expect(root.getByRole("table")).toBeVisible();
  await expect(skillTabs.getByRole("button",{name:"我的技能",exact:true})).toHaveAttribute("aria-current","page");
 });
 
@@ -528,4 +528,23 @@ test("Generate research report opens selected Chat mode, saves an approved demo 
  await reports.getByRole("button",{name:"收藏",exact:true}).click();
  await page.goto("/shuomi/#/workbench/ai/reports/favorites");
  await expect(page.locator("[data-report-center]").getByText("美国站商品市场调研演示")).toBeVisible();
+});
+
+test("My Skills keeps filtering and group management visible even when no skills are enabled",async({page})=>{
+ await page.goto("/shuomi/#/workbench/agents/skills/mine");
+ const root=page.locator('[data-skill-showcase="true"]');
+ const toolbar=root.getByRole("region",{name:"我的技能筛选"});
+ await expect(toolbar.getByRole("button",{name:"管理分组"})).toBeVisible();
+ await expect(toolbar.getByRole("combobox",{name:"按技能分组筛选"})).toBeVisible();
+ await expect(toolbar.getByRole("textbox",{name:"搜索技能名称"})).toBeVisible();
+ await expect(root.getByRole("table")).toBeVisible();
+ await expect(root.getByText("暂无已启用的技能")).toBeVisible();
+ await toolbar.getByRole("button",{name:"管理分组"}).click();
+ const dialog=page.getByRole("dialog",{name:"管理技能分组"});
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole("textbox",{name:"新技能分组名称"}).fill("我的运营技能");
+ await dialog.getByRole("button",{name:"创建分组"}).click();
+ await expect(dialog.getByText("我的运营技能")).toBeVisible();
+ await dialog.getByRole("button",{name:"完成"}).click();
+ await expect(toolbar.getByRole("combobox",{name:"按技能分组筛选"}).getByRole("option",{name:"我的运营技能"})).toHaveCount(1);
 });
