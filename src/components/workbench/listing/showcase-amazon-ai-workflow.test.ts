@@ -206,3 +206,14 @@ it("preserves source SKU identities and versions while validating names, codes a
  expect(()=>completeShowcaseUploadTask(org,member,task.id,entries)).toThrow(/分类变更/);
  expect(readShowcaseUploadTasks(org,member).find(x=>x.id===task.id)?.status).toBe("待补全");
 });
+
+it("saves historical missing fields for later edits instead of discarding them when completing",()=>{
+ simulateAmazonFiveListingWorkflow(args);
+ const record=readShowcaseUploadTasks(org,member).find(x=>x.status==="待补全")!;
+ const entries=Object.fromEntries(record.demoProduct!.missingFields.map(field=>[field,"Confirmed value for "+field]));
+ const draft=saveShowcaseListingTextEdits(org,member,record.id,{legacyMissingValues:entries});
+ expect(draft.textEdits?.legacyMissingValues).toEqual(entries);
+ const completed=completeShowcaseUploadTask(org,member,record.id,{});
+ expect(completed.textEdits?.legacyMissingValues).toEqual(entries);
+ expect(readShowcaseUploadTasks(org,member).find(x=>x.id===record.id)?.textEdits?.legacyMissingValues).toEqual(entries);
+});
