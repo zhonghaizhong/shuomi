@@ -51,6 +51,35 @@ function findOptimizedProduct(own:OwnProductRecord,versions:OptimizedDataset[]){
  matches.sort((a,b)=>b.dataset.version-a.dataset.version||String(b.dataset.createdAt).localeCompare(String(a.dataset.createdAt)));
  return matches[0];
 }
+/** A locally reviewed own-product demo may already contain an agent-assisted
+ * optimization draft without a platform upload receipt. Keep it explicitly
+ * labelled as a browser-only draft, never as a verified platform dataset. */
+function localDemoOptimizationSnapshot(product:OwnProductRecord):PreferredProductSnapshot|undefined{
+ if(product.status!=="已入库"||product.missing.length||!product.skus.length||
+    product.agent!=="商品优化智能体"||!product.template.trim()||!product.originalSkus?.length)return;
+ const originals=new Map(product.originalSkus.map(s=>[s.id,s]));
+ const changed=product.skus.some(s=>{
+  const raw=originals.get(s.id);
+  return raw&&(raw.name.trim()!==s.name.trim()||raw.description.trim()!==s.description.trim()||
+   s.images.some((image,i)=>image!==raw.images[i]));
+ });
+ if(!changed||product.skus.some(s=>!s.name.trim()||!s.description.trim()||!s.images.some(Boolean)))return;
+ return {
+  sourceProductId:product.id,
+  sku:product.skus.map(s=>s.skuCode||String(s.id)).join(" / "),
+  name:product.skus[0].name,
+  image:product.skus[0].images.find(Boolean)||"",
+  category:product.name,
+  batchId:product.batchId,
+  versionId:"local-demo:"+product.id,
+  versionName:"本地优化草稿（仅演示）",
+  platform:"自有商品库",
+  site:"本地演示",
+  description:product.skus[0].description,
+  skuCount:product.skus.length
+ };
+}
+
 export function readPreferredCandidates(org:string,member:string):PreferredCandidate[]{
  const own=readOwnProducts(org,member),versions=readOptimizedDatasets(org,member),applications=readPreferredApplications(org,member);
  return own.map(product=>{
@@ -58,7 +87,7 @@ export function readPreferredCandidates(org:string,member:string):PreferredCandi
    .sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
   const completed=product.status==="已入库"&&!product.missing.length&&product.skus.length>0;
   const optimized=completed?findOptimizedProduct(product,versions):undefined;
-  const snapshot=optimized?{
+  const snapshot:PreferredProductSnapshot|undefined=optimized?{
    sourceProductId:product.id,
    sku:product.skus.map(p=>p.skuCode||String(p.id)).join(" / "),
    name:optimized.entry.name||product.name,
@@ -66,12 +95,12 @@ export function readPreferredCandidates(org:string,member:string):PreferredCandi
    category:product.skus[0]?.name||"未分类",
    batchId:product.batchId,
    versionId:optimized.dataset.id,
-   versionName:"V"+(optimized.dataset.version+1),
+   versionName:"V"+optimized.dataset.version,
    platform:optimized.dataset.platform,
    site:optimized.dataset.site,
    description:optimized.entry.description||product.skus[0]?.description||"",
    skuCount:product.skus.length
-  }:undefined;
+  }:completed?localDemoOptimizationSnapshot(product):undefined;
   const status:PreferredCandidate["status"]=latest?.status==="已通过"?"已入选":
     latest?.status==="待审核"?"审核中":
     !completed?"待首次适配":!snapshot?"待智能体优化":"可申请";
