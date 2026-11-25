@@ -179,7 +179,9 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const [batchAiRequired,setBatchAiRequired]=useState(true),[batchAiOptional,setBatchAiOptional]=useState(false);
  const [batchAiInstructions,setBatchAiInstructions]=useState(""),[aiTargetField,setAiTargetField]=useState<string|null>(null),[aiFeedback,setAiFeedback]=useState("");
  const [selectedQualification,setSelectedQualification]=useState<Record<string,string>>({});
- const [optionalOpen,setOptionalOpen]=useState(false);
+ const [fieldSectionsOpen,setFieldSectionsOpen]=useState<Record<string,boolean>>({});
+ const sectionOpen=(id:string,required:boolean)=>fieldSectionsOpen[id]??required;
+ const toggleSection=(id:string,required:boolean)=>setFieldSectionsOpen(old=>({...old,[id]:!(old[id]??required)}));
  const [categoryEdit,setCategoryEdit]=useState(false);
  const [categoryDraft,setCategoryDraft]=useState("");
  const [categoryImpactConfirmed,setCategoryImpactConfirmed]=useState(false);
@@ -360,10 +362,28 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const hasScopedFields=(scope:FieldScope,requirement:"required"|"optional")=>Boolean(schemaValid&&schema?.fields.some(f=>f.scope===scope&&f.requirement===requirement));
  const renderScopedFields=(scope:FieldScope,requirement:"required"|"optional")=>{
   const fields=schemaValid?schema!.fields.filter(x=>x.scope===scope&&x.requirement===requirement):[];
-  return fields.length?fields.map(field=><label className={styles.productMissingField} key={field.id}>{field.label}<span>{requirement==="required"?"必填":"选填"} · {schema!.ruleVersion}</span>
+  return fields.length?fields.map(field=><div className={styles.individualField} key={field.id}><div className={styles.individualFieldHeading}><strong>{field.label}</strong>{field.aiEditable&&field.kind==="text"?<button type="button" onClick={()=>openAiForField("platform:"+scope+":"+field.id)}>✦ AI补全</button>:null}</div><label className={styles.productMissingField}><span>{requirement==="required"?"必填":"选填"}</span>
    {field.kind==="enum"?<select aria-label={field.label} value={scopedValue(scope,field.id)} onChange={e=>editScopedValue(scope,field.id,e.target.value)}><option value="">请选择</option>{field.options?.map(option=><option key={option} value={option}>{option}</option>)}</select>
-   :<input aria-label={field.label} type={field.kind==="number"?"number":"text"} maxLength={field.maxLength??500} value={scopedValue(scope,field.id)} onChange={e=>editScopedValue(scope,field.id,e.target.value)}/>}</label>)
+   :<input aria-label={field.label} type={field.kind==="number"?"number":"text"} maxLength={field.maxLength??500} value={scopedValue(scope,field.id)} onChange={e=>editScopedValue(scope,field.id,e.target.value)}/>}</label></div>)
     :null;
+ };
+ const fieldFold=(id:string,required:boolean,title:string,content:ReactNode,count?:number)=>(
+  <div className={styles.fieldFold}>
+   <button type="button" className={styles.fieldFoldToggle} aria-expanded={sectionOpen(id,required)} onClick={()=>toggleSection(id,required)}>
+    <strong>{title}</strong><span>{count===undefined?"":count+" 项 · "}{sectionOpen(id,required)?"收起":"展开"}</span>
+   </button>
+   {sectionOpen(id,required)?<div className={styles.fieldFoldBody}>{content}</div>:null}
+  </div>
+ );
+ const scopedFold=(scope:FieldScope,requirement:"required"|"optional")=>{
+  const count=schemaValid?schema!.fields.filter(f=>f.scope===scope&&f.requirement===requirement).length:0;
+  return count?fieldFold(scope+":"+requirement,requirement==="required",requirement==="required"?"必填信息":"选填信息",renderScopedFields(scope,requirement),count):null;
+ };
+ const openAiForField=(field:string)=>{
+  const candidate=field.startsWith("platform:")?schema?.fields.find(f=>field==="platform:"+f.scope+":"+f.id):undefined;
+  if(candidate&&(!candidate.aiEditable||candidate.kind!=="text")){setNotice("该字段需要使用平台允许的真实属性值，不能由AI编造。");return}
+  setAiTargetField(field);setBatchAiScope("current");setBatchAiOpen(true);
+  setAiFeedback("已选择单独补全字段："+(candidate?.label??aiEligibleFields.find(x=>x.key===field)?.label??field)+"。目前演示版本没有接入AI文本生成服务，尚不能自动生成内容。");
  };
  const applyBatchSkuNames=()=>{
   if(!batchSkuPattern.trim()){setNotice("请输入批量命名模板，例如 {color}-{size}");return}
@@ -488,7 +508,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <span className={styles.compactStoreType}>{item.targetStoreType||"—"}</span>
       <span className={styles.compactPlainCell} title={item.store}>{item.store||"—"}</span>
       <span className={styles.compactStatus}>{item.status}</span>
-      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes},fieldValues:{...record?.textEdits?.fieldValues},legacyMissingValues:{...record?.textEdits?.legacyMissingValues}}})());setBatchAiOpen(false);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setOptionalOpen(false);setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setBatchSkuPattern("");setBulkSkuOpen(false);setVariantDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return record?.textEdits?.variantStructure??initialVariantStructure(record?.demoProduct?.variantDetails??[])})());setConfirmVariantChange(false);setImagePreview(false);setForm({...savedTasks.find(t=>t.id===item.taskId)?.textEdits?.legacyMissingValues});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
+      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes},fieldValues:{...record?.textEdits?.fieldValues},legacyMissingValues:{...record?.textEdits?.legacyMissingValues}}})());setBatchAiOpen(false);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setFieldSectionsOpen({});setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setBatchSkuPattern("");setBulkSkuOpen(false);setVariantDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return record?.textEdits?.variantStructure??initialVariantStructure(record?.demoProduct?.variantDetails??[])})());setConfirmVariantChange(false);setImagePreview(false);setForm({...savedTasks.find(t=>t.id===item.taskId)?.textEdits?.legacyMissingValues});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
      </div>})}</div></div>{filtered.length>15?<nav className={styles.listPagination} aria-label="商品分页"><span>共 {filtered.length} 条 · 每页 15 条 · 第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setListPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setListPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></nav>:null}
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
@@ -615,7 +635,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
      </div>
      {batchAiOpen?<section className={styles.aiBatchPanel} aria-label="AI 批量重构配置">
       <header><strong>✦ {aiTargetField?"AI 字段重构":"AI 批量重构"}</strong><span>不包含图片</span><button type="button" aria-label="收起重构配置" onClick={()=>{setBatchAiOpen(false);setAiTargetField(null)}}>×</button></header>
-      {aiTargetField?<p>指定字段：{aiEligibleFields.find(f=>f.key===aiTargetField)?.label??aiTargetField}。仅在符合平台规则时允许重构。</p>:<>
+      {aiTargetField?<p>指定字段：{(aiTargetField?.startsWith("platform:")?schema?.fields.find(f=>aiTargetField==="platform:"+f.scope+":"+f.id)?.label:aiEligibleFields.find(f=>f.key===aiTargetField)?.label)??aiTargetField}。仅在符合平台规则时允许重构。</p>:<>
        <label>重构范围
         <select aria-label="重构信息范围" value={batchAiScope} onChange={e=>setBatchAiScope(e.target.value as "current"|"all")}><option value="current">当前信息标签</option><option value="all">整个商品的可编辑文字字段</option></select>
        </label>
@@ -635,11 +655,11 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
      {fieldTab==="common"?<>
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-title">商品标题</label></div><input id="listing-edit-title" value={textDraft.title} maxLength={500} onChange={e=>setTextDraft(d=>({...d,title:e.target.value}))}/></div>
       <div className={styles.aiEditableField}><div><label htmlFor="listing-edit-desc">商品描述</label></div><textarea id="listing-edit-desc" rows={4} maxLength={6000} value={textDraft.description} onChange={e=>setTextDraft(d=>({...d,description:e.target.value}))}/></div>
-      {hasScopedFields("common","required")?<><div className={styles.productSectionHeading}><strong>必填信息</strong></div>{renderScopedFields("common","required")}</>:null}
-      {hasScopedFields("common","optional")?<><div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("common","optional")}</>:null}
+      {scopedFold("common","required")}
+      {scopedFold("common","optional")}
      </>:fieldTab==="shared"?<div className={styles.aiVariantEditor}>
-       {hasScopedFields("shared","required")?<><div className={styles.productSectionHeading}><strong>必填信息</strong></div>{renderScopedFields("shared","required")}</>:null}
-       {hasScopedFields("shared","optional")?<><div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("shared","optional")}</>:null}
+       {scopedFold("shared","required")}
+       {scopedFold("shared","optional")}
       </div>
      :fieldTab==="variant"?<div className={styles.variantStructureEditor}>
       {variantDraft.dimensions.map((group,index)=><section className={styles.variantStructureGroup} key={group.id}>
@@ -662,7 +682,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
        <label><input type="checkbox" checked={confirmVariantChange} onChange={e=>setConfirmVariantChange(e.target.checked)}/> 确认影响，保存为待平台复核草稿</label>
       </div>:null}
       </div>:<div className={styles.aiVariantEditor}>
-       {hasScopedFields("sku","required")?<><div className={styles.productSectionHeading}><strong>必填信息</strong></div>{renderScopedFields("sku","required")}</>:null}
+       {scopedFold("sku","required")}
        {variantDetails.length>1?<button type="button" className={styles.compactAction} onClick={()=>setBulkSkuOpen(v=>!v)}>批量修改</button>:null}
        {bulkSkuOpen&&variantDetails.length>1?<div className={styles.aiEditableField}><div><label htmlFor="listing-sku-pattern">批量SKU名称模板</label></div>
         <div className={styles.batchSkuRow}><input id="listing-sku-pattern" aria-label="批量SKU名称模板" value={batchSkuPattern} placeholder="{color}-{size}，支持 {sku}" onChange={e=>setBatchSkuPattern(e.target.value)}/><button type="button" onClick={applyBatchSkuNames}>应用到全部SKU</button></div>
@@ -677,14 +697,14 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
         <input id="listing-merchant-sku" aria-label="商家SKU编码" maxLength={100} value={skuIdentityDraft} onChange={e=>setTextDraft(d=>({...d,merchantSkuCodes:{...d.merchantSkuCodes,[editingSkuKey]:e.target.value}}))}/>
         {invalidSkuCode?<p role="alert">商家SKU编码不能为空，且同一商品内不得重复。</p>:null}
        </div>
-       {hasScopedFields("sku","optional")?<><div className={styles.productSectionHeading}><strong>选填信息</strong></div>{renderScopedFields("sku","optional")}</>:null}
+       {scopedFold("sku","optional")}
       </div>}
     </div>
     {stage==="missing"&&selectedItem.missing.length?<div className={styles.productInfoBlock}>
-     <div className={styles.productSectionHeading}><strong>历史待归类必填资料</strong><small>共 {selectedItem.missing.length} 项</small></div>
-     <p className={styles.productHint}>旧任务尚未记录这些字段属于商品公共、变体公共或SKU层级，暂不擅自归类；接入已验证的分类规则后按实际层级重新显示。</p>
+     {fieldFold("legacy-required",true,"待核对必填资料",<>
      {selectedItem.missing.map(field=>/(资质|认证|证书|检测|报告|文件|许可)/.test(field)?<div className={styles.qualificationField} key={field}><strong>{field} · 必填</strong><label>选择资质文件<input type="file" accept=".pdf,.png,.jpg,.jpeg" aria-label={"上传"+field} onChange={e=>setSelectedQualification(x=>({...x,[field]:e.target.files?.[0]?.name??""}))}/></label><small>{selectedQualification[field]?"已选择本地文件："+selectedQualification[field]+"（未上传服务器）":"需要真实资质，AI 不生成或伪造文件。"}</small></div>
        :<label className={styles.productMissingField} key={field}>{field}<span>必填 · 人工核对</span><input aria-label={field} placeholder={"请输入"+field} value={form[field]??""} onChange={e=>setForm(prev=>({...prev,[field]:e.target.value}))}/></label>)}
+     </>,selectedItem.missing.length)}
 
     </div>:null}
     {stage==="review"?<div className={styles.productInfoBlock}><strong>人工审核</strong>
