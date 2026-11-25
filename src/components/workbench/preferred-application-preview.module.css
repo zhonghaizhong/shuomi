@@ -203,3 +203,8 @@
  .searchBox{min-width:0;max-width:none;flex:1}
  .page .confirmSearch{flex:none}
 }
+
+/* Light theme metric cards must stay pale even with CSS color-mix themes. */
+:global(.light) .page .candidateSummary .metricCard{background:#f8f7fa;border-color:#e3e1ed}
+:global(.light) .page .candidateSummary .metricCard[aria-pressed="true"]{background:#f1efff;border-color:#7367f0}
+:global(.light) .page .candidateSummary .metricValue{background:#eeebff}
