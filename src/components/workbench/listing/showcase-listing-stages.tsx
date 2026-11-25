@@ -157,7 +157,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const taskItems:Item[]=savedTasks.filter(task=>stage==="missing"?task.status==="待补全":task.status==="待审核").flatMap(task=>task.productIds.map((id,i)=>({sku:id+" · "+task.id.slice(-8),name:task.demoProduct?.optimizedName??task.batchName+(task.productCount>1?` · 商品 ${i+1}`:""),source:task.source,store:task.storeName,status:task.status,missing:task.demoProduct?.missingFields??(task.status==="待补全"?["商品必填资料"]:[]),ai:Boolean(task.agentId),taskId:task.id,originalName:task.demoProduct?.sourceName,originalDescription:task.demoProduct?.sourceDescription,originalImages:task.demoProduct?.sourceImages,optimizedDescription:task.demoProduct?.optimizedDescription,optimizedImages:task.demoProduct?.optimizedImages,batchKey:showcaseUploadBatchKey(task),batchName:currentBatchName(task),sourceVersionId:task.sourceVersionId||"original",targetPlatform:task.platform,targetRegion:task.region,targetStoreType:task.storeType})));
  const applyBatchFilter=()=>{setListPage(1);const next=batchOptions.some(option=>option.key===batchFilter)?batchFilter:"";setApplied(filter.trim());setAppliedBatch(next);sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),next);};
  const resetBatchFilter=()=>{setListPage(1);setFilter("");setApplied("");setBatchFilter("");setAppliedBatch("");sessionStorage.removeItem(showcaseUploadBatchPreferenceKey(organizationId,memberId));};
- const [reviewChecked,setReviewChecked]=useState(false),[reviewMode,setReviewMode]=useState<"compare"|"edit">("compare");
+
  const [pictureTab,setPictureTab]=useState<"main"|"detail">("main");
  const [variantColorId,setVariantColorId]=useState("");
  const [photoMode,setPhotoMode]=useState<"optimized"|"original">("optimized");
@@ -584,7 +584,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       <span className={styles.compactStoreType}>{item.targetStoreType||"—"}</span>
       <span className={styles.compactPlainCell} title={item.store}>{item.store||"—"}</span>
       <span className={styles.compactStatus}>{item.status}</span>
-      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes},fieldValues:{...record?.textEdits?.fieldValues},legacyMissingValues:{...record?.textEdits?.legacyMissingValues}}})());setBatchAiOpen(false);setAiGroupTarget(null);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setDemoPackaging("");setDemoSellingPoint("");setDemoUploadedName("");setDemoSharedRequired("");setDemoSharedFilled("演示已填资料");setDemoSharedOptional("");setFieldSectionsOpen({});setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setBatchSkuPattern("");setBulkSkuOpen(false);setVariantDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return record?.textEdits?.variantStructure??initialVariantStructure(record?.demoProduct?.variantDetails??[])})());setConfirmVariantChange(false);setImagePreview(false);setForm({...savedTasks.find(t=>t.id===item.taskId)?.textEdits?.legacyMissingValues});setReviewChecked(false);setReviewMode("compare")}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
+      <button type="button" className={styles.compactAction} onClick={()=>{setSelected(item);setPhotoIndex(0);setVariantColorId("");setVariantPreviewIndex(null);setPhotoMode("optimized");setEditingPhotoRole(null);setPhotoDraft("");setPictureTab("main");setFieldTab("common");setActiveSkuId("");setTextDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return {title:record?.textEdits?.title??item.name,description:record?.textEdits?.description??item.optimizedDescription??"",colorDescriptions:{...record?.textEdits?.colorDescriptions},skuDescriptions:{...record?.textEdits?.skuDescriptions},skuNames:{...record?.textEdits?.skuNames},merchantSkuCodes:{...record?.textEdits?.merchantSkuCodes},fieldValues:{...record?.textEdits?.fieldValues},legacyMissingValues:{...record?.textEdits?.legacyMissingValues}}})());setBatchAiOpen(false);setAiGroupTarget(null);setBatchAiScope("current");setBatchAiRequired(true);setBatchAiOptional(false);setBatchAiInstructions("");setAiTargetField(null);setAiFeedback("");setSelectedQualification({});setDemoPackaging("");setDemoSellingPoint("");setDemoUploadedName("");setDemoSharedRequired("");setDemoSharedFilled("演示已填资料");setDemoSharedOptional("");setFieldSectionsOpen({});setCategoryEdit(false);setCategoryDraft(savedTasks.find(t=>t.id===item.taskId)?.textEdits?.categoryPath??"");setCategoryImpactConfirmed(false);setBatchSkuPattern("");setBulkSkuOpen(false);setVariantDraft((()=>{const record=savedTasks.find(t=>t.id===item.taskId);return record?.textEdits?.variantStructure??initialVariantStructure(record?.demoProduct?.variantDetails??[])})());setConfirmVariantChange(false);setImagePreview(false);setForm({...savedTasks.find(t=>t.id===item.taskId)?.textEdits?.legacyMissingValues});}}>{stage==="missing"?(item.missing.length?"查看并补全":"查看结果"):"审核 AI 建议"}</button>
      </div>})}</div></div>{filtered.length>15?<nav className={styles.listPagination} aria-label="商品分页"><span>共 {filtered.length} 条 · 每页 15 条 · 第 {currentPage} / {totalPages} 页</span><div><button type="button" disabled={currentPage===1} onClick={()=>setListPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===totalPages} onClick={()=>setListPage(p=>Math.min(totalPages,p+1))}>下一页</button></div></nav>:null}
     <footer className={styles.foot}>演示记录 · 按原任务与目标店铺继续处理，不自动执行上传</footer>
    </section>
@@ -777,12 +777,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
        {scopedGroup("sku","optional",selectedTask?.demo&&!schemaValid?<div className={styles.individualField}><div className={styles.individualFieldHeading}><strong>SKU备注（演示）</strong></div><textarea rows={2} aria-label="SKU备注（演示）" value={scopedValueFor("sku","demo-note")} onChange={e=>editScopedValue("sku","demo-note",e.target.value)}/></div>:undefined)}
       </div>}
     </div>
-    {stage==="review"?<div className={styles.productInfoBlock}><strong>人工审核</strong>
-     <p className={styles.productHint}>检查标题、描述、图片及目标平台规则，审核通过后才可继续平台提交。</p>
-     {reviewMode==="edit"?<label className={styles.productMissingField}>审核意见<input aria-label="审核意见" value={form.reviewNotes??""} placeholder="输入修改意见" onChange={e=>setForm(prev=>({...prev,reviewNotes:e.target.value}))}/></label>:null}
-     <div className={styles.reviewActions}><button type="button" onClick={()=>setReviewMode(reviewMode==="edit"?"compare":"edit")}>手动修改</button><button type="button" onClick={()=>setNotice("演示模式：重新重构需要授权智能体执行，未生成新内容。")}>重新重构</button></div>
-     <label className={styles.productReviewCheck}><input type="checkbox" checked={reviewChecked} onChange={e=>setReviewChecked(e.target.checked)}/> 已核对优化结果与目标平台规则</label>{!colorPhotoComplete?<p className={styles.productHint}>有颜色组尚未绑定完整的六张优化图片，无法审核通过。</p>:null}
-    </div>:null}
+
    </section>
   </div>
   {variantPreviewIndex!==null&&selectedVariantGroup?<div className={styles.dialogImageLightbox} role="dialog" aria-modal="true" aria-label="颜色变体图片预览">
@@ -803,9 +798,20 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
     <ListingProductPhoto src={galleryImages[Math.min(photoIndex,galleryImages.length-1)]} alt="商品放大图片" size={640}/>
    </div>:null}
   <footer className={styles.productDetailFooter}>
-   <span>{stage==="missing"?(categoryNeedsReview?"分类变更需保存草稿并通过平台规则复核，不能直接送审":"保存完整必填资料后进入待审核"):"人工审核通过后进入待平台提交；此处不执行真实上传"}</span>
-   <div><button type="button" onClick={()=>setSelected(null)}>取消</button><button type="button" onClick={saveTextOnly}>保存补全资料</button>
-   <button type="button" className={styles.primary} disabled={(stage==="review"&&(!reviewChecked||!colorPhotoComplete||categoryNeedsReview||invalidSkuCode||!skuDisplayName.trim()))||(stage==="missing"&&(categoryNeedsReview||invalidSkuCode||!skuDisplayName.trim()))} onClick={stage==="missing"?save:()=>{setSelected(null);selectedItem.taskId?(()=>{try{approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId!);setNotice("人工审核通过，任务已进入待平台提交；没有伪造 SHEIN 上传回执。");}catch(e){setNotice(e instanceof Error?e.message:"审核失败");}})():action("AI 结果已在演示中确认；请回到原任务明确继续上传。")}}>{stage==="missing"?"重新检查并提交审核":"审核通过"}</button></div>
+   <span>{stage==="missing"?"补齐必填资料后提交检查":"核对优化结果；需要调整可直接修改或使用分组AI重构"}</span>
+   <div><button type="button" onClick={()=>setSelected(null)}>取消</button><button type="button" onClick={saveTextOnly}>保存修改</button>
+    <button type="button" className={styles.primary} onClick={()=>{
+     if(stage==="missing"){save();return}
+     if(!selectedItem?.taskId){setNotice("当前任务缺少可审核的记录");return}
+     if(structureBlocked){setNotice(structureIssues[0]??"请先确认变体结构的变更影响");return}
+     if(invalidSkuCode||!skuDisplayName.trim()){setNotice("请检查SKU编码及名称，不能留空或重复");return}
+     if(categoryNeedsReview&&!categoryImpactConfirmed){setNotice("请先确认分类变更影响");return}
+     if(!persistText())return;
+     try{
+      approveShowcaseUploadTask(organizationId,memberId,selectedItem.taskId);
+      setSelected(null);setNotice("审核通过，已进入待平台提交；本次没有执行真实平台上传。");
+     }catch(e){setNotice(e instanceof Error?e.message:"审核失败，请核对必填资料和图片")}
+    }}>{stage==="missing"?"提交检查":"审核通过"}</button></div>
   </footer>
  </section>
 </div>:null}
