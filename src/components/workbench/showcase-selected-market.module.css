@@ -36,3 +36,43 @@
 @media(max-width:1160px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.intro{grid-template-columns:1fr}.toolbar{flex-direction:column;align-items:stretch}.search{width:100%}}
 @media(max-width:590px){.page{width:calc(100% - 24px)}.header{flex-direction:column;align-items:start;padding:16px}.products{padding:14px}.grid{grid-template-columns:1fr}.modalBody{grid-template-columns:1fr}.modalBody img{max-height:260px}}
+
+/* Shared supply catalog: compact Vuexy layout and scoped light/dark behavior. */
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.metric{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:86px;border:1px solid var(--border);background:var(--surface);border-radius:8px}
+.metric strong{font-size:23px;color:var(--text);font-weight:700}
+.metric span{font-size:12px;color:var(--muted)}
+.filters{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.filters select,.inputField select{height:38px;min-width:120px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);color:var(--text);background:var(--subtle);font:inherit}
+.page button.primary{background:#7367f0;color:white;border-color:#7367f0}
+.page button:disabled{opacity:.45;cursor:not-allowed}
+.selectItem{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;cursor:pointer}
+.selectItem input{width:15px;height:15px;accent-color:#7367f0}
+.placeholder{position:relative;gap:8px}
+.price{font-size:17px;font-weight:700;color:#50c89b}
+:global(.light) .price{color:#087f6c}
+.cardActions{display:flex;gap:8px;min-width:0}
+.cardActions button{flex:1;min-width:0;font-size:12px;padding:7px 6px;white-space:nowrap}
+.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;color:var(--muted);font-size:12px}
+.pagination div{display:flex;align-items:center;gap:12px}
+.notice{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)}
+.notice svg{color:#50c89b}
+.notice button{margin-left:auto}
+.bulk{position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;padding:12px 16px;border:1px solid var(--border);background:var(--surface);border-radius:8px;box-shadow:0 5px 30px #0003}
+.modal>footer{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.modalPicture{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:240px;background:var(--subtle);border:1px solid var(--border);border-radius:8px;color:var(--muted)}
+.skuTitle{font-size:14px;margin:14px 0 10px!important}
+.skuTable{overflow-x:auto;border:1px solid var(--border);border-radius:7px}
+.skuTable table{width:100%;border-collapse:collapse;font-size:12px}
+.skuTable th,.skuTable td{padding:10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.skuTable th{background:var(--subtle)}
+.modeChoices{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin:16px 0}
+.modeChoices label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.modeChoices input{accent-color:#7367f0}
+.inputField{display:grid;gap:8px;margin:12px 0;color:var(--text);font-weight:600}
+.inputField input{height:38px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--subtle);color:var(--text);font:inherit}
+.inputField select{width:100%}
+.error{color:#ff8585!important;font-size:13px}
+:global(.light) .error{color:#bd3333!important}
+@media(max-width:940px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.filters{width:100%}.filters .search{flex:1}}
+@media(max-width:590px){.metrics{gap:8px}.metric{min-height:76px}.modalBody{grid-template-columns:1fr}.bulk{justify-content:flex-start}.pagination{align-items:flex-start;flex-direction:column}}
