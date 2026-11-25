@@ -139,7 +139,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
   </section>
   <section className={styles.mineTableWrap}><table className={styles.mineTable}>
    <thead><tr><th>技能名称</th><th>来源</th><th>所属分组</th><th>状态</th><th>操作</th></tr></thead>
-   <tbody>{mySkillRows.map(item=><tr key={item.key}>
+   <tbody>{mySkillRows.map(item=><tr key={item.key} data-skill-name={item.name}>
     <td><strong>{item.name}</strong><small>{item.description}</small></td><td>{item.source}</td>
     <td><select aria-label={item.name+"所属分组"} value={groupState.assignments[item.key]||""} onChange={e=>commitGroups({...groupState,assignments:{...groupState.assignments,[item.key]:e.target.value}},"所属分组已更新")}><option value="">未分组</option>{groupState.groups.map(g=><option key={g}>{g}</option>)}</select></td>
     <td><span className={styles.enabled}>已启用</span></td>
