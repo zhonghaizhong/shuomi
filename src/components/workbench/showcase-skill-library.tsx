@@ -52,7 +52,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const cards=officialSkills.filter(s=>(category==="official"?(filter==="全部"||s[3]===filter):enabled.includes(s[0])&&filter!=="我的创建")&&match(s.join(" ")));
  const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
  return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
- <header className={styles.hero}><div className={styles.breadcrumb}>AI工作台 / 技能库</div><h1>技能库</h1><p>选择官方模板、我的技能或团队技能；需要时再在 AI 会话中调用。</p></header>
+ <header className={styles.hero}><div className={styles.heroCopy}><div className={styles.breadcrumb}>AI工作台 / 技能库</div><h1>技能库</h1><p>选择官方模板、我的技能或团队技能；需要时再在 AI 会话中调用。</p></div><button type="button" className={styles.primary} onClick={()=>chat("create")}>创建我的技能</button></header>
  {tabNavigation}
  {category==="home"?<>
  <section className={styles.skillIntroGrid} aria-label="选择技能库入口">
@@ -107,7 +107,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
    <p>技能告诉 AI 如何处理工作；知识库提供参考资料。两者可以按需配合使用，不会因为启用就自动执行。</p>
   </div>
  </aside> </>:category==="team"?<section className={styles.empty} data-skill-management="team"><h2>暂未开放</h2><p>团队技能正在筹备中，暂不支持创建、管理、共享或调用。</p><button className={styles.primary} onClick={()=>go("")}>返回技能库</button><p>功能开放后，可在这里管理团队共享技能。</p></section>:<>
- {category==="mine"&&<div className={styles.actionBar}><button className={styles.secondary} onClick={()=>go("official")}>前往官方模板</button><button className={styles.primary} onClick={()=>chat("create")}>创建我的技能</button></div>}
+
  <section className={styles.toolbar} data-skill-management={category}>
  <h2 className={styles.sectionTitle}>{category==="official"?"官方技能列表":"已启用技能"}</h2>{category==="official"&&<p className={styles.sectionSub}>按分类浏览技能，查看介绍后启用需要的能力</p>}
  <div className={styles.filterRow}><nav className={styles.filterTabs} aria-label="技能筛选">{(category==="official"?["全部","标题优化","图片制作"]:["全部","官方技能","我的创建"]).map(x=><button key={x} className={filter===x?styles.active:styles.tab} aria-pressed={filter===x} onClick={()=>setFilter(x)}>{x}</button>)}</nav><form className={styles.searchForm} onSubmit={e=>{e.preventDefault();setSearch(query.trim())}}><input className={styles.search} aria-label="技能名称或关键词" placeholder="输入技能名称或关键词…" value={query} onChange={e=>setQuery(e.target.value)}/><button type="button" className={styles.secondary} onClick={()=>{setFilter("全部");setQuery("");setSearch("")}}>重置</button><button className={styles.primary}>搜索</button></form></div>
