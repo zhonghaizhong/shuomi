@@ -1,6 +1,6 @@
 "use client";
 import {listingDemoArtSet,type ListingArtKind} from "./showcase-listing-ai-images";
-import {fieldSchemaMatches,validatePlatformFields,type PlatformFieldSchema,type ScopedFieldValues} from "./showcase-platform-field-schema";
+import {categoryFieldImpact,fieldSchemaMatches,validatePlatformFields,type PlatformFieldSchema,type ScopedFieldValues} from "./showcase-platform-field-schema";
 
 /** Local showcase task ledger. This is not platform submission, AI execution or an order. */
 export const listingVariantPhotoRoles=[
@@ -270,6 +270,30 @@ export function saveShowcaseListingTextEdits(
  const record={revision:cleaned.revision,updatedAt:cleaned.updatedAt,categoryPath:cleaned.categoryPath??"",ruleVersion:task.platformFieldSchema?.ruleVersion??"unverified",changedFields:[...Object.keys(updates.fieldValues??{}),...Object.keys(updates.skuNames??{}),...Object.keys(updates.merchantSkuCodes??{})]};
  const next={...task,textEdits:cleaned,editHistory:[...(task.editHistory??[]),record].slice(-60)};
  persistShowcaseUploadTaskRecords(org,member,tasks.map(t=>t.id===taskId?next:t));
+ window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
+ return next;
+}
+/** Apply a platform/category rule only when an authorized integration provides a
+ * matching, versioned schema.  Incompatible historical values remain in the audit
+ * trail; they never silently transfer to the new category. */
+export function applyVerifiedListingFieldSchema(org:string,member:string,taskId:string,schema:PlatformFieldSchema):ShowcaseUploadTask{
+ const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
+ if(!task?.demoProduct||!["待补全","待审核"].includes(task.status))throw Error("该任务不允许替换平台字段规则");
+ if(schema.source!=="official"&&schema.source!=="verified-import")throw Error("字段规则必须来自经过验证的数据源");
+ if(!schema.fields.length||!schema.ruleVersion.trim())throw Error("平台字段规则不完整");
+ const expected={platform:task.platform,region:task.region,storeType:task.storeType,categoryPath:task.textEdits?.categoryPath??""};
+ if(!fieldSchemaMatches(schema,expected))throw Error("平台、站点、店铺类型或分类与字段规则不一致");
+ const current=task.platformFieldSchema;
+ const impact=categoryFieldImpact(current,schema);
+ const oldValues=task.textEdits?.fieldValues??{};
+ const compatible=impact.ready?new Set(impact.retained):new Set<string>();
+ // Retain all historical values as source evidence. Only keys belonging to
+ // compatible fields become active for the newly verified rule version.
+ const currentValues=Object.fromEntries(Object.entries(oldValues).filter(([key])=>{
+  try{const scopeField=JSON.parse(key) as unknown;return Array.isArray(scopeField)&&typeof scopeField[2]==="string"&&compatible.has(scopeField[2]);}catch{return false}
+ }));
+ const next={...task,platformFieldSchema:schema,textEdits:{...task.textEdits,categoryRulePending:false,fieldValues:currentValues,revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString()},editHistory:[...(task.editHistory??[]),{revision:(task.textEdits?.revision??0)+1,updatedAt:new Date().toISOString(),categoryPath:schema.categoryPath,ruleVersion:schema.ruleVersion,changedFields:impact.ready?impact.added: schema.fields.map(x=>x.id)}].slice(-60)};
+ persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
 }
