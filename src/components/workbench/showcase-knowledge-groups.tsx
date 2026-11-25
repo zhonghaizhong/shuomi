@@ -81,11 +81,10 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
      <button type="button" onClick={()=>router.push("/workbench/ai/chat/new?preview=1&knowledgeMode=reference&knowledgeName="+encodeURIComponent(item.name))}>使用</button>
      {item.origin==="我的"&&<button type="button" onClick={()=>{setEditor(item.id);setEditName(item.name);setEditDescription(item.description)}}>编辑</button>}
      <button type="button" aria-label={item.name+"的更多操作"} onClick={()=>setMore(more===item.id?null:item.id)}>更多</button>
-}
     </div></td>
-   </tr>)}</tbody>
+   </tr>)}
    {!visible.length&&<tr><td colSpan={5} className={styles.emptyCell}>{hasKnowledge?"没有符合条件的知识库":"暂无知识库"}</td></tr>}
-  </table></div>
+  </tbody></table></div>
   {more&&state.items.some(x=>x.id===more)&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setMore(null)}}>
    <section className={styles.dialog} role="dialog" aria-modal="true" aria-label="知识库更多操作">
     <header><h2>知识库操作</h2><button type="button" aria-label="关闭更多操作" onClick={()=>setMore(null)}>×</button></header>
