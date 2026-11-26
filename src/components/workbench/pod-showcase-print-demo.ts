@@ -50,3 +50,16 @@ export const showcasePODReviewPrints:PodPrintVersion[]=[
   mimeType:"image/webp",width:1254,height:1254,createdAt:"2026-11-26T00:00:00.000Z"
  }
 ];
+
+
+/** Pre-review source-product references for the three archived print variants.
+ * These are display-only demo associations, NOT approved POD variant bindings.
+ * Product identity, color/size SKUs and images are resolved from the actual
+ * SDS collection batch rather than duplicated here.
+ */
+export const SHOWCASE_SDS_POD_BATCH_ID="SIM-SDS-POD-TWO-20261126";
+export const showcaseSDSPrintSourceProducts:Readonly<Record<string,readonly string[]>>={
+ "POD-BUTTERFLY-FISSION-A":["SIM-SDS-POD-DTF-WOMEN-150G","SIM-SDS-POD-HOODIE-280G"],
+ "POD-BUTTERFLY-FISSION-B":["SIM-SDS-POD-DTF-WOMEN-150G","SIM-SDS-POD-HOODIE-280G"],
+ "POD-BUTTERFLY-FISSION-C":["SIM-SDS-POD-DTF-WOMEN-150G","SIM-SDS-POD-HOODIE-280G"]
+};
