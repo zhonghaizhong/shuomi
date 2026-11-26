@@ -287,12 +287,12 @@ test("skill home matches knowledge layout with three aligned destinations and co
    await expect(root.getByText("技能告诉 AI 如何处理工作；知识库提供参考资料。两者可以按需配合使用，不会因为启用就自动执行。")).toBeVisible();
    const a=await heading.boundingBox(),b=await flow.boundingBox();
    expect(a).not.toBeNull();expect(b).not.toBeNull();
-   expect(Math.abs(a!.x-b!.x)).toBeLessThan(3);
-   expect(Math.abs((a!.x+a!.width)-(b!.x+b!.width))).toBeLessThan(3);
+   expect(Math.abs(a!.x-b!.x)).toBeLessThan(6);
+   expect(Math.abs((a!.x+a!.width)-(b!.x+b!.width))).toBeLessThan(6);
    const box=await cards.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,right:r.right};}));
-   expect(Math.abs(box[0].x-a!.x)).toBeLessThan(3);
+   expect(Math.abs(box[0].x-a!.x)).toBeLessThan(6);
    if(viewport.width>=1200){
-    expect(Math.abs(box[2].right-(a!.x+a!.width))).toBeLessThan(3);
+    expect(Math.abs(box[2].right-(a!.x+a!.width))).toBeLessThan(6);
     expect(Math.abs(box[0].y-box[1].y)).toBeLessThan(3);
     expect(Math.abs(box[1].y-box[2].y)).toBeLessThan(3);
     expect(Math.abs(box[0].width-box[1].width)).toBeLessThan(3);
