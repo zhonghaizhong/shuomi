@@ -228,10 +228,14 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
       <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog(null)}>关闭</button><button type="button" className={styles.primary} onClick={()=>setDialog({kind:"request",service:dialog.service})}>提交需求</button></footer>
     </AccessibleDialog>}
     {dialog?.kind==="request" && <AccessibleDialog key={"request:"+dialog.service.id} title="提交服务需求" onClose={()=>setDialog(null)}>
-      <h3>{dialog.service.name}</h3><p>请先核对服务内容、服务地区、资料要求、办理周期及费用方式，再与服务方确认方案。</p>
-      <div className={styles.dialogHighlights}><div>服务范围：{dialog.service.category}</div><div>当前阶段：需求沟通</div></div>
-      <p className={styles.disclaimer}>正式提交暂未接入。本页面不会创建真实申请、发送联系方式或产生费用。</p>
-      <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog({kind:"service",service:dialog.service})}>返回服务详情</button><button type="button" className={styles.primary} onClick={()=>setDialog(null)}>知道了</button></footer>
+      <div className={styles.requestIntro}><strong>{dialog.service.name}</strong><p>填写业务需求，创建服务申请并在「我的服务」追踪办理进度。</p></div>
+      <form className={styles.ecoForm} onSubmit={e=>{e.preventDefault();createRequest()}}>
+        <label>服务地区 *<input required value={requestDraft.region} onChange={e=>setRequestDraft(p=>({...p,region:e.target.value}))} placeholder="例如：美国 / 加利福尼亚"/></label>
+        <label>需求说明 *<textarea required rows={4} value={requestDraft.details} onChange={e=>setRequestDraft(p=>({...p,details:e.target.value}))} placeholder="说明业务目标、当前情况及希望交付的成果"/></label>
+        <div className={styles.ecoFormRow}><label>联系人 *<input required value={requestDraft.contactName} onChange={e=>setRequestDraft(p=>({...p,contactName:e.target.value}))} placeholder="联系人姓名"/></label><label>联系方式 *<input required value={requestDraft.contactWay} onChange={e=>setRequestDraft(p=>({...p,contactWay:e.target.value}))} placeholder="邮箱、手机或微信"/></label></div>
+        <p className={styles.demoHint}>演示申请保存在当前浏览器，不会向实际服务商发送信息或产生费用。</p>
+        <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog({kind:"service",service:dialog.service})}>返回详情</button><button type="submit" className={styles.primary}>确认提交需求</button></footer>
+      </form>
     </AccessibleDialog>}
     {dialog?.kind==="record" && <AccessibleDialog key={"record:"+dialog.record.id} title="服务办理进度" side onClose={()=>setDialog(null)}>
       <div className={styles.drawerSummary}><small>{dialog.record.id}</small><h3>{dialog.record.service}</h3><span className={styles.status} data-status={dialog.record.status}>{dialog.record.status}</span><p>{dialog.record.progress}</p></div>
