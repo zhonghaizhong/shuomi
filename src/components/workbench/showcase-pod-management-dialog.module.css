@@ -178,7 +178,7 @@
 }
 .reviewLayout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.85fr);gap:16px;align-items:start;min-width:0}
 .reviewList{min-width:0}
-.reviewList .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.reviewLayout .reviewList .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .statusSwitch{display:flex;align-items:center;gap:5px;flex:0 1 auto;min-width:0}
 .statusSwitch button{min-width:0!important;padding:8px 10px!important;flex:0 0 auto!important}
 .dialog .statusSwitch .selectedStatus{background:#7367f0!important;border-color:#7367f0!important;color:#fff!important}
@@ -206,5 +206,5 @@
 .previewSection p{font-size:12px;line-height:1.6;margin:0;color:var(--podassets-muted,#acabc1)}
 .previewSection .previewNotice{color:#d3bbff}
 @media(max-width:1200px){.filters{flex-wrap:wrap!important;overflow:visible}.filters input{flex:1 1 100%!important;width:100%!important}.statusSwitch{flex:1 1 auto;flex-wrap:wrap}}
-@media(max-width:900px){.reviewLayout{grid-template-columns:1fr}.reviewList .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:700px){.reviewList .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.statusSwitch button{padding:7px 8px!important;font-size:12px}.relatedProduct{flex-wrap:wrap}}
+@media(max-width:900px){.reviewLayout{grid-template-columns:1fr}.reviewLayout .reviewList .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.reviewLayout .reviewList .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.statusSwitch button{padding:7px 8px!important;font-size:12px}.relatedProduct{flex-wrap:wrap}}
