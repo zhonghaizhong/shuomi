@@ -3,7 +3,8 @@ import {useEffect,useMemo,useRef,useState} from "react";
 import css from "./showcase-pod-management-dialog.module.css";
 import {readPodLibrary,savePodLibrary,readPodAssetImage,podAssetPreviewSrc,type PodLibraryAsset} from "./pod-asset-library";
 import {readPodPrintLineage,registerPodPrint,reviewPodPrint,searchPodPrints} from "./pod-print-lineage";
-import {isShowcasePODScope,showcasePODReviewPrints} from "./pod-showcase-print-demo";
+import {isShowcasePODScope,showcasePODReviewPrints,SHOWCASE_SDS_POD_BATCH_ID,showcaseSDSPrintSourceProducts} from "./pod-showcase-print-demo";
+import {readDemoCollectionBatches,type DemoCollectedProduct} from "./showcase-collection-batches";
 
 type Tab="我的素材库"|"产品图审核"|"灵感市场";
 type Asset=PodLibraryAsset;
@@ -29,6 +30,16 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const [selectedPrint,setSelectedPrint]=useState<string|null>(null);
  const [bindings,setBindings]=useState<ReturnType<typeof readPodPrintLineage>["bindings"]>([]);
  const [previewNote,setPreviewNote]=useState("");
+ const [sourceProducts,setSourceProducts]=useState<DemoCollectedProduct[]>([]);
+ useEffect(()=>{
+  if(!isShowcasePODScope(organizationId,memberId)){setSourceProducts([]);return;}
+  const refresh=()=>{
+   const batch=readDemoCollectionBatches(organizationId,memberId).find(b=>b.id===SHOWCASE_SDS_POD_BATCH_ID&&b.source==="SDS");
+   setSourceProducts(batch?.products??[]);
+  };
+  refresh();window.addEventListener("shuomi:demo-batches-updated",refresh);
+  return()=>window.removeEventListener("shuomi:demo-batches-updated",refresh);
+ },[organizationId,memberId]);
  useEffect(()=>{
   if(isShowcasePODScope(organizationId,memberId)){
    // Seed only the approved demonstration tenant. The archive files are
@@ -80,6 +91,8 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const displayed=filtered.slice((page-1)*perPage,page*perPage);
  const activePrint=reviews.find(x=>x.lineagePrintId&&x.lineagePrintId+"@"+x.lineageVersion===selectedPrint)??null;
  const activeBindings=activePrint?bindings.filter(x=>x.printId===activePrint.lineagePrintId&&x.printVersion===activePrint.lineageVersion):[];
+ const preReviewProductIds=activePrint&&isShowcasePODScope(organizationId,memberId)&&activePrint.lineagePrintId&&activePrint.lineageVersion===1?showcaseSDSPrintSourceProducts[activePrint.lineagePrintId]??[]:[];
+ const sourceLinkedProducts=preReviewProductIds.map(id=>sourceProducts.find(product=>product.id===id)).filter((product):product is DemoCollectedProduct=>Boolean(product));
  const relatedBindings=activePrint?activeBindings:[];
  const selectTab=(next:Tab)=>{setTab(next);setPreviewNote("");setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1);setPanel(null);setNotice("")};
  const open=(p:typeof panel,a?:Asset)=>{setPanel(p);setChosen(a??null);setNotice("")};
@@ -112,7 +125,10 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
        <strong title={asset.name}>{asset.name}</strong><small>{asset.status??asset.category}</small>{asset.originPrintId?<small title={asset.originPrintId}>原图编号：{asset.originPrintId}</small>:null}{tab==="产品图审核"&&asset.lineagePrintId?<small title={asset.lineagePrintId+" · V"+asset.lineageVersion}>编号：{asset.lineagePrintId} · V{asset.lineageVersion}</small>:null}
        {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" disabled={asset.readonly} title={asset.readonly?"已有裂变关联，不可删除原图":"删除当前素材"} onClick={()=>removeAsset(asset.id)}>删除</button>{asset.readonly?<span className={css.sourceLocked}>源图已关联 · 只读</span>:null}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
-    </div>{tab==="产品图审核"?<aside className={css.relatedPanel} aria-label="关联产品与效果预览"><h3>关联产品与效果预览</h3>{activePrint?<><div className={css.selectedPrintHeader}><img src={inspirationImageSrc(activePrint)} alt={activePrint.name}/><div><strong>{activePrint.name}</strong><small>编号：{activePrint.lineagePrintId} · V{activePrint.lineageVersion}</small><small>状态：{activePrint.status}</small></div></div><div className={css.relatedTabs}><strong>关联产品（{relatedBindings.length}）</strong><span>效果预览为可选项</span></div>{relatedBindings.length?<div className={css.relatedProducts}>{relatedBindings.map((b,i)=><div key={b.productId+"/"+b.variantId+"/"+i} className={css.relatedProduct}><div className={css.productPlaceholder} aria-label="该关联记录未提供商品图片">暂无商品图</div><div><strong>商品编号：{b.productId}</strong><small>变体：{b.variantId}</small>{b.sku?<small>SKU：{b.sku}</small>:null}</div><button type="button" onClick={()=>setPreviewNote("尚未接入实际 AI 生图和积分计费接口，无法发起生成；不会扣积分或产生商品图片。")}>生成效果图</button></div>)}</div>:<div className={css.relatedEmpty}>该印花尚未关联商品。审核通过不要求关联商品或生成预览图。<small>后续 POD 流程绑定商品后，这里会显示真实商品关联记录。</small></div>}<section className={css.previewSection}><strong>产品效果预览</strong><p>仅辅助查看印花应用效果，不进入商品图片库，也不影响审核结果。实际生成需先接入 AI 生图服务与积分计费。</p>{previewNote?<p role="status" className={css.previewNotice}>{previewNote}</p>:null}</section></>:<div className={css.relatedEmpty}>点击左侧任意印花图片，查看关联产品及效果预览。</div>}</aside>:null}</div>
+    </div>{tab==="产品图审核"?<aside className={css.relatedPanel} aria-label="关联产品与效果预览"><h3>关联产品与效果预览</h3>{activePrint?<><div className={css.selectedPrintHeader}><img src={inspirationImageSrc(activePrint)} alt={activePrint.name}/><div><strong>{activePrint.name}</strong><small>编号：{activePrint.lineagePrintId} · V{activePrint.lineageVersion}</small><small>状态：{activePrint.status}</small></div></div><div className={css.relatedTabs}><strong>关联产品（{sourceLinkedProducts.length+relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length}）</strong><span>来源关联 · 不等于审核通过</span></div>
+{sourceLinkedProducts.length?<div className={css.relatedProducts}>{sourceLinkedProducts.map(p=><div key={p.id} className={css.relatedProduct}><img className={css.productThumb} src={p.images?.[0]} alt={p.name+"商品参考图"} loading="lazy"/><div><strong>{p.name}</strong><small>批次：SDS POD · 2款公开目录商品（演示）</small><small>商品编号：{p.id}</small><small>{p.variants?.join("、")??"暂无变体"}</small><div className={css.productColors}>{p.images?.map((src,i)=><img key={src} src={src} alt={p.name+"颜色参考图"+(i+1)} loading="lazy"/>)}</div></div><button type="button" onClick={()=>setPreviewNote("生成产品效果图为可选预览。尚未接入真实 AI 生图及积分计费，不会扣费、生成图片或推进审核流程。")}>生成效果图</button></div>)}</div>:null}
+{relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length?<div className={css.relatedProducts}>{relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).map((b,i)=><div key={b.productId+"/"+b.variantId+"/"+i} className={css.relatedProduct}><div className={css.productPlaceholder}>暂无商品图</div><div><strong>正式绑定：{b.productId}</strong><small>变体：{b.variantId}</small>{b.sku?<small>SKU：{b.sku}</small>:null}</div></div>)}</div>:null}
+{!sourceLinkedProducts.length&&!relatedBindings.length?<div className={css.relatedEmpty}>该印花暂无可读取的关联商品。<small>演示数据仅在指定企业的管理员账号中显示；审核通过不强制要求生成效果图。</small></div>:null}<section className={css.previewSection}><strong>产品效果预览</strong><p>仅辅助查看印花应用效果，不进入商品图片库，也不影响审核结果。实际生成需先接入 AI 生图服务与积分计费。</p>{previewNote?<p role="status" className={css.previewNotice}>{previewNote}</p>:null}</section></>:<div className={css.relatedEmpty}>点击左侧任意印花图片，查看关联产品及效果预览。</div>}</aside>:null}</div>
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
    </div>
    {panel?<div className={css.overlay} onClick={e=>{if(e.target===e.currentTarget)setPanel(null)}}><section className={css.subDialog} role="dialog" aria-modal="true" aria-label={panel}>
