@@ -35,10 +35,10 @@ test("my agents model settings opens and closes a dialog", async ({ page }) => {
 test("customization has working request and progress entry points", async ({ page }) => {
   await page.goto(base + "/custom");
   await expect(page.getByRole("heading", { name: "智能体定制", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "提交定制需求" }).click();
+  await page.getByRole("navigation", { name: "智能体定制页面" }).getByRole("button", { name: "提交需求" }).click();
   await expect(page).toHaveURL(/agents\/custom\/new/);
   await expect(page.getByLabel("需求名称")).toBeVisible();
-  await page.getByRole("button", { name: "查看定制进度" }).click();
+  await page.getByRole("navigation", { name: "智能体定制页面" }).getByRole("button", { name: "查看进度" }).click();
   await expect(page).toHaveURL(/agents\/custom\/progress/);
 });
 
@@ -94,7 +94,7 @@ test("intelligent market submenus can be reached via sidebar navigation", async 
   await expect(page).toHaveURL(/agents\/mine/);
   await page.getByRole("link", { name: "智能体定制", exact: true }).click();
   await expect(page).toHaveURL(/agents\/custom$/);
-  await page.getByRole("button", { name: "查看定制进度" }).click();
+  await page.getByRole("navigation", { name: "智能体定制页面" }).getByRole("button", { name: "查看进度" }).click();
   await expect(page).toHaveURL(/agents\/custom\/progress/);
 });
 test("market cards and customization page do not overflow the desktop viewport", async ({ page }) => {
