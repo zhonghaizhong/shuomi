@@ -541,3 +541,12 @@
  .wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-left] {flex:1 1 100%;max-width:none}
  .wrapper .filterBar[data-shuomi-filter="balanced"] [data-shuomi-filter-right] {flex:1 1 100%;flex-wrap:wrap}
 }
+
+
+/* Larger batch manager: maximize usable space without stretching outside the viewport. */
+.wrapper .manageDialog{box-sizing:border-box;width:min(1440px,calc(100vw - 36px));max-width:none;height:min(900px,calc(100dvh - 36px));max-height:calc(100dvh - 36px);min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:22px 26px;gap:16px}
+.wrapper .manageHeader,.wrapper .manageFilters,.wrapper .manageFooter,.wrapper .manageInlineForm{flex:none}
+.wrapper .manageTableScroll{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;scrollbar-gutter:stable}
+.wrapper .manageTable{min-width:1020px}
+.wrapper .manageTable thead{position:sticky;top:0;z-index:1}
+@media(max-width:760px){.wrapper .manageDialog{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);padding:14px;gap:12px}.wrapper .manageFilters{grid-template-columns:minmax(0,1fr) 110px}.wrapper .manageSearch{grid-column:1/-1}}
