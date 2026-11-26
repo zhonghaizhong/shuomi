@@ -34,6 +34,12 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build interactive static showcase
         run: pnpm run build:pages
+      - name: Verify POD print images are included in Pages artifact
+        run: |
+          for image in butterfly-peony-original butterfly-peony-monochrome butterfly-peony-warm butterfly-peony-cluster; do
+            test -s "dist-pages/assets/pod-prints/v1/${image}.webp"
+            node -e 'const fs=require("node:fs");const b=fs.readFileSync(process.argv[1]);if(b.toString("ascii",0,4)!=="RIFF"||b.toString("ascii",8,12)!=="WEBP")process.exit(1)' "dist-pages/assets/pod-prints/v1/${image}.webp"
+          done
       - name: Verify generated own-product gallery is included in Pages artifact
         run: |
           test -s dist-pages/assets/own-product-ai-demo/six-products-48-images.webp
