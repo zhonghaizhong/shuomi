@@ -100,15 +100,19 @@ test("my tools search and reset work and launch shows a truthful dialog",async({
  await page.keyboard.press("Escape");
  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
-test("customization landing matches Figma structure and both entry routes navigate",async({page})=>{
+test("tool customization matches agent customization with three persistent tabs and shared lower content",async({page})=>{
  await page.goto(base+"/custom");
  await expect(page.getByRole("heading",{name:"工具定制",exact:true})).toBeVisible();
  await expect(page.getByRole("heading",{name:"可定制内容"})).toBeVisible();
- await expect(page.locator('[class*="features"] article')).toHaveCount(4);
- await page.getByRole("button",{name:"提交定制需求"}).click();
+ await expect(page.locator('[class*="introFeatures"] article')).toHaveCount(4);
+ const tabs=page.getByRole("navigation",{name:"工具定制页面"});
+ await expect(tabs.getByRole("button")).toHaveCount(3);
+ await expect(tabs.getByRole("button",{name:"定制介绍"})).toHaveAttribute("aria-current","page");
+ await tabs.getByRole("button",{name:"提交需求"}).click();
  await expect(page).toHaveURL(/tools\/custom\/new/);
  await expect(page.getByLabel("工具需求名称")).toBeVisible();
- await page.getByRole("button",{name:"查看定制进度"}).click();
+ await tabs.getByRole("button",{name:"查看进度"}).click();
+ await expect(tabs.getByRole("button",{name:"查看进度"})).toHaveAttribute("aria-current","page");
  await expect(page).toHaveURL(/tools\/custom\/progress/);
 });
 test("custom request form validates consent, confirms and shows local demo progress",async({page})=>{
