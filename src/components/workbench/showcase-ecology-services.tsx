@@ -17,7 +17,7 @@ const services: Service[] = [
 
 type ServiceRecord = {
   id: string; service: string; status: "服务中" | "待确认" | "待验收" | "已完成";
-  progress: string; updated: string; action: string; next: string;
+  progress: string; updated: string; action: string; next: string; detail?: string; contact?: string; region?: string;
 };
 const records: ServiceRecord[] = [
   { id: "SV-20260801", service: "公司注册", status: "服务中", progress: "登记资料审核中", updated: "2026-08-06 10:30", action: "查看进度", next: "等待服务方完成登记资料审核，必要时补充资料。" },
@@ -26,6 +26,14 @@ const records: ServiceRecord[] = [
   { id: "SV-20260601", service: "店铺代运营", status: "已完成", progress: "本期运营成果已交付", updated: "2026-08-20 14:20", action: "查看成果", next: "可查看本期演示成果说明；真实交付资料须由服务方提供。" },
 ];
 
+const ECO_DEMO_KEY="shuomi:eco-demo-requests-v1";
+const ECO_JOIN_KEY="shuomi:eco-demo-provider-v1";
+const stages:ServiceRecord["status"][]=["待确认","服务中","待验收","已完成"];
+const stageLabel=(status:ServiceRecord["status"])=>status==="待确认"?"等待确认需求":status==="服务中"?"正在办理服务":status==="待验收"?"交付成果待验收":"服务已完成";
+function readDemo<T>(key:string,fallback:T):T{if(typeof window==="undefined")return fallback;try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw) as T:fallback}catch{return fallback}}
+type RequestDraft={region:string;details:string;contactName:string;contactWay:string};
+type JoinDraft={company:string;contact:string;category:string;region:string;description:string};
+type JoinRecord=JoinDraft&{id:string;status:"待审核"|"审核通过"};
 type DialogState =
   | { kind: "service"; service: Service }
   | { kind: "request"; service: Service }
@@ -68,6 +76,25 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
   const [serviceType, setServiceType] = useState("全部类型");
   const [order, setOrder] = useState("更新时间");
   const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [extraRecords,setExtraRecords]=useState<ServiceRecord[]>(()=>readDemo(ECO_DEMO_KEY,[]));
+  const [requestDraft,setRequestDraft]=useState<RequestDraft>({region:"",details:"",contactName:"",contactWay:""});
+  const [joinDraft,setJoinDraft]=useState<JoinDraft>({company:"",contact:"",category:"企业服务",region:"",description:""});
+  const [joinRecord,setJoinRecord]=useState<JoinRecord|null>(()=>readDemo(ECO_JOIN_KEY,null));
+  const [showExamples,setShowExamples]=useState(true);
+  const allRecords=useMemo(()=>[...extraRecords,...(showExamples?records:[])],[extraRecords,showExamples]);
+  const saveRecords=(next:ServiceRecord[])=>{setExtraRecords(next);try{localStorage.setItem(ECO_DEMO_KEY,JSON.stringify(next))}catch{}};
+  const saveJoin=(next:JoinRecord)=>{setJoinRecord(next);try{localStorage.setItem(ECO_JOIN_KEY,JSON.stringify(next))}catch{}};
+  const createRequest=()=>{
+    if(!dialog||dialog.kind!=="request"||!requestDraft.region.trim()||!requestDraft.details.trim()||!requestDraft.contactName.trim()||!requestDraft.contactWay.trim())return;
+    const now=new Date();const record:ServiceRecord={id:"DEMO-"+now.getTime(),service:dialog.service.name,status:"待确认",progress:stageLabel("待确认"),updated:now.toLocaleString("sv-SE").slice(0,16),action:"查看进度",next:"需求已保存，等待演示确认。",detail:requestDraft.details,contact:requestDraft.contactName+" · "+requestDraft.contactWay,region:requestDraft.region};
+    saveRecords([record,...extraRecords]);setRequestDraft({region:"",details:"",contactName:"",contactWay:""});setDialog({kind:"record",record});go("/mine");
+  };
+  const advanceRecord=(record:ServiceRecord)=>{
+    if(record.status==="已完成")return;
+    const next=stages[Math.min(stages.length-1,stages.indexOf(record.status)+1)];
+    const updated={...record,status:next,progress:stageLabel(next),updated:new Date().toLocaleString("sv-SE").slice(0,16),next:next==="已完成"?"演示服务已完成，可查看过程记录。":"进入下一阶段，可继续模拟办理进度。"};
+    saveRecords(extraRecords.map(r=>r.id===record.id?updated:r));setDialog({kind:"record",record:updated});
+  };
   const go = (route: string) => navigate("/workbench/services" + route + "?preview=1");
   const reset = () => {
     setCategory("全部服务"); setStatus("全部服务");
@@ -76,11 +103,11 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
   const filteredServices = useMemo(() => services.filter(s =>
     (category === "全部服务" || category === s.category) &&
     [s.name, s.description, s.category, ...s.points].join(" ").toLowerCase().includes(search.trim().toLowerCase())), [category, search]);
-  const filteredRecords = useMemo(() => records.filter(r =>
+  const filteredRecords = useMemo(() => allRecords.filter(r =>
     (status === "全部服务" || r.status === status) &&
     (serviceType === "全部类型" || r.service === serviceType) &&
     [r.service, r.id, r.progress, r.status].join(" ").toLowerCase().includes(search.trim().toLowerCase()))
-    .sort((a, b) => order === "最早更新" ? a.updated.localeCompare(b.updated) : b.updated.localeCompare(a.updated)), [status, serviceType, order, search]);
+    .sort((a, b) => order === "最早更新" ? a.updated.localeCompare(b.updated) : b.updated.localeCompare(a.updated)), [allRecords,status, serviceType, order, search]);
 
   function Header({ section, title, description }: { section: string; title: string; description: string }) {
     return <header className={styles.head}><small>生态服务 / {section}</small><h1>{title}</h1><p>{description}</p></header>;
@@ -114,7 +141,7 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
     {isMarket && <>
       <Header section="服务市场" title="服务市场" description="围绕企业设立、品牌保护、店铺开通和日常运营，提供专业服务支持。" />
       <div className={styles.marketControls}>
-        <div className={styles.segmentRow}><div><strong>服务分类</strong><small>按照服务类型快速查看当前开放的专业服务</small></div>
+        <div className={styles.segmentRow}><div><strong>服务分类</strong><small>按业务类型筛选专业服务</small></div>
           <div className={styles.segments}>{[["全部服务", "全部服务 4"], ["企业服务", "企业服务 2"], ["店铺服务", "店铺服务 2"]].map(([value,label])=><button type="button" key={value} aria-pressed={category===value} onClick={()=>setCategory(value)}>{label}</button>)}</div>
         </div>
         <form className={styles.filterBar} onSubmit={e=>{e.preventDefault();setSearch(draftSearch);}}>
@@ -147,7 +174,7 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
         <button type="button" onClick={reset}>重置</button><button type="submit" className={styles.primary}>确定</button>
       </form>
       <section className={styles.recordsPanel} aria-label="服务记录">
-        <header><h2>服务记录</h2><small>示例服务 · 共 4 项</small></header>
+        <header><h2>服务记录</h2><div className={styles.recordOptions}><small>共 {filteredRecords.length} 项 · 本地演示</small><label><input type="checkbox" checked={showExamples} onChange={e=>setShowExamples(e.target.checked)}/> 显示预置案例</label></div></header>
         <div className={styles.tableScroll}><div className={styles.records}>
           <div className={styles.tableHeader}><span>服务名称</span><span>服务状态</span><span>当前进度</span><span>更新时间</span><span>操作</span></div>
           {filteredRecords.map(r=><div className={styles.recordRow} key={r.id}>
