@@ -169,3 +169,42 @@
 
 .sourceLocked{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:6px 8px;border:1px solid #52617b;border-radius:6px;color:#b6c4dc;font-size:11px;white-space:nowrap}
 :global(.light) .sourceLocked{color:#53657d;border-color:#d9e2ed}
+
+
+/* POD review workspace: make room for the two-column review / linked-product layout. */
+@media(min-width:1101px){
+ .dialog{width:min(1580px,calc(100vw - 24px));max-width:1580px;height:min(95dvh,990px)}
+ .reviewLayout{grid-template-columns:minmax(0,1.18fr) minmax(360px,.92fr)}
+}
+.reviewLayout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(310px,.85fr);gap:16px;align-items:start;min-width:0}
+.reviewList{min-width:0}
+.reviewList .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.statusSwitch{display:flex;align-items:center;gap:5px;flex:0 1 auto;min-width:0}
+.statusSwitch button{min-width:0!important;padding:8px 10px!important;flex:0 0 auto!important}
+.dialog .statusSwitch .selectedStatus{background:#7367f0!important;border-color:#7367f0!important;color:#fff!important}
+.reviewLayout .selectedCard{border-color:#8c80ff;box-shadow:0 0 0 1px #7367f0}
+.relatedPanel{border:1px solid var(--podassets-line,#52576e);border-radius:11px;background:var(--podassets-card,#393d55);padding:14px;min-width:0;display:grid;gap:12px}
+.relatedPanel h3{font-size:16px;margin:0;color:var(--podassets-ink,#cfcde4)}
+.selectedPrintHeader{display:flex;align-items:center;gap:11px;min-width:0}
+.selectedPrintHeader img{width:66px;height:66px;object-fit:cover;border-radius:8px;background:#eee;flex:none}
+.selectedPrintHeader div{display:grid;min-width:0;gap:5px}
+.selectedPrintHeader strong{font-size:14px;overflow-wrap:anywhere}
+.selectedPrintHeader small,.relatedProduct small{font-size:12px;color:var(--podassets-muted,#acabc1);overflow-wrap:anywhere}
+.relatedTabs{border-top:1px solid var(--podassets-line,#52576e);padding-top:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center}
+.relatedTabs strong{font-size:14px}
+.relatedTabs span{font-size:12px;color:var(--podassets-muted,#acabc1)}
+.relatedProducts{display:grid;gap:9px;max-height:315px;overflow:auto}
+.relatedProduct{border:1px solid var(--podassets-line,#52576e);border-radius:8px;padding:9px;display:flex;align-items:center;gap:10px;min-width:0}
+.relatedProduct>div:nth-child(2){min-width:0;flex:1;display:grid;gap:3px}
+.relatedProduct strong{font-size:12px;overflow-wrap:anywhere}
+.productPlaceholder{width:66px;height:66px;flex:none;display:grid;place-items:center;text-align:center;padding:5px;border:1px dashed var(--podassets-line,#52576e);border-radius:7px;color:var(--podassets-muted,#acabc1);font-size:11px}
+.relatedProduct button{border:1px solid #7367f0;background:transparent;color:var(--podassets-ink,#cfcde4);border-radius:7px;padding:7px 9px;white-space:nowrap;font-size:12px}
+.relatedEmpty{min-height:145px;border:1px dashed var(--podassets-line,#52576e);border-radius:8px;display:grid;place-content:center;text-align:center;gap:8px;padding:16px;font-size:13px;line-height:1.6}
+.relatedEmpty small{font-size:12px;color:var(--podassets-muted,#acabc1)}
+.previewSection{border-top:1px solid var(--podassets-line,#52576e);padding-top:12px;display:grid;gap:7px}
+.previewSection strong{font-size:14px}
+.previewSection p{font-size:12px;line-height:1.6;margin:0;color:var(--podassets-muted,#acabc1)}
+.previewSection .previewNotice{color:#d3bbff}
+@media(max-width:1200px){.filters{flex-wrap:wrap!important;overflow:visible}.filters input{flex:1 1 100%!important;width:100%!important}.statusSwitch{flex:1 1 auto;flex-wrap:wrap}}
+@media(max-width:900px){.reviewLayout{grid-template-columns:1fr}.reviewList .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.reviewList .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.statusSwitch button{padding:7px 8px!important;font-size:12px}.relatedProduct{flex-wrap:wrap}}
