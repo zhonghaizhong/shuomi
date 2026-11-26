@@ -124,7 +124,7 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
       </div>
       {filteredServices.length ? <section className={styles.serviceGrid} aria-label="服务列表">
         {filteredServices.map(s => <article key={s.id} className={styles.serviceCard} style={{ "--accent": s.color } as CSSProperties}>
-          <div className={styles.serviceCardTitle}><s.Icon size={19} aria-hidden="true" /><h2>{s.name}</h2></div><p>{s.description}</p>
+          <div className={styles.serviceCardTop}><span className={styles.serviceIcon}><s.Icon size={23} aria-hidden="true" /></span><div><div className={styles.serviceCardTitle}><h2>{s.name}</h2></div><p>{s.description}</p></div></div>
           <div className={styles.points}><strong>服务要点</strong><ul>{s.points.map(point=><li key={point}>{point}</li>)}</ul></div>
           <button type="button" onClick={()=>setDialog({kind:"service",service:s})}>查看详情</button>
         </article>)}
@@ -185,12 +185,20 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
     </>}
 
     {dialog?.kind==="service" && <AccessibleDialog key={"service:"+dialog.service.id} title={dialog.service.name+" · 服务详情"} onClose={()=>setDialog(null)}>
-      <div className={styles.dialogServiceHeader}><span className={styles.serviceCategory}>{dialog.service.category}</span><p>{dialog.service.description}</p></div>
-      <h3>服务内容</h3><ul className={styles.dialogList}>{dialog.service.points.map(t=><li key={t}><CheckCircle2 size={16}/>{t}</li>)}</ul>
-      <h3>适用范围与交付条件</h3><p>{dialog.service.providerNote}</p>
-      <div className={styles.dialogHighlights}><div><Clock3 size={16}/> 办理周期由服务方确认</div><div><ClipboardCheck size={16}/> 服务费用需确认报价</div></div>
-      <p className={styles.disclaimer}>这是公开原型中的服务介绍，不是实际报价、机构资质核验或订单承诺。</p>
-      <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog(null)}>关闭</button><button type="button" className={styles.primary} onClick={()=>setDialog({kind:"request",service:dialog.service})}>提交服务需求</button></footer>
+      <div className={styles.serviceDetailLead}>
+        <span className={styles.serviceDetailIcon} style={{"--service-accent":dialog.service.color} as CSSProperties}><dialog.service.Icon size={27} aria-hidden="true"/></span>
+        <div><span className={styles.serviceCategory}>{dialog.service.category}</span><h3>{dialog.service.name}</h3><p>{dialog.service.description}</p></div>
+      </div>
+      <div className={styles.serviceDetailTags}><span>专业服务</span><span>方案评估</span><span>按需交付</span></div>
+      <div className={styles.serviceDetailGrid}>
+        <section className={styles.serviceDetailPanel}><h3>服务要点</h3><ul className={styles.dialogList}>{dialog.service.points.map(t=><li key={t}><CheckCircle2 size={16}/>{t}</li>)}</ul></section>
+        <div className={styles.serviceDetailAside}>
+          <section className={styles.serviceDetailPanel}><h3>服务范围</h3><p>{dialog.service.providerNote}</p></section>
+          <section className={styles.serviceDetailPanel}><h3>办理周期与费用</h3><p>办理周期及服务费用由服务方根据具体需求评估，并在双方确认方案后提供。</p></section>
+        </div>
+      </div>
+      <p className={styles.disclaimer}>服务信息为演示介绍，具体服务范围、资质、报价及交付条件以服务方正式确认为准。</p>
+      <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog(null)}>关闭</button><button type="button" className={styles.primary} onClick={()=>setDialog({kind:"request",service:dialog.service})}>提交需求</button></footer>
     </AccessibleDialog>}
     {dialog?.kind==="request" && <AccessibleDialog key={"request:"+dialog.service.id} title="提交服务需求" onClose={()=>setDialog(null)}>
       <h3>{dialog.service.name}</h3><p>请先核对服务内容、服务地区、资料要求、办理周期及费用方式，再与服务方确认方案。</p>
