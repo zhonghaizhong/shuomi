@@ -128,7 +128,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
        {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" disabled={asset.readonly} title={asset.readonly?"已有裂变关联，不可删除原图":"删除当前素材"} onClick={()=>removeAsset(asset.id)}>删除</button>{asset.readonly?<span className={css.sourceLocked}>源图已关联 · 只读</span>:null}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
     </div>{tab==="产品图审核"?<aside className={css.relatedPanel} aria-label="关联产品与效果预览"><h3>关联产品与效果预览</h3>{activePrint?<><div className={css.selectedPrintHeader}><img src={inspirationImageSrc(activePrint)} alt={activePrint.name}/><div><strong>{activePrint.name}</strong><small>编号：{activePrint.lineagePrintId} · V{activePrint.lineageVersion}</small><small>状态：{activePrint.status}</small></div></div><div className={css.relatedTabs}><strong>关联产品（{sourceLinkedProducts.length+relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length}）</strong><span>来源关联 · 不等于审核通过</span></div>
-{sourceLinkedProducts.length?<div className={css.relatedProducts}>{sourceLinkedProducts.map(p=><div key={p.id} className={css.relatedProduct}><button type="button" className={css.productMainImageButton} aria-label={"放大查看："+p.name} onClick={()=>openProductZoom(p.images?.[0],p.name)}><img className={css.productThumb} src={p.images?.[0]} alt={p.name+"商品参考图"} loading="lazy"/><span>点击放大</span></button><div><strong>{p.name}</strong><small>批次：SDS POD · 2款公开目录商品（演示）</small><small>商品编号：{p.id}</small><small>{p.variants?.join("、")??"暂无变体"}</small><div className={css.productColors}>{p.images?.map((src,i)=><button type="button" key={src} aria-label={"放大查看"+p.name+"颜色参考图"+(i+1)} onClick={()=>openProductZoom(src,p.name+" · 颜色图 "+(i+1))}><img src={src} alt={p.name+"颜色参考图"+(i+1)} loading="lazy"/></button>)}</div></div><button type="button" onClick={()=>setPreviewNote("生成产品效果图为可选预览。尚未接入真实 AI 生图及积分计费，不会扣费、生成图片或推进审核流程。")}>生成效果图</button></div>)}</div>:null}
+{sourceLinkedProducts.length?<div className={css.relatedProducts}>{sourceLinkedProducts.map(p=><LinkedPodProduct key={p.id} product={p} onZoom={openProductZoom} onPreview={(variant)=>setPreviewNote("已选择 "+p.name+" · "+variant+"。效果预览需要真实 AI 生图与积分计费接口，目前不会扣积分或生成图片；不影响直接审核通过。")}/>)}</div>:null}
 {relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length?<div className={css.relatedProducts}>{relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).map((b,i)=><div key={b.productId+"/"+b.variantId+"/"+i} className={css.relatedProduct}><div className={css.productPlaceholder}>暂无商品图</div><div><strong>正式绑定：{b.productId}</strong><small>变体：{b.variantId}</small>{b.sku?<small>SKU：{b.sku}</small>:null}</div></div>)}</div>:null}
 {!sourceLinkedProducts.length&&!relatedBindings.length?<div className={css.relatedEmpty}>该印花暂无可读取的关联商品。<small>演示数据仅在指定企业的管理员账号中显示；审核通过不强制要求生成效果图。</small></div>:null}<section className={css.previewSection}><strong>产品效果预览</strong><p>仅辅助查看印花应用效果，不进入商品图片库，也不影响审核结果。实际生成需先接入 AI 生图服务与积分计费。</p>{previewNote?<p role="status" className={css.previewNotice}>{previewNote}</p>:null}</section></>:<div className={css.relatedEmpty}>点击左侧任意印花图片，查看关联产品及效果预览。</div>}</aside>:null}</div>
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
@@ -144,4 +144,36 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
    {zoomProduct?<div className={css.zoomOverlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setZoomProduct(null)}}><section className={css.zoomDialog} role="dialog" aria-modal="true" aria-label={"放大查看商品图片："+zoomProduct.title} onKeyDown={e=>{if(e.key==="Escape")setZoomProduct(null)}}><header><strong>{zoomProduct.title}</strong><button type="button" autoFocus onClick={()=>setZoomProduct(null)} aria-label="关闭图片预览">关闭</button></header><img src={zoomProduct.src} alt={zoomProduct.title+" 放大预览"}/><p>GitHub 已归档的服装实拍参考图，非 SDS 官方对应 SKU 图片。</p></section></div>:null}
    <footer className={css.foot}><span>演示素材保存在当前账号的浏览器会话中，未上传服务器</span><button type="button" onClick={onClose}>关闭</button></footer>
   </dialog>;
+}
+
+/** Preview selections are local UI state; they never create a formal POD binding. */
+function LinkedPodProduct({product,onZoom,onPreview}:{product:DemoCollectedProduct;onZoom:(src:string|undefined,title:string)=>void;onPreview:(variant:string)=>void}){
+ const details=product.variantDetails??[];
+ const colors=[...new Set(details.map(v=>v.color).filter(Boolean))];
+ const [color,setColor]=useState(colors[0]??"");
+ const sizes=[...new Set(details.filter(v=>!color||v.color===color).map(v=>v.size).filter(Boolean))];
+ const [size,setSize]=useState(sizes[0]??"");
+ const selected=details.find(v=>v.color===color&&v.size===size)??details.find(v=>v.color===color)??details[0];
+ const selectedSize=sizes.includes(size)?size:(sizes[0]??"");
+ const selectedVariant=details.find(v=>v.color===color&&v.size===selectedSize)??selected;
+ const photo=selectedVariant?.image??product.images?.[0];
+ const variantLabel=selectedVariant?.label??[color,selectedSize].filter(Boolean).join(" / ");
+ return <article className={css.relatedProduct}>
+  <button type="button" className={css.productMainImageButton} aria-label={"放大查看"+product.name+"当前规格图片"} onClick={()=>onZoom(photo,product.name+" · "+variantLabel)}>
+   {photo?<img className={css.productThumb} src={photo} alt={product.name+" · "+variantLabel+"商品参考图"} loading="lazy"/>:<span>暂无图片</span>}
+   <span>点击放大</span>
+  </button>
+  <div className={css.productInformation}>
+   <strong title={product.name}>{product.name}</strong>
+   <small>批次：SDS POD · 2款公开目录商品（演示）</small>
+   <small>商品编号：{product.id}</small>
+   <div className={css.variantControls}>
+    {colors.length?<div className={css.variantGroup}><span>颜色</span><div className={css.variantOptions}>{colors.map(c=><button type="button" key={c} className={color===c?css.variantSelected:""} aria-pressed={color===c} onClick={()=>{setColor(c);setSize(details.find(v=>v.color===c)?.size??"")}}>{c}</button>)}</div></div>:null}
+    {sizes.length?<div className={css.variantGroup}><span>尺码</span><div className={css.variantOptions}>{sizes.map(sz=><button type="button" key={sz} className={selectedSize===sz?css.variantSelected:""} aria-pressed={selectedSize===sz} onClick={()=>setSize(sz)}>{sz}</button>)}</div></div>:null}
+    <div className={css.variantGroup}><span>当前规格</span><strong>{variantLabel||"未选择"}</strong></div>
+   </div>
+   <div className={css.productColors}>{product.images?.map((src,i)=><button type="button" key={src} aria-label={"放大查看"+product.name+"颜色参考图"+(i+1)} onClick={()=>onZoom(src,product.name+" · 颜色参考图 "+(i+1))}><img src={src} alt={product.name+"颜色参考图"+(i+1)} loading="lazy"/></button>)}</div>
+  </div>
+  <button type="button" className={css.generatePreview} onClick={()=>onPreview(variantLabel)}>生成当前规格预览</button>
+ </article>;
 }
