@@ -469,3 +469,63 @@
 /* Join-page eyebrow: readable against white/light Vuexy surfaces. */
 :global(.light) .page .joinHero>div>small{color:#087f6c}
 .page .joinHero>div>small{overflow-wrap:anywhere}
+
+
+/* Service marketplace refresh — restrained Vuexy cards and centered detail modal. */
+.page[data-eco-page="market"] .marketControls{padding:18px 20px;gap:14px;border-radius:11px}
+.page[data-eco-page="market"] .segmentRow{gap:20px}
+.page[data-eco-page="market"] .segmentRow strong{font-size:18px}
+.page[data-eco-page="market"] .segments button{border-radius:8px;min-height:40px;padding:0 18px}
+.page[data-eco-page="market"] .filterBar{gap:11px}
+.page[data-eco-page="market"] .searchBox{border-radius:8px;min-height:43px}
+.page[data-eco-page="market"] .serviceGrid{gap:14px;align-items:stretch}
+.page[data-eco-page="market"] .serviceCard{min-height:322px;gap:16px;padding:20px 18px 17px;border-radius:11px;box-shadow:none}
+.page[data-eco-page="market"] .serviceCardTop{display:flex;align-items:flex-start;gap:13px;min-height:101px}
+.page[data-eco-page="market"] .serviceIcon{display:grid;place-items:center;flex:none;width:49px;height:49px;border-radius:12px;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--eco-surface,#393d55))}
+.page[data-eco-page="market"] .serviceCardTop>div{min-width:0;display:grid;gap:7px}
+.page[data-eco-page="market"] .serviceCardTitle h2{font-size:18px;line-height:1.35;color:var(--eco-text,#e7e5f2)}
+.page[data-eco-page="market"] .serviceCardTop p{margin:0;color:var(--eco-muted,#acabc1);font-size:13px;line-height:1.65}
+.page[data-eco-page="market"] .points{gap:10px;padding-top:14px;border-color:var(--eco-line,#52576e)}
+.page[data-eco-page="market"] .points>strong{font-size:14px;color:var(--accent)}
+.page[data-eco-page="market"] .points ul{padding:0;background:transparent;gap:9px}
+.page[data-eco-page="market"] .points li{gap:9px;font-size:13px;line-height:1.45;color:var(--eco-text,#cfcde4)}
+.page[data-eco-page="market"] .points li::before{width:7px;height:7px;flex-basis:7px}
+.page[data-eco-page="market"] .serviceCard>button{min-height:42px;margin-top:auto;border-radius:8px;font-size:14px;font-weight:600;background:var(--eco-surface,#393d55);color:var(--eco-text,#cfcde4);border:1px solid var(--eco-line,#52576e)}
+.page[data-eco-page="market"] .serviceCard>button:hover{border-color:var(--accent);color:var(--accent)}
+.page[data-eco-page="market"] .marketNotes article{min-height:125px;gap:11px;padding:18px 20px;border-radius:10px;box-shadow:none}
+.page[data-eco-page="market"] .marketNotes h2{border-left:3px solid #7367f0;padding-left:11px;font-size:18px}
+.page[data-eco-page="market"] .marketNotes span{border-radius:7px;min-height:35px}
+.dialog:not(.drawer){position:fixed;inset:0;margin:auto;width:min(760px,calc(100vw - 36px));max-width:760px;max-height:min(88dvh,800px);min-height:0;overflow-y:auto;border-radius:13px}
+.dialog:not(.drawer) .dialogHead{padding:19px 24px}
+.dialog:not(.drawer) .dialogBody{padding:23px 24px;gap:16px}
+.dialog .serviceDetailLead{display:flex;align-items:center;gap:16px;min-width:0}
+.dialog .serviceDetailIcon{display:grid;place-items:center;flex:none;width:64px;height:64px;border-radius:14px;background:color-mix(in srgb,var(--service-accent,#7367f0) 17%,var(--eco-surface));color:var(--service-accent,#7367f0);border:1px solid color-mix(in srgb,var(--service-accent,#7367f0) 45%,var(--eco-line))}
+.dialog .serviceDetailLead>div{min-width:0}
+.dialog .serviceDetailLead h3{margin:8px 0 5px;font-size:20px}
+.dialog .serviceDetailLead p{font-size:14px;line-height:1.65}
+.dialog .serviceDetailTags{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dialog .serviceDetailTags span{padding:5px 12px;border:1px solid var(--eco-line);border-radius:100px;background:var(--eco-surface);font-size:12px;color:var(--eco-muted)}
+.dialog .serviceDetailGrid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:12px;align-items:stretch}
+.dialog .serviceDetailAside{display:grid;gap:12px}
+.dialog .serviceDetailPanel{min-width:0;padding:17px;border:1px solid var(--eco-line);background:var(--eco-surface);border-radius:10px}
+.dialog .serviceDetailPanel h3{font-size:16px;line-height:1.3;margin:0 0 12px}
+.dialog .serviceDetailPanel p{font-size:13px;line-height:1.7}
+.dialog .serviceDetailPanel .dialogList{gap:8px}
+.dialog .serviceDetailPanel .dialogList li{padding:7px 0;border:0;background:transparent;font-size:13px}
+.dialog .serviceDetailPanel .dialogList svg{color:#7367f0}
+.dialog .dialogActions{margin-top:0;padding-top:16px;gap:10px}
+.dialog .dialogActions button{min-width:125px;min-height:41px}
+:global(.light) .page[data-eco-page="market"] .serviceCardTitle h2{color:#263747}
+:global(.light) .page[data-eco-page="market"] .serviceCardTop p{color:#607183}
+:global(.light) .page[data-eco-page="market"] .serviceCard>button{background:#f7fafd;color:#263747}
+@media(max-width:700px){
+ .page[data-eco-page="market"] .serviceCard{min-height:290px}
+ .page[data-eco-page="market"] .serviceCardTop{min-height:auto}
+ .dialog:not(.drawer){width:calc(100vw - 20px);max-height:calc(100dvh - 24px)}
+ .dialog:not(.drawer) .dialogHead{padding:15px 17px}
+ .dialog:not(.drawer) .dialogBody{padding:17px;gap:13px}
+ .dialog .serviceDetailGrid{grid-template-columns:1fr}
+ .dialog .serviceDetailLead{align-items:flex-start;gap:12px}
+ .dialog .serviceDetailIcon{width:48px;height:48px}
+ .dialog .dialogActions button{flex:1;min-width:0}
+}
