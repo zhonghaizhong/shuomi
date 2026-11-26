@@ -165,7 +165,7 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
     {isMine && <>
       <Header section="我的服务" title="我的服务" description="统一查看已提交和正在交付的服务，跟进确认、交付与售后进度。" />
       <section className={styles.segmentRow}><div><strong>服务状态</strong><small>按当前状态快速查看需要跟进的服务</small></div>
-        <div className={styles.segments}>{[["全部服务","全部服务 4"],["待确认","待确认 1"],["服务中","服务中 1"],["待验收","待验收 1"],["已完成","已完成 1"]].map(([val,label])=><button type="button" key={val} aria-pressed={status===val} onClick={()=>setStatus(val)}>{label}</button>)}</div>
+        <div className={styles.segments}>{[["全部服务","全部服务"],["待确认","待确认"],["服务中","服务中"],["待验收","待验收"],["已完成","已完成"]].map(([val,label])=><button type="button" key={val} aria-pressed={status===val} onClick={()=>setStatus(val)}>{label} {val==="全部服务"?allRecords.length:allRecords.filter(r=>r.status===val).length}</button>)}</div>
       </section>
       <form className={styles.filterBar} onSubmit={e=>{e.preventDefault();setSearch(draftSearch);}}>
         <label className={styles.searchBox}><Search size={16} aria-hidden="true"/><input aria-label="搜索服务名称或服务编号" placeholder="搜索服务名称或服务编号" value={draftSearch} onChange={e=>setDraftSearch(e.target.value)}/></label>
