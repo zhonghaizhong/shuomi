@@ -274,7 +274,8 @@ test("1688 online collection creates ten demo products and shows only owned batc
  await page.goto("/shuomi/#/workbench/data/mine");
  const mine=page.getByRole("region",{name:"采集批次",exact:true});
  await expect(mine).toContainText("1688 在线采集 · 10个产品（模拟）");
- await expect(mine).toContainText("2 批");
+ await expect(mine).toContainText("SDS POD · 2款公开目录商品（演示）");
+  await expect(mine).toContainText("3 批");
  await mine.getByRole("row").filter({hasText:"1688 在线采集 · 10个产品（模拟）"}).getByRole("button",{name:"更多"}).click();
  await mine.getByRole("button",{name:"查看商品"}).click();
  const details=page.getByRole("dialog",{name:"批次商品"});
