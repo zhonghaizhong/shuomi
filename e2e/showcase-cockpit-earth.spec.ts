@@ -282,7 +282,7 @@ test("standard headers keep actions clickable and adapt to narrow screens", asyn
    Test rendered RGB and foreground/background contrast, not just CSS presence. */
 const lightDetailSurfaces = [
   {route:"/workbench/tools/official", target:'[class*="toolCard"]', text:"h3"},
-  {route:"/workbench/agents/custom", target:'[class*="featureGrid"] article', text:"h3"},
+  {route:"/workbench/agents/custom", target:'[class*="introFeatures"] article', text:"h3"},
   {route:"/workbench/tools/custom", target:'[class*="features"] article', text:"h3"},
   {route:"/workbench/agents/custom/new", target:'[class*="formLayout"] input:not([type="checkbox"]):not([type="file"])', text:null},
   {route:"/workbench/tools/custom/new", target:'[class*="formLayout"] input:not([type="checkbox"]):not([type="file"])', text:null},
