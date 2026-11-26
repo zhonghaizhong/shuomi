@@ -32,19 +32,27 @@ test("Figma market has four original services, categories and functional search/
  await expect(page.locator('article[class*="serviceCard"]')).toHaveCount(4);
 });
 
-test("service details and request onboarding are honest keyboard accessible dialogs",async({page})=>{
+test("service details and request onboarding save a local demo record and support keyboard close",async({page})=>{
  await page.goto(root+"/market");
  const company=page.locator('article[class*="serviceCard"]').filter({hasText:"公司注册"});
  await company.getByRole("button",{name:"查看详情"}).click();
  const modal=page.getByRole("dialog");
  await expect(modal).toContainText("申请资料指导");
  await modal.getByRole("button",{name:"提交需求",exact:true}).click();
- await expect(modal).toContainText("正式提交暂未接入");
- await expect(modal).toContainText("不会创建真实申请");
- await modal.getByRole("button",{name:"返回服务详情"}).click();
- await expect(modal).toContainText("服务要点");
+ await expect(modal).toContainText("演示申请保存在当前浏览器");
+ await modal.getByRole("textbox",{name:/服务地区/}).fill("美国");
+ await modal.getByRole("textbox",{name:/需求说明/}).fill("公司注册模拟流程验收");
+ await modal.getByRole("textbox",{name:/联系人/}).fill("演示用户");
+ await modal.getByRole("textbox",{name:/联系方式/}).fill("demo@example.test");
+ await modal.getByRole("button",{name:"确认提交需求"}).click();
+ await expect(page).toHaveURL(/\/services\/mine\?preview=1/);
+ await expect(modal).toContainText("办理阶段");
+ await expect(modal).toContainText("公司注册模拟流程验收");
+ await modal.getByRole("button",{name:"模拟推进至下一阶段"}).click();
+ await expect(modal).toContainText("正在办理服务");
  await page.keyboard.press("Escape");
  await expect(modal).toHaveCount(0);
+ await expect(page.locator('[class*="recordRow"]').filter({hasText:"公司注册"}).first()).toBeVisible();
 });
 
 test("my services has four Figma records, status tabs, search, reset, progress drawer",async({page})=>{
@@ -69,19 +77,25 @@ test("my services has four Figma records, status tabs, search, reset, progress d
  await expect(rows).toHaveCount(4);
 });
 
-test("provider application keeps Figma four-stage flow and no false submission",async({page})=>{
+test("provider application saves local demo information and supports review progression",async({page})=>{
  await page.goto(root+"/join");
  await expect(page.getByRole("heading",{name:"申请加入",exact:true})).toBeVisible();
  await expect(page.locator('[class*="joinStep"]')).toHaveCount(4);
  await expect(page.getByText("预计 3–7 个工作日")).toBeVisible();
  await page.getByRole("button",{name:"提交入驻申请"}).click();
  const drawer=page.getByRole("dialog");
- await expect(drawer).toContainText("正式入驻表单暂未接入");
- await expect(drawer).toContainText("不会上传、保存或提交信息");
- await drawer.getByRole("button",{name:"了解后续流程"}).click();
- await expect(drawer).toContainText("审核与服务上线");
- await drawer.getByRole("button",{name:"返回资料清单"}).click();
- await expect(drawer).toContainText("申请资料清单");
+ await expect(drawer).toContainText("演示入驻申请保存在当前浏览器");
+ await drawer.getByRole("textbox",{name:/机构名称/}).fill("演示服务机构");
+ await drawer.getByRole("textbox",{name:/联系人及联系方式/}).fill("演示用户 demo@example.test");
+ await drawer.getByRole("textbox",{name:/覆盖地区/}).fill("美国");
+ await drawer.getByRole("textbox",{name:/资质与服务能力说明/}).fill("演示服务能力及交付流程");
+ await drawer.getByRole("button",{name:"提交入驻申请"}).click();
+ await expect(drawer).toContainText("演示服务机构");
+ await expect(drawer).toContainText("待审核");
+ await drawer.getByRole("button",{name:"模拟审核通过"}).click();
+ await expect(drawer).toContainText("审核通过");
+ await drawer.getByRole("button",{name:"返回申请资料"}).click();
+ await expect(drawer).toContainText("申请资料");
  await page.keyboard.press("Escape");
  await expect(drawer).toHaveCount(0);
 });
