@@ -1,7 +1,7 @@
 "use client";
 
 /** Isolated, browser-session-only fixture batches. Never represents a 1688 API response. */
-export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";supplyProductId?:string;supplierId?:string;supplierName?:string;supplyVersion?:string;supplySkuId?:string;images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string;images?:string[];price?:string;stock?:string;description?:string;sourceUrl?:string}>;originalTitle?:string;description?:string;demoSourceLink?:string};
+export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";supplyProductId?:string;supplierId?:string;supplierName?:string;supplyVersion?:string;supplySkuId?:string;images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string;images?:string[];price?:string;stock?:string;description?:string;sourceUrl?:string}>;originalTitle?:string;description?:string;demoSourceLink?:string;supplyType?:string;warehouseCountry?:string;shipToCountries?:string[];moq?:number;dropship?:boolean|null};
 export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon"|"硕米优选";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
 type CatalogItem={name:string;price:string;variants:string[];description:string;photos:string[]};
 // Public photographic sample references. Not original 1688 product photos or authenticated offers.
@@ -191,7 +191,7 @@ export function addSelectedCatalogProducts(
  const name=target.kind==="new"?target.name.trim():"";
  if(target.kind==="new"&&(!name||name.length>80))throw Error("请输入有效的批次名称");
  if(target.kind==="new"&&permitted.some(b=>b.name===name))throw Error("批次名称已存在");
- const copy=(p:DemoCollectedProduct):DemoCollectedProduct=>({...p,images:[...(p.images??[])],variants:[...(p.variants??[])],variantDetails:p.variantDetails?.map(v=>({...v,images:[...(v.images??[])]}))});
+ const copy=(p:DemoCollectedProduct):DemoCollectedProduct=>({...p,images:[...(p.images??[])],variants:[...(p.variants??[])],shipToCountries:[...(p.shipToCountries??[])],variantDetails:p.variantDetails?.map(v=>({...v,images:[...(v.images??[])]}))});
  const existing=new Set((batch?.products??[]).map(p=>p.supplyProductId||p.id));
  const additions=entries.filter(p=>!existing.has(p.supplyProductId||p.id)).map(copy);
  if(!additions.length)throw Error("选择的商品都已经存在于此采集批次");
