@@ -47,6 +47,13 @@ const bundledAgentExamples = {
       `${here}/dist-pages/assets/pod-inspiration`,
       { recursive: true }
     );
+    // POD print lineage fixtures are stored in the repository public tree.
+    // The Showcase uses a separate Vite root, so copy these assets explicitly.
+    await cp(
+      `${here}/public/assets/pod-prints`,
+      `${here}/dist-pages/assets/pod-prints`,
+      { recursive: true }
+    );
     // Publish the committed original POD apparel supplier photos.
     await cp(
       `${here}/public/assets/pod-demo`,
