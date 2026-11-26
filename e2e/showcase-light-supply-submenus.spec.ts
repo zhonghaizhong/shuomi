@@ -232,3 +232,43 @@ test("preferred application lists only approved own products regardless of initi
  await approved.getByRole("button",{name:"发起申请"}).click();
  await expect(page.getByRole("dialog",{name:"发起优选申请"})).toBeVisible();
 });
+
+
+test("selected marketplace supports POD, shipping and one-piece dropshipping filters and retains supply data in a personal batch",async({page})=>{
+ await page.goto(url("/supply/selected"));
+ const root=page.locator('[data-selected-market="true"]');
+ await expect(root).toBeVisible();
+ await expect(root.getByRole("combobox",{name:"货源国家"})).toBeVisible();
+ await expect(root.getByRole("combobox",{name:"可配送国家"})).toBeVisible();
+ await expect(root.getByRole("button",{name:"POD",exact:true})).toBeVisible();
+ await root.getByRole("button",{name:"POD",exact:true}).click();
+ await expect(root.locator("[data-selected-product]")).toHaveCount(2);
+ await expect(root.locator('[data-selected-product="SMYX-DEMO-003"]')).toBeVisible();
+ await root.getByRole("combobox",{name:"可配送国家"}).selectOption("加拿大");
+ await expect(root.locator("[data-selected-product]")).toHaveCount(1);
+ await root.getByRole("checkbox",{name:"仅看 1 件起订"}).check();
+ await root.getByRole("checkbox",{name:"仅看支持一件代发"}).check();
+ await expect(root.locator('[data-selected-product="SMYX-DEMO-003"]')).toBeVisible();
+ await root.locator('[data-selected-product="SMYX-DEMO-003"]').getByRole("button",{name:"查看详情"}).click();
+ const detail=page.getByRole("dialog",{name:"优选商品详情"});
+ await expect(detail).toContainText("POD");
+ await expect(detail).toContainText("加拿大");
+ await expect(detail).toContainText("一件代发");
+ await detail.getByRole("button",{name:"关闭"}).click();
+ await root.locator('[data-selected-product="SMYX-DEMO-003"]').getByRole("button",{name:"加入采集批次"}).click();
+ const collecting=page.getByRole("dialog",{name:"加入我的采集批次"});
+ await collecting.getByRole("textbox",{name:"新批次名称"}).fill("POD供货方案演示批次");
+ await collecting.getByRole("button",{name:"确认加入"}).click();
+ await expect(root.getByRole("status")).toContainText("POD供货方案演示批次");
+ const copy=await page.evaluate(()=>{
+  const org=document.querySelector('[data-selected-market="true"]')?.getAttribute("data-organization");
+  const raw=sessionStorage.getItem("shuomi:demo-collection-batches-v1:"+org);
+  const batches=raw?JSON.parse(raw):[];
+  return batches.find((b:{name:string})=>b.name==="POD供货方案演示批次")?.products?.[0];
+ });
+ expect(copy?.supplyType).toBe("POD");
+ expect(copy?.warehouseCountry).toBe("中国");
+ expect(copy?.shipToCountries).toContain("加拿大");
+ expect(copy?.moq).toBe(1);
+ expect(copy?.dropship).toBe(true);
+});
