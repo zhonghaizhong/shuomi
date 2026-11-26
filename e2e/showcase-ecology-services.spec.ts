@@ -38,11 +38,11 @@ test("service details and request onboarding are honest keyboard accessible dial
  await company.getByRole("button",{name:"查看详情"}).click();
  const modal=page.getByRole("dialog");
  await expect(modal).toContainText("申请资料指导");
- await modal.getByRole("button",{name:"提交服务需求"}).click();
+ await modal.getByRole("button",{name:"提交需求",exact:true}).click();
  await expect(modal).toContainText("正式提交暂未接入");
  await expect(modal).toContainText("不会创建真实申请");
  await modal.getByRole("button",{name:"返回服务详情"}).click();
- await expect(modal).toContainText("服务内容");
+ await expect(modal).toContainText("服务要点");
  await page.keyboard.press("Escape");
  await expect(modal).toHaveCount(0);
 });
