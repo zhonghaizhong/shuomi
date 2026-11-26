@@ -172,8 +172,7 @@ function LinkedPodProduct({product,onZoom,onPreview}:{product:DemoCollectedProdu
     {sizes.length?<div className={css.variantGroup}><span>尺码</span><div className={css.variantOptions}>{sizes.map(sz=><button type="button" key={sz} className={selectedSize===sz?css.variantSelected:""} aria-pressed={selectedSize===sz} onClick={()=>setSize(sz)}>{sz}</button>)}</div></div>:null}
     <div className={css.variantGroup}><span>当前规格</span><strong>{variantLabel||"未选择"}</strong></div>
    </div>
-   <div className={css.productColors}>{product.images?.map((src,i)=><button type="button" key={src} aria-label={"放大查看"+product.name+"颜色参考图"+(i+1)} onClick={()=>onZoom(src,product.name+" · 颜色参考图 "+(i+1))}><img src={src} alt={product.name+"颜色参考图"+(i+1)} loading="lazy"/></button>)}</div>
+   <div className={css.productBottomRow}><div className={css.productColors}>{product.images?.map((src,i)=><button type="button" key={src} aria-label={"放大查看"+product.name+"颜色参考图"+(i+1)} onClick={()=>onZoom(src,product.name+" · 颜色参考图 "+(i+1))}><img src={src} alt={product.name+"颜色参考图"+(i+1)} loading="lazy"/></button>)}</div><button type="button" className={css.generatePreview} onClick={()=>onPreview(variantLabel)}>生成当前规格预览</button></div>
   </div>
-  <button type="button" className={css.generatePreview} onClick={()=>onPreview(variantLabel)}>生成当前规格预览</button>
  </article>;
 }
