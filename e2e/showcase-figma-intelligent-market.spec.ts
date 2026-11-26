@@ -77,7 +77,7 @@ test("agent market category/search and activation persist across menu navigation
 });
 test("customization request is validated and switches between demo progress and empty state",async({page})=>{
  await page.goto(base+"/agents/custom");
- await page.locator("[data-agent-customization='overview']").getByRole("button",{name:"提交定制需求"}).click();
+ await page.locator("[data-agent-customization='overview']").getByRole("navigation",{name:"智能体定制页面"}).getByRole("button",{name:"提交需求"}).click();
  await expect(page).toHaveURL(/agents\/custom\/new/);
  const form=page.locator('[data-agent-customization="new"]');
  await expect(form.getByRole("heading",{name:"告诉我们你希望智能体完成什么"})).toBeVisible();
