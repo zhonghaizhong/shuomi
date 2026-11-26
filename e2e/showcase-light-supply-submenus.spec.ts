@@ -267,7 +267,7 @@ test("selected marketplace supports POD, shipping and one-piece dropshipping fil
   return batches.find((b:{name:string})=>b.name==="POD供货方案演示批次")?.products?.[0];
  });
  expect(copy?.supplyType).toBe("POD");
- expect(copy?.warehouseCountry).toBe("中国");
+ expect(copy?.warehouseCountry).toBe("美国");
  expect(copy?.shipToCountries).toContain("加拿大");
  expect(copy?.moq).toBe(1);
  expect(copy?.dropship).toBe(true);
