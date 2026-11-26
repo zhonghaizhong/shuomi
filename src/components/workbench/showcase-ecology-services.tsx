@@ -244,22 +244,25 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
         const current=dialog.record.status==="待确认"?1:dialog.record.status==="服务中"?2:dialog.record.status==="待验收"?3:4;
         return <div key={step} data-complete={i<current} data-active={i===Math.min(current-1,3)}><b>{i+1}</b><span><strong>{step}</strong><small>{i<current?"示例阶段":"待开始"}</small></span></div>;
       })}</div>
-      <h3>当前事项</h3><p>{dialog.record.next}</p><p className={styles.disclaimer}>以上为演示记录。真实办理数据、资料确认和交付验收需接入服务系统。</p>
-      <footer className={styles.dialogActions}><button type="button" className={styles.primary} onClick={()=>setDialog(null)}>关闭</button></footer>
+      <h3>当前事项</h3><p>{dialog.record.next}</p>
+      {dialog.record.detail?<div className={styles.requestIntro}><strong>申请信息</strong><p>{dialog.record.region} · {dialog.record.detail}</p><small>{dialog.record.contact}</small></div>:null}
+      <p className={styles.demoHint}>本地模拟流程，不代表真实服务商已受理或实际完成交付。</p>
+      <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog(null)}>关闭</button>{dialog.record.id.startsWith("DEMO-")&&dialog.record.status!=="已完成"?<button type="button" className={styles.primary} onClick={()=>advanceRecord(dialog.record)}>模拟推进至下一阶段</button>:null}</footer>
     </AccessibleDialog>}
     {dialog?.kind==="join" && <AccessibleDialog key={"join:"+dialog.tab} title="申请加入 · 入驻资料" side onClose={()=>setDialog(null)}>
       <div className={styles.drawerTabs}><button type="button" aria-pressed={dialog.tab==="requirements"} onClick={()=>setDialog({kind:"join",tab:"requirements"})}>申请资料</button><button type="button" aria-pressed={dialog.tab==="preview"} onClick={()=>setDialog({kind:"join",tab:"preview"})}>后续流程</button></div>
-      {dialog.tab==="requirements"?<>
-        <h3>申请资料清单</h3>
-        <p>申请时需准备主体信息及与所提供服务对应的资质、人员与交付能力说明。</p>
-        <ul className={styles.dialogList}>{["机构基本信息及联系人","企业主体与相关资质证明","主要服务领域、覆盖地区和交付说明","团队介绍及代表服务案例"].map(x=><li key={x}><CheckCircle2 size={16}/>{x}</li>)}</ul>
-        <p className={styles.disclaimer}>正式入驻表单暂未接入。此处仅展示申请资料要求，不会上传、保存或提交信息。</p>
-        <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog(null)}>关闭</button><button type="button" className={styles.primary} onClick={()=>setDialog({kind:"join",tab:"preview"})}>了解后续流程</button></footer>
-      </>:<>
-        <h3>审核与服务上线</h3>
-        <div className={styles.progressSteps}>{["提交机构资料","资质与案例审核","签署合作协议","配置并上线服务"].map((x,i)=><div key={x}><b>{i+1}</b><span><strong>{x}</strong><small>{i===0?"准备资料并核对主体信息":"审核或确认后推进"}</small></span></div>)}</div>
-        <p className={styles.disclaimer}>这是流程说明，不代表已提交或审核通过。正式申请功能尚未接入。</p>
-        <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog({kind:"join",tab:"requirements"})}>返回资料清单</button><button type="button" className={styles.primary} onClick={()=>setDialog(null)}>完成查看</button></footer>
+      {dialog.tab==="requirements"?<form className={styles.ecoForm} onSubmit={e=>{e.preventDefault();const next:JoinRecord={...joinDraft,id:"JOIN-"+Date.now(),status:"待审核"};saveJoin(next);setDialog({kind:"join",tab:"preview"})}}>
+        <label>机构名称 *<input required value={joinDraft.company} onChange={e=>setJoinDraft(p=>({...p,company:e.target.value}))} placeholder="请输入机构或团队名称"/></label>
+        <div className={styles.ecoFormRow}><label>联系人及联系方式 *<input required value={joinDraft.contact} onChange={e=>setJoinDraft(p=>({...p,contact:e.target.value}))} placeholder="姓名 / 手机或邮箱"/></label><label>服务领域 *<select value={joinDraft.category} onChange={e=>setJoinDraft(p=>({...p,category:e.target.value}))}><option>企业服务</option><option>店铺服务</option></select></label></div>
+        <label>覆盖地区 *<input required value={joinDraft.region} onChange={e=>setJoinDraft(p=>({...p,region:e.target.value}))} placeholder="主要服务国家和地区"/></label>
+        <label>资质与服务能力说明 *<textarea required rows={4} value={joinDraft.description} onChange={e=>setJoinDraft(p=>({...p,description:e.target.value}))} placeholder="介绍机构资质、团队经验、服务案例及交付方式"/></label>
+        <p className={styles.demoHint}>演示入驻申请保存在当前浏览器，可以继续模拟审核流程。</p>
+        <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog(null)}>取消</button><button type="submit" className={styles.primary}>提交入驻申请</button></footer>
+      </form>:<>
+        {joinRecord?<div className={styles.requestIntro}><strong>{joinRecord.company}</strong><p>申请编号：{joinRecord.id}</p><span className={styles.status}>{joinRecord.status}</span><p>{joinRecord.description}</p></div>:<p>填写并提交入驻申请后，可以在这里查看审核流程。</p>}
+        <div className={styles.progressSteps}>{["申请提交","资质审核","确认合作","服务上架"].map((x,i)=><div key={x}><b>{i+1}</b><span><strong>{x}</strong><small>{joinRecord?(i===0?"已提交":i===1?joinRecord.status:"待办理"):"待提交"}</small></span></div>)}</div>
+        <p className={styles.demoHint}>演示审核不代表已完成真实资质认证或服务上架。</p>
+        <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog({kind:"join",tab:"requirements"})}>返回申请资料</button>{joinRecord?.status==="待审核"?<button type="button" className={styles.primary} onClick={()=>saveJoin({...joinRecord,status:"审核通过"})}>模拟审核通过</button>:<button type="button" className={styles.primary} onClick={()=>setDialog(null)}>完成</button>}</footer>
       </>}
     </AccessibleDialog>}
   </main>;
