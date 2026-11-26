@@ -21,11 +21,11 @@ const baseSelectedCatalogFixtures:SelectedCatalogProduct[]=[
 
 // Supply capabilities are demonstration fixtures only, not verified logistics promises.
 // MOQ and dropshipping belong to each supply offer rather than the product category.
-const demoSupply: Array<Pick<SelectedCatalogProduct,"supplyType"|"warehouseCountry"|"shipToCountries"|"dropship"> & {moq?:number}>=[
+const demoSupply: Array<Pick<SelectedCatalogProduct,"supplyType"|"warehouseCountry"|"shipToCountries"|"dropship"> & {moq?:number;origin?:string}>=[
  {supplyType:"现货",warehouseCountry:"中国",shipToCountries:["美国","加拿大"],dropship:true},
  {supplyType:"定制",warehouseCountry:"中国",shipToCountries:["美国","英国"],dropship:true},
- {supplyType:"POD",warehouseCountry:"中国",shipToCountries:["美国","加拿大","英国"],dropship:true,moq:1},
- {supplyType:"POD",warehouseCountry:"中国",shipToCountries:["美国"],dropship:true,moq:1},
+ {supplyType:"POD",warehouseCountry:"美国",origin:"美国洛杉矶演示仓",shipToCountries:["美国","加拿大","英国"],dropship:true,moq:1},
+ {supplyType:"POD",warehouseCountry:"墨西哥",origin:"墨西哥蒙特雷演示仓",shipToCountries:["美国","墨西哥"],dropship:true,moq:1},
  {supplyType:"现货",warehouseCountry:"中国",shipToCountries:["美国"],dropship:false},
  {supplyType:"现货",warehouseCountry:"中国",shipToCountries:["美国","加拿大"],dropship:false}
 ];
