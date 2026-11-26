@@ -55,10 +55,11 @@ test("Tool Market actual dark-mode button and card backgrounds keep approved Vue
 test("Tool customization real card and button paints retain dark/light separation",async({page})=>{
  await page.goto("/shuomi/#/workbench/tools/custom");
  await ensureDark(page);
- const first=page.locator('[class*="features"] article').first();
+ const first=page.locator('[class*="introFeatures"] article').first();
  await expect(first).toBeVisible();
  await expect.poll(()=>first.evaluate(el=>getComputedStyle(el).backgroundColor))
   .toBe("rgb(47, 51, 73)");
+ await page.getByRole("navigation",{name:"工具定制页面"}).getByRole("button",{name:"提交需求"}).click();
  const action=page.getByRole("button",{name:"提交定制需求"});
  await expect(action).toBeVisible();
  // Preserve the primary action brand rather than painting it as a neutral card.
