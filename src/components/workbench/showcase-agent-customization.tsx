@@ -35,37 +35,45 @@ export function ShowcaseAgentCustomization({ pathname, navigate }: { pathname: s
     setExample(false);
     route("/progress");
   }
-  const headerDescription = isNew ? "填写核心需求即可，提交后由专员联系评估方案与费用。" : isProgress
-    ? "查看定制申请的当前状态、办理进展和下一步安排。" : "针对独特业务场景，定制专属于你的AI电商智能体。";
+  const activeTab = isNew ? "submit" : isProgress ? "progress" : "intro";
+  const tabs = [
+    { id: "intro", label: "定制介绍", suffix: "" },
+    { id: "submit", label: "提交需求", suffix: "/new" },
+    { id: "progress", label: "查看进度", suffix: "/progress" },
+  ] as const;
   return <div data-agent-customization={isNew ? "new" : isProgress ? "progress" : "overview"} className={styles.page}>
     <header className={styles.header}>
-      <div><small>智能市场 / 智能体定制{isNew ? " / 提交定制需求" : isProgress ? " / 定制进度" : ""}</small><h1>{isNew ? "提交定制需求" : isProgress ? "我的定制需求" : "智能体定制"}</h1><p>{headerDescription}</p></div>
-      <div className={styles.headerActions}>
-        {isNew ? <button type="button" className={styles.primary} onClick={() => route("/progress")}>查看定制进度</button>
-        : isProgress ? <button type="button" className={styles.primary} onClick={() => route("/new")}>提交新需求</button>
-        : <><button type="button" onClick={() => route("/progress")}>查看定制进度</button><button type="button" className={styles.primary} onClick={() => route("/new")}>提交定制需求</button></>}
-      </div>
+      <div><small>智能市场 / 智能体定制</small><h1>智能体定制</h1><p>针对独特业务场景，定制专属于你的 AI 电商智能体。</p></div>
     </header>
-
-    {!isNew && !isProgress ? <>
-      <section className={styles.hero}><h2>把业务流程变成可执行的智能体</h2><p>当标准智能体无法覆盖特定业务规则、数据要求或协作流程时，可提交定制需求。具体功能范围、数据条件和交付方式由专员评估后确认。</p></section>
-      <h2 className={styles.sectionTitle}>可定制内容</h2>
-      <section className={styles.featureGrid}>
+    <nav className={styles.customTabs} aria-label="智能体定制页面">
+      {tabs.map(t => <button type="button" key={t.id} aria-current={activeTab === t.id ? "page" : undefined} onClick={() => route(t.suffix)}>{t.label}</button>)}
+    </nav>
+    <div className={styles.tabContent} key={activeTab}>
+    {!isNew && !isProgress ? <section className={styles.intro}>
+      <div className={styles.introLead}>
+        <div><span className={styles.eyebrow}>专属智能体 · 按需定制</span><h2>让业务规则成为可执行的智能体</h2><p>面向标准智能体难以覆盖的业务场景，结合你的目标、数据和工作流程，评估专属能力与交付方案。</p></div>
+        <div className={styles.introService}><strong>定制服务说明</strong><p>需求提交与初步评估不产生费用。实施范围、报价与交付周期以双方确认的方案为准。</p></div>
+      </div>
+      <div className={styles.introSectionHeading}><h2>可定制内容</h2><p>从业务目标到交付集成，围绕四个关键维度构建</p></div>
+      <div className={styles.introFeatures}>
         {[
-          ["任务目标", "明确业务目标与触发条件，说明输入资料和预期结果，约定必要的人工确认环节。"],
-          ["数据与知识", "梳理所需数据、业务规则，明确资料来源和授权范围，评估是否接入专属知识。"],
-          ["执行流程", "拆解执行步骤及判断逻辑，明确审批节点、异常处理，以及需要人工协作的环节。"],
-          ["输出与连接", "约定报告、内容等交付格式，明确结果如何使用与验收，系统对接需另行评估。"],
-        ].map(([title, body], i) => <article key={title} data-step={i}><h3>{title}</h3><p>{body}</p></article>)}
-      </section>
-      <section className={styles.split}>
-        <article className={styles.card}><h2>定制流程</h2><p>定制属于有偿服务，需求评估与方案确认后提供报价。</p><div className={styles.steps}>{[
-          ["01", "提交需求", "说明业务目标与当前流程"], ["02", "需求评估", "确认业务范围与实现条件"],
-          ["03", "方案与报价", "明确实施方案、周期及费用"], ["04", "开发交付", "完成配置测试与成果交付"],
-        ].map(([num,title,body])=><div key={num}><b>{num}</b><span><strong>{title}</strong><small>{body}</small></span></div>)}</div></article>
-        <aside className={styles.card}><h2>有偿定制服务</h2><h3>提交需求后由专员联系</h3><p>评估范围 · 确认方案 · 提供报价</p><p>报价与交付周期以确认方案为准。确认范围及费用后再推进实施。</p></aside>
-      </section>
-    </> : isNew ? <section className={styles.formLayout}>
+          ["01","任务目标","明确使用场景、触发条件与预期结果，约定必要的人工确认环节。"],
+          ["02","数据与知识","梳理数据来源、业务规则、授权范围与专属知识库需求。"],
+          ["03","执行流程","设计执行步骤、审批节点、异常处理及人机协作方式。"],
+          ["04","输出与连接","确定交付格式、验收标准，评估第三方系统对接方式。"],
+        ].map(([num,title,body]) => <article key={num}><span>{num}</span><h3>{title}</h3><p>{body}</p></article>)}
+      </div>
+      <div className={styles.introSectionHeading}><h2>定制流程</h2><p>四个阶段，进展清晰可追踪</p></div>
+      <div className={styles.introProcess}>
+        {[
+          ["01","提交需求","描述业务目标和现有流程"],
+          ["02","需求评估","确认范围、数据和实现条件"],
+          ["03","方案与报价","明确实施周期和费用"],
+          ["04","开发交付","完成开发、测试与成果交付"],
+        ].map(([num,title,body]) => <article key={num}><b>{num}</b><div><strong>{title}</strong><p>{body}</p></div></article>)}
+      </div>
+      <div className={styles.introNote}><span>服务说明</span><p>具体开发范围、数据条件、第三方接入及交付方式，由专员评估后确认。确认方案和费用后再推进实施。</p></div>
+    </section> : isNew ? <section className={styles.formLayout}>
       <form className={styles.card} onSubmit={submit}>
         <div className={styles.formIntro}><h2>告诉我们你希望智能体完成什么</h2><small>* 为必填项</small></div><p>先描述目标、具体实现方式由专员与你确认。</p>
         <h3>基本信息</h3>
@@ -103,6 +111,8 @@ export function ShowcaseAgentCustomization({ pathname, navigate }: { pathname: s
         </div>
       </> : <div className={styles.card}><h2>暂无定制记录</h2><p>当前浏览器还没有本地演示需求；你可以提交一个演示申请，或切换查看示例。</p><button type="button" className={styles.primary} onClick={()=>route("/new")}>提交新需求</button></div>}
     </section>}
+
+    </div>
 
     {pending ? <ShowcaseCustomizationConfirm draft={pending} onCancel={() => setPending(null)} onConfirm={confirm} /> : null}
   </div>;
