@@ -408,3 +408,36 @@
 .page.page :is(.header p,.header small,.hero p,.card>p,.featureGrid p){color:var(--custom-muted)}
 .page.page button:not(.primary){background:var(--custom-raised);color:var(--custom-text);border-color:var(--custom-border)}
 .page.page button.primary{background:var(--custom-primary);color:#fff;border-color:var(--custom-primary)}
+
+/* Agent customization: fixed navigation and streamlined introduction. */
+.page .customTabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--custom-border);padding:0 4px 10px;margin-top:-4px}
+.page.page .customTabs button{min-width:126px;min-height:44px;padding:10px 20px;white-space:nowrap;border-radius:7px;background:var(--custom-surface);border:1px solid var(--custom-border);font-size:15px;font-weight:600;color:var(--custom-muted);transition:background .15s,border-color .15s,color .15s}
+.page.page .customTabs button[aria-current="page"]{border-color:#7367f0;background:color-mix(in srgb,#7367f0 13%,var(--custom-surface));color:var(--custom-text);box-shadow:inset 0 -3px #7367f0}
+.page .tabContent{min-width:0;min-height:360px;display:block}
+.page .intro{display:grid;gap:20px}
+.page .introLead{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(260px,.8fr);gap:22px;align-items:center;background:var(--custom-surface);border:1px solid var(--custom-border);border-radius:10px;padding:28px 30px}
+.page .introLead .eyebrow{font-size:13px;font-weight:600;letter-spacing:.04em;color:#9a90ff}
+.page .introLead h2{font-size:25px;line-height:1.35;letter-spacing:-.02em;margin:12px 0}
+.page .introLead p,.page .introService p{font-size:14px;color:var(--custom-muted);line-height:1.7;margin:0;max-width:730px}
+.page .introService{border-left:1px solid var(--custom-border);padding:10px 0 10px 26px}
+.page .introService strong{display:block;font-size:16px;margin-bottom:10px}
+.page .introSectionHeading{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.page .introSectionHeading h2{margin:0;font-size:19px;font-weight:700}
+.page .introSectionHeading p{margin:0;color:var(--custom-muted);font-size:13px}
+.page .introFeatures{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.page .introFeatures article{min-width:0;min-height:163px;background:var(--custom-surface);border:1px solid var(--custom-border);border-radius:9px;padding:20px}
+.page .introFeatures article span{font-size:13px;font-weight:700;color:#a89cff}
+.page .introFeatures article h3{margin:13px 0 9px;font-size:17px;line-height:1.35}
+.page .introFeatures article p{margin:0;font-size:13px;line-height:1.7;color:var(--custom-muted)}
+.page .introProcess{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.page .introProcess article{display:flex;gap:13px;align-items:flex-start;padding:18px;background:var(--custom-surface);border:1px solid var(--custom-border);border-radius:9px;min-width:0}
+.page .introProcess b{width:34px;height:34px;display:grid;place-items:center;border-radius:8px;flex:none;border:1px solid #7367f0;color:#b8aeff;font-size:13px}
+.page .introProcess strong{display:block;font-size:15px;margin-bottom:7px}
+.page .introProcess p{margin:0;color:var(--custom-muted);font-size:13px;line-height:1.6}
+.page .introNote{display:flex;gap:14px;align-items:center;padding:16px 20px;border-radius:9px;border:1px solid var(--custom-border);background:var(--custom-surface)}
+.page .introNote span{font-size:13px;flex:none;font-weight:700;color:#b8aeff}
+.page .introNote p{font-size:13px;line-height:1.6;color:var(--custom-muted);margin:0}
+:global(.light) .page .introLead .eyebrow,:global(.light) .page .introFeatures article span,:global(.light) .page .introNote span{color:#6757d8}
+:global(.light) .page .introProcess b{color:#6757d8}
+@media(max-width:1100px){.page .introFeatures,.page .introProcess{grid-template-columns:repeat(2,minmax(0,1fr))}.page .introLead{grid-template-columns:1fr}.page .introService{padding:16px 0 0;border-left:0;border-top:1px solid var(--custom-border)}}
+@media(max-width:700px){.page .customTabs{gap:6px}.page.page .customTabs button{min-width:0;flex:1;padding:10px 6px;font-size:13px}.page .introLead{padding:20px}.page .introLead h2{font-size:21px}.page .introFeatures,.page .introProcess{grid-template-columns:1fr}.page .introSectionHeading{display:block}.page .introSectionHeading p{margin-top:6px}.page .introNote{align-items:flex-start;flex-direction:column}}
