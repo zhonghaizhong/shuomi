@@ -88,15 +88,15 @@ function sdsPODFixtureBatch(organizationId:string,memberId:string):DemoCollectio
  {id:"SIM-SDS-POD-DTF-WOMEN-150G",sku:"SDS-DEMO-DTF-150G",name:"DTF 150gsm Print Crew Neck T-Shirts for Women (Front Printing)",
  originalTitle:"DTF 150gsm Print Crew Neck T-Shirts for Women (Front Printing)",source:"SDS / Bigollo 公开目录（非 API 采集）",price:"From $4.31（网页展示参考价，非实时）",
  status:"演示数据",supplyType:"POD",moq:1,dropship:true,
- images:[shirtBlack,shirtPink],variants:["Black / S","Black / M","Azalea / S","Azalea / M"],variantCount:4,
- variantDetails:[{sku:"SDS-DEMO-TEE-BK-S",label:"Black / S",color:"Black",size:"S",image:shirtBlack},{sku:"SDS-DEMO-TEE-BK-M",label:"Black / M",color:"Black",size:"M",image:shirtBlack},{sku:"SDS-DEMO-TEE-PK-S",label:"Azalea / S",color:"Azalea",size:"S",image:shirtPink},{sku:"SDS-DEMO-TEE-PK-M",label:"Azalea / M",color:"Azalea",size:"M",image:shirtPink}],
+ images:[shirtBlack,shirtPink],variants:["Black","Azalea"],variantCount:2,
+ variantDetails:[{sku:"SDS-DEMO-TEE-BK",label:"Black",color:"Black",size:"演示颜色",image:shirtBlack},{sku:"SDS-DEMO-TEE-PK",label:"Azalea",color:"Azalea",size:"演示颜色",image:shirtPink}],
  description:"SDS 公开目录确有该款 150gsm 前幅 DTF 印花女士圆领短袖，网页展示 S–3XL。当前颜色/变体仅为演示，图片是 GitHub 已归档的 Gildan 实拍参考图，并非 SDS 对应商品官方图片。未验证实时库存、发货仓或运送国家。",
  demoSourceLink:"https://staticbigollo.sdspod.com/portal/product"},
  {id:"SIM-SDS-POD-HOODIE-280G",sku:"SDS-DEMO-HOOD-280G",name:"280gsm Custom Hoodie No Minimum with Double-layer Cap",
  originalTitle:"280gsm Custom Hoodie No Minimum with Double-layer Cap",source:"SDS / Bigollo 公开目录（非 API 采集）",price:"From $9.92（网页展示参考价，非实时）",
  status:"演示数据",supplyType:"POD",moq:1,dropship:true,
- images:[hoodieGrey,hoodiePurple],variants:["Sport Grey / M","Sport Grey / L","Purple / M","Purple / L"],variantCount:4,
- variantDetails:[{sku:"SDS-DEMO-HOOD-GY-M",label:"Sport Grey / M",color:"Sport Grey",size:"M",image:hoodieGrey},{sku:"SDS-DEMO-HOOD-GY-L",label:"Sport Grey / L",color:"Sport Grey",size:"L",image:hoodieGrey},{sku:"SDS-DEMO-HOOD-PU-M",label:"Purple / M",color:"Purple",size:"M",image:hoodiePurple},{sku:"SDS-DEMO-HOOD-PU-L",label:"Purple / L",color:"Purple",size:"L",image:hoodiePurple}],
+ images:[hoodieGrey,hoodiePurple],variants:["Sport Grey","Purple"],variantCount:2,
+ variantDetails:[{sku:"SDS-DEMO-HOOD-GY",label:"Sport Grey",color:"Sport Grey",size:"演示颜色",image:hoodieGrey},{sku:"SDS-DEMO-HOOD-PU",label:"Purple",color:"Purple",size:"演示颜色",image:hoodiePurple}],
  description:"SDS 公开目录确有该款 280gsm 双层帽定制卫衣，网页展示 S–6XL、No Minimum。当前颜色/变体仅为演示，图片是 GitHub 已归档的 Gildan 实拍参考图，并非 SDS 对应商品官方图片。未验证实时库存、发货仓或运送国家。",
  demoSourceLink:"https://staticbigollo.sdspod.com/portal/product"}
  ]};
@@ -141,8 +141,12 @@ export function readDemoCollectionBatches(organizationId:string,memberId="admin"
   }
   result=migrateAmazonMultiVariantBatch(result);
   // GitHub-backed demo fixture: restore in each browser session without resetting user batches.
-  if(organizationId==="SM-ENT-000001"&&memberId==="admin"&&!result.some(b=>b.id===sdsPODBatchId)){
-   result=[sdsPODFixtureBatch(organizationId,memberId),...result];
+  if(organizationId==="SM-ENT-000001"&&memberId==="admin"){
+   const fixture=sdsPODFixtureBatch(organizationId,memberId);
+   const existing=result.find(b=>b.id===sdsPODBatchId);
+   // Synchronize only the checked-in SDS demo variants across existing sessions.
+   // Keep any user-created batches and all unrelated products untouched.
+   result=existing?result.map(b=>b.id===sdsPODBatchId?{...b,products:fixture.products}:b):[fixture,...result];
   }
   sessionStorage.setItem(key(organizationId),JSON.stringify(result));
   return result.filter(batch=>batch.organizationId===organizationId&&batch.ownerMemberId===memberId).map(decorate);
