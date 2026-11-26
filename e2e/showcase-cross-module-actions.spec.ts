@@ -96,8 +96,11 @@ test("billing filters support scalable search, multiple types and custom dates",
  await filter.getByRole("group",{name:"快捷时间"}).getByRole("button",{name:"自定义"}).click();
  await filter.getByRole("button",{name:"确定",exact:true}).click();
  await expect(filter.getByRole("alert")).toContainText("完整且有效");
- await filter.getByLabel("账单开始日期").fill("2026-08-01");
- await filter.getByLabel("账单结束日期").fill("2026-11-30");
+ await filter.getByRole("button",{name:"选择账单日期"}).click();
+  const billCalendar=filter.getByRole("group",{name:"账单日期范围"});
+  await billCalendar.locator('input[type="date"]').first().fill("2026-08-01");
+ await billCalendar.locator('input[type="date"]').last().fill("2026-11-30");
+  await billCalendar.getByRole("button",{name:"确定"}).click();
  await filter.getByLabel("搜索费用类型").fill("店铺");
  await filter.getByRole("group",{name:"费用类型选项"}).getByRole("checkbox",{name:"店铺服务"}).check();
  await filter.getByLabel("搜索费用类型").fill("");
@@ -125,8 +128,11 @@ test("usage filters keep a stable toolbar as stores and dates grow",async({page}
  await area.getByRole("group",{name:"用量快捷时间"}).getByRole("button",{name:"自定义"}).click();
  await area.getByRole("button",{name:"确定",exact:true}).click();
  await expect(area.getByRole("alert")).toContainText("有效的起止日期");
- await area.getByLabel("用量开始日期").fill("2026-01-01");
- await area.getByLabel("用量结束日期").fill("2026-12-31");
+ await area.getByRole("button",{name:"选择用量日期"}).click();
+  const usageCalendar=area.getByRole("group",{name:"用量日期范围"});
+  await usageCalendar.locator('input[type="date"]').first().fill("2026-01-01");
+ await usageCalendar.locator('input[type="date"]').last().fill("2026-12-31");
+  await usageCalendar.getByRole("button",{name:"确定"}).click();
  await area.getByRole("group",{name:"用量变动类型"}).getByRole("button",{name:"扣减"}).click();
  await area.getByRole("button",{name:"确定",exact:true}).click();
  await expect(area.getByRole("button",{name:"用量筛选条件"})).toHaveAttribute("aria-expanded","false");
