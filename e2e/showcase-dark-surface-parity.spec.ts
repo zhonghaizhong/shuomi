@@ -202,3 +202,28 @@ test("Alerts and advice each keep nine filter controls on one desktop row",async
   await bar.getByRole("button",{name:"清空日期"}).click();
  }
 });
+
+
+test("Data Market opens a wide related-services dialog with minimal per-service API management",async({page})=>{
+ await page.goto("/shuomi/#/workbench/data/market");
+ await ensureDark(page);
+ const market=page.locator('[data-commerce-unified="data"]');
+ const productCard=market.locator('[class*="cards"] article').filter({has:page.getByRole("heading",{name:"商品数据",exact:true})});
+ await expect(productCard).toBeVisible();
+ await productCard.getByRole("button",{name:"查看详情"}).click();
+ const dialog=page.getByRole("dialog",{name:"商品数据相关数据服务"});
+ await expect(dialog).toBeVisible();
+ await expect(dialog.getByRole("heading",{name:"Amazon 商品数据",exact:true})).toBeVisible();
+ await expect(dialog).toContainText("更多平台商品数据");
+ const rect=await dialog.boundingBox();
+ expect(rect?.width).toBeGreaterThan(700);
+ await dialog.getByRole("button",{name:"API管理"}).click();
+ await expect(dialog.getByRole("heading",{name:"Amazon 商品数据 API"})).toBeVisible();
+ await expect(dialog).toContainText("尚未连接真实密钥服务");
+ await dialog.getByRole("button",{name:"调用记录"}).click();
+ await expect(dialog).toContainText("暂无真实调用记录");
+ await dialog.getByRole("button",{name:"返回服务列表"}).click();
+ await expect(dialog.getByRole("heading",{name:"Amazon 商品数据",exact:true})).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(dialog).toHaveCount(0);
+});
