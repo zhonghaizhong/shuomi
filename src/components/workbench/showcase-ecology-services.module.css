@@ -529,3 +529,53 @@
  .dialog .serviceDetailIcon{width:48px;height:48px}
  .dialog .dialogActions button{flex:1;min-width:0}
 }
+
+
+/* Fix duplicated inner category panel; market controls are one unified surface. */
+.page[data-eco-page="market"] .marketControls .segmentRow{
+ display:flex;align-items:center;justify-content:space-between;
+ min-height:58px;padding:0 0 12px;margin:0;
+ background:transparent!important;border:0!important;border-bottom:1px solid var(--eco-line)!important;
+ border-radius:0!important;box-shadow:none!important;
+}
+.page[data-eco-page="market"] .marketControls .segmentRow>div:first-child{gap:4px}
+.page[data-eco-page="market"] .marketControls .segmentRow strong{
+ font-size:17px;line-height:1.35;margin:0;padding-left:10px;border-left:3px solid #7367f0;
+}
+.page[data-eco-page="market"] .marketControls .segmentRow small{font-size:13px;line-height:1.5}
+.page[data-eco-page="market"] .marketControls .segments{margin-left:auto;gap:9px}
+.page[data-eco-page="market"] .marketControls .filterBar{
+ padding:0;margin:0;border:0;min-height:44px;
+}
+.page[data-eco-page="market"] .marketControls .searchBox{height:44px}
+.page[data-eco-page="market"] .marketControls .filterBar>button{height:44px;min-height:44px}
+.recordOptions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.recordOptions label{display:inline-flex;align-items:center;gap:7px;color:var(--eco-muted);font-size:13px;cursor:pointer}
+.recordOptions input{width:16px;height:16px;accent-color:#7367f0}
+.dialog .ecoForm{display:grid;gap:14px}
+.dialog .ecoForm label{display:grid;gap:7px;font-size:13px;font-weight:600;color:var(--eco-text)}
+.dialog .ecoFormRow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.dialog .ecoForm :is(input,select,textarea){
+ width:100%;min-width:0;box-sizing:border-box;min-height:41px;
+ padding:10px 12px;font:inherit;font-size:14px;line-height:1.45;
+ background:var(--eco-surface);color:var(--eco-text);
+ border:1px solid var(--eco-line);border-radius:8px;
+}
+.dialog .ecoForm textarea{resize:vertical;min-height:100px}
+.dialog .ecoForm :is(input,textarea)::placeholder{color:var(--eco-muted)}
+.dialog .requestIntro{padding:14px 16px;display:grid;gap:7px;border:1px solid var(--eco-line);border-radius:9px;background:var(--eco-surface)}
+.dialog .requestIntro strong{font-size:16px;color:var(--eco-text)}
+.dialog .requestIntro p{margin:0;color:var(--eco-muted);line-height:1.6;font-size:13px}
+.dialog .requestIntro small{font-size:12px;color:var(--eco-muted)}
+.dialog .demoHint{padding:10px 12px;font-size:12px;line-height:1.6;color:var(--eco-muted);
+ border:1px solid var(--eco-line);border-radius:8px;background:var(--eco-surface);margin:0}
+@media(max-width:900px){
+ .page[data-eco-page="market"] .marketControls .segmentRow{flex-wrap:wrap;gap:10px}
+ .page[data-eco-page="market"] .marketControls .segments{margin-left:0}
+}
+@media(max-width:700px){
+ .dialog .ecoFormRow{grid-template-columns:1fr}
+ .page[data-eco-page="market"] .marketControls{padding:15px}
+ .page[data-eco-page="market"] .marketControls .segments{width:100%}
+ .page[data-eco-page="market"] .marketControls .segments button{flex:1;padding:0 8px}
+}
