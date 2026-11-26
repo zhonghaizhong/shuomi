@@ -208,3 +208,9 @@
 @media(max-width:1200px){.filters{flex-wrap:wrap!important;overflow:visible}.filters input{flex:1 1 100%!important;width:100%!important}.statusSwitch{flex:1 1 auto;flex-wrap:wrap}}
 @media(max-width:900px){.reviewLayout{grid-template-columns:1fr}.reviewLayout .reviewList .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.reviewLayout .reviewList .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.statusSwitch button{padding:7px 8px!important;font-size:12px}.relatedProduct{flex-wrap:wrap}}
+
+/* Real, repository-hosted SDS demo photos in the pre-review association panel. */
+.relatedProduct .productThumb{width:76px;height:76px;object-fit:contain;border-radius:8px;background:#edeae4;flex:none}
+.relatedProduct .productColors{display:flex;gap:6px;margin-top:5px;align-items:center;flex-wrap:wrap}
+.relatedProduct .productColors img{width:38px;height:38px;object-fit:contain;border:1px solid var(--podassets-line,#52576e);border-radius:6px;background:#edeae4}
+@media(max-width:700px){.relatedProduct .productThumb{width:58px;height:58px}.relatedProduct .productColors img{width:34px;height:34px}}
