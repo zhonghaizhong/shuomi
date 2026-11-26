@@ -2,7 +2,7 @@
 
 /** Isolated, browser-session-only fixture batches. Never represents a 1688 API response. */
 export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";supplyProductId?:string;supplierId?:string;supplierName?:string;supplyVersion?:string;supplySkuId?:string;images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string;images?:string[];price?:string;stock?:string;description?:string;sourceUrl?:string}>;originalTitle?:string;description?:string;demoSourceLink?:string;supplyType?:string;warehouseCountry?:string;shipToCountries?:string[];moq?:number;dropship?:boolean|null};
-export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon"|"硕米优选";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
+export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon"|"SDS"|"硕米优选";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
 type CatalogItem={name:string;price:string;variants:string[];description:string;photos:string[]};
 // Public photographic sample references. Not original 1688 product photos or authenticated offers.
 const demoCatalog:CatalogItem[]=[
@@ -72,6 +72,35 @@ export const amazonMultiVariantPhotoFixtures=[
    "https://www.elite-usa.com/cdn/shop/files/EU_Stan_RQ_14967.jpg?v=1726066365&width=1024"
   ]}
 ] as const;
+/** SDS public-catalog product descriptions with committed representative apparel photography.
+ * IMPORTANT: photos depict real blank Gildan garments already archived in GitHub;
+ * they are NOT authenticated product photos of these exact SDS SKUs.
+ * No SDS API, price, inventory or order access is simulated.
+ */
+const sdsPODBatchId="SIM-SDS-POD-TWO-20261126";
+const sdsPicture=(name:string)=> (typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"")+"/assets/pod-demo/"+name;
+function sdsPODFixtureBatch(organizationId:string,memberId:string):DemoCollectionBatch{
+ const shirtBlack=sdsPicture("gildan-5000-front_black.webp");
+ const shirtPink=sdsPicture("gildan-5000-plain_azalea.webp");
+ const hoodieGrey=sdsPicture("gildan-18500-front_sport-grey.webp");
+ const hoodiePurple=sdsPicture("gildan-18500-plain_purple.webp");
+ return {id:sdsPODBatchId,organizationId,ownerMemberId:memberId,source:"SDS",method:"SDS 公开目录参考 · 模拟采集",name:"SDS POD · 2款公开目录商品（演示）",createdAt:"2026-11-26 17:40",status:"已采集 · 待上传",demo:true,products:[
+ {id:"SIM-SDS-POD-DTF-WOMEN-150G",sku:"SDS-DEMO-DTF-150G",name:"DTF 150gsm Print Crew Neck T-Shirts for Women (Front Printing)",
+ originalTitle:"DTF 150gsm Print Crew Neck T-Shirts for Women (Front Printing)",source:"SDS / Bigollo 公开目录（非 API 采集）",price:"From $4.31（网页展示参考价，非实时）",
+ status:"演示数据",supplyType:"POD",moq:1,dropship:true,
+ images:[shirtBlack,shirtPink],variants:["Black / S","Black / M","Azalea / S","Azalea / M"],variantCount:4,
+ variantDetails:[{sku:"SDS-DEMO-TEE-BK-S",label:"Black / S",color:"Black",size:"S",image:shirtBlack},{sku:"SDS-DEMO-TEE-BK-M",label:"Black / M",color:"Black",size:"M",image:shirtBlack},{sku:"SDS-DEMO-TEE-PK-S",label:"Azalea / S",color:"Azalea",size:"S",image:shirtPink},{sku:"SDS-DEMO-TEE-PK-M",label:"Azalea / M",color:"Azalea",size:"M",image:shirtPink}],
+ description:"SDS 公开目录确有该款 150gsm 前幅 DTF 印花女士圆领短袖，网页展示 S–3XL。当前颜色/变体仅为演示，图片是 GitHub 已归档的 Gildan 实拍参考图，并非 SDS 对应商品官方图片。未验证实时库存、发货仓或运送国家。",
+ demoSourceLink:"https://staticbigollo.sdspod.com/portal/product"},
+ {id:"SIM-SDS-POD-HOODIE-280G",sku:"SDS-DEMO-HOOD-280G",name:"280gsm Custom Hoodie No Minimum with Double-layer Cap",
+ originalTitle:"280gsm Custom Hoodie No Minimum with Double-layer Cap",source:"SDS / Bigollo 公开目录（非 API 采集）",price:"From $9.92（网页展示参考价，非实时）",
+ status:"演示数据",supplyType:"POD",moq:1,dropship:true,
+ images:[hoodieGrey,hoodiePurple],variants:["Sport Grey / M","Sport Grey / L","Purple / M","Purple / L"],variantCount:4,
+ variantDetails:[{sku:"SDS-DEMO-HOOD-GY-M",label:"Sport Grey / M",color:"Sport Grey",size:"M",image:hoodieGrey},{sku:"SDS-DEMO-HOOD-GY-L",label:"Sport Grey / L",color:"Sport Grey",size:"L",image:hoodieGrey},{sku:"SDS-DEMO-HOOD-PU-M",label:"Purple / M",color:"Purple",size:"M",image:hoodiePurple},{sku:"SDS-DEMO-HOOD-PU-L",label:"Purple / L",color:"Purple",size:"L",image:hoodiePurple}],
+ description:"SDS 公开目录确有该款 280gsm 双层帽定制卫衣，网页展示 S–6XL、No Minimum。当前颜色/变体仅为演示，图片是 GitHub 已归档的 Gildan 实拍参考图，并非 SDS 对应商品官方图片。未验证实时库存、发货仓或运送国家。",
+ demoSourceLink:"https://staticbigollo.sdspod.com/portal/product"}
+ ]};
+}
 const amazonDemoId="SIM-AMAZON-US-5-20261124";
 function amazonUsDemoBatch(organizationId:string,memberId:string):DemoCollectionBatch{
  return {id:amazonDemoId,organizationId,ownerMemberId:memberId,source:"Amazon",method:"美国站 · 商品资料演示",name:"Amazon 美国站 · 7个真实商品（模拟采集）",createdAt:"2026-11-24 18:11",status:"已采集 · 待上传",demo:true,
@@ -111,9 +140,13 @@ export function readDemoCollectionBatches(organizationId:string,memberId="admin"
    sessionStorage.setItem(amazonSeedMarker(organizationId,memberId),"1");
   }
   result=migrateAmazonMultiVariantBatch(result);
+  // GitHub-backed demo fixture: restore in each browser session without resetting user batches.
+  if(organizationId==="SM-ENT-000001"&&memberId==="admin"&&!result.some(b=>b.id===sdsPODBatchId)){
+   result=[sdsPODFixtureBatch(organizationId,memberId),...result];
+  }
   sessionStorage.setItem(key(organizationId),JSON.stringify(result));
   return result.filter(batch=>batch.organizationId===organizationId&&batch.ownerMemberId===memberId).map(decorate);
- }catch{return organizationId==="SM-ENT-000001"&&memberId==="admin"?[amazonUsDemoBatch(organizationId,memberId),initialBatch(organizationId)]:[];}
+ }catch{return organizationId==="SM-ENT-000001"&&memberId==="admin"?[sdsPODFixtureBatch(organizationId,memberId),amazonUsDemoBatch(organizationId,memberId),initialBatch(organizationId)]:[];}
 }
 export function addDemoCollectionBatch(organizationId:string,memberId:string,source:"1688"|"Amazon",method:string,entries:string[]):DemoCollectionBatch|null{
  if(typeof window==="undefined"||!entries.length)return null;
