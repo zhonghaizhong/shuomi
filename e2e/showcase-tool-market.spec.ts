@@ -86,7 +86,7 @@ test("my tools search and reset work and launch shows a truthful dialog",async({
  await modal.getByRole("button",{name:/产品图审核/}).click();
  await expect(modal).toContainText("印花审核 · 共3张");
  await expect(modal.locator('[class*="assetCard"]')).toHaveCount(3);
- await expect(modal.getByText("待审核",{exact:true})).toHaveCount(3);
+ await expect(modal.locator('[class*="assetCard"]').getByText("待审核",{exact:true})).toHaveCount(3);
  await modal.getByRole("button",{name:/我的素材库/}).click();
  await expect(modal).toContainText("蝴蝶牡丹 · 原始印花");
  await expect(modal.locator('[class*="assetCard"]')).toHaveCount(1);
