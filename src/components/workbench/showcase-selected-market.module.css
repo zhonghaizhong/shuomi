@@ -76,3 +76,47 @@
 :global(.light) .error{color:#bd3333!important}
 @media(max-width:940px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.filters{width:100%}.filters .search{flex:1}}
 @media(max-width:590px){.metrics{gap:8px}.metric{min-height:76px}.modalBody{grid-template-columns:1fr}.bulk{justify-content:flex-start}.pagination{align-items:flex-start;flex-direction:column}}
+
+/* Supply capabilities: compact shared Vuexy controls, one filter model for tabs and toolbar. */
+.filterPanel{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--subtle);margin:2px 0 15px}
+.filterField{display:flex;flex-direction:column;gap:6px;min-width:122px;max-width:170px;font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+.filterPanel select,.listBar select{height:38px;width:100%;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);padding:7px 10px;font:inherit}
+.supplyTypeField{min-width:208px;display:flex;flex-direction:column;gap:6px;padding:0;margin:0;border:0}
+.supplyTypeField legend{color:var(--muted);font-size:12px;font-weight:600;padding:0 0 6px}
+.segmented{display:flex;gap:3px;border:1px solid var(--border);border-radius:6px;background:var(--surface);padding:2px}
+.page .segmented button{min-height:32px;padding:4px 10px;border:0;background:transparent;white-space:nowrap}
+.page .segmented button.selected{background:#7367f0;color:#fff}
+.checkFilters{display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-height:38px}
+.checkFilters label{display:flex;align-items:center;gap:5px;color:var(--text);font-size:12px;white-space:nowrap;cursor:pointer}
+.checkFilters input{width:16px;height:16px;accent-color:#7367f0}
+.filterPanel .search{flex:1;min-width:200px;min-height:38px;background:var(--surface)}
+.filterPanel>.primary{min-height:38px}
+.listBar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:0 0 14px}
+.typeTabs{display:flex;gap:7px;flex-wrap:wrap}
+.page .typeTabs button{border-radius:20px;padding:7px 15px;background:var(--subtle);color:var(--muted);font-size:12px}
+.page .typeTabs button.selected{background:#7367f0;border-color:#7367f0;color:#fff}
+.listBar select{width:auto;min-width:135px}
+.product{display:flex;flex-direction:column}
+.product .details{display:flex;flex:1;flex-direction:column;align-items:stretch;gap:8px;padding:13px}
+.product .details h3{font-size:14px;line-height:1.4;min-height:20px}
+.product .details p{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.cardBadges{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.cardBadges span{border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:11px;font-weight:650}
+.countryTag{background:var(--subtle);color:var(--text)}
+.typeStock{background:#155f3a33;color:#64d9a0;border-color:#155f3a66!important}
+.typeCustom{background:#225ab644;color:#81b9ff;border-color:#377ad366!important}
+.typePod{background:#7367f033;color:#bdb5ff;border-color:#7367f066!important}
+.typeUnknown{background:var(--subtle);color:var(--muted)}
+:global(.light) .typeStock{color:#067a4b;background:#e8f6ef}
+:global(.light) .typeCustom{color:#1659a1;background:#ebf4ff}
+:global(.light) .typePod{color:#5942b5;background:#f1eeff}
+.offerInfo{display:flex;flex-wrap:wrap;gap:7px 14px;align-items:center;font-size:12px}
+.offerInfo strong{font-size:13px;color:var(--text)}
+.dropshipYes{color:#57d29a;font-weight:600}
+:global(.light) .dropshipYes{color:#067a4b}
+.dropshipNeutral{color:var(--muted)}
+.product .price{font-size:18px;line-height:1.3}
+.shipping{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.product .cardActions{margin-top:auto;padding-top:6px}
+@media(max-width:1100px){.filterPanel{gap:10px}.filterField{max-width:none;flex:1 1 145px}.checkFilters{flex:1 1 250px}.supplyTypeField{flex:1 1 215px}}
+@media(max-width:590px){.filterPanel{padding:10px}.supplyTypeField{width:100%}.filterField{flex:1 1 125px}.filterPanel .search{min-width:100%;flex-basis:100%}.filterPanel>.primary{flex:1}.listBar{align-items:stretch}.listBar select{width:100%}}
