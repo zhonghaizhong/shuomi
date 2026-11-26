@@ -26,6 +26,9 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const [tab,setTab]=useState<Tab>("我的素材库");
  const [assets,setAssets]=useState<Asset[]>(()=>readPodLibrary(organizationId,memberId));
  const [reviews,setReviews]=useState<Asset[]>([]);
+ const [selectedPrint,setSelectedPrint]=useState<string|null>(null);
+ const [bindings,setBindings]=useState<ReturnType<typeof readPodPrintLineage>["bindings"]>([]);
+ const [previewNote,setPreviewNote]=useState("");
  useEffect(()=>{
   if(isShowcasePODScope(organizationId,memberId)){
    // Seed only the approved demonstration tenant. The archive files are
@@ -37,6 +40,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
   }
   const refresh=()=>{
    const source=readPodPrintLineage(organizationId,memberId);
+   setBindings(source.bindings);
    setReviews(source.reviews.map((r,i)=>{
     const print=source.prints.find(p=>p.printId===r.printId&&p.version===r.version);
     if(!print)return null;
@@ -74,11 +78,14 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
   });
  },[data,applied,category,status,tab,organizationId,memberId]);
  const displayed=filtered.slice((page-1)*perPage,page*perPage);
- const selectTab=(next:Tab)=>{setTab(next);setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1);setPanel(null);setNotice("")};
+ const activePrint=reviews.find(x=>x.lineagePrintId&&x.lineagePrintId+"@"+x.lineageVersion===selectedPrint)??null;
+ const activeBindings=activePrint?bindings.filter(x=>x.printId===activePrint.lineagePrintId&&x.printVersion===activePrint.lineageVersion):[];
+ const relatedBindings=activePrint?activeBindings:[];
+ const selectTab=(next:Tab)=>{setTab(next);setPreviewNote("");setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1);setPanel(null);setNotice("")};
  const open=(p:typeof panel,a?:Asset)=>{setPanel(p);setChosen(a??null);setNotice("")};
  const reset=()=>{setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1)};
  const promptFor=(asset:Asset)=>{setChosen(asset);setPanel("素材提示词")};
- const removeAsset=(id:number)=>{if(assets.some(x=>x.id===id&&x.readonly)){setNotice("原始印花已关联三张待审核裂变图，不能删除源文件。");return;}setAssets(v=>v.filter(x=>x.id!==id));setNotice("已从当前演示素材库删除。")};
+ const removeAsset=(id:number)=>{if(assets.some(x=>x.id===id&&x.readonly)){setNotice("该原始印花已关联裂变版本，为保证追溯不能删除。");return;}setAssets(v=>v.filter(x=>x.id!==id));setNotice("已从当前演示素材库删除。")};
  const audit=(id:number,next:string)=>{
   const record=reviews.find(x=>x.id===id);
   if(!record?.lineagePrintId||!record.lineageVersion){setNotice("印花缺少可追溯编号，禁止直接审核");return;}
@@ -92,19 +99,20 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
    <header className={css.header}><div><small>工具市场 / 我的工具 / POD素材管理</small><h2>POD 素材管理</h2><p>素材沉淀、生成图审核与创作灵感，形成可复用的 POD 创作闭环。</p></div><button type="button" aria-label="关闭POD素材管理" onClick={onClose} className={css.close}>×</button></header>
    <nav className={css.tabs} aria-label="POD素材管理模块">{([["我的素材库","上传、分类、复用素材"],["产品图审核","校验 POD 生成结果"],["灵感市场","趋势参考与生图提示词"]] as const).map(([t,sub])=><button type="button" key={t} className={tab===t?css.active:""} aria-current={tab===t?"page":undefined} onClick={()=>selectTab(t)}><strong>{t}</strong><small>{sub}</small></button>)}</nav>
    <div className={css.content}>
-    <div className={css.topline}><div><h3>{tab}</h3><small>{tab==="我的素材库"?"上传、分类、复用个人素材":tab==="产品图审核"?"待审核 / 审核通过 / 退回重做 / 驳回":"官方创意参考与可复制生图提示词"}</small></div>{tab==="我的素材库"?<div className={css.topactions}><button type="button" onClick={()=>open("分类管理")}>分类管理</button><button type="button" className={css.primary} onClick={()=>open("上传素材")}>上传素材</button></div>:null}</div>
+    <div className={css.topline}><div><h3>{tab}</h3><small>{tab==="我的素材库"?"上传、分类、复用个人素材":tab==="产品图审核"?"支持直接审核通过；生成效果预览为可选操作":"官方创意参考与可复制生图提示词"}</small></div>{tab==="我的素材库"?<div className={css.topactions}><button type="button" onClick={()=>open("分类管理")}>分类管理</button><button type="button" className={css.primary} onClick={()=>open("上传素材")}>上传素材</button></div>:null}</div>
     <form className={css.filters} onSubmit={e=>{e.preventDefault();setApplied(search.trim());setPage(1)}}>
       <input aria-label="搜索素材" placeholder={tab==="灵感市场"?"搜索风格 / 主题 / 元素":tab==="产品图审核"?"搜索印花编号、订单号、SKU、商品、批次或名称":"搜索素材名称或分类"} value={search} onChange={e=>setSearch(e.target.value)}/>
-      {tab==="产品图审核"?<select aria-label="审核状态" value={status} onChange={e=>{setStatus(e.target.value);setPage(1)}}>{["全部状态","待审核","审核通过","退回重做","驳回"].map(s=><option key={s}>{s}</option>)}</select>:<select aria-label="素材分类" value={category} onChange={e=>{setCategory(e.target.value);setPage(1)}}><option>全部分类</option>{(tab==="我的素材库"?["未分类",...categories]:[...inspirationCategories]).map(s=><option key={s}>{s}</option>)}</select>}
+      {tab==="产品图审核"?<div className={css.statusSwitch} role="group" aria-label="按审核状态筛选">{["全部状态","待审核","审核通过","退回重做","驳回"].map(s=><button type="button" key={s} className={status===s?css.selectedStatus:""} aria-pressed={status===s} onClick={()=>{setStatus(s);setPage(1)}}>{s}</button>)}</div>:<select aria-label="素材分类" value={category} onChange={e=>{setCategory(e.target.value);setPage(1)}}><option>全部分类</option>{(tab==="我的素材库"?["未分类",...categories]:[...inspirationCategories]).map(s=><option key={s}>{s}</option>)}</select>}
       <button type="button" onClick={reset}>重置</button><button type="submit" className={css.primary}>确认</button>
     </form>
     {notice?<p className={css.notice} role="status">{notice}</p>:null}
-    <div className={css.libraryHint}>{tab==="我的素材库"?"我的素材库 · 共 "+filtered.length+" 张图片（当前账号演示会话）":tab==="产品图审核"?"印花审核 · 共"+filtered.length+"张（GitHub已存档；此阶段不生成产品图）":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
-    {displayed.length?<div className={css.grid}>{displayed.map(asset=><article className={css.assetCard} key={asset.id}>
-       <button type="button" className={css.imageButton} onClick={()=>open("预览图片",asset)} aria-label={"预览"+asset.name}>{inspirationImageSrc(asset)?<img className={css.patternImage} src={inspirationImageSrc(asset)} alt={asset.name+"原创图案"} loading="lazy"/>:<div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div>}</button>
+    <div className={css.libraryHint}>{tab==="我的素材库"?"我的素材库 · 共 "+filtered.length+" 张图片（当前账号演示会话）":tab==="产品图审核"?"印花审核 · 共 "+filtered.length+" 张（GitHub已存档；产品效果预览不影响审核）":"灵感参考 · 共 "+filtered.length+" 条 · 每页最多 10 条"}</div>
+    <div className={tab==="产品图审核"?css.reviewLayout:undefined}><div className={css.reviewList}>{displayed.length?<div className={css.grid}>{displayed.map(asset=><article className={css.assetCard+(tab==="产品图审核"&&selectedPrint===asset.lineagePrintId+"@"+asset.lineageVersion?" "+css.selectedCard:"")} key={asset.id}>
+       <button type="button" className={css.imageButton} onClick={()=>{if(tab==="产品图审核"){setSelectedPrint(asset.lineagePrintId+"@"+asset.lineageVersion);setPreviewNote("")}else open("预览图片",asset)}} aria-label={tab==="产品图审核"?"查看关联商品："+asset.name:"预览"+asset.name}>{inspirationImageSrc(asset)?<img className={css.patternImage} src={inspirationImageSrc(asset)} alt={asset.name+"原创图案"} loading="lazy"/>:<div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div>}</button>
        <strong title={asset.name}>{asset.name}</strong><small>{asset.status??asset.category}</small>{asset.originPrintId?<small title={asset.originPrintId}>原图编号：{asset.originPrintId}</small>:null}{tab==="产品图审核"&&asset.lineagePrintId?<small title={asset.lineagePrintId+" · V"+asset.lineageVersion}>编号：{asset.lineagePrintId} · V{asset.lineageVersion}</small>:null}
-       {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>{setNotice("演示入口：请在正式POD刊登工具中引用此素材。")}}>用于POD</button>{asset.readonly?<span className={css.sourceLocked}>源图已关联 · 只读</span>:<button type="button" onClick={()=>removeAsset(asset.id)}>删除</button>}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
+       {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" disabled={asset.readonly} title={asset.readonly?"已有裂变关联，不可删除原图":"删除当前素材"} onClick={()=>removeAsset(asset.id)}>删除</button>{asset.readonly?<span className={css.sourceLocked}>源图已关联 · 只读</span>:null}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
+    </div>{tab==="产品图审核"?<aside className={css.relatedPanel} aria-label="关联产品与效果预览"><h3>关联产品与效果预览</h3>{activePrint?<><div className={css.selectedPrintHeader}><img src={inspirationImageSrc(activePrint)} alt={activePrint.name}/><div><strong>{activePrint.name}</strong><small>编号：{activePrint.lineagePrintId} · V{activePrint.lineageVersion}</small><small>状态：{activePrint.status}</small></div></div><div className={css.relatedTabs}><strong>关联产品（{relatedBindings.length}）</strong><span>效果预览为可选项</span></div>{relatedBindings.length?<div className={css.relatedProducts}>{relatedBindings.map((b,i)=><div key={b.productId+"/"+b.variantId+"/"+i} className={css.relatedProduct}><div className={css.productPlaceholder} aria-label="该关联记录未提供商品图片">暂无商品图</div><div><strong>商品编号：{b.productId}</strong><small>变体：{b.variantId}</small>{b.sku?<small>SKU：{b.sku}</small>:null}</div><button type="button" onClick={()=>setPreviewNote("尚未接入实际 AI 生图和积分计费接口，无法发起生成；不会扣积分或产生商品图片。")}>生成效果图</button></div>)}</div>:<div className={css.relatedEmpty}>该印花尚未关联商品。审核通过不要求关联商品或生成预览图。<small>后续 POD 流程绑定商品后，这里会显示真实商品关联记录。</small></div>}<section className={css.previewSection}><strong>产品效果预览</strong><p>仅辅助查看印花应用效果，不进入商品图片库，也不影响审核结果。实际生成需先接入 AI 生图服务与积分计费。</p>{previewNote?<p role="status" className={css.previewNotice}>{previewNote}</p>:null}</section></>:<div className={css.relatedEmpty}>点击左侧任意印花图片，查看关联产品及效果预览。</div>}</aside>:null}</div>
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
    </div>
    {panel?<div className={css.overlay} onClick={e=>{if(e.target===e.currentTarget)setPanel(null)}}><section className={css.subDialog} role="dialog" aria-modal="true" aria-label={panel}>
