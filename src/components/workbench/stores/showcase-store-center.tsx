@@ -116,7 +116,13 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [dialog,setDialog]=useState(false),[name,setName]=useState(""),[region,setRegion]=useState("美国站"),[type,setType]=useState("半托管"),[newGroup,setNewGroup]=useState("未分组"),[newOwner,setNewOwner]=useState("");
  const [authAccount,setAuthAccount]=useState(""),[authPassword,setAuthPassword]=useState(""),[authCode,setAuthCode]=useState(""),[showPassword,setShowPassword]=useState(false),[fixedIp,setFixedIp]=useState(false),[codeNotice,setCodeNotice]=useState(""),[manageId,setManageId]=useState<string|null>(null),[moreId,setMoreId]=useState<string|null>(null),[groupRename,setGroupRename]=useState<string|null>(null),[groupRenameValue,setGroupRenameValue]=useState("");
  const [query,setQuery]=useState(""),[search,setSearch]=useState(""),[notice,setNotice]=useState("");
- const [productStoreId,setProductStoreId]=useState("all");
+ const [productStoreId,setProductStoreId]=useState("");
+ const [storePickerOpen,setStorePickerOpen]=useState(false);
+ const [storePickerSearch,setStorePickerSearch]=useState("");
+ const [storePickerAdvanced,setStorePickerAdvanced]=useState(false);
+ const [storePickerRegion,setStorePickerRegion]=useState("全部站点");
+ const [storePickerStatus,setStorePickerStatus]=useState("全部状态");
+ const [storePickerPage,setStorePickerPage]=useState(1);
  const [productSource,setProductSource]=useState<"all"|"merchant"|"shuomi">("all");
  const [productKeyword,setProductKeyword]=useState("");
  const [productSyncNotice,setProductSyncNotice]=useState("");
@@ -125,7 +131,17 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  // Read the last verified snapshot from local browser storage. Opening this page
  // must never initiate a remote sync or mutate previously saved product rows.
  const eligibleProductStores=stores.filter(x=>Boolean(x.platformStoreId));
- const visibleProductStores=eligibleProductStores.filter(x=>productStoreId==="all"||x.id===productStoreId);
+ const selectedProductStore=eligibleProductStores.find(x=>x.id===productStoreId)??eligibleProductStores[0];
+ const visibleProductStores=selectedProductStore?[selectedProductStore]:[];
+ const storePickerRegions=[...new Set(eligibleProductStores.map(x=>x.region))];
+ const storePickerMatches=eligibleProductStores.filter(x=>
+  (!storePickerSearch.trim()||[x.name,x.platformStoreId,x.region,x.owner].join(" ").toLowerCase().includes(storePickerSearch.trim().toLowerCase()))&&
+  (storePickerRegion==="全部站点"||x.region===storePickerRegion)&&
+  (storePickerStatus==="全部状态"||storePickerStatus==="连接异常"&&Boolean(x.connectionIssue)||storePickerStatus==="服务已到期"&&!demoStoreServiceActive(x)||storePickerStatus==="服务有效"&&demoStoreServiceActive(x)&&!x.connectionIssue)
+ );
+ const storePickerPageCount=Math.max(1,Math.ceil(storePickerMatches.length/6));
+ const storePickerCurrentPage=Math.min(storePickerPage,storePickerPageCount);
+ const storePickerRows=storePickerMatches.slice((storePickerCurrentPage-1)*6,storePickerCurrentPage*6);
  void productSnapshotRevision;
  const productSnapshots=visibleProductStores.flatMap(x=>{
   const saved=readStoreProductSnapshot(organizationId,x.id,x.platformStoreId!);
@@ -285,16 +301,40 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
     <section className={css.panel} aria-label="店铺商品同步">
      <header><h2>选择店铺与同步商品</h2><span>打开页面优先显示上次同步结果 · 仅手动同步获取平台最新数据</span></header>
      <div className={css.productSyncToolbar}>
-      <label>目标店铺<select aria-label="选择要同步商品的店铺" value={productStoreId} onChange={e=>{setProductStoreId(e.target.value);setProductSyncNotice("")}}><option value="all">全部有权限的已绑定店铺</option>{stores.filter(s=>Boolean(s.platformStoreId)).map(s=><option key={s.id} value={s.id}>{s.name} · {s.region}</option>)}</select></label>
-      <button type="button" className={css.productSyncPrimary} disabled={productStoreId==="all"||!stores.some(s=>s.id===productStoreId&&s.platformStoreId)} onClick={()=>setProductSyncNotice("当前为页面设计预览，尚未接入 SHEIN 商品同步接口。未请求平台、未创建同步任务，商品数量保持为 0。")}>同步选中店铺商品</button>
+      <div className={css.productCurrentStore}><span>当前店铺</span><strong>{selectedProductStore?selectedProductStore.name+" · "+selectedProductStore.region:"暂无已绑定店铺"}</strong></div>
+      <button type="button" disabled={!eligibleProductStores.length} onClick={()=>{setStorePickerSearch("");setStorePickerRegion("全部站点");setStorePickerStatus("全部状态");setStorePickerAdvanced(false);setStorePickerPage(1);setStorePickerOpen(true)}}>选择店铺（{eligibleProductStores.length}）</button>
+      <button type="button" className={css.productSyncPrimary} disabled={!selectedProductStore} onClick={()=>setProductSyncNotice("当前为页面设计预览，尚未接入 SHEIN 商品同步接口。未请求平台、未创建同步任务；已保存的历史商品不会被清空。")}>同步商品</button>
       <button type="button" onClick={()=>link("/workbench/stores")}>管理我的店铺</button>
      </div>
+     {storePickerOpen?<div className={css.productPickerBackdrop} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setStorePickerOpen(false)}}>
+      <section className={css.productPickerDialog} role="dialog" aria-modal="true" aria-label="选择已绑定店铺">
+       <header><div><h2>选择店铺</h2><p>只显示当前企业及账号有权限的已绑定店铺 · 共 {eligibleProductStores.length} 家</p></div><button type="button" onClick={()=>setStorePickerOpen(false)}>关闭</button></header>
+       <div className={css.productPickerSearch}>
+        <input autoFocus aria-label="搜索店铺名称或平台 ID" placeholder="搜索店铺名称、负责人、站点或平台 ID" value={storePickerSearch} onChange={e=>{setStorePickerSearch(e.target.value);setStorePickerPage(1)}}/>
+        <button type="button" aria-expanded={storePickerAdvanced} onClick={()=>setStorePickerAdvanced(x=>!x)}>筛选{storePickerAdvanced?"（收起）":""}</button>
+        <button type="button" onClick={()=>{setStorePickerSearch("");setStorePickerRegion("全部站点");setStorePickerStatus("全部状态");setStorePickerPage(1)}}>重置</button>
+       </div>
+       {storePickerAdvanced?<div className={css.productPickerFilters}>
+        <label>站点<select value={storePickerRegion} onChange={e=>{setStorePickerRegion(e.target.value);setStorePickerPage(1)}}><option>全部站点</option>{storePickerRegions.map(region=><option key={region}>{region}</option>)}</select></label>
+        <label>状态<select value={storePickerStatus} onChange={e=>{setStorePickerStatus(e.target.value);setStorePickerPage(1)}}><option>全部状态</option><option>服务有效</option><option>连接异常</option><option>服务已到期</option></select></label>
+       </div>:null}
+       <div className={css.productPickerResults}>
+        {storePickerRows.map(store=><button type="button" key={store.id} aria-pressed={selectedProductStore?.id===store.id} onClick={()=>{setProductStoreId(store.id);setProductSyncNotice("");setStorePickerOpen(false)}}>
+         <span><strong>{store.name}</strong><small>SHEIN · {store.region} · {store.type}</small><small>平台 ID：{store.platformStoreId}</small></span>
+         <span><strong>{!demoStoreServiceActive(store)?"服务已到期":store.connectionIssue?"连接需处理":"已绑定"}</strong><small>{store.owner||"未分配负责人"}</small></span>
+         <span>{selectedProductStore?.id===store.id?"当前选择":"选择"}</span>
+        </button>)}
+        {!storePickerRows.length?<p>没有匹配的店铺，请调整搜索或筛选条件。</p>:null}
+       </div>
+       <footer><span>共 {storePickerMatches.length} 家 · 第 {storePickerCurrentPage} / {storePickerPageCount} 页</span><div><button type="button" disabled={storePickerCurrentPage<=1} onClick={()=>setStorePickerPage(x=>x-1)}>上一页</button><button type="button" disabled={storePickerCurrentPage>=storePickerPageCount} onClick={()=>setStorePickerPage(x=>x+1)}>下一页</button></div></footer>
+      </section>
+     </div>:null}
      {productSyncNotice?<p role="status" className={css.productSyncNotice}>{productSyncNotice}</p>:null}
      <div className={css.productSyncStoreSummary}>
-      {productStoreId!=="all"&&stores.some(s=>s.id===productStoreId&&s.platformStoreId)?stores.filter(s=>s.id===productStoreId).map(s=><div key={s.id} className={css.productSyncSelected}>
+      {selectedProductStore?[selectedProductStore].map(s=><div key={s.id} className={css.productSyncSelected}>
        <div><strong>{s.name}</strong><small>SHEIN · {s.region} · {s.type} · {s.owner||"未分配负责人"}</small><small>平台店铺 ID：{s.platformStoreId}</small></div>
        <div><strong>{!demoStoreServiceActive(s)?"服务已到期":s.connectionIssue?"连接需处理":"已绑定店铺"}</strong><small>最近商品同步：{productSnapshots.find(x=>x.store.id===s.id)?.snapshot.syncedAt?new Date(productSnapshots.find(x=>x.store.id===s.id)!.snapshot.syncedAt).toLocaleString("zh-CN",{hour12:false}):"从未成功同步"}</small></div>
-      </div>):<p>请选择一家店铺后同步。当前权限范围内共有 {stores.filter(s=>Boolean(s.platformStoreId)).length} 家已绑定店铺。</p>}
+      </div>):<p>当前账号暂无可选择的已绑定店铺。请先在「我的店铺」完成绑定。</p>}
      </div>
     </section>
     <section className={css.panel} aria-label="已同步商品与来源">
