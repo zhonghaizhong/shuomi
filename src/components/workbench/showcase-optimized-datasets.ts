@@ -97,15 +97,33 @@ export function readReusableOptimizedDatasets(org:string,member:string):Optimize
  const names=new Map(readDemoCollectionBatches(org,member).map(b=>[b.id,b.name]));
  const tasks=readShowcaseUploadTasks(org,member).filter(t=>t.status==="模拟已提交"&&t.demoSubmission?.result==="模拟提交成功"&&t.demoProduct&&t.source!=="数据集").sort((a,b)=>a.demoSubmission!.submittedAt.localeCompare(b.demoSubmission!.submittedAt)||a.id.localeCompare(b.id));
  const result=verified.map(d=>({...d,sourceBatchName:d.sourceKind==="采集批次"?names.get(d.sourceBatchId)??d.sourceBatchName:d.sourceBatchName}));
+ // Upload task IDs / receipts describe submissions, not data revisions. One source
+ // batch, source version, marketplace, site and explicit optimization revision
+ // forms a reusable snapshot. Re-uploading it must not generate V3, V4, etc.
+ const groups=new Map<string,OptimizedDataset>();
  for(const t of tasks){
   if(verified.some(d=>d.uploadTaskId===t.id))continue;
   const p=t.demoProduct!;
-  const version=result.filter(d=>d.sourceKind===t.source&&d.sourceBatchId===t.batchId).reduce((n,d)=>Math.max(n,d.version),0)+1;
+  const language=t.region==="美国站"?"英语":"站点适配";
   const batchName=t.source==="采集批次"?names.get(t.batchId)??t.batchName:t.batchName;
+  const revisionKey=t.optimizationVersionKey||"initial";
+  const identity=JSON.stringify([t.source,t.batchId,t.platform,t.region,language,revisionKey]);
   const images=[...new Set([...Object.values(t.imageEdits??{}).flatMap(x=>x.main??[]),...p.optimizedImages,...(p.variantImageGroups??[]).flatMap(g=>g.optimizedImages.map(x=>x.url))])];
   const skus=p.variantDetails?.map(v=>t.textEdits?.merchantSkuCodes?.[v.sku]??v.sku)??t.productIds;
   const baseline=t.originalPricingBaseline??readOriginalPricingBaseline(org,member,t.source,t.batchId,t.productIds);
-  result.push({id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language:t.region==="美国站"?"英语":"站点适配",storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:t.demoSubmission!.listingStatus??"未上架",simulatedPlatformProductId:t.demoSubmission!.simulatedPlatformProductId,simulatedReceiptId:t.demoSubmission!.simulatedReceiptId,demo:true,products:t.productIds.map(id=>({sourceProductId:id,name:t.textEdits?.title??p.optimizedName,description:t.textEdits?.description??p.optimizedDescription,images:[...images],skuCodes:[...skus],category:t.textEdits?.categoryPath,detailImages:Object.values(t.imageEdits??{}).flatMap(x=>x.detail??[]),skuSnapshots:(baseline.find(x=>x.sourceProductId===id)?.skus??[]).map(v=>({...v,merchantSku:t.textEdits?.merchantSkuCodes?.[v.sku]}))}))});
+  const products:OptimizedDatasetProduct[]=t.productIds.map(id=>({sourceProductId:id,name:t.textEdits?.title??p.optimizedName,description:t.textEdits?.description??p.optimizedDescription,images:[...images],skuCodes:[...skus],category:t.textEdits?.categoryPath,detailImages:Object.values(t.imageEdits??{}).flatMap(x=>x.detail??[]),skuSnapshots:(baseline.find(x=>x.sourceProductId===id)?.skus??[]).map(v=>({...v,merchantSku:t.textEdits?.merchantSkuCodes?.[v.sku]}))}));
+  const grouped=groups.get(identity);
+  if(grouped){
+   // Append only new source products. Repeated uploads of an already included
+   // product are execution history, not changes to the version snapshot.
+   const known=new Set(grouped.products.map(item=>item.sourceProductId));
+   grouped.products.push(...products.filter(item=>!known.has(item.sourceProductId)));
+   continue;
+  }
+  const version=result.filter(d=>d.sourceKind===t.source&&d.sourceBatchId===t.batchId).reduce((n,d)=>Math.max(n,d.version),0)+1;
+  const snapshot:OptimizedDataset={id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language,storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:t.demoSubmission!.listingStatus??"未上架",simulatedPlatformProductId:t.demoSubmission!.simulatedPlatformProductId,simulatedReceiptId:t.demoSubmission!.simulatedReceiptId,demo:true,products};
+  groups.set(identity,snapshot);
+  result.push(snapshot);
  }
  return result;
 }
