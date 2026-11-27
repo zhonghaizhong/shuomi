@@ -120,9 +120,18 @@ test("Vuexy light theme gives all cockpit subpages white panels and readable con
     const sidebarBg = await page.locator(".console-sidebar").evaluate(el => getComputedStyle(el).backgroundColor);
     const panelBg = await page.locator(item.panel).first().evaluate(el => getComputedStyle(el).backgroundColor);
     const text = await page.locator(item.panel).first().evaluate(el => getComputedStyle(el).color);
-    expect(shellBg).toBe("rgb(248, 247, 250)");
+    // Store matrix has its explicitly approved blue/green theme canvas; all other routes retain Vuexy.
+    expect(shellBg).toBe(item.route === "stores" ? "rgb(247, 250, 253)" : "rgb(248, 247, 250)");
     expect(sidebarBg).toBe("rgb(255, 255, 255)");
     expect(panelBg).toBe("rgb(255, 255, 255)");
+    if (item.route === "stores") {
+      const canvas = page.locator(".showcase-content");
+      expect(await canvas.evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(247, 250, 253)");
+      const rows = page.locator('[class*="matrixAnalysisRow"]');
+      await expect(rows.first()).toBeVisible();
+      expect(await rows.first().evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(255, 255, 255)");
+      expect(await rows.nth(1).evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(247, 250, 253)");
+    }
     expect(text).not.toBe("rgb(207, 205, 228)");
     const contentBg = await page.locator(item.content).first().evaluate(el => getComputedStyle(el).backgroundColor);
     expect(contentBg).not.toBe("rgb(47, 51, 73)");
