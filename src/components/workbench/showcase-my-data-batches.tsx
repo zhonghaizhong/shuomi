@@ -1,6 +1,7 @@
 "use client";
 import {Fragment,useEffect,useMemo,useState} from "react";
 import {readDemoCollectionBatches,createDemoCollectionBatch,renameDemoCollectionBatch,deleteDemoCollectionBatch,type DemoCollectionBatch} from "./showcase-collection-batches";
+import {ShowcaseOptimizedVersionDialog} from "./showcase-optimized-version-dialog";
 import css from "./showcase-my-data-batches.module.css";
 import {ShowcaseBatchProductsDialog} from "./showcase-batch-products-dialog";
 import {ShowcaseOwnProductLibrary} from "./showcase-own-product-library";
@@ -99,12 +100,7 @@ export function ShowcaseMyDataBatches({organizationId,memberId}:{organizationId:
   </>:<p role="status" className={css.empty}>暂无{tab}数据。采集批次不会自动写入此分类。</p>}</section>
   </>:tab==="自有商品库"?<ShowcaseOwnProductLibrary organizationId={organizationId} memberId={memberId}/>:<ShowcaseOptimizedDatasetLibrary organizationId={organizationId} memberId={memberId}/>}
 
-  {versionDetail?<div className={css.backdrop} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setVersionDetailId(null)}}><section className={css.versionProductDialog} role="dialog" aria-modal="true" aria-label="优化版本商品详情" onKeyDown={e=>{if(e.key==="Escape")setVersionDetailId(null)}}>
-    <header><div><h2>{versionDetail.name} · V{versionDetail.version+1}</h2><p>来源：{versionDetail.sourceBatchName} · {versionDetail.platform} / {versionDetail.site} / {versionDetail.language}</p></div><button type="button" onClick={()=>setVersionDetailId(null)}>关闭</button></header>
-    <p className={css.versionHint}>这是当前批次的已保存优化版本。仅展示优化后的商品内容，不覆盖原始数据、价格或库存。</p>
-    <div className={css.versionProductScroll}><table><thead><tr><th>商品名称</th><th>原商品编号</th><th>SKU</th><th>图片</th><th>优化描述</th></tr></thead><tbody>{versionDetail.products.map((product,i)=><tr key={product.sourceProductId+"-"+i}><td><strong>{product.name}</strong></td><td>{product.sourceProductId}</td><td>{product.skuCodes.join(" / ")||"—"}</td><td>{product.images.length?product.images.map((url,k)=><a key={url+"-"+k} href={url} target="_blank" rel="noopener noreferrer">图片 {k+1}</a>):"—"}</td><td>{product.description||"—"}</td></tr>)}</tbody></table></div>
-    <footer><span>共 {versionDetail.products.length} 件商品 · 原始批次保持不变</span><button type="button" onClick={()=>downloadOptimizedVersionCsv(versionDetail)}>下载 CSV</button><button type="button" onClick={()=>setVersionDetailId(null)}>关闭</button></footer>
-   </section></div>:null}
+  {versionDetail?<ShowcaseOptimizedVersionDialog key={versionDetail.id} dataset={versionDetail} onClose={()=>setVersionDetailId(null)}/>:null}
   {picked?<ShowcaseBatchProductsDialog key={picked.id} batch={picked} organizationId={organizationId} memberId={memberId} otherBatches={batches.filter(x=>x.id!==picked.id&&!archived.has(x.id))} onClose={()=>setSelected(null)}/>:null}
   {manage?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setManage(false)}}>
    <section className={css.manageDialog} role="dialog" aria-modal="true" aria-label="管理采集批次" onKeyDown={e=>{if(e.key==="Escape")setManage(false)}}>

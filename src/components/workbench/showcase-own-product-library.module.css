@@ -164,3 +164,12 @@
 .manageFooter>div{display:flex;gap:8px}
 .manageFooter button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:760px){.library .manageDialog{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);padding:14px;gap:12px}.manageFilters{grid-template-columns:minmax(0,1fr) 115px}.manageSearch{grid-column:1/-1}.manageFooter{flex-wrap:wrap}}
+
+/* Version status and actions must never overlap, including inside narrow table cells. */
+.versionItem{grid-template-columns:minmax(0,1fr) minmax(0,max-content) max-content;gap:12px}
+.versionTag{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+.versionActions{min-width:0;flex-wrap:wrap;grid-column:auto}
+.versionInfo strong{white-space:normal;overflow-wrap:anywhere}
+.versionExpanded{container-type:inline-size}
+@container (max-width:760px){.versionItem{grid-template-columns:minmax(0,1fr) minmax(0,max-content)}.versionActions{grid-column:1/-1;justify-content:flex-end}}
+@container (max-width:420px){.versionItem{grid-template-columns:minmax(0,1fr)}.versionActions{grid-column:1;justify-content:flex-start}.versionTag{justify-self:start}}
