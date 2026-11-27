@@ -428,3 +428,13 @@
  .podWideDialog .approvalProductIdentity>img{width:72px;height:90px}
  .podWideDialog>footer{align-items:flex-start}
 }
+
+/* 1:1 SKU image preview follows the actively inspected SKU; selected means approval, not focus. */
+.podWideDialog .approvalFocusedPhoto{width:112px;max-width:100%;display:grid;gap:5px;align-content:start;min-width:0}
+.podWideDialog .approvalFocusedPhoto img{display:block;width:100%;aspect-ratio:1/1;object-fit:contain;background:#f2f2f2;border:1px solid var(--podassets-line,#52576e);border-radius:7px}
+.podWideDialog .approvalFocusedPhoto .productPlaceholder{width:100%;aspect-ratio:1/1;display:grid;place-items:center;border:1px dashed var(--podassets-line,#52576e);border-radius:7px;font-size:11px}
+.podWideDialog .approvalFocusedPhoto>span{display:block;font-size:10px;line-height:1.3;color:var(--podassets-muted,#acabc1);text-align:center;white-space:normal}
+.podWideDialog .approvalProductIdentity{grid-template-columns:112px minmax(0,1fr);align-items:start}
+.podWideDialog .approvalSkuTable tbody tr{cursor:pointer}
+.podWideDialog .approvalSkuFocused{outline:1px solid #7367f0;outline-offset:-1px}
+@media(max-width:560px){.podWideDialog .approvalProductIdentity{grid-template-columns:88px minmax(0,1fr)}.podWideDialog .approvalFocusedPhoto{width:88px}}
