@@ -173,3 +173,6 @@
 .versionExpanded{container-type:inline-size}
 @container (max-width:760px){.versionItem{grid-template-columns:minmax(0,1fr) minmax(0,max-content)}.versionActions{grid-column:1/-1;justify-content:flex-end}}
 @container (max-width:420px){.versionItem{grid-template-columns:minmax(0,1fr)}.versionActions{grid-column:1;justify-content:flex-start}.versionTag{justify-self:start}}
+
+/* Non-destructive demo-record recovery feedback. */
+.recoveryMessage{margin:8px 16px;padding:10px 12px;border:1px solid #5b6fa1;border-radius:8px;font-size:13px;line-height:1.5;color:inherit;background:color-mix(in srgb,#7367f0 10%,transparent)}
