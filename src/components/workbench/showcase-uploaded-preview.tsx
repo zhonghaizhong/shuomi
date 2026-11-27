@@ -3,7 +3,7 @@ import type {ReactNode} from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./showcase-uploaded-preview.module.css";
 import {ShowcaseListingStageHeader} from "./listing/showcase-listing-stage-header";
-import {showcaseUploadBatchPreferenceKey} from "./listing/showcase-upload-tasks";
+import {showcaseUploadBatchPreferenceKey,readShowcaseUploadTasks,showcaseUploadTasksEvent} from "./listing/showcase-upload-tasks";
 import {readOptimizedDatasets,optimizedDatasetsChanged} from "./showcase-optimized-datasets";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./listing/showcase-batch-version-picker";
 
@@ -15,8 +15,9 @@ export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:
  const [batchDialog,setBatchDialog]=useState(false),[pickSource,setPickSource]=useState<PickSource>("采集批次");
  const [query,setQuery]=useState(""),[appliedQuery,setAppliedQuery]=useState("");
  const [revision,setRevision]=useState(0),[page,setPage]=useState(1),[selected,setSelected]=useState<Item|null>(null);
- useEffect(()=>{const refresh=(event:Event)=>{const d=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setRevision(v=>v+1)};window.addEventListener(optimizedDatasetsChanged,refresh);return()=>window.removeEventListener(optimizedDatasetsChanged,refresh)},[organizationId,memberId]);
+ useEffect(()=>{const refresh=(event:Event)=>{const d=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setRevision(v=>v+1)};window.addEventListener(optimizedDatasetsChanged,refresh);window.addEventListener(showcaseUploadTasksEvent,refresh);return()=>{window.removeEventListener(optimizedDatasetsChanged,refresh);window.removeEventListener(showcaseUploadTasksEvent,refresh)}},[organizationId,memberId]);
  const datasets=useMemo(()=>readOptimizedDatasets(organizationId,memberId),[organizationId,memberId,revision]);
+ const localDemoSubmissions=useMemo(()=>readShowcaseUploadTasks(organizationId,memberId).filter(t=>t.demoSubmission?.result==="模拟提交成功"&&t.status==="模拟已提交"),[organizationId,memberId,revision]);
  // Only verified platform-accepted datasets are uploaded; demo tasks have no receipt.
  const batches=datasets.map(d=>({key:JSON.stringify([d.sourceKind,d.sourceBatchId,d.id]),label:d.sourceBatchName+" · V"+d.version+" · "+d.platform+" "+d.site,name:d.sourceBatchName,source:d.sourceKind,version:d.id}));
  const activeBatch=batches.find(option=>option.key===appliedBatch);
@@ -47,6 +48,8 @@ export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:
   (!appliedBatch||item.batchKey===appliedBatch)&&
   (item.name+" "+item.sku+" "+item.batch+" "+item.productId).toLowerCase().includes(appliedQuery.toLowerCase())
  );
+ const demoVisible=localDemoSubmissions.filter(t=>(!appliedBatch||JSON.stringify([t.source,t.batchId,t.sourceVersionId||"original"])===appliedBatch)&&
+  (t.demoProduct?.optimizedName+" "+t.productIds.join(" ")+" "+t.batchName).toLowerCase().includes(appliedQuery.toLowerCase()));
  const pages=Math.max(1,Math.ceil(filtered.length/15));
  const actualPage=Math.min(page,pages);
  const visible=filtered.slice((actualPage-1)*15,actualPage*15);
@@ -60,6 +63,15 @@ export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:
    {[[String(records.length),"平台已接收商品","仅来自已验证的平台回执"],[String(records.filter(x=>x.reviewStatus==="审核通过").length),"审核通过","审核通过不等于已上架"],[String(records.filter(x=>x.listingStatus==="已上架").length),"已上架","以平台状态回执为准"]].map(([value,title,sub],i)=><article key={title} data-tone={i}><strong>{value}</strong><span><b>{title}</b><small>{sub}</small></span></article>)}
   </section>
 
+  {demoVisible.length>0?<section className={styles.panel} aria-label="模拟上传演示记录">
+   <div className={styles.listTitle}><h2>模拟审核与目标店铺提交记录</h2><span>仅本地演示 · 未真实提交至 SHEIN</span></div>
+   {demoVisible.map(t=><div className={styles.item} key={t.id} style={{display:"grid",gridTemplateColumns:"minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)",gap:12,padding:"16px 20px",alignItems:"center"}}>
+    <span><b>{t.demoProduct?.optimizedName}</b><small>{t.productIds.join(" / ")}</small></span>
+    <span><b>审核通过 · 模拟提交成功</b><small>{t.demoSubmission?.platform} · {t.demoSubmission?.site} · {t.demoSubmission?.storeName}</small></span>
+    <span><small>模拟时间：{t.demoSubmission?.submittedAt?new Date(t.demoSubmission.submittedAt).toLocaleString("zh-CN"):"—"}</small><small>平台回执：无（未连接真实接口）</small></span>
+   </div>)}
+   <p className={styles.disclaimer}>此记录只展示模拟流程，不计入“平台已接收商品”、真实审核或已上架数量，也不生成平台商品 ID。</p>
+  </section>:null}
   <section className={styles.panel}>
    <div className={styles.toolbar}>
     <div className={styles.filters}><label>商品批次<button type="button" aria-label="选择刊登批次" onClick={()=>{setPickSource(activeBatch?.source==="自有商品库"?"自有商品库":"采集批次");setBatchDialog(true)}}>{activeBatch?.label||"全部批次"} · 选择批次与版本</button></label></div>
