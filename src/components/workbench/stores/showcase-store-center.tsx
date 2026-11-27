@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState,type FormEvent} from "react";
 import {Building2,Package,Truck,Plus,Search,ShieldCheck,ClipboardList} from "lucide-react";
 import css from "./showcase-store-center.module.css";
+import {ShowcaseOrderDemo} from "./showcase-order-demo";
 import {useShowcaseSuite} from "../account/showcase-account-state";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
 import {demoStoreKey,readDemoStoreBindings,saveDemoStoreBindings,startDemoStoreService,demoStoreServiceActive,countConsumedStorePeriods,countPoolConsumedStorePeriods,type DemoStoreBinding} from "../store-binding-demo";
@@ -385,11 +386,10 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
      <p className={css.productSyncFootnote}>演示店铺支持模拟同步，真实商品快照仅在接口接通并成功同步后更新。同步失败必须保留上一次成功结果；已保存商品不保证是实时状态。来源判定以店铺 ID、平台商品 ID 和已核实上传回执为准；没有对应回执的商品暂归为「商家原有 / 来源待核实」，不因商品名称相同就标记为硕米刊登。待刊登、已提交不等于已上架。</p>
     </section>
    </>:<>
-    <section className={css.metrics}>{[["订单总数",0],["待处理订单",0],["发货中",0],["履约异常",0]].map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
-    <section className={css.panel}><header><h2>平台订单记录</h2><span>共 0 条</span></header><div className={css.empty}><Truck size={34}/><h3>暂无平台订单</h3><p>绑定店铺并同步业务数据后，订单才会出现在这里。没有订单时不显示虚构履约进度。</p><button className={css.orderEmptyAction} style={{backgroundColor:"#6254d9",color:"#fff",borderColor:"#6254d9"}} onClick={()=>link("/workbench/stores")}>前往我的店铺</button></div></section>
+    <ShowcaseOrderDemo organizationId={organizationId} memberId={memberId} stores={stores} onStores={()=>link("/workbench/stores")}/>
    </>}
   </>}
-  <p className={css.disclaimer}>{route==="stores"?"店铺分组与负责人可用于任务中心、数据中心和 AI 智能体的跨店筛选与权限管理。":"每个演示账号展示各自独立的已绑定店铺资料；当前未接入真实 SHEIN 数据同步，不产生商品、订单、销售或库存数据。"}</p>
+  <p className={css.disclaimer}>{route==="stores"?"店铺分组与负责人可用于任务中心、数据中心和 AI 智能体的跨店筛选与权限管理。":"每个演示账号展示各自独立的已绑定店铺资料；当前未接入真实 SHEIN 数据同步，所有模拟订单与真实销售及库存分开。"}</p>
   {groupAssignOpen?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setGroupAssignOpen(false)}}><section className={css.dialog} role="dialog" aria-modal="true" aria-label="批量加入分组"><header><div><h2>批量加入分组</h2><p>已选择 {checkedStores.length} 家店铺。确认后统一更新所属分组，不改变负责人、平台店铺 ID 和服务期。</p></div><button type="button" aria-label="关闭弹窗" onClick={()=>setGroupAssignOpen(false)}>×</button></header><label>目标分组<select aria-label="选择批量分组" value={bulkGroup} onChange={e=>setBulkGroup(e.target.value)}><option>未分组</option>{groups.map(g=><option key={g}>{g}</option>)}</select></label><footer className={css.dialogActions}><button type="button" onClick={()=>setGroupAssignOpen(false)}>取消</button><button type="button" className={css.primary} disabled={!checkedStores.length} onClick={applyGroupToSelection}>确认加入</button></footer></section></div>:null}
   {groupsOpen?<div className={css.backdrop+" "+css.groupBackdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setGroupsOpen(false)}}><section className={css.dialog} role="dialog" aria-modal="true" aria-label="管理分组"><header><div><h2>管理分组</h2><p>与 Figma 一致：新建分组、查看分组内店铺、移除空分组。仅保存到本地演示会话。</p></div><button aria-label="关闭弹窗" onClick={()=>setGroupsOpen(false)}>×</button></header><form onSubmit={e=>{e.preventDefault();const v=groupName.trim();if(!v||groups.includes(v))return;setGroups(old=>[...old,v]);setGroupName("");setNewGroup(v);setNotice("分组已创建，可在绑定和管理店铺时选择。")}}><label>新建分组<input aria-label="分组名称" maxLength={40} value={groupName} onChange={e=>setGroupName(e.target.value)} placeholder="输入分组名称"/></label><button className={css.primary} type="submit" disabled={!groupName.trim()||groups.includes(groupName.trim())}>创建分组</button></form><div className={css.groupList}>{["未分组",...groups].map(g=><div key={g}><strong>{g}</strong><span>{stores.filter(x=>(x.group||"未分组")===g).length} 家店铺</span>{g!=="未分组"?<button type="button" onClick={()=>{setGroupRename(g);setGroupRenameValue(g)}}>重命名</button>:null}{g!=="未分组"?<button onClick={()=>{setStores(old=>old.map(x=>x.group===g?{...x,group:"未分组"}:x));setGroups(old=>old.filter(x=>x!==g));setSettingsDraft(old=>({...old,group:old.group===g?"未分组":old.group}));setNotice("已移除分组，原店铺自动转入未分组，未解绑店铺。")}}>删除</button>:null}</div>)}</div><footer className={css.dialogActions}><button className={css.primary} onClick={()=>setGroupsOpen(false)}>完成</button></footer></section></div>:null}
 

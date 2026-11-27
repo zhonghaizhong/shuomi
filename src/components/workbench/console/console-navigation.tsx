@@ -51,7 +51,7 @@ export function ConsoleNavigation({ pathname, ariaLabel, onNavigate, showcaseMod
   const researchPath = research?.step ? `${research.workflow.root}?step=${research.step.id}` : pathname;
   const inListing = pathname === listingHome || pathname.startsWith(listingHome + "/");
   const navigationPath = pathname.startsWith("/workbench/supply/catalogs/") ? "/workbench/supply/catalogs" : pathname.startsWith("/workbench/supply/applications/") ? "/workbench/supply/applications" : researchPath;
-  const trail = research ? ["/workbench/agents", "/workbench/agents/market"] : findConsoleRoute(navigationPath)?.trail.map(node=>node.href) ?? (inListing ? [listingHome] : []);
+  const trail = demoPreview && (pathname==="/workbench/store-orders"||pathname.startsWith("/workbench/store-orders/")) ? ["/workbench/store-center","/workbench/store-orders"] : research ? ["/workbench/agents", "/workbench/agents/market"] : findConsoleRoute(navigationPath)?.trail.map(node=>node.href) ?? (inListing ? [listingHome] : []);
   if(inListing){
     for(const key of ["preparation","store","operation","plan"]){
       const values=query?.getAll(key);
