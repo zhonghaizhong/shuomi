@@ -67,13 +67,13 @@ test("theme toggle and account menu follow Figma, with safe dialog for logout/de
 });
 
 test("cleared store product and order pages show truthful empty states and working navigation",async({page})=>{
- for(const [route,label] of [["/store-products","暂无已同步商品"],["/store-orders","暂无平台订单"]]){
+ for(const [route,label] of [["/store-products","暂无已保存的同步商品"],["/store-orders","暂无平台订单"]]){
   await page.goto(base+route);
   const root=page.locator('[data-store-center-showcase]');
   await expect(root).toBeVisible();
   await expect(root.getByRole("heading",{name:label,exact:true})).toBeVisible();
   await expect(root.getByText("共 0 条")).toBeVisible();
-  await root.getByRole("button",{name:"前往我的店铺"}).click();
+  await root.getByRole("button",{name:route==="/store-products"?"管理我的店铺":"前往我的店铺",exact:true}).click();
   await expect(root).toHaveAttribute("data-store-center-showcase","stores");
   await expect(root).toContainText("共 11 家");
   await expect(root).toContainText("管理员演示店铺01");

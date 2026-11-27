@@ -172,7 +172,7 @@ test("Figma binding modal has account, OTP, groups, fixed IP and honest authoriz
   await page.getByRole("navigation",{name:"店铺详情导航"}).getByRole("button",{name:"服务信息",exact:true}).click();
   await expect(page.locator('[aria-label="店铺详情页面"]')).toContainText("已绑定");
  await page.goto(root+"/store-products");
- await expect(page.getByRole("heading",{name:"暂无已同步商品"})).toBeVisible();
+ await expect(page.getByRole("heading",{name:"暂无已保存的同步商品"})).toBeVisible();
 });
 test("compact store rows show batch actions only after selection and preserve local group changes",async({page})=>{
  const area=await createDemo(page,"批量店铺");
