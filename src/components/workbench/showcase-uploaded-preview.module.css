@@ -246,3 +246,30 @@
 .page .toolbar .primary{background:#7367f0;border-color:#7367f0;color:#fff}
 .page .listTitle{min-height:54px;box-sizing:border-box}
 .page .columns{min-height:46px;align-items:center}
+
+/* Uploaded product ledger: keep eight columns aligned, photos square, metadata legible. */
+.page .table{min-width:1350px}
+.page .columns,.page .item{
+ grid-template-columns:minmax(225px,1.85fr) minmax(140px,1.12fr) minmax(100px,.7fr) minmax(155px,1.1fr) minmax(128px,.83fr) minmax(150px,.98fr) minmax(156px,1.02fr) minmax(96px,.66fr);
+ column-gap:16px;
+ align-items:center;
+}
+.page .item{min-height:82px}
+.productCell{display:flex;align-items:center;gap:12px;min-width:0}
+.productThumb,.productThumbPlaceholder{display:block;width:56px;height:56px;min-width:56px;object-fit:contain;background-color:#fff;border-radius:7px;border:1px solid var(--upload-border)}
+.productThumb{background-repeat:no-repeat}
+.productThumbPlaceholder{display:flex;align-items:center;justify-content:center;background:var(--upload-inset);color:var(--upload-muted);font-size:11px;text-align:center}
+.productText,.stackCell{display:flex;flex-direction:column;gap:4px;min-width:0}
+.productText b,.stackCell b{font-size:14px;line-height:1.4;overflow-wrap:anywhere;font-weight:600}
+.productText small,.stackCell small{font-size:12px;line-height:1.4;overflow-wrap:anywhere;color:var(--upload-muted)}
+.stackCell>span{font-size:13px;overflow-wrap:anywhere}
+.dateCell{font-size:13px;line-height:1.5;white-space:normal;color:var(--upload-ink);font-variant-numeric:tabular-nums}
+.statusCell{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;font-size:12px;line-height:1.35}
+.statusSuccess{color:var(--upload-success);font-weight:600}
+.statusInfo{color:var(--upload-info);font-weight:600}
+.statusMuted{color:var(--upload-muted)}
+.dialogProduct{display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid var(--upload-border)}
+.dialogProduct .productThumb,.dialogProduct .productThumbPlaceholder{width:76px;height:76px;min-width:76px}
+.dialogProduct>div{display:flex;flex-direction:column;min-width:0;gap:5px}
+.dialogProduct strong{font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+.dialogProduct small{font-size:12px;overflow-wrap:anywhere;color:var(--upload-muted)}
