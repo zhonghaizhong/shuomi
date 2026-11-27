@@ -155,7 +155,7 @@ export function readReusableOptimizedDatasets(org:string,member:string):Optimize
    grouped.demoListingSummary=listed===0?"未上架":listed===grouped.products.length?"已上架":"部分已上架（"+listed+"/"+grouped.products.length+"）";grouped.versionListingSummary=grouped.demoListingSummary;
    continue;
   }
-  const version=result.filter(d=>d.sourceKind===t.source&&d.sourceBatchId===t.batchId).reduce((n,d)=>Math.max(n,d.version),0)+1;
+  const version=result.filter(d=>d.sourceKind===t.source&&d.sourceBatchId===t.batchId&&d.platform===t.platform&&d.site===t.region&&d.language===language).reduce((n,d)=>Math.max(n,d.version),0)+1;
   const snapshot:OptimizedDataset={id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language,storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:t.demoSubmission!.listingStatus??"未上架",simulatedPlatformProductId:t.demoSubmission!.simulatedPlatformProductId,simulatedReceiptId:t.demoSubmission!.simulatedReceiptId,demo:true,demoListingSummary:t.demoSubmission!.listingStatus??"未上架",versionListingSummary:t.demoSubmission!.listingStatus??"未上架",products};
   groups.set(identity,snapshot);
   result.push(snapshot);
