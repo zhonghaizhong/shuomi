@@ -68,3 +68,34 @@
 .goalPickerFooter button:disabled{opacity:.45;cursor:not-allowed}
 .goalPickerFooter .primary{background:#7367f0;border-color:#7367f0;color:white}
 @media(max-width:680px){.goalPickerFilters{grid-template-columns:1fr 1fr}.goalPickerFilters input{grid-column:1/-1}.goalPickerFooter{flex-wrap:wrap}.goalPickerFooter>div{flex-wrap:wrap}.goalPickerPanel{max-height:calc(100dvh - 24px)}.goalPickerOverlay{padding:12px}.panel:has(.goalPickerField){overflow-y:auto}}
+
+/* Goal store picker: platform -> site -> type, followed by search. */
+.goalPickerPanel{width:min(880px,100%)}
+.goalPickerFilters{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;padding:14px 20px}
+.goalPickerFilters>label{display:grid;gap:5px;min-width:0;font-size:12px;line-height:1.4;color:var(--muted-foreground,#acabc1);font-weight:500}
+.form .goalPickerFilters select{width:100%;min-width:0;font-size:14px}
+.goalPickerSearch{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-width:0}
+.form .goalPickerSearch input{flex:1 1 auto;min-width:0;width:auto}
+.goalPickerSearch button{flex:none;min-height:40px}
+.goalPickerResults{gap:0;padding:0 20px 8px;overflow-y:auto;overflow-x:auto;min-height:0}
+.goalPickerStoreHead,.form .goalPickerStore{
+ display:grid!important;
+ grid-template-columns:28px minmax(180px,1.8fr) minmax(58px,.65fr) minmax(87px,.9fr) minmax(85px,.85fr) minmax(52px,.55fr);
+ gap:12px;align-items:center;
+}
+.goalPickerStoreHead{padding:10px 12px;border-bottom:1px solid var(--border,#44485e);color:var(--muted-foreground,#acabc1);font-size:12px;font-weight:500}
+.form .goalPickerStore{min-height:57px;padding:8px 12px;border-bottom:1px solid var(--border,#44485e);border-top:0;border-left:1px solid transparent;border-right:1px solid transparent;border-radius:4px;cursor:pointer;font-weight:400}
+.form .goalPickerStore:last-of-type{border-bottom-color:transparent}
+.goalPickerStoreName{display:flex!important;flex-direction:column;gap:3px;min-width:0}
+.goalPickerStoreName strong{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.goalPickerStoreName small{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.goalPickerStoreMeta,.goalPickerStoreCurrency{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500}
+.goalPickerStoreCurrency{color:var(--muted-foreground,#acabc1);font-variant-numeric:tabular-nums}
+.form .goalPickerStore:has(input:checked){border-color:color-mix(in srgb,#7367f0 45%,var(--border,#44485e))}
+@media(max-width:680px){
+ .goalPickerFilters{grid-template-columns:repeat(3,minmax(0,1fr));padding:12px;gap:8px}
+ .goalPickerSearch{grid-column:1/-1}
+ .goalPickerResults{padding:0 12px 8px}
+ .goalPickerStoreHead,.form .goalPickerStore{min-width:650px}
+ .goalPickerPanel>header,.goalPickerControls,.goalPickerFooter{padding-left:12px;padding-right:12px}
+}
