@@ -289,3 +289,6 @@
 .relatedProduct .previewActions button:disabled{opacity:.42;cursor:not-allowed}
 .relatedProduct .previewActions .generatePreview{margin-left:0}
 @media(max-width:700px){.relatedProduct .previewActions{justify-content:flex-start;margin-left:0}}
+
+/* Mark the one print that has a committed SKU-specific preview. */
+.assetCard .printPreviewIndicator{display:inline-flex;align-self:flex-start;max-width:100%;padding:4px 7px;border:1px solid #7367f0;border-radius:6px;color:var(--podassets-ink,#cfcde4);font-size:11px;line-height:1.4;background:color-mix(in srgb,#7367f0 14%,transparent)}
