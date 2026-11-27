@@ -6,6 +6,7 @@ import {useShowcaseSuite} from "../account/showcase-account-state";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
 import {demoStoreKey,readDemoStoreBindings,saveDemoStoreBindings,startDemoStoreService,demoStoreServiceActive,countConsumedStorePeriods,countPoolConsumedStorePeriods,type DemoStoreBinding} from "../store-binding-demo";
 import {useDemoPurchases} from "../showcase-purchases";
+import {readStoreProductSnapshot} from "./store-product-snapshot-demo";
 
 type Store=DemoStoreBinding;
 const demoSites=["美国站","加拿大站","英国站","德国站","法国站"] as const;
@@ -119,6 +120,21 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [productSource,setProductSource]=useState<"all"|"merchant"|"shuomi">("all");
  const [productKeyword,setProductKeyword]=useState("");
  const [productSyncNotice,setProductSyncNotice]=useState("");
+ const [productSnapshotRevision,setProductSnapshotRevision]=useState(0);
+ useEffect(()=>{const refresh=()=>setProductSnapshotRevision(n=>n+1);window.addEventListener("storage",refresh);window.addEventListener("shuomi:store-product-snapshot-updated",refresh);return()=>{window.removeEventListener("storage",refresh);window.removeEventListener("shuomi:store-product-snapshot-updated",refresh)}},[]);
+ // Read the last verified snapshot from local browser storage. Opening this page
+ // must never initiate a remote sync or mutate previously saved product rows.
+ const eligibleProductStores=stores.filter(x=>Boolean(x.platformStoreId));
+ const visibleProductStores=eligibleProductStores.filter(x=>productStoreId==="all"||x.id===productStoreId);
+ void productSnapshotRevision;
+ const productSnapshots=visibleProductStores.flatMap(x=>{
+  const saved=readStoreProductSnapshot(organizationId,x.id,x.platformStoreId!);
+  return saved?[{store:x,snapshot:saved}]:[];
+ });
+ const lastProductSync=productSnapshots.map(x=>x.snapshot.syncedAt).sort().at(-1);
+ const allCachedProducts=productSnapshots.flatMap(x=>x.snapshot.rows.map(row=>({...row,store:x.store})));
+ const cachedProducts=allCachedProducts.filter(row=>(productSource==="all"||row.origin===productSource)&&(!productKeyword.trim()||[row.name,row.sku,row.platformProductId].join(" ").toLowerCase().includes(productKeyword.trim().toLowerCase())));
+ const cachedOriginCount=(origin:"merchant"|"shuomi")=>allCachedProducts.filter(row=>row.origin===origin).length;
  const [editing,setEditing]=useState<string|null>(null),[confirmDelete,setConfirmDelete]=useState<string|null>(null);
   const [inspecting,setInspecting]=useState<string|null>(null);
  const [syncing,setSyncing]=useState<string|null>(null),[entered,setEntered]=useState<string|null>(null),[groupsOpen,setGroupsOpen]=useState(false);
@@ -265,9 +281,9 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
    </section>
   </>:<>
    {route==="products"?<>
-    <section className={css.metrics}>{[["已同步商品",0],["商家原有",0],["硕米刊登",0],["已关联店铺",stores.filter(s=>Boolean(s.platformStoreId)).length]].map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
+    <section className={css.metrics}>{[["已同步商品",allCachedProducts.length],["商家原有",cachedOriginCount("merchant")],["硕米刊登",cachedOriginCount("shuomi")],["已关联店铺",eligibleProductStores.length]].map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
     <section className={css.panel} aria-label="店铺商品同步">
-     <header><h2>选择店铺与同步商品</h2><span>从已绑定店铺中选择 · 商品以平台返回结果为准</span></header>
+     <header><h2>选择店铺与同步商品</h2><span>打开页面优先显示上次同步结果 · 仅手动同步获取平台最新数据</span></header>
      <div className={css.productSyncToolbar}>
       <label>目标店铺<select aria-label="选择要同步商品的店铺" value={productStoreId} onChange={e=>{setProductStoreId(e.target.value);setProductSyncNotice("")}}><option value="all">全部有权限的已绑定店铺</option>{stores.filter(s=>Boolean(s.platformStoreId)).map(s=><option key={s.id} value={s.id}>{s.name} · {s.region}</option>)}</select></label>
       <button type="button" className={css.productSyncPrimary} disabled={productStoreId==="all"||!stores.some(s=>s.id===productStoreId&&s.platformStoreId)} onClick={()=>setProductSyncNotice("当前为页面设计预览，尚未接入 SHEIN 商品同步接口。未请求平台、未创建同步任务，商品数量保持为 0。")}>同步选中店铺商品</button>
@@ -277,12 +293,12 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
      <div className={css.productSyncStoreSummary}>
       {productStoreId!=="all"&&stores.some(s=>s.id===productStoreId&&s.platformStoreId)?stores.filter(s=>s.id===productStoreId).map(s=><div key={s.id} className={css.productSyncSelected}>
        <div><strong>{s.name}</strong><small>SHEIN · {s.region} · {s.type} · {s.owner||"未分配负责人"}</small><small>平台店铺 ID：{s.platformStoreId}</small></div>
-       <div><strong>{!demoStoreServiceActive(s)?"服务已到期":s.connectionIssue?"连接需处理":"已绑定店铺"}</strong><small>最近商品同步：暂无记录</small></div>
+       <div><strong>{!demoStoreServiceActive(s)?"服务已到期":s.connectionIssue?"连接需处理":"已绑定店铺"}</strong><small>最近商品同步：{productSnapshots.find(x=>x.store.id===s.id)?.snapshot.syncedAt?new Date(productSnapshots.find(x=>x.store.id===s.id)!.snapshot.syncedAt).toLocaleString("zh-CN",{hour12:false}):"从未成功同步"}</small></div>
       </div>):<p>请选择一家店铺后同步。当前权限范围内共有 {stores.filter(s=>Boolean(s.platformStoreId)).length} 家已绑定店铺。</p>}
      </div>
     </section>
     <section className={css.panel} aria-label="已同步商品与来源">
-     <header><h2>店铺商品</h2><span>共 0 条 · 当前尚无平台同步记录</span></header>
+     <header><h2>店铺商品</h2><span>共 {cachedProducts.length} 条 · {lastProductSync?"最近同步："+new Date(lastProductSync).toLocaleString("zh-CN",{hour12:false}):"暂无已保存的同步记录"}</span></header>
      <div className={css.productSourceToolbar}>
       <div className={css.productSourceTabs} role="group" aria-label="商品来源筛选">
        {([["all","全部商品"],["merchant","商家原有"],["shuomi","硕米刊登"]] as const).map(([value,label])=><button type="button" key={value} aria-pressed={productSource===value} onClick={()=>setProductSource(value)}>{label}</button>)}
@@ -294,8 +310,8 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       <div><strong>商家原有</strong><small>平台同步到商品，但没有匹配到经验证的硕米上传回执</small></div>
       <div><strong>硕米刊登</strong><small>平台商品 ID 与硕米上传任务、平台接收回执匹配成功</small></div>
      </div>
-     <div className={css.productDataTable}><table><thead><tr><th>商品信息</th><th>所属店铺</th><th>商品来源</th><th>平台状态</th><th>售价 / 库存</th><th>最近同步</th><th>操作</th></tr></thead><tbody><tr><td colSpan={7}><div className={css.productDataEmpty}><Package size={30}/><strong>暂无已同步的商品</strong><span>选择已绑定店铺后点击同步。正式接入前不会虚构上架商品、价格或库存。</span></div></td></tr></tbody></table></div>
-     <p className={css.productSyncFootnote}>来源判定以店铺 ID、平台商品 ID 和已核实上传回执为准；没有对应回执的商品暂归为「商家原有 / 来源待核实」，不因商品名称相同就标记为硕米刊登。待刊登、已提交不等于已上架。</p>
+     <div className={css.productDataTable}><table><thead><tr><th>商品信息</th><th>所属店铺</th><th>商品来源</th><th>平台状态</th><th>售价 / 库存</th><th>最近同步</th><th>操作</th></tr></thead><tbody>{cachedProducts.length?cachedProducts.map(row=><tr key={row.store.id+":"+row.platformProductId+":"+row.sku}><td><div className={css.productCachedIdentity}>{row.imageUrl?<img src={row.imageUrl} alt={row.name} loading="lazy"/>:null}<div><strong>{row.name}</strong><small>平台商品 ID：{row.platformProductId} · SKU：{row.sku}</small></div></div></td><td>{row.store.name}</td><td>{row.origin==="shuomi"?"硕米刊登":row.origin==="merchant"?"商家原有":"来源待核实"}</td><td>{row.platformStatus}</td><td>{row.price??"—"} / {row.stock??"—"}</td><td>{new Date(productSnapshots.find(x=>x.store.id===row.store.id)!.snapshot.syncedAt).toLocaleString("zh-CN",{hour12:false})}</td><td>查看</td></tr>):<tr><td colSpan={7}><div className={css.productDataEmpty}><Package size={30}/><strong>{allCachedProducts.length?"当前筛选没有匹配商品":"暂无已保存的同步商品"}</strong><span>{allCachedProducts.length?"切换来源或清空搜索条件查看上次同步记录。":"首次成功同步后会保留商品快照；再次打开页面不自动同步或清空旧结果。"}</span></div></td></tr>}</tbody></table></div>
+     <p className={css.productSyncFootnote}>仅「同步商品」在真实接口接通后才会更新已保存快照。同步失败必须保留上一次成功结果；已保存商品不保证是实时状态。来源判定以店铺 ID、平台商品 ID 和已核实上传回执为准；没有对应回执的商品暂归为「商家原有 / 来源待核实」，不因商品名称相同就标记为硕米刊登。待刊登、已提交不等于已上架。</p>
     </section>
    </>:<>
     <section className={css.metrics}>{[["订单总数",0],["待处理订单",0],["发货中",0],["履约异常",0]].map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
