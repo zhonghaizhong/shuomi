@@ -1,5 +1,5 @@
 "use client";
-import {readShowcaseUploadTasks} from "../listing/showcase-upload-tasks";
+import {readShowcaseUploadTasks,persistShowcaseUploadTaskRecords,showcaseUploadTasksEvent} from "../listing/showcase-upload-tasks";
 import {listingDemoArtSet} from "../listing/showcase-listing-ai-images";
 
 /** Browser-only demonstration of the last successfully verified product sync.
@@ -56,15 +56,32 @@ export function saveVerifiedStoreProductSnapshot(snapshot:StoreProductSnapshot):
  */
 export function buildAdminStoreSyncDemo(org:string,store:string,platformStoreId:string):StoreProductSnapshot|null{
  if(org!=="SM-ENT-000001"||store!=="SIM-ADMIN-01"||platformStoreId!=="SIM-SHEIN-ADMIN-01")return null;
- const task=readShowcaseUploadTasks(org,"admin").find(t=>t.storeId===store&&t.id.startsWith("SHUOMI-AMZ-AI-5:")&&t.id.endsWith(":B0CFPJYX7P")&&t.productIds.length===1&&t.status==="模拟已提交"&&t.demoSubmission?.storeId===store&&t.demoSubmission.externalReceiptId===null&&t.demoSubmission.listingStatus==="已上架"&&t.demoSubmission.simulatedPlatformProductId&&t.demoSubmission.simulatedReceiptId&&t.demoProduct);
+ const task=readShowcaseUploadTasks(org,"admin").find(t=>t.storeId===store&&t.id.startsWith("SHUOMI-AMZ-AI-5:")&&t.id.endsWith(":B0CFPJYX7P")&&t.productIds.length===1&&t.status==="模拟已提交"&&t.demoSubmission?.storeId===store&&t.demoSubmission.externalReceiptId===null&&(t.demoSubmission.listingStatus==="已上架"||t.demoSubmission.listingStatus==="已下架")&&t.demoSubmission.simulatedPlatformProductId&&t.demoSubmission.simulatedReceiptId&&t.demoProduct);
  if(!task?.demoProduct||!task.demoSubmission)return null;
  const base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
  const photo=task.imageEdits?.default?.main?.[0]||task.demoProduct.optimizedImages[0];
  const imageUrl=photo&&/^(https?:\/\/|\/)/.test(photo)?photo:listingDemoArtSet("ereader")[0];
  const simulatedReceipt={storeId:task.storeId,platformProductId:task.demoSubmission.simulatedPlatformProductId!,taskId:task.id,id:task.demoSubmission.simulatedReceiptId!};
  const platformRows:StoreProductSnapshotRow[]=[
-  {platformProductId:simulatedReceipt.platformProductId,sku:"B0CFPJYX7P",name:task.textEdits?.title||task.demoProduct.optimizedName,imageUrl,platformStatus:"模拟已上架",price:"US$129.99",stock:36,origin:"unknown"},
+  {platformProductId:simulatedReceipt.platformProductId,sku:"B0CFPJYX7P",name:task.textEdits?.title||task.demoProduct.optimizedName,imageUrl,platformStatus:task.demoSubmission.listingStatus==="已下架"?"模拟已下架":"模拟已上架",price:"US$129.99",stock:36,origin:"unknown"},
   {platformProductId:"SIM-SHEIN-ADMIN-01-MERCHANT-0001",sku:"MERCHANT-TEE-BLK-M",name:"Classic Black Cotton Crew Neck T-Shirt",imageUrl:base+"/assets/store-sync-demo/merchant-black-cotton-tee.webp",platformStatus:"模拟已上架",price:"US$12.99",stock:143,origin:"unknown"}
  ];
  return {organizationId:org,storeId:store,platformStoreId,syncedAt:task.demoSubmission.publishedAt||task.demoSubmission.submittedAt,simulated:true,rows:platformRows.map(row=>row.platformProductId===simulatedReceipt.platformProductId&&simulatedReceipt.storeId===store?{...row,origin:"shuomi",demoUploadTaskId:simulatedReceipt.taskId,demoReceiptId:simulatedReceipt.id}:{...row,origin:"merchant"})};
+}
+
+/** Explicit local demo action; keep the last sync timestamp and all unrelated rows. */
+export function saveSimulatedStoreDelisting(snapshot:StoreProductSnapshot,ids:string[]):void{
+ if(snapshot.simulated!==true)throw Error("真实平台下架接口未接入");
+ const current=readStoreProductSnapshot(snapshot.organizationId,snapshot.storeId,snapshot.platformStoreId)??snapshot;
+ if(current.simulated!==true)throw Error("不能修改真实快照");
+ const targets=new Set(ids);
+ const rows=current.rows.map(r=>targets.has(r.platformProductId)&&r.platformStatus==="模拟已上架"?{...r,platformStatus:"模拟已下架"}:r);
+ saveVerifiedStoreProductSnapshot({...current,rows});
+ const tasks=readShowcaseUploadTasks(snapshot.organizationId,"admin");
+ const taskIds=new Set(rows.filter(r=>targets.has(r.platformProductId)&&r.platformStatus==="模拟已下架"&&r.demoUploadTaskId).map(r=>r.demoUploadTaskId));
+ if(snapshot.organizationId==="SM-ENT-000001"&&snapshot.storeId==="SIM-ADMIN-01"&&taskIds.size){
+ const next=tasks.map(t=>taskIds.has(t.id)&&t.storeId===snapshot.storeId&&t.demoSubmission?.listingStatus==="已上架"?{...t,demoSubmission:{...t.demoSubmission,listingStatus:"已下架" as const}}:t);
+ persistShowcaseUploadTaskRecords(snapshot.organizationId,"admin",next);
+ window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:snapshot.organizationId,memberId:"admin"}}));
+ }
 }

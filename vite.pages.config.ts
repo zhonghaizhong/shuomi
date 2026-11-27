@@ -84,6 +84,8 @@ const bundledAgentExamples = {
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
+    // Store synchronization fixtures are also in the main public tree.
+    await cp(`${here}/public/assets/store-sync-demo`,`${here}/dist-pages/assets/store-sync-demo`,{recursive:true});
     // Include the approved real-photography atlas; no external image host required.
     await cp(
       `${here}/public/assets/listing-ai-preview`,

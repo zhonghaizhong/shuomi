@@ -1,12 +1,12 @@
 "use client";
-import {useEffect,useState,type FormEvent} from "react";
+import {useEffect,useRef,useState,type FormEvent} from "react";
 import {Building2,Package,Truck,Plus,Search,ShieldCheck,ClipboardList} from "lucide-react";
 import css from "./showcase-store-center.module.css";
 import {useShowcaseSuite} from "../account/showcase-account-state";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
 import {demoStoreKey,readDemoStoreBindings,saveDemoStoreBindings,startDemoStoreService,demoStoreServiceActive,countConsumedStorePeriods,countPoolConsumedStorePeriods,type DemoStoreBinding} from "../store-binding-demo";
 import {useDemoPurchases} from "../showcase-purchases";
-import {readStoreProductSnapshot,saveVerifiedStoreProductSnapshot,buildAdminStoreSyncDemo} from "./store-product-snapshot-demo";
+import {readStoreProductSnapshot,saveVerifiedStoreProductSnapshot,buildAdminStoreSyncDemo,saveSimulatedStoreDelisting} from "./store-product-snapshot-demo";
 import {simulateApprovedKindleListing} from "../listing/showcase-upload-tasks";
 
 type Store=DemoStoreBinding;
@@ -128,6 +128,10 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [productKeyword,setProductKeyword]=useState("");
  const [productSyncNotice,setProductSyncNotice]=useState("");
  const [productSnapshotRevision,setProductSnapshotRevision]=useState(0);
+ const [selectedProducts,setSelectedProducts]=useState<string[]>([]);
+ const [productView,setProductView]=useState<string|null>(null);
+ const [delistProducts,setDelistProducts]=useState<string[]>([]);
+ const productModal=useRef<HTMLDialogElement>(null),productSelectAll=useRef<HTMLInputElement>(null);
  useEffect(()=>{const refresh=()=>setProductSnapshotRevision(n=>n+1);window.addEventListener("storage",refresh);window.addEventListener("shuomi:store-product-snapshot-updated",refresh);return()=>{window.removeEventListener("storage",refresh);window.removeEventListener("shuomi:store-product-snapshot-updated",refresh)}},[]);
  // Read the last verified snapshot from local browser storage. Opening this page
  // must never initiate a remote sync or mutate previously saved product rows.
@@ -154,6 +158,24 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const lastProductSync=productSnapshots.map(x=>x.snapshot.syncedAt).sort().at(-1);
  const allCachedProducts=productSnapshots.flatMap(x=>x.snapshot.rows.map(row=>({...row,store:x.store})));
  const cachedProducts=allCachedProducts.filter(row=>(productSource==="all"||row.origin===productSource)&&(!productKeyword.trim()||[row.name,row.sku,row.platformProductId].join(" ").toLowerCase().includes(productKeyword.trim().toLowerCase())));
+ const rowKey=(row:typeof allCachedProducts[number])=>JSON.stringify([row.store.id,row.platformProductId]);
+ const visibleKeys=[...new Set(cachedProducts.map(rowKey))];
+ const checkedKeys=selectedProducts.filter(k=>visibleKeys.includes(k));
+ const canDelist=(row:typeof allCachedProducts[number])=>row.platformStatus==="模拟已上架"&&productSnapshots.some(x=>x.store.id===row.store.id&&x.snapshot.simulated===true)&&demoStoreServiceActive(row.store)&&!row.store.connectionIssue;
+ const delistableKeys=[...new Set(cachedProducts.filter(r=>checkedKeys.includes(rowKey(r))&&canDelist(r)).map(rowKey))];
+ const viewedProduct=allCachedProducts.find(r=>rowKey(r)===productView);
+ useEffect(()=>{setSelectedProducts([]);setProductView(null);setDelistProducts([])},[organizationId,memberId,selectedProductStore?.id,productSource,productKeyword,pathname]);
+ useEffect(()=>{if(productSelectAll.current)productSelectAll.current.indeterminate=checkedKeys.length>0&&checkedKeys.length<visibleKeys.length},[checkedKeys.length,visibleKeys.length]);
+ useEffect(()=>{const d=productModal.current;if((productView||delistProducts.length)&&d&&!d.open)d.showModal();else if(!productView&&!delistProducts.length&&d?.open)d.close()},[productView,delistProducts.length]);
+ const closeProductModal=()=>{setProductView(null);setDelistProducts([])};
+ const confirmProductDelisting=()=>{
+  const targets=allCachedProducts.filter(r=>delistProducts.includes(rowKey(r))&&canDelist(r));
+  if(!targets.length){setProductSyncNotice("没有可下架的演示商品。");closeProductModal();return}
+  try{
+   for(const entry of productSnapshots){const ids=[...new Set(targets.filter(r=>r.store.id===entry.store.id).map(r=>r.platformProductId))];if(ids.length)saveSimulatedStoreDelisting(entry.snapshot,ids)}
+   setProductSyncNotice("模拟下架成功："+new Set(targets.map(rowKey)).size+" 款商品。未请求真实平台。");setSelectedProducts([]);closeProductModal();
+  }catch{setProductSyncNotice("模拟下架未完成，请检查浏览器存储后重试。");closeProductModal()}
+ };
  const cachedOriginCount=(origin:"merchant"|"shuomi")=>allCachedProducts.filter(row=>row.origin===origin).length;
  const [editing,setEditing]=useState<string|null>(null),[confirmDelete,setConfirmDelete]=useState<string|null>(null);
   const [inspecting,setInspecting]=useState<string|null>(null);
@@ -307,7 +329,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
      <div className={css.productSyncToolbar}>
       <div className={css.productCurrentStore}><span>当前店铺</span><strong>{selectedProductStore?selectedProductStore.name+" · "+selectedProductStore.region:"暂无已绑定店铺"}</strong></div>
       <button type="button" disabled={!eligibleProductStores.length} onClick={()=>{setStorePickerSearch("");setStorePickerRegion("全部站点");setStorePickerStatus("全部状态");setStorePickerAdvanced(false);setStorePickerPage(1);setStorePickerOpen(true)}}>选择店铺（{eligibleProductStores.length}）</button>
-      <button type="button" className={css.productSyncPrimary} disabled={!selectedProductStore} onClick={()=>{if(!selectedProductStore?.platformStoreId)return;const existing=readStoreProductSnapshot(organizationId,selectedProductStore.id,selectedProductStore.platformStoreId);const demo=buildAdminStoreSyncDemo(organizationId,selectedProductStore.id,selectedProductStore.platformStoreId);if(demo&&(!existing||existing.simulated)){if(!demoStoreServiceActive(selectedProductStore)||selectedProductStore.connectionIssue){setProductSyncNotice("店铺服务已到期或连接异常，已保留上次同步记录。");return}try{saveVerifiedStoreProductSnapshot({...demo,syncedAt:new Date().toISOString()});setProductSyncNotice("模拟同步成功：共 2 款商品，硕米刊登 1 款、商家原有 1 款。未请求真实平台。")}catch{setProductSyncNotice("模拟同步保存失败，已保留原有记录。")}return}setProductSyncNotice("当前未接入 SHEIN 真实商品同步接口；已保存的历史商品不会被清空。")}}>同步商品</button>
+      <button type="button" className={css.productSyncPrimary} disabled={!selectedProductStore} onClick={()=>{if(!selectedProductStore?.platformStoreId)return;const existing=readStoreProductSnapshot(organizationId,selectedProductStore.id,selectedProductStore.platformStoreId);const demo=buildAdminStoreSyncDemo(organizationId,selectedProductStore.id,selectedProductStore.platformStoreId);if(demo&&(!existing||existing.simulated)){if(!demoStoreServiceActive(selectedProductStore)||selectedProductStore.connectionIssue){setProductSyncNotice("店铺服务已到期或连接异常，已保留上次同步记录。");return}try{saveVerifiedStoreProductSnapshot({...demo,syncedAt:new Date().toISOString(),rows:demo.rows.map(row=>existing?.rows.some(old=>old.platformProductId===row.platformProductId&&old.platformStatus==="模拟已下架")?{...row,platformStatus:"模拟已下架"}:row)});setProductSyncNotice("模拟同步成功：共 2 款商品，硕米刊登 1 款、商家原有 1 款。未请求真实平台。")}catch{setProductSyncNotice("模拟同步保存失败，已保留原有记录。")}return}setProductSyncNotice("当前未接入 SHEIN 真实商品同步接口；已保存的历史商品不会被清空。")}}>同步商品</button>
       
      </div>
      {storePickerOpen?<div className={css.productPickerBackdrop} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setStorePickerOpen(false)}}>
@@ -350,11 +372,15 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       <input aria-label="搜索已同步商品" placeholder="搜索商品名称 / 平台商品 ID / SKU" value={productKeyword} onChange={e=>setProductKeyword(e.target.value)}/>
       <button type="button" onClick={()=>{setProductSource("all");setProductKeyword("")}}>重置</button>
      </div>
+     <div className={css.productBulkBar}><label><input type="checkbox" checked={visibleKeys.length>0&&checkedKeys.length===visibleKeys.length} disabled={!visibleKeys.length} onChange={e=>setSelectedProducts(e.target.checked?visibleKeys:[])}/>全选当前筛选商品</label><span>已选 {checkedKeys.length} 款</span><button type="button" disabled={!checkedKeys.length} onClick={()=>setSelectedProducts([])}>取消选择</button><button type="button" disabled={!delistableKeys.length} onClick={()=>setDelistProducts(delistableKeys)}>批量下架</button></div>
      <div className={css.productOriginInfo}>
       <div><strong>商家原有</strong><small>平台同步到商品，但没有匹配到经验证的硕米上传回执</small></div>
       <div><strong>硕米刊登</strong><small>平台商品 ID 与硕米上传任务、平台接收回执匹配成功</small></div>
      </div>
-     <div className={css.productDataTable}><table><thead><tr><th>商品信息</th><th>所属店铺</th><th>商品来源</th><th>平台状态</th><th>售价 / 库存</th><th>最近同步</th><th>操作</th></tr></thead><tbody>{cachedProducts.length?cachedProducts.map(row=><tr key={row.store.id+":"+row.platformProductId+":"+row.sku}><td><div className={css.productCachedIdentity}>{row.imageUrl?<img src={row.imageUrl} alt={row.name} loading="lazy"/>:null}<div><strong>{row.name}</strong><small>平台商品 ID：{row.platformProductId} · SKU：{row.sku}</small></div></div></td><td>{row.store.name}</td><td>{row.origin==="shuomi"?"硕米刊登":row.origin==="merchant"?"商家原有":"来源待核实"}</td><td>{row.platformStatus}</td><td>{row.price??"—"} / {row.stock??"—"}</td><td>{new Date(productSnapshots.find(x=>x.store.id===row.store.id)!.snapshot.syncedAt).toLocaleString("zh-CN",{hour12:false})}</td><td>查看</td></tr>):<tr><td colSpan={7}><div className={css.productDataEmpty}><Package size={30}/><h3>{allCachedProducts.length?"当前筛选没有匹配商品":"暂无已保存的同步商品"}</h3><span>{allCachedProducts.length?"切换来源或清空搜索条件查看上次同步记录。":"首次成功同步后会保留商品快照；再次打开页面不自动同步或清空旧结果。"}</span></div></td></tr>}</tbody></table></div>
+     <div className={css.productDataTable}><table><thead><tr><th><input ref={productSelectAll} type="checkbox" aria-label="全选商品" checked={visibleKeys.length>0&&checkedKeys.length===visibleKeys.length} disabled={!visibleKeys.length} onChange={e=>setSelectedProducts(e.target.checked?visibleKeys:[])}/></th><th>商品信息</th><th>所属店铺</th><th>商品来源</th><th>平台状态</th><th>售价 / 库存</th><th>最近同步</th><th>操作</th></tr></thead><tbody>{cachedProducts.length?cachedProducts.map(row=><tr key={row.store.id+":"+row.platformProductId+":"+row.sku}><td><input type="checkbox" aria-label={"选择商品 "+row.name} checked={checkedKeys.includes(rowKey(row))} onChange={e=>setSelectedProducts(p=>e.target.checked?[...new Set([...p,rowKey(row)])]:p.filter(k=>k!==rowKey(row)))}/></td><td><div className={css.productCachedIdentity}>{row.imageUrl?<img src={row.imageUrl} alt={row.name} loading="lazy" onError={e=>{e.currentTarget.style.display="none";e.currentTarget.parentElement?.setAttribute("data-image-missing","true")}}/>:null}<div><strong>{row.name}</strong><small>平台商品 ID：{row.platformProductId} · SKU：{row.sku}</small></div></div></td><td>{row.store.name}</td><td>{row.origin==="shuomi"?"硕米刊登":row.origin==="merchant"?"商家原有":"来源待核实"}</td><td>{row.platformStatus}</td><td>{row.price??"—"} / {row.stock??"—"}</td><td>{new Date(productSnapshots.find(x=>x.store.id===row.store.id)!.snapshot.syncedAt).toLocaleString("zh-CN",{hour12:false})}</td><td><div className={css.productRowActions}><button type="button" onClick={()=>setProductView(rowKey(row))}>查看</button><button type="button" disabled={!canDelist(row)} onClick={()=>setDelistProducts([rowKey(row)])}>{row.platformStatus==="模拟已下架"?"已下架":"下架"}</button></div></td></tr>):<tr><td colSpan={8}><div className={css.productDataEmpty}><Package size={30}/><h3>{allCachedProducts.length?"当前筛选没有匹配商品":"暂无已保存的同步商品"}</h3><span>{allCachedProducts.length?"切换来源或清空搜索条件查看上次同步记录。":"首次成功同步后会保留商品快照；再次打开页面不自动同步或清空旧结果。"}</span></div></td></tr>}</tbody></table></div>
+     <dialog ref={productModal} className={css.productOperationDialog} aria-label={delistProducts.length?"确认商品下架":"查看店铺商品"} onCancel={e=>{e.preventDefault();closeProductModal()}} onClick={e=>{if(e.target===e.currentTarget)closeProductModal()}}>
+      {delistProducts.length?<><header><h2>确认下架商品</h2><button type="button" onClick={closeProductModal}>关闭</button></header><p>确定将 {delistProducts.length} 款已上架演示商品下架？下架后保留商品、价格和库存记录，不删除数据，不会操作真实平台。</p><footer><button type="button" onClick={closeProductModal}>取消</button><button type="button" className={css.primary} onClick={confirmProductDelisting}>确认下架</button></footer></>:viewedProduct?<><header><h2>商品详情</h2><button type="button" onClick={closeProductModal}>关闭</button></header><div className={css.productOperationDetail}>{viewedProduct.imageUrl&&<img src={viewedProduct.imageUrl} alt={viewedProduct.name} onError={e=>{e.currentTarget.style.visibility="hidden"}}/>}<div><h3>{viewedProduct.name}</h3><dl className={css.detailList}>{[["所属店铺",viewedProduct.store.name],["平台商品 ID",viewedProduct.platformProductId],["SKU",viewedProduct.sku],["商品来源",viewedProduct.origin==="shuomi"?"硕米刊登":viewedProduct.origin==="merchant"?"商家原有":"来源待核实"],["平台状态",viewedProduct.platformStatus],["售价",viewedProduct.price??"未记录"],["库存",viewedProduct.stock??"未记录"]].map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl></div></div><footer><button type="button" onClick={closeProductModal}>关闭</button>{canDelist(viewedProduct)&&<button type="button" onClick={()=>{setDelistProducts([rowKey(viewedProduct)]);setProductView(null)}}>下架</button>}</footer></>:null}
+     </dialog>
      <p className={css.productSyncFootnote}>演示店铺支持模拟同步，真实商品快照仅在接口接通并成功同步后更新。同步失败必须保留上一次成功结果；已保存商品不保证是实时状态。来源判定以店铺 ID、平台商品 ID 和已核实上传回执为准；没有对应回执的商品暂归为「商家原有 / 来源待核实」，不因商品名称相同就标记为硕米刊登。待刊登、已提交不等于已上架。</p>
     </section>
    </>:<>
