@@ -30,6 +30,7 @@ export function ShowcaseGoalForm({stores,onCreateGoal,onClose}:{
  const [shopOpen,setShopOpen]=useState(false);
  useEffect(()=>{if(!shopOpen)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();setShopOpen(false)}};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[shopOpen]);
  const [search,setSearch]=useState("");
+ const [platform,setPlatform]=useState("全部平台");
  const [site,setSite]=useState("全部站点");
  const [type,setType]=useState("全部类型");
  const [page,setPage]=useState(1);
@@ -44,16 +45,19 @@ export function ShowcaseGoalForm({stores,onCreateGoal,onClose}:{
   for(const store of selected){const currency=currencyBySite(store.region)||"未配置币种";map.set(currency,[...(map.get(currency)||[]),store]);}
   return [...map.entries()];
  },[selected]);
- const siteOptions=[...new Set(available.map(s=>s.region))];
- const typeOptions=[...new Set(available.map(s=>s.type))];
- const filtered=available.filter(s=>(site==="全部站点"||s.region===site)&&(type==="全部类型"||s.type===type)&&
+ const platformOptions=[...new Set(available.map(s=>s.platform))];
+ const byPlatform=available.filter(s=>platform==="全部平台"||s.platform===platform);
+ const siteOptions=[...new Set(byPlatform.map(s=>s.region))];
+ const bySite=byPlatform.filter(s=>site==="全部站点"||s.region===site);
+ const typeOptions=[...new Set(bySite.map(s=>s.type))];
+ const filtered=bySite.filter(s=>(type==="全部类型"||s.type===type)&&
   (s.name+" "+s.region+" "+s.type+" "+(s.platformStoreId||"")).toLowerCase().includes(search.trim().toLowerCase()));
  const count=Math.max(1,Math.ceil(filtered.length/pageSize));
  const currentPage=Math.min(page,count);
  const visible=filtered.slice((currentPage-1)*pageSize,currentPage*pageSize);
  const selectedAllVisible=visible.length>0&&visible.every(s=>selectedIds.includes(s.id));
  const toggle=(id:string)=>setSelectedIds(previous=>previous.includes(id)?previous.filter(x=>x!==id):[...previous,id]);
- const resetFilters=()=>{setSearch("");setSite("全部站点");setType("全部类型");setPage(1)};
+ const resetFilters=()=>{setSearch("");setPlatform("全部平台");setSite("全部站点");setType("全部类型");setPage(1)};
  const save=(event:FormEvent<HTMLFormElement>)=>{
   event.preventDefault();setError("");
   if(!name.trim()){setError("请输入目标名称");return}
@@ -96,14 +100,22 @@ export function ShowcaseGoalForm({stores,onCreateGoal,onClose}:{
    <section role="dialog" aria-modal="true" aria-label="选择目标店铺" className={styles.goalPickerPanel}>
     <header><div><strong>选择目标店铺</strong><small>已选择 {selected.length} 家 · 共 {available.length} 家可选店铺</small></div><button aria-label="关闭店铺选择" type="button" onClick={()=>setShopOpen(false)}>×</button></header>
     <div className={styles.goalPickerFilters}>
-     <input aria-label="搜索目标店铺" placeholder="搜索店铺名称或平台ID" value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}}/>
-     <select aria-label="筛选站点" value={site} onChange={e=>{setSite(e.target.value);setPage(1)}}><option>全部站点</option>{siteOptions.map(v=><option key={v}>{v}</option>)}</select>
-     <select aria-label="筛选店铺类型" value={type} onChange={e=>{setType(e.target.value);setPage(1)}}><option>全部类型</option>{typeOptions.map(v=><option key={v}>{v}</option>)}</select>
-     <button type="button" onClick={resetFilters}>重置</button>
+     <label>平台<select aria-label="筛选平台" value={platform} onChange={e=>{setPlatform(e.target.value);setSite("全部站点");setType("全部类型");setPage(1)}}><option>全部平台</option>{platformOptions.map(v=><option key={v}>{v}</option>)}</select></label>
+     <label>站点<select aria-label="筛选站点" value={site} onChange={e=>{setSite(e.target.value);setType("全部类型");setPage(1)}}><option>全部站点</option>{siteOptions.map(v=><option key={v}>{v}</option>)}</select></label>
+     <label>店铺类型<select aria-label="筛选店铺类型" value={type} onChange={e=>{setType(e.target.value);setPage(1)}}><option>全部类型</option>{typeOptions.map(v=><option key={v}>{v}</option>)}</select></label>
+     <div className={styles.goalPickerSearch}><input aria-label="搜索目标店铺" placeholder="搜索店铺名称或平台ID" value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}}/><button type="button" onClick={resetFilters}>重置</button></div>
     </div>
     <div className={styles.goalPickerControls}><label><input type="checkbox" checked={selectedAllVisible} disabled={!visible.length} onChange={e=>{const ids=visible.map(s=>s.id);setSelectedIds(prev=>e.target.checked?[...new Set([...prev,...ids])]:prev.filter(id=>!ids.includes(id)))}}/>全选本页</label><span>已选 {selected.length} 家</span><button type="button" onClick={()=>setSelectedIds([])}>清空选择</button></div>
     <div className={styles.goalPickerResults}>
-     {visible.map(s=><label key={s.id} className={styles.goalPickerStore}><input type="checkbox" checked={selectedIds.includes(s.id)} onChange={()=>toggle(s.id)}/><span><strong>{s.name}</strong><small>{s.platform} · {s.region} · {s.type} · {currencyBySite(s.region)||"币种待确认"}</small></span></label>)}
+     <div className={styles.goalPickerStoreHead} aria-hidden="true"><span>选择</span><span>店铺名称</span><span>平台</span><span>站点</span><span>店铺类型</span><span>币种</span></div>
+     {visible.map(s=><label key={s.id} className={styles.goalPickerStore}>
+      <input type="checkbox" aria-label={"选择"+s.name} checked={selectedIds.includes(s.id)} onChange={()=>toggle(s.id)}/>
+      <span className={styles.goalPickerStoreName}><strong>{s.name}</strong><small title={s.platformStoreId||""}>ID：{s.platformStoreId||"待获取"}</small></span>
+      <span className={styles.goalPickerStoreMeta}>{s.platform}</span>
+      <span className={styles.goalPickerStoreMeta}>{s.region}</span>
+      <span className={styles.goalPickerStoreMeta}>{s.type}</span>
+      <span className={styles.goalPickerStoreCurrency}>{currencyBySite(s.region)||"待确认"}</span>
+     </label>)}
      {!visible.length?<p className={styles.goalHint}>没有匹配的已绑定店铺，请调整筛选条件。</p>:null}
     </div>
     <footer className={styles.goalPickerFooter}><span>第 {currentPage}/{count} 页 · 每页 {pageSize} 家</span><div><button type="button" disabled={currentPage===1} onClick={()=>setPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={currentPage===count} onClick={()=>setPage(p=>Math.min(count,p+1))}>下一页</button><button type="button" className={styles.primary} onClick={()=>{setShopOpen(false);setError("")}}>确定（{selected.length}）</button></div></footer>
