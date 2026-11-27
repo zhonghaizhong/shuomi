@@ -40,6 +40,10 @@ jobs:
             test -s "dist-pages/assets/pod-prints/v1/${image}.webp"
             node -e 'const fs=require("node:fs");const b=fs.readFileSync(process.argv[1]);if(b.toString("ascii",0,4)!=="RIFF"||b.toString("ascii",8,12)!=="WEBP")process.exit(1)' "dist-pages/assets/pod-prints/v1/${image}.webp"
           done
+      - name: Verify the archived single POD composite preview is published
+        run: |
+          test -s dist-pages/assets/pod-previews/v1/butterfly-peony-warm-sds-tee-black-s.webp
+          node -e 'const fs=require("node:fs");const b=fs.readFileSync("dist-pages/assets/pod-previews/v1/butterfly-peony-warm-sds-tee-black-s.webp");if(b.toString("ascii",0,4)!=="RIFF"||b.toString("ascii",8,12)!=="WEBP")process.exit(1)'
       - name: Verify generated own-product gallery is included in Pages artifact
         run: |
           test -s dist-pages/assets/own-product-ai-demo/six-products-48-images.webp
