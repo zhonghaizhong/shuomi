@@ -6,8 +6,16 @@ import {ShowcaseListingStageHeader} from "./listing/showcase-listing-stage-heade
 import {showcaseUploadBatchPreferenceKey,readShowcaseUploadTasks,showcaseUploadTasksEvent} from "./listing/showcase-upload-tasks";
 import {readOptimizedDatasets,optimizedDatasetsChanged} from "./showcase-optimized-datasets";
 import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./listing/showcase-batch-version-picker";
+import {parseListingPhoto,listingPhotoAtlasUrl} from "./listing/showcase-listing-ai-images";
 
-type Item={sku:string;name:string;batch:string;batchKey:string;site:string;platform:string;time:string;productId:string;reviewStatus:string;listingStatus:string;datasetId:string;receiptId:string;demo?:boolean;storeName?:string};
+type Item={sku:string;name:string;batch:string;batchKey:string;batchVersion:string;site:string;platform:string;time:string;productId:string;reviewStatus:string;listingStatus:string;datasetId:string;receiptId:string;demo?:boolean;storeName?:string;storeType?:string;image?:string;acceptanceStatus:string};
+const displayTime=(input:string)=>{const timestamp=Date.parse(input);if(!Number.isFinite(timestamp))return input.replace("T"," ").replace(/\\.\\d+Z$/,"");const date=new Date(timestamp);return date.toLocaleString("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).replace(/\\//g,"/")};
+function ProductThumb({src,name}:{src?:string;name:string}){
+ if(!src)return <div className={styles.productThumbPlaceholder} aria-label="暂无商品图片">暂无图片</div>;
+ const tile=parseListingPhoto(src);
+ if(tile)return <span className={styles.productThumb} role="img" aria-label={name+"商品图"} style={{backgroundImage:`url("${listingPhotoAtlasUrl()}")`,backgroundPosition:`${tile.col*20}% ${tile.row*25}%`,backgroundSize:"600% 500%"}}/>;
+ return <img className={styles.productThumb} src={src} alt={name+"商品图"} loading="lazy"/>;
+}
 
 export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:{organizationId:string;memberId:string;tabNavigation?:ReactNode}){
  const readPreferredBatch=()=>typeof window==="undefined"?"":sessionStorage.getItem(showcaseUploadBatchPreferenceKey(organizationId,memberId))||"";
@@ -38,18 +46,18 @@ export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:
   if(!batch.versions.some(v=>v.id===versionId))batch.versions.push({id:versionId,label:task.sourceVersionLabel||"原始版本",count:task.productIds.length,isOriginal:versionId==="original"});
  }
  const records:Item[]=datasets.flatMap(d=>d.products.map(p=>({
-   sku:p.skuCodes.join(" / ")||p.sourceProductId,name:p.name,batch:d.sourceBatchName,
+   sku:p.skuCodes.join(" / ")||p.sourceProductId,name:p.name,batch:d.sourceBatchName,batchVersion:"V"+d.version+" · 优化版本",
    batchKey:JSON.stringify([d.sourceKind,d.sourceBatchId,d.id]),site:d.site,platform:d.platform,
    time:d.acceptedAt||d.createdAt,productId:"未返回独立商品ID",reviewStatus:d.reviewStatus||"待审核",
-   listingStatus:d.listingStatus||"未上架",datasetId:d.id,receiptId:d.externalReceiptId
+   listingStatus:d.listingStatus||"未上架",datasetId:d.id,receiptId:d.externalReceiptId,storeName:d.storeName,image:p.images[0],acceptanceStatus:"平台已接收"
  })));
  const demoRecords:Item[]=localDemoSubmissions.flatMap(t=>t.productIds.map(id=>({
-  sku:id,name:t.demoProduct?.optimizedName||id,batch:t.batchName,
+  sku:id,name:t.textEdits?.title||t.demoProduct?.optimizedName||id,batch:t.batchName,batchVersion:t.sourceVersionLabel||"原始版本",
   batchKey:JSON.stringify([t.source,t.batchId,t.sourceVersionId||"original"]),
   platform:t.platform,site:t.region,time:t.demoSubmission?.submittedAt||t.createdAt,
   productId:"无平台商品ID（演示）",reviewStatus:"审核通过（演示）",
   listingStatus:"平台已接收（演示）",datasetId:"",receiptId:"",
-  demo:true,storeName:t.storeName
+  demo:true,storeName:t.storeName,storeType:t.storeType,image:t.demoProduct?.optimizedImages[0]||t.demoProduct?.sourceImages[0],acceptanceStatus:"平台已接收（演示）"
  })));
  const allRecords=[...demoRecords,...records];
  const chooseBatch=(id:string,versionId:string)=>{const key=JSON.stringify([pickSource,id,versionId]);setBatch(key);setAppliedBatch(key);setPage(1);sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),key);setBatchDialog(false)};
@@ -64,7 +72,7 @@ export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:
  },[selected]);
  const filtered=allRecords.filter(item=>
   (!appliedBatch||item.batchKey===appliedBatch)&&
-  (item.name+" "+item.sku+" "+item.batch+" "+item.productId).toLowerCase().includes(appliedQuery.toLowerCase())
+  (item.name+" "+item.sku+" "+item.batch+" "+item.productId+" "+(item.storeName||"")).toLowerCase().includes(appliedQuery.toLowerCase())
  );
  const pages=Math.max(1,Math.ceil(filtered.length/15));
  const actualPage=Math.min(page,pages);
@@ -87,9 +95,16 @@ export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:
    {activeBatch?<div className={styles.batchContext} role="status"><strong>当前批次：{activeBatch.name}</strong><span>{activeBatch.label} · 列表 {filtered.length} 件商品（含演示）</span></div>:null}
    <div className={styles.listTitle}><h2>已上传商品</h2><span>共 {filtered.length} 条记录</span></div>
    <div className={styles.tableScroll}><div className={styles.table}>
-    <div className={styles.columns}><span>商品名称 / SKU</span><span>批次</span><span>目标平台 / 站点</span><span>平台商品ID / 草稿</span><span>上传时间</span><span>审核 / 上架状态</span><span>操作</span></div>
-    {visible.map(item=><div className={styles.item} key={item.sku}>
-      <span><b>{item.name}</b><small>{item.sku}</small></span><span>{item.batch}</span><span>{item.platform}<small>{item.site}</small></span><span>{item.productId}</span><span>{item.time}</span><span className={styles.method}>{item.reviewStatus}<small>{item.listingStatus}</small></span><button type="button" onClick={()=>setSelected(item)}>查看商品</button>
+    <div className={styles.columns}><span>商品 / SKU</span><span>所属批次 / 版本</span><span>平台 / 站点</span><span>目标店铺 / 类型</span><span>平台商品ID</span><span>上传时间</span><span>审核 / 接收 / 上架</span><span>操作</span></div>
+    {visible.map(item=><div className={styles.item} key={item.datasetId+item.sku}>
+      <div className={styles.productCell}><ProductThumb src={item.image} name={item.name}/><div className={styles.productText}><b title={item.name}>{item.name}</b><small title={item.sku}>{item.sku}</small></div></div>
+      <div className={styles.stackCell}><b title={item.batch}>{item.batch}</b><small>{item.batchVersion}</small></div>
+      <div className={styles.stackCell}><b>{item.platform}</b><small>{item.site}</small></div>
+      <div className={styles.stackCell}><b title={item.storeName||"—"}>{item.storeName||"未提供"}</b><small>{item.storeType||"店铺类型未提供"}</small></div>
+      <div className={styles.stackCell}><span title={item.productId}>{item.productId}</span></div>
+      <span className={styles.dateCell}>{displayTime(item.time)}</span>
+      <div className={styles.statusCell}><span className={styles.statusSuccess}>{item.reviewStatus}</span><span className={styles.statusInfo}>{item.acceptanceStatus}</span><span className={styles.statusMuted}>{item.demo?"未上架（演示）":item.listingStatus}</span></div>
+      <button type="button" onClick={()=>setSelected(item)}>查看商品</button>
     </div>)}
    </div></div>
    {!filtered.length?<div className={styles.empty}>{activeBatch?"当前批次暂无已上传商品记录。":"暂无已上传商品记录。完成实际商品上传后，才会在这里显示记录。"}</div>:null}
@@ -97,6 +112,6 @@ export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:
   </section>
   <p className={styles.disclaimer}>规则：第三方平台确认接收商品后，即将本次优化内容保存到「我的数据 → 数据集」，初始状态为「待审核 / 未上架」；后续审核与上架状态独立同步。平台未接收、草稿未提交成功、提交失败或取消均不创建优化版本。原始资料、价格和库存始终不覆盖。模拟接收仅在当前浏览器演示，明确标注（演示），不会创建实际平台回执或平台商品 ID，也不计入真实上架。</p>
   {batchDialog?<ShowcaseBatchVersionPicker source={pickSource} batches={pickerBatches} selected={activeBatch&&activeBatch.source===pickSource?{batchId:JSON.parse(activeBatch.key)[1],versionId:activeBatch.version}:null} onSourceChange={setPickSource} onClose={()=>setBatchDialog(false)} onConfirm={v=>chooseBatch(v.batchId,v.versionId)}/>:null}
-  {selected&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null);}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看商品详情"><header><div><small>已上传 / 查看商品</small><h2>{selected.name}</h2></div><button type="button" ref={closeDetail} aria-label="关闭商品详情" onClick={()=>setSelected(null)}>×</button></header><dl>{[["SKU",selected.sku],["批次",selected.batch],["平台与站点",selected.platform+" · "+selected.site],["平台商品ID",selected.productId],["上传时间",selected.time],["优化版本",selected.demo?"演示原始版本":datasets.find(d=>d.id===selected.datasetId)?.name||selected.datasetId],["平台受理回执",selected.demo?"无（本地演示）":selected.receiptId],["目标店铺",selected.storeName||"—"],["审核状态",selected.reviewStatus],["上架状态",selected.listingStatus]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><p>{selected.demo?"这是演示平台接收状态，仅供流程演示；SHEIN 未实际接收商品，未返回任何真实回执或商品 ID。":"原提交版本与受理回执只读；审核、上架以单独的平台状态回执为准。"}</p><footer><button type="button" onClick={()=>setSelected(null)}>返回商品列表</button></footer></section></div>}
+  {selected&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null);}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看商品详情"><header><div><small>已上传 / 查看商品</small><h2>{selected.name}</h2></div><button type="button" ref={closeDetail} aria-label="关闭商品详情" onClick={()=>setSelected(null)}>×</button></header><div className={styles.dialogProduct}><ProductThumb src={selected.image} name={selected.name}/><div><strong>{selected.name}</strong><small>{selected.sku}</small></div></div><dl>{[["SKU",selected.sku],["所属批次",selected.batch],["商品版本",selected.batchVersion],["目标平台 / 站点",selected.platform+" · "+selected.site],["目标店铺",selected.storeName||"—"],["店铺类型",selected.storeType||"未提供"],["平台商品ID",selected.productId],["上传时间",displayTime(selected.time)],["优化数据版本",selected.demo?"未创建真实平台优化版本":datasets.find(d=>d.id===selected.datasetId)?.name||selected.datasetId],["平台受理回执",selected.demo?"无（本地演示）":selected.receiptId],["审核状态",selected.reviewStatus],["接收状态",selected.acceptanceStatus],["上架状态",selected.demo?"未上架（演示）":selected.listingStatus]].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><p>{selected.demo?"这是演示平台接收状态，仅供流程演示；SHEIN 未实际接收商品，未返回任何真实回执或商品 ID。":"原提交版本与受理回执只读；审核、上架以单独的平台状态回执为准。"}</p><footer><button type="button" onClick={()=>setSelected(null)}>返回商品列表</button></footer></section></div>}
  </div>;
 }
