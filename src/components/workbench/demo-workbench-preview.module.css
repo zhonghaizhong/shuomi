@@ -5081,3 +5081,6 @@
 
 /* Empty reports and library states must remain readable in both themes. */
 :global(.light) .libraryHubPreview .empty{color:#64748b}
+
+/* Matrix uses the shared bound-shop register without fabricating business metrics. */
+.matrixMetricAction{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;border:0;background:transparent;color:inherit;text-align:left;font:inherit;padding:0;cursor:pointer}.matrixMetricAction[aria-pressed="true"]{outline:2px solid #7367f0;outline-offset:5px;border-radius:4px}.matrixStoreIdentity{display:grid;gap:4px;min-width:0;text-align:left}.matrixStoreIdentity button{border:0;background:transparent;color:inherit;font:inherit;font-weight:650;text-align:left;padding:0;cursor:pointer;overflow-wrap:anywhere}.matrixStoreIdentity small{font-size:11px;opacity:.85}.matrixPager{display:flex;gap:8px}.matrixPager button{border:1px solid currentColor;background:transparent;color:inherit;border-radius:6px;padding:5px 10px}.matrixPager button:disabled{opacity:.4;cursor:not-allowed}

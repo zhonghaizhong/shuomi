@@ -31,6 +31,7 @@ import { ShowcaseTaskCenter } from "./showcase-task-center";
 import { ShowcaseProjectCenter } from "./showcase-project-center";
 import {ShowcaseReportCenter} from "./showcase-report-center";
 import { ShowcaseStoreCenter } from "./stores/showcase-store-center";
+import {readStoreProductSnapshot,buildAdminStoreSyncDemo} from "./stores/store-product-snapshot-demo";
 import {SectionPageTabs,sectionForPath} from "./console/section-page-tabs";
 
 type Row = { title: string; detail: string; value?: string; state?: string };
@@ -188,13 +189,17 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
   const [matrixSite,setMatrixSite]=useState("全部站点");
   const [matrixType,setMatrixType]=useState("全部类型");
   const [matrixDateOpen,setMatrixDateOpen]=useState(false);
+  const [matrixPage,setMatrixPage]=useState(1);
+  const [matrixStatus,setMatrixStatus]=useState("全部");
+  const [matrixRevision,setMatrixRevision]=useState(0);
+  useEffect(()=>{const refresh=()=>setMatrixRevision(n=>n+1);window.addEventListener("shuomi:store-product-snapshot-updated",refresh);window.addEventListener("shuomi:listing-upload-tasks-updated",refresh);window.addEventListener("focus",refresh);window.addEventListener("storage",refresh);return()=>{window.removeEventListener("shuomi:store-product-snapshot-updated",refresh);window.removeEventListener("shuomi:listing-upload-tasks-updated",refresh);window.removeEventListener("focus",refresh);window.removeEventListener("storage",refresh)}},[]);
   const [cockpitExtraFilters,setCockpitExtraFilters]=useState<Record<string,string>>({});
   const [matrixApplied,setMatrixApplied]=useState({from:"",to:"",platform:"全部平台",site:"全部站点",type:"全部类型",query:""});
   const resetCockpitExtraFilters=()=>{resetMatrixFilters();setCockpitExtraFilters({})};
   const resetMatrixFilters=()=>{
     setMatrixDateFrom("");setMatrixDateTo("");
     setMatrixPlatform("全部平台");setMatrixSite("全部站点");setMatrixType("全部类型");
-    setMatrixDateOpen(false);setQuery("");setNotice("");
+    setMatrixDateOpen(false);setQuery("");setNotice("");setMatrixPage(1);setMatrixStatus("全部");
     setMatrixApplied({from:"",to:"",platform:"全部平台",site:"全部站点",type:"全部类型",query:""});
   };
   const applyMatrixFilters=(area="店铺矩阵")=>{
@@ -206,7 +211,7 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
     }
     setMatrixApplied({from:matrixDateFrom,to:matrixDateTo,platform:matrixPlatform,site:matrixSite,type:matrixType,query});
     setMatrixDateOpen(false);
-    setNotice(`筛选条件已应用；${area}目前尚无已同步的业务数据。`);
+    setMatrixPage(1);setNotice(area==="店铺矩阵"?"已按条件筛选授权店铺；经营指标按所选周期显示。":`筛选条件已应用；${area}目前尚无已同步的业务数据。`);
   };
 
   const [notice, setNotice] = useState("");
@@ -216,6 +221,14 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
     try{const saved:unknown=JSON.parse(sessionStorage.getItem(goalKey)||"[]");return Array.isArray(saved)?saved.filter((v):v is DemoGoal=>Boolean(v&&typeof v==="object"&&"name"in v&&"storeIds"in v&&Array.isArray(v.storeIds))):[]}catch{return []}
   });
   useEffect(()=>{try{const saved:unknown=JSON.parse(sessionStorage.getItem(goalKey)||"[]");setDemoGoals(Array.isArray(saved)?saved.filter((v):v is DemoGoal=>Boolean(v&&typeof v==="object"&&"name"in v&&"storeIds"in v&&Array.isArray(v.storeIds))):[])}catch{setDemoGoals([])}},[goalKey]);
+  const matrixStores=bindingSummary.visible.filter(s=>Boolean(s.platformStoreId));
+  const matrixState=(s:typeof matrixStores[number])=>!demoStoreServiceActive(s)||s.connectionIssue?"异常":Date.parse(s.serviceExpiresAt||"")-Date.now()<=7*86400000?"需关注":"正常";
+  const matrixScope=matrixStores.filter(s=>(matrixApplied.platform==="全部平台"||s.platform===matrixApplied.platform)&&(matrixApplied.site==="全部站点"||s.region===matrixApplied.site)&&(matrixApplied.type==="全部类型"||s.type===matrixApplied.type));
+  const matrixMatches=matrixScope.filter(s=>(matrixStatus==="全部"||matrixState(s)===matrixStatus)&&[s.name,s.platformStoreId,s.owner,s.region].join(" ").toLowerCase().includes(matrixApplied.query.trim().toLowerCase()));
+  const matrixPages=Math.max(1,Math.ceil(matrixMatches.length/10));const matrixCurrentPage=Math.min(matrixPage,matrixPages);
+  const matrixRows=matrixMatches.slice((matrixCurrentPage-1)*10,matrixCurrentPage*10);
+  void matrixRevision;
+  const matrixSnapshot=(s:typeof matrixStores[number])=>{const saved=readStoreProductSnapshot(organizationId,s.id,s.platformStoreId!);return saved?.simulated&&saved.rows.some(r=>r.platformProductId==="SIM-SHEIN-ADMIN-01-B00008GKD3")?buildAdminStoreSyncDemo(organizationId,s.id,s.platformStoreId!):saved??buildAdminStoreSyncDemo(organizationId,s.id,s.platformStoreId!)};
   const [demoDrafts, setDemoDrafts] = useState<DemoDraft[]>([]);
   const [selectedDetail, setSelectedDetail] = useState<DemoDetail | null>(null);
   const [agentCategory, setAgentCategory] = useState("全部");
@@ -330,7 +343,7 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
       <section className={styles.matrixPanel}><div className={styles.cockpitUnifiedFilters} data-cockpit-filter="alerts" style={{display:"grid",gridTemplateColumns:"minmax(0,2fr) minmax(0,1.22fr) repeat(5,minmax(0,1fr)) 70px 70px",gridTemplateRows:"40px",alignItems:"center",gap:"8px",width:"100%",boxSizing:"border-box"}}><input type="search" aria-label="搜索经营预警" placeholder="搜索预警或店铺" value={query} onChange={event=>setQuery(event.target.value)}/>{cockpitDatePicker}{([["平台",["全部平台","SHEIN"]],["站点",["全部站点","美国站"]],["店铺类型",["全部店铺类型","全托店","半托店","自营店"]],["风险等级",["全部等级","高风险","中风险","低风险"]],["处理状态",["全部状态","待处理","处理中","已恢复"]]] as [string,string[]][]).map(([name,items])=><select key={name} aria-label={name} value={cockpitExtraFilters[name]??items[0]} onChange={event=>setCockpitExtraFilters(old=>({...old,[name]:event.target.value}))}>{items.map(option=><option key={option}>{option}</option>)}</select>)}<button type="button" onClick={resetCockpitExtraFilters}>重置</button><button type="button" className={styles.primary} onClick={()=>applyMatrixFilters("经营预警")}>确认</button></div><header><div><h2>经营预警列表</h2><p>接入业务后按风险优先级展示</p></div><span>共 0 条预警</span></header><div className={styles.alertTable}><div className={styles.alertColumns}><b>风险类型</b><b>预警事项</b><b>关键数据与影响</b><b>触发时间</b><b>处理状态</b><b>操作</b></div><p role="status">暂无经营预警</p></div><footer>当前显示 0 条预警</footer></section>
     </> : page.layout === "storeMatrix" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>运营驾驶舱 / 店铺矩阵</div><h1>店铺矩阵</h1><p>接入并授权店铺后汇总各店经营表现。</p></div></header>
-      <section className={styles.goalMetrics}>{[["0","店铺总数","尚无经营数据"],["0","正常店铺","待经营状态评估"],["0","需关注店铺","待经营状态评估"],["0","异常店铺","待经营状态评估"]].map(([value,label,hint],i)=><article key={label} data-step={i}><strong>{value}</strong><span><b>{label}</b><small>{hint}</small></span></article>)}</section>
+      <section className={styles.goalMetrics}>{[["全部","店铺总数","当前授权范围"],["正常","正常店铺","服务有效且连接正常"],["需关注","需关注店铺","服务期即将到期"],["异常","异常店铺","连接异常或服务到期"]].map(([status,label,hint],i)=><article key={label} data-step={i}><button type="button" className={styles.matrixMetricAction} aria-pressed={matrixStatus===status} onClick={()=>{setMatrixStatus(status);setMatrixPage(1)}}><strong>{matrixScope.filter(s=>status==="全部"||matrixState(s)===status).length}</strong><span><b>{label}</b><small>{hint}</small></span></button></article>)}</section>
       <section className={styles.matrixPanel}><div className={styles.matrixInlineFilters}>
        <input type="search" aria-label="搜索店铺名称" placeholder="搜索店铺名称" value={query} onChange={event=>setQuery(event.target.value)}/>
        <div className={styles.matrixTimePicker}>
@@ -339,13 +352,13 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
            <div className={styles.matrixDateRange}><label>开始日期<input type="date" aria-label="统计开始日期" value={matrixDateFrom} max={matrixDateTo||undefined} onChange={event=>setMatrixDateFrom(event.target.value)}/></label><label>结束日期<input type="date" aria-label="统计结束日期" value={matrixDateTo} min={matrixDateFrom||undefined} onChange={event=>setMatrixDateTo(event.target.value)}/></label><button type="button" className={styles.primary} onClick={()=>{if(matrixDateFrom&&matrixDateTo&&matrixDateFrom<=matrixDateTo){setMatrixDateOpen(false);setNotice("")}else setNotice("请选择正确的开始和结束日期。")}}>确定日期</button><button type="button" onClick={()=>{setMatrixDateFrom("");setMatrixDateTo("");setMatrixDateOpen(false);setNotice("")}}>清空日期</button></div>
          </div>:null}
        </div>
-       <select aria-label="平台" value={matrixPlatform} onChange={event=>setMatrixPlatform(event.target.value)}><option>全部平台</option><option>SHEIN</option></select>
-       <select aria-label="站点" value={matrixSite} onChange={event=>setMatrixSite(event.target.value)}><option>全部站点</option><option>美国站</option></select>
-       <select aria-label="店铺类型" value={matrixType} onChange={event=>setMatrixType(event.target.value)}><option>全部类型</option><option>全托店</option><option>半托店</option><option>自营店</option></select>
+       <select aria-label="平台" value={matrixPlatform} onChange={event=>setMatrixPlatform(event.target.value)}><option>全部平台</option>{[...new Set(matrixStores.map(s=>s.platform))].map(x=><option key={x}>{x}</option>)}</select>
+       <select aria-label="站点" value={matrixSite} onChange={event=>setMatrixSite(event.target.value)}><option>全部站点</option>{[...new Set(matrixStores.map(s=>s.region))].map(x=><option key={x}>{x}</option>)}</select>
+       <select aria-label="店铺类型" value={matrixType} onChange={event=>setMatrixType(event.target.value)}><option>全部类型</option>{[...new Set(matrixStores.map(s=>s.type))].map(x=><option key={x}>{x}</option>)}</select>
 
        <button type="button" onClick={resetMatrixFilters}>重置</button>
        <button type="button" className={styles.primary} onClick={()=>applyMatrixFilters()}>确认</button>
-     </div><header><div><h2>店铺经营表现</h2><p>同周期经营指标与状态 · {matrixApplied.from&&matrixApplied.to?`${matrixApplied.from} 至 ${matrixApplied.to}`:"全部日期"}</p></div><button onClick={()=>chooseAction("判定说明")}>判定说明</button></header><div className={styles.matrixTable}><div className={styles.matrixColumns}><b>店铺</b><b>平台 · 站点</b><b>成交金额</b><b>成交订单</b><b>预估净利润</b><b>预估净利率</b><b>订单环比</b><b>经营状态</b></div><p role="status">暂无店铺经营数据，请先完成店铺授权及业务同步。</p></div><footer>共 0 家店铺 <span>待真实业务接入后统计</span></footer></section>
+     </div><header><div><h2>店铺经营表现</h2><p>同周期经营指标与状态 · {matrixApplied.from&&matrixApplied.to?`${matrixApplied.from} 至 ${matrixApplied.to}`:"全部日期"}</p></div><button onClick={()=>viewDetail({title:"判定说明",description:"当前状态仅按店铺服务及连接判断：正常为服务有效、连接正常且剩余超过7天；需关注为7天内到期；异常为连接异常或已到期。经营订单、成交额、净利润及环比尚无已同步事实，不以商品售价和库存推算。目标为现有草稿，不代表已经生效。",state:"店铺服务状态"})}>判定说明</button></header><div className={styles.matrixTable}><div className={styles.matrixColumns}><b>店铺</b><b>平台 · 站点</b><b>成交金额</b><b>成交订单</b><b>预估净利润</b><b>预估净利率</b><b>订单环比</b><b>经营状态</b></div>{matrixRows.map(s=>{const snapshot=matrixSnapshot(s);const goalCount=demoGoals.filter(g=>g.storeIds.includes(s.id)).length;const state=matrixState(s);return <div className={styles.matrixRow} key={s.id}><div className={styles.matrixStoreIdentity}><button type="button" onClick={()=>viewDetail({title:s.name,description:[s.platform+" · "+s.region+" · "+s.type,"负责人："+(s.owner||"未分配"),"平台店铺 ID："+s.platformStoreId,"服务到期："+(s.serviceExpiresAt?new Date(s.serviceExpiresAt).toLocaleDateString("zh-CN"):"待核实"),"商品："+(snapshot?snapshot.rows.length+" 款 · "+snapshot.rows.filter(r=>/^(模拟)?已上架$/.test(r.platformStatus)).length+" 款已上架"+(snapshot.simulated?"（模拟）":""):"尚未同步"),"当前账号目标草稿："+goalCount+" 项","经营数据尚未同步"].join("；"),state})}>{s.name}</button><small>{s.owner||"未分配"} · {s.type}</small><small>{snapshot?snapshot.rows.length+" 款商品":"商品待同步"} · {goalCount} 项目标草稿</small></div><span>{s.platform} · {s.region}</span><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span><b data-status={state} title={s.connectionIssue||"服务与连接状态，非利润评估"}>{state}</b></div>})}{!matrixRows.length&&<p role="status">当前筛选范围暂无授权店铺。</p>}</div><footer><span>共 {matrixMatches.length} 家店铺 · 第 {matrixCurrentPage} / {matrixPages} 页 · 经营指标待同步</span><div className={styles.matrixPager}><button type="button" disabled={matrixCurrentPage<=1} onClick={()=>setMatrixPage(matrixCurrentPage-1)}>上一页</button><button type="button" disabled={matrixCurrentPage>=matrixPages} onClick={()=>setMatrixPage(matrixCurrentPage+1)}>下一页</button></div></footer></section>
     </> : page.layout === "goals" ? <>
       <header className={styles.header}><div><div className={styles.breadcrumb}>运营驾驶舱 / 目标管理</div><h1>目标管理</h1><p>为不同店铺、指标和周期建立独立目标，后续通过真实经营数据跟踪。</p></div><button className={styles.primary} onClick={()=>chooseAction("新建目标")}>新建目标</button></header>
       <section className={styles.goalMetrics}>{[[String(demoGoals.length),"全部目标","当前新建的目标"],["0","已生效","尚未关联业务"],[String(demoGoals.length),"草稿","等待业务接入"]].map(([value,label,hint],i)=><article key={label} data-step={i}><strong>{value}</strong><span><b>{label}</b><small>{hint}</small></span></article>)}</section>
