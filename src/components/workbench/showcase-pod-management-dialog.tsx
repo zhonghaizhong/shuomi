@@ -198,14 +198,24 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
        const focused=variants.find(v=>v.sku===(focusedApprovalSkus[p.id]??picked[0]))??variants[0];
        const matchingPreview=archivedPreviews.find(x=>x.productId===p.id&&(x.scope==="sku"&&x.sku===focused?.sku||x.scope==="color"&&x.color===focused?.color));
        const sameColorPhoto=variants.find(v=>v.color===focused?.color&&(v.image||v.images?.[0]));
-       const displayedPhoto=matchingPreview?.src??focused?.image??focused?.images?.[0]??sameColorPhoto?.image??sameColorPhoto?.images?.[0]??p.images?.[0];
-       const photoSource=matchingPreview?"AI 效果预览":focused?.image||focused?.images?.[0]?"SKU 原始商品图":sameColorPhoto?"同颜色原始商品图":p.images?.[0]?"原始商品主图":"暂无图片";
+       // Original artwork and generated previews must never substitute for one another.
+       const originalPhoto=focused?.image??focused?.images?.[0]??sameColorPhoto?.image??sameColorPhoto?.images?.[0]??p.images?.[0];
+       const originalSource=focused?.image||focused?.images?.[0]?"SKU 原始商品图":sameColorPhoto?"同颜色原始商品图":p.images?.[0]?"原始商品主图":"暂无原图";
+       const variantLabel=focused?focused.color+" / "+focused.size:"未选择规格";
        return <section key={p.id} className={css.approvalProductRow}>
         <div className={css.approvalProductIdentity}>
-         <div className={css.approvalFocusedPhoto}>{displayedPhoto?<img src={displayedPhoto} alt={p.name+" · "+(focused?.color??"")+" / "+(focused?.size??"")+" · "+photoSource} loading="lazy"/>:<div className={css.productPlaceholder}>暂无图片</div>}<span>{photoSource}</span></div>
-         <div><strong title={p.name}>{p.name}</strong><small>商品编号：{p.id}</small><small>已选 {picked.length} / {variants.length} SKU</small>{focused?<><small>当前查看：{focused.color} / {focused.size}</small><small>SKU：{focused.sku}</small></>:null}</div>
+         <strong className={css.approvalVisualTitle}>原始商品图</strong>
+         <button type="button" className={css.approvalFocusedPhoto} disabled={!originalPhoto} onClick={()=>openProductZoom(originalPhoto,p.name+" · "+variantLabel+" · "+originalSource)} aria-label={"查看"+p.name+"原图"}>
+          {originalPhoto?<img src={originalPhoto} alt={p.name+" · "+variantLabel+" · "+originalSource} loading="lazy"/>:<span className={css.productPlaceholder}>暂无原图</span>}
+         </button>
+         <small className={css.approvalImageSource}>{originalSource}</small>
+         <div><strong title={p.name}>{p.name}</strong><small>商品编号：{p.id}</small><small>已选 {picked.length} / {variants.length} SKU</small>{focused?<><small>当前查看：{variantLabel}</small><small title={focused.sku}>SKU：{focused.sku}</small></>:null}</div>
         </div>
         <PodCompactSkuOptions product={p} selected={picked} focusedSku={focused?.sku??""} readOnly={approvalMode==="全部通过"} onFocus={sku=>setFocusedApprovalSkus(prev=>({...prev,[p.id]:sku}))} onChange={skus=>setApprovalDraft(prev=>({...prev,[p.id]:skus}))}/>
+        <div className={css.approvalPreviewArea}>
+         <strong className={css.approvalVisualTitle}>产品效果预览</strong>
+         {matchingPreview?<><button type="button" className={css.approvalPreviewImage} onClick={()=>openProductZoom(matchingPreview.src,p.name+" · "+variantLabel+" · 已生成效果预览")} aria-label={"放大查看"+variantLabel+"产品效果预览"}><img src={matchingPreview.src} alt={p.name+" · "+variantLabel+" · AI 效果预览"} loading="lazy"/></button><small>已生成预览 · 点击放大</small></>:<div className={css.approvalNoPreview}><span>该规格暂无效果预览</span><small>可直接审核，不必生成图片</small></div>}
+        </div>
        </section>;
       })}</div>
      </div>
