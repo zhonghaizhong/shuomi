@@ -107,7 +107,7 @@ export function simulateFiveOwnProductIntakes(org:string,member:string,batchId:s
 export function installSixProductOptimizationDemo(org:string,member:string):{created:number;pending:number;review:number;alreadyInstalled:boolean}{
  if(typeof window==="undefined"||!org||!member)throw Error("演示账号信息不完整");
  const marker="shuomi:own-product-six-demo-v2:"+org+":"+member;
- if((()=>{try{return localStorage.getItem(marker)==="ready"||sessionStorage.getItem(marker)==="ready"}catch{return false}})()&&readOwnProducts(org,member).some(p=>p.id.startsWith("OWN-SIX-DEMO-")))return {created:0,pending:0,review:0,alreadyInstalled:true};
+ if((()=>{try{return localStorage.getItem(marker)==="ready"||sessionStorage.getItem(marker)==="ready"}catch{return false}})()&&["SH-OPT-TEE-001","SH-OPT-HOOD-002","SH-OPT-TOTE-003","SH-OPT-BOTTLE-004","SH-OPT-MUG-005","SH-OPT-TRAVEL-006"].every(code=>readOwnProducts(org,member).some(p=>p.id==="OWN-SIX-DEMO-"+code)))return {created:0,pending:0,review:0,alreadyInstalled:true};
  const existingBatches=readOwnProductBatches(org,member);
  const batch=existingBatches.find(b=>b.name==="自有商品测试批次");
  // Prepare in-memory first; only replace data after the full new batch is constructed.
@@ -136,14 +136,15 @@ export function installSixProductOptimizationDemo(org:string,member:string):{cre
  if(created.filter(x=>x.status==="待审核").length!==4||created.filter(x=>x.status==="入库待完善").length!==2)throw Error("模拟商品分流数量异常");
  const prior=readOwnProducts(org,member);
  // Only replace unfinished products IN THE NAMED DEMO BATCH; preserve all real/other-batch records and approved data.
- const createdIds=new Set(created.map(p=>p.id));
- const retained=prior.filter(p=>!createdIds.has(p.id));
+ const existingIds=new Set(prior.map(p=>p.id));
+ const missingFixtures=created.filter(p=>!existingIds.has(p.id));
+ const retained=prior;
  const templates=readAgentPreviewTemplates(org,member,"商品优化智能体");
  const needsTemplate=!templates.some(t=>t.name==="测试模板");
  const nextBatches=batch?existingBatches:[{id:batchId,name:"自有商品测试批次",createdAt:now,productCount:0},...existingBatches];
  // Persist product data before writing marker. Failures must not report success.
  if(!batch)writeArray(batchKey(org,member),nextBatches);
- writeArray(productKey(org,member),[...created,...retained]);
+ writeArray(productKey(org,member),[...missingFixtures,...retained]);
  if(needsTemplate)writeAgentPreviewTemplates(org,member,"商品优化智能体",[...templates,{
   id:"own-six-demo-test-template",name:"测试模板",createdAt:now,config:{
    skills:["标题结构整理","商品卖点提炼","信息完整性检测"],knowledge:[],
@@ -153,7 +154,7 @@ export function installSixProductOptimizationDemo(org:string,member:string):{cre
  try{localStorage.setItem(marker,"ready")}catch{/* fixture remains identifiable by stable ids */}
  try{sessionStorage.setItem(marker,"ready")}catch{/* durable marker may be present */}
  notify(org,member);
- return {created:6,pending:2,review:4,alreadyInstalled:false};
+ return {created:missingFixtures.length,pending:missingFixtures.filter(p=>p.status==="入库待完善").length,review:missingFixtures.filter(p=>p.status==="待审核").length,alreadyInstalled:false};
 }
 
 
@@ -389,6 +390,15 @@ export function installPodApparelIntakeDemo(org:string,member:string):{batchId:s
  return {batchId:batch.id,created,approved:readOwnProducts(org,member).filter(p=>p.batchId===batch.id&&p.status==="已入库"&&p.skus.some(s=>s.skuCode?.startsWith("POD-DEMO-"))).length};
 }
 
+/** Recover only checked-in demo fixtures; does not claim to restore lost user uploads.
+ * Existing records are never replaced, including partially completed review work.
+ */
+export function recoverOwnProductShowcaseFixtures(org:string,member:string){
+ if(org!=="SM-ENT-000001"||member!=="admin")throw Error("仅允许恢复默认演示企业管理员的模拟商品");
+ const six=installSixProductOptimizationDemo(org,member);
+ const pod=installPodApparelIntakeDemo(org,member);
+ return {created:six.created+pod.created,six:six.created,pod:pod.created};
+}
 const podAssetBase=()=> (typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"")+"/assets/pod-demo/";
 const podImageNames=new Set(["gildan-18500-front_sport-grey.webp","gildan-18500-back_sport-grey.webp","gildan-18500-plain_purple.webp","gildan-5000-front_black.webp","gildan-5000-back_black.webp","gildan-5000-plain_azalea.webp"]);
 function localizePodImages(skus:OwnProductSku[]):OwnProductSku[]{return skus.map(s=>s.skuCode?.startsWith("POD-DEMO-")?{...s,images:s.images.map(src=>{const name=src.split("/").at(-1)??"";return podImageNames.has(name)?podAssetBase()+name:src})}:s)}
