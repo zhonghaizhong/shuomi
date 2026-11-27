@@ -360,3 +360,5 @@
 .assetCard .cardActions{flex-wrap:wrap}
 .assetCard .cardActions button{min-width:0;white-space:nowrap}
 .podActionDialog>footer button:disabled{opacity:.42;cursor:not-allowed}
+
+.approvalAllSkuSummary{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.approvalAllSkuSummary span{padding:7px 10px;border:1px solid var(--podassets-line,#52576e);background:color-mix(in srgb,#7367f0 12%,transparent);border-radius:7px;font-size:12px;color:var(--podassets-ink,#cfcde4)}
