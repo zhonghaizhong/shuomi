@@ -24,7 +24,7 @@ const readArray=(key:string):unknown[]=>{
  let durable:unknown[]=[],legacy:unknown[]=[];
  try{durable=parseArray(localStorage.getItem(key))}catch{/* storage may be disabled */}
  try{legacy=parseArray(sessionStorage.getItem(key))}catch{/* storage may be disabled */}
- const merged=[...legacy,...durable];
+ const merged=[...durable,...legacy];
  const seen=new Set<string>();
  const records=merged.filter(item=>{
   if(!item||typeof item!=="object"||typeof (item as {id?:unknown}).id!=="string")return false;
@@ -107,7 +107,7 @@ export function simulateFiveOwnProductIntakes(org:string,member:string,batchId:s
 export function installSixProductOptimizationDemo(org:string,member:string):{created:number;pending:number;review:number;alreadyInstalled:boolean}{
  if(typeof window==="undefined"||!org||!member)throw Error("演示账号信息不完整");
  const marker="shuomi:own-product-six-demo-v2:"+org+":"+member;
- if((()=>{try{return localStorage.getItem(marker)==="ready"||sessionStorage.getItem(marker)==="ready"}catch{return false}})())return {created:0,pending:0,review:0,alreadyInstalled:true};
+ if((()=>{try{return localStorage.getItem(marker)==="ready"||sessionStorage.getItem(marker)==="ready"}catch{return false}})()&&readOwnProducts(org,member).some(p=>p.id.startsWith("OWN-SIX-DEMO-")))return {created:0,pending:0,review:0,alreadyInstalled:true};
  const existingBatches=readOwnProductBatches(org,member);
  const batch=existingBatches.find(b=>b.name==="自有商品测试批次");
  // Prepare in-memory first; only replace data after the full new batch is constructed.
