@@ -205,13 +205,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
          <div className={css.approvalFocusedPhoto}>{displayedPhoto?<img src={displayedPhoto} alt={p.name+" · "+(focused?.color??"")+" / "+(focused?.size??"")+" · "+photoSource} loading="lazy"/>:<div className={css.productPlaceholder}>暂无图片</div>}<span>{photoSource}</span></div>
          <div><strong title={p.name}>{p.name}</strong><small>商品编号：{p.id}</small><small>已选 {picked.length} / {variants.length} SKU</small>{focused?<><small>当前查看：{focused.color} / {focused.size}</small><small>SKU：{focused.sku}</small></>:null}</div>
         </div>
-        <div className={css.approvalSkuTableWrap}><table className={css.approvalSkuTable}>
-         <thead><tr><th>选择</th><th>颜色</th><th>尺码</th><th>SKU 编码</th></tr></thead>
-         <tbody>{variants.map(v=><tr key={v.sku} onClick={()=>setFocusedApprovalSkus(prev=>({...prev,[p.id]:v.sku}))} className={[picked.includes(v.sku)?css.approvalSkuChecked:"",focused?.sku===v.sku?css.approvalSkuFocused:""].filter(Boolean).join(" ")}>
-          <td><input type="checkbox" aria-label={"选择 "+p.name+" · "+v.color+" / "+v.size+" · "+v.sku} disabled={approvalMode==="全部通过"} checked={picked.includes(v.sku)} onChange={e=>{setFocusedApprovalSkus(prev=>({...prev,[p.id]:v.sku}));setApprovalDraft(prev=>({...prev,[p.id]:e.target.checked?[...(prev[p.id]??[]),v.sku]:(prev[p.id]??[]).filter(x=>x!==v.sku)}))}}/></td>
-          <td>{v.color}</td><td>{v.size}</td><td>{v.sku}</td>
-         </tr>)}</tbody>
-        </table></div>
+        <PodCompactSkuOptions product={p} selected={picked} focusedSku={focused?.sku??""} readOnly={approvalMode==="全部通过"} onFocus={sku=>setFocusedApprovalSkus(prev=>({...prev,[p.id]:sku}))} onChange={skus=>setApprovalDraft(prev=>({...prev,[p.id]:skus}))}/>
        </section>;
       })}</div>
      </div>
@@ -247,6 +241,37 @@ function LinkedPodProduct({product,onZoom,onOpenPreview,onGeneratePreview,previe
    </div>
   </div>
  </article>;
+}
+
+/** Compact SKU selector: one row per colour, not one tall table row per SKU.
+ * Choices are kept by SKU ID, not colour/size labels, so special variants stay distinct.
+ */
+function PodCompactSkuOptions({product,selected,focusedSku,readOnly,onFocus,onChange}:{product:DemoCollectedProduct;selected:string[];focusedSku:string;readOnly:boolean;onFocus:(sku:string)=>void;onChange:(skus:string[])=>void}){
+ const [page,setPage]=useState(1);
+ const variants=product.variantDetails??[];
+ const colors=[...new Set(variants.map(v=>v.color))];
+ const perPage=5;
+ const pages=Math.max(1,Math.ceil(colors.length/perPage));
+ const currentPage=Math.min(page,pages);
+ const visibleColors=colors.slice((currentPage-1)*perPage,currentPage*perPage);
+ const toggle=(sku:string)=>{
+  onFocus(sku);
+  if(readOnly)return;
+  onChange(selected.includes(sku)?selected.filter(id=>id!==sku):[...selected,sku]);
+ };
+ return <div className={css.compactSkuSelector}>
+  <div className={css.compactSkuHeader}><strong>颜色 / 规格</strong><span>已选 {selected.length} / {variants.length} SKU</span>{!readOnly?<button type="button" onClick={()=>onChange(variants.map(v=>v.sku))}>全选本商品</button>:null}{!readOnly?<button type="button" onClick={()=>onChange([])}>清空</button>:null}</div>
+  <div className={css.compactSkuRows}>{visibleColors.map(color=>{
+   const options=variants.filter(v=>v.color===color);
+   const count=options.filter(v=>selected.includes(v.sku)).length;
+   return <div className={css.compactColorRow} key={color}>
+    <div className={css.compactColorName}><strong title={color}>{color}</strong><small>{count}/{options.length} 已选</small></div>
+    <div className={css.compactSizeScroll} role="group" aria-label={product.name+" · "+color+" 规格"}>{options.map(v=><button type="button" key={v.sku} title={v.sku} aria-label={v.color+" / "+v.size+" · "+v.sku} aria-pressed={selected.includes(v.sku)} className={[selected.includes(v.sku)?css.compactSkuSelected:"",focusedSku===v.sku?css.compactSkuFocused:""].filter(Boolean).join(" ")} onClick={()=>toggle(v.sku)}>{v.size}</button>)}</div>
+   </div>;
+  })}</div>
+  {colors.length>perPage?<div className={css.compactSkuPagination}><span>颜色 {colors.length} 种 · 第 {currentPage}/{pages} 页</span><button type="button" disabled={currentPage===1} onClick={()=>setPage(n=>Math.max(1,n-1))}>上一页</button><button type="button" disabled={currentPage===pages} onClick={()=>setPage(n=>Math.min(pages,n+1))}>下一页</button></div>:null}
+  <small className={css.compactSkuHelp}>点击尺码可选择或取消 SKU，并切换左侧对应的商品图片；完整 SKU 编码显示在左侧。</small>
+ </div>;
 }
 
 type PodPreviewRecord={
