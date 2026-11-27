@@ -282,3 +282,10 @@
 .savedPreview strong{font-size:13px;overflow-wrap:anywhere}
 .savedPreview small{font-size:12px;color:var(--podassets-muted,#acabc1);overflow-wrap:anywhere}
 @media(max-width:700px){.savedPreviewImage{width:100px}}
+
+/* SKU-aware generated-preview action alongside optional generation. */
+.relatedProduct .previewActions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:7px;margin-left:auto}
+.relatedProduct .previewActions button{padding:8px 10px;min-height:34px;white-space:nowrap}
+.relatedProduct .previewActions button:disabled{opacity:.42;cursor:not-allowed}
+.relatedProduct .previewActions .generatePreview{margin-left:0}
+@media(max-width:700px){.relatedProduct .previewActions{justify-content:flex-start;margin-left:0}}
