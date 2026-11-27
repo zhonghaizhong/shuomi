@@ -362,3 +362,69 @@
 .podActionDialog>footer button:disabled{opacity:.42;cursor:not-allowed}
 
 .approvalAllSkuSummary{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.approvalAllSkuSummary span{padding:7px 10px;border:1px solid var(--podassets-line,#52576e);background:color-mix(in srgb,#7367f0 12%,transparent);border-radius:7px;font-size:12px;color:var(--podassets-ink,#cfcde4)}
+
+/* Shared wide POD review modals: horizontal content, centered and capped by viewport. */
+.podActionDialog.podWideDialog{
+ width:min(1320px,calc(100vw - 48px));max-width:calc(100vw - 48px);
+ max-height:min(88dvh,900px);min-height:0;box-sizing:border-box;
+ overflow:hidden;padding:18px 20px;gap:12px;
+}
+.podWideDialog>header{flex:none;border-bottom:1px solid var(--podassets-line,#52576e);padding-bottom:12px}
+.podWideDialog>footer{flex:none}
+.podWideDialog .approvalPrintInfo{display:flex;gap:12px;align-items:center;min-height:70px;padding:8px 10px;flex:none;border:1px solid var(--podassets-line,#52576e);border-radius:9px}
+.podWideDialog .approvalPrintInfo img{width:63px;height:63px;object-fit:cover;border-radius:6px;background:#eee}
+.podWideDialog .approvalPrintInfo>div{display:grid;gap:5px;min-width:0}
+.podWideDialog .approvalPrintInfo strong{font-size:13px}
+.podWideDialog .approvalPrintInfo small{color:var(--podassets-muted,#acabc1);font-size:11px}
+.podWideDialog .approvalToolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px}
+.podWideDialog .approvalToolbar>strong{font-size:14px}
+.podWideDialog .approvalToolbar>span{color:var(--podassets-muted,#acabc1);flex:1}
+.podWideDialog .approvalWorkspace{display:grid;grid-template-columns:minmax(0,2.55fr) minmax(230px,.85fr);gap:12px;min-height:0;flex:1;overflow:hidden}
+.podWideDialog .approvalProducts{display:grid;gap:10px;align-content:start;overflow:auto;max-height:none;padding:0 3px 2px 0;min-height:0}
+.podWideDialog .approvalProductRow{display:grid;grid-template-columns:minmax(200px,.8fr) minmax(0,1.7fr);gap:12px;align-items:start;border:1px solid var(--podassets-line,#52576e);border-radius:9px;padding:10px}
+.podWideDialog .approvalProductIdentity{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:center;min-width:0}
+.podWideDialog .approvalProductIdentity>img{width:96px;height:116px;object-fit:cover;border-radius:7px;background:#eee}
+.podWideDialog .approvalProductIdentity>div{display:grid;gap:7px;min-width:0}
+.podWideDialog .approvalProductIdentity strong{font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.podWideDialog .approvalProductIdentity small{font-size:11px;line-height:1.4;color:var(--podassets-muted,#acabc1);overflow-wrap:anywhere}
+.podWideDialog .approvalSkuTableWrap{min-width:0;overflow-x:auto;border:1px solid var(--podassets-line,#52576e);border-radius:8px}
+.podWideDialog .approvalSkuTable{width:100%;min-width:390px;border-collapse:collapse;font-size:12px}
+.podWideDialog .approvalSkuTable th{padding:9px 8px;text-align:left;font-weight:600;color:var(--podassets-muted,#acabc1);background:color-mix(in srgb,#8088af 10%,transparent)}
+.podWideDialog .approvalSkuTable td{padding:9px 8px;border-top:1px solid var(--podassets-line,#52576e);color:var(--podassets-ink,#cfcde4)}
+.podWideDialog .approvalSkuTable td:last-child{overflow-wrap:anywhere}
+.podWideDialog .approvalSkuChecked{background:color-mix(in srgb,#7367f0 17%,transparent)}
+.podWideDialog .approvalSkuTable input{width:17px;height:17px;accent-color:#7367f0;cursor:pointer}
+.podWideDialog .approvalSkuTable input:disabled{cursor:default}
+.podWideDialog .approvalSummary{min-width:0;overflow:auto;padding:12px;border:1px solid var(--podassets-line,#52576e);border-radius:9px;display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.podWideDialog .approvalSummary>strong{font-size:14px;padding-bottom:10px;border-bottom:1px solid var(--podassets-line,#52576e)}
+.podWideDialog .approvalSummaryProduct{display:grid;gap:7px;padding-bottom:12px;border-bottom:1px solid var(--podassets-line,#52576e)}
+.podWideDialog .approvalSummaryHeader{display:flex;gap:9px;align-items:center;min-width:0}
+.podWideDialog .approvalSummaryHeader img{width:53px;height:53px;object-fit:cover;border-radius:6px;background:#eee;flex:none}
+.podWideDialog .approvalSummaryHeader span{display:grid;gap:5px;min-width:0}
+.podWideDialog .approvalSummaryHeader strong{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.podWideDialog .approvalSummaryHeader small,.podWideDialog .approvalSummaryProduct>small{color:var(--podassets-muted,#acabc1);font-size:11px;overflow-wrap:anywhere}
+.podWideDialog .approvalSummary>p{font-size:12px;line-height:1.6;color:var(--podassets-muted,#acabc1);margin:0}
+.podActionDialog.podPreviewWideDialog .previewWideBody{display:flex;flex-direction:column;flex:1;min-height:0;gap:12px;overflow:hidden}
+.podPreviewWideDialog .previewFilters{display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px 10px;align-items:center;flex:none}
+.podPreviewWideDialog .previewFilters>span{font-size:12px;color:var(--podassets-muted,#acabc1)}
+.podPreviewWideDialog .previewFilters>div{display:flex;flex-wrap:wrap;gap:6px}
+.podPreviewWideDialog .previewFilters button{padding:6px 11px;min-height:31px;font-size:12px}
+.podPreviewWideDialog .previewFilters button[aria-pressed="true"]{border-color:#7367f0;background:#7367f0;color:white}
+.podPreviewWideDialog .previewBrowser{display:grid;grid-template-columns:minmax(240px,.8fr) minmax(0,1.7fr);gap:12px;flex:1;min-height:0;overflow:hidden}
+.podPreviewWideDialog .previewIndex,.podPreviewWideDialog .previewDetail{min-height:0;overflow:auto}
+.podPreviewWideDialog .previewThumbnailGrid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none;overflow:visible}
+.podPreviewWideDialog .previewThumbnailGrid>button small{font-size:10px;color:var(--podassets-muted,#acabc1);padding:0 3px 4px;overflow-wrap:anywhere}
+.podPreviewWideDialog .previewLargeButton img{max-height:55dvh;aspect-ratio:4/3;object-fit:contain}
+@media(max-width:950px){
+ .podActionDialog.podWideDialog{width:calc(100vw - 24px);max-width:calc(100vw - 24px);padding:13px;max-height:94dvh}
+ .podWideDialog .approvalWorkspace{grid-template-columns:minmax(0,1fr)}
+ .podWideDialog .approvalSummary{max-height:180px}
+ .podWideDialog .approvalProductRow{grid-template-columns:minmax(0,1fr)}
+ .podPreviewWideDialog .previewBrowser{grid-template-columns:minmax(0,1fr)}
+ .podPreviewWideDialog .previewIndex{max-height:240px}
+}
+@media(max-width:560px){
+ .podWideDialog .approvalProductIdentity{grid-template-columns:72px minmax(0,1fr)}
+ .podWideDialog .approvalProductIdentity>img{width:72px;height:90px}
+ .podWideDialog>footer{align-items:flex-start}
+}
