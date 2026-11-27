@@ -115,6 +115,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [dialog,setDialog]=useState(false),[name,setName]=useState(""),[region,setRegion]=useState("美国站"),[type,setType]=useState("半托管"),[newGroup,setNewGroup]=useState("未分组"),[newOwner,setNewOwner]=useState("");
  const [authAccount,setAuthAccount]=useState(""),[authPassword,setAuthPassword]=useState(""),[authCode,setAuthCode]=useState(""),[showPassword,setShowPassword]=useState(false),[fixedIp,setFixedIp]=useState(false),[codeNotice,setCodeNotice]=useState(""),[manageId,setManageId]=useState<string|null>(null),[moreId,setMoreId]=useState<string|null>(null),[groupRename,setGroupRename]=useState<string|null>(null),[groupRenameValue,setGroupRenameValue]=useState("");
  const [query,setQuery]=useState(""),[search,setSearch]=useState(""),[notice,setNotice]=useState("");
+ const [productStoreId,setProductStoreId]=useState("all");
  const [editing,setEditing]=useState<string|null>(null),[confirmDelete,setConfirmDelete]=useState<string|null>(null);
   const [inspecting,setInspecting]=useState<string|null>(null);
  const [syncing,setSyncing]=useState<string|null>(null),[entered,setEntered]=useState<string|null>(null),[groupsOpen,setGroupsOpen]=useState(false);
@@ -130,7 +131,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  useEffect(()=>{if(!moreId)return;const dismiss=(event:PointerEvent)=>{const target=event.target;if(!(target instanceof Element))return;if(target.closest('[role="menu"][aria-label="店铺操作"],button[aria-label^="更多操作 · "]'))return;setMoreId(null)};document.addEventListener("pointerdown",dismiss);return()=>document.removeEventListener("pointerdown",dismiss)},[moreId]);
  const route=pathname==="/workbench/store-center"?"home":pathname==="/workbench/stores"?"stores":pathname==="/workbench/store-products"?"products":"orders";
  const heading=route==="home"?"店铺中心":route==="stores"?"我的店铺":route==="products"?"店铺商品":"订单履约";
-  const intro=route==="home"?"围绕店铺绑定、商品刊登、数据同步和订单交付形成业务闭环；经营分析与 AI 执行由对应模块负责。":route==="stores"?"统一管理店铺连接、授权、网络环境和数据状态。":route==="products"?"商品来自实际同步结果，不展示虚构商品。":"订单来自实际同步记录，不展示虚构交易或履约结果。";
+  const intro=route==="home"?"围绕店铺绑定、商品刊登、数据同步和订单交付形成业务闭环；经营分析与 AI 执行由对应模块负责。":route==="stores"?"统一管理店铺连接、授权、网络环境和数据状态。":route==="products"?"关联当前账号已绑定店铺，按店铺查看商品同步状态；未取得平台记录时不虚构商品。":"订单来自实际同步记录，不展示虚构交易或履约结果。";
  const link=(path:string)=>navigate(path+"?preview=1");
  function submitBinding(e:FormEvent){e.preventDefault();if(authorizationMethod==="API 授权（暂未开放）"){setCodeNotice("API 授权暂未开放，请选择子账户授权方式。");return;}if(!name.trim()){setCodeNotice("请先填写自定义名称。");return;}if(manageId){const original=stores.find(s=>s.id===manageId);if(!original?.platformStoreId){setCodeNotice("未找到原绑定的平台店铺 ID，请重新核验，不能修改绑定身份。");return;}if(stores.some(s=>s.id!==manageId&&s.name.trim().toLowerCase()===name.trim().toLowerCase())){setCodeNotice("店铺名称已存在，请修改后保存。");return;}const selectedMember=newOwner?ownerMembers.find(m=>m.name===newOwner):ownerMembers.find(m=>m.id==="admin");if(!selectedMember){setCodeNotice("请选择本组织内状态正常的负责人，不能转移给其他组织。");return;}if(!administrator&&selectedMember.id!==memberId){setCodeNotice("跨成员转移店铺需要本组织管理员操作。");return;}if(!isMainTenant&&selectedMember.id!==memberId&&!getDemoMembership({organizationId,memberId:selectedMember.id})){setCodeNotice("目标负责人不属于当前组织，不能转移店铺。");return;}setAllStores(old=>old.map(x=>x.id===manageId?{...x,name:name.trim(),group:newGroup,owner:selectedMember.name,ownerMemberId:selectedMember.id,bindingAccount:authAccount.trim(),demoPassword:authPassword,fixedIpPreference:fixedIp,proxyIpAddress:fixedIp?ipAddress:undefined,proxyIpPort:fixedIp?ipPort:undefined,proxyIpUser:fixedIp?ipUser:undefined}:x));setManageId(null);setAuthPassword("");setAuthCode("");setNotice("保存成功：所属权已更新，平台店铺 ID、服务期限及连接状态保持原样。");}else add(e);}
  function commitFilters(){setPageNumber(1);setSelectedStores([]);setSearch(query.trim());setAppliedFilters({platform:platformFilter,region:regionFilter,type:typeFilter})}
@@ -260,8 +261,29 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
     {list.length>pageSize?<nav aria-label="店铺列表分页" className={css.storePages}><span>第 {currentPage} / {pageCount} 页</span><button type="button" disabled={currentPage<=1} onClick={()=>{setPageNumber(currentPage-1);setSelectedStores([])}}>上一页</button><button type="button" disabled={currentPage>=pageCount} onClick={()=>{setPageNumber(currentPage+1);setSelectedStores([])}}>下一页</button></nav>:null}
    </section>
   </>:<>
-   <section className={css.metrics}>{(route==="products"?[["已同步商品",0],["待处理",0],["同步异常",0],["已关联店铺",0]]:[["订单总数",0],["待处理订单",0],["发货中",0],["履约异常",0]]).map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
-   <section className={css.panel}><header><h2>{route==="products"?"店铺商品列表":"平台订单记录"}</h2><span>共 0 条</span></header><div className={css.empty}>{route==="products"?<Package size={34}/>:<Truck size={34}/>}<h3>{route==="products"?"暂无已同步商品":"暂无平台订单"}</h3><p>{route==="products"?"店铺绑定后可开始使用，尚无实际同步商品。":"绑定店铺并同步业务数据后，订单才会出现在这里。没有订单时不显示虚构履约进度。"}</p><button className={css.primary} onClick={()=>link("/workbench/stores")}>前往我的店铺</button></div></section>
+   {route==="products"?<>
+    <section className={css.metrics}>{[["已同步商品",0],["待处理",0],["同步异常",0],["已关联店铺",stores.filter(s=>Boolean(s.platformStoreId)).length]].map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
+    <section className={css.panel} aria-label="店铺商品关联">
+     <header><h2>关联店铺</h2><span>共 {stores.filter(s=>Boolean(s.platformStoreId)).length} 家 · 当前企业权限范围</span></header>
+     <div className={css.productStoreToolbar}>
+      <label>选择店铺 <select aria-label="筛选店铺商品所属店铺" value={stores.some(s=>s.id===productStoreId&&s.platformStoreId)?productStoreId:"all"} onChange={e=>setProductStoreId(e.target.value)}><option value="all">全部已绑定店铺</option>{stores.filter(s=>Boolean(s.platformStoreId)).map(s=><option key={s.id} value={s.id}>{s.name} · {s.region}</option>)}</select></label>
+      <button type="button" onClick={()=>setProductStoreId("all")}>重置</button>
+      <button type="button" onClick={()=>link("/workbench/stores")}>管理我的店铺</button>
+     </div>
+     {stores.filter(s=>Boolean(s.platformStoreId)&&(productStoreId==="all"||!stores.some(x=>x.id===productStoreId&&x.platformStoreId)||s.id===productStoreId)).length?
+      <div className={css.linkedProductStores}>{stores.filter(s=>Boolean(s.platformStoreId)&&(productStoreId==="all"||!stores.some(x=>x.id===productStoreId&&x.platformStoreId)||s.id===productStoreId)).map(s=><article key={s.id} className={css.linkedProductStore}>
+       <div><strong>{s.name}</strong><small>{s.platform} · {s.region} · {s.type}</small><small>平台店铺 ID：{s.platformStoreId}</small></div>
+       <div><strong>{s.owner||"未指定负责人"}</strong><small>店铺负责人</small></div>
+       <div><strong>{!demoStoreServiceActive(s)?"服务已到期":s.connectionIssue?"连接需处理":"店铺已关联"}</strong><small>商品数据：尚未实际同步</small></div>
+       <button type="button" onClick={()=>setProductStoreId(s.id)}>查看此店商品</button>
+      </article>)}</div>
+      :<div className={css.empty}><Package size={34}/><h3>暂无可关联的已绑定店铺</h3><p>请先在「我的店铺」完成平台店铺 ID 绑定。已删除或其他企业、未授权成员的店铺不会显示。</p><button className={css.primary} onClick={()=>link("/workbench/stores")}>前往我的店铺</button></div>}
+    </section>
+    <section className={css.panel}><header><h2>店铺商品列表</h2><span>共 0 条</span></header><div className={css.empty}><Package size={34}/><h3>暂无已同步商品</h3><p>已关联店铺资料；当前尚未取得 SHEIN 平台商品同步记录。自有商品库、采集批次和待刊登商品不会自动视为已上架。</p></div></section>
+   </>:<>
+    <section className={css.metrics}>{[["订单总数",0],["待处理订单",0],["发货中",0],["履约异常",0]].map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
+    <section className={css.panel}><header><h2>平台订单记录</h2><span>共 0 条</span></header><div className={css.empty}><Truck size={34}/><h3>暂无平台订单</h3><p>绑定店铺并同步业务数据后，订单才会出现在这里。没有订单时不显示虚构履约进度。</p><button className={css.primary} onClick={()=>link("/workbench/stores")}>前往我的店铺</button></div></section>
+   </>}
   </>}
   <p className={css.disclaimer}>{route==="stores"?"店铺分组与负责人可用于任务中心、数据中心和 AI 智能体的跨店筛选与权限管理。":"每个演示账号展示各自独立的已绑定店铺资料；当前未接入真实 SHEIN 数据同步，不产生商品、订单、销售或库存数据。"}</p>
   {groupAssignOpen?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setGroupAssignOpen(false)}}><section className={css.dialog} role="dialog" aria-modal="true" aria-label="批量加入分组"><header><div><h2>批量加入分组</h2><p>已选择 {checkedStores.length} 家店铺。确认后统一更新所属分组，不改变负责人、平台店铺 ID 和服务期。</p></div><button type="button" aria-label="关闭弹窗" onClick={()=>setGroupAssignOpen(false)}>×</button></header><label>目标分组<select aria-label="选择批量分组" value={bulkGroup} onChange={e=>setBulkGroup(e.target.value)}><option>未分组</option>{groups.map(g=><option key={g}>{g}</option>)}</select></label><footer className={css.dialogActions}><button type="button" onClick={()=>setGroupAssignOpen(false)}>取消</button><button type="button" className={css.primary} disabled={!checkedStores.length} onClick={applyGroupToSelection}>确认加入</button></footer></section></div>:null}
