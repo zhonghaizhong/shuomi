@@ -317,3 +317,11 @@
 .previewDetail .previewLargeButton img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain}
 .previewBlank{display:grid;place-items:center;min-height:145px;font-size:12px;line-height:1.6;color:var(--podassets-muted,#acabc1);text-align:center;padding:12px}
 @media(max-width:1250px){.previewBrowser{grid-template-columns:1fr}.previewIndex{max-height:250px;overflow:auto}}
+
+/* Image-first POD preview navigator: thumbnails on the left, large image on the right. */
+.previewThumbnailGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:9px;min-width:0;max-height:370px;overflow-y:auto}
+.previewThumbnailGrid>button{display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid var(--podassets-line,#52576e);border-radius:8px;padding:4px;background:transparent;color:var(--podassets-ink,#cfcde4);text-align:left;cursor:pointer}
+.previewThumbnailGrid>button.previewIndexActive{border-color:#7367f0;box-shadow:inset 0 0 0 1px #7367f0;background:color-mix(in srgb,#7367f0 13%,var(--podassets-card,#393d55))}
+.previewThumbnailGrid>button img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:5px;background:#eee}
+.previewThumbnailGrid>button span{padding:5px 2px 2px;font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+@media(max-width:1250px){.previewThumbnailGrid{grid-template-columns:repeat(auto-fit,minmax(100px,1fr));max-height:260px}}
