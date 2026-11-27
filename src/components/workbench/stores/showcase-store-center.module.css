@@ -673,3 +673,36 @@
 .linkedProductStore small{font-size:12px;color:var(--st-muted);overflow-wrap:anywhere}
 @media(max-width:900px){.linkedProductStore{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.linkedProductStore>button{justify-self:start}}
 @media(max-width:560px){.linkedProductStore{grid-template-columns:minmax(0,1fr)}.productStoreToolbar label{flex-wrap:wrap}.productStoreToolbar select{width:100%}}
+
+/* Store products: select one bound store, then browse source-aware platform records. */
+.productSyncToolbar{display:flex;align-items:end;gap:10px;padding:16px 18px;flex-wrap:wrap}
+.productSyncToolbar label{display:grid;gap:7px;flex:1 1 350px;min-width:190px;color:var(--st-text);font-size:12px;font-weight:600}
+.productSyncToolbar select{height:42px;min-width:0;width:100%;border:1px solid var(--st-line);border-radius:8px;background:var(--st-control);color:var(--st-text);padding:8px 12px;font-size:13px}
+.productSyncToolbar button,.productSourceToolbar>button{border:1px solid var(--st-line);border-radius:8px;background:var(--st-control);color:var(--st-text);padding:9px 13px;min-height:42px;font-size:13px;white-space:nowrap}
+.productSyncToolbar .productSyncPrimary{background:var(--st-accent);border-color:var(--st-accent);color:#fff;font-weight:600}
+.productSyncToolbar .productSyncPrimary:disabled{opacity:.43;cursor:not-allowed}
+.productSyncNotice{margin:0 18px 12px;padding:10px 12px;border:1px solid var(--st-line);border-radius:8px;color:var(--st-text);font-size:12px;line-height:1.5}
+.productSyncStoreSummary{padding:0 18px 16px;color:var(--st-muted);font-size:12px}
+.productSyncStoreSummary>p{padding:12px;margin:0;border:1px dashed var(--st-line);border-radius:8px}
+.productSyncSelected{display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;background:var(--st-card-1);border:1px solid var(--st-line);border-radius:8px;padding:12px 14px}
+.productSyncSelected>div{display:grid;gap:4px}
+.productSyncSelected strong{color:var(--st-text);font-size:13px}
+.productSyncSelected small{color:var(--st-muted);font-size:12px}
+.productSourceToolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 18px}
+.productSourceTabs{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.productSourceTabs button{background:var(--st-control);border:1px solid var(--st-line);border-radius:8px;padding:9px 12px;color:var(--st-text);font-size:12px;min-height:38px;white-space:nowrap}
+.productSourceTabs button[aria-pressed="true"]{background:color-mix(in srgb,var(--st-accent) 23%,var(--st-card-1));border-color:var(--st-accent);font-weight:700}
+.productSourceToolbar input{height:40px;box-sizing:border-box;flex:1 1 235px;min-width:180px;background:var(--st-control);color:var(--st-text);border:1px solid var(--st-line);border-radius:8px;padding:9px 12px;font-size:13px}
+.productSourceToolbar>button{min-height:40px}
+.productOriginInfo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 18px 14px}
+.productOriginInfo>div{display:grid;gap:5px;border:1px solid var(--st-line);background:var(--st-card-1);border-radius:8px;padding:11px 13px}
+.productOriginInfo strong{font-size:12px;color:var(--st-text)}
+.productOriginInfo small{font-size:11px;color:var(--st-muted);line-height:1.5}
+.productDataTable{margin:0 18px;overflow-x:auto;border:1px solid var(--st-line);border-radius:9px}
+.productDataTable table{width:100%;border-collapse:collapse;min-width:810px;text-align:left}
+.productDataTable th{background:var(--st-card-2);color:var(--st-muted);padding:12px 13px;border-bottom:1px solid var(--st-line);font-size:12px;font-weight:600;white-space:nowrap}
+.productDataTable td{padding:0}
+.productDataEmpty{display:flex;min-height:170px;align-items:center;justify-content:center;gap:9px;flex-direction:column;color:var(--st-muted);font-size:12px;text-align:center;padding:20px}
+.productDataEmpty strong{color:var(--st-text);font-size:14px}
+.productSyncFootnote{margin:12px 18px 17px;color:var(--st-muted);font-size:11px;line-height:1.6}
+@media(max-width:720px){.productSyncToolbar{align-items:stretch}.productSyncToolbar label{flex-basis:100%}.productSyncToolbar button{flex:1 1 auto}.productOriginInfo{grid-template-columns:1fr}}
