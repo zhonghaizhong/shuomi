@@ -21,7 +21,7 @@ export function ShowcaseActionDialog({action,detail,onClose,onCreateGoal,onCreat
    const previous=document.activeElement as HTMLElement|null;
    first.current?.focus();
    const onKey=(event:KeyboardEvent)=>{
-     if(event.key==="Escape"){event.preventDefault();closeRef.current();}
+     if(event.key==="Escape"){if(document.querySelector('[role="dialog"][aria-label="选择目标店铺"]'))return;event.preventDefault();closeRef.current();}
      if(event.key!=="Tab"||!panel.current)return;
      const items=Array.from(panel.current.querySelectorAll<HTMLElement>("button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]"));
      if(!items.length)return;
