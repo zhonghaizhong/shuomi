@@ -31,7 +31,7 @@
 @media(max-width:520px){.actions button{flex:1 1 130px}}
 
 /* Goals: scoped multi-store selector, currency targets and one clean centered picker. */
-.panel:has(.goalPickerField){width:min(650px,100%);overflow:visible}
+.panel:has(.goalPickerField){width:min(650px,100%);overflow-y:auto;overflow-x:hidden;max-height:calc(100dvh - 40px);min-height:0}
 .goalPickerField{display:grid;gap:8px;font-size:14px;font-weight:550}
 .goalPickerField small,.goalHint{font-size:12px;line-height:1.6;color:var(--muted-foreground,#acabc1);font-weight:400}
 .goalSelectButton{min-height:43px;padding:0 14px;border:1px solid var(--input,#44485e);border-radius:6px;text-align:left;background:var(--secondary,#393d55);color:var(--foreground,#e2e2f0);font:inherit;cursor:pointer}
