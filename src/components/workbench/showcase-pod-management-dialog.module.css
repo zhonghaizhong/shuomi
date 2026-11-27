@@ -347,3 +347,16 @@
 .podSkuChoices input{accent-color:#7367f0;width:16px;height:16px}
 .podSkuChoices>button{justify-self:start}
 @media(max-width:670px){.podActionDialog{padding:12px;max-height:95dvh}.podActionDialog .previewBrowser{grid-template-columns:1fr}}
+
+/* Review decision is scoped to explicit product/SKU choices, never a blind approval. */
+.approvalExplanation{font-size:12px;line-height:1.55;color:var(--podassets-muted,#acabc1);margin:0}
+.approvalProducts{display:grid;gap:10px;min-height:0;max-height:58dvh;overflow-y:auto;padding-right:3px}
+.approvalProducts>section{padding:12px;border:1px solid var(--podassets-line,#52576e);border-radius:9px;display:grid;gap:7px}
+.approvalProducts>section>strong{font-size:13px}
+.approvalProducts>section>small{font-size:12px;color:var(--podassets-muted,#acabc1)}
+.approvalProducts .podSkuChoices>p{display:none}
+.approvalProducts .podSkuChoices>section{padding:8px 10px}
+.approvalProducts .podSkuChoices label{padding:7px 10px}
+.assetCard .cardActions{flex-wrap:wrap}
+.assetCard .cardActions button{min-width:0;white-space:nowrap}
+.podActionDialog>footer button:disabled{opacity:.42;cursor:not-allowed}
