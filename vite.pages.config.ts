@@ -54,6 +54,12 @@ const bundledAgentExamples = {
       `${here}/dist-pages/assets/pod-prints`,
       { recursive: true }
     );
+    // Single composite POD preview images live outside the showcase Vite root.
+    await cp(
+      `${here}/public/assets/pod-previews`,
+      `${here}/dist-pages/assets/pod-previews`,
+      { recursive: true }
+    );
     // Publish the committed original POD apparel supplier photos.
     await cp(
       `${here}/public/assets/pod-demo`,
