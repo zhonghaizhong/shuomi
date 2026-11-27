@@ -1,6 +1,6 @@
 "use client";
 import {Fragment,useEffect,useMemo,useState,type MouseEvent} from "react";
-import {readOwnProductBatches,readOwnProducts,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
+import {readOwnProductBatches,readOwnProducts,recoverOwnProductShowcaseFixtures,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
 import {readReusableOptimizedDatasets,optimizedDatasetsChanged} from "./showcase-optimized-datasets";
 import {readArchivedOptimizedVersions,setOptimizedVersionArchived,downloadOptimizedVersionCsv} from "./showcase-dataset-version-actions";
 import {ShowcaseOptimizedVersionDialog} from "./showcase-optimized-version-dialog";
@@ -32,6 +32,28 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
  const [versionDetailId,setVersionDetailId]=useState<string|null>(null);
  const [page,setPage]=useState(1),[checked,setChecked]=useState<string[]>([]),[managing,setManaging]=useState(false);
  const [manageError,setManageError]=useState("");
+ const [recoveryMessage,setRecoveryMessage]=useState("");
+ const demoScope=organizationId==="SM-ENT-000001"&&memberId==="admin";
+ const restoreFixtures=()=>{
+  if(!demoScope)return;
+  try{
+   const result=recoverOwnProductShowcaseFixtures(organizationId,memberId);
+   setRevision(n=>n+1);
+   setArchivedOnly(false);setSearch("");setQuery("");setAppliedStatus("全部状态");setStatus("全部状态");setPage(1);
+   setRecoveryMessage(result.created?"已补回 "+result.created+" 款 GitHub 可重建的演示商品（六款基础样本、两款 POD 服装）；原有商品未覆盖。":"已核对：演示商品均已存在，未覆盖原数据。");
+  }catch(error){setRecoveryMessage("恢复未完成："+(error instanceof Error?error.message:"请检查浏览器存储空间"))}
+ };
+ useEffect(()=>{
+  if(!demoScope||typeof window==="undefined")return;
+  const marker="shuomi:own-library-safe-restore:v1:"+organizationId+":"+memberId;
+  try{
+   if(localStorage.getItem(marker)||readOwnProducts(organizationId,memberId).length||readOwnProductBatches(organizationId,memberId).length)return;
+   localStorage.setItem(marker,"attempted");
+   const result=recoverOwnProductShowcaseFixtures(organizationId,memberId);
+   setRevision(n=>n+1);
+   setRecoveryMessage("空库已补回 "+result.created+" 款 GitHub 演示样本；此为重建，不是已丢失的浏览器原始记录。");
+  }catch(error){setRecoveryMessage("自动恢复未完成："+(error instanceof Error?error.message:"存储不可用")+"；可使用手动恢复按钮重试。")}
+ },[demoScope,organizationId,memberId]);
  const [manageQuery,setManageQuery]=useState(""),[manageApplied,setManageApplied]=useState(""),[manageStatus,setManageStatus]=useState("全部状态"),[managePage,setManagePage]=useState(1);
  useEffect(()=>{
   const refresh=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setRevision(v=>v+1)};
@@ -94,7 +116,7 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
    <div data-shuomi-filter-right className={css.filterActions}><select aria-label="自有商品状态" value={status} onChange={e=>setStatus(e.target.value)}><option>全部状态</option><option>已入库</option><option>入库待完善</option><option>待审核</option></select><button type="button" onClick={reset}>重置</button><button type="button" className={css.primary} onClick={apply}>确认</button></div>
   </section>
   <section className={css.batchSection} aria-label="自有商品批次列表">
-   <header className={css.batchHeading}><div><h2>自有商品批次</h2><span>共 {archivedOnly?batches.filter(b=>archived.has(b.id)).length:batches.filter(b=>!archived.has(b.id)).length} 批</span></div><div className={css.headingActions}><button type="button" aria-pressed={archivedOnly} onClick={()=>{setArchivedOnly(v=>!v);setPage(1);setChecked([]);setMenu(null)}}>{archivedOnly?"返回批次":"已归档"}</button><button type="button" onClick={()=>setManaging(true)}>管理批次</button></div></header>
+   <header className={css.batchHeading}><div><h2>自有商品批次</h2><span>共 {archivedOnly?batches.filter(b=>archived.has(b.id)).length:batches.filter(b=>!archived.has(b.id)).length} 批</span></div><div className={css.headingActions}><button type="button" aria-pressed={archivedOnly} onClick={()=>{setArchivedOnly(v=>!v);setPage(1);setChecked([]);setMenu(null)}}>{archivedOnly?"返回批次":"已归档"}</button><button type="button" onClick={()=>setManaging(true)}>管理批次</button>{demoScope?<button type="button" onClick={restoreFixtures}>恢复演示商品</button>:null}</div></header>{recoveryMessage?<p role="status" className={css.recoveryMessage}>{recoveryMessage}</p>:null}
    <div className={css.tableWrap}><table className={css.batchTable}><thead><tr><th><label className={css.selectTitle}><input type="checkbox" aria-label="选择当前页所有自有商品批次" disabled={!rows.length} checked={checkedAll} onChange={e=>setChecked(old=>e.target.checked?[...new Set([...old,...rows.map(b=>b.id)])]:old.filter(id=>!rows.some(b=>b.id===id)))}/>批次名称</label></th><th>商品总数</th><th>已入库</th><th>入库待完善</th><th>待审核</th><th>创建时间</th><th>操作</th></tr></thead><tbody>
     {rows.map(b=>{
      const count=counts(b.id),open=expanded.includes(b.id);
