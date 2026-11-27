@@ -745,5 +745,5 @@
 @media(max-width:640px){.productPickerBackdrop{padding:8px}.productPickerDialog{max-height:94dvh}.productPickerResults>button{grid-template-columns:minmax(0,1fr) auto}.productPickerResults>button>span:nth-child(2){display:none}.productPickerSearch{flex-wrap:wrap}.productPickerSearch>input{flex-basis:100%}.productPickerFilters label{flex-basis:100%}}
 
 .productDataEmpty h3{margin:0;color:var(--st-text);font-size:14px;font-weight:600}
-.page .panel .empty button.orderEmptyAction{background:#6254d9!important;border-color:#6254d9!important;color:#fff!important}
+.page .panel .empty button.orderEmptyAction{background:#6254d9!important;border-color:#6254d9!important;color:#fff!important;transition:none!important;animation:none!important}
 .page .panel .empty button.orderEmptyAction:hover{background:#5345c6!important;border-color:#5345c6!important}

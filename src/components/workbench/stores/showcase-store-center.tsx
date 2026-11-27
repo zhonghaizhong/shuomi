@@ -304,7 +304,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       <div className={css.productCurrentStore}><span>当前店铺</span><strong>{selectedProductStore?selectedProductStore.name+" · "+selectedProductStore.region:"暂无已绑定店铺"}</strong></div>
       <button type="button" disabled={!eligibleProductStores.length} onClick={()=>{setStorePickerSearch("");setStorePickerRegion("全部站点");setStorePickerStatus("全部状态");setStorePickerAdvanced(false);setStorePickerPage(1);setStorePickerOpen(true)}}>选择店铺（{eligibleProductStores.length}）</button>
       <button type="button" className={css.productSyncPrimary} disabled={!selectedProductStore} onClick={()=>setProductSyncNotice("当前为页面设计预览，尚未接入 SHEIN 商品同步接口。未请求平台、未创建同步任务；已保存的历史商品不会被清空。")}>同步商品</button>
-      <button type="button" onClick={()=>link("/workbench/stores")}>管理我的店铺</button>
+      
      </div>
      {storePickerOpen?<div className={css.productPickerBackdrop} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setStorePickerOpen(false)}}>
       <section className={css.productPickerDialog} role="dialog" aria-modal="true" aria-label="选择已绑定店铺">
@@ -355,7 +355,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
     </section>
    </>:<>
     <section className={css.metrics}>{[["订单总数",0],["待处理订单",0],["发货中",0],["履约异常",0]].map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>
-    <section className={css.panel}><header><h2>平台订单记录</h2><span>共 0 条</span></header><div className={css.empty}><Truck size={34}/><h3>暂无平台订单</h3><p>绑定店铺并同步业务数据后，订单才会出现在这里。没有订单时不显示虚构履约进度。</p><button className={css.orderEmptyAction} onClick={()=>link("/workbench/stores")}>前往我的店铺</button></div></section>
+    <section className={css.panel}><header><h2>平台订单记录</h2><span>共 0 条</span></header><div className={css.empty}><Truck size={34}/><h3>暂无平台订单</h3><p>绑定店铺并同步业务数据后，订单才会出现在这里。没有订单时不显示虚构履约进度。</p><button className={css.orderEmptyAction} style={{backgroundColor:"#6254d9",color:"#fff",borderColor:"#6254d9"}} onClick={()=>link("/workbench/stores")}>前往我的店铺</button></div></section>
    </>}
   </>}
   <p className={css.disclaimer}>{route==="stores"?"店铺分组与负责人可用于任务中心、数据中心和 AI 智能体的跨店筛选与权限管理。":"每个演示账号展示各自独立的已绑定店铺资料；当前未接入真实 SHEIN 数据同步，不产生商品、订单、销售或库存数据。"}</p>
