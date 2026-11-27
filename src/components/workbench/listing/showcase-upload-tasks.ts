@@ -38,6 +38,9 @@ export function variantGroupReady(group:ListingVariantImageGroup):boolean{
 export type ShowcaseUploadTask={
  id:string;organizationId:string;memberId:string;
  source:"采集批次"|"自有商品库"|"数据集";batchId:string;batchName:string;sourceVersionId?:string;sourceVersionLabel?:string;
+ /** Explicitly approved NEW optimization snapshot identity. Omit when merely
+  * reusing or re-uploading the same data version; never derive from task ID. */
+ optimizationVersionKey?:string;
  productIds:string[];productCount:number;missingCount:number;
  originalPricingBaseline?:import("../showcase-optimized-datasets").OriginalPricingBaseline[];
  reusedProducts?:import("../showcase-optimized-datasets").OptimizedDatasetProduct[];
