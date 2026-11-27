@@ -20,12 +20,19 @@ describe("optimized dataset provenance and reusable batch selection",()=>{
   expect(duplicate.id).toBe(first.id);
   expect(readOptimizedDatasets("org-a","member-b")).toHaveLength(0);
   expect(readOptimizedDatasets("org-b","member-a")).toHaveLength(0);
-  const another={...payload,uploadTaskId:"task-2",externalReceiptId:"receipt-2"};
-  const v2=saveVerifiedOptimizedDataset("org-a","member-a",another,{verifiedBy:"platform-callback",result:"accepted",taskId:"task-2",externalReceiptId:"receipt-2"});
-  expect(v2.version).toBe(2);
+  const another={...payload,uploadTaskId:"task-2",externalReceiptId:"receipt-2",products:[{sourceProductId:"item-2",name:"Cotton Hoodie",images:["hoodie-en"],description:"Hoodie adaptation",skuCodes:["SKU-2"]}]};
+  const sameVersion=saveVerifiedOptimizedDataset("org-a","member-a",another,{verifiedBy:"platform-callback",result:"accepted",taskId:"task-2",externalReceiptId:"receipt-2"});
+  expect(sameVersion.version).toBe(1); // Two receipts belong to one V2 content group
+  expect(readReusableOptimizedDatasets("org-a","member-a")).toHaveLength(1);
+  expect(readReusableOptimizedDatasets("org-a","member-a")[0].products).toHaveLength(2);
+  expect(()=>saveVerifiedOptimizedDataset("org-a","member-a",{...payload,uploadTaskId:"task-no-change",externalReceiptId:"receipt-no-change",optimizationVersionKey:"revision-2"}, {verifiedBy:"platform-callback",result:"accepted",taskId:"task-no-change",externalReceiptId:"receipt-no-change"})).toThrow("未发现商品内容变化");
+  const changed={...payload,uploadTaskId:"task-3",externalReceiptId:"receipt-3",optimizationVersionKey:"revision-2",products:[{...payload.products[0],description:"Revised English content"}]};
+  const v3=saveVerifiedOptimizedDataset("org-a","member-a",changed,{verifiedBy:"platform-callback",result:"accepted",taskId:"task-3",externalReceiptId:"receipt-3"});
+  expect(v3.version).toBe(2);
   const french=saveVerifiedOptimizedDataset("org-a","member-a",{...another,site:"法国站",language:"法语",uploadTaskId:"task-fr",externalReceiptId:"receipt-fr"},{verifiedBy:"platform-callback",result:"accepted",taskId:"task-fr",externalReceiptId:"receipt-fr"});
   expect(french.version).toBe(1);
-  expect(readOptimizedDatasets("org-a","member-a")).toHaveLength(3);
+  expect(readOptimizedDatasets("org-a","member-a")).toHaveLength(4);
+  expect(readReusableOptimizedDatasets("org-a","member-a")).toHaveLength(3);
  });
  it("stores the version on platform acceptance, then only updates status after subsequent verified callbacks",()=>{
   const received=saveVerifiedOptimizedDataset("org-a","member-a",payload,{...receipt,result:"accepted",acceptedAt:"2026-11-23T09:00:00Z"});
