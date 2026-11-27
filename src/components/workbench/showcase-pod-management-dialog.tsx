@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import css from "./showcase-pod-management-dialog.module.css";
 import {readPodLibrary,savePodLibrary,readPodAssetImage,podAssetPreviewSrc,type PodLibraryAsset} from "./pod-asset-library";
-import {readPodPrintLineage,registerPodPrint,reviewPodPrint,searchPodPrints,bindPodPrintToVariant} from "./pod-print-lineage";
+import {readPodPrintLineage,registerPodPrint,reviewPodPrint,reopenPodPrintReview,searchPodPrints,bindPodPrintToVariant} from "./pod-print-lineage";
 import {isShowcasePODScope,showcasePODReviewPrints,SHOWCASE_SDS_POD_BATCH_ID,showcaseSDSPrintSourceProducts} from "./pod-showcase-print-demo";
 import {readDemoCollectionBatches,type DemoCollectedProduct} from "./showcase-collection-batches";
 
@@ -34,6 +34,9 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const [previewProductId,setPreviewProductId]=useState<string|null>(null);
  const [skuProductId,setSkuProductId]=useState<string|null>(null);
  const [skuDraft,setSkuDraft]=useState<string[]>([]);
+ const [approvalPrintId,setApprovalPrintId]=useState<number|null>(null);
+ const [approvalMode,setApprovalMode]=useState<"部分通过"|"全部通过">("部分通过");
+ const [approvalDraft,setApprovalDraft]=useState<Record<string,string[]>>({});
  const openProductZoom=(src:string|undefined,title:string)=>{if(src)setZoomProduct({src,title})};
  const [sourceProducts,setSourceProducts]=useState<DemoCollectedProduct[]>([]);
  // Staged SKU selections remain separate from immutable preview records and review status.
@@ -55,6 +58,20 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
     try{registerPodPrint(organizationId,memberId,print)}
     catch(error){setNotice(error instanceof Error?error.message:"印花审核记录初始化失败")}
    }
+  }
+  // One-time, narrowly scoped recovery of the accidental approval visible on
+  // the demo account. Preserve unrelated prints, versions, and image archives.
+  if(isShowcasePODScope(organizationId,memberId)&&typeof window!=="undefined"){
+   const undoKey="shuomi:pod:undo-accidental-fission-c-v1:"+organizationId+":"+memberId;
+   try{
+    if(sessionStorage.getItem(undoKey)!=="done"){
+     const current=readPodPrintLineage(organizationId,memberId);
+     if(current.reviews.some(x=>x.printId==="POD-BUTTERFLY-FISSION-C"&&x.version===1&&x.status==="审核通过")){
+      reopenPodPrintReview(organizationId,memberId,"POD-BUTTERFLY-FISSION-C",1);
+      sessionStorage.setItem(undoKey,"done");
+     }
+    }
+   }catch(error){setNotice(error instanceof Error?error.message:"撤销演示审核失败")}
   }
   const refresh=()=>{
    const source=readPodPrintLineage(organizationId,memberId);
@@ -110,27 +127,43 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const reset=()=>{setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1)};
  const promptFor=(asset:Asset)=>{setChosen(asset);setPanel("素材提示词")};
  const removeAsset=(id:number)=>{if(assets.some(x=>x.id===id&&x.readonly)){setNotice("该原始印花已关联裂变版本，为保证追溯不能删除。");return;}setAssets(v=>v.filter(x=>x.id!==id));setNotice("已从当前演示素材库删除。")};
- const audit=(id:number,next:string)=>{
+ const audit=(id:number,next:"退回重做"|"驳回")=>{
   const record=reviews.find(x=>x.id===id);
-  if(!record?.lineagePrintId||!record.lineageVersion){setNotice("印花缺少可追溯编号，禁止直接审核");return;}
+  if(!record?.lineagePrintId||!record.lineageVersion){setNotice("印花缺少可追溯编号");return}
   try{
-   const staged=next==="审核通过"?Object.entries(pendingSkuSelections).filter(([key])=>key.startsWith(record.lineagePrintId+"@"+record.lineageVersion+":")):[];
-   const resolved=staged.flatMap(([key,skus])=>{
-    const product=sourceProducts.find(p=>p.id===key.split(":").slice(1).join(":"));
-    return product?skus.map(sku=>({product,variant:product.variantDetails?.find(v=>v.sku===sku)})):[];
-   });
-   if(resolved.some(x=>!x.variant))throw Error("所选 SKU 已失效，请重新选择规格");
-   reviewPodPrint(organizationId,memberId,record.lineagePrintId,record.lineageVersion,
-    next as "审核通过"|"退回重做"|"驳回");
-   let bound=0;
-   if(next==="审核通过")for(const item of resolved){
-    if(!item.variant)continue;
-    bindPodPrintToVariant(organizationId,memberId,item.product.id,item.variant.sku,record.lineagePrintId,record.lineageVersion,item.variant.sku);
-    bound++;
-   }
-   setNotice(next==="审核通过"?"印花已审核通过"+(bound?"，已将选定的 "+bound+" 个 SKU 绑定至此印花（演示记录）":"；未选择商品规格，后续可另行绑定")+"。预览图不进入正式商品图片库。":next+" · 原印花记录已保留");
+   reviewPodPrint(organizationId,memberId,record.lineagePrintId,record.lineageVersion,next);
+   setNotice(next+" · 原印花与已生成预览均保留");
   }catch(error){setNotice(error instanceof Error?error.message:"审核未保存")}
  };
+ const openApproval=(asset:Asset,mode:"部分通过"|"全部通过")=>{
+  if(!asset.lineagePrintId||!asset.lineageVersion)return;
+  const ids=isShowcasePODScope(organizationId,memberId)?showcaseSDSPrintSourceProducts[asset.lineagePrintId]??[]:[];
+  const products=ids.map(id=>sourceProducts.find(x=>x.id===id)).filter((x):x is DemoCollectedProduct=>Boolean(x));
+  const prefix=asset.lineagePrintId+"@"+asset.lineageVersion+":";
+  const selected:Record<string,string[]>={};
+  for(const p of products)selected[p.id]=mode==="全部通过"?(p.variantDetails??[]).map(v=>v.sku):[...(pendingSkuSelections[prefix+p.id]??[])];
+  setApprovalDraft(selected);setApprovalMode(mode);setApprovalPrintId(asset.id);
+  setSelectedPrint(asset.lineagePrintId+"@"+asset.lineageVersion);
+ };
+ const approveSelected=()=>{
+  const asset=reviews.find(x=>x.id===approvalPrintId);
+  if(!asset?.lineagePrintId||!asset.lineageVersion)return;
+  const products=(showcaseSDSPrintSourceProducts[asset.lineagePrintId]??[]).map(id=>sourceProducts.find(p=>p.id===id)).filter((x):x is DemoCollectedProduct=>Boolean(x));
+  const variants=products.flatMap(p=>(p.variantDetails??[]).filter(v=>(approvalDraft[p.id]??[]).includes(v.sku)).map(v=>({product:p,variant:v})));
+  if(!variants.length){setNotice("请至少选择一个商品 SKU，再确认通过");return}
+  try{
+   const staged:Record<string,string[]>={};
+   for(const p of products)staged[asset.lineagePrintId+"@"+asset.lineageVersion+":"+p.id]=[...(approvalDraft[p.id]??[])];
+   reviewPodPrint(organizationId,memberId,asset.lineagePrintId,asset.lineageVersion,"审核通过",approvalMode+" · "+variants.length+" 个 SKU");
+   for(const {product,variant} of variants)bindPodPrintToVariant(organizationId,memberId,product.id,variant.sku,asset.lineagePrintId,asset.lineageVersion,variant.sku);
+   setPendingSkuSelections(prev=>({...prev,...staged}));
+   setApprovalPrintId(null);
+   setNotice(approvalMode+"成功：选定 "+new Set(variants.map(x=>x.product.id)).size+" 款商品、"+variants.length+" 个 SKU 已建立印花绑定（演示），未启动正式刊登。");
+  }catch(error){setNotice(error instanceof Error?error.message:"确认通过失败")}
+ };
+ const approvalAsset=reviews.find(x=>x.id===approvalPrintId);
+ const approvalProducts=approvalAsset?.lineagePrintId?(showcaseSDSPrintSourceProducts[approvalAsset.lineagePrintId]??[]).map(id=>sourceProducts.find(p=>p.id===id)).filter((x):x is DemoCollectedProduct=>Boolean(x)):[];
+ const approvalSkuCount=Object.values(approvalDraft).reduce((total,ids)=>total+ids.length,0);
  return <dialog ref={ref} className={css.dialog} aria-label="POD素材管理" onCancel={e=>{e.preventDefault();if(zoomProduct)setZoomProduct(null);else if(previewProductId)setPreviewProductId(null);else if(skuProductId)setSkuProductId(null);else if(panel)setPanel(null);else onClose()}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
    <header className={css.header}><div><small>工具市场 / 我的工具 / POD素材管理</small><h2>POD 素材管理</h2><p>素材沉淀、生成图审核与创作灵感，形成可复用的 POD 创作闭环。</p></div><button type="button" aria-label="关闭POD素材管理" onClick={onClose} className={css.close}>×</button></header>
    <nav className={css.tabs} aria-label="POD素材管理模块">{([["我的素材库","上传、分类、复用素材"],["产品图审核","校验 POD 生成结果"],["灵感市场","趋势参考与生图提示词"]] as const).map(([t,sub])=><button type="button" key={t} className={tab===t?css.active:""} aria-current={tab===t?"page":undefined} onClick={()=>selectTab(t)}><strong>{t}</strong><small>{sub}</small></button>)}</nav>
@@ -146,7 +179,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
     <div className={tab==="产品图审核"?css.reviewLayout:undefined}><div className={css.reviewList}>{displayed.length?<div className={css.grid}>{displayed.map(asset=><article className={css.assetCard+(tab==="产品图审核"&&selectedPrint===asset.lineagePrintId+"@"+asset.lineageVersion?" "+css.selectedCard:"")} key={asset.id}>
        <button type="button" className={css.imageButton} onClick={()=>{if(tab==="产品图审核"){setSelectedPrint(asset.lineagePrintId+"@"+asset.lineageVersion);setPreviewProductId(null);setSkuProductId(null);setPreviewNote("")}else open("预览图片",asset)}} aria-label={tab==="产品图审核"?"查看关联商品："+asset.name:"预览"+asset.name}>{inspirationImageSrc(asset)?<img className={css.patternImage} src={inspirationImageSrc(asset)} alt={asset.name+"原创图案"} loading="lazy"/>:<div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div>}</button>
        <strong title={asset.name}>{asset.name}</strong>{tab==="产品图审核"&&asset.lineagePrintId==="POD-BUTTERFLY-FISSION-B"&&asset.lineageVersion===1&&isShowcasePODScope(organizationId,memberId)?<small className={css.printPreviewIndicator}>已生成预览 1 张 · 黑色短袖 S</small>:null}<small>{asset.status??asset.category}</small>{asset.originPrintId?<small title={asset.originPrintId}>原图编号：{asset.originPrintId}</small>:null}{tab==="产品图审核"&&asset.lineagePrintId?<small title={asset.lineagePrintId+" · V"+asset.lineageVersion}>编号：{asset.lineagePrintId} · V{asset.lineageVersion}</small>:null}
-       {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" disabled={asset.readonly} title={asset.readonly?"已有裂变关联，不可删除原图":"删除当前素材"} onClick={()=>removeAsset(asset.id)}>删除</button>{asset.readonly?<span className={css.sourceLocked}>源图已关联 · 只读</span>:null}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
+       {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" disabled={asset.readonly} title={asset.readonly?"已有裂变关联，不可删除原图":"删除当前素材"} onClick={()=>removeAsset(asset.id)}>删除</button>{asset.readonly?<span className={css.sourceLocked}>源图已关联 · 只读</span>:null}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>openApproval(asset,"部分通过")}>部分通过</button><button type="button" onClick={()=>openApproval(asset,"全部通过")}>全部通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<><button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>{asset.status==="审核通过"?<button type="button" onClick={()=>{try{reopenPodPrintReview(organizationId,memberId,asset.lineagePrintId!,asset.lineageVersion!);setNotice("已撤销误通过，恢复待审核；已有预览文件保留。")}catch(error){setNotice(error instanceof Error?error.message:"撤销失败")}}}>撤销通过</button>:null}</>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
     </div>{tab==="产品图审核"?<aside className={css.relatedPanel} aria-label="关联产品与效果预览"><h3>关联产品与效果预览</h3>{activePrint?<><div className={css.selectedPrintHeader}><img src={inspirationImageSrc(activePrint)} alt={activePrint.name}/><div><strong>{activePrint.name}</strong><small>编号：{activePrint.lineagePrintId} · V{activePrint.lineageVersion}</small><small>状态：{activePrint.status}</small></div></div><div className={css.relatedTabs}><strong>关联产品（{sourceLinkedProducts.length+relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length}）</strong><span>来源关联 · 不等于审核通过</span></div>
 {sourceLinkedProducts.length?<div className={css.relatedProducts}>{sourceLinkedProducts.map(p=><LinkedPodProduct key={activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id} product={p} selectedSkus={pendingSkuSelections[activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id]??[]} onZoom={openProductZoom} onSelectSku={()=>{setSkuProductId(p.id);setSkuDraft([...(pendingSkuSelections[activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id]??[])]);}} onOpenPreview={()=>setPreviewProductId(p.id)} onGeneratePreview={()=>setPreviewNote("当前仍未接入 AI 生图与积分计费接口。每次仅生成一张组合预览的规则已保留；不会虚构生图结果或扣费。")} previewCount={archivedPreviews.filter(x=>x.productId===p.id).length}/>)}</div>:null}
@@ -161,6 +194,14 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
       :panel==="素材提示词"?<div className={css.modalBody}><p>提示词为创作参考，使用时可根据商品和图案进行调整。</p><textarea readOnly value={chosen?.prompt??""} rows={5}/><button type="button" className={css.primary} onClick={()=>{if(chosen?.prompt)void navigator.clipboard?.writeText(chosen.prompt);setNotice("提示词已请求复制到剪贴板。")}}>复制示例提示词</button></div>
       :panel==="加入素材"?<div className={css.modalBody}><p>先选择保存分类，再点击「保存到素材库」。</p><select value={chosenCategory} onChange={e=>setChosenCategory(e.target.value)}><option value="">选择分类</option><option value="未分类">未分类</option>{categories.map(c=><option key={c}>{c}</option>)}</select><button type="button" className={css.primary} disabled={!chosenCategory} onClick={()=>{if(chosen){setAssets(v=>[{...chosen,id:Date.now(),category:chosenCategory},...v]);setNotice("已保存到我的素材库（当前演示会话）。");setPanel(null)}}}>保存到素材库</button></div>
       :<div className={css.modalBody}>{chosen&&inspirationImageSrc(chosen)?<img className={css.patternLarge} src={inspirationImageSrc(chosen)} alt={chosen.name+"完整图案预览"}/>:<div className={css.largeArtwork} data-variant={chosen?.style??0}><span>{["✿","🎀","≈","☾","◒","✦"][chosen?.style??0]}</span></div>}<p>{chosen?.name} · 完整比例预览</p></div>}
+    </section></div>:null}
+   {approvalAsset?<div className={css.zoomOverlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setApprovalPrintId(null)}}>
+    <section className={css.podActionDialog} role="dialog" aria-modal="true" aria-label={approvalMode+"选择商品规格"}>
+     <header><div><strong>{approvalMode} · {approvalAsset.name}</strong><small>按商品、颜色和尺码确定哪些 SKU 绑定当前印花。没有实际绑定的 SKU 不会被推进后续流程。</small></div><button type="button" autoFocus onClick={()=>setApprovalPrintId(null)}>关闭</button></header>
+     {approvalMode==="全部通过"?<p className={css.approvalExplanation}>当前关联的 {approvalProducts.length} 款商品、全部 {approvalSkuCount} 个 SKU 将使用此印花。请确认后提交。</p>:<p className={css.approvalExplanation}>勾选要通过的商品及其具体 SKU；可只选某款商品的一种颜色、一个或多个尺码。未选择的保持未绑定。</p>}
+     <div className={css.approvalProducts}>{approvalProducts.map(p=><section key={p.id}><strong>{p.name}</strong><small>已选 {(approvalDraft[p.id]??[]).length} / {(p.variantDetails??[]).length} SKU</small><PodSkuPicker product={p} selected={approvalDraft[p.id]??[]} onChange={ids=>setApprovalDraft(v=>({...v,[p.id]:ids}))}/></section>)}</div>
+     {!approvalProducts.length?<p role="alert">当前关联商品没有可用的 SKU 资料，无法执行部分或全部通过。请先恢复关联批次。</p>:null}
+     <footer><span>本次将绑定 {approvalSkuCount} 个 SKU · 不自动生成预览、也不直接启动刊登</span><div><button type="button" onClick={()=>setApprovalPrintId(null)}>取消</button><button type="button" disabled={!approvalSkuCount} onClick={approveSelected}>确认{approvalMode}</button></div></footer>
     </section></div>:null}
    {previewProduct?<div className={css.zoomOverlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setPreviewProductId(null)}}>
     <section className={css.podActionDialog} role="dialog" aria-modal="true" aria-label={"产品效果预览："+previewProduct.name}>
