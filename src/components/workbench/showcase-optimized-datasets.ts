@@ -27,6 +27,8 @@ export type OptimizedDataset={
  sourceKind:"采集批次"|"自有商品库";sourceBatchId:string;sourceBatchName:string;
  platform:string;site:string;language:string;storeName:string;
  uploadTaskId:string;externalReceiptId:string;
+ /** Explicit approved optimization revision, independent of upload receipts. */
+ optimizationVersionKey?:string;
  acceptedAt?:string;reviewStatus?:PlatformReviewStatus;listingStatus?:PlatformListingStatus;reviewUpdatedAt?:string;
  products:OptimizedDatasetProduct[];
  demo?:true;storeType?:string;simulatedPlatformProductId?:string;simulatedReceiptId?:string;demoListingSummary?:string;
@@ -60,7 +62,20 @@ export function saveVerifiedOptimizedDataset(
  const existing=readOptimizedDatasets(org,member);
  const duplicate=existing.find(d=>d.uploadTaskId===payload.uploadTaskId&&d.externalReceiptId===payload.externalReceiptId);
  if(duplicate)return duplicate;
- const revision=existing.filter(d=>d.sourceKind===payload.sourceKind&&d.sourceBatchId===payload.sourceBatchId&&d.platform===payload.platform&&d.site===payload.site&&d.language===payload.language).reduce((n,d)=>Math.max(n,d.version),0)+1;
+ const sameLineage=existing.filter(d=>d.sourceKind===payload.sourceKind&&d.sourceBatchId===payload.sourceBatchId&&d.platform===payload.platform&&d.site===payload.site&&d.language===payload.language);
+ const revisionKey=payload.optimizationVersionKey||"initial";
+ const acceptedRevision=sameLineage.find(d=>(d.optimizationVersionKey||"initial")===revisionKey);
+ // Each receipt remains separately auditable, but a receipt does not create a
+ // new content version. Only an explicitly approved revision key can do that.
+ if(payload.optimizationVersionKey&&!acceptedRevision&&sameLineage.length){
+  const prior=new Map(sameLineage.flatMap(d=>d.products.map(p=>[p.sourceProductId,p] as const)));
+  const changed=payload.products.some(p=>{
+   const old=prior.get(p.sourceProductId);
+   return old&&JSON.stringify([p.name,p.description,p.images,p.category,p.attributes,p.skuCodes])!==JSON.stringify([old.name,old.description,old.images,old.category,old.attributes,old.skuCodes]);
+  });
+  if(!changed)throw Error("未发现商品内容变化，不能仅凭重复上传创建新优化版本");
+ }
+ const revision=acceptedRevision?.version??(sameLineage.reduce((n,d)=>Math.max(n,d.version),0)+1);
  const record:OptimizedDataset={...payload,id:"OPT-"+crypto.randomUUID(),version:revision,createdAt:new Date().toLocaleString("zh-CN",{hour12:false}),acceptedAt:verifiedReceipt.acceptedAt||new Date().toISOString(),reviewStatus:"待审核",listingStatus:"未上架"};
  sessionStorage.setItem(key(org,member),JSON.stringify([record,...existing]));
  window.dispatchEvent(new CustomEvent(optimizedDatasetsChanged,{detail:{organizationId:org,memberId:member}}));
