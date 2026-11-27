@@ -117,7 +117,8 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const [dialog,setDialog]=useState(false),[name,setName]=useState(""),[region,setRegion]=useState("美国站"),[type,setType]=useState("半托管"),[newGroup,setNewGroup]=useState("未分组"),[newOwner,setNewOwner]=useState("");
  const [authAccount,setAuthAccount]=useState(""),[authPassword,setAuthPassword]=useState(""),[authCode,setAuthCode]=useState(""),[showPassword,setShowPassword]=useState(false),[fixedIp,setFixedIp]=useState(false),[codeNotice,setCodeNotice]=useState(""),[manageId,setManageId]=useState<string|null>(null),[moreId,setMoreId]=useState<string|null>(null),[groupRename,setGroupRename]=useState<string|null>(null),[groupRenameValue,setGroupRenameValue]=useState("");
  const [query,setQuery]=useState(""),[search,setSearch]=useState(""),[notice,setNotice]=useState("");
- const [productStoreId,setProductStoreId]=useState("");
+ const [productStoreId,setProductStoreId]=useState(()=>{try{return sessionStorage.getItem("shuomi:matrix-product-store:"+organizationId+":"+memberId)||""}catch{return ""}});
+ useEffect(()=>{if(pathname!=="/workbench/store-products")return;try{const k="shuomi:matrix-product-store:"+organizationId+":"+memberId;const id=sessionStorage.getItem(k);if(id){setProductStoreId(id);sessionStorage.removeItem(k)}}catch{}},[pathname,organizationId,memberId]);
  const [storePickerOpen,setStorePickerOpen]=useState(false);
  const [storePickerSearch,setStorePickerSearch]=useState("");
  const [storePickerAdvanced,setStorePickerAdvanced]=useState(false);

@@ -1344,3 +1344,5 @@
 /* Contrast remediation: muted gauge text on Vuexy panels, both themes. */
 .page .supportGauge>span small{color:#b7b5c8}
 :global(.light) .page .supportGauge>span small{color:#625d70}
+
+.matrixRow em[data-status="待评估"]{color:#b7c6d7;background:transparent}:global(.light) .matrixRow em[data-status="待评估"]{color:#475569;background:transparent}

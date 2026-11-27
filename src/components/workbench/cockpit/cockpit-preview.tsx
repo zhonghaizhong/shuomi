@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./cockpit-preview.module.css";
 import { SeamlessEarthGlobe } from "./seamless-earth-globe";
-import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
+import {useDemoStoreBindings} from "../store-binding-demo";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
 
 type StoreSummary={id:string;name:string;platform:string;site:string;type:string;gmv:string;profit:string;trend:string;status:string};
@@ -16,7 +16,7 @@ const alerts:AlertSummary[]=[];
 export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}:{organizationId?:string;memberId?:string}={}) {
   const administrator=memberId==="admin"||getDemoMembership({organizationId,memberId})?.role==="管理员";
   const bindings=useDemoStoreBindings(organizationId,memberId,administrator);
-  const stores:StoreSummary[]=bindings.visible.filter(s=>Boolean(s.platformStoreId)).map(s=>({id:s.id,name:s.name,platform:s.platform,site:s.region,type:s.type,gmv:"—",profit:"—",trend:"—",status:!demoStoreServiceActive(s)||s.connectionIssue?"异常":Date.parse(s.serviceExpiresAt||"")-Date.now()<=7*86400000?"需关注":"正常"}));
+  const stores:StoreSummary[]=bindings.visible.filter(s=>Boolean(s.platformStoreId)).map(s=>({id:s.id,name:s.name,platform:s.platform,site:s.region,type:s.type,gmv:"—",profit:"—",trend:"—",status:"待评估"}));
   const router = useRouter();
   const emptyFilters = { platform: "全部平台", site: "全部站点", type: "全部店铺类型", time: "全部时间", search: "" };
   const [filters, setFilters] = useState(emptyFilters);
@@ -116,7 +116,7 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
     <section className={`${styles.panel} ${styles.storeMatrixPanel}`}>
       <header><div><span>店铺矩阵</span><h2>{visibleStores.length} 家店铺 · GMV / 净利润 / 环比</h2></div><button className={styles.linkButton} onClick={() => router.push("/workbench/overview/stores")}>查看全部店铺 <ArrowRight size={13}/></button></header>
       <div className={styles.matrixTable} role="table" aria-label="店铺经营数据">
-        <div className={styles.matrixHead} role="row"><span><input type="checkbox" aria-label="全选当前页店铺"/></span><b>店铺</b><b>平台 / 站点</b><b>GMV</b><b>净利润</b><b>环比</b><b>服务状态</b><b>GMV 占比</b></div>
+        <div className={styles.matrixHead} role="row"><span><input type="checkbox" aria-label="全选当前页店铺"/></span><b>店铺</b><b>平台 / 站点</b><b>GMV</b><b>净利润</b><b>环比</b><b>经营状态</b><b>GMV 占比</b></div>
         {pageStores.map(row => {
           const share = totalGmv ? Math.round(Number(row.gmv.replace(/[^\d]/g, "")) / totalGmv * 100) : 0;
           return <div className={styles.matrixRow} role="row" key={row.id}>
