@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {beforeEach,expect,it} from "vitest";
-import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,applyVerifiedListingFieldSchema,refreshAmazonFiveDemoPhotos} from "./showcase-upload-tasks";
+import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,applyVerifiedListingFieldSchema,refreshAmazonFiveDemoPhotos,simulateApprovedLodgeSubmission} from "./showcase-upload-tasks";
 import {listingDemoArtSet} from "./showcase-listing-ai-images";
 import {scopedFieldKey,type PlatformFieldSchema} from "./showcase-platform-field-schema";
 import {readDemoCollectionBatches,amazonMultiVariantPhotoFixtures} from "../showcase-collection-batches";
@@ -32,6 +32,23 @@ it("creates 5 separate optimized items, three missing and two review without ext
  expect(readShowcaseUploadTasks("different-org",member)).toHaveLength(0);
  expect(readShowcaseUploadTasks(org,"other-member")).toHaveLength(0);
 });
+it("simulates only Lodge approval against the bound SHEIN US store without an external receipt",()=>{
+ simulateAmazonFiveListingWorkflow(args);
+ expect(simulateApprovedLodgeSubmission(org,member,"wrong-store")).toBe(false);
+ expect(simulateApprovedLodgeSubmission(org,"other-member",args.storeId)).toBe(false);
+ expect(simulateApprovedLodgeSubmission(org,member,args.storeId)).toBe(true);
+ expect(simulateApprovedLodgeSubmission(org,member,args.storeId)).toBe(false);
+ const records=readShowcaseUploadTasks(org,member);
+ const lodge=records.find(t=>t.id.endsWith(":B00008GKD3"))!;
+ expect(lodge.status).toBe("模拟已提交");
+ expect(lodge.demoProduct?.reviewedAt).toBeTruthy();
+ expect(lodge.demoSubmission).toMatchObject({platform:"SHEIN",site:"美国站",storeId:args.storeId,
+  storeName:"管理员演示店铺01",result:"模拟提交成功",externalReceiptId:null});
+ expect(records.filter(t=>t.status==="模拟已提交")).toHaveLength(1);
+ expect(records.filter(t=>t.status==="待审核")).toHaveLength(1);
+ expect(records.filter(t=>t.status==="待补全")).toHaveLength(3);
+});
+
 it("gates missing fields, then review and never fakes upload",()=>{
  simulateAmazonFiveListingWorkflow(args);
  const records=readShowcaseUploadTasks(org,member);
