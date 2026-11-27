@@ -2,7 +2,7 @@
 import type {ReactNode} from "react";
 import {useEffect,useMemo,useRef,useState} from "react";
 import {readOwnProductBatches,listOwnReadyProducts,ownProductUpdated} from "../showcase-own-product-data";
-import {readOptimizedDatasets,optimizedDatasetsChanged} from "../showcase-optimized-datasets";
+import {readReusableOptimizedDatasets,optimizedDatasetsChanged} from "../showcase-optimized-datasets";
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import {readShowcaseEnabledAgents,readShowcaseAgentTemplates,showcaseAgentId,showcaseAgentStateChanged} from "../showcase-agent-demo-state";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
@@ -75,7 +75,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  useEffect(()=>{const onChange=(event:Event)=>{const d=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setTaskVersion(v=>v+1)};window.addEventListener(showcaseUploadTasksEvent,onChange);return()=>window.removeEventListener(showcaseUploadTasksEvent,onChange)},[organizationId,memberId]);
  useEffect(()=>{const handle=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d?.memberId===memberId)setDataVersion(n=>n+1)};window.addEventListener(ownProductUpdated,handle);return()=>window.removeEventListener(ownProductUpdated,handle)},[organizationId,memberId]);
  useEffect(()=>{const handle=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setDataVersion(v=>v+1)};window.addEventListener(optimizedDatasetsChanged,handle);return()=>window.removeEventListener(optimizedDatasetsChanged,handle)},[organizationId,memberId]);
- const optimizedSets=useMemo(()=>readOptimizedDatasets(organizationId,memberId),[organizationId,memberId,dataVersion]);
+ const optimizedSets=useMemo(()=>readReusableOptimizedDatasets(organizationId,memberId),[organizationId,memberId,dataVersion,taskVersion]);
  useEffect(()=>{
   const key="shuomi:listing-dataset-prefill:"+organizationId+":"+memberId;
   const id=sessionStorage.getItem(key);
@@ -90,7 +90,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   const revisions=optimizedSets.filter(d=>d.sourceKind===source&&d.sourceBatchId===b.id).sort((a,b)=>b.version-a.version);
   return {id:b.id,name:b.name,sourceName:source==="采集批次"&&"source"in b?b.source:source,date:b.createdAt,products:originalProducts,versions:[
    {id:"original",label:"原始版本",count:originalProducts.length,isOriginal:true},
-   ...revisions.map(d=>({id:d.id,label:"V"+d.version+" · "+d.platform+" "+d.site+" 优化版",count:d.products.length,isOriginal:false,platform:d.platform,site:d.site,language:d.language,date:d.createdAt}))
+   ...revisions.map(d=>({id:d.id,label:"V"+(d.version+1)+" · "+d.platform+" "+d.site+" 优化版"+(d.demo?"（演示）":""),count:d.products.length,isOriginal:false,platform:d.platform,site:d.site,language:d.language,date:d.createdAt}))
   ]};
  });
  const chosenBatch=pickerBatches.find(b=>b.id===batch);
@@ -469,7 +469,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   if(agent&&(!chosenAgent||!chosenTemplate)){setNotice("请先选择当前企业已启用的智能体及执行模板。");return}
   if(uploadMode==="定时上传"){setNotice("定时上传尚未连接正式调度服务，已保留时间配置，但未创建自动执行任务。");return}
   if(selectedOptimizedSet&&selectedOptimizedSet.platform!==chosenStore.platform){setNotice("提示：优化版本源自 "+selectedOptimizedSet.platform+"，目标店铺为 "+chosenStore.platform+"。本演示未接入跨平台字段映射，不能把旧版内容直接提交为新平台数据。");return}
-  if(source==="采集批次"&&selectedCollectedBatch?.id==="SIM-AMAZON-US-5-20261124"&&agent&&chosenAgent?.name==="商品优化智能体"&&chosenTemplate?.name==="测试模板"){
+  if(!selectedOptimizedSet&&source==="采集批次"&&selectedCollectedBatch?.id==="SIM-AMAZON-US-5-20261124"&&agent&&chosenAgent?.name==="商品优化智能体"&&chosenTemplate?.name==="测试模板"){
    try{
     const report=simulateAmazonFiveListingWorkflow({
      organizationId,memberId,batchId:selectedCollectedBatch.id,batchName:selectedCollectedBatch.name,

@@ -1,4 +1,6 @@
 "use client";
+import {readShowcaseUploadTasks} from "./listing/showcase-upload-tasks";
+import {readDemoCollectionBatches} from "./showcase-collection-batches";
 
 /** Immutable, reusable adapted-product snapshots. Never merge them into original inventory.
  * Demo session storage only. A real service must authenticate upload receipts server-side.
@@ -16,6 +18,7 @@ export type OptimizedDataset={
  uploadTaskId:string;externalReceiptId:string;
  acceptedAt?:string;reviewStatus?:PlatformReviewStatus;listingStatus?:PlatformListingStatus;reviewUpdatedAt?:string;
  products:OptimizedDatasetProduct[];
+ demo?:true;storeType?:string;
 };
 const key=(org:string,member:string)=>"shuomi:optimized-datasets-v1:"+org+":"+member;
 const statusKey=(org:string,member:string)=>"shuomi:optimized-dataset-platform-states-v1:"+org+":"+member;
@@ -74,4 +77,23 @@ export function updateOptimizedDatasetPlatformState(
  sessionStorage.setItem(statusKey(org,member),JSON.stringify([...states,state]));
  window.dispatchEvent(new CustomEvent(optimizedDatasetsChanged,{detail:{organizationId:org,memberId:member}}));
  return {...record,...state};
+}
+
+/** Browser-only accepted snapshots. Never pass these to verified callback APIs. Stable task IDs
+ * backfill previously accepted demo submissions without re-running listing or inventing receipts. */
+export function readReusableOptimizedDatasets(org:string,member:string):OptimizedDataset[]{
+ const verified=readOptimizedDatasets(org,member);
+ const names=new Map(readDemoCollectionBatches(org,member).map(b=>[b.id,b.name]));
+ const tasks=readShowcaseUploadTasks(org,member).filter(t=>t.status==="模拟已提交"&&t.demoSubmission?.result==="模拟提交成功"&&t.demoProduct&&t.source!=="数据集").sort((a,b)=>a.demoSubmission!.submittedAt.localeCompare(b.demoSubmission!.submittedAt)||a.id.localeCompare(b.id));
+ const result=verified.map(d=>({...d,sourceBatchName:d.sourceKind==="采集批次"?names.get(d.sourceBatchId)??d.sourceBatchName:d.sourceBatchName}));
+ for(const t of tasks){
+  if(verified.some(d=>d.uploadTaskId===t.id))continue;
+  const p=t.demoProduct!;
+  const version=result.filter(d=>d.sourceKind===t.source&&d.sourceBatchId===t.batchId).reduce((n,d)=>Math.max(n,d.version),0)+1;
+  const batchName=t.source==="采集批次"?names.get(t.batchId)??t.batchName:t.batchName;
+  const images=[...new Set([...Object.values(t.imageEdits??{}).flatMap(x=>x.main??[]),...p.optimizedImages,...(p.variantImageGroups??[]).flatMap(g=>g.optimizedImages.map(x=>x.url))])];
+  const skus=p.variantDetails?.map(v=>t.textEdits?.merchantSkuCodes?.[v.sku]??v.sku)??t.productIds;
+  result.push({id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language:t.region==="美国站"?"英语":"站点适配",storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:"未上架",demo:true,products:t.productIds.map(id=>({sourceProductId:id,name:t.textEdits?.title??p.optimizedName,description:t.textEdits?.description??p.optimizedDescription,images:[...images],skuCodes:[...skus]}))});
+ }
+ return result;
 }

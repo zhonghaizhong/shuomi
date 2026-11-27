@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import {readReusableOptimizedDatasets,readOptimizedDatasets} from "../showcase-optimized-datasets";
 import {beforeEach,expect,it} from "vitest";
 import {simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,saveListingVariantPhoto,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,readShowcaseUploadTasks,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,applyVerifiedListingFieldSchema,refreshAmazonFiveDemoPhotos,simulateApprovedLodgeSubmission} from "./showcase-upload-tasks";
 import {listingDemoArtSet} from "./showcase-listing-ai-images";
@@ -45,6 +46,12 @@ it("simulates only Lodge approval against the bound SHEIN US store without an ex
  expect(lodge.demoSubmission).toMatchObject({platform:"SHEIN",site:"美国站",storeId:args.storeId,
   storeName:"管理员演示店铺01",result:"模拟提交成功",externalReceiptId:null});
  expect(records.filter(t=>t.status==="模拟已提交")).toHaveLength(1);
+ const versions=readReusableOptimizedDatasets(org,member);
+ expect(versions.filter(d=>d.demo)).toHaveLength(1);
+ expect(versions.find(d=>d.demo)).toMatchObject({sourceBatchId:args.batchId,version:1,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:"未上架"});
+ expect(versions.find(d=>d.demo)?.products).toHaveLength(1);
+ expect(readOptimizedDatasets(org,member)).toHaveLength(0);
+ expect(readReusableOptimizedDatasets(org,"other-member").filter(d=>d.demo)).toHaveLength(0);
  expect(records.filter(t=>t.status==="待审核")).toHaveLength(1);
  expect(records.filter(t=>t.status==="待补全")).toHaveLength(3);
 });
