@@ -92,7 +92,7 @@ export function ShowcaseUploadedPreview({organizationId,memberId,tabNavigation}:
       <span><b>{item.name}</b><small>{item.sku}</small></span><span>{item.batch}</span><span>{item.platform}<small>{item.site}</small></span><span>{item.productId}</span><span>{item.time}</span><span className={styles.method}>{item.reviewStatus}<small>{item.listingStatus}</small></span><button type="button" onClick={()=>setSelected(item)}>查看商品</button>
     </div>)}
    </div></div>
-   {!filtered.length?<div className={styles.empty}>{activeBatch?"当前批次暂无已上传商品记录。":"暂无已上传记录，请先完成演示或真实平台提交。"}</div>:null}
+   {!filtered.length?<div className={styles.empty}>{activeBatch?"当前批次暂无已上传商品记录。":"暂无已上传商品记录。完成实际商品上传后，才会在这里显示记录。"}</div>:null}
    <footer className={styles.pagination}><span>第 {actualPage} / {pages} 页 · 每页最多 15 条</span><div><button type="button" disabled={actualPage<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}>上一页</button><button type="button" disabled={actualPage>=pages} onClick={()=>setPage(p=>Math.min(pages,p+1))}>下一页</button></div></footer>
   </section>
   <p className={styles.disclaimer}>规则：第三方平台确认接收商品后，即将本次优化内容保存到「我的数据 → 数据集」，初始状态为「待审核 / 未上架」；后续审核与上架状态独立同步。平台未接收、草稿未提交成功、提交失败或取消均不创建优化版本。原始资料、价格和库存始终不覆盖。模拟接收仅在当前浏览器演示，明确标注（演示），不会创建实际平台回执或平台商品 ID，也不计入真实上架。</p>
