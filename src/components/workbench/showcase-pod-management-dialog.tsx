@@ -190,12 +190,12 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
     <section className={css.podActionDialog+" "+css.podWideDialog} role="dialog" aria-modal="true" aria-label={approvalMode+"选择商品规格"}>
      <header><div><strong>{approvalMode} · 选择商品与 SKU</strong><small>按商品、颜色和尺码审核当前印花；只绑定确认的 SKU，不自动发起刊登。</small></div><button type="button" autoFocus onClick={()=>setApprovalPrintId(null)}>关闭</button></header>
      <div className={css.approvalPrintInfo}><img src={inspirationImageSrc(approvalAsset)} alt={approvalAsset.name}/><div><strong>{approvalAsset.name}</strong><small>编号：{approvalAsset.lineagePrintId} · V{approvalAsset.lineageVersion}</small><small>状态：{approvalAsset.status}</small></div></div>
-     <div className={css.approvalToolbar}><strong>关联商品与规格</strong><span>{approvalMode==="全部通过"?"将选中全部商品 SKU，提交前核对范围":"自由选择不同颜色与尺码；未勾选的 SKU 不进入后续流程"}</span>{approvalMode==="部分通过"?<button type="button" onClick={()=>setApprovalDraft(Object.fromEntries(approvalProducts.map(p=>[p.id,(p.variantDetails??[]).map(v=>v.sku)])))}>全选所有 SKU</button>:null}</div>
+     <div className={css.approvalToolbar}><strong>关联商品与规格 · 已选 {approvalSkuCount} 个 SKU / {approvalProducts.filter(p=>(approvalDraft[p.id]??[]).length).length} 款商品</strong><span>{approvalMode==="全部通过"?"将选中全部商品 SKU，提交前核对范围":"点击 SKU 行切换左侧图片；勾选框才决定是否通过"}</span>{approvalMode==="部分通过"?<button type="button" onClick={()=>setApprovalDraft(Object.fromEntries(approvalProducts.map(p=>[p.id,(p.variantDetails??[]).map(v=>v.sku)])))}>全选所有 SKU</button>:null}</div>
      <div className={css.approvalWorkspace}>
       <div className={css.approvalProducts}>{approvalProducts.map(p=>{
        const variants=p.variantDetails??[];
        const picked=approvalDraft[p.id]??[];
-       const focused=variants.find(v=>v.sku===focusedApprovalSkus[p.id])??variants[0];
+       const focused=variants.find(v=>v.sku===(focusedApprovalSkus[p.id]??picked[0]))??variants[0];
        const matchingPreview=archivedPreviews.find(x=>x.productId===p.id&&(x.scope==="sku"&&x.sku===focused?.sku||x.scope==="color"&&x.color===focused?.color));
        const sameColorPhoto=variants.find(v=>v.color===focused?.color&&(v.image||v.images?.[0]));
        const displayedPhoto=matchingPreview?.src??focused?.image??focused?.images?.[0]??sameColorPhoto?.image??sameColorPhoto?.images?.[0]??p.images?.[0];
@@ -214,18 +214,6 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
         </table></div>
        </section>;
       })}</div>
-      <aside className={css.approvalSummary}><strong>已选 SKU · {approvalSkuCount} 个</strong>
-       {approvalProducts.map(p=>{
-        const chosen=(p.variantDetails??[]).filter(v=>(approvalDraft[p.id]??[]).includes(v.sku));
-        if(!chosen.length)return null;
-        return <div key={p.id} className={css.approvalSummaryProduct}>
-         <div className={css.approvalSummaryHeader}>{(p.images?.[0]??p.variantDetails?.[0]?.image)?<img src={p.images?.[0]??p.variantDetails?.[0]?.image} alt={p.name} loading="lazy"/>:null}<span><strong>{p.name}</strong><small>{chosen.length} / {p.variantDetails?.length??0} SKU</small></span></div>
-         {chosen.map(v=><small key={v.sku}>{v.color} / {v.size} · {v.sku}</small>)}
-        </div>;
-       })}
-       {!approvalSkuCount?<p>尚未选择 SKU。请从左侧选择商品规格。</p>:null}
-       <p>审核通过只建立所选 SKU 的印花绑定，不自动生成预览或启动刊登。</p>
-      </aside>
      </div>
      {!approvalProducts.length?<p role="alert">当前关联商品没有可用的 SKU 资料，无法执行审核，请先恢复关联批次。</p>:null}
      <footer><span>已选择 {approvalSkuCount} 个 SKU（{approvalProducts.filter(p=>(approvalDraft[p.id]??[]).length>0).length} 款商品）</span><div><button type="button" onClick={()=>setApprovalPrintId(null)}>取消</button><button type="button" disabled={!approvalSkuCount} onClick={approveSelected}>确认{approvalMode}</button></div></footer>
