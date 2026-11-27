@@ -301,7 +301,7 @@ export function approveOwnProductIntake(org:string,member:string,id:string):OwnP
  if(!current.skus.length)throw Error("至少需要一个 SKU，禁止空商品入库");
  if(checkOwnProductSkus(current.skus).length)throw Error("资料缺失，请先在待完善补齐");
  const updated:OwnProductRecord={...current,status:"已入库",missing:[],checkedAt:new Date().toLocaleString("zh-CN",{hour12:false})};
- sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===id?updated:p)));
+ writeArray(productKey(org,member),all.map(p=>p.id===id?updated:p));
  notify(org,member);
  return updated;
 }
