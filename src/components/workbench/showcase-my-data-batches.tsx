@@ -87,7 +87,7 @@ export function ShowcaseMyDataBatches({organizationId,memberId}:{organizationId:
         {!versions.some(d=>d.sourceKind==="采集批次"&&d.sourceBatchId===b.id)?<p className={css.noNextVersion}>当前只有 V1 原始数据，暂无后续优化版本。优化结果保存后会在这里显示，可查看、下载或归档。</p>:null}
         {versions.filter(d=>d.sourceKind==="采集批次"&&d.sourceBatchId===b.id).sort((a,z)=>z.createdAt.localeCompare(a.createdAt)).map(d=><div className={css.versionItem} key={d.id} data-version-archived={archivedVersions.has(d.id)}>
          <div className={css.versionInfo}><strong>V{d.version+1} · {d.platform} {d.site}优化版</strong><small>{d.language} · {d.createdAt} · {d.products.length} 件商品</small></div>
-         <span className={css.versionTag}>{archivedVersions.has(d.id)?"已归档":d.demo?"平台已接收（演示） · "+(d.demoListingSummary??"未上架"):d.listingStatus??"已保存"}</span>
+         <span className={css.versionTag}>{archivedVersions.has(d.id)?"已归档":d.demo?"平台已接收（演示） · "+(d.versionListingSummary??"未上架"):d.versionListingSummary??d.listingStatus??"已保存"}</span>
          <div className={css.versionActions}><button type="button" onClick={()=>setVersionDetailId(d.id)}>查看商品</button><button type="button" onClick={()=>downloadOptimizedVersionCsv(d)}>下载 CSV</button><button type="button" onClick={()=>handleVersionArchive(d.id,!archivedVersions.has(d.id))}>{archivedVersions.has(d.id)?"恢复":"归档"}</button></div>
         </div>)}
        </div>
