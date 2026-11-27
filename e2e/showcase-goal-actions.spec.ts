@@ -64,3 +64,26 @@ test("goal actions open a detail dialog after creating a store-scoped draft",asy
  await detail.getByRole("button",{name:"返回列表"}).click();
  await expect(detail).toHaveCount(0);
 });
+
+test("store picker filters in platform, site and store-type order while keeping selected stores",async({page})=>{
+ await page.goto(root+"/overview/goals");
+ await page.getByRole("button",{name:"新建目标"}).click();
+ await page.getByRole("dialog",{name:"新建目标"}).getByRole("button",{name:"选择适用店铺"}).click();
+ const picker=page.getByRole("dialog",{name:"选择目标店铺"});
+ await expect(picker.getByRole("combobox",{name:"筛选平台"})).toBeVisible();
+ await expect(picker.getByRole("combobox",{name:"筛选站点"})).toBeVisible();
+ await expect(picker.getByRole("combobox",{name:"筛选店铺类型"})).toBeVisible();
+ await picker.getByRole("combobox",{name:"筛选平台"}).selectOption("SHEIN");
+ await picker.getByRole("combobox",{name:"筛选站点"}).selectOption("美国站");
+ await picker.getByRole("combobox",{name:"筛选店铺类型"}).selectOption("全托管");
+ await expect(picker.getByRole("checkbox",{name:"选择管理员演示店铺01"})).toBeVisible();
+ await expect(picker.getByRole("checkbox",{name:"选择管理员演示店铺02"})).toHaveCount(0);
+ await picker.getByRole("checkbox",{name:"选择管理员演示店铺01"}).check();
+ await picker.getByRole("combobox",{name:"筛选站点"}).selectOption("加拿大站");
+ await expect(picker.getByRole("combobox",{name:"筛选店铺类型"})).toHaveValue("全部类型");
+ await expect(picker.getByRole("checkbox",{name:"选择管理员演示店铺02"})).toBeVisible();
+ await picker.getByRole("button",{name:"重置"}).click();
+ await expect(picker.getByRole("combobox",{name:"筛选平台"})).toHaveValue("全部平台");
+ await expect(picker.getByRole("checkbox",{name:"选择管理员演示店铺01"})).toBeChecked();
+ await expect(picker).toContainText("已选 1 家");
+});
