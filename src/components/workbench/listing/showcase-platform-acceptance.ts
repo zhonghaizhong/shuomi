@@ -1,6 +1,6 @@
 "use client";
 import {readShowcaseUploadTasks} from "./showcase-upload-tasks";
-import {readOptimizedDatasets,saveVerifiedOptimizedDataset,updateOptimizedDatasetPlatformState,type OptimizedDataset,type OptimizedDatasetProduct,type PlatformReviewStatus,type PlatformListingStatus} from "../showcase-optimized-datasets";
+import {readOptimizedDatasets,saveVerifiedOptimizedDataset,updateOptimizedDatasetPlatformState,type OptimizedDataset,type OptimizedDatasetProduct,type VersionSkuSnapshot,type PlatformReviewStatus,type PlatformListingStatus} from "../showcase-optimized-datasets";
 
 /** Showcase integration boundary. A trusted server must authenticate the actual third-party callback.
  * Do not call from a browser "upload" button, queued task or fabricated demo response.
@@ -11,7 +11,7 @@ export type AcceptedPlatformReceipt={
  taskId:string;externalReceiptId:string;acceptedAt:string;
 };
 export type AcceptedProductSnapshot={
- sourceProductId:string;name:string;images:string[];description:string;skuCodes:string[];
+ sourceProductId:string;name:string;images:string[];description:string;skuCodes:string[];skuSnapshots?:VersionSkuSnapshot[];
 };
 /** One accepted task may have several platform product receipts; the snapshot groups only
  * the verified accepted products and preserves their source lineage.
@@ -39,7 +39,7 @@ export function recordVerifiedPlatformAcceptance(
  // are intentionally absent, so no source record can be overwritten by these values.
  const products:OptimizedDatasetProduct[]=acceptedProducts.map(p=>({
   sourceProductId:p.sourceProductId,name:p.name,images:[...p.images],
-  description:p.description,skuCodes:[...p.skuCodes]
+  description:p.description,skuCodes:[...p.skuCodes],skuSnapshots:p.skuSnapshots?.map(v=>({...v}))
  }));
  return saveVerifiedOptimizedDataset(org,member,{
   name:task.batchName+" · "+task.platform+" "+task.region+"优化版",

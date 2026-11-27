@@ -1,13 +1,24 @@
 "use client";
 import {readShowcaseUploadTasks} from "./listing/showcase-upload-tasks";
 import {readDemoCollectionBatches} from "./showcase-collection-batches";
+import {readOwnProducts} from "./showcase-own-product-data";
 
 /** Immutable, reusable adapted-product snapshots. Never merge them into original inventory.
  * Demo session storage only. A real service must authenticate upload receipts server-side.
  */
+export type VersionSkuSnapshot={sku:string;spec?:string;merchantSku?:string;platformSku?:string;originalPrice?:string;originalStock?:string;submittedPrice?:string;submittedStock?:string;listingPrice?:string;listingStock?:string};
+export type OriginalPricingBaseline={sourceProductId:string;skus:VersionSkuSnapshot[]};
+export function readOriginalPricingBaseline(org:string,member:string,kind:string,batchId:string,ids:string[]):OriginalPricingBaseline[]{
+ if(kind==="采集批次"){
+ const batch=readDemoCollectionBatches(org,member).find(b=>b.id===batchId);
+ return ids.map(id=>{const p=batch?.products.find(x=>x.id===id);return {sourceProductId:id,skus:p?.variantDetails?.length?p.variantDetails.map(v=>({sku:v.sku,spec:v.label,originalPrice:v.price,originalStock:v.stock})):p?[{sku:p.sku,spec:p.variants?.join(" / "),originalPrice:p.price}]:[]}})
+ }
+ const own=readOwnProducts(org,member);
+ return ids.map(id=>{const p=own.find(x=>x.id===id&&x.batchId===batchId);return {sourceProductId:id,skus:(p?.originalSkus??p?.skus??[]).map(v=>({sku:v.skuCode??String(v.id),spec:v.name,originalPrice:v.price,originalStock:v.stock===undefined?undefined:String(v.stock)}))}})
+}
 export type OptimizedDatasetProduct={
  sourceProductId:string;name:string;images:string[];description:string;
- skuCodes:string[]; /** product presentation only: no stock/price overwrite */
+ skuCodes:string[]; skuSnapshots?:VersionSkuSnapshot[]; detailImages?:string[]; category?:string; attributes?:Record<string,string>;
 };
 export type PlatformReviewStatus="待审核"|"审核中"|"审核通过"|"审核驳回";
 export type PlatformListingStatus="未上架"|"已上架"|"已下架";
@@ -93,7 +104,8 @@ export function readReusableOptimizedDatasets(org:string,member:string):Optimize
   const batchName=t.source==="采集批次"?names.get(t.batchId)??t.batchName:t.batchName;
   const images=[...new Set([...Object.values(t.imageEdits??{}).flatMap(x=>x.main??[]),...p.optimizedImages,...(p.variantImageGroups??[]).flatMap(g=>g.optimizedImages.map(x=>x.url))])];
   const skus=p.variantDetails?.map(v=>t.textEdits?.merchantSkuCodes?.[v.sku]??v.sku)??t.productIds;
-  result.push({id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language:t.region==="美国站"?"英语":"站点适配",storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:"未上架",demo:true,products:t.productIds.map(id=>({sourceProductId:id,name:t.textEdits?.title??p.optimizedName,description:t.textEdits?.description??p.optimizedDescription,images:[...images],skuCodes:[...skus]}))});
+  const baseline=t.originalPricingBaseline??readOriginalPricingBaseline(org,member,t.source,t.batchId,t.productIds);
+  result.push({id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language:t.region==="美国站"?"英语":"站点适配",storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:"未上架",demo:true,products:t.productIds.map(id=>({sourceProductId:id,name:t.textEdits?.title??p.optimizedName,description:t.textEdits?.description??p.optimizedDescription,images:[...images],skuCodes:[...skus],category:t.textEdits?.categoryPath,detailImages:Object.values(t.imageEdits??{}).flatMap(x=>x.detail??[]),skuSnapshots:(baseline.find(x=>x.sourceProductId===id)?.skus??[]).map(v=>({...v,merchantSku:t.textEdits?.merchantSkuCodes?.[v.sku]}))}))});
  }
  return result;
 }

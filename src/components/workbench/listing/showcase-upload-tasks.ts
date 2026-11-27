@@ -39,6 +39,8 @@ export type ShowcaseUploadTask={
  id:string;organizationId:string;memberId:string;
  source:"采集批次"|"自有商品库"|"数据集";batchId:string;batchName:string;sourceVersionId?:string;sourceVersionLabel?:string;
  productIds:string[];productCount:number;missingCount:number;
+ originalPricingBaseline?:import("../showcase-optimized-datasets").OriginalPricingBaseline[];
+ reusedProducts?:import("../showcase-optimized-datasets").OptimizedDatasetProduct[];
  storeId:string;storeName:string;platform:"SHEIN";region:string;storeType:string;
  rule:string;ruleConfig?:{id:string;name:string;skuMode:string;prefix:string;suffix:string;priceMode:string;priceValue:string;currencyConversion:boolean;aiFill:boolean};agentId:string|null;agentName:string|null;
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
