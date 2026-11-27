@@ -33,7 +33,9 @@ const stageLabel=(status:ServiceRecord["status"])=>status==="待确认"?"等待�
 function readDemo<T>(key:string,fallback:T):T{if(typeof window==="undefined")return fallback;try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw) as T:fallback}catch{return fallback}}
 type RequestDraft={region:string;details:string;contactName:string;contactWay:string};
 type JoinDraft={company:string;contact:string;category:string;region:string;description:string};
-type JoinRecord=JoinDraft&{id:string;status:"待审核"|"审核通过"};
+type JoinStatus="待审核"|"待补充资料"|"审核通过"|"已签署"|"服务待审核"|"已入驻";
+type JoinRecord=JoinDraft&{id:string;status:JoinStatus;subjectType?:string;subjectVerified?:boolean;documents?:string[];reviewNote?:string;agreementAt?:string;offer?:{name:string;price:string;duration:string;description:string}};
+const joinActions:Record<JoinStatus,string>={"待审核":"查看申请进度","待补充资料":"补充申请资料","审核通过":"签署合作协议","已签署":"配置服务","服务待审核":"查看审核进度","已入驻":"管理我的服务"};
 type DialogState =
   | { kind: "service"; service: Service }
   | { kind: "request"; service: Service }
@@ -80,6 +82,11 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
   const [requestDraft,setRequestDraft]=useState<RequestDraft>({region:"",details:"",contactName:"",contactWay:""});
   const [joinDraft,setJoinDraft]=useState<JoinDraft>({company:"",contact:"",category:"企业服务",region:"",description:""});
   const [joinRecord,setJoinRecord]=useState<JoinRecord|null>(()=>readDemo(ECO_JOIN_KEY,null));
+  const [subjectType,setSubjectType]=useState("企业");
+  const [documents,setDocuments]=useState<string[]>([]);
+  const [agreement,setAgreement]=useState(false);
+  const [offer,setOffer]=useState({name:"",price:"",duration:"",description:""});
+  const marketServices=useMemo<Service[]>(()=>joinRecord?.status==="已入驻"&&joinRecord.offer?[...services,{id:joinRecord.id,name:joinRecord.offer.name,category:joinRecord.category==="店铺服务"?"店铺服务":"企业服务",description:joinRecord.offer.description,points:[joinRecord.company,"交付周期："+joinRecord.offer.duration,"服务价格："+joinRecord.offer.price],color:"#4fd1bd",providerNote:joinRecord.region,Icon:Building2}]:services,[joinRecord]);
   const [showExamples,setShowExamples]=useState(true);
   const allRecords=useMemo(()=>[...extraRecords,...(showExamples?records:[])],[extraRecords,showExamples]);
   const saveRecords=(next:ServiceRecord[])=>{setExtraRecords(next);try{localStorage.setItem(ECO_DEMO_KEY,JSON.stringify(next))}catch{}};
@@ -100,9 +107,9 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
     setCategory("全部服务"); setStatus("全部服务");
     setDraftSearch(""); setSearch(""); setServiceType("全部类型"); setOrder("更新时间");
   };
-  const filteredServices = useMemo(() => services.filter(s =>
+  const filteredServices = useMemo(() => marketServices.filter(s =>
     (category === "全部服务" || category === s.category) &&
-    [s.name, s.description, s.category, ...s.points].join(" ").toLowerCase().includes(search.trim().toLowerCase())), [category, search]);
+    [s.name, s.description, s.category, ...s.points].join(" ").toLowerCase().includes(search.trim().toLowerCase())), [category, search, marketServices]);
   const filteredRecords = useMemo(() => allRecords.filter(r =>
     (status === "全部服务" || r.status === status) &&
     (serviceType === "全部类型" || r.service === serviceType) &&
@@ -142,7 +149,7 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
       <Header section="服务市场" title="服务市场" description="围绕企业设立、品牌保护、店铺开通和日常运营，提供专业服务支持。" />
       <div className={styles.marketControls}>
         <div className={styles.segmentRow}><div><strong>服务分类</strong><small>按业务类型筛选专业服务</small></div>
-          <div className={styles.segments}>{[["全部服务", "全部服务 4"], ["企业服务", "企业服务 2"], ["店铺服务", "店铺服务 2"]].map(([value,label])=><button type="button" key={value} aria-pressed={category===value} onClick={()=>setCategory(value)}>{label}</button>)}</div>
+          <div className={styles.segments}>{["全部服务","企业服务","店铺服务"].map(v=>[v,v+" "+marketServices.filter(s=>v==="全部服务"||s.category===v).length]).map(([value,label])=><button type="button" key={value} aria-pressed={category===value} onClick={()=>setCategory(value)}>{label}</button>)}</div>
         </div>
         <form className={styles.filterBar} onSubmit={e=>{e.preventDefault();setSearch(draftSearch);}}>
           <label className={styles.searchBox}><Search size={16} aria-hidden="true" /><input aria-label="搜索服务名称或关键词" placeholder="搜索服务名称或关键词" value={draftSearch} onChange={e=>setDraftSearch(e.target.value)}/></label>
@@ -169,7 +176,7 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
       </section>
       <form className={styles.filterBar} onSubmit={e=>{e.preventDefault();setSearch(draftSearch);}}>
         <label className={styles.searchBox}><Search size={16} aria-hidden="true"/><input aria-label="搜索服务名称或服务编号" placeholder="搜索服务名称或服务编号" value={draftSearch} onChange={e=>setDraftSearch(e.target.value)}/></label>
-        <select aria-label="服务类型" value={serviceType} onChange={e=>setServiceType(e.target.value)}>{["全部类型",...services.map(s=>s.name)].map(x=><option key={x}>{x}</option>)}</select>
+        <select aria-label="服务类型" value={serviceType} onChange={e=>setServiceType(e.target.value)}>{["全部类型",...marketServices.map(s=>s.name)].map(x=><option key={x}>{x}</option>)}</select>
         <select aria-label="更新时间" value={order} onChange={e=>setOrder(e.target.value)}><option>更新时间</option><option>最近更新</option><option>最早更新</option></select>
         <button type="button" onClick={reset}>重置</button><button type="submit" className={styles.primary}>确定</button>
       </form>
@@ -196,8 +203,8 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
       <section className={styles.joinGrid}>
         <article className={styles.joinFlow}><h2>入驻流程</h2>
           {[
-            ["01","提交机构资料","填写机构信息、服务领域与主要覆盖区域","资料准备"],
-            ["02","资质与案例审核","上传资质证明、团队介绍及代表服务案例","资质审核"],
+            ["01","提交机构资料","填写主体资料、服务领域与主要覆盖区域","资料准备"],
+            ["02","资质与案例审核","统一审核主体真实性、行业资质及服务能力","资质审核"],
             ["03","签署合作协议","确认服务规范、交付标准与平台合作规则","合作确认"],
             ["04","上线服务","配置服务内容、价格与交付周期后正式发布","服务上线"],
           ].map(([n,title,detail,state],i)=><div className={styles.joinStep} key={n} data-step={i}><b>{n}</b><span><strong>{title}</strong><small>{detail}</small></span><em>{state}</em></div>)}
@@ -205,7 +212,8 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
         <aside className={styles.joinAside}><h2>申请入口</h2>
           <div className={styles.joinInfo}><strong>入驻要求</strong><p>主体资质、服务能力与交付条件</p></div>
           <div className={styles.joinInfo}><strong>申请资料</strong><p>机构信息、资质证明及服务案例</p></div>
-          <button type="button" className={styles.primary} onClick={()=>setDialog({kind:"join",tab:"requirements"})}>提交入驻申请</button>
+          {joinRecord&&<div className={styles.joinInfo}><strong>{joinRecord.status}</strong><p>申请编号：{joinRecord.id}</p>{joinRecord.reviewNote&&<p>{joinRecord.reviewNote}</p>}</div>}
+          <button type="button" className={styles.primary} onClick={()=>{if(joinRecord){setJoinDraft(joinRecord);setSubjectType(joinRecord.subjectType??"企业");setDocuments(joinRecord.documents??[]);if(joinRecord.offer)setOffer(joinRecord.offer)}setDialog({kind:"join",tab:!joinRecord||joinRecord.status==="待补充资料"?"requirements":"preview"})}}>{joinRecord?joinActions[joinRecord.status]:"提交入驻申请"}</button>
           <section className={styles.joinNotice}><strong>合作说明</strong><p>审核通过后，可在服务市场展示已确认的服务。应明确服务范围、交付要求及费用方式，并跟进客户需求、验收和后续服务。</p></section>
         </aside>
       </section>
@@ -249,20 +257,40 @@ export function ShowcaseEcologyServices({ pathname, navigate }: {
       <p className={styles.demoHint}>本地模拟流程，不代表真实服务商已受理或实际完成交付。</p>
       <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog(null)}>关闭</button>{dialog.record.id.startsWith("DEMO-")&&dialog.record.status!=="已完成"?<button type="button" className={styles.primary} onClick={()=>advanceRecord(dialog.record)}>模拟推进至下一阶段</button>:null}</footer>
     </AccessibleDialog>}
-    {dialog?.kind==="join" && <AccessibleDialog key={"join:"+dialog.tab} title="申请加入 · 入驻资料" side onClose={()=>setDialog(null)}>
+    {dialog?.kind==="join" && <AccessibleDialog key={"join:"+dialog.tab} title="申请加入 · 入驻资料" onClose={()=>setDialog(null)}>
       <div className={styles.drawerTabs}><button type="button" aria-pressed={dialog.tab==="requirements"} onClick={()=>setDialog({kind:"join",tab:"requirements"})}>申请资料</button><button type="button" aria-pressed={dialog.tab==="preview"} onClick={()=>setDialog({kind:"join",tab:"preview"})}>后续流程</button></div>
-      {dialog.tab==="requirements"?<form className={styles.ecoForm} onSubmit={e=>{e.preventDefault();const next:JoinRecord={...joinDraft,id:"JOIN-"+Date.now(),status:"待审核"};saveJoin(next);setDialog({kind:"join",tab:"preview"})}}>
+      {dialog.tab==="requirements"?<form className={styles.ecoForm} onSubmit={e=>{e.preventDefault();if(joinRecord&&joinRecord.status!=="待补充资料")return;const next:JoinRecord={...joinDraft,id:joinRecord?.id??"JOIN-"+Date.now(),status:"待审核",subjectType,documents,subjectVerified:false};saveJoin(next);setDialog({kind:"join",tab:"preview"})}}>
+        <div className={styles.requestIntro}><strong>主体信息</strong><p>无需提前完成主体认证，平台将在入驻时统一审核主体资料。</p></div>
+        <label>主体类型<select value={subjectType} onChange={e=>setSubjectType(e.target.value)}><option>企业</option><option>个体工商户</option><option>个人</option></select></label>
         <label>机构名称 *<input required value={joinDraft.company} onChange={e=>setJoinDraft(p=>({...p,company:e.target.value}))} placeholder="请输入机构或团队名称"/></label>
         <div className={styles.ecoFormRow}><label>联系人及联系方式 *<input required value={joinDraft.contact} onChange={e=>setJoinDraft(p=>({...p,contact:e.target.value}))} placeholder="姓名 / 手机或邮箱"/></label><label>服务领域 *<select value={joinDraft.category} onChange={e=>setJoinDraft(p=>({...p,category:e.target.value}))}><option>企业服务</option><option>店铺服务</option></select></label></div>
         <label>覆盖地区 *<input required value={joinDraft.region} onChange={e=>setJoinDraft(p=>({...p,region:e.target.value}))} placeholder="主要服务国家和地区"/></label>
         <label>资质与服务能力说明 *<textarea required rows={4} value={joinDraft.description} onChange={e=>setJoinDraft(p=>({...p,description:e.target.value}))} placeholder="介绍机构资质、团队经验、服务案例及交付方式"/></label>
+        <label>主体资质及代表案例<input type="file" multiple accept="image/*,.pdf" onChange={e=>setDocuments(p=>[...new Set([...p,...Array.from(e.target.files??[]).map(f=>f.name)])])}/></label>
+        {documents.length>0&&<div className={styles.requestIntro}>{documents.map(name=><div key={name}>{name} <button type="button" onClick={()=>setDocuments(p=>p.filter(x=>x!==name))}>移除</button></div>)}</div>}
+        <p>演示附件仅保存文件名称；正式审核需核验原件。</p>
         <p className={styles.demoHint}>演示入驻申请保存在当前浏览器，可以继续模拟审核流程。</p>
-        <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog(null)}>取消</button><button type="submit" className={styles.primary}>提交入驻申请</button></footer>
+        <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog(null)}>取消</button><button type="submit" className={styles.primary} disabled={!!joinRecord&&joinRecord.status!=="待补充资料"}>提交入驻申请</button></footer>
       </form>:<>
         {joinRecord?<div className={styles.requestIntro}><strong>{joinRecord.company}</strong><p>申请编号：{joinRecord.id}</p><span className={styles.status}>{joinRecord.status}</span><p>{joinRecord.description}</p></div>:<p>填写并提交入驻申请后，可以在这里查看审核流程。</p>}
-        <div className={styles.progressSteps}>{["申请提交","资质审核","确认合作","服务上架"].map((x,i)=><div key={x}><b>{i+1}</b><span><strong>{x}</strong><small>{joinRecord?(i===0?"已提交":i===1?joinRecord.status:"待办理"):"待提交"}</small></span></div>)}</div>
-        <p className={styles.demoHint}>演示审核不代表已完成真实资质认证或服务上架。</p>
-        <footer className={styles.dialogActions}><button type="button" onClick={()=>setDialog({kind:"join",tab:"requirements"})}>返回申请资料</button>{joinRecord?.status==="待审核"?<button type="button" className={styles.primary} onClick={()=>saveJoin({...joinRecord,status:"审核通过"})}>模拟审核通过</button>:<button type="button" className={styles.primary} onClick={()=>setDialog(null)}>完成</button>}</footer>
+        <div className={styles.progressSteps}>{["申请提交","资质审核","确认合作","服务上架"].map((x,i)=><div key={x}><b>{i+1}</b><span><strong>{x}</strong><small>{joinRecord?(i===0?"已提交":i===1?(joinRecord.subjectVerified?"审核通过":joinRecord.status):i===2?(joinRecord.agreementAt?"已签署": "待办理"):joinRecord.status==="已入驻"?"已上线":joinRecord.status==="服务待审核"?"待审核":"待办理"):"待提交"}</small></span></div>)}</div>
+        {joinRecord?.reviewNote&&<p role="status">{joinRecord.reviewNote}</p>}
+        {joinRecord?.status==="审核通过"&&<div className={styles.requestIntro}><strong>生态服务商合作协议（演示）</strong><p>服务商须真实披露资质、价格及交付范围，保护客户信息，按约定完成交付及售后。</p><label><input type="checkbox" checked={agreement} onChange={e=>setAgreement(e.target.checked)}/> 我已阅读并同意合作规则</label></div>}
+        {(joinRecord?.status==="已签署"||joinRecord?.status==="已入驻")&&<form className={styles.ecoForm} onSubmit={e=>{e.preventDefault();if(!offer.name.trim()||!offer.price.trim()||!offer.duration.trim()||!offer.description.trim())return;saveJoin({...joinRecord,offer,status:"服务待审核"})}}>
+          <label>服务名称 *<input required value={offer.name} onChange={e=>setOffer(p=>({...p,name:e.target.value}))}/></label>
+          <div className={styles.ecoFormRow}><label>服务价格 *<input required value={offer.price} onChange={e=>setOffer(p=>({...p,price:e.target.value}))} placeholder="例如：¥ 980 / 次"/></label><label>交付周期 *<input required value={offer.duration} onChange={e=>setOffer(p=>({...p,duration:e.target.value}))}/></label></div>
+          <label>服务介绍 *<textarea required value={offer.description} onChange={e=>setOffer(p=>({...p,description:e.target.value}))}/></label>
+          <button type="submit" className={styles.primary}>提交服务审核</button>
+        </form>}
+        <p className={styles.demoHint}>演示审核及协议不代表实际认证或真实签署，服务仅在当前浏览器的演示市场展示。</p>
+        <footer className={styles.dialogActions}><button type="button" onClick={()=>{if(joinRecord){setJoinDraft(joinRecord);setSubjectType(joinRecord.subjectType??"企业");setDocuments(joinRecord.documents??[])}setDialog({kind:"join",tab:"requirements"})}}>返回申请资料</button>
+          {joinRecord?.status==="待审核"&&<><button type="button" onClick={()=>saveJoin({...joinRecord,status:"待补充资料",reviewNote:"请补充主体资质及代表案例。"})}>模拟退回补充</button><button type="button" className={styles.primary} onClick={()=>saveJoin({...joinRecord,status:"审核通过",subjectVerified:true,reviewNote:"主体与服务能力模拟审核通过"})}>模拟审核通过</button></>}
+          {joinRecord?.status==="待补充资料"&&<button type="button" className={styles.primary} onClick={()=>{setJoinDraft(joinRecord);setDialog({kind:"join",tab:"requirements"})}}>补充申请资料</button>}
+          {joinRecord?.status==="审核通过"&&<button type="button" className={styles.primary} disabled={!agreement} onClick={()=>saveJoin({...joinRecord,status:"已签署",agreementAt:new Date().toISOString()})}>确认签署协议</button>}
+          {joinRecord?.status==="服务待审核"&&<button type="button" className={styles.primary} onClick={()=>saveJoin({...joinRecord,status:"已入驻"})}>模拟服务审核通过并上线</button>}
+          {joinRecord?.status==="已入驻"&&<button type="button" className={styles.primary} onClick={()=>{setDialog(null);go("/market")}}>查看已上线服务</button>}
+          <button type="button" onClick={()=>setDialog(null)}>关闭</button>
+        </footer>
       </>}
     </AccessibleDialog>}
   </main>;
