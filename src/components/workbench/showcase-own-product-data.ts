@@ -13,7 +13,45 @@ const batchKey=(org:string,member:string)=>"shuomi:own-product-batches-v1:"+org+
 const productKey=(org:string,member:string)=>"shuomi:own-product-records-v1:"+org+":"+member;
 export const ownProductUpdated="shuomi:own-products-updated";
 const cloneSkus=(skus:OwnProductSku[]):OwnProductSku[]=>skus.map(s=>({...s,images:[...s.images]}));
-const readArray=(key:string):unknown[]=>{if(typeof window==="undefined")return [];try{const p:unknown=JSON.parse(sessionStorage.getItem(key)||"[]");return Array.isArray(p)?p:[]}catch{return []}};
+/** Own-product data is browser-local demo data, not server-side inventory.
+ * Read both generations and merge by stable id: older session data must not
+ * disappear just because a newer persistent snapshot exists.
+ * Never write an empty snapshot merely because storage is unavailable.
+ */
+const parseArray=(raw:string|null):unknown[]=>{try{const value:unknown=JSON.parse(raw||"[]");return Array.isArray(value)?value:[]}catch{return []}};
+const readArray=(key:string):unknown[]=>{
+ if(typeof window==="undefined")return [];
+ let durable:unknown[]=[],legacy:unknown[]=[];
+ try{durable=parseArray(localStorage.getItem(key))}catch{/* storage may be disabled */}
+ try{legacy=parseArray(sessionStorage.getItem(key))}catch{/* storage may be disabled */}
+ const merged=[...legacy,...durable];
+ const seen=new Set<string>();
+ const records=merged.filter(item=>{
+  if(!item||typeof item!=="object"||typeof (item as {id?:unknown}).id!=="string")return false;
+  const id=(item as {id:string}).id;
+  if(seen.has(id))return false;
+  seen.add(id);return true;
+ });
+ if(legacy.length)try{
+  // A partial migration or storage-quota failure must never erase durable data.
+  const previous=parseArray(localStorage.getItem(key));
+  const previousIds=new Set(previous.map(item=>item&&typeof item==="object"?(item as {id?:string}).id:undefined));
+  const additions=legacy.filter(item=>item&&typeof item==="object"&&!previousIds.has((item as {id?:string}).id));
+  if(additions.length)localStorage.setItem(key,JSON.stringify([...additions,...previous]));
+ }catch{/* existing session data remains available, no destructive fallback */}
+ return records;
+};
+const writeArray=(key:string,values:unknown[])=>{
+ if(typeof window==="undefined")throw Error("浏览器存储不可用");
+ const serialized=JSON.stringify(values);
+ // Keep the session copy for compatibility with previously opened tabs.
+ // Never claim durable persistence if browser quota/policy prevents it.
+ try{localStorage.setItem(key,serialized)}catch{
+  try{sessionStorage.setItem(key,serialized)}catch{throw Error("浏览器存储空间不足，无法保存商品数据。请先导出重要记录，勿清除站点数据。")}
+  throw Error("商品仅暂存在当前会话：浏览器持久存储空间不足，无法确保关闭后保留。请减少图片大小或导出数据。");
+ }
+ try{sessionStorage.setItem(key,serialized)}catch{/* durable snapshot already saved */}
+};
 export function readOwnProductBatches(org:string,member:string):OwnProductBatch[]{
  return readArray(batchKey(org,member)).filter((p):p is OwnProductBatch=>Boolean(p&&typeof p==="object"&&"id"in p&&typeof p.id==="string"&&"name"in p&&typeof p.name==="string"&&"createdAt"in p&&typeof p.createdAt==="string")).map(p=>({...p,productCount:readOwnProducts(org,member).filter(x=>x.batchId===p.id).length}));
 }
@@ -28,7 +66,7 @@ export function createOwnProductBatch(org:string,member:string,name:string):OwnP
  const list=readOwnProductBatches(org,member);
  if(list.some(b=>b.name===value))throw Error("该批次名称已经存在");
  const batch={id:"OWN-"+crypto.randomUUID(),name:value,createdAt:new Date().toLocaleString("zh-CN",{hour12:false}),productCount:0};
- sessionStorage.setItem(batchKey(org,member),JSON.stringify([batch,...list]));
+ writeArray(batchKey(org,member),[batch,...list]);
  notify(org,member);return batch;
 }
 export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omit<OwnProductRecord,"id"|"batchId"|"createdAt"|"checkedAt">):OwnProductRecord{
@@ -48,7 +86,7 @@ export function saveOwnProduct(org:string,member:string,batchId:string,entry:Omi
   const product:OwnProductRecord={...entry,templateId,optimizationMode,skus:adaptedSkus,originalSkus,id:"OWN-P-"+crypto.randomUUID(),batchId,createdAt:time,checkedAt:time};
  const current=readOwnProducts(org,member);
  // Keep prior products intact if session storage is full; no success without the actual data.
- sessionStorage.setItem(productKey(org,member),JSON.stringify([product,...current]));
+ writeArray(productKey(org,member),[product,...current]);
  notify(org,member);return product;
 }
 
@@ -69,7 +107,7 @@ export function simulateFiveOwnProductIntakes(org:string,member:string,batchId:s
 export function installSixProductOptimizationDemo(org:string,member:string):{created:number;pending:number;review:number;alreadyInstalled:boolean}{
  if(typeof window==="undefined"||!org||!member)throw Error("演示账号信息不完整");
  const marker="shuomi:own-product-six-demo-v2:"+org+":"+member;
- if(sessionStorage.getItem(marker)==="ready")return {created:0,pending:0,review:0,alreadyInstalled:true};
+ if((()=>{try{return localStorage.getItem(marker)==="ready"||sessionStorage.getItem(marker)==="ready"}catch{return false}})())return {created:0,pending:0,review:0,alreadyInstalled:true};
  const existingBatches=readOwnProductBatches(org,member);
  const batch=existingBatches.find(b=>b.name==="自有商品测试批次");
  // Prepare in-memory first; only replace data after the full new batch is constructed.
@@ -98,20 +136,22 @@ export function installSixProductOptimizationDemo(org:string,member:string):{cre
  if(created.filter(x=>x.status==="待审核").length!==4||created.filter(x=>x.status==="入库待完善").length!==2)throw Error("模拟商品分流数量异常");
  const prior=readOwnProducts(org,member);
  // Only replace unfinished products IN THE NAMED DEMO BATCH; preserve all real/other-batch records and approved data.
- const retained=prior.filter(p=>p.batchId!==batchId||p.status==="已入库");
+ const createdIds=new Set(created.map(p=>p.id));
+ const retained=prior.filter(p=>!createdIds.has(p.id));
  const templates=readAgentPreviewTemplates(org,member,"商品优化智能体");
  const needsTemplate=!templates.some(t=>t.name==="测试模板");
  const nextBatches=batch?existingBatches:[{id:batchId,name:"自有商品测试批次",createdAt:now,productCount:0},...existingBatches];
  // Persist product data before writing marker. Failures must not report success.
- if(!batch)sessionStorage.setItem(batchKey(org,member),JSON.stringify(nextBatches));
- sessionStorage.setItem(productKey(org,member),JSON.stringify([...created,...retained]));
+ if(!batch)writeArray(batchKey(org,member),nextBatches);
+ writeArray(productKey(org,member),[...created,...retained]);
  if(needsTemplate)writeAgentPreviewTemplates(org,member,"商品优化智能体",[...templates,{
   id:"own-six-demo-test-template",name:"测试模板",createdAt:now,config:{
    skills:["标题结构整理","商品卖点提炼","信息完整性检测"],knowledge:[],
    imageOptimization:true,imageInstructions:"English labels; white background; eight image slots per product; preserve original source. Generated illustrative assets must be marked as simulation.",useConfig:{imageLanguage:"英语",imageBackground:"白色背景",optimizationSource:"官方方案",imageUse:"共用视觉素材",imageProcessingScope:"手动选择",selectedMainImages:[1,2,3,4,5,6,7,8],selectedDetailImages:[1,2,3,4,5,6,7,8]}
   }
  }]);
- sessionStorage.setItem(marker,"ready");
+ try{localStorage.setItem(marker,"ready")}catch{/* fixture remains identifiable by stable ids */}
+ try{sessionStorage.setItem(marker,"ready")}catch{/* durable marker may be present */}
  notify(org,member);
  return {created:6,pending:2,review:4,alreadyInstalled:false};
 }
@@ -155,7 +195,7 @@ export function importOwnProductDemoImagePack(org:string,member:string,raw:unkno
  const review=next.filter(p=>ids.has(p.id)&&p.status==="待审核").length;
  const pending=next.filter(p=>ids.has(p.id)&&p.status==="入库待完善").length;
  if(review!==4||pending!==2)throw Error("预期状态不是 4 款待审核、2 款待完善，已停止导入");
- try{sessionStorage.setItem(productKey(org,member),JSON.stringify(next));}catch{throw Error("浏览器会话存储空间不足，未能保存全部 48 张图片；请换一个空白演示会话。")}
+ writeArray(productKey(org,member),next);
  notify(org,member);
  return {products:6,images:48,pending,review};
 }
@@ -213,7 +253,7 @@ export async function installGeneratedOwnProductDemoImages(org:string,member:str
  const review=selected.filter(p=>p.status==="待审核").length;
  const pending=selected.filter(p=>p.status==="入库待完善").length;
  // Approved products and manually edited statuses are preserved, even if counts differ from the original 4/2 fixture.
- try{sessionStorage.setItem(productKey(org,member),JSON.stringify(changed));}catch{throw Error("本次会话存储空间不足，无法保存 48 张图片")}
+ writeArray(productKey(org,member),changed);
  notify(org,member);
  return {products:6,images:changed.filter(p=>p.batchId===batch.id&&codes.includes(p.skus[0]?.skuCode??"")&&p.demoImageSource).reduce((n,p)=>n+Math.min(8,p.skus[0]?.images.length??0),0),review,pending,alreadyInstalled:false};
 }
@@ -246,7 +286,7 @@ export function updateOwnProductAfterReview(org:string,member:string,id:string,s
  const missing=checkOwnProductSkus(skus);
  const checkedAt=new Date().toLocaleString("zh-CN",{hour12:false});
  const updated:OwnProductRecord={...existing,originalSkus:cloneSkus(existing.originalSkus??existing.skus),skus:cloneSkus(skus),missing,checkedAt,status:missing.length?"入库待完善":"待审核",name:skus[0].name.trim()||existing.name};
- sessionStorage.setItem(productKey(org,member),JSON.stringify(all.map(p=>p.id===id?updated:p)));
+ writeArray(productKey(org,member),all.map(p=>p.id===id?updated:p));
  notify(org,member);
  return updated;
 }
