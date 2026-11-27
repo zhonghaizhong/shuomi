@@ -292,3 +292,10 @@
 
 /* Mark the one print that has a committed SKU-specific preview. */
 .assetCard .printPreviewIndicator{display:inline-flex;align-self:flex-start;max-width:100%;padding:4px 7px;border:1px solid #7367f0;border-radius:6px;color:var(--podassets-ink,#cfcde4);font-size:11px;line-height:1.4;background:color-mix(in srgb,#7367f0 14%,transparent)}
+
+/* Preview one colour, independently stage any subset of colour/size SKUs. */
+.relatedProduct .selectedSkuSummary{display:flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:11px;color:var(--podassets-muted,#acabc1);margin-top:2px;line-height:1.4}
+.relatedProduct .selectedSkuSummary>span:first-child{font-weight:700;color:var(--podassets-ink,#cfcde4);white-space:nowrap}
+.relatedProduct .selectedSkuSummary>span:nth-child(2){max-width:100%;overflow-wrap:anywhere}
+.relatedProduct .selectedSkuSummary button{padding:3px 7px;border:1px solid var(--podassets-line,#52576e);border-radius:5px;background:transparent;color:var(--podassets-ink,#cfcde4);font-size:11px;min-height:0}
+.relatedProduct .variantGroup>span{white-space:normal;line-height:1.3}
