@@ -18,7 +18,7 @@ export function readOriginalPricingBaseline(org:string,member:string,kind:string
 }
 export type OptimizedDatasetProduct={
  sourceProductId:string;name:string;images:string[];description:string;
- skuCodes:string[]; skuSnapshots?:VersionSkuSnapshot[]; detailImages?:string[]; category?:string; attributes?:Record<string,string>;
+ skuCodes:string[]; skuSnapshots?:VersionSkuSnapshot[]; detailImages?:string[]; category?:string; attributes?:Record<string,string>; demoListingStatus?:PlatformListingStatus;
 };
 export type PlatformReviewStatus="待审核"|"审核中"|"审核通过"|"审核驳回";
 export type PlatformListingStatus="未上架"|"已上架"|"已下架";
@@ -29,7 +29,7 @@ export type OptimizedDataset={
  uploadTaskId:string;externalReceiptId:string;
  acceptedAt?:string;reviewStatus?:PlatformReviewStatus;listingStatus?:PlatformListingStatus;reviewUpdatedAt?:string;
  products:OptimizedDatasetProduct[];
- demo?:true;storeType?:string;simulatedPlatformProductId?:string;simulatedReceiptId?:string;
+ demo?:true;storeType?:string;simulatedPlatformProductId?:string;simulatedReceiptId?:string;demoListingSummary?:string;
 };
 const key=(org:string,member:string)=>"shuomi:optimized-datasets-v1:"+org+":"+member;
 const statusKey=(org:string,member:string)=>"shuomi:optimized-dataset-platform-states-v1:"+org+":"+member;
@@ -111,17 +111,19 @@ export function readReusableOptimizedDatasets(org:string,member:string):Optimize
   const images=[...new Set([...Object.values(t.imageEdits??{}).flatMap(x=>x.main??[]),...p.optimizedImages,...(p.variantImageGroups??[]).flatMap(g=>g.optimizedImages.map(x=>x.url))])];
   const skus=p.variantDetails?.map(v=>t.textEdits?.merchantSkuCodes?.[v.sku]??v.sku)??t.productIds;
   const baseline=t.originalPricingBaseline??readOriginalPricingBaseline(org,member,t.source,t.batchId,t.productIds);
-  const products:OptimizedDatasetProduct[]=t.productIds.map(id=>({sourceProductId:id,name:t.textEdits?.title??p.optimizedName,description:t.textEdits?.description??p.optimizedDescription,images:[...images],skuCodes:[...skus],category:t.textEdits?.categoryPath,detailImages:Object.values(t.imageEdits??{}).flatMap(x=>x.detail??[]),skuSnapshots:(baseline.find(x=>x.sourceProductId===id)?.skus??[]).map(v=>({...v,merchantSku:t.textEdits?.merchantSkuCodes?.[v.sku]}))}));
+  const products:OptimizedDatasetProduct[]=t.productIds.map(id=>({demoListingStatus:t.demoSubmission!.listingStatus??"未上架",sourceProductId:id,name:t.textEdits?.title??p.optimizedName,description:t.textEdits?.description??p.optimizedDescription,images:[...images],skuCodes:[...skus],category:t.textEdits?.categoryPath,detailImages:Object.values(t.imageEdits??{}).flatMap(x=>x.detail??[]),skuSnapshots:(baseline.find(x=>x.sourceProductId===id)?.skus??[]).map(v=>({...v,merchantSku:t.textEdits?.merchantSkuCodes?.[v.sku]}))}));
   const grouped=groups.get(identity);
   if(grouped){
    // Append only new source products. Repeated uploads of an already included
    // product are execution history, not changes to the version snapshot.
    const known=new Set(grouped.products.map(item=>item.sourceProductId));
    grouped.products.push(...products.filter(item=>!known.has(item.sourceProductId)));
+   const listed=grouped.products.filter(item=>item.demoListingStatus==="已上架").length;
+   grouped.demoListingSummary=listed===0?"未上架":listed===grouped.products.length?"已上架":"部分已上架（"+listed+"/"+grouped.products.length+"）";
    continue;
   }
   const version=result.filter(d=>d.sourceKind===t.source&&d.sourceBatchId===t.batchId).reduce((n,d)=>Math.max(n,d.version),0)+1;
-  const snapshot:OptimizedDataset={id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language,storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:t.demoSubmission!.listingStatus??"未上架",simulatedPlatformProductId:t.demoSubmission!.simulatedPlatformProductId,simulatedReceiptId:t.demoSubmission!.simulatedReceiptId,demo:true,products};
+  const snapshot:OptimizedDataset={id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language,storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:t.demoSubmission!.listingStatus??"未上架",simulatedPlatformProductId:t.demoSubmission!.simulatedPlatformProductId,simulatedReceiptId:t.demoSubmission!.simulatedReceiptId,demo:true,demoListingSummary:t.demoSubmission!.listingStatus??"未上架",products};
   groups.set(identity,snapshot);
   result.push(snapshot);
  }
