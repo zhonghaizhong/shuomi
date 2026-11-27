@@ -12,8 +12,8 @@ export function ShowcaseActionDialog({action,detail,onClose,onCreateGoal,onCreat
  const goal=action==="新建目标";
  const kind:DemoDraft["kind"]|null=action.includes("新建任务")?"task":action.includes("新建项目")?"project":
   action.includes("添加知识")||action.includes("新增知识")?"knowledge":action.includes("新建技能")?"skill":null;
- const [name,setName]=useState(""),[description,setDescription]=useState(""),[metric,setMetric]=useState("预计净利润");
- const [store,setStore]=useState("一号店"),[period,setPeriod]=useState("每月"),[value,setValue]=useState("");
+ const [name,setName]=useState(""),[description,setDescription]=useState("");
+ const [store,setStore]=useState("一号店");
  const first=useRef<HTMLButtonElement>(null),panel=useRef<HTMLElement>(null);
  const closeRef=useRef(onClose);
  closeRef.current=onClose;
@@ -34,25 +34,17 @@ export function ShowcaseActionDialog({action,detail,onClose,onCreateGoal,onCreat
  const submit=(e:FormEvent<HTMLFormElement>)=>{
    e.preventDefault();
    if(!name.trim())return;
-   if(goal){if(!Number.isFinite(Number(value))||Number(value)<=0)return;onCreateGoal({name:name.trim(),metric,store,period,value:value.trim()});}
-   else if(kind&&onCreateDraft)onCreateDraft({kind,name:name.trim(),description:description.trim(),store});
+   if(kind&&onCreateDraft)onCreateDraft({kind,name:name.trim(),description:description.trim(),store});
  };
  return <div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
    <section ref={panel} className={styles.panel} role="dialog" aria-modal="true" aria-labelledby="showcase-action-heading">
      <header className={styles.header}><div><small>{goal?"运营驾驶舱 / 目标管理":detail?"业务记录 / 查看详情":"硕米智能引擎 / 演示交互"}</small><h2 id="showcase-action-heading">{detail?.title??action}</h2></div><button ref={first} type="button" className={styles.close} aria-label="关闭弹窗" onClick={onClose}>×</button></header>
      {goal?<ShowcaseGoalForm stores={stores} onCreateGoal={onCreateGoal} onClose={onClose}/>:kind?<form onSubmit={submit} className={styles.form}>
        <p className={styles.note}>本次操作仅更新演示界面的本地数据，不会写入正式业务后台。</p>
-       <label>{goal?"目标名称":kind==="task"?"任务名称":kind==="project"?"项目名称":kind==="knowledge"?"知识名称":"技能名称"}<input required maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="输入名称"/></label>
-       {goal?<div className={styles.fields}>
-         <label>目标指标<select value={metric} onChange={e=>setMetric(e.target.value)}><option>预计净利润</option><option>销售额</option><option>成交订单数</option><option>净利润率</option></select></label>
-         <label>适用店铺<select value={store} onChange={e=>setStore(e.target.value)}><option>一号店</option><option>二号店</option><option>三号店</option><option>全部店铺</option></select></label>
-         <label>目标周期<select value={period} onChange={e=>setPeriod(e.target.value)}><option>每天</option><option>每周</option><option>每月</option></select></label>
-         <label>目标值<input required type="number" min="0.01" step="any" value={value} onChange={e=>setValue(e.target.value)} placeholder="输入目标数值"/></label>
-       </div>:<>
-         <label>业务说明<textarea rows={4} maxLength={1000} value={description} onChange={e=>setDescription(e.target.value)} placeholder="描述业务目标或需要处理的内容"/></label>
-         {(kind==="task"||kind==="project")&&<label>关联店铺<select value={store} onChange={e=>setStore(e.target.value)}><option>一号店</option><option>二号店</option><option>三号店</option><option>全部店铺</option></select></label>}
-       </>}
-       <footer className={styles.actions}><button type="button" className={styles.secondary} onClick={onClose}>取消</button><button type="submit" className={styles.primary}>{goal?"添加到演示列表":"创建演示草稿"}</button></footer>
+       <label>{kind==="task"?"任务名称":kind==="project"?"项目名称":kind==="knowledge"?"知识名称":"技能名称"}<input required maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="输入名称"/></label>
+       <label>业务说明<textarea rows={4} maxLength={1000} value={description} onChange={e=>setDescription(e.target.value)} placeholder="描述业务目标或需要处理的内容"/></label>
+       {(kind==="task"||kind==="project")&&<label>关联店铺<select value={store} onChange={e=>setStore(e.target.value)}><option>一号店</option><option>二号店</option><option>三号店</option><option>全部店铺</option></select></label>}
+       <footer className={styles.actions}><button type="button" className={styles.secondary} onClick={onClose}>取消</button><button type="submit" className={styles.primary}>创建演示草稿</button></footer>
      </form>:detail?<div className={styles.information}>
        <div className={styles.detail}><span>记录名称</span><strong>{detail.title}</strong></div>
        <div className={styles.detail}><span>业务说明</span><p>{detail.description}</p></div>
