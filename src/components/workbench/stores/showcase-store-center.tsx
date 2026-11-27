@@ -6,7 +6,7 @@ import {useShowcaseSuite} from "../account/showcase-account-state";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
 import {demoStoreKey,readDemoStoreBindings,saveDemoStoreBindings,startDemoStoreService,demoStoreServiceActive,countConsumedStorePeriods,countPoolConsumedStorePeriods,type DemoStoreBinding} from "../store-binding-demo";
 import {useDemoPurchases} from "../showcase-purchases";
-import {readStoreProductSnapshot} from "./store-product-snapshot-demo";
+import {readStoreProductSnapshot,saveVerifiedStoreProductSnapshot,buildAdminStoreSyncDemo} from "./store-product-snapshot-demo";
 
 type Store=DemoStoreBinding;
 const demoSites=["美国站","加拿大站","英国站","德国站","法国站"] as const;
@@ -144,7 +144,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const storePickerRows=storePickerMatches.slice((storePickerCurrentPage-1)*6,storePickerCurrentPage*6);
  void productSnapshotRevision;
  const productSnapshots=visibleProductStores.flatMap(x=>{
-  const saved=readStoreProductSnapshot(organizationId,x.id,x.platformStoreId!);
+  const saved=readStoreProductSnapshot(organizationId,x.id,x.platformStoreId!)??buildAdminStoreSyncDemo(organizationId,x.id,x.platformStoreId!);
   return saved?[{store:x,snapshot:saved}]:[];
  });
  const lastProductSync=productSnapshots.map(x=>x.snapshot.syncedAt).sort().at(-1);
@@ -303,7 +303,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
      <div className={css.productSyncToolbar}>
       <div className={css.productCurrentStore}><span>当前店铺</span><strong>{selectedProductStore?selectedProductStore.name+" · "+selectedProductStore.region:"暂无已绑定店铺"}</strong></div>
       <button type="button" disabled={!eligibleProductStores.length} onClick={()=>{setStorePickerSearch("");setStorePickerRegion("全部站点");setStorePickerStatus("全部状态");setStorePickerAdvanced(false);setStorePickerPage(1);setStorePickerOpen(true)}}>选择店铺（{eligibleProductStores.length}）</button>
-      <button type="button" className={css.productSyncPrimary} disabled={!selectedProductStore} onClick={()=>setProductSyncNotice("当前为页面设计预览，尚未接入 SHEIN 商品同步接口。未请求平台、未创建同步任务；已保存的历史商品不会被清空。")}>同步商品</button>
+      <button type="button" className={css.productSyncPrimary} disabled={!selectedProductStore} onClick={()=>{if(!selectedProductStore?.platformStoreId)return;const existing=readStoreProductSnapshot(organizationId,selectedProductStore.id,selectedProductStore.platformStoreId);const demo=buildAdminStoreSyncDemo(organizationId,selectedProductStore.id,selectedProductStore.platformStoreId);if(demo&&(!existing||existing.simulated)){if(!demoStoreServiceActive(selectedProductStore)||selectedProductStore.connectionIssue){setProductSyncNotice("店铺服务已到期或连接异常，已保留上次同步记录。");return}try{saveVerifiedStoreProductSnapshot({...demo,syncedAt:new Date().toISOString()});setProductSyncNotice("模拟同步成功：共 2 款商品，硕米刊登 1 款、商家原有 1 款。未请求真实平台。")}catch{setProductSyncNotice("模拟同步保存失败，已保留原有记录。")}return}setProductSyncNotice("当前未接入 SHEIN 真实商品同步接口；已保存的历史商品不会被清空。")}}>同步商品</button>
       
      </div>
      {storePickerOpen?<div className={css.productPickerBackdrop} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setStorePickerOpen(false)}}>
@@ -338,7 +338,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
      </div>
     </section>
     <section className={css.panel} aria-label="已同步商品与来源">
-     <header><h2>店铺商品</h2><span>共 {cachedProducts.length} 条 · {lastProductSync?"最近同步："+new Date(lastProductSync).toLocaleString("zh-CN",{hour12:false}):"暂无已保存的同步记录"}</span></header>
+     <header><h2>店铺商品</h2><span>共 {cachedProducts.length} 条 · {lastProductSync?"(productSnapshots.some(x=>x.snapshot.simulated)?"模拟同步：":"最近同步：")+new Date(lastProductSync).toLocaleString("zh-CN",{hour12:false}):"暂无已保存的同步记录"}</span></header>
      <div className={css.productSourceToolbar}>
       <div className={css.productSourceTabs} role="group" aria-label="商品来源筛选">
        {([["all","全部商品"],["merchant","商家原有"],["shuomi","硕米刊登"]] as const).map(([value,label])=><button type="button" key={value} aria-pressed={productSource===value} onClick={()=>setProductSource(value)}>{label}</button>)}
@@ -351,7 +351,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
       <div><strong>硕米刊登</strong><small>平台商品 ID 与硕米上传任务、平台接收回执匹配成功</small></div>
      </div>
      <div className={css.productDataTable}><table><thead><tr><th>商品信息</th><th>所属店铺</th><th>商品来源</th><th>平台状态</th><th>售价 / 库存</th><th>最近同步</th><th>操作</th></tr></thead><tbody>{cachedProducts.length?cachedProducts.map(row=><tr key={row.store.id+":"+row.platformProductId+":"+row.sku}><td><div className={css.productCachedIdentity}>{row.imageUrl?<img src={row.imageUrl} alt={row.name} loading="lazy"/>:null}<div><strong>{row.name}</strong><small>平台商品 ID：{row.platformProductId} · SKU：{row.sku}</small></div></div></td><td>{row.store.name}</td><td>{row.origin==="shuomi"?"硕米刊登":row.origin==="merchant"?"商家原有":"来源待核实"}</td><td>{row.platformStatus}</td><td>{row.price??"—"} / {row.stock??"—"}</td><td>{new Date(productSnapshots.find(x=>x.store.id===row.store.id)!.snapshot.syncedAt).toLocaleString("zh-CN",{hour12:false})}</td><td>查看</td></tr>):<tr><td colSpan={7}><div className={css.productDataEmpty}><Package size={30}/><h3>{allCachedProducts.length?"当前筛选没有匹配商品":"暂无已保存的同步商品"}</h3><span>{allCachedProducts.length?"切换来源或清空搜索条件查看上次同步记录。":"首次成功同步后会保留商品快照；再次打开页面不自动同步或清空旧结果。"}</span></div></td></tr>}</tbody></table></div>
-     <p className={css.productSyncFootnote}>仅「同步商品」在真实接口接通后才会更新已保存快照。同步失败必须保留上一次成功结果；已保存商品不保证是实时状态。来源判定以店铺 ID、平台商品 ID 和已核实上传回执为准；没有对应回执的商品暂归为「商家原有 / 来源待核实」，不因商品名称相同就标记为硕米刊登。待刊登、已提交不等于已上架。</p>
+     <p className={css.productSyncFootnote}>演示店铺支持模拟同步，真实商品快照仅在接口接通并成功同步后更新。同步失败必须保留上一次成功结果；已保存商品不保证是实时状态。来源判定以店铺 ID、平台商品 ID 和已核实上传回执为准；没有对应回执的商品暂归为「商家原有 / 来源待核实」，不因商品名称相同就标记为硕米刊登。待刊登、已提交不等于已上架。</p>
     </section>
    </>:<>
     <section className={css.metrics}>{[["订单总数",0],["待处理订单",0],["发货中",0],["履约异常",0]].map(([title,val])=><article key={title}><span>{title}</span><strong>{val}</strong></article>)}</section>

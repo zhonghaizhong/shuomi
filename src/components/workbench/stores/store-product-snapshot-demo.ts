@@ -1,4 +1,6 @@
 "use client";
+import {readShowcaseUploadTasks} from "../listing/showcase-upload-tasks";
+import {listingDemoArtSet} from "../listing/showcase-listing-ai-images";
 
 /** Browser-only demonstration of the last successfully verified product sync.
  * Production must persist these records server-side per organization and store.
@@ -13,6 +15,8 @@ export type StoreProductSnapshotRow={
  price?:string;
  stock?:number;
  origin:"merchant"|"shuomi"|"unknown";
+ demoUploadTaskId?:string;
+ demoReceiptId?:string;
 };
 export type StoreProductSnapshot={
  organizationId:string;
@@ -20,6 +24,7 @@ export type StoreProductSnapshot={
  platformStoreId:string;
  syncedAt:string;
  rows:StoreProductSnapshotRow[];
+ simulated?:true;
 };
 const key=(org:string,store:string)=>"shuomi:store-product-snapshot-demo:v1:"+org+":"+store;
 export function readStoreProductSnapshot(org:string,store:string,platformStoreId:string):StoreProductSnapshot|null{
@@ -33,7 +38,7 @@ export function readStoreProductSnapshot(org:string,store:string,platformStoreId
   if(v.organizationId!==org||v.storeId!==store||v.platformStoreId!==platformStoreId||!v.syncedAt||!Number.isFinite(Date.parse(v.syncedAt))||!Array.isArray(v.rows))return null;
   const rows=v.rows.filter((r):r is StoreProductSnapshotRow=>Boolean(r&&typeof r.platformProductId==="string"&&r.platformProductId&&typeof r.name==="string"&&typeof r.sku==="string"&&typeof r.platformStatus==="string"&&["merchant","shuomi","unknown"].includes(r.origin))).map(r=>({...r}));
   if(rows.length!==v.rows.length)return null;
-  return {organizationId:org,storeId:store,platformStoreId,syncedAt:v.syncedAt,rows};
+  return {organizationId:org,storeId:store,platformStoreId,syncedAt:v.syncedAt,rows,...(v.simulated===true?{simulated:true as const}:{})};
  }catch{return null}
 }
 /** Only call after platform sync finishes and returned records are validated. */
@@ -43,4 +48,23 @@ export function saveVerifiedStoreProductSnapshot(snapshot:StoreProductSnapshot):
  if(snapshot.rows.some(r=>!r.platformProductId||!r.name||!r.sku||!r.platformStatus||!["merchant","shuomi","unknown"].includes(r.origin)))throw Error("平台商品数据不完整");
  localStorage.setItem(key(snapshot.organizationId,snapshot.storeId),JSON.stringify(snapshot));
  window.dispatchEvent(new CustomEvent("shuomi:store-product-snapshot-updated",{detail:{organizationId:snapshot.organizationId,storeId:snapshot.storeId}}));
+}
+
+/** Two explicitly synthetic marketplace results, scoped to the existing approved Lodge task.
+ * No external receipt is created or claimed; the simulated receipt is matched by task/store ID.
+ * No other product or shop is seeded. Existing successful snapshots are not overwritten on load.
+ */
+export function buildAdminStoreSyncDemo(org:string,store:string,platformStoreId:string):StoreProductSnapshot|null{
+ if(org!=="SM-ENT-000001"||store!=="SIM-ADMIN-01"||platformStoreId!=="SIM-SHEIN-ADMIN-01")return null;
+ const task=readShowcaseUploadTasks(org,"admin").find(t=>t.storeId===store&&t.id.startsWith("SHUOMI-AMZ-AI-5:")&&t.id.endsWith(":B00008GKD3")&&t.productIds.length===1&&t.status==="模拟已提交"&&t.demoSubmission?.storeId===store&&t.demoSubmission.externalReceiptId===null&&t.demoProduct);
+ if(!task?.demoProduct||!task.demoSubmission)return null;
+ const base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
+ const photo=task.imageEdits?.default?.main?.[0]||task.demoProduct.optimizedImages[0];
+ const imageUrl=photo&&/^(https?:\/\/|\/)/.test(photo)?photo:listingDemoArtSet("skillet")[0];
+ const simulatedReceipt={storeId:task.storeId,platformProductId:"SIM-SHEIN-ADMIN-01-B00008GKD3",taskId:task.id,id:"SIM-RECEIPT-"+task.id};
+ const platformRows:StoreProductSnapshotRow[]=[
+  {platformProductId:simulatedReceipt.platformProductId,sku:"L8SK3",name:task.textEdits?.title||task.demoProduct.optimizedName,imageUrl,platformStatus:"模拟已上架",price:"US$24.99",stock:68,origin:"unknown"},
+  {platformProductId:"SIM-SHEIN-ADMIN-01-MERCHANT-0001",sku:"MERCHANT-TEE-BLK-M",name:"Classic Black Cotton Crew Neck T-Shirt",imageUrl:base+"/assets/store-sync-demo/merchant-black-cotton-tee.webp",platformStatus:"模拟已上架",price:"US$12.99",stock:143,origin:"unknown"}
+ ];
+ return {organizationId:org,storeId:store,platformStoreId,syncedAt:task.demoSubmission.submittedAt,simulated:true,rows:platformRows.map(row=>row.platformProductId===simulatedReceipt.platformProductId&&simulatedReceipt.storeId===store?{...row,origin:"shuomi",demoUploadTaskId:simulatedReceipt.taskId,demoReceiptId:simulatedReceipt.id}:{...row,origin:"merchant"})};
 }
