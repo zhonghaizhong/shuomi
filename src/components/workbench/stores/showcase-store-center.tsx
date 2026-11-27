@@ -7,6 +7,7 @@ import {getDemoMembership} from "../../../../showcase/demo-identity";
 import {demoStoreKey,readDemoStoreBindings,saveDemoStoreBindings,startDemoStoreService,demoStoreServiceActive,countConsumedStorePeriods,countPoolConsumedStorePeriods,type DemoStoreBinding} from "../store-binding-demo";
 import {useDemoPurchases} from "../showcase-purchases";
 import {readStoreProductSnapshot,saveVerifiedStoreProductSnapshot,buildAdminStoreSyncDemo} from "./store-product-snapshot-demo";
+import {simulateApprovedKindleListing} from "../listing/showcase-upload-tasks";
 
 type Store=DemoStoreBinding;
 const demoSites=["美国站","加拿大站","英国站","德国站","法国站"] as const;
@@ -130,6 +131,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  useEffect(()=>{const refresh=()=>setProductSnapshotRevision(n=>n+1);window.addEventListener("storage",refresh);window.addEventListener("shuomi:store-product-snapshot-updated",refresh);return()=>{window.removeEventListener("storage",refresh);window.removeEventListener("shuomi:store-product-snapshot-updated",refresh)}},[]);
  // Read the last verified snapshot from local browser storage. Opening this page
  // must never initiate a remote sync or mutate previously saved product rows.
+ useEffect(()=>{if(pathname==="/workbench/store-products"&&simulateApprovedKindleListing(organizationId,memberId,"SIM-ADMIN-01"))setProductSnapshotRevision(n=>n+1)},[pathname,organizationId,memberId]);
  const eligibleProductStores=stores.filter(x=>Boolean(x.platformStoreId));
  const selectedProductStore=eligibleProductStores.find(x=>x.id===productStoreId)??eligibleProductStores[0];
  const visibleProductStores=selectedProductStore?[selectedProductStore]:[];
@@ -144,7 +146,9 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const storePickerRows=storePickerMatches.slice((storePickerCurrentPage-1)*6,storePickerCurrentPage*6);
  void productSnapshotRevision;
  const productSnapshots=visibleProductStores.flatMap(x=>{
-  const saved=readStoreProductSnapshot(organizationId,x.id,x.platformStoreId!)??buildAdminStoreSyncDemo(organizationId,x.id,x.platformStoreId!);
+  const prior=readStoreProductSnapshot(organizationId,x.id,x.platformStoreId!);
+  const legacy=prior?.simulated&&prior.rows.some(row=>row.platformProductId==="SIM-SHEIN-ADMIN-01-B00008GKD3");
+  const saved=legacy?buildAdminStoreSyncDemo(organizationId,x.id,x.platformStoreId!):prior??buildAdminStoreSyncDemo(organizationId,x.id,x.platformStoreId!);
   return saved?[{store:x,snapshot:saved}]:[];
  });
  const lastProductSync=productSnapshots.map(x=>x.snapshot.syncedAt).sort().at(-1);

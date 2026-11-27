@@ -6,7 +6,7 @@ import {readReusableOptimizedDatasets,optimizedDatasetsChanged,readOriginalPrici
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import {readShowcaseEnabledAgents,readShowcaseAgentTemplates,showcaseAgentId,showcaseAgentStateChanged} from "../showcase-agent-demo-state";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
-import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,simulateApprovedLodgeSubmission,saveListingVariantPhoto,saveShowcaseGalleryEdits,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,type ListingVariantPhotoRole,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
+import {addShowcaseUploadTask,readShowcaseUploadTasks,refreshAmazonFiveDemoPhotos,simulateAmazonFiveListingWorkflow,simulateAmazonMultiVariantListingWorkflow,simulateApprovedLodgeSubmission,simulateApprovedKindleListing,saveListingVariantPhoto,saveShowcaseGalleryEdits,listingVariantPhotoRoles,listingVariantGalleryCards,variantGroupReady,type ListingVariantPhotoRole,completeShowcaseUploadTask,approveShowcaseUploadTask,saveShowcaseListingTextEdits,showcaseUploadTasksEvent,showcaseUploadBatchKey,showcaseUploadBatchLabel,showcaseUploadBatchPreferenceKey,type ShowcaseUploadTask} from "./showcase-upload-tasks";
 import {useRouter} from "next/navigation";
 import {AdaptationRulesDialog} from "./showcase-adaptation-rules-dialog";
 import {fieldSchemaMatches,scopedFieldKey,findUnambiguousEnumOption,type FieldScope} from "./showcase-platform-field-schema";
@@ -133,11 +133,13 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
     rule:"硕米规则",agentName:"商品优化智能体",templateId:template.id
    });
    const lodgeSimulated=simulateApprovedLodgeSubmission(organizationId,memberId,target.id);
+   const kindleSimulated=simulateApprovedKindleListing(organizationId,memberId,target.id);
    demoTaskInitialized.current=true;
    const preference=JSON.stringify(["采集批次",selectedAmazon.id,"original"]);
    sessionStorage.setItem(showcaseUploadBatchPreferenceKey(organizationId,memberId),preference);
    setBatchFilter(preference);setAppliedBatch(preference);
-   if(lodgeSimulated)setNotice("Lodge 铸铁煎锅已模拟审核并提交至 SHEIN 美国站 · 管理员演示店铺01。仅本地演示，没有实际平台上传或回执。");
+   if(kindleSimulated)setNotice("Kindle 阅读器已模拟审核通过、平台接收及上架；Lodge 煎锅维持未上架。仅本地演示。");
+   else if(lodgeSimulated)setNotice("Lodge 铸铁煎锅已模拟审核并提交至 SHEIN 美国站 · 管理员演示店铺01。仅本地演示，没有实际平台上传或回执。");
    else if(result.created||extra.created)setNotice("已新增两款真实图片多变体商品到原批次：Crocs 待补全、Stanley 待审核；仅保存模拟任务，未上传 SHEIN。");
   }catch(e){setNotice(e instanceof Error?e.message:"五款商品演示初始化失败");}
  },[organizationId,memberId,dataVersion,agentDemoVersion,availableStoreBindings.length,collectedBatches]);

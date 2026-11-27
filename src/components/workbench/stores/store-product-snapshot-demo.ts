@@ -50,21 +50,21 @@ export function saveVerifiedStoreProductSnapshot(snapshot:StoreProductSnapshot):
  window.dispatchEvent(new CustomEvent("shuomi:store-product-snapshot-updated",{detail:{organizationId:snapshot.organizationId,storeId:snapshot.storeId}}));
 }
 
-/** Two explicitly synthetic marketplace results, scoped to the existing approved Lodge task.
+/** Two explicitly synthetic marketplace results, scoped to the existing approved and published Kindle task.
  * No external receipt is created or claimed; the simulated receipt is matched by task/store ID.
  * No other product or shop is seeded. Existing successful snapshots are not overwritten on load.
  */
 export function buildAdminStoreSyncDemo(org:string,store:string,platformStoreId:string):StoreProductSnapshot|null{
  if(org!=="SM-ENT-000001"||store!=="SIM-ADMIN-01"||platformStoreId!=="SIM-SHEIN-ADMIN-01")return null;
- const task=readShowcaseUploadTasks(org,"admin").find(t=>t.storeId===store&&t.id.startsWith("SHUOMI-AMZ-AI-5:")&&t.id.endsWith(":B00008GKD3")&&t.productIds.length===1&&t.status==="模拟已提交"&&t.demoSubmission?.storeId===store&&t.demoSubmission.externalReceiptId===null&&t.demoProduct);
+ const task=readShowcaseUploadTasks(org,"admin").find(t=>t.storeId===store&&t.id.startsWith("SHUOMI-AMZ-AI-5:")&&t.id.endsWith(":B0CFPJYX7P")&&t.productIds.length===1&&t.status==="模拟已提交"&&t.demoSubmission?.storeId===store&&t.demoSubmission.externalReceiptId===null&&t.demoSubmission.listingStatus==="已上架"&&t.demoSubmission.simulatedPlatformProductId&&t.demoSubmission.simulatedReceiptId&&t.demoProduct);
  if(!task?.demoProduct||!task.demoSubmission)return null;
  const base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
  const photo=task.imageEdits?.default?.main?.[0]||task.demoProduct.optimizedImages[0];
- const imageUrl=photo&&/^(https?:\/\/|\/)/.test(photo)?photo:listingDemoArtSet("skillet")[0];
- const simulatedReceipt={storeId:task.storeId,platformProductId:"SIM-SHEIN-ADMIN-01-B00008GKD3",taskId:task.id,id:"SIM-RECEIPT-"+task.id};
+ const imageUrl=photo&&/^(https?:\/\/|\/)/.test(photo)?photo:listingDemoArtSet("ereader")[0];
+ const simulatedReceipt={storeId:task.storeId,platformProductId:task.demoSubmission.simulatedPlatformProductId!,taskId:task.id,id:task.demoSubmission.simulatedReceiptId!};
  const platformRows:StoreProductSnapshotRow[]=[
-  {platformProductId:simulatedReceipt.platformProductId,sku:"L8SK3",name:task.textEdits?.title||task.demoProduct.optimizedName,imageUrl,platformStatus:"模拟已上架",price:"US$24.99",stock:68,origin:"unknown"},
+  {platformProductId:simulatedReceipt.platformProductId,sku:"B0CFPJYX7P",name:task.textEdits?.title||task.demoProduct.optimizedName,imageUrl,platformStatus:"模拟已上架",price:"US$129.99",stock:36,origin:"unknown"},
   {platformProductId:"SIM-SHEIN-ADMIN-01-MERCHANT-0001",sku:"MERCHANT-TEE-BLK-M",name:"Classic Black Cotton Crew Neck T-Shirt",imageUrl:base+"/assets/store-sync-demo/merchant-black-cotton-tee.webp",platformStatus:"模拟已上架",price:"US$12.99",stock:143,origin:"unknown"}
  ];
- return {organizationId:org,storeId:store,platformStoreId,syncedAt:task.demoSubmission.submittedAt,simulated:true,rows:platformRows.map(row=>row.platformProductId===simulatedReceipt.platformProductId&&simulatedReceipt.storeId===store?{...row,origin:"shuomi",demoUploadTaskId:simulatedReceipt.taskId,demoReceiptId:simulatedReceipt.id}:{...row,origin:"merchant"})};
+ return {organizationId:org,storeId:store,platformStoreId,syncedAt:task.demoSubmission.publishedAt||task.demoSubmission.submittedAt,simulated:true,rows:platformRows.map(row=>row.platformProductId===simulatedReceipt.platformProductId&&simulatedReceipt.storeId===store?{...row,origin:"shuomi",demoUploadTaskId:simulatedReceipt.taskId,demoReceiptId:simulatedReceipt.id}:{...row,origin:"merchant"})};
 }

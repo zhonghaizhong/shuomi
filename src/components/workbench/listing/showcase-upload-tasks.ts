@@ -46,7 +46,7 @@ export type ShowcaseUploadTask={
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
  status:"待补全"|"待执行智能体"|"待审核"|"待平台提交"|"模拟已提交";
  /** Local demonstration only; not evidence of external API submission. */
- demoSubmission?:{reviewedAt:string;submittedAt:string;platform:"SHEIN";site:string;storeId:string;storeName:string;result:"模拟提交成功";externalReceiptId:null};
+ demoSubmission?:{reviewedAt:string;submittedAt:string;platform:"SHEIN";site:string;storeId:string;storeName:string;result:"模拟提交成功";externalReceiptId:null;listingStatus?:"未上架"|"已上架"|"已下架";publishedAt?:string;simulatedPlatformProductId?:string;simulatedReceiptId?:string};
  demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:ListingVariantDetail[];variantImageGroups?:ListingVariantImageGroup[];imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
  textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>;skuNames?:Record<string,string>;merchantSkuCodes?:Record<string,string>;categoryPath?:string;categoryRulePending?:boolean;revision?:number;updatedAt?:string;fieldValues?:ScopedFieldValues;legacyMissingValues?:Record<string,string>;variantStructure?:VariantStructureDraft;variantStructurePending?:boolean};
  /** Authoritative schema only; no guessed marketplace categories. */
@@ -392,4 +392,17 @@ export function refreshAmazonFiveDemoPhotos(org:string,member:string):number{
   window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  }
  return count;
+}
+
+/** One additional approved demo item, never alter the previously received Lodge item. */
+export function simulateApprovedKindleListing(org:string,member:string,storeId:string):boolean{
+ if(typeof window==="undefined"||org!=="SM-ENT-000001"||member!=="admin"||storeId!=="SIM-ADMIN-01")return false;
+ const records=readShowcaseUploadTasks(org,member);
+ const target=records.find(t=>t.id.startsWith("SHUOMI-AMZ-AI-5:")&&t.id.endsWith(":B0CFPJYX7P")&&t.productIds.length===1&&t.storeId===storeId);
+ if(!target||target.status!=="待审核"||!target.demoProduct||target.demoProduct.missingFields.length||target.missingCount||target.demoProduct.variantImageGroups?.length||target.platform!=="SHEIN"||target.region!=="美国站"||target.storeName!=="管理员演示店铺01")return false;
+ const now=new Date().toISOString();
+ const next:ShowcaseUploadTask={...target,status:"模拟已提交",demoProduct:{...target.demoProduct,reviewedAt:now},demoSubmission:{reviewedAt:now,submittedAt:now,platform:"SHEIN",site:target.region,storeId,storeName:target.storeName,result:"模拟提交成功",externalReceiptId:null,listingStatus:"已上架",publishedAt:now,simulatedPlatformProductId:"SIM-SHEIN-ADMIN-01-B0CFPJYX7P",simulatedReceiptId:"SIM-RECEIPT-"+target.id}};
+ persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===target.id?next:t));
+ window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
+ return true;
 }

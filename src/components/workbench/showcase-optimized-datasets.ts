@@ -29,7 +29,7 @@ export type OptimizedDataset={
  uploadTaskId:string;externalReceiptId:string;
  acceptedAt?:string;reviewStatus?:PlatformReviewStatus;listingStatus?:PlatformListingStatus;reviewUpdatedAt?:string;
  products:OptimizedDatasetProduct[];
- demo?:true;storeType?:string;
+ demo?:true;storeType?:string;simulatedPlatformProductId?:string;simulatedReceiptId?:string;
 };
 const key=(org:string,member:string)=>"shuomi:optimized-datasets-v1:"+org+":"+member;
 const statusKey=(org:string,member:string)=>"shuomi:optimized-dataset-platform-states-v1:"+org+":"+member;
@@ -105,7 +105,7 @@ export function readReusableOptimizedDatasets(org:string,member:string):Optimize
   const images=[...new Set([...Object.values(t.imageEdits??{}).flatMap(x=>x.main??[]),...p.optimizedImages,...(p.variantImageGroups??[]).flatMap(g=>g.optimizedImages.map(x=>x.url))])];
   const skus=p.variantDetails?.map(v=>t.textEdits?.merchantSkuCodes?.[v.sku]??v.sku)??t.productIds;
   const baseline=t.originalPricingBaseline??readOriginalPricingBaseline(org,member,t.source,t.batchId,t.productIds);
-  result.push({id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language:t.region==="美国站"?"英语":"站点适配",storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:"未上架",demo:true,products:t.productIds.map(id=>({sourceProductId:id,name:t.textEdits?.title??p.optimizedName,description:t.textEdits?.description??p.optimizedDescription,images:[...images],skuCodes:[...skus],category:t.textEdits?.categoryPath,detailImages:Object.values(t.imageEdits??{}).flatMap(x=>x.detail??[]),skuSnapshots:(baseline.find(x=>x.sourceProductId===id)?.skus??[]).map(v=>({...v,merchantSku:t.textEdits?.merchantSkuCodes?.[v.sku]}))}))});
+  result.push({id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language:t.region==="美国站"?"英语":"站点适配",storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:t.demoSubmission!.listingStatus??"未上架",simulatedPlatformProductId:t.demoSubmission!.simulatedPlatformProductId,simulatedReceiptId:t.demoSubmission!.simulatedReceiptId,demo:true,products:t.productIds.map(id=>({sourceProductId:id,name:t.textEdits?.title??p.optimizedName,description:t.textEdits?.description??p.optimizedDescription,images:[...images],skuCodes:[...skus],category:t.textEdits?.categoryPath,detailImages:Object.values(t.imageEdits??{}).flatMap(x=>x.detail??[]),skuSnapshots:(baseline.find(x=>x.sourceProductId===id)?.skus??[]).map(v=>({...v,merchantSku:t.textEdits?.merchantSkuCodes?.[v.sku]}))}))});
  }
  return result;
 }
