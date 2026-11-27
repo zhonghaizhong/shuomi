@@ -142,7 +142,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
        {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" disabled={asset.readonly} title={asset.readonly?"已有裂变关联，不可删除原图":"删除当前素材"} onClick={()=>removeAsset(asset.id)}>删除</button>{asset.readonly?<span className={css.sourceLocked}>源图已关联 · 只读</span>:null}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>audit(asset.id,"审核通过")}>通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
     </div>{tab==="产品图审核"?<aside className={css.relatedPanel} aria-label="关联产品与效果预览"><h3>关联产品与效果预览</h3>{activePrint?<><div className={css.selectedPrintHeader}><img src={inspirationImageSrc(activePrint)} alt={activePrint.name}/><div><strong>{activePrint.name}</strong><small>编号：{activePrint.lineagePrintId} · V{activePrint.lineageVersion}</small><small>状态：{activePrint.status}</small></div></div><div className={css.relatedTabs}><strong>关联产品（{sourceLinkedProducts.length+relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length}）</strong><span>来源关联 · 不等于审核通过</span></div>
-{sourceLinkedProducts.length?<div className={css.relatedProducts}>{sourceLinkedProducts.map(p=><LinkedPodProduct key={p.id} product={p} onZoom={openProductZoom} onPreview={(variant)=>setPreviewNote(variant.startsWith("当前印花与 ")?variant:"已选择 "+p.name+" · "+variant+"。效果预览需要真实 AI 生图与积分计费接口，目前不会扣积分或生成图片；不影响直接审核通过。")} onSelectionChange={(skus)=>setPendingSkuSelections(v=>({...v,[activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id]:skus}))} savedPreview={activePrint.lineagePrintId==="POD-BUTTERFLY-FISSION-B"&&activePrint.lineageVersion===1&&p.id==="SIM-SDS-POD-DTF-WOMEN-150G"?{sku:"SDS-DEMO-TEE-BK-S",src:(typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"")+"/assets/pod-previews/v1/butterfly-peony-warm-sds-tee-black-s.webp"}:undefined}/>)}</div>:null}
+{sourceLinkedProducts.length?<div className={css.relatedProducts}>{sourceLinkedProducts.map(p=><LinkedPodProduct key={activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id} product={p} selectedSkus={pendingSkuSelections[activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id]??[]} onZoom={openProductZoom} onPreview={(variant)=>setPreviewNote(variant.startsWith("当前印花与 ")?variant:"已选择 "+p.name+" · "+variant+"。效果预览需要真实 AI 生图与积分计费接口，目前不会扣积分或生成图片；不影响直接审核通过。")} onSelectionChange={(skus)=>setPendingSkuSelections(v=>({...v,[activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id]:skus}))} savedPreview={activePrint.lineagePrintId==="POD-BUTTERFLY-FISSION-B"&&activePrint.lineageVersion===1&&p.id==="SIM-SDS-POD-DTF-WOMEN-150G"?{sku:"SDS-DEMO-TEE-BK-S",src:(typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"")+"/assets/pod-previews/v1/butterfly-peony-warm-sds-tee-black-s.webp"}:undefined}/>)}</div>:null}
 {relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length?<div className={css.relatedProducts}>{relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).map((b,i)=><div key={b.productId+"/"+b.variantId+"/"+i} className={css.relatedProduct}><div className={css.productPlaceholder}>暂无商品图</div><div><strong>正式绑定：{b.productId}</strong><small>变体：{b.variantId}</small>{b.sku?<small>SKU：{b.sku}</small>:null}</div></div>)}</div>:null}
 {!sourceLinkedProducts.length&&!relatedBindings.length?<div className={css.relatedEmpty}>该印花暂无可读取的关联商品。<small>演示数据仅在指定企业的管理员账号中显示；审核通过不强制要求生成效果图。</small></div>:null}<section className={css.previewSection}><strong>产品效果预览 {activePrint.lineagePrintId==="POD-BUTTERFLY-FISSION-B"&&activePrint.lineageVersion===1&&isShowcasePODScope(organizationId,memberId)?"（1）":""}</strong>{activePrint.lineagePrintId==="POD-BUTTERFLY-FISSION-B"&&activePrint.lineageVersion===1&&isShowcasePODScope(organizationId,memberId)?<div className={css.savedPreview}><button type="button" className={css.savedPreviewImage} aria-label="放大查看单张组合预览" onClick={()=>openProductZoom((typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"")+"/assets/pod-previews/v1/butterfly-peony-warm-sds-tee-black-s.webp","蝴蝶牡丹 · 暖色复古 / 黑色短袖 S · 单张组合预览")}><img src={(typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"")+"/assets/pod-previews/v1/butterfly-peony-warm-sds-tee-black-s.webp"} alt="黑色短袖 S · 蝴蝶牡丹暖色复古组合效果预览" loading="lazy"/></button><div><strong>Black / S · 单张组合预览</strong><small>商品：SIM-SDS-POD-DTF-WOMEN-150G</small><small>SKU：SDS-DEMO-TEE-BK-S</small><small>已保存至 GitHub · 仅供审核辅助</small></div></div>:<p>当前印花尚无已归档的产品效果预览。</p>}<p>预览不进入商品图片库，也不改变印花审核状态。新生成需要真实 AI 生图服务和积分计费。</p>{previewNote?<p role="status" className={css.previewNotice}>{previewNote}</p>:null}</section></>:<div className={css.relatedEmpty}>点击左侧任意印花图片，查看关联产品及效果预览。</div>}</aside>:null}</div>
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
@@ -161,29 +161,23 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
 }
 
 /** Preview selections are local UI state; they never create a formal POD binding. */
-function LinkedPodProduct({product,onZoom,onPreview,onSelectionChange,savedPreview}:{product:DemoCollectedProduct;onZoom:(src:string|undefined,title:string)=>void;onPreview:(variant:string)=>void;onSelectionChange:(skus:string[])=>void;savedPreview?:{sku:string;src:string}}){
+/** Preview colour is a single visual choice; downstream SKU selection is an independent set. */
+function LinkedPodProduct({product,onZoom,onPreview,onSelectionChange,selectedSkus,savedPreview}:{product:DemoCollectedProduct;onZoom:(src:string|undefined,title:string)=>void;onPreview:(variant:string)=>void;onSelectionChange:(skus:string[])=>void;selectedSkus:string[];savedPreview?:{sku:string;src:string}}){
  const details=product.variantDetails??[];
  const colors=[...new Set(details.map(v=>v.color).filter(Boolean))];
- const [color,setColor]=useState(colors[0]??"");
- const sizes=[...new Set(details.filter(v=>v.color===color).map(v=>v.size).filter(Boolean))];
- const [selectedSizes,setSelectedSizes]=useState<string[]>(()=>[...new Set(details.filter(v=>v.color===(colors[0]??"")).map(v=>v.size).filter(Boolean))]);
- const variants=details.filter(v=>v.color===color&&selectedSizes.includes(v.size));
- const photo=details.find(v=>v.color===color)?.image??product.images?.[0];
- const selectionLabel=color+" / "+(selectedSizes.length?selectedSizes.join("、"):"未选尺码");
- const chooseColor=(value:string)=>{
-  setColor(value);
-  const nextSizes=[...new Set(details.filter(v=>v.color===value).map(v=>v.size).filter(Boolean))];
-  setSelectedSizes(nextSizes);
-  onSelectionChange(details.filter(v=>v.color===value&&nextSizes.includes(v.size)).map(v=>v.sku));
- };
+ const [previewColor,setPreviewColor]=useState(colors[0]??"");
+ const available=details.filter(v=>v.color===previewColor);
+ const sizes=[...new Set(available.map(v=>v.size).filter(Boolean))];
+ const photo=available[0]?.image??product.images?.[0];
+ const selectedVariants=details.filter(v=>selectedSkus.includes(v.sku));
  const toggleSize=(value:string)=>{
-  const next=selectedSizes.includes(value)?selectedSizes.filter(x=>x!==value):[...selectedSizes,value];
-  setSelectedSizes(next);
-  onSelectionChange(details.filter(v=>v.color===color&&next.includes(v.size)).map(v=>v.sku));
+  const sku=available.find(v=>v.size===value)?.sku;
+  if(!sku)return;
+  onSelectionChange(selectedSkus.includes(sku)?selectedSkus.filter(x=>x!==sku):[...selectedSkus,sku]);
  };
  return <article className={css.relatedProduct}>
-  <button type="button" className={css.productMainImageButton} aria-label={"放大查看"+product.name+"商品图片"} onClick={()=>onZoom(photo,product.name+" · "+color)}>
-   {photo?<img className={css.productThumb} src={photo} alt={product.name+" · "+color+"商品参考图"} loading="lazy"/>:<span>暂无图片</span>}
+  <button type="button" className={css.productMainImageButton} aria-label={"放大查看"+product.name+"商品图片"} onClick={()=>onZoom(photo,product.name+" · "+previewColor)}>
+   {photo?<img className={css.productThumb} src={photo} alt={product.name+" · "+previewColor+"商品参考图"} loading="lazy"/>:<span>暂无图片</span>}
    <span>点击放大</span>
   </button>
   <div className={css.productInformation}>
@@ -191,11 +185,11 @@ function LinkedPodProduct({product,onZoom,onPreview,onSelectionChange,savedPrevi
    <small>批次：SDS POD · 2款公开目录商品（演示）</small>
    <small>商品编号：{product.id}</small>
    <div className={css.variantControls}>
-    {colors.length?<div className={css.variantGroup}><span>颜色（单选）</span><div className={css.variantOptions}>{colors.map(c=><button type="button" key={c} className={color===c?css.variantSelected:""} aria-pressed={color===c} onClick={()=>chooseColor(c)}>{c}</button>)}</div></div>:null}
-    {sizes.length?<div className={css.variantGroup}><span>尺码（可多选）</span><div className={css.variantOptions}>{sizes.map(sz=><button type="button" key={sz} className={selectedSizes.includes(sz)?css.variantSelected:""} aria-pressed={selectedSizes.includes(sz)} onClick={()=>toggleSize(sz)}>{sz}</button>)}</div></div>:null}
-    <div className={css.variantGroup}><span>拟用于后续流程</span><strong>{selectionLabel}（{variants.length} SKU）</strong></div>
+    {colors.length?<div className={css.variantGroup}><span>预览颜色（单选）</span><div className={css.variantOptions}>{colors.map(c=><button type="button" key={c} className={previewColor===c?css.variantSelected:""} aria-pressed={previewColor===c} onClick={()=>setPreviewColor(c)}>{c}</button>)}</div></div>:null}
+    {sizes.length?<div className={css.variantGroup}><span>{previewColor} · 参与后续流程的规格（多选）</span><div className={css.variantOptions}>{sizes.map(sz=>{const sku=available.find(v=>v.size===sz)?.sku;const selected=Boolean(sku&&selectedSkus.includes(sku));return <button type="button" key={sz} className={selected?css.variantSelected:""} aria-pressed={selected} onClick={()=>toggleSize(sz)}>{sz}</button>})}</div></div>:null}
    </div>
-   <div className={css.productBottomRow}><div className={css.productColors}>{product.images?.map((src,i)=><button type="button" key={src} aria-label={"放大查看"+product.name+"颜色参考图"+(i+1)} onClick={()=>onZoom(src,product.name+" · 颜色参考图 "+(i+1))}><img src={src} alt={product.name+"颜色参考图"+(i+1)} loading="lazy"/></button>)}</div><div className={css.previewActions}><button type="button" title={savedPreview?"该商品有 1 张已归档的组合预览（Black / S），与当前选择的规格无关":"当前印花与商品尚无已归档预览"} onClick={()=>{if(savedPreview)onZoom(savedPreview.src,product.name+" · Black / S · 已归档单张组合预览");else onPreview("当前印花与 "+product.name+" 尚无已归档的效果预览。")}} aria-label={"查看"+product.name+"已生成的预览"}>查看预览{savedPreview?" (1)":""}</button><button type="button" className={css.generatePreview} onClick={()=>onPreview(selectionLabel)}>生成当前颜色预览</button></div></div>
+   <div className={css.selectedSkuSummary}><span>待使用：{selectedVariants.length} 个 SKU</span>{selectedVariants.length?<><span title={selectedVariants.map(v=>v.label).join("、")}>{selectedVariants.map(v=>v.label).join("、")}</span><button type="button" onClick={()=>onSelectionChange([])}>清空选择</button></>:<span>可自由勾选任意颜色与尺码；不选也可直接审核通过</span>}</div>
+   <div className={css.productBottomRow}><div className={css.productColors}>{product.images?.map((src,i)=><button type="button" key={src} aria-label={"放大查看"+product.name+"颜色参考图"+(i+1)} onClick={()=>onZoom(src,product.name+" · 颜色参考图 "+(i+1))}><img src={src} alt={product.name+"颜色参考图"+(i+1)} loading="lazy"/></button>)}</div><div className={css.previewActions}><button type="button" title={savedPreview?"该商品有 1 张已归档的 Black / S 组合预览，独立于待使用 SKU 的选择":"当前印花与商品尚无已归档预览"} onClick={()=>{if(savedPreview)onZoom(savedPreview.src,product.name+" · Black / S · 已归档单张组合预览");else onPreview("当前印花与 "+product.name+" 尚无已归档的效果预览。")}} aria-label={"查看"+product.name+"已生成的预览"}>查看预览{savedPreview?" (1)":""}</button><button type="button" className={css.generatePreview} onClick={()=>onPreview(previewColor+"（仅此颜色，单张组合图；不自动选择规格）")}>生成此颜色预览</button></div></div>
   </div>
  </article>;
 }
