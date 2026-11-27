@@ -325,3 +325,25 @@
 .previewThumbnailGrid>button img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:5px;background:#eee}
 .previewThumbnailGrid>button span{padding:5px 2px 2px;font-size:11px;line-height:1.35;overflow-wrap:anywhere}
 @media(max-width:1250px){.previewThumbnailGrid{grid-template-columns:repeat(auto-fit,minmax(100px,1fr));max-height:260px}}
+
+/* Keep preview galleries outside the audit card; separate SKU workflow dialog. */
+.podActionDialog{width:min(900px,100%);max-height:min(88dvh,850px);overflow:auto;display:flex;flex-direction:column;gap:14px;padding:18px;border:1px solid var(--podassets-line,#52576e);border-radius:12px;background:var(--podassets-bg,#2f3349);color:var(--podassets-ink,#cfcde4)}
+.podActionDialog>header{display:flex;justify-content:space-between;align-items:start;gap:14px}
+.podActionDialog>header>div{display:grid;gap:5px;min-width:0}
+.podActionDialog>header strong{font-size:16px;line-height:1.4}
+.podActionDialog>header small{font-size:12px;line-height:1.5;color:var(--podassets-muted,#acabc1)}
+.podActionDialog button{border:1px solid var(--podassets-line,#52576e);border-radius:8px;padding:8px 12px;background:var(--podassets-card,#393d55);color:var(--podassets-ink,#cfcde4);cursor:pointer}
+.podActionDialog>footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--podassets-line,#52576e);padding-top:14px;color:var(--podassets-muted,#acabc1);font-size:12px}
+.podActionDialog>footer>div{display:flex;gap:8px}
+.podActionDialog>footer>div>button:last-child{background:#7367f0;border-color:#7367f0;color:#fff}
+.podActionDialog .previewBrowser{grid-template-columns:minmax(160px,.72fr) minmax(0,1.45fr)}
+.podSkuChoices{display:grid;gap:12px;overflow:auto}
+.podSkuChoices>p{font-size:12px;color:var(--podassets-muted,#acabc1);line-height:1.6;margin:0}
+.podSkuChoices>section{border:1px solid var(--podassets-line,#52576e);border-radius:9px;padding:12px;display:grid;gap:10px}
+.podSkuChoices>section>strong{font-size:13px}
+.podSkuChoices>section>div{display:flex;flex-wrap:wrap;gap:10px}
+.podSkuChoices label{display:flex;align-items:center;gap:8px;border:1px solid var(--podassets-line,#52576e);border-radius:8px;padding:9px 12px;cursor:pointer;font-size:12px}
+.podSkuChoices label:has(input:checked){border-color:#7367f0;background:color-mix(in srgb,#7367f0 15%,transparent)}
+.podSkuChoices input{accent-color:#7367f0;width:16px;height:16px}
+.podSkuChoices>button{justify-self:start}
+@media(max-width:670px){.podActionDialog{padding:12px;max-height:95dvh}.podActionDialog .previewBrowser{grid-template-columns:1fr}}
