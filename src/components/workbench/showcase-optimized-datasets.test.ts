@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import {beforeEach,describe,expect,it} from "vitest";
-import {readOptimizedDatasets,saveVerifiedOptimizedDataset,updateOptimizedDatasetPlatformState} from "./showcase-optimized-datasets";
+import {readOptimizedDatasets,saveVerifiedOptimizedDataset,updateOptimizedDatasetPlatformState,readReusableOptimizedDatasets} from "./showcase-optimized-datasets";
+import {persistShowcaseUploadTaskRecords,type ShowcaseUploadTask} from "./listing/showcase-upload-tasks";
 
 describe("optimized dataset provenance and reusable batch selection",()=>{
  beforeEach(()=>sessionStorage.clear());
@@ -45,4 +46,37 @@ describe("optimized dataset provenance and reusable batch selection",()=>{
   expect(readOptimizedDatasets("org-a","member-a")).toEqual([]);
  });
 
+});
+
+describe("demo uploaded product versions are not upload-count versions",()=>{
+ beforeEach(()=>{sessionStorage.clear();localStorage.clear()});
+ const org="test-version-org",member="test-version-member";
+ const make=(id:string,productId:string,submittedAt:string,optimizationVersionKey?:string):ShowcaseUploadTask=>({
+  id,organizationId:org,memberId:member,source:"采集批次",batchId:"batch-1",
+  batchName:"源批次",sourceVersionId:"original",productIds:[productId],productCount:1,missingCount:0,
+  storeId:"store-1",storeName:"演示店铺",platform:"SHEIN",region:"美国站",storeType:"全托管",
+  rule:"规则",agentId:null,agentName:null,templateId:null,mode:"直接上传到平台",
+  status:"模拟已提交",optimizationVersionKey,createdAt:submittedAt,demo:true,
+  demoSubmission:{reviewedAt:submittedAt,submittedAt,platform:"SHEIN",site:"美国站",storeId:"store-1",storeName:"演示店铺",result:"模拟提交成功",externalReceiptId:null},
+  demoProduct:{sourceName:productId,sourceDescription:"原文",sourceImages:[],optimizedName:productId,optimizedDescription:"英文优化",optimizedImages:[],missingFields:[],agentRun:"模拟已优化"}
+ });
+ it("groups two products from the same source into V2, even with separate receipts",()=>{
+  persistShowcaseUploadTaskRecords(org,member,[make("task-a","product-a","2026-11-27T05:00:00Z"),make("task-b","product-b","2026-11-27T09:00:00Z")]);
+  const versions=readReusableOptimizedDatasets(org,member);
+  expect(versions).toHaveLength(1);
+  expect(versions[0].version).toBe(1); // Display V2 after raw V1
+  expect(versions[0].products.map(p=>p.sourceProductId).sort()).toEqual(["product-a","product-b"]);
+ });
+ it("reusing an upload does not increment version or duplicate a product",()=>{
+  persistShowcaseUploadTaskRecords(org,member,[make("task-a","product-a","2026-11-27T05:00:00Z"),make("task-b","product-a","2026-11-27T09:00:00Z")]);
+  const versions=readReusableOptimizedDatasets(org,member);
+  expect(versions).toHaveLength(1);
+  expect(versions[0].products).toHaveLength(1);
+ });
+ it("only an explicitly identified new optimization snapshot advances to V3",()=>{
+  persistShowcaseUploadTaskRecords(org,member,[make("task-a","product-a","2026-11-27T05:00:00Z"),make("task-c","product-a","2026-11-27T09:00:00Z","approved-revision-2")]);
+  const versions=readReusableOptimizedDatasets(org,member);
+  expect(versions.map(v=>v.version)).toEqual([1,2]);
+  expect(versions.map(v=>v.products.length)).toEqual([1,1]);
+ });
 });
