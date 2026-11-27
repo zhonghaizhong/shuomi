@@ -42,7 +42,9 @@ export type ShowcaseUploadTask={
  storeId:string;storeName:string;platform:"SHEIN";region:string;storeType:string;
  rule:string;ruleConfig?:{id:string;name:string;skuMode:string;prefix:string;suffix:string;priceMode:string;priceValue:string;currencyConversion:boolean;aiFill:boolean};agentId:string|null;agentName:string|null;
  templateId:string|null;mode:"平台草稿"|"直接上传到平台"|"定时上传";
- status:"待补全"|"待执行智能体"|"待审核"|"待平台提交";
+ status:"待补全"|"待执行智能体"|"待审核"|"待平台提交"|"模拟已提交";
+ /** Local demonstration only; not evidence of external API submission. */
+ demoSubmission?:{reviewedAt:string;submittedAt:string;platform:"SHEIN";site:string;storeId:string;storeName:string;result:"模拟提交成功";externalReceiptId:null};
  demoProduct?:{sourceName:string;sourceDescription:string;sourceImages:string[];optimizedName:string;optimizedDescription:string;optimizedImages:string[];missingFields:string[];agentRun:"模拟已优化";reviewedAt?:string;variantDetails?:ListingVariantDetail[];variantImageGroups?:ListingVariantImageGroup[];imageProvenance?:"品牌/零售商真实商品照片（未进行图片 AI 重绘）"};
  textEdits?:{title?:string;description?:string;colorDescriptions?:Record<string,string>;skuDescriptions?:Record<string,string>;skuNames?:Record<string,string>;merchantSkuCodes?:Record<string,string>;categoryPath?:string;categoryRulePending?:boolean;revision?:number;updatedAt?:string;fieldValues?:ScopedFieldValues;legacyMissingValues?:Record<string,string>;variantStructure?:VariantStructureDraft;variantStructurePending?:boolean};
  /** Authoritative schema only; no guessed marketplace categories. */
@@ -344,6 +346,24 @@ export function approveShowcaseUploadTask(org:string,member:string,taskId:string
  persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;
+}
+
+/** Complete the selected Lodge demo against its already bound SHEIN US destination.
+ * This updates only the scoped browser demo ledger and NEVER calls SHEIN or
+ * creates an external receipt. Existing manual results are left untouched.
+ */
+export function simulateApprovedLodgeSubmission(org:string,member:string,storeId:string):boolean{
+ if(typeof window==="undefined"||org!=="SM-ENT-000001"||member!=="admin"||!storeId)return false;
+ const records=readShowcaseUploadTasks(org,member);
+ const target=records.find(t=>t.id.startsWith("SHUOMI-AMZ-AI-5:")&&t.productIds.length===1&&t.id.endsWith(":B00008GKD3")&&t.storeId===storeId);
+ if(!target||target.status==="模拟已提交"||target.status!=="待审核"||target.demoProduct?.missingFields.length||target.demoProduct?.variantImageGroups?.length||
+  target.platform!=="SHEIN"||target.region!=="美国站"||target.storeName!=="管理员演示店铺01"||!target.demoProduct)return false;
+ const now=new Date().toISOString();
+ const next:ShowcaseUploadTask={...target,status:"模拟已提交",demoProduct:{...target.demoProduct,reviewedAt:now},
+  demoSubmission:{reviewedAt:now,submittedAt:now,platform:"SHEIN",site:target.region,storeId:target.storeId,storeName:target.storeName,result:"模拟提交成功",externalReceiptId:null}};
+ persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===target.id?next:t));
+ window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
+ return true;
 }
 
 /** Migrate only old generated SVG previews in this user's five-product demo.
