@@ -35,6 +35,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const [approvalPrintId,setApprovalPrintId]=useState<number|null>(null);
  const [approvalMode,setApprovalMode]=useState<"部分通过"|"全部通过">("部分通过");
  const [approvalDraft,setApprovalDraft]=useState<Record<string,string[]>>({});
+ const [focusedApprovalSkus,setFocusedApprovalSkus]=useState<Record<string,string>>({});
  const openProductZoom=(src:string|undefined,title:string)=>{if(src)setZoomProduct({src,title})};
  const [sourceProducts,setSourceProducts]=useState<DemoCollectedProduct[]>([]);
  useEffect(()=>{
@@ -135,7 +136,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
   const products=ids.map(id=>sourceProducts.find(x=>x.id===id)).filter((x):x is DemoCollectedProduct=>Boolean(x));
   const selected:Record<string,string[]>={};
   for(const p of products)selected[p.id]=mode==="全部通过"?(p.variantDetails??[]).map(v=>v.sku):[];
-  setApprovalDraft(selected);setApprovalMode(mode);setApprovalPrintId(asset.id);
+  setApprovalDraft(selected);setFocusedApprovalSkus({});setApprovalMode(mode);setApprovalPrintId(asset.id);
   setSelectedPrint(asset.lineagePrintId+"@"+asset.lineageVersion);
  };
  const approveSelected=()=>{
@@ -194,16 +195,20 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
       <div className={css.approvalProducts}>{approvalProducts.map(p=>{
        const variants=p.variantDetails??[];
        const picked=approvalDraft[p.id]??[];
-       const firstPhoto=p.images?.[0]??variants[0]?.image;
+       const focused=variants.find(v=>v.sku===focusedApprovalSkus[p.id])??variants[0];
+       const matchingPreview=archivedPreviews.find(x=>x.productId===p.id&&(x.scope==="sku"&&x.sku===focused?.sku||x.scope==="color"&&x.color===focused?.color));
+       const sameColorPhoto=variants.find(v=>v.color===focused?.color&&(v.image||v.images?.[0]));
+       const displayedPhoto=matchingPreview?.src??focused?.image??focused?.images?.[0]??sameColorPhoto?.image??sameColorPhoto?.images?.[0]??p.images?.[0];
+       const photoSource=matchingPreview?"AI 效果预览":focused?.image||focused?.images?.[0]?"SKU 原始商品图":sameColorPhoto?"同颜色原始商品图":p.images?.[0]?"原始商品主图":"暂无图片";
        return <section key={p.id} className={css.approvalProductRow}>
         <div className={css.approvalProductIdentity}>
-         {firstPhoto?<img src={firstPhoto} alt={p.name+"商品参考图"} loading="lazy"/>:<div className={css.productPlaceholder}>暂无商品图</div>}
-         <div><strong title={p.name}>{p.name}</strong><small>商品编号：{p.id}</small><small>已选 {picked.length} / {variants.length} SKU</small></div>
+         <div className={css.approvalFocusedPhoto}>{displayedPhoto?<img src={displayedPhoto} alt={p.name+" · "+(focused?.color??"")+" / "+(focused?.size??"")+" · "+photoSource} loading="lazy"/>:<div className={css.productPlaceholder}>暂无图片</div>}<span>{photoSource}</span></div>
+         <div><strong title={p.name}>{p.name}</strong><small>商品编号：{p.id}</small><small>已选 {picked.length} / {variants.length} SKU</small>{focused?<><small>当前查看：{focused.color} / {focused.size}</small><small>SKU：{focused.sku}</small></>:null}</div>
         </div>
         <div className={css.approvalSkuTableWrap}><table className={css.approvalSkuTable}>
          <thead><tr><th>选择</th><th>颜色</th><th>尺码</th><th>SKU 编码</th></tr></thead>
-         <tbody>{variants.map(v=><tr key={v.sku} className={picked.includes(v.sku)?css.approvalSkuChecked:""}>
-          <td><input type="checkbox" aria-label={"选择 "+p.name+" · "+v.color+" / "+v.size+" · "+v.sku} disabled={approvalMode==="全部通过"} checked={picked.includes(v.sku)} onChange={e=>setApprovalDraft(prev=>({...prev,[p.id]:e.target.checked?[...(prev[p.id]??[]),v.sku]:(prev[p.id]??[]).filter(x=>x!==v.sku)}))}/></td>
+         <tbody>{variants.map(v=><tr key={v.sku} onClick={()=>setFocusedApprovalSkus(prev=>({...prev,[p.id]:v.sku}))} className={[picked.includes(v.sku)?css.approvalSkuChecked:"",focused?.sku===v.sku?css.approvalSkuFocused:""].filter(Boolean).join(" ")}>
+          <td><input type="checkbox" aria-label={"选择 "+p.name+" · "+v.color+" / "+v.size+" · "+v.sku} disabled={approvalMode==="全部通过"} checked={picked.includes(v.sku)} onChange={e=>{setFocusedApprovalSkus(prev=>({...prev,[p.id]:v.sku}));setApprovalDraft(prev=>({...prev,[p.id]:e.target.checked?[...(prev[p.id]??[]),v.sku]:(prev[p.id]??[]).filter(x=>x!==v.sku)}))}}/></td>
           <td>{v.color}</td><td>{v.size}</td><td>{v.sku}</td>
          </tr>)}</tbody>
         </table></div>
