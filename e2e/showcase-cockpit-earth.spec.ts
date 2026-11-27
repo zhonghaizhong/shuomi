@@ -120,17 +120,22 @@ test("Vuexy light theme gives all cockpit subpages white panels and readable con
     const sidebarBg = await page.locator(".console-sidebar").evaluate(el => getComputedStyle(el).backgroundColor);
     const panelBg = await page.locator(item.panel).first().evaluate(el => getComputedStyle(el).backgroundColor);
     const text = await page.locator(item.panel).first().evaluate(el => getComputedStyle(el).color);
-    // Store matrix has its explicitly approved blue/green theme canvas; all other routes retain Vuexy.
-    expect(shellBg).toBe(item.route === "stores" ? "rgb(247, 250, 253)" : "rgb(248, 247, 250)");
+    expect(shellBg).toBe("rgb(248, 247, 250)");
     expect(sidebarBg).toBe("rgb(255, 255, 255)");
     expect(panelBg).toBe("rgb(255, 255, 255)");
     if (item.route === "stores") {
       const canvas = page.locator(".showcase-content");
-      expect(await canvas.evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(247, 250, 253)");
+      expect(await canvas.evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
       const rows = page.locator('[class*="matrixAnalysisRow"]');
       await expect(rows.first()).toBeVisible();
       expect(await rows.first().evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(255, 255, 255)");
-      expect(await rows.nth(1).evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(247, 250, 253)");
+      expect(await rows.nth(1).evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(248, 247, 250)");
+      await page.getByRole("button",{name:"查看分析",exact:true}).first().click();
+      const dialog=page.getByRole("dialog",{name:"店铺经营分析"});
+      await expect(dialog).toBeVisible();
+      expect(await dialog.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(255, 255, 255)");
+      expect(await dialog.locator('[class*="matrixAnalysisMetrics"] article').first().evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(248, 247, 250)");
+      await dialog.getByRole("button",{name:"关闭经营分析"}).click();
     }
     expect(text).not.toBe("rgb(207, 205, 228)");
     const contentBg = await page.locator(item.content).first().evaluate(el => getComputedStyle(el).backgroundColor);

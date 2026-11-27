@@ -672,10 +672,5 @@ html.light main.showcase-content[data-route="/workbench/data/api"] [class*="_api
   color:#595568;
 }
 
-/* Align the real outer workbench background for the store matrix route, not only inner cards. */
-.showcase-shell:has(.showcase-content[data-route="/workbench/overview/stores"]),
-.showcase-shell:has(.showcase-content[data-route="/workbench/overview/stores"]) .showcase-main,
-.showcase-content[data-route="/workbench/overview/stores"]{background:#0b1422}
-.light .showcase-shell:has(.showcase-content[data-route="/workbench/overview/stores"]),
-.light .showcase-shell:has(.showcase-content[data-route="/workbench/overview/stores"]) .showcase-main,
-.light .showcase-content[data-route="/workbench/overview/stores"]{background:#f7fafd}
+/* Store matrix inherits the same canvas as all Vuexy pages. */
+.showcase-content[data-route="/workbench/overview/stores"]{background:transparent}
