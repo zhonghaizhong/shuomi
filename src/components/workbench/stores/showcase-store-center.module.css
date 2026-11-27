@@ -706,3 +706,12 @@
 .productDataEmpty strong{color:var(--st-text);font-size:14px}
 .productSyncFootnote{margin:12px 18px 17px;color:var(--st-muted);font-size:11px;line-height:1.6}
 @media(max-width:720px){.productSyncToolbar{align-items:stretch}.productSyncToolbar label{flex-basis:100%}.productSyncToolbar button{flex:1 1 auto}.productOriginInfo{grid-template-columns:1fr}}
+
+/* Persisted last-successful-sync view; never silently fetch or replace on page load. */
+.productDataTable tbody tr+tr{border-top:1px solid var(--st-line)}
+.productDataTable tbody tr:not(:has(.productDataEmpty)) td{padding:12px 13px;vertical-align:middle;font-size:12px;color:var(--st-text)}
+.productCachedIdentity{display:flex;align-items:center;gap:10px;min-width:190px}
+.productCachedIdentity img{width:48px;height:48px;object-fit:contain;background:var(--st-card-1);border:1px solid var(--st-line);border-radius:7px}
+.productCachedIdentity>div{display:grid;gap:5px;min-width:0}
+.productCachedIdentity strong{font-size:12px;overflow-wrap:anywhere}
+.productCachedIdentity small{color:var(--st-muted);font-size:11px;overflow-wrap:anywhere}
