@@ -31,7 +31,7 @@ export type OptimizedDataset={
  optimizationVersionKey?:string;
  acceptedAt?:string;reviewStatus?:PlatformReviewStatus;listingStatus?:PlatformListingStatus;reviewUpdatedAt?:string;
  products:OptimizedDatasetProduct[];
- demo?:true;storeType?:string;simulatedPlatformProductId?:string;simulatedReceiptId?:string;demoListingSummary?:string;
+ demo?:true;storeType?:string;simulatedPlatformProductId?:string;simulatedReceiptId?:string;demoListingSummary?:string;versionListingSummary?:string;
 };
 const key=(org:string,member:string)=>"shuomi:optimized-datasets-v1:"+org+":"+member;
 const statusKey=(org:string,member:string)=>"shuomi:optimized-dataset-platform-states-v1:"+org+":"+member;
@@ -111,7 +111,25 @@ export function readReusableOptimizedDatasets(org:string,member:string):Optimize
  const verified=readOptimizedDatasets(org,member);
  const names=new Map(readDemoCollectionBatches(org,member).map(b=>[b.id,b.name]));
  const tasks=readShowcaseUploadTasks(org,member).filter(t=>t.status==="模拟已提交"&&t.demoSubmission?.result==="模拟提交成功"&&t.demoProduct&&t.source!=="数据集").sort((a,b)=>a.demoSubmission!.submittedAt.localeCompare(b.demoSubmission!.submittedAt)||a.id.localeCompare(b.id));
- const result=verified.map(d=>({...d,sourceBatchName:d.sourceKind==="采集批次"?names.get(d.sourceBatchId)??d.sourceBatchName:d.sourceBatchName}));
+ const result:OptimizedDataset[]=[];
+ const verifiedGroups=new Map<string,OptimizedDataset>();
+ // Keep the original platform receipt records intact in storage. The data
+ // library groups their products into one version per approved content revision.
+ for(const d of [...verified].sort((a,b)=>(a.acceptedAt||a.createdAt).localeCompare(b.acceptedAt||b.createdAt))){
+  const identity=JSON.stringify([d.sourceKind,d.sourceBatchId,d.platform,d.site,d.language,d.optimizationVersionKey||"initial"]);
+  const existing=verifiedGroups.get(identity);
+  if(existing){
+   const known=new Set(existing.products.map(p=>p.sourceProductId));
+   existing.products.push(...d.products.filter(p=>!known.has(p.sourceProductId)));
+   const same=verified.filter(v=>v.sourceKind===d.sourceKind&&v.sourceBatchId===d.sourceBatchId&&v.platform===d.platform&&v.site===d.site&&v.language===d.language&&(v.optimizationVersionKey||"initial")===(d.optimizationVersionKey||"initial"));
+   const listed=same.filter(v=>v.listingStatus==="已上架").length;
+   existing.versionListingSummary=listed===0?"未上架":listed===same.length?"已上架":"部分已上架（"+listed+"/"+same.length+" 个回执）";
+   continue;
+  }
+  const clone={...d,sourceBatchName:d.sourceKind==="采集批次"?names.get(d.sourceBatchId)??d.sourceBatchName:d.sourceBatchName,products:[...d.products],versionListingSummary:d.listingStatus??"未上架"};
+  verifiedGroups.set(identity,clone);
+  result.push(clone);
+ }
  // Upload task IDs / receipts describe submissions, not data revisions. One source
  // batch, source version, marketplace, site and explicit optimization revision
  // forms a reusable snapshot. Re-uploading it must not generate V3, V4, etc.
@@ -134,11 +152,11 @@ export function readReusableOptimizedDatasets(org:string,member:string):Optimize
    const known=new Set(grouped.products.map(item=>item.sourceProductId));
    grouped.products.push(...products.filter(item=>!known.has(item.sourceProductId)));
    const listed=grouped.products.filter(item=>item.demoListingStatus==="已上架").length;
-   grouped.demoListingSummary=listed===0?"未上架":listed===grouped.products.length?"已上架":"部分已上架（"+listed+"/"+grouped.products.length+"）";
+   grouped.demoListingSummary=listed===0?"未上架":listed===grouped.products.length?"已上架":"部分已上架（"+listed+"/"+grouped.products.length+"）";grouped.versionListingSummary=grouped.demoListingSummary;
    continue;
   }
   const version=result.filter(d=>d.sourceKind===t.source&&d.sourceBatchId===t.batchId).reduce((n,d)=>Math.max(n,d.version),0)+1;
-  const snapshot:OptimizedDataset={id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language,storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:t.demoSubmission!.listingStatus??"未上架",simulatedPlatformProductId:t.demoSubmission!.simulatedPlatformProductId,simulatedReceiptId:t.demoSubmission!.simulatedReceiptId,demo:true,demoListingSummary:t.demoSubmission!.listingStatus??"未上架",products};
+  const snapshot:OptimizedDataset={id:"DEMO-OPT-"+t.id,name:batchName+" · "+t.platform+" "+t.region+"优化版（演示）",createdAt:t.demoSubmission!.submittedAt,acceptedAt:t.demoSubmission!.submittedAt,version,sourceKind:t.source as OptimizedDataset["sourceKind"],sourceBatchId:t.batchId,sourceBatchName:batchName,platform:t.platform,site:t.region,language,storeName:t.storeName,storeType:t.storeType,uploadTaskId:t.id,externalReceiptId:"",reviewStatus:"审核通过",listingStatus:t.demoSubmission!.listingStatus??"未上架",simulatedPlatformProductId:t.demoSubmission!.simulatedPlatformProductId,simulatedReceiptId:t.demoSubmission!.simulatedReceiptId,demo:true,demoListingSummary:t.demoSubmission!.listingStatus??"未上架",versionListingSummary:t.demoSubmission!.listingStatus??"未上架",products};
   groups.set(identity,snapshot);
   result.push(snapshot);
  }
