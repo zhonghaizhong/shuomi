@@ -342,7 +342,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
      </div>
     </section>
     <section className={css.panel} aria-label="已同步商品与来源">
-     <header><h2>店铺商品</h2><span>共 {cachedProducts.length} 条 · {lastProductSync?"(productSnapshots.some(x=>x.snapshot.simulated)?"模拟同步：":"最近同步：")+new Date(lastProductSync).toLocaleString("zh-CN",{hour12:false}):"暂无已保存的同步记录"}</span></header>
+     <header><h2>店铺商品</h2><span>共 {cachedProducts.length} 条 · {lastProductSync?(productSnapshots.some(x=>x.snapshot.simulated)?"模拟同步：":"最近同步：")+new Date(lastProductSync).toLocaleString("zh-CN",{hour12:false}):"暂无已保存的同步记录"}</span></header>
      <div className={css.productSourceToolbar}>
       <div className={css.productSourceTabs} role="group" aria-label="商品来源筛选">
        {([["all","全部商品"],["merchant","商家原有"],["shuomi","硕米刊登"]] as const).map(([value,label])=><button type="button" key={value} aria-pressed={productSource===value} onClick={()=>setProductSource(value)}>{label}</button>)}
