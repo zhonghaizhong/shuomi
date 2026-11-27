@@ -1,5 +1,5 @@
 "use client";
-import {useMemo,useState,type FormEvent} from "react";
+import {useEffect,useMemo,useState,type FormEvent} from "react";
 import type {DemoStoreBinding} from "./store-binding-demo";
 import styles from "./showcase-action-dialog.module.css";
 
@@ -28,6 +28,7 @@ export function ShowcaseGoalForm({stores,onCreateGoal,onClose}:{
  const [period,setPeriod]=useState<DemoGoal["period"]>("每月");
  const [selectedIds,setSelectedIds]=useState<string[]>([]);
  const [shopOpen,setShopOpen]=useState(false);
+ useEffect(()=>{if(!shopOpen)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();setShopOpen(false)}};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[shopOpen]);
  const [search,setSearch]=useState("");
  const [site,setSite]=useState("全部站点");
  const [type,setType]=useState("全部类型");
