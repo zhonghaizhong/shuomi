@@ -226,7 +226,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
      <footer><span>已选择 {approvalSkuCount} 个 SKU（{approvalProducts.filter(p=>(approvalDraft[p.id]??[]).length>0).length} 款商品）</span><div><button type="button" onClick={()=>setApprovalPrintId(null)}>取消</button><button type="button" disabled={!approvalSkuCount} onClick={approveSelected}>确认{approvalMode}</button></div></footer>
     </section></div>:null}
    {previewProduct?<div className={css.zoomOverlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setPreviewProductId(null)}}>
-    <section className={css.podActionDialog} role="dialog" aria-modal="true" aria-label={"产品效果预览："+previewProduct.name}>
+    <section className={css.podActionDialog+" "+css.podWideDialog+" "+css.podPreviewWideDialog} role="dialog" aria-modal="true" aria-label={"产品效果预览："+previewProduct.name}>
      <header><div><strong>{previewProduct.name} · 已生成的产品效果预览</strong><small>左侧图片缩略图 · 右侧大图；仅展示已归档的预览，不影响审核</small></div><button type="button" autoFocus onClick={()=>setPreviewProductId(null)}>关闭</button></header>
      <PodPreviewBrowser key={activePrint?.lineagePrintId+"-"+previewProduct.id} previews={archivedPreviews.filter(x=>x.productId===previewProduct.id)} onZoom={openProductZoom}/>
     </section></div>:null}
@@ -263,17 +263,30 @@ type PodPreviewRecord={
 };
 function PodPreviewBrowser({previews,onZoom}:{previews:PodPreviewRecord[];onZoom:(src:string|undefined,title:string)=>void}){
  const [chosenId,setChosenId]=useState<string|null>(null);
- const current=previews.find(p=>p.id===chosenId)??previews[0];
- return <div className={css.previewBrowser}>
-  <div className={css.previewIndex}>
-   <strong>预览记录（{previews.length}）</strong>
-   {previews.length?<div className={css.previewThumbnailGrid}>{previews.map(p=><button type="button" key={p.id} aria-label={"选择预览："+p.productName+" "+p.color+(p.size?" / "+p.size:"")} aria-pressed={p.id===current?.id} className={p.id===current?.id?css.previewIndexActive:""} onClick={()=>setChosenId(p.id)}>
-    <img src={p.src} alt={p.productName+" · "+p.color+(p.size?" / "+p.size:"")+"组合预览"} loading="lazy"/>
-    <span>{p.color}{p.scope==="sku"&&p.size?" / "+p.size:""} · {p.scope==="color"?"颜色预览":"规格预览"}</span>
-   </button>)}</div>:<p>当前印花没有已归档的产品预览。可直接审核通过，无需生成。</p>}
+ const [selectedColor,setSelectedColor]=useState("全部颜色");
+ const [selectedSize,setSelectedSize]=useState("全部尺码");
+ const colors=[...new Set(previews.map(p=>p.color))];
+ const sizes=[...new Set(previews.map(p=>p.size).filter((v):v is string=>Boolean(v)))];
+ const visiblePreviews=previews.filter(p=>(selectedColor==="全部颜色"||p.color===selectedColor)&&(selectedSize==="全部尺码"||p.size===selectedSize||p.scope==="color"));
+ const current=visiblePreviews.find(p=>p.id===chosenId)??visiblePreviews[0];
+ const nextColor=(value:string)=>{setSelectedColor(value);setChosenId(null)};
+ const nextSize=(value:string)=>{setSelectedSize(value);setChosenId(null)};
+ return <div className={css.previewWideBody}>
+  <div className={css.previewFilters}>
+   <span>颜色</span><div>{["全部颜色",...colors].map(color=><button type="button" key={color} aria-pressed={selectedColor===color} onClick={()=>nextColor(color)}>{color}</button>)}</div>
+   <span>尺码</span><div>{["全部尺码",...sizes].map(size=><button type="button" key={size} aria-pressed={selectedSize===size} onClick={()=>nextSize(size)}>{size}</button>)}</div>
   </div>
-  <div className={css.previewDetail}>
-   {current?<><button type="button" className={css.previewLargeButton} onClick={()=>onZoom(current.src,current.productName+" · "+current.color+(current.size?"/"+current.size:"")+" · 组合预览")} aria-label="点击放大已生成的组合预览"><img src={current.src} alt={current.productName+" · "+current.color+" · 已归档单张组合预览"} loading="lazy"/></button><strong>{current.productName} · {current.color}{current.size?" / "+current.size:""}</strong><small>{current.scope==="sku"?"此图仅代表 SKU："+current.sku:"此图为颜色级预览，不保证适用于不同尺码"}</small><small>点击图片放大 · GitHub 已归档</small></>:<div className={css.previewBlank}>选中左侧预览记录后，在这里查看组合图。不同尺寸的图片可独立保存。</div>}
+  <div className={css.previewBrowser}>
+   <div className={css.previewIndex}>
+    <strong>预览图片（{visiblePreviews.length} / {previews.length}）</strong>
+    {visiblePreviews.length?<div className={css.previewThumbnailGrid}>{visiblePreviews.map(p=><button type="button" key={p.id} aria-label={"选择预览："+p.productName+" "+p.color+(p.size?" / "+p.size:"")} aria-pressed={p.id===current?.id} className={p.id===current?.id?css.previewIndexActive:""} onClick={()=>setChosenId(p.id)}>
+     <img src={p.src} alt={p.productName+" · "+p.color+(p.size?" / "+p.size:"")+"组合预览"} loading="lazy"/>
+     <span>{p.color}{p.scope==="sku"&&p.size?" / "+p.size:""}</span><small>{p.sku??"颜色级预览"}</small>
+    </button>)}</div>:<p>{previews.length?"当前颜色或尺码没有已生成的预览图，请切换筛选条件。":"此商品尚无已归档预览，可在不生成图片的情况下直接审核。"}</p>}
+   </div>
+   <div className={css.previewDetail}>
+    {current?<><button type="button" className={css.previewLargeButton} onClick={()=>onZoom(current.src,current.productName+" · "+current.color+(current.size?"/"+current.size:"")+" · 组合预览")} aria-label="点击放大已生成的组合预览"><img src={current.src} alt={current.productName+" · "+current.color+" · 组合预览"} loading="lazy"/></button><strong>{current.productName} · {current.color}{current.size?" / "+current.size:""}</strong><small>{current.scope==="sku"?"SKU："+current.sku:"颜色级预览，不能代表全部尺寸"}</small><small>点击大图放大 · 仅供审核参考</small></>:<div className={css.previewBlank}>左侧选择已归档的预览图片后查看大图。</div>}
+   </div>
   </div>
  </div>;
 }
