@@ -75,6 +75,21 @@ export function reviewPodPrint(organizationId:string,memberId:string,printId:str
  return store(organizationId,memberId,{...current,reviews:current.reviews.map(x=>x===review?
   {...x,status,reviewNote:note,updatedAt:new Date().toISOString()}:x)});
 }
+/** Undo an accidental demo approval, but never rewrite prints with frozen order references. */
+export function reopenPodPrintReview(organizationId:string,memberId:string,printId:string,version:number){
+ const current=readPodPrintLineage(organizationId,memberId);
+ const review=current.reviews.find(x=>x.printId===printId&&x.version===version);
+ if(!review)throw Error("审核记录不存在");
+ if(current.orders.some(x=>x.printId===printId&&x.printVersion===version))
+  throw Error("此印花已有订单履约快照，不能直接撤销审核；需人工处理");
+ if(review.status==="待审核")return current;
+ if(review.status!=="审核通过")throw Error("只有已通过的印花允许撤销通过");
+ return store(organizationId,memberId,{
+  ...current,
+  reviews:current.reviews.map(x=>x===review?{...x,status:"待审核",reviewNote:"误操作撤销：重新进入待审核",updatedAt:new Date().toISOString()}:x),
+  bindings:current.bindings.filter(x=>x.printId!==printId||x.printVersion!==version),
+ });
+}
 export function bindPodPrintToVariant(organizationId:string,memberId:string,productId:string,variantId:string,printId:string,version:number,sku?:string){
  const current=readPodPrintLineage(organizationId,memberId);
  const print=current.prints.find(x=>x.printId===printId&&x.version===version);
