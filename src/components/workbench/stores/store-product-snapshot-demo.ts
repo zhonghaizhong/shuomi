@@ -55,7 +55,12 @@ export function saveVerifiedStoreProductSnapshot(snapshot:StoreProductSnapshot):
  * No other product or shop is seeded. Existing successful snapshots are not overwritten on load.
  */
 export function buildAdminStoreSyncDemo(org:string,store:string,platformStoreId:string):StoreProductSnapshot|null{
- if(org!=="SM-ENT-000001"||store!=="SIM-ADMIN-01"||platformStoreId!=="SIM-SHEIN-ADMIN-01")return null;
+ if(org!=="SM-ENT-000001")return null;
+ if(["SIM-ADMIN-02","SIM-ADMIN-03"].includes(store)&&platformStoreId==="SIM-SHEIN-ADMIN-"+store.slice(-2)){
+ const second=store.endsWith("02"),base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
+ return {organizationId:org,storeId:store,platformStoreId,syncedAt:"2026-11-27T08:00:00Z",simulated:true,rows:[{platformProductId:platformStoreId+"-MERCHANT-0001",sku:second?"CA-CLOG-BLK":"UK-CLOG-NAVY",name:second?"Black Classic Clogs":"Navy Classic Clogs",imageUrl:base+"/assets/store-sync-demo/"+(second?"merchant-ca-clogs.jpg":"merchant-uk-clogs.jpg"),platformStatus:"模拟已上架",price:second?"CA$39.99":"£29.99",stock:second?48:3,origin:"merchant"}]};
+ }
+ if(store!=="SIM-ADMIN-01"||platformStoreId!=="SIM-SHEIN-ADMIN-01")return null;
  const task=readShowcaseUploadTasks(org,"admin").find(t=>t.storeId===store&&t.id.startsWith("SHUOMI-AMZ-AI-5:")&&t.id.endsWith(":B0CFPJYX7P")&&t.productIds.length===1&&t.status==="模拟已提交"&&t.demoSubmission?.storeId===store&&t.demoSubmission.externalReceiptId===null&&(t.demoSubmission.listingStatus==="已上架"||t.demoSubmission.listingStatus==="已下架")&&t.demoSubmission.simulatedPlatformProductId&&t.demoSubmission.simulatedReceiptId&&t.demoProduct);
  if(!task?.demoProduct||!task.demoSubmission)return null;
  const base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";

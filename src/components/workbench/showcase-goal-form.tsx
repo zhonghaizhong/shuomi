@@ -5,7 +5,7 @@ import styles from "./showcase-action-dialog.module.css";
 
 export type DemoGoal={
  name:string;metric:"订单量"|"销售额";store:string;storeIds:string[];
- period:"每周"|"每月";value:string;currencyTargets?:Record<string,string>;
+ period:"每周"|"每月";value:string;currencyTargets?:Record<string,string>;demoScenario?:true;
 };
 const currencyBySite=(region:string):string=>{
  const site=region.toLowerCase();
