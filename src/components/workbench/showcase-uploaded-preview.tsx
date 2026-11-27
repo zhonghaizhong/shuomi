@@ -9,7 +9,11 @@ import {ShowcaseBatchVersionPicker,type PickBatch,type PickSource} from "./listi
 import {parseListingPhoto,listingPhotoAtlasUrl} from "./listing/showcase-listing-ai-images";
 
 type Item={sku:string;name:string;batch:string;batchKey:string;batchVersion:string;site:string;platform:string;time:string;productId:string;reviewStatus:string;listingStatus:string;datasetId:string;receiptId:string;demo?:boolean;storeName?:string;storeType?:string;image?:string;acceptanceStatus:string};
-const displayTime=(input:string)=>{const timestamp=Date.parse(input);if(!Number.isFinite(timestamp))return input.replace("T"," ").replace(/\\.\\d+Z$/,"");const date=new Date(timestamp);return date.toLocaleString("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).replace(/\\//g,"/")};
+const displayTime=(input:string)=>{
+ const timestamp=Date.parse(input);
+ if(!Number.isFinite(timestamp))return input.replace("T"," ");
+ return new Date(timestamp).toLocaleString("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+};
 function ProductThumb({src,name}:{src?:string;name:string}){
  if(!src)return <div className={styles.productThumbPlaceholder} aria-label="暂无商品图片">暂无图片</div>;
  const tile=parseListingPhoto(src);
