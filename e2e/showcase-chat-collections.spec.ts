@@ -95,3 +95,33 @@ test("Chat home three entry cards are compact and keep links and examples visibl
  await expect(entries.getByRole("link",{name:/查看最近会话/})).toBeVisible();
  await expect(entries.getByRole("link",{name:/进入收藏会话/})).toBeVisible();
 });
+
+test("new chat keeps task and schedule demo inside one conversation and orders task below chat",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/chat/new");
+ const modes=page.getByRole("complementary",{name:"选择执行方式"});
+ await expect(modes).toBeVisible();
+ const buttons=modes.locator('[class*="modeList"] > button');
+ await expect(buttons.nth(0)).toContainText("创建会话");
+ await expect(buttons.nth(1)).toContainText("发起任务");
+ await buttons.nth(1).click();
+ await page.getByLabel("描述你的业务目标").fill("核对待审核商品并整理处理方案");
+ await page.getByRole("button",{name:"确认任务草案"}).click();
+ const inline=page.getByLabel("会话内确认任务");
+ await expect(inline).toBeVisible();
+ await expect(page.getByRole("dialog",{name:/确认发起任务/})).toHaveCount(0);
+ await expect(inline).toContainText("核对待审核商品并整理处理方案");
+ await inline.getByRole("button",{name:"确认并继续"}).click();
+ await expect(inline).toHaveCount(0);
+ const thread=page.getByLabel("聊天记录");
+ await expect(thread).toContainText("核对待审核商品并整理处理方案");
+ await expect(thread).toContainText("任务中心");
+ await page.getByRole("button",{name:"＋ 新会话"}).click();
+ await modes.getByRole("button",{name:"执行定时任务"}).click();
+ await page.getByLabel("描述你的业务目标").fill("每周检查待审核商品");
+ await page.getByRole("button",{name:"确认定时计划"}).click();
+ const schedule=page.getByLabel("会话内确认任务");
+ await expect(schedule.getByLabel("定时安排")).toBeVisible();
+ await expect(page.getByRole("dialog",{name:/确认执行定时任务/})).toHaveCount(0);
+ await schedule.getByRole("button",{name:"确认并继续"}).click();
+ await expect(thread).toContainText("定时任务演示草案");
+});
