@@ -98,11 +98,12 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
    if(sku.price&&Number(sku.price)>0&&sku.price!==firstPrice)skuOverrides[key]={...skuOverrides[key],price:String(sku.price)};
    if(sku.stock!==undefined&&sku.stock!==firstQuantity)skuOverrides[key]={...skuOverrides[key],quantity:String(sku.stock)};
   }
+  const previous=records[0]?.supply;
   setSelected(list);
   setSkuEditing(Object.keys(skuOverrides));setShowPackagingOverrides(false);
   setSupply({...emptyPreferredSupply,supplyKind:"现货",warehouseMode:"硕米仓库",currency:"CNY",dropship:true,skuPrices,skuOverrides,defaultSkuQuantity:firstQuantity===undefined?"":String(firstQuantity),
    supplierName:profile?.name??"",supplierContact:profile?.contact??"",supplierPhone:profile?.phone??"",supplierLocation:profile?.location??"",supplierAgreement:Boolean(profile?.agreement),
-   unitPrice:firstPrice,packageWeight:"",packageSize:"",shippingCountries:"",maxQuantity:"",stock:String(sourceSkus.reduce((sum,v)=>sum+(v.sku.stock??0),0)),moq:"1"});
+   unitPrice:firstPrice||previous?.unitPrice||"",packageWeight:previous?.packageWeight??"",packageSize:previous?.packageSize??"",shippingCountries:previous?.shippingCountries??"",origin:previous?.origin??"",dispatch:previous?.dispatch??"",returns:previous?.returns??"",maxQuantity:previous?.maxQuantity??"",stock:String(sourceSkus.reduce((sum,v)=>sum+(v.sku.stock??0),0)),moq:previous?.moq??"1"});
   setEditSupplier(!profile?.name);setShowSkuPricing(false);setShowTierPricing(false);
   setNotice("");setError("");setApplicationOpen(true);
  };
@@ -117,8 +118,8 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
      price:override?.price??supply.unitPrice??"",
      quantity:override?.quantity??supply.defaultSkuQuantity??"",
      moq:override?.moq??supply.moq,
-     weight:override?.weight??supply.packageWeight,
-     size:override?.size??supply.packageSize
+     weight:showPackagingOverrides?override?.weight??supply.packageWeight:supply.packageWeight,
+     size:showPackagingOverrides?override?.size??supply.packageSize:supply.packageSize
     };
    }
    const total=Object.values(skuPrices).reduce((sum,v)=>sum+Math.max(0,Number(v.quantity)||0),0);
@@ -213,7 +214,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
   {notice?<p role="status" className={styles.notice}>{notice}</p>:null}
   {applicationOpen?<div className={styles.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setApplicationOpen(false)}}>
    <section className={styles.modal+" "+styles.preferredApplyModal} role="dialog" aria-modal="true" aria-label="申请加入硕米优选">
-    <header><div><small>硕米优选 · {chosen.length} 件商品</small><h2>申请加入硕米优选</h2><p>供应商信息仅首次补全；商品报价按 SKU 配置，仓储验证与后台费用核算由硕米处理。</p></div><button type="button" onClick={()=>setApplicationOpen(false)}>关闭</button></header>
+    <header><div><small>硕米优选 · {chosen.length} 件商品</small><h2>申请加入硕米优选</h2><p>已有资料直接复用；先填写统一规则，只有不同的 SKU 才需单独调整。</p></div><button type="button" onClick={()=>setApplicationOpen(false)}>关闭</button></header>
     <form onSubmit={submit} className={styles.applyForm}>
      <div className={styles.applyScroll}>
       <section className={styles.applySection}>
