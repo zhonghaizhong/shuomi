@@ -387,3 +387,17 @@
    transformed showcase shell establishes its own fixed-position containing block. */
 .overlay:has(.confirmDrawer){box-sizing:border-box;overflow:hidden;padding-right:12px}
 .overlay .confirmDrawer{box-sizing:border-box;width:min(500px,calc(100vw - 24px));max-width:100%;height:100%;min-width:0;overflow-x:hidden;overflow-y:auto}
+
+/* All demo actions stay inside the conversation composer, not a separate modal. */
+.inlineConfirmation{display:flex;flex-direction:column;gap:13px;max-height:min(470px,52dvh);overflow-y:auto;padding:16px 18px;border:1px solid var(--cn-border);border-radius:10px;background:var(--cn-raised);color:var(--cn-text)}
+.inlineConfirmation>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--cn-border)}
+.inlineConfirmation>header h2{font-size:16px;line-height:1.4;color:var(--cn-heading);margin:0}
+.inlineConfirmation>header p{font-size:13px;color:var(--cn-muted);margin:4px 0 0;line-height:1.5}
+.inlineConfirmation>header button{border:1px solid var(--cn-border);border-radius:6px;background:var(--cn-inset);color:var(--cn-text);cursor:pointer;min-width:32px;height:32px}
+.inlineConfirmation .confirmSummary{border:0;background:transparent;padding:2px 0;gap:8px 14px}
+.inlineConfirmation .drawerFooter{margin-top:0;padding-top:10px;justify-content:flex-end}
+.inlineConfirmation .drawerFooter button{border:1px solid var(--cn-border);border-radius:6px;background:var(--cn-inset);color:var(--cn-text);cursor:pointer}
+.inlineConfirmation .drawerFooter .primary{background:var(--cn-primary);border-color:var(--cn-primary);color:white}
+.workspace:has(.inlineConfirmation) .composer textarea{flex:0 0 auto;min-height:110px!important;height:130px}
+.workspace:has(.inlineConfirmation) .composer{overflow-y:auto}
+@media(max-width:700px){.inlineConfirmation{max-height:min(410px,52dvh);padding:12px}.inlineConfirmation .confirmSummary{grid-template-columns:92px minmax(0,1fr)}}
