@@ -88,16 +88,15 @@ function validateSupply(supply:PreferredSupply){
  if(!supply.dispatch.trim()||!supply.origin.trim()||!supply.returns.trim())throw Error("请补充发货或生产时效、发货地及售后政策");
  if(supply.supplyKind){
   if(!supply.supplierName?.trim()||!supply.supplierContact?.trim()||!supply.supplierPhone?.trim()||!supply.supplierAgreement)throw Error("请完善供应商档案并同意合作规则");
-  if(!supply.unitPrice?.trim()||!Number.isFinite(Number(supply.unitPrice))||Number(supply.unitPrice)<=0)throw Error("请填写有效的基础供货价格");
-  if(!supply.packageWeight?.trim()||!Number.isFinite(Number(supply.packageWeight))||Number(supply.packageWeight)<=0||!supply.packageSize?.trim())throw Error("请补充包装重量和尺寸，供硕米后台核算运费");
+  // Each SKU owns its own price, weight and dimensions; bulk defaults are optional.
   if(!supply.shippingCountries?.trim())throw Error("请填写可配送国家或地区");
   if(supply.supplyKind==="现货"&&supply.warehouseMode==="新增自有仓"&&(!supply.warehouseName?.trim()||!supply.warehouseAddress?.trim()))throw Error("请填写新增自有仓名称与地址以提交仓库验证");
   if(supply.supplyKind==="现货"&&supply.warehouseMode==="已验证自有仓"&&!supply.warehouseId)throw Error("请选择已验证的自有仓库");
   const skuOffers=Object.values(supply.skuPrices??{});
   if(!skuOffers.length||skuOffers.some(v=>!Number.isFinite(Number(v.price))||Number(v.price)<=0||!Number.isSafeInteger(Number(v.quantity))||Number(v.quantity)<0||
    (v.moq!==undefined&&(!Number.isSafeInteger(Number(v.moq))||Number(v.moq)<1))||
-   (v.weight!==undefined&&(!Number.isFinite(Number(v.weight))||Number(v.weight)<=0))||
-   (v.size!==undefined&&!/^\s*\d+(?:\.\d+)?\s*[x×*]\s*\d+(?:\.\d+)?\s*[x×*]\s*\d+(?:\.\d+)?\s*$/.test(v.size))))
+   (!v.weight?.trim()||!Number.isFinite(Number(v.weight))||Number(v.weight)<=0)||
+   (!v.size?.trim()||!/^\s*\d+(?:\.\d+)?\s*[x×*]\s*\d+(?:\.\d+)?\s*[x×*]\s*\d+(?:\.\d+)?\s*$/.test(v.size))))
    throw Error("请补充有效的 SKU 报价、库存、起订量及包装规格（长×宽×高）");
 
  }
