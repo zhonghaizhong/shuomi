@@ -85,11 +85,11 @@ function validateSupply(supply:PreferredSupply){
  const moq=Number(supply.moq),stock=Number(supply.stock);
  if(!Number.isSafeInteger(moq)||moq<1)throw Error("请填写有效的最小起订量");
  if(!Number.isSafeInteger(stock)||stock<1||moq>stock)throw Error("请填写有效的可售库存或可接单量，且不能小于起订量");
- if(!supply.dispatch.trim()||!supply.origin.trim()||!supply.returns.trim())throw Error("请补充发货或生产时效、发货地及售后政策");
+ if(!supply.dispatch.trim()||!supply.origin.trim())throw Error("请补充发货或生产时效及发货地");
  if(supply.supplyKind){
   if(!supply.supplierName?.trim()||!supply.supplierContact?.trim()||!supply.supplierPhone?.trim()||!supply.supplierAgreement)throw Error("请完善供应商档案并同意合作规则");
   // Each SKU owns its own price, weight and dimensions; bulk defaults are optional.
-  if(!supply.shippingCountries?.trim())throw Error("请填写可配送国家或地区");
+  // Destination coverage and aftersales terms are agreed with the Shuomi account manager, not collected here.
   if(supply.supplyKind==="现货"&&supply.warehouseMode==="新增自有仓"&&(!supply.warehouseName?.trim()||!supply.warehouseAddress?.trim()))throw Error("请填写新增自有仓名称与地址以提交仓库验证");
   if(supply.supplyKind==="现货"&&supply.warehouseMode==="已验证自有仓"&&!supply.warehouseId)throw Error("请选择已验证的自有仓库");
   const skuOffers=Object.values(supply.skuPrices??{});
