@@ -21,7 +21,7 @@ function info(t:Task){switch(t.state){case "pending":return ["等待确认后继
 export function ShowcaseTaskCenter({pathname,navigate,tabNavigation}:{pathname:string;navigate:(href:string)=>void;tabNavigation?:ReactNode}){
  const segment=pathname.split("/").pop() as Mode;const mode:Mode=modes.includes(segment)?segment:"all";
  const [tasks,setTasks]=useState<Task[]>(read),[input,setInput]=useState(""),[query,setQuery]=useState(""),[scheduleFilter,setScheduleFilter]=useState("全部"),[filter,setFilter]=useState("全部"),[selected,setSelected]=useState<string|null>(null),[dialog,setDialog]=useState<"detail"|"review"|"ai"|"create"|"new"|null>(null),[notice,setNotice]=useState(""),[draft,setDraft]=useState({name:"",scope:"通用业务",frequency:"每天",time:"08:30"}),[note,setNote]=useState(""),[suggestion,setSuggestion]=useState(""),[messages,setMessages]=useState<{role:"user"|"assistant";text:string}[]>([]),[resolved,setResolved]=useState(false);
- useEffect(()=>{try{sessionStorage.setItem(key,JSON.stringify(tasks))}catch{}},[tasks]);
+ useEffect(()=>{try{sessionStorage.setItem(key,JSON.stringify(tasks));window.dispatchEvent(new Event("shuomi-project-tasks-changed"))}catch{}},[tasks]);
  useEffect(()=>{setInput("");setQuery("");setFilter("全部");setScheduleFilter("全部");setDialog(null);setNotice("")},[mode]);
  useEffect(()=>{if(!dialog)return;const close=(e:KeyboardEvent)=>{if(e.key==="Escape")setDialog(null)};document.addEventListener("keydown",close);return()=>document.removeEventListener("keydown",close)},[dialog]);
  const task=tasks.find(t=>t.id===selected);
@@ -30,11 +30,11 @@ export function ShowcaseTaskCenter({pathname,navigate,tabNavigation}:{pathname:s
  const visible=tasks.filter(t=>(!projectIdFilter||t.projectId===projectIdFilter)&&(mode==="all"||t.state===mode)&&(mode!=="all"||filter==="全部"||stateLabel(t)===filter)&&(mode!=="scheduled"||scheduleFilter==="全部"||(scheduleFilter==="已暂停"?t.paused:!t.paused))&&[t.name,t.description,t.scope].join(" ").toLowerCase().includes(query.toLowerCase()));
  function saveConversation(t:Task,thread:{role:"user"|"assistant";text:string}[]){setTasks(old=>old.map(x=>x.id===t.id?{...x,conversation:thread}:x))}
  function runPlan(t:Task){if(t.paused)return;const id=crypto.randomUUID();setTasks(old=>[{id,name:t.name+" · 本次执行",description:"等待演示执行处理",scope:t.scope,state:"running",progress:0,time:"刚刚",planId:t.id,projectId:t.projectId,history:[{time:new Date().toLocaleString("zh-CN"),event:"从定时计划手动发起演示执行"}]},...old.map(x=>x.id===t.id?{...x,history:[...(x.history??[]),{time:new Date().toLocaleString("zh-CN"),event:"已发起演示执行 "+id}]}:x)]);setDialog(null);setNotice("已生成独立演示执行记录，可在进行中查看；定时计划保持不变。")}
- const rows=mode==="all"&&!query&&filter==="全部"?visible.slice(0,5):visible;
+ const rows=mode==="all"&&!query&&filter==="全部"&&!projectIdFilter?visible.slice(0,5):visible;
  function open(t:Task,kind:"detail"|"review"|"ai"="detail"){setSelected(t.id);setDialog(kind);setNote("");setSuggestion("");setMessages(t.conversation??[]);setResolved(false)}
  function update(t:Task,change:Partial<Task>,message:string){setTasks(old=>old.map(x=>x.id===t.id?{...x,...change,history:[...(x.history??[]),{time:new Date().toLocaleString("zh-CN"),event:message}]}:x));setDialog(null);setNotice(message+"（仅演示）")}
  function create(e:FormEvent){e.preventDefault();if(!draft.name.trim())return;setTasks(old=>[{id:crypto.randomUUID(),name:draft.name.trim(),description:"新建演示周期计划",scope:draft.scope,state:"scheduled",frequency:draft.frequency+" "+draft.time,time:"待首次执行"},...old]);setDialog(null);setNotice("已添加演示计划，未启动真实任务。")}
- const go=(m:Mode)=>navigate("/workbench/ai/tasks"+(m==="all"?"":"/"+m)+"?preview=1");
+ const go=(m:Mode)=>navigate("/workbench/ai/tasks"+(m==="all"?"":"/"+m)+"?preview=1"+(projectIdFilter?"&projectId="+encodeURIComponent(projectIdFilter):""));
  const action=(t:Task)=>t.state==="pending"?"去确认":t.state==="errors"?"去处理":t.state==="scheduled"?"详情":t.state==="revision"?"重新提交":"查看";
  const title=mode==="all"?"任务中心":mode==="pending"?"待确认任务":mode==="running"?"进行中任务":mode==="completed"?"已完成任务":labels[mode];
  return <div data-task-center-preview={mode} className={`${styles.page} ${styles.tasksPreview} ${extra.root}`}>
