@@ -1,5 +1,5 @@
 /** Demonstration-only approved supplier listings, not real platform approvals,
- * live inventory, prices, merchants or cross-tenant records. Intentionally no images.
+ * live inventory, prices, merchants or cross-tenant records. Product illustrations are demonstration assets.
  */
 export type SupplyType="现货"|"定制"|"POD"|"待确认";
 export type SelectedCatalogProduct={
@@ -18,8 +18,9 @@ export type SelectedCatalogProduct={
 };
 const supplierA={supplierId:"DEMO-SUP-A",supplierName:"演示供货商 · 织造工厂"};
 const supplierB={supplierId:"DEMO-SUP-B",supplierName:"演示供货商 · 生活用品"};
+const teePhotos=(color:"black"|"white")=>Array.from({length:4},(_,i)=>((typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi/"))?"/shuomi":"")+"/assets/selected-market/SMYX-DEMO-001/"+color+"-0"+(i+1)+".png");
 const baseSelectedCatalogFixtures:SelectedCatalogProduct[]=[
- {id:"SMYX-DEMO-001",name:"纯棉圆领短袖T恤",category:"服装",description:"基础纯棉圆领短袖，男女休闲版型，可进行平台专属标题及属性适配。",...supplierA,price:28,moq:1,stock:3600,dispatch:"48小时内",origin:"浙江义乌",returns:"质量问题按规则处理",version:"DEMO-V1",approved:"演示审核通过",images:[],skus:[{id:"SMYX-001-BK-M",label:"黑色 / M",color:"黑色",size:"M",stock:900,price:28},{id:"SMYX-001-BK-L",label:"黑色 / L",color:"黑色",size:"L",stock:900,price:28},{id:"SMYX-001-WH-M",label:"白色 / M",color:"白色",size:"M",stock:900,price:28},{id:"SMYX-001-WH-L",label:"白色 / L",color:"白色",size:"L",stock:900,price:28}]},
+ {id:"SMYX-DEMO-001",name:"纯棉圆领短袖T恤",category:"服装",description:"基础纯棉圆领短袖，男女休闲版型，可进行平台专属标题及属性适配。",...supplierA,price:28,moq:1,stock:3600,dispatch:"48小时内",origin:"浙江义乌",returns:"质量问题按规则处理",version:"DEMO-V1",approved:"演示审核通过",images:teePhotos("black"),skus:[{id:"SMYX-001-BK-M",label:"黑色 / M",color:"黑色",size:"M",stock:900,price:28,images:teePhotos("black")},{id:"SMYX-001-BK-L",label:"黑色 / L",color:"黑色",size:"L",stock:900,price:28,images:teePhotos("black")},{id:"SMYX-001-WH-M",label:"白色 / M",color:"白色",size:"M",stock:900,price:28,images:teePhotos("white")},{id:"SMYX-001-WH-L",label:"白色 / L",color:"白色",size:"L",stock:900,price:28,images:teePhotos("white")}]},
  {id:"SMYX-DEMO-002",name:"宽松连帽卫衣",category:"服装",description:"常规连帽卫衣，宽松休闲款，提供基础颜色和尺码供卖家选择。",...supplierA,price:65,moq:1,stock:1800,dispatch:"72小时内",origin:"浙江义乌",returns:"质量问题按规则处理",version:"DEMO-V1",approved:"演示审核通过",images:[],skus:[{id:"SMYX-002-BK-M",label:"黑色 / M",color:"黑色",size:"M",stock:450,price:65},{id:"SMYX-002-BK-L",label:"黑色 / L",color:"黑色",size:"L",stock:450,price:65},{id:"SMYX-002-GR-M",label:"灰色 / M",color:"灰色",size:"M",stock:450,price:65},{id:"SMYX-002-GR-L",label:"灰色 / L",color:"灰色",size:"L",stock:450,price:65}]},
  {id:"SMYX-DEMO-003",name:"帆布手提购物袋",category:"箱包",description:"简约帆布托特袋，可用于通勤、购物和礼品搭配。",...supplierA,price:15,moq:5,stock:2400,dispatch:"48小时内",origin:"浙江义乌",returns:"质量问题按规则处理",version:"DEMO-V1",approved:"演示审核通过",images:[],skus:[{id:"SMYX-003-NT",label:"原色 / 标准",color:"原色",size:"标准",stock:1200,price:15},{id:"SMYX-003-BK",label:"黑色 / 标准",color:"黑色",size:"标准",stock:1200,price:15}]},
  {id:"SMYX-DEMO-004",name:"不锈钢保温杯",category:"家居",description:"日常办公与旅行使用的保温杯，演示版产品参数与报价非真实供货承诺。",...supplierB,price:32,moq:2,stock:1300,dispatch:"72小时内",origin:"广东汕头",returns:"质量问题按规则处理",version:"DEMO-V1",approved:"演示审核通过",images:[],skus:[{id:"SMYX-004-BK-500",label:"黑色 / 500ml",color:"黑色",size:"500ml",stock:600,price:32},{id:"SMYX-004-WH-500",label:"白色 / 500ml",color:"白色",size:"500ml",stock:700,price:32}]},

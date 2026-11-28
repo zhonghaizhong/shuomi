@@ -46,7 +46,7 @@ function toCollected(product:SelectedCatalogProduct,mode:CollectionMode,selected
   // The price and variantDetails.price fields stay at supplier price; total landed
   // costs are country-specific, and cannot safely be represented as one price.
   destinationCosts:mode==="landed"?countryCosts:undefined,
-  images:[...product.images],variants:selectedSkus.map(s=>s.label),variantCount:selectedSkus.length,
+  images:[...new Set(selectedSkus.some(s=>s.images?.length)?selectedSkus.flatMap(s=>s.images??[]):product.images)],variants:selectedSkus.map(s=>s.label),variantCount:selectedSkus.length,
   variantDetails:selectedSkus.map(s=>({sku:s.id,label:s.label,color:s.color,size:s.size,
    image:s.images?.[0]||"",images:[...(s.images||[])],
    price:String(s.price),stock:String(s.stock),description:product.description})),
@@ -212,7 +212,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   {current&&!collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setActive(null)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="优选商品详情"><header><h2>商品与供货信息</h2><button type="button" onClick={()=>setActive(null)}>关闭</button></header>
    <div className={css.modalBody}><aside className={css.galleryColumn}>
     <div className={css.squareGallery} aria-label="商品图片轮播">
-     {activePhoto&&!imageFailed?<img key={activePhoto} src={activePhoto} alt={current.name+" · "+(selectedSku?.label||"商品")+" · 图片 "+(photoIndex+1)} onError={()=>setImageFailed(true)}/>:<div className={css.emptySquare}><PackageSearch size={42}/><span>{skuPhotos.length?"图片暂不可用":"暂无商品图片"}</span></div>}
+     {activePhoto&&!imageFailed?<a className={css.fullPhoto} href={activePhoto} target="_blank" rel="noreferrer" aria-label="查看商品原图"><img key={activePhoto} src={activePhoto} alt={current.name+" · "+(selectedSku?.label||"商品")+" · 图片 "+(photoIndex+1)} onError={()=>setImageFailed(true)}/></a>:<div className={css.emptySquare}><PackageSearch size={42}/><span>{skuPhotos.length?"图片暂不可用":"暂无商品图片"}</span></div>}
      {skuPhotos.length>1?<div className={css.galleryPaging}><button type="button" aria-label="上一张商品图片" onClick={()=>{setPhotoIndex(v=>(v+skuPhotos.length-1)%skuPhotos.length);setImageFailed(false)}}>上一张</button><span>{Math.min(photoIndex+1,skuPhotos.length)} / {skuPhotos.length}</span><button type="button" aria-label="下一张商品图片" onClick={()=>{setPhotoIndex(v=>(v+1)%skuPhotos.length);setImageFailed(false)}}>下一张</button></div>:null}
     </div>
     {skuPhotos.length>1?<div className={css.galleryThumbs}>{skuPhotos.map((src,i)=><button type="button" aria-label={"查看商品图片 "+(i+1)} key={src+"-"+i} aria-pressed={photoIndex===i} onClick={()=>{setPhotoIndex(i);setImageFailed(false)}}><img src={src} alt={"缩略图 "+(i+1)}/></button>)}</div>:null}

@@ -1,12 +1,15 @@
 import {expect,test} from "@playwright/test";
 
-test("Shuomi selected supply catalog demo can collect a blank-image product to the current account",async({page})=>{
+test("Shuomi selected supply catalog demo can collect a product with repository images to the current account",async({page})=>{
  await page.goto("/shuomi/#/workbench/supply/selected");
  const market=page.locator('[data-selected-market="true"]');
  await expect(market.getByRole("heading",{name:"硕米优选",level:1})).toBeVisible();
  const fixture=market.locator('[data-selected-product="SMYX-DEMO-001"]');
  await expect(fixture).toBeVisible();
- await expect(fixture.getByText("暂无商品图片")).toBeVisible();
+ const cover=fixture.getByRole("img",{name:"纯棉圆领短袖T恤",exact:true});
+ await expect(cover).toHaveAttribute("src",/black-01\.png$/);
+ await expect.poll(()=>cover.evaluate((img:HTMLImageElement)=>img.naturalWidth)).toBeGreaterThan(0);
+ const frame=await cover.boundingBox();expect(Math.abs(frame!.width-frame!.height)).toBeLessThan(2);
  await expect(fixture.getByText("纯棉圆领短袖T恤")).toBeVisible();
  await fixture.getByRole("button",{name:"查看详情"}).click();
  const detail=page.getByRole("dialog",{name:"优选商品详情"});
@@ -73,6 +76,14 @@ test("selected product detail uses square gallery, SKU switching and per-item se
  await expect(detail.getByRole("button",{name:"选择变体 黑色 / L"})).toHaveAttribute("aria-pressed","true");
  await detail.getByRole("button",{name:"选择变体 白色 / M"}).click();
  await expect(detail.getByText("SKU：SMYX-001-WH-M")).toBeVisible();
+ const photo=detail.getByLabel("商品图片轮播").getByRole("img");
+ await expect(photo).toHaveAttribute("src",/white-01\.png$/);
+ await expect.poll(()=>photo.evaluate((img:HTMLImageElement)=>img.naturalWidth)).toBeGreaterThan(0);
+ await detail.getByRole("button",{name:"下一张商品图片"}).click();
+ await expect(photo).toHaveAttribute("src",/white-02\.png$/);
+ await detail.getByRole("button",{name:"选择变体 黑色 / M"}).click();
+ await expect(photo).toHaveAttribute("src",/black-01\.png$/);
+ await expect(detail.getByRole("button",{name:/查看商品图片 [1-4]/})).toHaveCount(4);
 });
 
 test("destination updates per-SKU cost while collection saves every selected variant and country",async({page})=>{
