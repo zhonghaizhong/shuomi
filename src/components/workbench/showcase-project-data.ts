@@ -1,7 +1,8 @@
 export type ProjectStatus="进行中"|"待确认"|"已完成"|"已归档";
 export type PreviewProject={id:string;name:string;goal:string;scope:string;category:string;milestone:string;progress:number;status:ProjectStatus;updated:number;visited:number;archivedAt?:number;previousStatus?:Exclude<ProjectStatus,"已归档">;reports:string[];resources:string[];template?:string;group?:string;links?:ProjectResourceLink[];stages?:ProjectStage[]};
 export const PROJECT_ROOT="/workbench/ai/projects";
-const KEY="shuomi-preview-projects-v1";\nconst RETIRED_DEMO_IDS=new Set(["demo-project-supplier","demo-project-shein-sync"]);
+const KEY="shuomi-preview-projects-v1";
+const RETIRED_DEMO_IDS=new Set(["demo-project-supplier","demo-project-shein-sync"]);
 export type ProjectResourceLink={kind:"store"|"batch"|"product"|"agent"|"tool"|"module"|"data"|"report"|"skill";id:string;label:string;status:"演示可引用"|"待选择"|"待配置";path?:string;note?:string};
 export type ProjectStage={title:string;state:"已完成"|"进行中"|"待确认"|"异常"|"待开始";detail:string};
 const R=(kind:ProjectResourceLink["kind"],id:string,label:string,status:ProjectResourceLink["status"],path?:string,note?:string):ProjectResourceLink=>({kind,id,label,status,path,note});
