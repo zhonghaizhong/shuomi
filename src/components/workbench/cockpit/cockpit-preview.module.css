@@ -1411,18 +1411,18 @@
 .page .aiTasksCard{gap:11px!important;min-width:0;overflow:hidden}
 .page .aiTasksCard>header{flex:none}
 .cockpitTaskCounters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.page .cockpitTaskCounters button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;min-width:0;padding:9px 4px;background:#393d55;border:1px solid #4b506a;border-radius:7px;color:#e8e7f6;cursor:pointer}
+.page .cockpitTaskCounters button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;min-width:0;padding:9px 4px;background:#18283c;border:1px solid var(--line);border-radius:7px;color:#e8e7f6;cursor:pointer}
 .cockpitTaskCounters strong{font-size:19px;line-height:1;font-variant-numeric:tabular-nums}
 .cockpitTaskCounters small{font-size:11px;color:#c5c5d6;white-space:nowrap}
 .cockpitTaskRows{display:grid;gap:5px;min-height:0;overflow:auto}
-.page .cockpitTaskRows button{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;min-height:33px;text-align:left;color:#e8e7f6;background:#393d55;border:1px solid #4b506a;border-radius:7px;cursor:pointer}
+.page .cockpitTaskRows button{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;min-height:33px;text-align:left;color:#e8e7f6;background:#18283c;border:1px solid var(--line);border-radius:7px;cursor:pointer}
 .cockpitTaskName{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cockpitTaskStatus{color:#cabfff;font-size:11px;white-space:nowrap}
 .cockpitTaskRows p{font-size:12px;line-height:1.5;color:#c5c5d6;margin:0}
 .cockpitTaskFoot{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:auto}
 .cockpitTaskFoot span{font-size:11px;line-height:1.5;color:#c5c5d6}
-.page .cockpitTaskFoot button{flex:none;padding:7px 10px;min-height:30px;font-size:12px;color:#e8e7f6;background:#393d55;border:1px solid #4b506a;border-radius:7px;cursor:pointer}
-:global(.light) .page .cockpitTaskCounters button,:global(.light) .page .cockpitTaskRows button,:global(.light) .page .cockpitTaskFoot button{color:#444050;background:#f6f5fb;border-color:#e3e0ed}
+.page .cockpitTaskFoot button{flex:none;padding:7px 10px;min-height:30px;font-size:12px;color:#e8e7f6;background:#18283c;border:1px solid var(--line);border-radius:7px;cursor:pointer}
+:global(.light) .page .cockpitTaskCounters button,:global(.light) .page .cockpitTaskRows button,:global(.light) .page .cockpitTaskFoot button{color:#444050;background:#f7fafd;border-color:var(--line)}
 :global(.light) .page .cockpitTaskCounters small,:global(.light) .page .cockpitTaskFoot span,:global(.light) .page .cockpitTaskRows p{color:#6f6b7d}
 :global(.light) .page .cockpitTaskStatus{color:#6357c7}
 @media(max-width:600px){.cockpitTaskCounters{grid-template-columns:repeat(2,minmax(0,1fr))}.cockpitTaskFoot{flex-wrap:wrap}}
