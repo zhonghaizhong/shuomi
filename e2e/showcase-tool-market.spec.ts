@@ -281,7 +281,8 @@ test("1688 online collection creates ten demo products and shows only owned batc
  const mine=page.getByRole("region",{name:"采集批次",exact:true});
  await expect(mine).toContainText("1688 在线采集 · 10个产品（模拟）");
  await expect(mine).toContainText("SDS POD · 2款公开目录商品（演示）");
-  await expect(mine).toContainText("3 批");
+ await expect(mine).toContainText("硕米优选 · 服装采集测试批次");
+ await expect(mine).toContainText("共 4 批");
  await mine.getByRole("row").filter({hasText:"1688 在线采集 · 10个产品（模拟）"}).getByRole("button",{name:"更多"}).click();
  await mine.getByRole("button",{name:"查看商品"}).click();
  const details=page.getByRole("dialog",{name:"批次商品"});
@@ -306,8 +307,8 @@ test("1688 online collection creates ten demo products and shows only owned batc
  await expect(modal).toContainText("已记录 10 条1688演示数据");
  await modal.getByRole("button",{name:"知道了"}).click();
  await page.goto("/shuomi/#/workbench/data/mine");
- // The fresh 1688 collection creates one additional owned batch beyond the three seeded demos.
- await expect(page.getByRole("region",{name:"采集批次",exact:true})).toContainText("4 批");
+ // The fresh 1688 collection creates one additional owned batch beyond the four seeded demos.
+ await expect(page.getByRole("region",{name:"采集批次",exact:true})).toContainText("共 5 批");
  await page.getByRole("region",{name:"采集批次",exact:true}).getByRole("row").filter({hasText:"1688 在线采集"}).first().getByRole("button",{name:"更多"}).click();
  await page.getByRole("region",{name:"采集批次",exact:true}).getByRole("button",{name:"查看商品"}).click();
  await expect(page.getByRole("dialog",{name:"批次商品"}).locator("tbody tr")).toHaveCount(4);
