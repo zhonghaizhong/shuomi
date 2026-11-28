@@ -56,7 +56,15 @@ const stores = [
 
 type Props = { organizationId?:string;memberId?:string };
 type ApprovalKind = "knowledge" | "skill" | "report";
-type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; approval?: ApprovalKind };
+type OutcomeSection={heading:string;content:string};
+type OutcomeJobStatus="waiting"|"running"|"ready"|"blocked"|"failed";
+type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; approval?: ApprovalKind; jobId?:string; jobStatus?:OutcomeJobStatus; outcomeSections?:OutcomeSection[] };
+type SavedChat={messages:PreviewMessage[];chatActive:boolean};
+const outcomeApi=(process.env.NEXT_PUBLIC_SHUOMI_OUTCOME_API||"").replace(/\/$/,"");
+function chatStorageKey(organizationId:string,memberId:string){return "shuomi-chat-outcomes-v2:"+organizationId+":"+memberId}
+function readChatState(key:string):SavedChat|null{if(typeof window==="undefined")return null;try{const raw=localStorage.getItem(key);if(!raw)return null;const value=JSON.parse(raw) as SavedChat;if(!Array.isArray(value.messages))return null;return {messages:value.messages.filter(m=>m&&typeof m.id==="number"&&(m.role==="user"||m.role==="assistant")),chatActive:Boolean(value.chatActive)}}catch{return null}}
+function validSections(value:unknown):OutcomeSection[]|null{if(!Array.isArray(value)||!value.length)return null;const sections=value.filter((s):s is OutcomeSection=>Boolean(s&&typeof s.heading==="string"&&typeof s.content==="string"&&s.heading.trim()&&s.content.trim()));return sections.length===value.length?sections:null}
+
 
 
 // Each preview is based on the actual generated draft text. Missing business data stays
@@ -64,7 +72,7 @@ type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; ap
 function draftField(text:string, label:string) {
   return text.split("\n").find(line=>line.startsWith(label+"："))?.slice(label.length+1).trim()||"";
 }
-function previewSections(message:PreviewMessage):{heading:string;content:string}[] {
+function previewSections(message:PreviewMessage):{heading:string;content:string}[] {\n  if(message.outcomeSections?.length)return message.outcomeSections;
   const kind=message.approval;
   if(kind==="report"){
     const title=draftField(message.text,"报告主题")||"未命名报告";
@@ -133,9 +141,11 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   const [pendingStores, setPendingStores] = useState<string[]>([]);
   const [files, setFiles] = useState<string[]>([]);
   const [confirmation, setConfirmation] = useState(false);
-  const [chatActive, setChatActive] = useState(false);
+  const [chatActive, setChatActive] = useState(()=>Boolean(readChatState(chatStorageKey(organizationId,memberId))?.chatActive));
   
-  const [messages, setMessages] = useState<PreviewMessage[]>([]);
+  const storageKey=chatStorageKey(organizationId,memberId);
+  const [messages, setMessages] = useState<PreviewMessage[]>(()=>readChatState(storageKey)?.messages||[]);
+
   const [feedback,onAction]=useState("");
   const [guideFor,setGuideFor]=useState<number|null>(null);
   const [expandedDraftId,setExpandedDraftId]=useState<number|null>(null);
@@ -144,6 +154,60 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   const threadRef = useRef<HTMLDivElement>(null);
   const mode = modes[modeIndex];
   const modeGuide=guideFor===null?null:modeGuides[guideFor];
+  const jobMessages=messages.filter(message=>message.jobId&&message.jobStatus!=="ready"&&message.jobStatus!=="failed"&&message.jobStatus!=="blocked");
+  useEffect(()=>{try{localStorage.setItem(storageKey,JSON.stringify({messages:messages.slice(-100),chatActive}))}catch{/* Browser storage may be disabled. */}},[storageKey,messages,chatActive]);
+  // A configured service owns the work, and is polled by job id. Closing the dialog
+  // does not cancel it; after reload the persisted job ids can be checked again.
+  useEffect(()=>{
+    if(!outcomeApi||!jobMessages.length)return;
+    let stopped=false;
+    const check=async()=>{
+      for(const msg of jobMessages){
+        if(stopped||!msg.jobId)break;
+        try{
+          const response=await fetch(outcomeApi+"/"+encodeURIComponent(msg.jobId),{headers:{"Accept":"application/json"},cache:"no-store"});
+          if(!response.ok)throw new Error("HTTP "+response.status);
+          const result=await response.json() as {status?:string;sections?:unknown;error?:string};
+          if(stopped)return;
+          if(result.status==="completed"){
+            const sections=validSections(result.sections);
+            setMessages(current=>current.map(m=>m.id===msg.id?{...m,jobStatus:sections?"ready":"failed",outcomeSections:sections||undefined,text:sections?"完整成果已生成，可以打开预览并审核。":"生成服务未返回完整成果，无法确认保存。"}:m));
+          }else if(result.status==="failed"){
+            setMessages(current=>current.map(m=>m.id===msg.id?{...m,jobStatus:"failed",text:"成果生成失败："+(result.error||"请稍后重试。")}:m));
+          }else if(result.status==="running"){
+            setMessages(current=>current.map(m=>m.id===msg.id&&m.jobStatus!=="running"?{...m,jobStatus:"running",text:"正在生成具体内容。可关闭弹窗，任务由生成服务继续处理。"}:m));
+          }
+        }catch{/* Temporary polling failure must not discard an existing server job. */}
+      }
+    };
+    void check();
+    const interval=window.setInterval(()=>{void check()},10000);
+    return()=>{stopped=true;window.clearInterval(interval)};
+  // Depend only on the pending id list to avoid restarting polling on status text changes.
+  },[jobMessages.map(m=>m.jobId).join("|")]);
+  const requestOutcome=async(index:number,request:string)=>{
+    const kind:ApprovalKind=index===3?"knowledge":index===4?"skill":"report";
+    const id=Date.now()+1;
+    const title=kind==="skill"?"技能":kind==="report"?"报告":"知识条目";
+    const input:PreviewMessage={id:id-1,role:"user",text:request};
+    const placeholder:PreviewMessage={id,role:"assistant",approval:kind,jobStatus:"waiting",text:"已收到"+title+"生成请求，准备提交生成服务。"};
+    setMessages(current=>[...current,input,placeholder]);
+    setChatActive(true);setDraft("");
+    if(!outcomeApi){
+      setMessages(current=>current.map(m=>m.id===id?{...m,jobStatus:"blocked",text:"生成请求已保存在当前浏览器，但尚未配置服务端成果生成服务；没有实际启动后台生成，也没有可审核成果。"}:m));
+      return;
+    }
+    try{
+      const response=await fetch(outcomeApi,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({kind,prompt:request,organizationId,memberId,stores:selectedStores,resources:selectedResources})});
+      if(!response.ok)throw new Error("HTTP "+response.status);
+      const data=await response.json() as {jobId?:string};
+      if(!data.jobId)throw new Error("未返回任务编号");
+      setMessages(current=>current.map(m=>m.id===id?{...m,jobId:data.jobId,jobStatus:"running",text:"服务端已接收生成任务。可关闭弹窗或切换页面，完成后在此查看具体内容。"}:m));
+    }catch(error){
+      setMessages(current=>current.map(m=>m.id===id?{...m,jobStatus:"failed",text:"未能启动后台生成："+String(error instanceof Error?error.message:error)+"。请检查生成服务。"}:m));
+    }
+  };
+
   useEffect(() => {
     if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
   }, [chatActive, messages, feedback, confirmation]);
@@ -167,11 +231,9 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
       if(modeIndex===1||modeIndex===2||modeIndex===6){setConfirmDetailsOpen(false);setConfirmation(true);return;}
       const sent = draft.trim();
       const nextId = Date.now();
-      const revised = buildApprovalPreview(modeIndex, sent);
-      setMessages(current => [...current, { id: nextId, role: "user", text: sent }, revised ? { ...revised, id: nextId + 1 } : { id: nextId + 1, role: "assistant", text: "已收到补充信息。我会结合「" + mode.title + "」继续完善当前内容；这是页面交互演示，不会提交到真实业务。" }]);
-      setDraft("");
-      onAction("演示对话已继续");
-      return;
+      if(modeIndex===3||modeIndex===4||modeIndex===5){void requestOutcome(modeIndex,sent);return;}
+      setMessages(current => [...current,{id:nextId,role:"user",text:sent},{id:nextId+1,role:"assistant",text:"已收到补充信息，当前为页面交互演示。"}]);
+      setDraft("");return;
     }
     if (modeIndex === 0) {
       const sent = draft.trim();
@@ -184,11 +246,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     if (modeIndex === 3 || modeIndex === 4 || modeIndex === 5) {
       const sent = draft.trim();
       const nextId = Date.now();
-      const preview = buildApprovalPreview(modeIndex, sent);
-      if (preview) setMessages([{ id: nextId, role: "user", text: sent }, { ...preview, id: nextId + 1 }]);
-      setChatActive(true);
-      setDraft("");
-      onAction("演示草案已生成，请在聊天中确认");
+      void requestOutcome(modeIndex,sent);
       return;
     }
     setConfirmation(true);
@@ -206,42 +264,30 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     : scheduleFrequency === "weekly"
       ? "每" + weekdayNames[Number(scheduleWeekday)] + " " + scheduleTime
       : "每月 " + scheduleMonthday + " 日 " + scheduleTime;
-  const startNewConversation = () => { onAction(""); setChatActive(false); setMessages([]);setGuideFor(null);setExpandedDraftId(null);setConfirmDetailsOpen(false); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
-  const buildApprovalPreview = (index: number, request: string): Omit<PreviewMessage, "id"> | null => {
-    if (index === 3) return {
-      role: "assistant",
-      approval: "knowledge",
-      text: ["【知识条目草案】", "主题：" + request, "整理内容：已根据你的描述归纳为可检索的知识条目。", "引用资料：" + (selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配"), "当前状态：待确认加入我的知识库", "本页为交互演示，确认后不会写入真实知识库。"].join("\n"),
-    };
-    if (index === 4) return {
-      role: "assistant",
-      approval: "skill",
-      text: ["【技能草案】", "技能目标：" + request, "执行步骤：明确输入 → 按规则处理 → 检查结果 → 输出内容", "关联资源：" + (selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配"), "当前状态：待确认保存为我的技能", "本页为交互演示，确认后不会创建真实技能。"].join("\n"),
-    };
-    if (index === 5) return {
-      role: "assistant",
-      approval: "report",
-      text: ["【经营报告草案】", "报告主题：" + request, "统计范围：" + (selectedStores.length ? selectedStores.join("、") : "全部关联店铺") + " · 近30天", "报告章节：经营概览、销售与利润表现、异常变化及建议", "当前状态：待确认加入我的报告", "本页为交互演示，不含真实业务数据；确认后会保存演示报告草案。"].join("\n"),
-    };
-    return null;
+  const resumeGeneration=(item:PreviewMessage)=>{
+    if(!item.approval)return;
+    const index=item.approval==="knowledge"?3:item.approval==="skill"?4:5;
+    const original=messages.slice(0,messages.findIndex(m=>m.id===item.id)).reverse().find(m=>m.role==="user");
+    if(original)void requestOutcome(index,original.text);
   };
+  const startNewConversation = () => { onAction(""); setChatActive(false); setMessages([]);setGuideFor(null);setExpandedDraftId(null);setConfirmDetailsOpen(false); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
   const handleApproval = (message: PreviewMessage, confirm: boolean) => {
-    if (!message.approval) return;
+    if (!message.approval) return;\n    if(confirm&&!(message.jobStatus==="ready"&&message.outcomeSections?.length)){onAction("尚未生成完整成果，无法确认保存");return;}
     const labels: Record<ApprovalKind, string> = { knowledge: "知识库", skill: "技能", report: "报告" };
     const label = labels[message.approval];
     if(confirm&&message.approval==="report"){
-      const title=message.text.split("\n").find(line=>line.startsWith("报告主题："))?.slice(5).trim();
+      const title=message.outcomeSections?.[0]?.heading||message.text.split("\n").find(line=>line.startsWith("报告主题："))?.slice(5).trim();
       if(title){try{
         const saved=savePreviewReport(organizationId,memberId,title,"报告需求："+title+"。当前仅生成演示结构与待确认事项，没有检索或分析真实业务数据。",linkedProjectId||undefined);
         if(!saved){onAction("报告主题为空，未保存演示报告");return;}
       }catch{onAction("报告演示数据保存失败，请检查浏览器存储权限");return}}
     }
-    if(confirm&&message.approval==="report"&&linkedProjectId){const p=readPreviewProjects().find(p=>p.id===linkedProjectId&&p.status!=="已归档");const name=message.text.split("\n").find(x=>x.startsWith("报告主题："))?.slice(5).trim();if(p&&name){try{savePreviewProject({...p,reports:[...p.reports,name],updated:Date.now()})}catch{onAction("本地成果保存失败");return}}}
+    if(confirm&&message.approval==="report"&&linkedProjectId){const p=readPreviewProjects().find(p=>p.id===linkedProjectId&&p.status!=="已归档");const name=message.outcomeSections?.[0]?.heading||message.text.split("\n").find(x=>x.startsWith("报告主题："))?.slice(5).trim();if(p&&name){try{savePreviewProject({...p,reports:[...p.reports,name],updated:Date.now()})}catch{onAction("本地成果保存失败");return}}}
     if(confirm&&message.approval==="knowledge"){
-      const name=message.text.split("\n").find(line=>line.startsWith("主题：")||line.startsWith("整理主题："))?.replace(/^(主题：|整理主题：)/,"").trim();
+      const name=message.outcomeSections?.[0]?.heading||message.text.split("\n").find(line=>line.startsWith("主题：")||line.startsWith("整理主题："))?.replace(/^(主题：|整理主题：)/,"").trim();
       if(name){try{savePersonalKnowledge(organizationId,memberId,name,"经硕米Chat确认保存的演示知识条目，可在我的知识库中分组管理。")}catch{onAction("知识库演示记录保存失败");return}}
     }
-    if(confirm&&message.approval==="skill"){const goal=message.text.split("\n").find(line=>line.startsWith("技能目标："))?.slice(5).trim();if(goal)savePersonalPreviewSkill({name:skillEntry.mode==="edit"&&skillEntry.name?skillEntry.name:goal,description:goal},organizationId,memberId);}
+    if(confirm&&message.approval==="skill"){const goal=message.outcomeSections?.[0]?.heading||message.text.split("\n").find(line=>line.startsWith("技能目标："))?.slice(5).trim();if(goal)savePersonalPreviewSkill({name:skillEntry.mode==="edit"&&skillEntry.name?skillEntry.name:goal,description:goal},organizationId,memberId);}
     setMessages(current => current.map(item => item.id === message.id ? { ...item, approval: undefined } : item).concat({
       id: Date.now(),
       role: "assistant",
@@ -287,7 +333,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   return <div className={styles.workspace} data-chat-active={chatActive}>
       <section className={styles.composer} aria-label={chatActive ? "会话消息与输入区" : "新建会话输入区"} data-conversation-composer="stable">
         <header className={styles.composerIntro}><div><h2>有什么想交给硕米？</h2><p>{chatActive ? "当前会话的消息和处理结果在这里继续显示，不切换页面。" : "直接描述问题或工作目标，硕米协助整理并回复。"}</p></div>{chatActive && <button className={styles.newConversation} onClick={startNewConversation}>＋ 新会话</button>}</header>
-        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请核对详情后决定是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button><button type="button" aria-label={"查看"+(item.approval==="knowledge"?"知识条目":item.approval==="skill"?"技能":"报告")+"完整内容"} onClick={()=>setExpandedDraftId(item.id)}>查看完整{item.approval==="knowledge"?"知识条目":item.approval==="skill"?"技能":"报告"}</button></div></div>}</article>)}
+        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>{item.jobStatus==="ready"?"完整成果已生成，请打开审核":item.jobStatus==="running"?"服务端正在生成，可关闭页面后回来查看":item.jobStatus==="blocked"?"尚未接入生成服务，未启动后台任务":item.jobStatus==="failed"?"生成失败，需要重试":"生成请求待处理"}</span><div>{item.jobStatus==="ready"?<><button className={styles.approveButton} onClick={()=>setExpandedDraftId(item.id)}>查看完整{item.approval==="skill"?"技能":item.approval==="report"?"报告":"知识条目"}</button><button onClick={()=>handleApproval(item,false)}>继续修改</button></>:item.jobStatus==="blocked"||item.jobStatus==="failed"?<button onClick={()=>resumeGeneration(item)}>重试生成</button>:<button type="button" disabled>生成中</button>}</div></div>}</article>)}
         {confirmation && <section className={styles.inlineConfirmation} aria-label="会话内确认任务">
         <header><div><h2 id="chat-confirm-title">确认{mode.title}</h2><p>请核对当前内容和关联范围，再继续下一步。</p></div><button aria-label="关闭" onClick={() => setConfirmation(false)}>×</button></header>
         {modeIndex === 1 && <section className={styles.scheduleFields} aria-label="定时安排">
@@ -350,7 +396,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
       </aside>
 
 
-    {expandedDraftId!==null&&(()=>{const item=messages.find(message=>message.id===expandedDraftId&&message.approval);if(!item)return null;const kind=item.approval!;const title=kind==="report"?draftField(item.text,"报告主题"):kind==="skill"?draftField(item.text,"技能目标"):draftField(item.text,"主题");return <div className={styles.outcomeBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setExpandedDraftId(null)}}><section className={styles.outcomeDialog} role="dialog" aria-modal="true" aria-labelledby="outcome-preview-title"><header><div><small>{kind==="report"?"报告预览":kind==="skill"?"技能定义":"知识条目"} · 待确认草案</small><h2 id="outcome-preview-title">{title||"未命名成果"}</h2><p>内容来自当前会话草案；缺失的资料和分析结果会明确标记，未执行真实业务操作。</p></div><button type="button" aria-label="关闭成果预览" onClick={()=>setExpandedDraftId(null)}>×</button></header><div className={styles.outcomeBody}>{previewSections(item).map(section=><section key={section.heading}><h3>{section.heading}</h3><p>{section.content}</p></section>)}</div><footer><button type="button" onClick={()=>{setExpandedDraftId(null);document.getElementById("chat-new-prompt")?.focus()}}>继续修改</button><button className={styles.primary} type="button" onClick={()=>{setExpandedDraftId(null);handleApproval(item,true)}}>{kind==="report"?"确认加入报告":kind==="skill"?"确认保存技能":"确认加入知识库"}</button></footer></section></div>})()}
+    {expandedDraftId!==null&&(()=>{const item=messages.find(message=>message.id===expandedDraftId&&message.approval);if(!item||item.jobStatus!=="ready"||!item.outcomeSections?.length)return null;const kind=item.approval!;const title=kind==="report"?draftField(item.text,"报告主题"):kind==="skill"?draftField(item.text,"技能目标"):draftField(item.text,"主题");return <div className={styles.outcomeBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setExpandedDraftId(null)}}><section className={styles.outcomeDialog} role="dialog" aria-modal="true" aria-labelledby="outcome-preview-title"><header><div><small>{kind==="report"?"报告预览":kind==="skill"?"技能定义":"知识条目"} · 待确认草案</small><h2 id="outcome-preview-title">{item.outcomeSections?.[0]?.heading||title||"未命名成果"}</h2><p>内容来自成果生成服务返回的具体章节。请审核后再保存，生成完成不等于业务执行完成。</p></div><button type="button" aria-label="关闭成果预览" onClick={()=>setExpandedDraftId(null)}>×</button></header><div className={styles.outcomeBody}>{previewSections(item).map(section=><section key={section.heading}><h3>{section.heading}</h3><p>{section.content}</p></section>)}</div><footer><button type="button" onClick={()=>{setExpandedDraftId(null);document.getElementById("chat-new-prompt")?.focus()}}>继续修改</button><button className={styles.primary} type="button" onClick={()=>{setExpandedDraftId(null);handleApproval(item,true)}}>{kind==="report"?"确认加入报告":kind==="skill"?"确认保存技能":"确认加入知识库"}</button></footer></section></div>})()}
 
     {modeGuide&&guideFor!==null&&<div className={styles.guideBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setGuideFor(null)}}>
       <section className={styles.guideDialog} role="dialog" aria-modal="true" aria-label={modes[guideFor].title+"功能介绍"}>
