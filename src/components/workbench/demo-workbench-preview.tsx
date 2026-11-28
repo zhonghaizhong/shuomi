@@ -382,7 +382,7 @@ function DemoWorkbenchPreviewContent({ pathname, memberId="admin",organizationId
   };
   const createGoal = (goal: DemoGoal) => {
     const next:DemoGoal=goalEdit?{...goal,id:goalIdentity(goalEdit),active:isActiveGoal(goalEdit),demoScenario:goalEdit.demoScenario}:{...goal,id:"goal:"+Date.now()+":"+Math.random().toString(36).slice(2),active:false};
-    if(persistGoal(next)){closeAction();setGoalTab("全部目标");setNotice(goalEdit?"目标已调整，经营指标将重新计算。":"已添加目标草稿，可在列表启用。")}
+    if(persistGoal(next)){closeAction();setGoalTab("全部目标");setNotice(goalEdit?"目标已调整，经营指标将重新计算。":"已添加目标草稿，可在列表启用；未提交正式业务数据。")}
   };
 
   if (pathname.startsWith("/workbench/agents/custom")) return <ShowcaseAgentCustomization pathname={pathname} navigate={router.push} />;
