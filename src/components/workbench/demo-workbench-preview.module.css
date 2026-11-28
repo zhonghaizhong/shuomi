@@ -5186,3 +5186,19 @@
 :global(.light) .adviceChatQuestion small,:global(.light) .adviceChatSources small,:global(.light) .adviceChatBubble .adviceChatFootnote{color:#6f6b7d;border-color:#e6e6f1}
 :global(.light) .adviceChatSources button{color:#6556cc;border-color:#d8d2fa}
 @media(max-width:760px){.adviceChatBody{max-height:none}.adviceChatQuestion{max-width:100%}.adviceChatBubble{padding:12px}.adviceConversation{min-height:0}}
+
+.adviceConversation .adviceChatBody{flex:1;min-height:180px;max-height:calc(100dvh - 440px);overflow-y:auto;overscroll-behavior:contain}
+.adviceChatComposer{flex:none;display:grid;gap:8px;padding:12px 14px;margin-top:14px;background:#393d55;border:1px solid #52576e;border-radius:8px}
+.adviceChatComposer textarea{width:100%;min-height:66px;max-height:150px;resize:vertical;background:transparent!important;border:0!important;padding:4px 0!important;color:#e2e2f0;font:inherit;outline:none}
+.adviceChatComposer textarea::placeholder{color:#acabc1}
+.adviceChatComposer footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;padding:0;border:0}
+.adviceChatComposer footer small{color:#acabc1;font-size:12px}
+.adviceChatComposer button{min-width:82px;min-height:36px}
+.adviceChatComposer button:disabled{opacity:.55;cursor:not-allowed}
+.adviceChatComposer:focus-within{border-color:#7367f0}
+:global(.light) .adviceChatComposer{background:#fff;border-color:#e6e6f1}
+:global(.light) .adviceChatComposer textarea{color:#444050}
+:global(.light) .adviceChatComposer textarea::placeholder,:global(.light) .adviceChatComposer footer small{color:#6f6b7d}
+@media(max-width:760px){.adviceConversation .adviceChatBody{max-height:65dvh}}
+
+.adviceChatTurn{display:flex;flex-direction:column;gap:20px;min-width:0}

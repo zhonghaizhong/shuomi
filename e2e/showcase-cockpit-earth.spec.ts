@@ -216,8 +216,16 @@ test("switching themes preserves menus and light-page selected card interaction"
     await expect(conversation.getByText("尚未接入大模型",{exact:false})).toBeVisible();
     await expect(advice.getByRole("button",{name:"前往处理",exact:true})).toHaveCount(0);
     await expect(advice.getByRole("button",{name:"确认已执行",exact:true})).toHaveCount(0);
-    await expect(advice.locator("textarea")).toHaveCount(0);
-    const bubble=conversation.locator('[class*="adviceChatBubble"]');
+    const composer=advice.getByRole("textbox",{name:"经营建议追问"});
+    await expect(composer).toBeVisible();
+    const send=advice.getByRole("button",{name:"发送",exact:true});
+    await expect(send).toBeDisabled();
+    await composer.fill("目前有哪些经营风险？");
+    await send.click();
+    await expect(conversation.getByText("目前有哪些经营风险？",{exact:true})).toBeVisible();
+    await expect(conversation.getByText("硕米 AI · 规则化演示",{exact:true})).toBeVisible();
+    await expect(composer).toHaveValue("");
+    const bubble=conversation.locator('[class*="adviceChatBubble"]').first();
     expect(await bubble.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(248, 247, 250)");
   } else {
     await expect(advice.getByRole("heading", { name: "暂无经营建议" })).toBeVisible();
@@ -322,8 +330,16 @@ test("standard headers keep actions clickable and adapt to narrow screens", asyn
     await expect(conversation.getByText("尚未接入大模型",{exact:false})).toBeVisible();
     await expect(advice.getByRole("button",{name:"前往处理",exact:true})).toHaveCount(0);
     await expect(advice.getByRole("button",{name:"确认已执行",exact:true})).toHaveCount(0);
-    await expect(advice.locator("textarea")).toHaveCount(0);
-    const bubble=conversation.locator('[class*="adviceChatBubble"]');
+    const composer=advice.getByRole("textbox",{name:"经营建议追问"});
+    await expect(composer).toBeVisible();
+    const send=advice.getByRole("button",{name:"发送",exact:true});
+    await expect(send).toBeDisabled();
+    await composer.fill("目前有哪些经营风险？");
+    await send.click();
+    await expect(conversation.getByText("目前有哪些经营风险？",{exact:true})).toBeVisible();
+    await expect(conversation.getByText("硕米 AI · 规则化演示",{exact:true})).toBeVisible();
+    await expect(composer).toHaveValue("");
+    const bubble=conversation.locator('[class*="adviceChatBubble"]').first();
     expect(await bubble.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(248, 247, 250)");
   } else {
     await expect(advice.getByRole("heading", { name: "暂无经营建议" })).toBeVisible();
