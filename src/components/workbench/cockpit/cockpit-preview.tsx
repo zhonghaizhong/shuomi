@@ -20,6 +20,7 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
   const [filters, setFilters] = useState(emptyFilters);
   const [activeFilters, setActiveFilters] = useState(emptyFilters);
   const [tablePage, setTablePage] = useState(1);
+  const [detailStoreId,setDetailStoreId]=useState<string|null>(null);
   const visibleStores = stores.filter(store => {
     const query = activeFilters.search.trim().toLocaleLowerCase();
     return (activeFilters.platform === "全部平台" || store.platform === activeFilters.platform)
@@ -45,6 +46,8 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
   const pageCount = Math.max(1, Math.ceil(visibleStores.length / pageSize));
   const currentPage=Math.min(tablePage,pageCount);
   const pageStores = visibleStores.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const detailStore=visibleStores.find(item=>item.id===detailStoreId);
+  const detailDemoOrders=detailStore?ordersByStore.get(detailStore.id)??0:0;
   const updateFilter = (key: keyof typeof emptyFilters, value: string) => setFilters(current => ({ ...current, [key]: value }));
   const resetFilters = () => { setFilters(emptyFilters); setActiveFilters(emptyFilters); setTablePage(1); };
 
@@ -123,20 +126,22 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
     </section>
 
     <section className={`${styles.panel} ${styles.storeMatrixPanel}`}>
-      <header><div><span>店铺矩阵</span><h2>{visibleStores.length} 家店铺 · 订单 / 曝光 / 点击</h2></div><button className={styles.linkButton} onClick={() => router.push("/workbench/overview/stores")}>查看全部店铺 <ArrowRight size={13}/></button></header>
+      <header><div><span>店铺矩阵</span><h2>{visibleStores.length} 家店铺 · 订单 / 曝光 / 点击</h2></div><button className={styles.linkButton} onClick={() => router.push("/workbench/stores")}>进入店铺中心 <ArrowRight size={13}/></button></header>
       <div className={styles.matrixTable} role="table" aria-label="店铺经营数据">
-        <div className={styles.matrixHead} role="row"><span>操作</span><b>店铺</b><b>平台 / 站点</b><b>演示订单</b><b>曝光量</b><b>点击量</b><b>连接状态</b><b>数据状态</b></div>
-        {pageStores.map(row => {
+        <div className={styles.matrixHead} role="row"><b>店铺</b><b>平台 / 站点</b><b>订单量</b><b>曝光量</b><b>点击量</b><b>连接状态</b><b>操作</b></div>
+        {pageStores.map(row=>{
           const demoOrderCount=ordersByStore.get(row.id)??0;
           return <div className={styles.matrixRow} role="row" key={row.id}>
-            <span><button type="button" aria-label={`查看${row.name}的店铺详情`} onClick={()=>router.push("/workbench/store-center")}>查看</button></span>
             <span className={styles.matrixStore}><i><Store size={15}/></i><strong>{row.name}<small>{row.type}</small></strong></span>
-            <span>{row.platform} · {row.site}</span><b>{demoOrderCount||"—"}</b><b>{row.impressions}</b><b>{row.clicks}</b>
-            <em data-status={row.status}>{row.issue??"未发现连接异常"}</em>
-            <span className={styles.matrixProgress}><small>{demoOrderCount?"含演示订单":"平台指标待接入"}</small></span>
+            <span>{row.platform} · {row.site}</span>
+            <span className={styles.matrixMetric}><strong>{demoOrderCount?demoOrderCount.toLocaleString("zh-CN"):"—"}</strong>{demoOrderCount?<small>演示</small>:null}</span>
+            <span className={styles.matrixMetric}>—</span>
+            <span className={styles.matrixMetric}>—</span>
+            <span><em data-status={row.issue?"需关注":"待评估"} className={styles.matrixConnection}>{row.issue??"无已知异常"}</em></span>
+            <span className={styles.matrixActions}><button type="button" onClick={()=>setDetailStoreId(row.id)}>查看详情</button>{row.issue?<button type="button" onClick={()=>router.push("/workbench/stores")}>去处理</button>:null}</span>
           </div>;
         })}
-        {visibleStores.length === 0 ? <p className={styles.empty}>当前筛选无已绑定且获取平台 ID 的店铺</p> : null}
+        {visibleStores.length===0?<p className={styles.empty}>当前筛选范围内没有已绑定并获取平台店铺 ID 的店铺。</p>:null}
       </div>
       <footer className={styles.matrixFooter}>
         <span>显示 {visibleStores.length ? (currentPage - 1) * pageSize + 1 : 0} 至 {Math.min(currentPage * pageSize, visibleStores.length)} 条，共 {visibleStores.length} 条</span>
@@ -149,5 +154,18 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
         </nav>
       </footer>
     </section>
+    {detailStore?<div className={styles.cockpitStoreOverlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setDetailStoreId(null)}}>
+      <section className={styles.cockpitStoreDialog} role="dialog" aria-modal="true" aria-label={detailStore.name+"经营详情"}>
+        <header><div><h2>{detailStore.name}</h2><p>{detailStore.platform} · {detailStore.site} · {detailStore.type}</p></div><button type="button" onClick={()=>setDetailStoreId(null)}>关闭</button></header>
+        <div className={styles.cockpitStoreStats}>
+          <div><small>订单量</small><strong>{detailDemoOrders?detailDemoOrders.toLocaleString("zh-CN"):"—"}</strong><span>{detailDemoOrders?"演示订单，仅当前筛选范围":"平台真实订单未接入"}</span></div>
+          <div><small>曝光量</small><strong>—</strong><span>平台指标待接入</span></div>
+          <div><small>点击量</small><strong>—</strong><span>平台指标待接入</span></div>
+        </div>
+        <div className={styles.cockpitStoreConnection}><strong>连接状态</strong><span>{detailStore.issue??"未记录连接异常（不代表完成实时检测）"}</span></div>
+        <p className={styles.cockpitStoreHint}>统计范围：{scopeLabel}。演示订单与平台真实数据分开标识；未接入的指标不按 0 处理。</p>
+        <footer><button type="button" onClick={()=>setDetailStoreId(null)}>关闭</button><button type="button" onClick={()=>router.push("/workbench/stores")}>{detailStore.issue?"前往店铺中心处理":"进入店铺中心"}</button></footer>
+      </section>
+    </div>:null}
   </section>;
 }
