@@ -185,26 +185,32 @@ test("chat keeps the original input docked at the bottom before and after send",
  await expect(messages).toBeVisible();
  await expect(input).toBeVisible();
  await expect(right.getByRole("button",{name:"创建会话"})).toBeVisible();
- const before=await input.boundingBox();
- const initialComposer=await composer.boundingBox();
- expect(before).not.toBeNull();
+ // Playwright scrolls the bottom action into view on click. Measure the
+ // actual dock geometry relative to its card and document, not viewport scroll.
+ const send=composer.getByRole("button",{name:"发送消息",exact:true});
+ await send.scrollIntoViewIfNeeded();
+ const dockGeometry=()=>input.evaluate(el=>{
+  const card=el.closest('[data-conversation-composer="stable"]')!;
+  const a=el.getBoundingClientRect(),b=card.getBoundingClientRect();
+  return {offset:a.y-b.y,bottom:b.bottom-a.bottom,height:a.height,cardHeight:b.height,cardDocumentY:b.y+window.scrollY};
+ });
+ const before=await dockGeometry();
  await input.fill("每周汇总商品适配与上传进展");
  await composer.getByRole("button",{name:"发送消息"}).click();
  await expect(messages).toContainText("每周汇总商品适配与上传进展");
  await expect(input).toBeVisible();
  await expect(right.getByRole("button",{name:"发起任务"})).toBeVisible();
  expect(page.url()).toBe(initialURL);
- const after=await input.boundingBox(),afterComposer=await composer.boundingBox();
- expect(after).not.toBeNull();
- expect(Math.abs(after!.y-before!.y)).toBeLessThan(3);
- expect(Math.abs(after!.height-before!.height)).toBeLessThan(3);
- expect(Math.abs(afterComposer!.height-initialComposer!.height)).toBeLessThan(3);
+ const after=await dockGeometry();
+ for(const key of ["offset","bottom","height","cardHeight","cardDocumentY"] as const)
+  expect(Math.abs(after[key]-before[key]),key+": "+JSON.stringify({before,after})).toBeLessThan(3);
  await input.fill("继续核对今天的待补全商品");
  await composer.getByRole("button",{name:"发送消息"}).click();
  await expect(messages).toContainText("继续核对今天的待补全商品");
  expect(page.url()).toBe(initialURL);
- const repeated=await input.boundingBox();
- expect(Math.abs(repeated!.y-before!.y)).toBeLessThan(3);
+ const repeated=await dockGeometry();
+ for(const key of ["offset","bottom","height","cardHeight","cardDocumentY"] as const)
+  expect(Math.abs(repeated[key]-before[key]),key+": "+JSON.stringify({before,repeated})).toBeLessThan(3);
  await right.getByRole("button",{name:"发起任务"}).click();
  await input.fill("检查今日异常");
  await composer.getByRole("button",{name:"确认任务草案"}).click();
