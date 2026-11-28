@@ -24,11 +24,28 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const [recordFilter,setRecordFilter]=useState("全部状态");
  const [selected,setSelected]=useState<string[]>([]);
  const [supply,setSupply]=useState<PreferredSupply>(emptyPreferredSupply);
+ const [supplierSaved,setSupplierSaved]=useState(false);
+ const [warehouseOptions,setWarehouseOptions]=useState<Array<{id:string;name:string;address:string;status:"已验证"|"待验证"|"验证失效"}>>([]);
+ const [editSupplier,setEditSupplier]=useState(false);
+ const [showSkuPricing,setShowSkuPricing]=useState(false);
+ const [showTierPricing,setShowTierPricing]=useState(false);
  const [applicationOpen,setApplicationOpen]=useState(false);
  const [recordDetail,setRecordDetail]=useState<string|null>(null);
  const [reviewReason,setReviewReason]=useState("");
  const [error,setError]=useState(""),[notice,setNotice]=useState("");
  const [page,setPage]=useState(1),[recordPage,setRecordPage]=useState(1);
+ const supplierKey="shuomi:preferred-supplier-profile-demo-v1:"+encodeURIComponent(organizationId);
+ const warehousesKey="shuomi:preferred-warehouse-register-demo-v1:"+encodeURIComponent(organizationId);
+ useEffect(()=>{
+  try{
+   const saved=JSON.parse(localStorage.getItem(supplierKey)||"null") as {name?:string;contact?:string;phone?:string;location?:string;agreement?:boolean}|null;
+   setSupplierSaved(Boolean(saved?.name&&saved?.contact&&saved?.agreement));
+  }catch{setSupplierSaved(false)}
+  try{
+   const rows:unknown=JSON.parse(localStorage.getItem(warehousesKey)||"[]");
+   setWarehouseOptions(Array.isArray(rows)?rows.filter((x):x is {id:string;name:string;address:string;status:"已验证"|"待验证"|"验证失效"}=>Boolean(x&&typeof x==="object"&&typeof x.id==="string"&&typeof x.name==="string"&&["已验证","待验证","验证失效"].includes(x.status))):[]);
+  }catch{setWarehouseOptions([])}
+ },[supplierKey,warehousesKey]);
  useEffect(()=>{
   const refresh=(event:Event)=>{
    const scope=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;
@@ -62,12 +79,34 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const showApply=(ids?:string[])=>{
   const list=ids??chosen;
   if(!list.length){setNotice("只有已入库的自有商品可以申请，优选审核通过后再使用官方模板进行二次优化。");return}
-  setSelected(list);setSupply(emptyPreferredSupply);setNotice("");setError("");setApplicationOpen(true);
+  const available=candidates.filter(c=>list.includes(c.product.id));
+  const skuPrices:Record<string,{price:string;quantity:string}>={};
+  for(const c of available)for(const sku of c.product.skus){
+   const key=c.product.id+":"+String(sku.id);
+   const raw=sku.price??"";
+   skuPrices[key]={price:raw&&Number(raw)>0?String(raw):"",quantity:String(sku.stock??0)};
+  }
+  let profile:{name?:string;contact?:string;phone?:string;location?:string;agreement?:boolean}|null=null;
+  try{profile=JSON.parse(localStorage.getItem(supplierKey)||"null")}catch{/* first-time application */}
+  setSelected(list);
+  setSupply({...emptyPreferredSupply,supplyKind:"现货",warehouseMode:"硕米仓库",currency:"CNY",dropship:true,skuPrices,
+   supplierName:profile?.name??"",supplierContact:profile?.contact??"",supplierPhone:profile?.phone??"",supplierLocation:profile?.location??"",supplierAgreement:Boolean(profile?.agreement),
+   unitPrice:"",packageWeight:"",packageSize:"",shippingCountries:"",maxQuantity:""});
+  setEditSupplier(!profile?.name);setShowSkuPricing(true);setShowTierPricing(false);
+  setNotice("");setError("");setApplicationOpen(true);
  };
  const submit=(event:FormEvent<HTMLFormElement>)=>{
   event.preventDefault();
   try{
    const record=submitPreferredDemoApplication(organizationId,memberId,chosen,supply);
+   try{
+    localStorage.setItem(supplierKey,JSON.stringify({name:supply.supplierName,contact:supply.supplierContact,phone:supply.supplierPhone,location:supply.supplierLocation,agreement:supply.supplierAgreement,status:"资料已提交·待后台审核"}));
+    setSupplierSaved(true);
+    if(supply.supplyKind==="现货"&&supply.warehouseMode==="新增自有仓"){
+     const next={id:"WH-DEMO-"+Date.now().toString(36),name:supply.warehouseName?.trim()||"",address:supply.warehouseAddress?.trim()||"",status:"待验证" as const};
+     const updated=[...warehouseOptions,next];localStorage.setItem(warehousesKey,JSON.stringify(updated));setWarehouseOptions(updated);
+    }
+   }catch{/* Application record remains in scoped browser session; no backend onboarding claim. */}
    setApplicationOpen(false);setSelected([]);setSupply(emptyPreferredSupply);
    setView("records");setRecordFilter("全部状态");setRecordPage(1);setRecordDetail(record.id);
    setNotice("演示申请 "+record.id+" 已保存为「待审核」，正式审批仍需平台后台完成。");setError("");
@@ -149,23 +188,74 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
   <p className={styles.disclaimer}><Info size={14}/> 当前为浏览器会话演示：优选申请、审核和官方模板二次整理均为本地操作，不代表真实 AI 执行或正式入选。</p>
   {notice?<p role="status" className={styles.notice}>{notice}</p>:null}
   {applicationOpen?<div className={styles.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setApplicationOpen(false)}}>
-   <section className={styles.modal} role="dialog" aria-modal="true" aria-label="发起优选申请">
-    <header><div><small>优选合作申请 · {chosen.length} 件商品</small><h2>填写供货与合作信息</h2><p>一次填写本次申请统一的供货条件，提交后进入待审核。</p></div><button type="button" onClick={()=>setApplicationOpen(false)}>关闭</button></header>
-    <form onSubmit={submit}><div className={styles.fields}>
-     <label>可供库存<input aria-label="可供库存" required min="1" type="number" value={supply.stock} onChange={e=>setSupply(v=>({...v,stock:e.target.value}))}/></label>
-     <label>最小起订量<input aria-label="最小起订量" required min="1" type="number" value={supply.moq} onChange={e=>setSupply(v=>({...v,moq:e.target.value}))}/></label>
-     <label>发货时效<select aria-label="发货时效" required value={supply.dispatch} onChange={e=>setSupply(v=>({...v,dispatch:e.target.value}))}><option value="">请选择</option><option>24小时内</option><option>48小时内</option><option>3–5天</option><option>另行协商</option></select></label>
-     <label>发货地<input aria-label="发货地" required value={supply.origin} onChange={e=>setSupply(v=>({...v,origin:e.target.value}))} placeholder="省、市"/></label>
-     <label className={styles.full}>供货价说明<textarea aria-label="供货价说明" value={supply.pricing} onChange={e=>setSupply(v=>({...v,pricing:e.target.value}))} placeholder="例如：含税情况、批量优惠、运费说明"/></label>
-     <label className={styles.full}>售后政策<textarea aria-label="售后政策" required value={supply.returns} onChange={e=>setSupply(v=>({...v,returns:e.target.value}))} placeholder="说明质量问题、退换货及售后安排"/></label>
-    </div><div className={styles.modalTip}>提交不会自动通过审核，也不会产生平台曝光或成交保证。</div>
-    {error?<p role="alert">{error}</p>:null}
-    <footer><button type="button" onClick={()=>setApplicationOpen(false)}>取消</button><button type="submit" className={styles.primary}>提交演示申请</button></footer></form>
+   <section className={styles.modal+" "+styles.preferredApplyModal} role="dialog" aria-modal="true" aria-label="申请加入硕米优选">
+    <header><div><small>硕米优选 · {chosen.length} 件商品</small><h2>申请加入硕米优选</h2><p>供应商信息仅首次补全；商品报价按 SKU 配置，仓储验证与后台费用核算由硕米处理。</p></div><button type="button" onClick={()=>setApplicationOpen(false)}>关闭</button></header>
+    <form onSubmit={submit} className={styles.applyForm}>
+     <div className={styles.applyScroll}>
+      <section className={styles.applySection}>
+       <div className={styles.applySectionHeading}><strong>供应商资料</strong><span className={styles.applyPill}>{supplierSaved?"已保存资料 · 可复用":"首次入驻 · 建立档案"}</span>{supplierSaved?<button type="button" className={styles.linkAction} onClick={()=>setEditSupplier(v=>!v)}>{editSupplier?"收起资料":"编辑资料"}</button>:null}</div>
+       {!supplierSaved||editSupplier?<div className={styles.fields}>
+        <label>供应商名称<input required aria-label="供应商名称" value={supply.supplierName??""} onChange={e=>setSupply(v=>({...v,supplierName:e.target.value}))} placeholder="企业名称 / 合作主体"/></label>
+        <label>联系人<input required aria-label="供应商联系人" value={supply.supplierContact??""} onChange={e=>setSupply(v=>({...v,supplierContact:e.target.value}))} placeholder="联系人姓名"/></label>
+        <label>联系电话<input required aria-label="供应商联系电话" value={supply.supplierPhone??""} onChange={e=>setSupply(v=>({...v,supplierPhone:e.target.value}))} placeholder="联系电话"/></label>
+        <label>经营所在地<input aria-label="供应商经营所在地" value={supply.supplierLocation??""} onChange={e=>setSupply(v=>({...v,supplierLocation:e.target.value}))} placeholder="国家 / 省市"/></label>
+        <label className={styles.full}><span className={styles.checkboxLine}><input type="checkbox" checked={Boolean(supply.supplierAgreement)} onChange={e=>setSupply(v=>({...v,supplierAgreement:e.target.checked}))}/>已阅读并同意硕米优选供应商合作规则（演示确认，不构成正式签约）</span></label>
+       </div>:<p className={styles.applyHint}>当前企业已填写供应商资料：{supply.supplierName} · {supply.supplierContact}。资料可复用，供应商资格仍以硕米后台审核为准。</p>}
+      </section>
+      <section className={styles.applySection}>
+       <div className={styles.applySectionHeading}><strong>商品与供货类型</strong><span className={styles.applyPill}>{chosen.length} 件商品</span></div>
+       <div className={styles.chosenProducts}>{candidates.filter(c=>chosen.includes(c.product.id)).map(c=><div key={c.product.id} className={styles.chosenProduct}><ProductImage src={c.snapshot?.image??""} name={c.product.name}/><div><strong>{c.product.name}</strong><small>{c.product.skus.length} 个 SKU · 自有商品库 · {c.product.batchId}</small></div></div>)}</div>
+       <div className={styles.choiceRow} role="group" aria-label="供货类型">
+        {(["现货","定制","POD"] as const).map(kind=><button type="button" key={kind} className={styles.choiceButton} aria-pressed={supply.supplyKind===kind} onClick={()=>setSupply(v=>({...v,supplyKind:kind,warehouseMode:kind==="现货"?(v.warehouseMode??"硕米仓库"):undefined}))}>{kind}</button>)}
+       </div>
+      </section>
+      <section className={styles.applySection}>
+       <div className={styles.applySectionHeading}><strong>供货价格与采购条件</strong><span className={styles.applyMeta}>运费及处理费用由硕米后台评估</span></div>
+       <div className={styles.fields}>
+        <label>结算币种<select aria-label="结算币种" value={supply.currency??"CNY"} onChange={e=>setSupply(v=>({...v,currency:e.target.value}))}><option value="CNY">CNY · 人民币</option><option value="USD">USD · 美元</option></select></label>
+        <label>基础供货价<input required type="number" step="0.01" min="0.01" aria-label="基础供货价" value={supply.unitPrice??""} onChange={e=>setSupply(v=>({...v,unitPrice:e.target.value,skuPrices:Object.fromEntries(Object.entries(v.skuPrices??{}).map(([k,o])=>[k,{...o,price:o.price||e.target.value}]))}))} placeholder="输入基础供货价"/></label>
+        <label>最小起订量<input required type="number" min="1" aria-label="最小起订量" value={supply.moq} onChange={e=>setSupply(v=>({...v,moq:e.target.value}))} placeholder="最少采购件数"/></label>
+        <label>{supply.supplyKind==="现货"?"可售库存总量":"可接单数量"}<input required type="number" min="1" aria-label="可供库存" value={supply.stock} onChange={e=>setSupply(v=>({...v,stock:e.target.value}))} placeholder="最大可供应数量"/></label>
+        <label>单次最大可采购量<input type="number" min="1" aria-label="单次最大可采购量" value={supply.maxQuantity??""} onChange={e=>setSupply(v=>({...v,maxQuantity:e.target.value}))} placeholder="选填"/></label>
+        <label><span className={styles.checkboxLine}><input type="checkbox" checked={Boolean(supply.dropship)} onChange={e=>setSupply(v=>({...v,dropship:e.target.checked}))}/>支持一件代发</span></label>
+       </div>
+       <div className={styles.applyTools}><strong>SKU 供货报价</strong><span>共 {Object.keys(supply.skuPrices??{}).length} 个 SKU</span><button type="button" onClick={()=>setShowSkuPricing(v=>!v)}>{showSkuPricing?"收起明细":"编辑 SKU 明细"}</button></div>
+       {showSkuPricing?<div className={styles.skuPricingWrap}><table><thead><tr><th>商品 / 规格</th><th>供货价</th><th>{supply.supplyKind==="现货"?"SKU 库存":"可接单量"}</th></tr></thead><tbody>{candidates.filter(c=>chosen.includes(c.product.id)).flatMap(c=>c.product.skus.map(sku=>{
+        const key=c.product.id+":"+String(sku.id),offer=supply.skuPrices?.[key]??{price:"",quantity:"0"};
+        return <tr key={key}><td><strong>{sku.name}</strong><small>{sku.skuCode||sku.id}</small></td><td><input aria-label={"SKU供货价 "+key} required type="number" min="0.01" step="0.01" value={offer.price} onChange={e=>setSupply(v=>({...v,skuPrices:{...v.skuPrices,[key]:{...offer,price:e.target.value}}}))} placeholder="单价"/></td><td><input aria-label={"SKU库存 "+key} required type="number" min="0" value={offer.quantity} onChange={e=>setSupply(v=>({...v,skuPrices:{...v.skuPrices,[key]:{...offer,quantity:e.target.value}}}))}/></td></tr>
+       }))}</tbody></table></div>:null}
+       <div className={styles.applyTools}><label className={styles.checkboxLine}><input type="checkbox" checked={showTierPricing} onChange={e=>setShowTierPricing(e.target.checked)}/>启用阶梯供货报价</label></div>
+       {showTierPricing?<label className={styles.applyTextLabel}>阶梯报价规则<textarea aria-label="阶梯报价规则" value={supply.tierPrices??""} onChange={e=>setSupply(v=>({...v,tierPrices:e.target.value}))} placeholder="如：10–49 件每件 11.80；50 件以上每件 10.90"/></label>:null}
+      </section>
+      <section className={styles.applySection}>
+       <div className={styles.applySectionHeading}><strong>仓储与履约信息</strong>{supply.supplyKind!=="现货"?<span className={styles.applyPill}>按单生产 · 无需提前备货</span>:null}</div>
+       {supply.supplyKind==="现货"?<div className={styles.warehouseOptions}>
+        {([["硕米仓库","备货到硕米仓库（后续入库验收）"],["已验证自有仓","选择已通过验证的自有仓库"],["新增自有仓","新增自有仓库（后台待验证）"]] as const).map(([value,label])=><label key={value} className={styles.warehouseOption}><input type="radio" name="preferredWarehouseMode" checked={supply.warehouseMode===value} onChange={()=>setSupply(v=>({...v,warehouseMode:value,warehouseId:""}))}/>{label}</label>)}
+        {supply.warehouseMode==="已验证自有仓"?<div className={styles.warehouseDetail}>{warehouseOptions.filter(x=>x.status==="已验证").length?<select aria-label="选择已验证仓库" required value={supply.warehouseId??""} onChange={e=>{const wh=warehouseOptions.find(x=>x.id===e.target.value);setSupply(v=>({...v,warehouseId:e.target.value,warehouseName:wh?.name,warehouseAddress:wh?.address}))}}><option value="">选择已有已验证仓库</option>{warehouseOptions.filter(x=>x.status==="已验证").map(wh=><option key={wh.id} value={wh.id}>{wh.name} · {wh.address}</option>)}</select>:<p className={styles.applyHint}>当前暂无已验证的自有仓库。可选择「新增自有仓」提交验证，或选择硕米仓库。</p>}</div>:null}
+        {supply.warehouseMode==="新增自有仓"?<div className={styles.fields+" "+styles.warehouseDetail}><label>仓库名称<input required aria-label="新仓库名称" value={supply.warehouseName??""} onChange={e=>setSupply(v=>({...v,warehouseName:e.target.value}))} placeholder="填写仓库名称"/></label><label>仓库地址<input required aria-label="新仓库地址" value={supply.warehouseAddress??""} onChange={e=>setSupply(v=>({...v,warehouseAddress:e.target.value}))} placeholder="详细仓库地址"/></label><p className={styles.applyHint}>允许先提交商品申请，仓库进入待验证状态；仓库认证通过后可在后续申请中直接复用。</p></div>:null}
+        {supply.warehouseMode==="硕米仓库"?<p className={styles.applyHint}>不要求商家验证硕米仓库，但现货商品须完成备货与入库验收才可正式开放采购。</p>:null}
+        {warehouseOptions.some(x=>x.status==="待验证")?<p className={styles.applyHint}>已有 {warehouseOptions.filter(x=>x.status==="待验证").length} 个待验证仓库；审核完成前不能作为已验证仓库使用。</p>:null}
+       </div>:<p className={styles.applyHint}>按订单生产，无须提前入库；由硕米后台审核生产能力、质量及履约条件。</p>}
+       <div className={styles.fields}>
+        <label>发货地<input required aria-label="发货地" value={supply.origin} onChange={e=>setSupply(v=>({...v,origin:e.target.value}))} placeholder="国家 / 省市"/></label>
+        <label>{supply.supplyKind==="现货"?"出库时效":"生产与发货时效"}<input required aria-label="发货时效" value={supply.dispatch} onChange={e=>setSupply(v=>({...v,dispatch:e.target.value}))} placeholder="例如 1–3 个工作日"/></label>
+        <label>包装重量（kg）<input required type="number" min="0.001" step="0.001" aria-label="包装重量" value={supply.packageWeight??""} onChange={e=>setSupply(v=>({...v,packageWeight:e.target.value}))} placeholder="例如 0.35"/></label>
+        <label>包装尺寸（cm）<input required aria-label="包装尺寸" value={supply.packageSize??""} onChange={e=>setSupply(v=>({...v,packageSize:e.target.value}))} placeholder="长 × 宽 × 高"/></label>
+        <label className={styles.full}>可配送国家 / 地区<input required aria-label="可配送国家" value={supply.shippingCountries??""} onChange={e=>setSupply(v=>({...v,shippingCountries:e.target.value}))} placeholder="例如 美国、加拿大、英国"/></label>
+        <label className={styles.full}>售后与质量处理规则<textarea required aria-label="售后政策" value={supply.returns} onChange={e=>setSupply(v=>({...v,returns:e.target.value}))} placeholder="质量问题及退换货责任划分"/></label>
+        <label className={styles.full}>供货补充说明（可选）<textarea aria-label="供货价说明" value={supply.pricing} onChange={e=>setSupply(v=>({...v,pricing:e.target.value}))} placeholder="供货特殊要求、报价备注等；无需填写运费或处理费"/></label>
+       </div>
+      </section>
+      <p className={styles.modalTip}>提交后直接进入后台审核，无需等待运费、质检、打包及贴标费用评估。此页面仅演示本地申请记录，不执行真实平台入选或仓库认证。</p>
+      {error?<p role="alert">{error}</p>:null}
+     </div>
+     <footer className={styles.applyFooter}><span>已选 {chosen.length} 件商品 · {Object.keys(supply.skuPrices??{}).length} 个 SKU</span><div><button type="button" onClick={()=>setApplicationOpen(false)}>取消</button><button type="submit" className={styles.primary}>提交优选申请（演示）</button></div></footer>
+    </form>
    </section></div>:null}
   {activeRecord?<div className={styles.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setRecordDetail(null)}}>
    <section className={styles.modal} role="dialog" aria-modal="true" aria-label="优选申请详情">
     <header><div><small>{activeRecord.id}</small><h2>申请审核详情</h2><p>申请时间：{formatDate(activeRecord.createdAt)}</p></div><button type="button" onClick={()=>setRecordDetail(null)}>关闭</button></header>
-    <div className={styles.recordDetail}><Status value={activeRecord.status}/><p>{activeRecord.reviewNote}</p><strong>申请商品（{activeRecord.products.length}）</strong>{activeRecord.products.map(p=><div key={p.sourceProductId}><span>{p.name}</span><small>{p.versionName} · {p.platform} / {p.site}</small></div>)}<p>可供库存 {activeRecord.supply.stock} · 起订量 {activeRecord.supply.moq} · {activeRecord.supply.dispatch}</p></div>
+    <div className={styles.recordDetail}><Status value={activeRecord.status}/><p>{activeRecord.reviewNote}</p><strong>申请商品（{activeRecord.products.length}）</strong>{activeRecord.products.map(p=><div key={p.sourceProductId}><span>{p.name}</span><small>{p.versionName} · {p.platform} / {p.site}</small></div>)}<p>供货类型：{activeRecord.supply.supplyKind??"未分类"} · 可售 / 可接单量 {activeRecord.supply.stock} · 起订量 {activeRecord.supply.moq} · {activeRecord.supply.dispatch}</p><p>仓储方式：{activeRecord.supply.warehouseMode??"按单生产"}{activeRecord.supply.warehouseName?" · "+activeRecord.supply.warehouseName:""} · 结算币种：{activeRecord.supply.currency??"—"} · 起始供货价：{activeRecord.supply.unitPrice??"—"}</p></div>
     {activeRecord.status==="已通过"&&activeRecord.secondaryOptimization!=="已完成"?<div className={styles.demoReview}><strong>通过审核后 · 二次优化</strong><p>使用官方「硕米适配」模板进行演示字段整理，完成后才进入硕米优选。真实模型执行尚未接入。</p><button type="button" className={styles.primary} onClick={runSecondary}>执行官方模板二次优化（演示）</button></div>:null}
     {activeRecord.status==="待审核"?<div className={styles.demoReview}><strong>仅供验收的模拟审核</strong><p>真实用户不能自行审批商品。此操作仅演示优选申请审核，审核通过后仍须完成官方模板二次优化。</p><textarea aria-label="演示驳回原因" value={reviewReason} onChange={e=>setReviewReason(e.target.value)} placeholder="未通过原因（选填）"/><div><button type="button" onClick={()=>review("未通过")}>演示审核不通过</button><button type="button" className={styles.primary} onClick={()=>review("已通过")}>演示审核通过</button></div></div>:null}
     {error?<p role="alert">{error}</p>:null}
