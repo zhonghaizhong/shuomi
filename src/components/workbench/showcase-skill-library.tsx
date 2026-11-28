@@ -15,7 +15,29 @@ export const officialSkills=[
 ] as const;
 const enabledKey="shuomi-preview-enabled-skills";
 const personalKey="shuomi-preview-personal-skills";
-export type PersonalPreviewSkill={name:string;description:string};
+export type PersonalPreviewSkill={name:string;description:string;id?:string;projectIds?:string[];demo?:boolean};
+export const projectDemoSkills:PersonalPreviewSkill[]=[
+ {id:"demo-skill-profit",name:"SHEIN 店铺利润诊断流程（演示）",projectIds:["demo-project-shein-growth"],demo:true,description:`【目标】建立店铺经营成本核对与利润诊断步骤，属于方法草案，并不自动读取真实店铺数据。
+【输入】店铺ID、日期范围、站点币种、销售明细、退款、采购成本、物流费用、平台佣金及其他已确认的费用字段。
+【处理】1. 核对店铺权限和时间口径；2. 标记缺少成本或币种不一致的数据；3. 在具备全部必要字段时按净收入减去成本及费用核算利润；4. 对负利润或异常退款商品生成待核对列表；5. 人工确认后形成改善任务。
+【输出】利润核对表、字段缺失清单、异常商品清单、阶段改善建议。
+【边界】目前未连接自动计算服务，不生成真实利润数字；没有授权不得获取店铺数据。`},
+ {id:"demo-skill-pod-review",name:"POD 多变体图片审核流程（演示）",projectIds:["demo-project-pod-images"],demo:true,description:`【目标】保证POD服装多颜色、多尺码的素材与目标站点规格一致。
+【输入】批次ID、商品ID、变体SKU、原始商品图、印花素材、目标站点要求及预期输出数量。
+【处理】1. 逐个变体核对颜色尺码；2. 对主图与详情图建立SKU映射；3. 检查1:1尺寸、背景、语言和主体完整性；4. 核对印花区域和素材授权；5. 图片缺失或内容错误时进入待确认，不得自动标记通过。
+【输出】逐SKU审核清单、待补全项、审核结论以及拟刊登图片顺序。
+【边界】本技能是可查看的演示方法；未调用图像生成模型，也不表示图片已生成或上传。`},
+ {id:"demo-skill-selected-listing",name:"硕米优选选品与SHEIN刊登检查（演示）",projectIds:["demo-project-selected-sales"],demo:true,description:`【目标】让来自硕米优选的演示SKU经过可审计的采集与刊登准备流程。
+【输入】货盘商品ID、所选SKU、供货国家、可配送国家、MOQ、供货价、目标SHEIN店铺。
+【处理】1. 检查供货商品ID和版本；2. 按SKU核验库存、起订量、配送范围；3. 在我的数据中建立采集批次；4. 进行属性和图片适配；5. 缺失必填字段转待补全，审核通过后才可进入刊登。
+【输出】SKU选择表、采集来源追溯、平台适配清单和异常待办。
+【边界】当前只支持演示流程；不自动采购、不保证真实库存、不向SHEIN真实发布。`},
+ {id:"demo-skill-market-compare",name:"美国站候选商品比较与报告整理（演示）",projectIds:["demo-project-market-research"],demo:true,description:`【目标】比较已有货盘样品的供货条件，形成有证据边界的选品研究材料。
+【输入】研究国家、品类、候选SKU、报价、MOQ、发货地、物流条件、可调用的数据市场服务结果。
+【处理】1. 核对数据来源和版本；2. 对候选SKU统一币种与条件；3. 分别评估供货、商品属性及待核实风险；4. 对没有市场需求证据的结论标记未知；5. 将可追溯比较结果整理成报告。
+【输出】候选商品对比表、证据与缺失清单、待核实建议、归档材料。
+【边界】未调取真实市场销量、竞争数据，不构成实际选品收益预测。`}
+];
 const scopedKey=(base:string,organizationId="SM-ENT-000001",memberId="admin")=>
  organizationId==="SM-ENT-000001"&&memberId==="admin"?base:base+":"+encodeURIComponent(organizationId)+":"+encodeURIComponent(memberId);
 export function readEnabledPreviewSkills(organizationId="SM-ENT-000001",memberId="admin"):string[]{
@@ -25,9 +47,9 @@ export function readEnabledPreviewSkills(organizationId="SM-ENT-000001",memberId
 }
 export function readPersonalPreviewSkills(organizationId="SM-ENT-000001",memberId="admin"):PersonalPreviewSkill[]{
  try{const raw=sessionStorage.getItem(scopedKey(personalKey,organizationId,memberId));
-  if(raw){const a=JSON.parse(raw);if(Array.isArray(a))return a.filter(x=>typeof x?.name==="string"&&typeof x?.description==="string")}
+  if(raw){const a=JSON.parse(raw);if(Array.isArray(a)){const own=a.filter(x=>typeof x?.name==="string"&&typeof x?.description==="string") as PersonalPreviewSkill[];return organizationId==="SM-ENT-000001"&&memberId==="admin"?[...own.filter(x=>!projectDemoSkills.some(d=>d.id===x.id)),...projectDemoSkills.map(d=>own.find(x=>x.id===d.id)??d)]:own}}
  }catch{}
- return [];
+ return organizationId==="SM-ENT-000001"&&memberId==="admin"?projectDemoSkills.map(x=>({...x})):[];
 }
 export function savePersonalPreviewSkill(skill:PersonalPreviewSkill,organizationId="SM-ENT-000001",memberId="admin"){
  try{sessionStorage.setItem(scopedKey(personalKey,organizationId,memberId),JSON.stringify([...readPersonalPreviewSkills(organizationId,memberId).filter(x=>x.name!==skill.name),skill]))}catch{}
@@ -46,7 +68,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const [enabled,setEnabled]=useState(()=>readEnabledPreviewSkills(organizationId,memberId));
  const [personal,setPersonal]=useState(()=>readPersonalPreviewSkills(organizationId,memberId));
  const [filter,setFilter]=useState("全部"),[query,setQuery]=useState(""),[search,setSearch]=useState("");
- const [intro,setIntro]=useState<string|null>(null);
+ const [intro,setIntro]=useState<string|null>(null);\n const [detailSkill,setDetailSkill]=useState<string|null>(null);
  const [groupState,setGroupState]=useState<SkillGroups>(()=>readSkillGroups(organizationId,memberId));
  const [groupFilter,setGroupFilter]=useState("全部分组");
  const [groupOpen,setGroupOpen]=useState(false);
@@ -70,7 +92,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const match=(s:string)=>s.toLowerCase().includes(search.toLowerCase());
  const cards=officialSkills.filter(s=>(category==="official"?(filter==="全部"||s[3]===filter):enabled.includes(s[0])&&filter!=="我的创建")&&match(s.join(" ")));
  const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
- const mySkillRows=[...officialSkills.filter(item=>enabled.includes(item[0])).map(item=>({key:"official:"+item[0],name:item[0],description:item[1],source:"官方技能",enabled:true})),...personal.map(item=>({key:"personal:"+item.name,name:item.name,description:item.description,source:"我的创建",enabled:true}))].filter(item=>(item.name+" "+item.description).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
+ const detailPreview=personal.find(item=>item.name===detailSkill);\n const mySkillRows=[...officialSkills.filter(item=>enabled.includes(item[0])).map(item=>({key:"official:"+item[0],name:item[0],description:item[1],source:"官方技能",enabled:true})),...personal.map(item=>({key:"personal:"+item.name,name:item.name,description:item.description,source:"我的创建",enabled:true}))].filter(item=>(item.name+" "+item.description).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
  return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
  <header className={styles.hero}><div className={styles.heroCopy}><div className={styles.breadcrumb}>AI工作台 / 技能库</div><h1>技能库</h1><p>选择官方模板、我的技能或团队技能；需要时再在 AI 会话中调用。</p></div><button type="button" className={styles.primary} onClick={()=>chat("create")}>创建我的技能</button></header>
  {tabNavigation}
@@ -144,7 +166,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
     <td><span className={styles.enabled}>已启用</span></td>
     <td><div className={styles.mineRowActions}>
      <button type="button" onClick={()=>chat("reference",item.name)}>去会话引用</button>
-     {item.source==="我的创建"?<button type="button" onClick={()=>chat("edit",item.name)}>编辑</button>:<button type="button" onClick={()=>toggle(item.name)}>停用</button>}
+     {item.source==="我的创建"?<><button type="button" onClick={()=>setDetailSkill(item.name)}>查看完整技能</button><button type="button" onClick={()=>chat("edit",item.name)}>编辑</button></>:<button type="button" onClick={()=>toggle(item.name)}>停用</button>}
     </div></td>
    </tr>)}
    {!mySkillRows.length&&<tr><td colSpan={5} className={styles.mineEmpty}>{search?"没有符合条件的技能":"暂无已启用的技能"}</td></tr>}
@@ -167,6 +189,7 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  {!cards.length&&!mine.length&&<p className={styles.emptyText}>{search?"未找到匹配技能":filter==="我的创建"?"还没有自建技能":"暂无已启用的技能"}</p>}
  </section>}
  </>}
+ {detailPreview&&<div className={styles.groupOverlay} onMouseDown={e=>{if(e.target===e.currentTarget)setDetailSkill(null)}}><section className={styles.groupDialog} role="dialog" aria-modal="true" aria-label="完整技能定义"><header><h2>{detailPreview.name}</h2><button type="button" aria-label="关闭技能详情" onClick={()=>setDetailSkill(null)}>×</button></header><p style={{whiteSpace:"pre-wrap",lineHeight:1.8,maxHeight:"65vh",overflowY:"auto"}}>{detailPreview.description}</p><footer><button className={styles.primary} onClick={()=>setDetailSkill(null)}>关闭</button></footer></section></div>}
  <dialog ref={dialog} className={styles.introDialog} onClose={()=>setIntro(null)} aria-label="官方技能介绍">{selected&&<><header><h2>官方技能介绍</h2><button onClick={()=>setIntro(null)} aria-label="关闭">×</button></header><h3>{selected[0]}</h3><p>{selected[1]}</p><dl><dt>技能来源</dt><dd>硕米官方</dd><dt>适用范围</dt><dd>{selected[2]}</dd><dt>使用提醒</dt><dd>{selected[4]}</dd></dl></>}</dialog>
  </main>
 }
