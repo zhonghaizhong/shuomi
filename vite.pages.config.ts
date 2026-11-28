@@ -84,6 +84,8 @@ const bundledAgentExamples = {
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
+    // Publish selected-market SKU artwork from the main public tree.
+    await cp(`${here}/public/assets/selected-market`,`${here}/dist-pages/assets/selected-market`,{recursive:true});
     // Store synchronization fixtures are also in the main public tree.
     await cp(`${here}/public/assets/store-sync-demo`,`${here}/dist-pages/assets/store-sync-demo`,{recursive:true});
     // Include the approved real-photography atlas; no external image host required.
