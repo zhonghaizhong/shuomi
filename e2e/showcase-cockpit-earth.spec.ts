@@ -475,7 +475,7 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
   await page.goto("/shuomi/#/workbench/ai/chat");
   await page.getByRole("button",{name:"切换浅色主题"}).click();
   const screens=[
-    {route:"/workbench/ai/chat",surfaces:['[data-conversation-composer="stable"]','[class*="_modeList_"] button[aria-pressed]','[class*="_examples_"] > div > button']},
+    {route:"/workbench/ai/chat",surfaces:['[data-conversation-composer="stable"]','[class*="_modeList_"] button[aria-pressed="false"]','[class*="_examples_"] > div > button']},
     {route:"/workbench/ai/tasks",surfaces:['[data-task-center-preview="all"] [class*="guideIntro"]','[data-task-center-preview="all"] [class*="guideCapabilities"] > article','[data-task-center-preview="all"] [class*="guideSteps"] > article']},
     {route:"/workbench/ai/projects",surfaces:['[data-project-showcase] [class*="guideIntro"]','[data-project-showcase] [class*="guideCapabilities"] article','[data-project-showcase] [class*="guideSteps"] article']},
   ] as const;
@@ -502,6 +502,11 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
       });
       expect(result.background,screen.route+" should use white/pale cards").toMatch(/^rgb\(2(?:4[0-9]|5[0-5]), 2(?:4[0-9]|5[0-5]), 2(?:4[0-9]|5[0-5])\)$/);
       expect(result.text,screen.route+" should not have pastel title text").not.toBe("rgb(207, 205, 228)");
+    }
+    if(screen.route==="/workbench/ai/chat") {
+      const selected=page.locator('[class*="_modeList_"] button[aria-pressed="true"]');
+      await expect(selected).toHaveCount(1);
+      await expect(selected).toHaveCSS("background-color","rgb(238, 235, 255)");
     }
     await page.screenshot({path:"test-results/vuexy-light-"+screen.route.split("/").at(-1)+".png",fullPage:true});
   }
