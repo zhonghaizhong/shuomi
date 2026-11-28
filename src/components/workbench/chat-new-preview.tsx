@@ -58,6 +58,54 @@ type Props = { organizationId?:string;memberId?:string };
 type ApprovalKind = "knowledge" | "skill" | "report";
 type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; approval?: ApprovalKind };
 
+
+// Each preview is based on the actual generated draft text. Missing business data stays
+// explicitly unverified; a display-only preview must never invent analysis or execution.
+function draftField(text:string, label:string) {
+  return text.split("\n").find(line=>line.startsWith(label+"："))?.slice(label.length+1).trim()||"";
+}
+function previewSections(message:PreviewMessage):{heading:string;content:string}[] {
+  const kind=message.approval;
+  if(kind==="report"){
+    const title=draftField(message.text,"报告主题")||"未命名报告";
+    const scope=draftField(message.text,"统计范围")||"范围尚未确定";
+    return [
+      {heading:"报告摘要",content:"本报告围绕「"+title+"」展开。当前仅有报告需求和章节规划，尚无经核实的经营数据，因此不能提供销售额、利润或趋势结论。"},
+      {heading:"一、研究范围与数据来源",content:"主题："+title+"\n统计范围："+scope+"\n数据来源：未接入或未经核验；正式分析前需确认数据集和统计口径。"},
+      {heading:"二、经营概览",content:"待生成：经营指标汇总、同比或环比变化。当前没有可靠指标，暂不绘制图表。"},
+      {heading:"三、销售与利润分析",content:"待生成：销售构成、订单、费用、利润、净利率及对应的数据表。"},
+      {heading:"四、异常与风险",content:"待生成：基于真实经营数据定位异常、说明影响范围与证据。"},
+      {heading:"五、结论和行动建议",content:"待分析完成后填写；任何建议均应对应可追溯的数据和判断依据。"}
+    ];
+  }
+  if(kind==="skill"){
+    const goal=draftField(message.text,"技能目标")||"待明确技能目标";
+    const resource=draftField(message.text,"关联资源")||"未关联";
+    const image=/图片|重构|主图|详情图|图像/.test(goal);
+    const profit=/利润|成本|定价|核价/.test(goal);
+    const steps=image
+      ?["接收原图与目标图片规格，确认商品及颜色变体","识别商品主体和原始素材，标记模糊、缺失或不一致信息","按照确认的尺寸、背景、语言和构图规则重构图片","逐张检查主体完整性、颜色一致性和图片规格","输出重构图片、逐张检查结果与需要人工确认的问题"]
+      :profit
+      ?["接收售价、采购成本、运费及适用费用项目","检查币种、税费口径、缺失成本与适用平台","按经确认的公式计算利润和利润率","校验异常值并列出无法计算的项目","输出计算表、关键假设和需要复核的数据"]
+      :["接收任务输入并校验完整性","读取已明确的业务规则和授权资源","依照确认的操作规则处理内容","按验收标准检查并记录异常","输出结果、执行记录及待人工确认事项"];
+    return [
+      {heading:"一、技能目标与适用场景",content:goal+"\n适用范围：以用户确认的需求为准。"},
+      {heading:"二、输入参数",content:image?"原始图片（必填）；目标尺寸、背景、语言、变体与输出数量（待确认）。":profit?"售价、成本、费用、币种与计算口径（待确认）。":"任务输入、所需资料、输出格式和触发条件（待补充）。"},
+      {heading:"三、执行流程（待审核草案）",content:steps.map((step,i)=>String(i+1)+". "+step).join("\n")},
+      {heading:"四、关联资源与权限",content:"当前关联："+resource+"\n调用前需要核对资源实际可用性和访问授权。"},
+      {heading:"五、输出及验收规则",content:image?"输出：逐张重构图片和检查结果；验收：图片规格、主体完整、商品颜色及变体一致。":profit?"输出：明细计算表、利润率及假设；验收：数据完整、计算口径一致、可复算。":"输出：结构化处理结果、异常清单及执行记录；具体验收阈值仍需确认。"},
+      {heading:"六、异常与执行边界",content:"缺少关键输入或必要权限时中止相应操作并请求确认。此处展示的是可审核的流程草案，并非已接入的自动执行程序。"}
+    ];
+  }
+  const title=draftField(message.text,"主题")||"未命名知识条目";
+  return [
+    {heading:"知识条目",content:title},
+    {heading:"正文内容",content:"当前只收到知识整理主题，尚未提供经过核验的知识正文。请补充资料或原文后再整理具体条目。"},
+    {heading:"引用资料",content:draftField(message.text,"引用资料")||"未提供来源"},
+    {heading:"检索与引用方式",content:"保存后可在知识库管理并供后续会话引用；来源、适用范围和版本需随实际资料补全。"}
+  ];
+}
+
 export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin" }: Props) {
   const [projectEntry]=useState(()=>{const q=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const id=q.get("projectId");const template=projectTemplates.find(t=>t.name===q.get("projectTemplate"));const project=readPreviewProjects().find(p=>p.id===id&&p.status!=="已归档");return {mode:q.get("projectMode"),template,project}});
   const [linkedProjectId,setLinkedProjectId]=useState(projectEntry.project?.id||"");
@@ -239,13 +287,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   return <div className={styles.workspace} data-chat-active={chatActive}>
       <section className={styles.composer} aria-label={chatActive ? "会话消息与输入区" : "新建会话输入区"} data-conversation-composer="stable">
         <header className={styles.composerIntro}><div><h2>有什么想交给硕米？</h2><p>{chatActive ? "当前会话的消息和处理结果在这里继续显示，不切换页面。" : "直接描述问题或工作目标，硕米协助整理并回复。"}</p></div>{chatActive && <button className={styles.newConversation} onClick={startNewConversation}>＋ 新会话</button>}</header>
-        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请核对详情后决定是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button><button type="button" aria-expanded={expandedDraftId===item.id} aria-label={"查看"+(item.approval==="knowledge"?"知识库":item.approval==="skill"?"技能":"报告")+"草案详情"} onClick={()=>setExpandedDraftId(current=>current===item.id?null:item.id)}>{expandedDraftId===item.id?"收起":"查看"}</button></div>
- {expandedDraftId===item.id&&<section className={styles.draftDetails} aria-label="当前草案完整详情">
-  <header><strong>{item.approval==="knowledge"?"知识库":item.approval==="skill"?"技能":"报告"}草案详情</strong><small>仅展示当前实际生成的演示内容，不补造未生成的数据</small></header>
-  <dl>{item.text.split("\n").filter(line=>line.includes("：")).map((line,index)=>{const separator=line.indexOf("：");return <div key={index}><dt>{line.slice(0,separator)}</dt><dd>{line.slice(separator+1)||"待完善"}</dd></div>})}</dl>
-  <div className={styles.draftDetailsUsage}><strong>确认后去哪里</strong><span>{item.approval==="knowledge"?"保存到「我的知识库」，之后从资源与能力中引用；目前不会自动产生具体问答内容。":item.approval==="skill"?"保存到「我的技能」，后续被会话或任务引用时执行；单独保存不会自动运行。":"保存到「我的报告」，可查看、收藏或关联项目；尚未执行真实数据分析。"}</span></div>
-  <p>如需详细条目、执行步骤、真实统计结果或来源明细，请在下方输入框补充要求；当前演示中未生成的内容不会伪装为已完成。</p>
- </section>}</div>}</article>)}
+        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请核对详情后决定是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button><button type="button" aria-label={"查看"+(item.approval==="knowledge"?"知识条目":item.approval==="skill"?"技能":"报告")+"完整内容"} onClick={()=>setExpandedDraftId(item.id)}>查看完整{item.approval==="knowledge"?"知识条目":item.approval==="skill"?"技能":"报告"}</button></div>}</article>)}
         {confirmation && <section className={styles.inlineConfirmation} aria-label="会话内确认任务">
         <header><div><h2 id="chat-confirm-title">确认{mode.title}</h2><p>请核对当前内容和关联范围，再继续下一步。</p></div><button aria-label="关闭" onClick={() => setConfirmation(false)}>×</button></header>
         {modeIndex === 1 && <section className={styles.scheduleFields} aria-label="定时安排">
@@ -306,6 +348,9 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
         </button>)}</div>
       </section></>
       </aside>
+
+
+    {expandedDraftId!==null&&(()=>{const item=messages.find(message=>message.id===expandedDraftId&&message.approval);if(!item)return null;const kind=item.approval!;const title=kind==="report"?draftField(item.text,"报告主题"):kind==="skill"?draftField(item.text,"技能目标"):draftField(item.text,"主题");return <div className={styles.outcomeBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setExpandedDraftId(null)}}><section className={styles.outcomeDialog} role="dialog" aria-modal="true" aria-labelledby="outcome-preview-title"><header><div><small>{kind==="report"?"报告预览":kind==="skill"?"技能定义":"知识条目"} · 待确认草案</small><h2 id="outcome-preview-title">{title||"未命名成果"}</h2><p>内容来自当前会话草案；缺失的资料和分析结果会明确标记，未执行真实业务操作。</p></div><button type="button" aria-label="关闭成果预览" onClick={()=>setExpandedDraftId(null)}>×</button></header><div className={styles.outcomeBody}>{previewSections(item).map(section=><section key={section.heading}><h3>{section.heading}</h3><p>{section.content}</p></section>)}</div><footer><button type="button" onClick={()=>{setExpandedDraftId(null);document.getElementById("chat-new-prompt")?.focus()}}>继续修改</button><button className={styles.primary} type="button" onClick={()=>{setExpandedDraftId(null);handleApproval(item,true)}}>{kind==="report"?"确认加入报告":kind==="skill"?"确认保存技能":"确认加入知识库"}</button></footer></section></div>})()}
 
     {modeGuide&&guideFor!==null&&<div className={styles.guideBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setGuideFor(null)}}>
       <section className={styles.guideDialog} role="dialog" aria-modal="true" aria-label={modes[guideFor].title+"功能介绍"}>
