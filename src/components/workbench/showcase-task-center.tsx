@@ -6,10 +6,11 @@ import {ListChecks,MessageSquare,Workflow,Target,FileCheck2} from "lucide-react"
 import styles from "./demo-workbench-preview.module.css";
 import extra from "./showcase-task-center.module.css";
 import chat from "./chat-new-preview.module.css";
+import {demoProjectTasks} from "./showcase-project-data";
 
 type Mode="all"|"pending"|"running"|"completed"|"errors"|"scheduled";
-type Task={id:string;name:string;description:string;scope:string;state:"pending"|"running"|"completed"|"errors"|"scheduled"|"revision";time:string;progress?:number;frequency?:string;paused?:boolean;history?:{time:string;event:string}[];conversation?:{role:"user"|"assistant";text:string}[];result?:string;planId?:string};
-const base:Task[]=[];
+type Task={id:string;name:string;description:string;scope:string;state:"pending"|"running"|"completed"|"errors"|"scheduled"|"revision";time:string;progress?:number;frequency?:string;paused?:boolean;history?:{time:string;event:string}[];conversation?:{role:"user"|"assistant";text:string}[];result?:string;planId?:string;projectId?:string};
+const base:Task[]=demoProjectTasks.map(task=>({...task,history:task.history?[...task.history]:undefined}));
 const modes:Mode[]=["pending","running","completed","errors","scheduled"];
 const labels:Record<Mode,string>={all:"任务中心",pending:"待确认",running:"进行中",completed:"已完成",errors:"异常任务",scheduled:"定时任务"};
 const subtitles:Record<Mode,string>={all:"统一查看 AI 发起的任务、处理待确认事项，并追踪执行结果。",pending:"只显示需要人工决定或补充信息的事项，避免误执行。",running:"按当前执行阶段查看任务进度与预计完成时间。",completed:"查看执行结果、报告和同步记录；完成任务保持只读。",errors:"集中查看失败原因、权限问题及恢复建议。",scheduled:"按设定时间自动运行；统一管理频率、授权范围与执行结果。"};
@@ -24,7 +25,9 @@ export function ShowcaseTaskCenter({pathname,navigate,tabNavigation}:{pathname:s
  useEffect(()=>{setInput("");setQuery("");setFilter("全部");setScheduleFilter("全部");setDialog(null);setNotice("")},[mode]);
  useEffect(()=>{if(!dialog)return;const close=(e:KeyboardEvent)=>{if(e.key==="Escape")setDialog(null)};document.addEventListener("keydown",close);return()=>document.removeEventListener("keydown",close)},[dialog]);
  const task=tasks.find(t=>t.id===selected);
- const visible=tasks.filter(t=>(mode==="all"||t.state===mode)&&(mode!=="all"||filter==="全部"||stateLabel(t)===filter)&&(mode!=="scheduled"||scheduleFilter==="全部"||(scheduleFilter==="已暂停"?t.paused:!t.paused))&&[t.name,t.description,t.scope].join(" ").toLowerCase().includes(query.toLowerCase()));
+ const params=typeof window==="undefined"?new URLSearchParams():new URLSearchParams(window.location.hash.split("?").slice(1).join("?"));
+ const projectIdFilter=params.get("projectId")||"";
+ const visible=tasks.filter(t=>(!projectIdFilter||t.projectId===projectIdFilter)&&(mode==="all"||t.state===mode)&&(mode!=="all"||filter==="全部"||stateLabel(t)===filter)&&(mode!=="scheduled"||scheduleFilter==="全部"||(scheduleFilter==="已暂停"?t.paused:!t.paused))&&[t.name,t.description,t.scope].join(" ").toLowerCase().includes(query.toLowerCase()));
  function saveConversation(t:Task,thread:{role:"user"|"assistant";text:string}[]){setTasks(old=>old.map(x=>x.id===t.id?{...x,conversation:thread}:x))}
  function runPlan(t:Task){if(t.paused)return;const id=crypto.randomUUID();setTasks(old=>[{id,name:t.name+" · 本次执行",description:"等待演示执行处理",scope:t.scope,state:"running",progress:0,time:"刚刚",planId:t.id,history:[{time:new Date().toLocaleString("zh-CN"),event:"从定时计划手动发起演示执行"}]},...old.map(x=>x.id===t.id?{...x,history:[...(x.history??[]),{time:new Date().toLocaleString("zh-CN"),event:"已发起演示执行 "+id}]}:x)]);setDialog(null);setNotice("已生成独立演示执行记录，可在进行中查看；定时计划保持不变。")}
  const rows=mode==="all"&&!query&&filter==="全部"?visible.slice(0,5):visible;
@@ -35,7 +38,7 @@ export function ShowcaseTaskCenter({pathname,navigate,tabNavigation}:{pathname:s
  const action=(t:Task)=>t.state==="pending"?"去确认":t.state==="errors"?"去处理":t.state==="scheduled"?"详情":t.state==="revision"?"重新提交":"查看";
  const title=mode==="all"?"任务中心":mode==="pending"?"待确认任务":mode==="running"?"进行中任务":mode==="completed"?"已完成任务":labels[mode];
  return <div data-task-center-preview={mode} className={`${styles.page} ${styles.tasksPreview} ${extra.root}`}>
- <header className={`${styles.header} ${extra.pageHeader}`}><div><div className={styles.breadcrumb}>AI工作台 / 任务中心</div><h1>任务中心</h1><p>通过硕米Chat发起任务，在这里跟踪执行进度、处理确认事项并查看成果。</p></div><button className={styles.primary} onClick={()=>navigate("/workbench/ai/chat/new?preview=1&taskMode="+(mode==="scheduled"?"scheduled":"task"))}>＋ 新建任务</button></header>
+ <header className={`${styles.header} ${extra.pageHeader}`}><div><div className={styles.breadcrumb}>AI工作台 / 任务中心</div><h1>任务中心</h1><p>{projectIdFilter?"当前仅显示所选项目关联的演示任务；不涉及真实平台操作。":"通过硕米Chat发起任务，在这里跟踪执行进度、处理确认事项并查看成果。"}</p></div><button className={styles.primary} onClick={()=>navigate("/workbench/ai/chat/new?preview=1&taskMode="+(mode==="scheduled"?"scheduled":"task"))}>＋ 新建任务</button></header>
  {tabNavigation}
  {mode==="all"&&<div className={extra.guide} aria-label="任务指南">
   <section className={extra.guideIntro}>
