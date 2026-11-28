@@ -12,24 +12,26 @@ const formatMoney=(value:number,currency:string)=>currency==="CNY"?"¥"+value.to
 const packageVolume=(p:SelectedCatalogProduct)=>p.packagingLengthCm&&p.packagingWidthCm&&p.packagingHeightCm
  ?(p.packagingLengthCm*p.packagingWidthCm*p.packagingHeightCm/1000000).toFixed(4)+" m³":"待供应商提供";
 type CollectionMode="supply"|"landed";
-function unitQuote(product:SelectedCatalogProduct,skuPrice:number,country:string){
- const fees=product.serviceFees;
- const freight=product.shippingQuotes?.find(q=>q.country===country);
+type CatalogSku=SelectedCatalogProduct["skus"][number];
+const skuFees=(p:SelectedCatalogProduct,sku:CatalogSku)=>sku.serviceFees??p.serviceFees;
+const skuShipping=(p:SelectedCatalogProduct,sku:CatalogSku)=>sku.shippingQuotes??p.shippingQuotes??[];
+const skuCountries=(p:SelectedCatalogProduct,sku:CatalogSku)=>skuShipping(p,sku).length
+ ?skuShipping(p,sku).map(q=>q.country):p.shipToCountries??[];
+function costForCountry(product:SelectedCatalogProduct,sku:CatalogSku,country:string){
+ const fees=skuFees(product,sku),freight=skuShipping(product,sku).find(q=>q.country===country);
  const currency=product.quotationCurrency||"CNY";
- const complete=skuPrice>0&&Boolean(country)&&Boolean(fees)&&fees?.inspection!=null&&fees?.packing!=null&&fees?.labeling!=null&&
-  fees.currency===currency&&freight?.freight!=null&&freight.currency===currency;
- if(!complete)return null;
- const inspection=fees!.inspection!,packing=fees!.packing!,labeling=fees!.labeling!;
- const shipping=freight!.freight!;
- return {supplyPrice:skuPrice,inspection,packing,labeling,freight:shipping,unitTotal:Math.round((skuPrice+inspection+packing+labeling+shipping)*100)/100,currency,demo:Boolean(product.id.includes("DEMO")||fees?.demo||freight?.demo)};
+ const valid=sku.price>0&&Boolean(country)&&fees?.inspection!=null&&fees.packing!=null&&fees.labeling!=null
+  &&fees.currency===currency&&freight?.freight!=null&&freight.currency===currency;
+ return {skuId:sku.id,country,supplyPrice:sku.price,inspection:fees?.inspection??null,
+  packing:fees?.packing??null,labeling:fees?.labeling??null,freight:freight?.freight??null,
+  unitTotal:valid?Math.round((sku.price+fees!.inspection!+fees!.packing!+fees!.labeling!+freight!.freight!)*100)/100:null,
+  currency,complete:valid,demo:Boolean(product.id.includes("DEMO")||fees?.demo||freight?.demo)};
 }
-function toCollected(product:SelectedCatalogProduct,mode:CollectionMode,country:string):DemoCollectedProduct{
+function toCollected(product:SelectedCatalogProduct,mode:CollectionMode):DemoCollectedProduct{
  const currency=product.quotationCurrency||"CNY";
  const minSku=Math.min(...product.skus.map(s=>s.price));
- const unit=unitQuote(product,minSku,country);
- if(mode==="landed"&&(!unit||product.skus.some(s=>!unitQuote(product,s.price,country))))throw Error(product.name+" 的目标国家运费或服务费用不完整，无法按总成本采集");
- const chosenPrice=mode==="landed"?unit!.unitTotal:minSku;
- const priceLabel=chosenPrice>0?formatMoney(chosenPrice,currency)+" 起":"待供应商报价";
+ const countryCosts=product.skus.flatMap(s=>skuCountries(product,s).map(country=>costForCountry(product,s,country)));
+ const supplyLabel=minSku>0?formatMoney(minSku,currency)+" 起":"待供应商报价";
  return {
   id:"COLLECT-"+product.id,sku:product.skus[0]?.id??product.id,
   name:product.name,originalTitle:product.name,description:product.description,
@@ -37,14 +39,16 @@ function toCollected(product:SelectedCatalogProduct,mode:CollectionMode,country:
   supplyProductId:product.id,supplySkuId:product.skus[0]?.id,
   supplierId:product.supplierId,supplierName:product.supplierName,
   supplyVersion:product.version,supplyType:product.supplyType??"待确认",
-  warehouseCountry:product.warehouseCountry??"",shipToCountries:[...(product.shipToCountries??[])],
-  moq:product.moq,dropship:product.dropship??null,price:priceLabel,
-  collectionPriceMode:mode,destinationCountry:country||undefined,quoteCurrency:currency,
-  costBreakdown:mode==="landed"?unit??undefined:undefined,
+  warehouseCountry:product.warehouseCountry??"",shipToCountries:[...new Set(countryCosts.map(q=>q.country))],
+  moq:product.moq,dropship:product.dropship??null,price:supplyLabel,
+  collectionPriceMode:mode,quoteCurrency:currency,
+  // The price and variantDetails.price fields stay at supplier price; total landed
+  // costs are country-specific, and cannot safely be represented as one price.
+  destinationCosts:mode==="landed"?countryCosts:undefined,
   images:[...product.images],variants:product.skus.map(s=>s.label),variantCount:product.skus.length,
   variantDetails:product.skus.map(s=>({sku:s.id,label:s.label,color:s.color,size:s.size,
    image:s.images?.[0]||"",images:[...(s.images||[])],
-   price:String(mode==="landed"?unitQuote(product,s.price,country)!.unitTotal:s.price),stock:String(s.stock),description:product.description})),
+   price:String(s.price),stock:String(s.stock),description:product.description})),
   status:"演示数据"
  };
 }
@@ -109,14 +113,23 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const shown=sorted.slice((Math.min(page,totalPages)-1)*pagesize,Math.min(page,totalPages)*pagesize);
  const current=items.find(p=>p.id===active);
  const selectedForCollection=items.filter(p=>chosen.includes(p.id));
- const commonDestinations=selectedForCollection.length
-  ?selectedForCollection[0].shipToCountries?.filter(c=>selectedForCollection.every(p=>p.shipToCountries?.includes(c)))||[]
-  :[];
- const collectionCostReady=selectedForCollection.every(p=>p.skus.every(s=>Boolean(unitQuote(p,s.price,targetCountry))));
+ const allDestinationCosts=selectedForCollection.flatMap(p=>p.skus.flatMap(s=>skuCountries(p,s).map(country=>costForCountry(p,s,country))));
+ const incompleteCosts=allDestinationCosts.filter(q=>!q.complete);
+ const collectionCostReady=allDestinationCosts.length>0&&incompleteCosts.length===0;
  const selectedSku=current?.skus.find(s=>s.id===activeSku)??current?.skus[0];
  const skuPhotos=selectedSku?.images?.length?selectedSku.images:(current?.images??[]);
  const activePhoto=skuPhotos.length?skuPhotos[Math.min(photoIndex,skuPhotos.length-1)]:null;
- const selectedCost=current&&selectedSku?unitQuote(current,selectedSku.price,targetCountry):null;
+ const selectedCost=current&&selectedSku&&targetCountry?costForCountry(current,selectedSku,targetCountry):null;
+ const terms=current&&selectedSku?{
+  fees:skuFees(current,selectedSku),shipping:skuShipping(current,selectedSku),countries:skuCountries(current,selectedSku),
+  origin:selectedSku.origin??current.origin,dispatch:selectedSku.dispatch??current.dispatch,
+  warehouse:selectedSku.warehouseCountry??current.warehouseCountry,
+  moq:selectedSku.moq??current.moq,dropship:selectedSku.dropship??current.dropship,
+  weight:selectedSku.packagingWeightKg??current.packagingWeightKg,
+  length:selectedSku.packagingLengthCm??current.packagingLengthCm,
+  width:selectedSku.packagingWidthCm??current.packagingWidthCm,
+  height:selectedSku.packagingHeightCm??current.packagingHeightCm
+ }:null;
  const setSku=(id:string)=>{setActiveSku(id);setPhotoIndex(0);setImageFailed(false)};
  const openProduct=(id:string)=>{setActive(id);setActiveSku("");setPhotoIndex(0);setImageFailed(false);setTargetCountry("")};
  const ownedBatches=batches.filter(b=>b.source==="硕米优选");
@@ -125,11 +138,9 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   setError("");
   try{
    const selected=items.filter(p=>chosen.includes(p.id));
-   if(priceMode==="landed"&&!collectionCostReady)throw Error("所选商品的目标国家总成本报价不完整，请选择可配送国家或改为只采集供货价格");
-   if(targetCountry&&selected.some(p=>!p.shipToCountries?.includes(targetCountry)))throw Error("所选目标国家不支持全部商品配送，请重新选择");
-   const batch=addSelectedCatalogProducts(organizationId,memberId,selected.map(p=>toCollected(p,priceMode,targetCountry)),
+   const batch=addSelectedCatalogProducts(organizationId,memberId,selected.map(p=>toCollected(p,priceMode)),
      batchMode==="new"?{kind:"new",name:batchName}:{kind:"existing",id:batchId});
-   setCollectOpen(false);setActive(null);setChosen([]);setTargetCountry("");setNotice("已将 "+selected.length+" 件商品保存到「我的数据 / 采集批次」："+batch.name+"。价格口径："+(priceMode==="landed"?"目标国家单件总成本":"供应商供货价")+"；保留原商品和SKU关联。");
+   setCollectOpen(false);setActive(null);setChosen([]);setTargetCountry("");setNotice("已将 "+selected.length+" 件商品及全部变体保存到「我的数据 / 采集批次」："+batch.name+"。采集方式："+(priceMode==="landed"?"各国家总成本明细":"仅供货价格")+"；已保留货源与SKU关联。");
   }catch(e){setError(e instanceof Error?e.message:"保存失败")}
  };
  const choose=(id:string)=>setChosen(ids=>ids.includes(id)?ids.filter(v=>v!==id):[...ids,id]);
@@ -216,9 +227,8 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   {collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setCollectOpen(false)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="加入我的采集批次">
    <header><h2>加入我的采集批次</h2><button type="button" onClick={()=>setCollectOpen(false)}>关闭</button></header><p>已选择 {chosen.length} 件商品。将复制商品资料及关联 ID 到当前账号，不修改共享货盘源数据。</p>
    <div className={css.collectionPricing}>
-    <label>目标国家<select aria-label="采集目标国家" value={targetCountry} onChange={e=>{setTargetCountry(e.target.value);setError("")}}><option value="">不指定国家（仅供货价）</option>{commonDestinations.map(c=><option key={c} value={c}>{c}</option>)}</select></label>
     <fieldset><legend>采集价格方式</legend><label><input type="radio" name="collection-price-mode" checked={priceMode==="landed"} onChange={()=>setPriceMode("landed")}/>按总成本采集</label><label><input type="radio" name="collection-price-mode" checked={priceMode==="supply"} onChange={()=>setPriceMode("supply")}/>只采集供货价格</label></fieldset>
-    <p>{priceMode==="landed"?(targetCountry?(collectionCostReady?"将按每个 SKU 分别计算含运费的单件成本，并记录原报价和目标国家。":"报价不完整：无法保存为总成本，请核查费用或更换采集方式。"):"请先选择所有商品均支持配送的目标国家。"):"采集 SKU 供货价格，不计入运费、质检、打包及贴标费用。"}<br/>多商品批量采集使用共同可配送国家；费用均为演示估算。</p>
+    <p>{priceMode==="landed"?"采集每款商品的全部 SKU、全部可配送国家及其供货价、质检、打包、贴标、运费和单件总成本。": "采集全部 SKU 的供货价及可配送国家资料，不以任何国家的运费覆盖 SKU 供货价。"}<br/>{priceMode==="landed"?(collectionCostReady?"全部已提供的国家报价完整，可分别保留。":"其中 "+incompleteCosts.length+" 条 SKU / 国家报价不完整，仍保留为“待报价”，不计算虚假总价。"):"不同国家运费作为供货资料保留，不计入采集价格。"} 演示报价仅供参考。</p>
    </div>
    <div className={css.modeChoices}><label><input type="radio" name="batch-mode" checked={batchMode==="new"} onChange={()=>setBatchMode("new")}/>创建新批次</label><label><input type="radio" name="batch-mode" checked={batchMode==="existing"} onChange={()=>setBatchMode("existing")}/>加入已有批次</label></div>
    {batchMode==="new"?<label className={css.inputField}>批次名称<input aria-label="新批次名称" maxLength={80} value={batchName} onChange={e=>setBatchName(e.target.value)}/></label>:
