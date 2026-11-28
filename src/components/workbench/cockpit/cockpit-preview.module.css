@@ -1360,3 +1360,39 @@
 :global(.light) .page .digestNoTrend{background:#faf9fd;border-color:#e5e1ed}
 :global(.light) .page .digestNoTrend strong{color:#444050}
 :global(.light) .page .matrixRow>span:first-child button{color:#444050;border-color:#dcd7e9}
+
+/* Seven-column store matrix: each metric has a distinct data/source meaning. */
+.page .matrixHead,.page .matrixRow{
+ grid-template-columns:minmax(190px,1.6fr) minmax(155px,1.25fr) minmax(92px,.65fr) minmax(90px,.62fr) minmax(90px,.62fr) minmax(140px,1fr) minmax(155px,1.1fr);
+ min-width:1020px;gap:12px;padding:12px 18px;align-items:center;
+}
+.page .matrixHead>b{white-space:nowrap;line-height:1.4}
+.page .matrixRow>.matrixMetric{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.page .matrixMetric strong{color:var(--text);font-size:14px;font-variant-numeric:tabular-nums}
+.page .matrixMetric small{color:var(--muted);font-size:11px;padding:2px 5px;border:1px solid var(--line);border-radius:5px}
+.page .matrixConnection{display:inline-flex;align-items:center;max-width:100%;white-space:nowrap;font-style:normal;font-size:12px}
+.page .matrixActions{display:flex;gap:7px;align-items:center;white-space:nowrap;min-width:0}
+.page .matrixRow .matrixActions button{min-height:31px;padding:5px 9px;background:transparent;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--text);cursor:pointer}
+.page .matrixRow .matrixActions button:hover{border-color:#7367f0;color:#a99fff}
+.page .matrixActions button:last-child:not(:first-child){color:#ffb36f}
+.page .matrixHead>b:last-child,.page .matrixActions{justify-self:start}
+.cockpitStoreOverlay{position:fixed;inset:0;z-index:1500;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.65)}
+.cockpitStoreDialog{display:grid;gap:17px;width:min(680px,100%);max-height:min(86dvh,760px);overflow-y:auto;background:var(--surface-raised);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:22px;box-shadow:0 20px 64px #0007}
+.cockpitStoreDialog>header{display:flex;justify-content:space-between;gap:14px;align-items:start;border-bottom:1px solid var(--line);padding-bottom:14px}
+.cockpitStoreDialog h2{margin:0 0 6px;font-size:18px}
+.cockpitStoreDialog p{margin:0;font-size:12px;line-height:1.6;color:var(--muted)}
+.cockpitStoreDialog button{min-height:34px;padding:6px 13px;background:var(--surface-raised);color:var(--text);border:1px solid var(--line);border-radius:7px;cursor:pointer}
+.cockpitStoreStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cockpitStoreStats>div{display:grid;gap:6px;padding:13px;border:1px solid var(--line);border-radius:8px;background:var(--surface-inset);min-width:0}
+.cockpitStoreStats small,.cockpitStoreStats span{font-size:11px;color:var(--muted)}
+.cockpitStoreStats strong{font-size:23px;font-variant-numeric:tabular-nums}
+.cockpitStoreConnection{display:flex;flex-wrap:wrap;justify-content:space-between;gap:9px;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:12px}
+.cockpitStoreConnection span{color:var(--muted)}
+.cockpitStoreDialog>footer{display:flex;gap:9px;justify-content:end}
+.cockpitStoreDialog>footer button:last-child{color:#fff;background:#7367f0;border-color:#7367f0}
+:global(.light) .page .matrixMetric strong{color:#444050}
+:global(.light) .page .matrixMetric small{color:#6f6b7d;border-color:#ddd8e9}
+:global(.light) .page .matrixRow .matrixActions button{color:#444050;border-color:#dcd7e9}
+:global(.light) .cockpitStoreDialog{background:#fff;color:#444050;border-color:#e5e1ed}
+:global(.light) .cockpitStoreStats>div{background:#f7f6fb;border-color:#e5e1ed}
+@media(max-width:590px){.cockpitStoreStats{grid-template-columns:1fr}.cockpitStoreDialog{padding:16px}}
