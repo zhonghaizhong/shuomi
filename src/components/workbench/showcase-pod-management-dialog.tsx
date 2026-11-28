@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useMemo,useRef,useState} from "react";
 import css from "./showcase-pod-management-dialog.module.css";
-import {readPodLibrary,savePodLibrary,readPodAssetImage,podAssetPreviewSrc,type PodLibraryAsset} from "./pod-asset-library";
+import {readPodLibrary,savePodLibrary,readPodAssetImage,podAssetPreviewSrc,isPodOriginalHidden,setPodOriginalHidden,type PodLibraryAsset} from "./pod-asset-library";
 import {readPodPrintLineage,registerPodPrint,reviewPodPrint,reopenPodPrintReview,searchPodPrints,bindPodPrintToVariant} from "./pod-print-lineage";
 import {isShowcasePODScope,showcasePODReviewPrints,SHOWCASE_SDS_POD_BATCH_ID,showcaseSDSPrintSourceProducts} from "./pod-showcase-print-demo";
 import {readDemoCollectionBatches,type DemoCollectedProduct} from "./showcase-collection-batches";
@@ -92,6 +92,8 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const [chosen,setChosen]=useState<Asset|null>(null);const [newCategory,setNewCategory]=useState("");
  const [chosenCategory,setChosenCategory]=useState("");const [newFiles,setNewFiles]=useState<File[]>([]);
  const [notice,setNotice]=useState("");
+ const [deleteCandidate,setDeleteCandidate]=useState<Asset|null>(null);
+ const [originalHidden,setOriginalHidden]=useState(()=>isPodOriginalHidden(organizationId,memberId));
  useEffect(()=>{if(!savePodLibrary(organizationId,memberId,assets))setNotice("浏览器会话存储空间不足，素材未能持久保存。请减少图片数量。")},[assets,organizationId,memberId]);
  useEffect(()=>{const d=ref.current;const prev=document.activeElement;d?.showModal();return()=>{d?.close();if(prev instanceof HTMLElement&&prev.isConnected)prev.focus()}},[]);
  const data=tab==="我的素材库"?assets:tab==="产品图审核"?reviews:ideas;
@@ -121,7 +123,22 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const open=(p:typeof panel,a?:Asset)=>{setPanel(p);setChosen(a??null);setNotice("")};
  const reset=()=>{setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1)};
  const promptFor=(asset:Asset)=>{setChosen(asset);setPanel("素材提示词")};
- const removeAsset=(id:number)=>{if(assets.some(x=>x.id===id&&x.readonly)){setNotice("该原始印花已关联裂变版本，为保证追溯不能删除。");return;}setAssets(v=>v.filter(x=>x.id!==id));setNotice("已从当前演示素材库删除。")};
+ const removeAsset=(asset:Asset)=>{
+  const references=readPodPrintLineage(organizationId,memberId).prints.filter(p=>asset.originPrintId&&p.originPrintId===asset.originPrintId);
+  if(asset.readonly){
+   try{
+    setPodOriginalHidden(organizationId,memberId,true);
+    setOriginalHidden(true);
+    setAssets(v=>v.filter(x=>x.id!==asset.id));
+    setNotice("已从当前素材库移除，"+references.length+" 个裂变印花版本及历史关联均已保留；可点击恢复原图。");
+   }catch(error){setNotice(error instanceof Error?error.message:"素材移除失败")}
+  }else{
+   // This only removes the user's session-library record; archived history is never deleted.
+   setAssets(v=>v.filter(x=>x.id!==asset.id));
+   setNotice("已从当前演示素材库移除；不会删除 GitHub 文件或历史业务引用。");
+  }
+  setDeleteCandidate(null);
+ };
  const audit=(id:number,next:"退回重做"|"驳回")=>{
   const record=reviews.find(x=>x.id===id);
   if(!record?.lineagePrintId||!record.lineageVersion){setNotice("印花缺少可追溯编号");return}
@@ -155,11 +172,11 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const approvalAsset=reviews.find(x=>x.id===approvalPrintId);
  const approvalProducts=approvalAsset?.lineagePrintId?(showcaseSDSPrintSourceProducts[approvalAsset.lineagePrintId]??[]).map(id=>sourceProducts.find(p=>p.id===id)).filter((x):x is DemoCollectedProduct=>Boolean(x)):[];
  const approvalSkuCount=Object.values(approvalDraft).reduce((total,ids)=>total+ids.length,0);
- return <dialog ref={ref} className={css.dialog} aria-label="POD素材管理" onCancel={e=>{e.preventDefault();if(zoomProduct)setZoomProduct(null);else if(previewProductId)setPreviewProductId(null);else if(panel)setPanel(null);else onClose()}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+ return <dialog ref={ref} className={css.dialog} aria-label="POD素材管理" onCancel={e=>{e.preventDefault();if(zoomProduct)setZoomProduct(null);else if(previewProductId)setPreviewProductId(null);else if(deleteCandidate)setDeleteCandidate(null);else if(panel)setPanel(null);else onClose()}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
    <header className={css.header}><div><small>工具市场 / 我的工具 / POD素材管理</small><h2>POD 素材管理</h2><p>素材沉淀、生成图审核与创作灵感，形成可复用的 POD 创作闭环。</p></div><button type="button" aria-label="关闭POD素材管理" onClick={onClose} className={css.close}>×</button></header>
    <nav className={css.tabs} aria-label="POD素材管理模块">{([["我的素材库","上传、分类、复用素材"],["产品图审核","校验 POD 生成结果"],["灵感市场","趋势参考与生图提示词"]] as const).map(([t,sub])=><button type="button" key={t} className={tab===t?css.active:""} aria-current={tab===t?"page":undefined} onClick={()=>selectTab(t)}><strong>{t}</strong><small>{sub}</small></button>)}</nav>
    <div className={css.content}>
-    <div className={css.topline}><div><h3>{tab}</h3><small>{tab==="我的素材库"?"上传、分类、复用个人素材":tab==="产品图审核"?"支持直接审核通过；生成效果预览为可选操作":"官方创意参考与可复制生图提示词"}</small></div>{tab==="我的素材库"?<div className={css.topactions}><button type="button" onClick={()=>open("分类管理")}>分类管理</button><button type="button" className={css.primary} onClick={()=>open("上传素材")}>上传素材</button></div>:null}</div>
+    <div className={css.topline}><div><h3>{tab}</h3><small>{tab==="我的素材库"?"上传、分类、复用个人素材":tab==="产品图审核"?"支持直接审核通过；生成效果预览为可选操作":"官方创意参考与可复制生图提示词"}</small></div>{tab==="我的素材库"?<div className={css.topactions}>{originalHidden&&isShowcasePODScope(organizationId,memberId)?<button type="button" onClick={()=>{try{setPodOriginalHidden(organizationId,memberId,false);setOriginalHidden(false);setAssets(readPodLibrary(organizationId,memberId));setNotice("原始印花已恢复至素材库，历史裂变记录保持不变。")}catch(error){setNotice(error instanceof Error?error.message:"恢复失败")}}}>恢复原图</button>:null}<button type="button" onClick={()=>open("分类管理")}>分类管理</button><button type="button" className={css.primary} onClick={()=>open("上传素材")}>上传素材</button></div>:null}</div>
     <form className={css.filters} onSubmit={e=>{e.preventDefault();setApplied(search.trim());setPage(1)}}>
       <input aria-label="搜索素材" placeholder={tab==="灵感市场"?"搜索风格 / 主题 / 元素":tab==="产品图审核"?"搜索印花编号、订单号、SKU、商品、批次或名称":"搜索素材名称或分类"} value={search} onChange={e=>setSearch(e.target.value)}/>
       {tab==="产品图审核"?<div className={css.statusSwitch} role="group" aria-label="按审核状态筛选">{["全部状态","待审核","审核通过","退回重做","驳回"].map(s=><button type="button" key={s} className={status===s?css.selectedStatus:""} aria-pressed={status===s} onClick={()=>{setStatus(s);setPage(1)}}>{s}</button>)}</div>:<select aria-label="素材分类" value={category} onChange={e=>{setCategory(e.target.value);setPage(1)}}><option>全部分类</option>{(tab==="我的素材库"?["未分类",...categories]:[...inspirationCategories]).map(s=><option key={s}>{s}</option>)}</select>}
@@ -170,7 +187,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
     <div className={tab==="产品图审核"?css.reviewLayout:undefined}><div className={css.reviewList}>{displayed.length?<div className={css.grid}>{displayed.map(asset=><article className={css.assetCard+(tab==="产品图审核"&&selectedPrint===asset.lineagePrintId+"@"+asset.lineageVersion?" "+css.selectedCard:"")} key={asset.id}>
        <button type="button" className={css.imageButton} onClick={()=>{if(tab==="产品图审核"){setSelectedPrint(asset.lineagePrintId+"@"+asset.lineageVersion);setPreviewProductId(null);setPreviewNote("")}else open("预览图片",asset)}} aria-label={tab==="产品图审核"?"查看关联商品："+asset.name:"预览"+asset.name}>{inspirationImageSrc(asset)?<img className={css.patternImage} src={inspirationImageSrc(asset)} alt={asset.name+"原创图案"} loading="lazy"/>:<div className={css.artwork} data-variant={asset.style}><span>{["✿","🎀","≈","☾","◒","✦"][asset.style]}</span></div>}</button>
        <strong title={asset.name}>{asset.name}</strong>{tab==="产品图审核"&&asset.lineagePrintId==="POD-BUTTERFLY-FISSION-B"&&asset.lineageVersion===1&&isShowcasePODScope(organizationId,memberId)?<small className={css.printPreviewIndicator}>已生成预览 1 张 · 黑色短袖 S</small>:null}<small>{asset.status??asset.category}</small>{asset.originPrintId?<small title={asset.originPrintId}>原图编号：{asset.originPrintId}</small>:null}{tab==="产品图审核"&&asset.lineagePrintId?<small title={asset.lineagePrintId+" · V"+asset.lineageVersion}>编号：{asset.lineagePrintId} · V{asset.lineageVersion}</small>:null}
-       {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" disabled={asset.readonly} title={asset.readonly?"已有裂变关联，不可删除原图":"删除当前素材"} onClick={()=>removeAsset(asset.id)}>删除</button>{asset.readonly?<span className={css.sourceLocked}>源图已关联 · 只读</span>:null}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>openApproval(asset,"部分通过")}>部分通过</button><button type="button" onClick={()=>openApproval(asset,"全部通过")}>全部通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<><button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>{asset.status==="审核通过"?<button type="button" onClick={()=>{try{reopenPodPrintReview(organizationId,memberId,asset.lineagePrintId!,asset.lineageVersion!);setNotice("已撤销误通过，恢复待审核；已有预览文件保留。")}catch(error){setNotice(error instanceof Error?error.message:"撤销失败")}}}>撤销通过</button>:null}</>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
+       {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>setDeleteCandidate(asset)}>删除</button>{asset.readonly?<span className={css.sourceLocked}>已关联 · 保留历史原图</span>:null}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>openApproval(asset,"部分通过")}>部分通过</button><button type="button" onClick={()=>openApproval(asset,"全部通过")}>全部通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<><button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>{asset.status==="审核通过"?<button type="button" onClick={()=>{try{reopenPodPrintReview(organizationId,memberId,asset.lineagePrintId!,asset.lineageVersion!);setNotice("已撤销误通过，恢复待审核；已有预览文件保留。")}catch(error){setNotice(error instanceof Error?error.message:"撤销失败")}}}>撤销通过</button>:null}</>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
     </div>{tab==="产品图审核"?<aside className={css.relatedPanel} aria-label="关联产品与效果预览"><h3>关联产品与效果预览</h3>{activePrint?<><div className={css.selectedPrintHeader}><img src={inspirationImageSrc(activePrint)} alt={activePrint.name}/><div><strong>{activePrint.name}</strong><small>编号：{activePrint.lineagePrintId} · V{activePrint.lineageVersion}</small><small>状态：{activePrint.status}</small></div></div><div className={css.relatedTabs}><strong>关联产品（{sourceLinkedProducts.length+relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length}）</strong><span>来源关联 · 不等于审核通过</span></div>
 {sourceLinkedProducts.length?<div className={css.relatedProducts}>{sourceLinkedProducts.map(p=><LinkedPodProduct key={activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id} product={p} onZoom={openProductZoom} onOpenPreview={()=>setPreviewProductId(p.id)} onGeneratePreview={()=>setPreviewNote("当前仍未接入 AI 生图与积分计费接口。生成一次只保存一张组合预览；目前不会生成或扣费。")} previewCount={archivedPreviews.filter(x=>x.productId===p.id).length}/>)}</div>:null}
@@ -178,6 +195,15 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
 {!sourceLinkedProducts.length&&!relatedBindings.length?<div className={css.relatedEmpty}>该印花暂无可读取的关联商品。<small>演示数据仅在指定企业的管理员账号中显示；审核通过不强制要求生成效果图。</small></div>:null}{previewNote?<p role="status" className={css.previewNotice}>{previewNote}</p>:null}</>:<div className={css.relatedEmpty}>点击左侧任意印花图片，查看关联产品及效果预览。</div>}</aside>:null}</div>
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
    </div>
+   {deleteCandidate?<div className={css.overlay} role="presentation" onClick={e=>{if(e.target===e.currentTarget)setDeleteCandidate(null)}}>
+    <section className={css.subDialog} role="dialog" aria-modal="true" aria-label="确认从素材库移除">
+     <header><div><h3>确认移除素材</h3><small>{deleteCandidate.name}</small></div><button type="button" onClick={()=>setDeleteCandidate(null)} aria-label="取消移除">×</button></header>
+     <div className={css.modalBody}>
+      <p>{deleteCandidate.readonly?"此原图已被 "+readPodPrintLineage(organizationId,memberId).prints.filter(p=>p.originPrintId===deleteCandidate.originPrintId).length+" 个裂变印花版本引用。移除只会隐藏当前账号素材库中的卡片，不会删除 GitHub 文件、印花版本、已生成预览、SKU 绑定或订单记录。可通过「恢复原图」重新显示。":"将从当前账号的演示素材库移除此素材，不会删除历史业务文件。普通会话素材移除后暂不提供恢复，请确认不再需要。"} </p>
+      <div className={css.cardActions}><button type="button" onClick={()=>setDeleteCandidate(null)}>取消</button><button type="button" className={css.primary} onClick={()=>removeAsset(deleteCandidate)}>确认移除</button></div>
+     </div>
+    </section>
+   </div>:null}
    {panel?<div className={css.overlay} onClick={e=>{if(e.target===e.currentTarget)setPanel(null)}}><section className={css.subDialog} role="dialog" aria-modal="true" aria-label={panel}>
       <header><div><h3>{panel}</h3><small>{panel==="上传素材"?"支持 PNG、JPG、SVG；请确保素材具有使用授权。":panel==="分类管理"?"为素材建立分类，便于后续检索和复用。":panel==="加入素材"?"选择分类后保存到我的素材库。":chosen?.name??"管理个人素材"}</small></div><button type="button" onClick={()=>setPanel(null)} aria-label="关闭子弹窗">×</button></header>
       {panel==="上传素材"?<div className={css.modalBody}><label className={css.upload}>添加素材图片 / 将文件拖入此处<input type="file" multiple accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={e=>setNewFiles(Array.from(e.target.files??[]))}/></label><p>{newFiles.length?"已选择 "+newFiles.map(f=>f.name).join("、"):"请选择需要添加的图片。"}</p><button type="button" className={css.primary} disabled={!newFiles.length} onClick={async()=>{try{const stored=await Promise.all(newFiles.map(async(file,i)=>({id:Date.now()+i,name:file.name,category:"未分类",style:i%6,prompt:"此素材尚未生成提示词。",dataUrl:await readPodAssetImage(file)})));setAssets(v=>[...stored,...v]);setNewFiles([]);setPanel(null);setNotice("图片已保存到当前账号的演示素材库，可在智能体图片选择器中查看。不会上传服务器。");}catch(error){setNotice(error instanceof Error?error.message:"保存失败，请重新选择图片。")}}}>保存素材</button></div>
