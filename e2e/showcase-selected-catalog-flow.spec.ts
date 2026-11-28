@@ -137,3 +137,62 @@ test("bulk collection supports each product's variant selection and prevents an 
  await collect.getByRole("button",{name:"确认加入"}).click();
  await expect(market.getByRole("status")).toContainText("5 个选定 SKU");
 });
+
+test("existing batch chooser is synced with My Data and imports preserve origin provenance",async({page})=>{
+ await page.goto("/shuomi/#/workbench/supply/selected");
+ const market=page.locator('[data-selected-market="true"]');
+ await market.locator('[data-selected-product="SMYX-DEMO-001"]').getByRole("button",{name:"加入采集批次"}).click();
+ const collect=page.getByRole("dialog",{name:"加入我的采集批次"});
+ await collect.getByRole("radio",{name:"加入已有批次"}).check();
+ const select=collect.getByRole("combobox",{name:"选择已有批次"});
+ // The standard Amazon/1688 batches are real entries in the same browser store
+ // and must not be hidden by a previous supply-only source filter.
+ await expect(select.locator("option")).toContainText(["请选择批次","SDS","Amazon"]);
+ const amazon=await select.locator("option").evaluateAll(options=>
+  options.find(o=>o.textContent?.includes("Amazon 美国站"))?.getAttribute("value")||"");
+ expect(amazon).not.toBe("");
+ await select.selectOption(amazon);
+ await collect.getByRole("button",{name:"确认加入"}).click();
+ await expect(market.getByRole("status")).toContainText("已将 1 件商品");
+ await page.goto("/shuomi/#/workbench/data/mine");
+ const myData=page.locator("[data-my-data-owner]");
+ await expect(myData.getByRole("combobox",{name:"采集来源"})).toContainText("混合来源");
+ await myData.getByRole("combobox",{name:"采集来源"}).selectOption("混合来源");
+ await myData.getByRole("button",{name:"确认"}).first().click();
+ await expect(myData.getByText("Amazon 美国站 · 7个真实商品（模拟采集）",{exact:true})).toBeVisible();
+});
+
+test("recollecting same product merges only new SKU rows into selected My Data batch",async({page})=>{
+ await page.goto("/shuomi/#/workbench/supply/selected");
+ const market=page.locator('[data-selected-market="true"]');
+ const card=market.locator('[data-selected-product="SMYX-DEMO-001"]');
+ await card.getByRole("button",{name:"加入采集批次"}).click();
+ let collect=page.getByRole("dialog",{name:"加入我的采集批次"});
+ await collect.getByRole("checkbox",{name:"全选纯棉圆领短袖T恤变体"}).uncheck();
+ await collect.getByRole("checkbox",{name:"采集变体 纯棉圆领短袖T恤 黑色 / M"}).check();
+ await collect.getByRole("textbox",{name:"新批次名称"}).fill("SKU增量合并批次");
+ await collect.getByRole("button",{name:"确认加入"}).click();
+ await expect(market.getByRole("status")).toContainText("1 个选定 SKU");
+ await card.getByRole("button",{name:"加入采集批次"}).click();
+ collect=page.getByRole("dialog",{name:"加入我的采集批次"});
+ await collect.getByRole("radio",{name:"加入已有批次"}).check();
+ await collect.getByRole("combobox",{name:"选择已有批次"}).selectOption({label:/SKU增量合并批次/});
+ await collect.getByRole("checkbox",{name:"全选纯棉圆领短袖T恤变体"}).uncheck();
+ await collect.getByRole("checkbox",{name:"采集变体 纯棉圆领短袖T恤 白色 / L"}).check();
+ await collect.getByRole("button",{name:"确认加入"}).click();
+ await expect(market.getByRole("status")).toContainText("SKU增量合并批次");
+ const found=await page.evaluate(()=>{
+  const arr=JSON.parse(sessionStorage.getItem("shuomi:demo-collection-batches-v1:SM-ENT-000001")||"[]") as Array<{name:string;products:Array<{supplyProductId?:string;variantDetails?:Array<{sku:string}>}>}>;
+  return arr.find(b=>b.name==="SKU增量合并批次")?.products||[];
+ });
+ expect(found).toHaveLength(1);
+ expect(found[0].variantDetails?.map(v=>v.sku).sort()).toEqual(["SMYX-001-BK-M","SMYX-001-WH-L"]);
+ await card.getByRole("button",{name:"加入采集批次"}).click();
+ collect=page.getByRole("dialog",{name:"加入我的采集批次"});
+ await collect.getByRole("radio",{name:"加入已有批次"}).check();
+ await collect.getByRole("combobox",{name:"选择已有批次"}).selectOption({label:/SKU增量合并批次/});
+ await collect.getByRole("checkbox",{name:"全选纯棉圆领短袖T恤变体"}).uncheck();
+ await collect.getByRole("checkbox",{name:"采集变体 纯棉圆领短袖T恤 白色 / L"}).check();
+ await collect.getByRole("button",{name:"确认加入"}).click();
+ await expect(collect.getByRole("alert")).toContainText("没有新增内容");
+});
