@@ -1,14 +1,15 @@
 "use client";
 
-import { Activity, ArrowRight, Search, ShoppingCart, Store, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { Eye, MousePointerClick, ArrowRight, Search, ShoppingCart, Store, TriangleAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./cockpit-preview.module.css";
 import { SeamlessEarthGlobe } from "./seamless-earth-globe";
 import {useDemoStoreBindings} from "../store-binding-demo";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
+import {readDemoOrders} from "../stores/showcase-order-demo";
 
-type StoreSummary={id:string;name:string;platform:string;site:string;type:string;gmv:string;profit:string;trend:string;status:string};
+type StoreSummary={id:string;name:string;platform:string;site:string;type:string;gmv:string;impressions:string;clicks:string;trend:string;status:string;issue?:string};
 
 type AlertSummary={title:string;detail:string;level:string;tone:string};
 const alerts:AlertSummary[]=[];
@@ -16,7 +17,7 @@ const alerts:AlertSummary[]=[];
 export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}:{organizationId?:string;memberId?:string}={}) {
   const administrator=memberId==="admin"||getDemoMembership({organizationId,memberId})?.role==="管理员";
   const bindings=useDemoStoreBindings(organizationId,memberId,administrator);
-  const stores:StoreSummary[]=bindings.visible.filter(s=>Boolean(s.platformStoreId)).map(s=>({id:s.id,name:s.name,platform:s.platform,site:s.region,type:s.type,gmv:"—",profit:"—",trend:"—",status:"待评估"}));
+  const stores:StoreSummary[]=bindings.visible.filter(s=>Boolean(s.platformStoreId)).map(s=>({id:s.id,name:s.name,platform:s.platform,site:s.region,type:s.type,gmv:"—",impressions:"—",clicks:"—",trend:"—",status:s.connectionIssue?"需关注":"数据待接入",issue:s.connectionIssue}));
   const router = useRouter();
   const emptyFilters = { platform: "全部平台", site: "全部站点", type: "全部店铺类型", time: "全部时间", search: "" };
   const [filters, setFilters] = useState(emptyFilters);
@@ -29,9 +30,20 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
       && (activeFilters.type === "全部店铺类型" || store.type === activeFilters.type)
       && (!query || [store.name, store.platform, store.site, store.type].some(value => value.toLocaleLowerCase().includes(query)));
   });
-  const totalGmv = visibleStores.reduce((sum, store) => sum + Number(store.gmv.replace(/[^\d]/g, "")), 0);
-  const totalProfit = visibleStores.reduce((sum, store) => sum + Number(store.profit.replace(/[^\d]/g, "")), 0);
-  const formatAmount = (amount: number) => `¥${amount.toLocaleString("en-US")}`;
+  const [ordersRevision,setOrdersRevision]=useState(0);
+  useEffect(()=>{
+    const refresh=()=>setOrdersRevision(v=>v+1);
+    window.addEventListener("focus",refresh);window.addEventListener("pageshow",refresh);window.addEventListener("storage",refresh);
+    return()=>{window.removeEventListener("focus",refresh);window.removeEventListener("pageshow",refresh);window.removeEventListener("storage",refresh)};
+  },[]);
+  const demoOrders=useMemo(()=>readDemoOrders(organizationId,bindings.visible),[organizationId,bindings.visible,ordersRevision]);
+  const timeStart=activeFilters.time==="最近7天"?Date.now()-7*86400000:activeFilters.time==="最近30天"?Date.now()-30*86400000:null;
+  const visibleIds=new Set(visibleStores.map(store=>store.id));
+  const scopedOrders=demoOrders.filter(order=>visibleIds.has(order.storeId)&&(timeStart===null||(Number.isFinite(Date.parse(order.created))&&Date.parse(order.created)>=timeStart)));
+  const ordersByStore=new Map<string,number>();
+  for(const order of scopedOrders)ordersByStore.set(order.storeId,(ordersByStore.get(order.storeId)??0)+1);
+  const connectionIssues=visibleStores.filter(store=>store.issue);
+  const scopeLabel=activeFilters.time;
   const pageSize = 5;
   const pageCount = Math.max(1, Math.ceil(visibleStores.length / pageSize));
   const currentPage=Math.min(tablePage,pageCount);
@@ -47,7 +59,7 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
             <div className={styles.heroEyebrow}><span className={styles.heroPulse} aria-hidden="true" />运营总览 <span className={styles.heroEnglish}>OPERATIONS OVERVIEW</span></div>
             <h1>经营全局 · 一屏掌握</h1>
             <p className={styles.heroIntro}>汇聚多店铺经营表现、核心指标与风险动态，让每一次决策都有清晰依据。</p>
-            <div className={styles.heroScope}>当前：{visibleStores.length} 家店铺 <i aria-hidden="true" /> 全部时间 <i aria-hidden="true" /> 业务数据待接入</div>
+            <div className={styles.heroScope}>当前：{visibleStores.length} 家店铺 <i aria-hidden="true" /> {scopeLabel} <i aria-hidden="true" /> GMV / 曝光 / 点击待接入</div>
             <div className={styles.heroHighlights} aria-label="经营总览能力"><span>多店数据统一查看</span><span>经营风险快速识别</span><span>AI 执行与待办追踪</span></div>
           </div>
           <div className={styles.overviewAside}>
@@ -82,25 +94,25 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
 
     <section className={styles.digestRow} aria-label="经营表现与支持追踪">
     <section className={styles.metricsDigest} aria-label="核心经营指标">
-      <header className={styles.digestHeader}><div><h2>经营表现</h2><span>核心指标 · 按当前筛选汇总</span></div><button aria-label="更多经营表现选项">···</button></header>
+      <header className={styles.digestHeader}><div><h2>经营表现</h2><span>核心指标 · {scopeLabel} · 按当前筛选汇总</span></div><button type="button" onClick={()=>router.push("/workbench/overview/stores")}>店铺详情</button></header>
       <div className={styles.digestMain}>
-        <div className={styles.digestLead}><span>总 GMV</span><div><strong>{totalGmv?formatAmount(totalGmv):"—"}</strong><small>暂未接入经营数据</small></div><p>{visibleStores.length} 家店铺 · 经营目标见目标管理</p></div>
+        <div className={styles.digestLead}><span>总 GMV</span><div><strong>—</strong><small>平台成交金额待接入</small></div><p>{visibleStores.length} 家店铺 · {scopeLabel} · 经营目标见目标管理</p></div>
         <div className={styles.digestBars} role="img" aria-label="近一周 GMV 暂无数据">{[0, 0, 0, 0, 0, 0, 0].map((height, index) => <div key={index}><i style={{ height: `${height}%` }} /><span>{["周一", "周二", "周三", "周四", "周五", "周六", "周日"][index]}</span></div>)}</div>
       </div>
       <div className={styles.digestDetails}>
-        <article><span className={styles.digestLabel}><ShoppingCart size={15}/>订单量</span><strong>—</strong><small>多店订单汇总待接入</small><div className={styles.digestProgress}><i data-tone="purple"/></div></article>
-        <article><span className={styles.digestLabel}><Activity size={15}/>净利润</span><strong>{totalProfit?formatAmount(totalProfit):"—"}</strong><small>净利率待业务接入</small><div className={styles.digestProgress}><i data-tone="cyan"/></div></article>
-        <article><span className={styles.digestLabel}><Activity size={15}/>经营健康度</span><strong>—</strong><small>多店评分口径待接入</small><div className={styles.digestProgress}><i data-tone="red"/></div></article>
+        <article><span className={styles.digestLabel}><ShoppingCart size={15}/>订单量</span><strong>{scopedOrders.length?scopedOrders.length.toLocaleString("zh-CN"):"—"}</strong><small>{scopedOrders.length?"当前范围演示订单 · 非实时平台数据":"平台订单未接入，当前无演示订单"}</small><div className={styles.digestProgress}><i data-tone="purple"/></div></article>
+        <article><span className={styles.digestLabel}><Eye size={15}/>曝光量</span><strong>—</strong><small>平台商品曝光统计待接入</small><div className={styles.digestProgress}><i data-tone="cyan"/></div></article>
+        <article><span className={styles.digestLabel}><MousePointerClick size={15}/>点击量</span><strong>—</strong><small>平台商品点击统计待接入</small><div className={styles.digestProgress}><i data-tone="red"/></div></article>
       </div>
     </section>
     <article className={styles.supportTracker}>
       <header><h2>经营预警</h2><button type="button" className={styles.alertLink} onClick={() => router.push("/workbench/overview/alerts")}>查看全部预警 <ArrowRight size={13}/></button></header>
       <div className={styles.supportTrackerBody}>
         <div className={styles.supportAlertSummary}>
-          <div className={styles.alertCountSummary}><strong>{alerts.length}</strong><small>项</small><span>待处理预警</span></div>
-          <ul>{alerts.length===0?<li>暂无经营预警，接入店铺与订单后再生成。</li>:null}{alerts.map(item => <li key={item.title} data-tone={item.tone}><i><TriangleAlert size={16}/></i><span><b>{item.title}</b><small>{item.detail}</small></span><em>{item.level}</em></li>)}</ul>
+          <div className={styles.alertCountSummary}><strong>{connectionIssues.length||"—"}</strong><small>项</small><span>店铺连接需关注</span></div>
+          <ul>{connectionIssues.length===0?<li>当前筛选没有已记录的店铺连接异常，经营风险数据仍待接入。</li>:null}{connectionIssues.map(item=><li key={item.id} data-tone="amber"><i><TriangleAlert size={16}/></i><span><b>{item.name}</b><small>{item.issue} · 请前往店铺中心检测连接</small></span><em>需关注</em></li>)}</ul>
         </div>
-        <div className={styles.supportGauge} role="img" aria-label="高风险预警占比暂无数据">
+        <div className={styles.supportGauge} role="img" aria-label="经营风险占比暂无数据">
           <svg viewBox="0 0 200 200" aria-hidden="true">
             {Array.from({ length: 28 }, (_, index) => {
               const angle = -135 + index * (270 / 27);
@@ -114,21 +126,20 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
     </section>
 
     <section className={`${styles.panel} ${styles.storeMatrixPanel}`}>
-      <header><div><span>店铺矩阵</span><h2>{visibleStores.length} 家店铺 · GMV / 净利润 / 环比</h2></div><button className={styles.linkButton} onClick={() => router.push("/workbench/overview/stores")}>查看全部店铺 <ArrowRight size={13}/></button></header>
+      <header><div><span>店铺矩阵</span><h2>{visibleStores.length} 家店铺 · 订单 / 曝光 / 点击</h2></div><button className={styles.linkButton} onClick={() => router.push("/workbench/overview/stores")}>查看全部店铺 <ArrowRight size={13}/></button></header>
       <div className={styles.matrixTable} role="table" aria-label="店铺经营数据">
-        <div className={styles.matrixHead} role="row"><span><input type="checkbox" aria-label="全选当前页店铺"/></span><b>店铺</b><b>平台 / 站点</b><b>GMV</b><b>净利润</b><b>环比</b><b>经营状态</b><b>GMV 占比</b></div>
+        <div className={styles.matrixHead} role="row"><span><input type="checkbox" aria-label="全选当前页店铺"/></span><b>店铺</b><b>平台 / 站点</b><b>演示订单</b><b>曝光量</b><b>点击量</b><b>连接状态</b><b>数据状态</b></div>
         {pageStores.map(row => {
-          const share = totalGmv ? Math.round(Number(row.gmv.replace(/[^\d]/g, "")) / totalGmv * 100) : 0;
+          const demoOrderCount=ordersByStore.get(row.id)??0;
           return <div className={styles.matrixRow} role="row" key={row.id}>
             <span><input type="checkbox" aria-label={`选择${row.name}`}/></span>
             <span className={styles.matrixStore}><i><Store size={15}/></i><strong>{row.name}<small>{row.type}</small></strong></span>
-            <span>{row.platform} · {row.site}</span><b>{row.gmv}</b><b>{row.profit}</b>
-            <b data-trend={row.trend.startsWith("+") ? "up" : "down"}>{row.trend}</b>
-            <em data-status={row.status}>{row.status}</em>
-            <span className={styles.matrixProgress}><i><b style={{ width: `${share}%` }}/></i><small>{totalGmv?share+"%":"—"}</small></span>
+            <span>{row.platform} · {row.site}</span><b>{demoOrderCount||"—"}</b><b>{row.impressions}</b><b>{row.clicks}</b>
+            <em data-status={row.status}>{row.issue??"未发现连接异常"}</em>
+            <span className={styles.matrixProgress}><small>{demoOrderCount?"含演示订单":"平台指标待接入"}</small></span>
           </div>;
         })}
-        {visibleStores.length === 0 ? <p className={styles.empty}>暂无已接入的店铺经营数据</p> : null}
+        {visibleStores.length === 0 ? <p className={styles.empty}>当前筛选无已绑定且获取平台 ID 的店铺</p> : null}
       </div>
       <footer className={styles.matrixFooter}>
         <span>显示 {visibleStores.length ? (tablePage - 1) * pageSize + 1 : 0} 至 {Math.min(tablePage * pageSize, visibleStores.length)} 条，共 {visibleStores.length} 条</span>
