@@ -69,33 +69,18 @@ test("recent/saved action panels inherit light and dark palette",async({page})=>
 });
 
 
-test("Chat home three entry cards are compact and keep links and examples visible",async({page})=>{
+test("ShuoMi Chat opens composer directly without intro landing or horizontal tabs",async({page})=>{
  await page.setViewportSize({width:1600,height:900});
  await page.goto("/shuomi/#/workbench/ai/chat");
- const entries=page.getByRole("region",{name:"会话入口"});
- await expect(entries).toBeVisible();
- const cards=entries.locator(":scope > *");
- await expect(cards).toHaveCount(3);
- const bounds=await cards.evaluateAll(elements=>elements.map(element=>{
-  const rect=element.getBoundingClientRect();
-  return {top:rect.top,height:rect.height,width:rect.width};
- }));
- for(const card of bounds){
-  expect(card.height).toBeLessThan(285);
-  expect(card.height).toBeGreaterThan(165);
-  expect(Math.abs(card.top-bounds[0].top)).toBeLessThan(3);
- }
- expect(Math.max(...bounds.map(card=>card.height))-Math.min(...bounds.map(card=>card.height))).toBeLessThan(3);
- for(const name of ["新建会话","最近会话","收藏会话"]){
-  const card=entries.locator('[class*="landingCard"]').filter({has:page.getByRole("heading",{name,exact:true})});
-  await expect(card.getByText("使用示例")).toBeVisible();
- }
- // The create action can live in the page header; entry-card copy must not imply edit permission.
- await expect(entries.getByRole("heading",{name:"新建会话",exact:true})).toBeVisible();
- await expect(entries.getByRole("link",{name:/查看最近会话/})).toBeVisible();
- await expect(entries.getByRole("link",{name:/进入收藏会话/})).toBeVisible();
+ const composer=page.locator('[data-conversation-composer="stable"]');
+ await expect(composer).toBeVisible();
+ await expect(page.getByRole("region",{name:"会话入口"})).toHaveCount(0);
+ await expect(page.getByRole("navigation",{name:"会话视图"})).toHaveCount(0);
+ await expect(composer.getByLabel("描述你的业务目标")).toBeVisible();
+ await expect(page.getByRole("complementary",{name:"选择执行方式"})).toBeVisible();
+ await expect(page.getByRole("button",{name:"介绍发起任务"})).toBeVisible();
+ await expect(page.getByRole("button",{name:"介绍加入我的项目"})).toBeVisible();
 });
-
 test("new chat keeps task and schedule demo inside one conversation and orders task below chat",async({page})=>{
  await page.goto("/shuomi/#/workbench/ai/chat/new");
  const modes=page.getByRole("complementary",{name:"选择执行方式"});
