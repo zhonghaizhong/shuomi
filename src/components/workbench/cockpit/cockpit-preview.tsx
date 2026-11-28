@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./cockpit-preview.module.css";
 import { SeamlessEarthGlobe } from "./seamless-earth-globe";
-import {useDemoStoreBindings} from "../store-binding-demo";
+import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
 import {readDemoOrders} from "../stores/showcase-order-demo";
 
@@ -14,7 +14,7 @@ type StoreSummary={id:string;name:string;platform:string;site:string;type:string
 export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}:{organizationId?:string;memberId?:string}={}) {
   const administrator=memberId==="admin"||getDemoMembership({organizationId,memberId})?.role==="管理员";
   const bindings=useDemoStoreBindings(organizationId,memberId,administrator);
-  const stores:StoreSummary[]=bindings.visible.filter(s=>Boolean(s.platformStoreId)).map(s=>({id:s.id,name:s.name,platform:s.platform,site:s.region,type:s.type,impressions:"—",clicks:"—",status:s.connectionIssue?"需关注":"数据待接入",issue:s.connectionIssue}));
+  const stores:StoreSummary[]=bindings.visible.filter(s=>Boolean(s.platformStoreId)).map(s=>({id:s.id,name:s.name,platform:s.platform,site:s.region,type:s.type,impressions:"—",clicks:"—",status:s.connectionIssue||!demoStoreServiceActive(s)?"需关注":"数据待接入",issue:s.connectionIssue??(!demoStoreServiceActive(s)?"店铺服务期已到期":undefined)}));
   const router = useRouter();
   const emptyFilters = { platform: "全部平台", site: "全部站点", type: "全部店铺类型", time: "全部时间", search: "" };
   const [filters, setFilters] = useState(emptyFilters);
@@ -103,20 +103,20 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
       </div>
     </section>
     <article className={styles.supportTracker}>
-      <header><h2>经营预警</h2><button type="button" className={styles.alertLink} onClick={() => router.push("/workbench/overview/alerts")}>查看全部预警 <ArrowRight size={13}/></button></header>
+      <header><h2>店铺连接提醒</h2><button type="button" className={styles.alertLink} onClick={() => router.push("/workbench/store-center")}>检查店铺 <ArrowRight size={13}/></button></header>
       <div className={styles.supportTrackerBody}>
         <div className={styles.supportAlertSummary}>
           <div className={styles.alertCountSummary}><strong>{connectionIssues.length||"—"}</strong><small>项</small><span>店铺连接需关注</span></div>
-          <ul>{connectionIssues.length===0?<li>当前筛选没有已记录的店铺连接异常，经营风险数据仍待接入。</li>:null}{connectionIssues.map(item=><li key={item.id} data-tone="amber"><i><TriangleAlert size={16}/></i><span><b>{item.name}</b><small>{item.issue} · 请前往店铺中心检测连接</small></span><em>需关注</em></li>)}</ul>
+          <ul>{connectionIssues.length===0?<li>当前筛选没有已记录的店铺连接异常，经营风险评级仍待平台经营数据接入。</li>:null}{connectionIssues.map(item=><li key={item.id} data-tone="amber"><i><TriangleAlert size={16}/></i><span><b>{item.name}</b><small>{item.issue} · 请前往店铺中心检测连接</small></span><em>需关注</em></li>)}</ul>
         </div>
-        <div className={styles.supportGauge} role="img" aria-label="经营风险占比暂无数据">
+        <div className={styles.supportGauge} role="img" aria-label="经营风险占比暂无真实数据">
           <svg viewBox="0 0 200 200" aria-hidden="true">
             {Array.from({ length: 28 }, (_, index) => {
               const angle = -135 + index * (270 / 27);
               return <line key={index} x1="100" y1="19" x2="100" y2="34" transform={`rotate(${angle} 100 100)`} data-active="false"/>;
             })}
           </svg>
-          <span><small>高风险占比</small><strong>—</strong></span>
+          <span><small>经营风险占比</small><strong>—</strong></span>
         </div>
       </div>
     </article>
@@ -129,7 +129,7 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
         {pageStores.map(row => {
           const demoOrderCount=ordersByStore.get(row.id)??0;
           return <div className={styles.matrixRow} role="row" key={row.id}>
-            <span><button type="button" aria-label={`查看${row.name}的店铺详情`} onClick={()=>router.push("/workbench/overview/stores")}>查看</button></span>
+            <span><button type="button" aria-label={`查看${row.name}的店铺详情`} onClick={()=>router.push("/workbench/store-center")}>查看</button></span>
             <span className={styles.matrixStore}><i><Store size={15}/></i><strong>{row.name}<small>{row.type}</small></strong></span>
             <span>{row.platform} · {row.site}</span><b>{demoOrderCount||"—"}</b><b>{row.impressions}</b><b>{row.clicks}</b>
             <em data-status={row.status}>{row.issue??"未发现连接异常"}</em>
@@ -139,7 +139,7 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
         {visibleStores.length === 0 ? <p className={styles.empty}>当前筛选无已绑定且获取平台 ID 的店铺</p> : null}
       </div>
       <footer className={styles.matrixFooter}>
-        <span>显示 {visibleStores.length ? (tablePage - 1) * pageSize + 1 : 0} 至 {Math.min(tablePage * pageSize, visibleStores.length)} 条，共 {visibleStores.length} 条</span>
+        <span>显示 {visibleStores.length ? (currentPage - 1) * pageSize + 1 : 0} 至 {Math.min(currentPage * pageSize, visibleStores.length)} 条，共 {visibleStores.length} 条</span>
         <nav aria-label="店铺表格分页">
           <button onClick={() => setTablePage(1)} disabled={tablePage === 1} aria-label="第一页">«</button>
           <button onClick={() => setTablePage(page => Math.max(1, page - 1))} disabled={tablePage === 1} aria-label="上一页">‹</button>
