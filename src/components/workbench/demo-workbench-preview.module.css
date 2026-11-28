@@ -5142,3 +5142,23 @@
 :global(.light) .riskTable .alertRow:nth-child(odd),:global(.light) .riskEvidence,:global(.light) .riskDialog textarea,:global(.light) .adviceDetail textarea{background:#f8f7fa;color:#444050;border-color:#e6e6f1}
 :global(.light) .riskTable .alertRow small,:global(.light) .riskAdviceQueue small{color:#6f6b7d}
 :global(.light) .riskTable .alertRow [data-risk="高风险"]{color:#b42335}:global(.light) .riskTable .alertRow [data-risk="中风险"],:global(.light) .riskTable .alertRow [data-risk="待处理"]{color:#99540a}:global(.light) .riskTable .alertRow [data-risk="处理中"]{color:#2858a5}:global(.light) .riskTable .alertRow [data-risk="已恢复"]{color:#168548}
+
+/* Keep existing alert metric appearance, make whole card interactive. */
+.riskMetricCards article{position:relative}
+.riskMetricCards article>button{display:flex;align-items:center;gap:15px;width:100%;height:100%;padding:0;text-align:left;background:transparent;color:inherit;border:0;font:inherit;cursor:pointer}
+.riskMetricCards article>button>strong{display:grid;place-items:center;width:52px;height:50px;flex:none;border-radius:6px;font-size:24px;font-weight:650;color:var(--accent);background:color-mix(in srgb,var(--accent),transparent 76%)}
+.riskMetricCards article>button>span{display:grid;gap:5px}
+.riskMetricCards article[data-selected="true"]{border-color:var(--accent)}
+.riskMetricCards article>button:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:5px}
+.riskTable .alertColumns>*,.riskTable .alertRow>*{text-align:left;justify-self:stretch;align-self:center}
+.riskTable .alertColumns>b:last-child{text-align:center}
+.riskTable .alertRow>.riskActions{justify-content:center;display:flex;flex-wrap:nowrap}
+.riskTable .alertRow>.riskActions>button{width:auto;min-width:76px;flex:0 0 auto}
+.riskTable .alertRow>span>small,.riskTable .alertRow>span>strong{text-align:left}
+.riskTable .alertRow:hover{border-color:#52576e}
+.riskFactGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.riskFactGrid>div{display:grid;gap:5px;padding:10px;border:1px solid #52576e;border-radius:6px}
+.riskFactGrid small{color:#acabc1}
+:global(.light) .riskFactGrid>div{border-color:#e6e6f1}
+:global(.light) .riskFactGrid small{color:#6f6b7d}
+:global(.light) .riskMetricCards article>button>strong{color:var(--accent);background:color-mix(in srgb,var(--accent),white 83%)}
