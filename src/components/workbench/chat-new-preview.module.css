@@ -588,7 +588,7 @@
 @media(max-width:600px){.guideDialog{padding:16px}.guideSteps{grid-template-columns:1fr}.guideSteps>div{min-height:0}}
 
 /* Keep example cards pale in the light workspace, including pointer hover. */
-:global(.light) .workspace .examples > div > button {background:#fff;}
+:global(.light) .workspace .examples > div > button {background:#fff;transition:border-color .16s,transform .16s;}
 :global(.light) .workspace .examples > div > button:hover {background:#f1efff;}
 
 /* Full-size, result-specific preview dialogs: reports, skills and knowledge. */
