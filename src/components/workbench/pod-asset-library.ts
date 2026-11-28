@@ -30,6 +30,34 @@ export function setPodOriginalHidden(org:string,member:string,hidden:boolean):vo
  }catch{throw Error("浏览器无法保存素材可见性设置，请检查网站存储权限")}
  window.dispatchEvent(new CustomEvent("shuomi:pod:asset-library:change",{detail:{organizationId:org,memberId:member}}));
 }
+/** Recoverable deleted personal assets, scoped by organization/member.
+ * Demo images are stored in sessionStorage only; a closed browser session
+ * cannot restore their bytes. Production requires durable backend storage.
+ */
+const trashKey=(org:string,member:string)=>
+ "shuomi:pod:asset-trash:v1:"+encodeURIComponent(org)+":"+encodeURIComponent(member);
+export function readPodAssetTrash(org:string,member:string):PodLibraryAsset[]{
+ if(typeof window==="undefined")return [];
+ try{
+  const data:unknown=JSON.parse(sessionStorage.getItem(trashKey(org,member))||"[]");
+  if(!Array.isArray(data))return [];
+  return data.filter((item):item is PodLibraryAsset=>Boolean(item&&typeof item==="object"&&typeof item.id==="number"&&typeof item.name==="string"&&typeof item.style==="number"&&typeof item.category==="string"&&("dataUrl" in item||"image" in item||"archivePath" in item)));
+ }catch{return []}
+}
+export function trashPodAsset(org:string,member:string,asset:PodLibraryAsset):void{
+ if(typeof window==="undefined")throw Error("浏览器存储不可用");
+ const previous=readPodAssetTrash(org,member);
+ try{sessionStorage.setItem(trashKey(org,member),JSON.stringify([asset,...previous.filter(x=>x.id!==asset.id)]))}
+ catch{throw Error("回收站空间不足，未移除素材，以免无法恢复")}
+}
+export function untrashPodAsset(org:string,member:string,id:number):PodLibraryAsset|null{
+ const previous=readPodAssetTrash(org,member);
+ const item=previous.find(a=>a.id===id);
+ if(!item)return null;
+ try{sessionStorage.setItem(trashKey(org,member),JSON.stringify(previous.filter(a=>a.id!==id)))}
+ catch{throw Error("未能更新回收站")}
+ return item;
+}
 export function readPodLibrary(organizationId:string,memberId:string):PodLibraryAsset[]{
  if(typeof window==="undefined")return [];
  // Checked-in demo art stays visible in every browser, not sessionStorage.
