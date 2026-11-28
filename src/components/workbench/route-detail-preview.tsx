@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./route-detail-preview.module.css";
 import dataCustomStyles from "./showcase-data-customization-dialog.module.css";
+import {customDeliveryDemo,canSeeCustomDelivery,customDeliveryUrl} from "./showcase-custom-delivery-demo";
 import {WorkbenchDateRange} from "./workbench-date-picker";
 import { plansDemoDisplay, plansDemoFacts, plansDemoWalletCredit, plansDemoPurchases, plansDemoRates } from "./plans-demo-facts";
 import {readDemoPurchases,writeDemoPurchases,useDemoPurchases,type DemoPurchase} from "./showcase-purchases";
@@ -661,7 +662,7 @@ const dataFlow=[["提交需求","说明数据来源、范围及用途"],["确认
 function DataCustomizationDemo({organizationId,memberId,onClose}:{organizationId:string;memberId:string;onClose:()=>void}){
  const key="shuomi:data-custom-demo:"+JSON.stringify([organizationId,memberId]);
  const [tab,setTab]=useState("定制介绍"),[form,setForm]=useState<CustomDataForm>(emptyCustomData);
- const [records,setRecords]=useState<CustomDataRecord[]>(()=>{try{const value=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(value)?value:[]}catch{return []}});
+ const [records,setRecords]=useState<CustomDataRecord[]>(()=>{let stored:CustomDataRecord[]=[];try{const value=JSON.parse(localStorage.getItem(key)||"[]");if(Array.isArray(value))stored=value.filter(x=>x?.id!==customDeliveryDemo.id)}catch{}return canSeeCustomDelivery(organizationId,memberId)?[customDeliveryDemo,...stored]:stored});
  const [selected,setSelected]=useState<string|null>(null),[error,setError]=useState(""),[search,setSearch]=useState(""),[query,setQuery]=useState(""),[page,setPage]=useState(1);
  const ref=useRef<HTMLDialogElement>(null),body=useRef<HTMLDivElement>(null);
  useEffect(()=>{const previous=document.activeElement;const d=ref.current;if(d&&!d.open)d.showModal();return()=>{d?.close();if(previous instanceof HTMLElement&&previous.isConnected)previous.focus()}},[]);
@@ -697,7 +698,7 @@ function DataCustomizationDemo({organizationId,memberId,onClose}:{organizationId
  <div className={dataCustomStyles.flow}>{dataFlow.map(([a,b],i)=><article key={a} data-active={i===activeStep&&record.stage!==5} data-complete={i<activeStep||record.stage===5}><b>0{i+1}</b><div><strong>{a}</strong><p>{i<activeStep||record.stage===5?"已完成":i===activeStep?customDataSteps[record.stage]:"待开始"}</p></div></article>)}</div>
  <dl className={dataCustomStyles.facts}>{[["数据来源",record.source],["数据条数",record.quantity],["更新频率",record.frequency],["交付方式",record.delivery],["数据范围及字段要求",record.fields],["补充要求",record.notes||"无"]].map(([a,b])=><div key={a}><dt>{a}</dt><dd>{b}</dd></div>)}</dl>
  {record.stage>=1&&<div className={dataCustomStyles.lead}><h3>方案与报价（演示）</h3><p>¥{quote(record).toLocaleString("zh-CN")} · 预计 7 个工作日 · 不产生真实扣款</p></div>}
- {record.stage>=4&&<div className={dataCustomStyles.lead}><h3>交付成果（演示）</h3><p>已生成演示交付清单，不含真实数据或 API 凭证。</p><button type="button" onClick={()=>exportSample(record)}>下载交付清单</button></div>}
+ {record.stage>=4&&<div className={dataCustomStyles.lead}><h3>交付成果（演示）</h3>{record.id===customDeliveryDemo.id?<><p>V1 · 已交付 3 条公开商品样本 · 已完成验收（演示） · 2026-11-28。价格及库存未核实留空。可在「我的数据 / 数据集」查看同一版本。</p><a href={customDeliveryUrl("csv")} download="amazon-us-drinkware-v1.csv">下载 CSV 数据集</a>{" · "}<a href={customDeliveryUrl("json")} download="amazon-us-drinkware-v1.json">下载 JSON 数据集</a></>:<><p>已生成演示交付清单，不含真实数据或 API 凭证。</p><button type="button" onClick={()=>exportSample(record)}>下载交付清单</button></>}</div>}
  </section>:<section className={dataCustomStyles.detail}><div className={dataCustomStyles.detailHead}><h3>需求记录 <small>共 {records.length} 项</small></h3></div><form className={dataCustomStyles.search} onSubmit={e=>{e.preventDefault();setQuery(search.trim());setPage(1)}}><input aria-label="搜索定制需求" placeholder="搜索需求名称 / 编号" value={search} onChange={e=>setSearch(e.target.value)}/><button type="submit">确认</button></form>
  {filtered.length?<><div className={dataCustomStyles.tableWrap}><table><thead><tr><th>需求名称 / 编号</th><th>数据来源</th><th>交付方式</th><th>当前状态</th><th>提交时间</th><th>操作</th></tr></thead><tbody>{filtered.slice((currentPage-1)*10,currentPage*10).map(x=><tr key={x.id}><td><strong>{x.name}</strong><small>{x.id}</small></td><td>{x.source}</td><td>{x.delivery}</td><td><span className={dataCustomStyles.status}>{customDataSteps[x.stage]}</span></td><td>{new Date(x.created).toLocaleDateString("zh-CN")}</td><td><button type="button" onClick={()=>setSelected(x.id)}>查看详情</button></td></tr>)}</tbody></table></div><div className={dataCustomStyles.paging}><span>第 {currentPage} / {pages} 页</span><button type="button" disabled={currentPage===1} onClick={()=>setPage(currentPage-1)}>上一页</button><button type="button" disabled={currentPage===pages} onClick={()=>setPage(currentPage+1)}>下一页</button></div></>:<p className={dataCustomStyles.empty}>{records.length?"没有匹配的需求":"暂无定制需求，可在「提交需求」创建。"}</p>}
  </section>}

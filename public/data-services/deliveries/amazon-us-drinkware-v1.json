@@ -1,0 +1,53 @@
+[
+  {
+    "asin": "B0FJN3BTPV",
+    "site": "us",
+    "title": "Owala FreeSip 24 oz Black Cherry",
+    "brand": "Owala",
+    "material": "Stainless steel",
+    "color": "Black Cherry",
+    "size_label": "24 oz",
+    "rating": 4.6,
+    "reviewCount": 144150,
+    "sourceUrl": "https://www.amazon.com/dp/B0FJN3BTPV",
+    "price": null,
+    "currency": "USD",
+    "availability": null,
+    "observedOn": "2026-11-28",
+    "sourceNote": "Indexed public listing snapshot; not live inventory or price"
+  },
+  {
+    "asin": "B0DTN5FBMZ",
+    "site": "us",
+    "title": "Stanley IceFlow Fast Flow 36 oz Rose Quartz",
+    "brand": "STANLEY",
+    "material": "Stainless steel",
+    "color": "Rose Quartz",
+    "size_label": "36 oz (listing title; detail capacity conflicts)",
+    "rating": 4.6,
+    "reviewCount": 7317,
+    "sourceUrl": "https://us.amazon.com/STANLEY-IceFlow-Fast-Bottle-Quartz/dp/B0DTN5FBMZ",
+    "price": null,
+    "currency": "USD",
+    "availability": null,
+    "observedOn": "2026-11-28",
+    "sourceNote": "Indexed public listing snapshot; not live inventory or price"
+  },
+  {
+    "asin": "B0GH2F3QLG",
+    "site": "us",
+    "title": "Simple Modern Disney Trek 40 oz Tumbler",
+    "brand": "Simple Modern",
+    "material": "Stainless steel",
+    "color": "Minnie Mouse Valentine's",
+    "size_label": "40 oz",
+    "rating": 4.8,
+    "reviewCount": 1708,
+    "sourceUrl": "https://us.amazon.com/dp/B0GH2F3QLG",
+    "price": null,
+    "currency": "USD",
+    "availability": null,
+    "observedOn": "2026-11-28",
+    "sourceNote": "Indexed public listing snapshot; not live inventory or price"
+  }
+]
