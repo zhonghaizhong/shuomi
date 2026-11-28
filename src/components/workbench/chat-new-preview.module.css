@@ -565,3 +565,24 @@
 .approvalActions .draftDetails{max-width:100%;box-sizing:border-box}
 .inlineConfirmation .draftDetails{flex:0 0 auto}
 @media(max-width:540px){.draftDetails{padding:10px}.draftDetails dl>div{grid-template-columns:1fr;gap:3px}}
+
+/* Centered introductions for every work mode; separate from draft inspection. */
+.guideBackdrop{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(8,12,25,.68)}
+.guideDialog{display:grid;gap:17px;width:min(680px,100%);max-height:calc(100dvh - 44px);overflow:auto;border:1px solid var(--cn-border-strong);border-radius:11px;background:var(--cn-surface);color:var(--cn-text);box-shadow:0 24px 70px #0005;padding:22px 24px}
+.guideDialog>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--cn-border)}
+.guideDialog>header>div{display:grid;gap:6px}
+.guideDialog>header small{font-size:12px;color:var(--cn-muted)}
+.guideDialog>header h2{margin:0;font-size:19px;color:var(--cn-heading);line-height:1.45}
+.guideDialog>header button{height:34px;border-radius:6px;border:1px solid var(--cn-border-strong);background:var(--cn-inset);color:var(--cn-text);cursor:pointer;padding:0 12px}
+.guideDialog>p,.guideOutcome p{margin:0;font-size:14px;line-height:1.7;color:var(--cn-muted)}
+.guideDialog h3{margin:0;font-size:14px;color:var(--cn-heading)}
+.guideSteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.guideSteps>div{display:grid;align-content:start;gap:8px;min-height:100px;padding:12px;border:1px solid var(--cn-border);border-radius:8px;background:var(--cn-inset)}
+.guideSteps b{font-size:13px;color:var(--cn-link)}
+.guideSteps span{font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.guideOutcome{display:grid;gap:7px;padding:14px;border:1px solid var(--cn-border);border-radius:8px;background:var(--cn-raised)}
+.guideOutcome strong{color:var(--cn-heading);font-size:13px}
+.guideOutcome span{color:var(--cn-muted);font-size:12px}
+.guideDialog>footer{display:flex;justify-content:flex-end;padding-top:5px}
+.guideDialog>footer button{height:36px;padding:0 18px}
+@media(max-width:600px){.guideDialog{padding:16px}.guideSteps{grid-template-columns:1fr}.guideSteps>div{min-height:0}}
