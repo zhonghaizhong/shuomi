@@ -40,7 +40,7 @@ export function readKnowledgeState(org:string,member:string):KnowledgeState{
   const value=JSON.parse(raw);
   if(!Array.isArray(value.groups)||!Array.isArray(value.items))return blank();
   const groups=value.groups.filter((g:unknown):g is string=>typeof g==="string"&&g.trim().length>0&&g.length<=40).slice(0,100);
-  const items=value.items.filter((x:KnowledgeItem)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&typeof x.description==="string"&&["官方","我的"].includes(x.origin)&&typeof x.group==="string").slice(0,200);
+  const items:KnowledgeItem[]=value.items.filter((x:KnowledgeItem)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&typeof x.description==="string"&&["官方","我的"].includes(x.origin)&&typeof x.group==="string").slice(0,200);
   const demo=seeded(org,member);return {groups,items:[...items.filter(x=>!demo.some(d=>d.id===x.id)),...demo.map(d=>items.find(x=>x.id===d.id)??d)]};
  }catch{return {groups:[],items:seeded(org,member)}}
 }
