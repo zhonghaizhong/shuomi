@@ -289,3 +289,18 @@
 .skuExceptionFields label{display:grid;gap:5px;min-width:0;font-size:11px;color:var(--text)}
 .preferredApplyModal .skuExceptionFields input{width:100%;min-width:0;min-height:36px;padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit}
 @media(max-width:700px){.skuExceptionFields{grid-template-columns:repeat(2,minmax(0,1fr))}.skuExceptionHead{flex-wrap:wrap}.skuExceptionHead>div{flex-basis:100%}}
+
+/* Apparel preferred applications: direct SKU attributes and selective batch fill. */
+.skuFullTable{max-height:400px;overflow:auto;scrollbar-gutter:stable}
+.skuFullTable table{min-width:990px}
+.skuFullTable th{font-size:11px;white-space:nowrap}
+.skuFullTable td{padding:9px 7px}
+.skuFullTable td:first-child{min-width:46px;width:46px;text-align:center}
+.skuFullTable td:nth-child(2){min-width:200px}
+.skuFullTable td:nth-child(3),.skuFullTable td:nth-child(4),.skuFullTable td:nth-child(5){min-width:100px}
+.skuFullTable td:nth-child(6){min-width:120px}
+.skuFullTable td:nth-child(7){min-width:165px}
+.skuFullTable td input[type=number],.skuFullTable td input:not([type]){max-width:none;width:100%;min-width:80px}
+.skuFullTable td input[type=checkbox]{width:17px;min-height:17px;height:17px;accent-color:#7367f0}
+.skuFullTable td:nth-child(2) strong{white-space:normal}
+.preferredApplyModal .applyTools button:disabled{opacity:.45;cursor:not-allowed}
