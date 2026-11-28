@@ -64,9 +64,9 @@ test("selected product detail uses square gallery, SKU switching and per-item se
  const detail=page.getByRole("dialog",{name:"优选商品详情"});
  await expect(detail).toBeVisible();
  await expect(detail.getByLabel("商品图片轮播")).toBeVisible();
- await expect(detail.getByText("质检费用")).toBeVisible();
- await expect(detail.getByText("打包费用")).toBeVisible();
- await expect(detail.getByText("贴标费用")).toBeVisible();
+ await expect(detail.getByText("质检 / 打包 / 贴标")).toBeVisible();
+ await expect(detail.locator('[class*="galleryColumn"] [aria-label="目标国家成本测算"]')).toBeVisible();
+ await expect(detail.getByRole("heading",{name:"目标国家及成本"})).toBeVisible();
  await detail.getByRole("button",{name:"选择变体 黑色 / L"}).click();
  await expect(detail.getByText("SKU：SMYX-001-BK-L")).toBeVisible();
  await expect(detail.getByText("库存：900")).toBeVisible();
