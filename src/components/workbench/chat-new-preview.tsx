@@ -231,6 +231,10 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
           <label><span>执行时间</span><input type="time" value={scheduleTime} onChange={event => setScheduleTime(event.target.value)} /></label>
           <p>确认后会生成定时任务演示草案，不会真实创建任务。</p>
         </section>}
+        {modeIndex===2&&<section className={styles.scheduleFields}><label><span>项目名称</span><input aria-label="项目名称" value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="请输入项目名称" required/></label>{projectEntry.template&&<p>项目模板：{projectEntry.template.name}</p>}<p>确认后保存本地演示项目并自动关联会话。</p></section>}
+        <div className={styles.confirmSummary}>{modeIndex === 1 && <><span>执行安排</span><strong>{scheduleDescription}</strong></>}<span>执行方式</span><strong>{mode.title}</strong><span>工作内容</span><p>{draft}</p><span>关联店铺</span><p>{selectedStores.length ? selectedStores.join("、") : "未关联店铺"}</p><span>引用资源</span><p>{selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配"}</p></div>
+        <footer className={styles.drawerFooter}><button onClick={() => setConfirmation(false)}>返回修改</button><button className={styles.primary} onClick={confirmAction}>确认并继续</button></footer>
+        </section>}
         <label className={styles.srOnly} htmlFor="chat-new-prompt">描述你的业务目标</label>
         <textarea id="chat-new-prompt" maxLength={2000} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); submit(); } }} placeholder={chatActive ? "继续输入，按 Ctrl / ⌘ + Enter 发送…" : mode.placeholder} />
         {(selectedResources.length > 0 || selectedStores.length > 0 || files.length > 0) && <div className={styles.selectedTags}>
@@ -281,9 +285,6 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
     </div>}
 
 
-        {modeIndex===2&&<section className={styles.scheduleFields}><label><span>项目名称</span><input aria-label="项目名称" value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="请输入项目名称" required/></label>{projectEntry.template&&<p>项目模板：{projectEntry.template.name}</p>}<p>确认后保存本地演示项目并自动关联会话。</p></section>}
-        <div className={styles.confirmSummary}>{modeIndex === 1 && <><span>执行安排</span><strong>{scheduleDescription}</strong></>}<span>执行方式</span><strong>{mode.title}</strong><span>工作内容</span><p>{draft}</p><span>关联店铺</span><p>{selectedStores.length ? selectedStores.join("、") : "未关联店铺"}</p><span>引用资源</span><p>{selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配"}</p></div>
-        <footer className={styles.drawerFooter}><button onClick={() => setConfirmation(false)}>返回修改</button><button className={styles.primary} onClick={confirmAction}>确认并继续</button></footer>
-        </section>}
+
   </div>;
 }
