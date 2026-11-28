@@ -36,11 +36,11 @@ const stores = [
   ["品牌旗舰店", "Amazon", "英国站", "自营店"],
 ];
 
-type Props = { onAction: (label: string) => void;organizationId?:string;memberId?:string };
+type Props = { organizationId?:string;memberId?:string };
 type ApprovalKind = "knowledge" | "skill" | "report";
 type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; approval?: ApprovalKind };
 
-export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberId="admin" }: Props) {
+export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin" }: Props) {
   const router=useRouter();
   const [projectEntry]=useState(()=>{const q=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const id=q.get("projectId");const template=projectTemplates.find(t=>t.name===q.get("projectTemplate"));const project=readPreviewProjects().find(p=>p.id===id&&p.status!=="已归档");return {mode:q.get("projectMode"),template,project}});
   const [linkedProjectId,setLinkedProjectId]=useState(projectEntry.project?.id||"");
@@ -71,12 +71,13 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
   const [chatActive, setChatActive] = useState(false);
   
   const [messages, setMessages] = useState<PreviewMessage[]>([]);
+  const [feedback,onAction]=useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const mode = modes[modeIndex];
   useEffect(() => {
     if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
-  }, [chatActive, messages]);
+  }, [chatActive, messages, feedback, confirmation]);
 
   const toggle = (values: string[], value: string, setter: (v: string[]) => void) => {
     setter(values.includes(value) ? values.filter(item => item !== value) : [...values, value]);
@@ -136,7 +137,7 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
     : scheduleFrequency === "weekly"
       ? "每" + weekdayNames[Number(scheduleWeekday)] + " " + scheduleTime
       : "每月 " + scheduleMonthday + " 日 " + scheduleTime;
-  const startNewConversation = () => { setChatActive(false); setMessages([]); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
+  const startNewConversation = () => { onAction(""); setChatActive(false); setMessages([]); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
   const buildApprovalPreview = (index: number, request: string): Omit<PreviewMessage, "id"> | null => {
     if (index === 3) return {
       role: "assistant",
@@ -231,6 +232,7 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
         <div className={styles.confirmSummary}>{modeIndex === 1 && <><span>执行安排</span><strong>{scheduleDescription}</strong></>}<span>执行方式</span><strong>{mode.title}</strong><span>工作内容</span><p>{draft}</p><span>关联店铺</span><p>{selectedStores.length ? selectedStores.join("、") : "未关联店铺"}</p><span>引用资源</span><p>{selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配"}</p></div>
         <footer className={styles.drawerFooter}><button onClick={() => setConfirmation(false)}>返回修改</button><button className={styles.primary} onClick={confirmAction}>确认并继续</button></footer>
         </section>}
+        {feedback && <p role="status" className={styles.threadEmpty}>{feedback}</p>}
         </div>
         <label className={styles.srOnly} htmlFor="chat-new-prompt">描述你的业务目标</label>
         <textarea id="chat-new-prompt" maxLength={2000} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); submit(); } }} placeholder={modeIndex===0?"向硕米提问，或描述你想完成的任务…":mode.placeholder} />

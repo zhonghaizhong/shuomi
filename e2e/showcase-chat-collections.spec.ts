@@ -198,6 +198,8 @@ test("chat keeps the original input docked at the bottom before and after send",
  await input.fill("每周汇总商品适配与上传进展");
  await composer.getByRole("button",{name:"发送消息"}).click();
  await expect(messages).toContainText("每周汇总商品适配与上传进展");
+ await expect(messages.getByRole("status")).toHaveText("演示对话已继续");
+ await expect(page.getByRole("dialog",{name:"演示对话已继续"})).toHaveCount(0);
  await expect(input).toBeVisible();
  await expect(right.getByRole("button",{name:"发起任务"})).toBeVisible();
  expect(page.url()).toBe(initialURL);
