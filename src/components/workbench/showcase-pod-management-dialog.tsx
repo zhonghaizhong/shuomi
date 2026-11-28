@@ -280,7 +280,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
     </section></div>:null}
    {generateProduct?<div className={css.zoomOverlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setGenerateProductId(null)}}>
     <section className={css.podActionDialog+" "+css.podGenerateDialog} role="dialog" aria-modal="true" aria-label="选择多个 SKU 生成产品效果预览">
-     <header><div><strong>生成产品效果预览 · 多选规格</strong><small>按颜色与尺码自由多选 SKU，右侧只展示当前查看规格的原始商品图。</small></div><button type="button" onClick={()=>setGenerateProductId(null)}>关闭</button></header>
+     <header><div><strong>生成产品效果预览 · 多选规格</strong><small>按颜色与尺码多选 SKU，每个已选 SKU 对应一张待生成预览；右侧显示当前查看规格的原图。</small></div><button type="button" onClick={()=>setGenerateProductId(null)}>关闭</button></header>
      <div className={css.generatePreviewBody}>
       <div className={css.generateSkuPanel}>
        <strong>{generateProduct.name}</strong><small>商品编号：{generateProduct.id}</small>
@@ -296,9 +296,9 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
        <strong>当前查看：{selectedGenerateVariant?.color??"—"} / {selectedGenerateVariant?.size??"—"}</strong><small>SKU：{selectedGenerateVariant?.sku??"—"}</small><small>原始商品图 · 非 AI 效果图</small>
       </div>
      </div>
-     <p className={css.generateBillingNotice}>已选择 {generateSkus.length} 个 SKU。多选只表示待生成的规格清单，不会自动批量生图。正式生成前须展示每张图片和总积分、经确认后才逐张生成。目前未接入生图及积分接口。</p>
+     <p className={css.generateBillingNotice}>已选 {generateSkus.length} 个 SKU · 预计生成 {generateSkus.length} 张预览图（每个 SKU 一张）。正式批量生成前需展示每张费用和总积分，并在用户确认后执行。目前生图及积分接口未接入，不会生成或扣费。</p>
      {generateMessage?<p role="status">{generateMessage}</p>:null}
-     <footer><span>预览不影响印花审核 · 暂不产生积分费用</span><div><button type="button" onClick={()=>setGenerateProductId(null)}>取消</button><button type="button" disabled={!generateSkus.length} onClick={()=>setGenerateMessage("已选择 "+generateSkus.length+" 个 SKU。AI 生图与积分计费尚未接入，没有执行生图或扣费。")}>确认所选规格（尚未接入）</button></div></footer>
+     <footer><span>已选 {generateSkus.length} 个 SKU · 预计 {generateSkus.length} 张预览 · 未扣积分</span><div><button type="button" onClick={()=>setGenerateProductId(null)}>取消</button><button type="button" disabled={!generateSkus.length} onClick={()=>setGenerateMessage("已选 "+generateSkus.length+" 个 SKU，预计生成 "+generateSkus.length+" 张预览；生成和计费服务尚未接入，因此未执行任何生成或扣费。")}>{generateSkus.length?"确认生成 "+generateSkus.length+" 张预览（尚未接入）":"请选择 SKU"}</button></div></footer>
     </section></div>:null}
    {previewProduct?<div className={css.zoomOverlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setPreviewProductId(null)}}>
     <section className={css.podActionDialog+" "+css.podWideDialog+" "+css.podPreviewWideDialog} role="dialog" aria-modal="true" aria-label={"产品效果预览："+previewProduct.name}>
