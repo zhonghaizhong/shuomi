@@ -190,28 +190,27 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
     <div className={css.variantPicker}><strong>选择 SKU / 变体</strong><div className={css.variantChoices}>{current.skus.map(s=><button type="button" aria-label={"选择变体 "+s.label} aria-pressed={selectedSku?.id===s.id} key={s.id} onClick={()=>setSku(s.id)}>{s.label}</button>)}</div>
      {selectedSku?<div className={css.variantFacts}><span>SKU：{selectedSku.id}</span><span>供货价：{selectedSku.price>0?formatMoney(selectedSku.price,current.quotationCurrency||"CNY"):"待供应商报价"}</span><span>库存：{selectedSku.stock}</span></div>:null}
     </div>
-   </aside><div className={css.productOverview}><h3>{current.name}</h3><p>{current.description}</p><dl><dt>供货商</dt><dd>{current.supplierName}</dd><dt>认证状态</dt><dd>演示审核通过</dd><dt>货盘商品 ID</dt><dd>{current.id}</dd><dt>商品类目</dt><dd>{current.category}</dd><dt>供货类型</dt><dd>{current.supplyType??"待确认"}</dd><dt>货源国家</dt><dd>{current.warehouseCountry||"待确认"}</dd><dt>可配送国家</dt><dd>{current.shipToCountries?.join("、")||"待确认"}</dd><dt>一件代发</dt><dd>{current.dropship===true?"支持":current.dropship===false?"不支持":"待确认"}</dd><dt>来源版本</dt><dd>{current.version}</dd><dt>供货价</dt><dd>{current.price>0?formatMoney(current.price,current.quotationCurrency||"CNY")+" 起（演示报价）":"待供应商报价"}</dd><dt>质检费用</dt><dd>{current.serviceFees?.inspection!=null?formatMoney(current.serviceFees.inspection,current.serviceFees.currency)+(current.serviceFees.demo?"（演示/件）":"/件"):"待供应商报价"}</dd>
-    <dt>打包费用</dt><dd>{current.serviceFees?.packing!=null?formatMoney(current.serviceFees.packing,current.serviceFees.currency)+(current.serviceFees.demo?"（演示/件）":"/件"):"待供应商报价"}</dd>
-    <dt>贴标费用</dt><dd>{current.serviceFees?.labeling!=null?formatMoney(current.serviceFees.labeling,current.serviceFees.currency)+(current.serviceFees.demo?"（演示/件）":"/件"):"待供应商报价"}</dd><dt>库存</dt><dd>{current.stock}</dd><dt>起订量</dt><dd>{current.moq}</dd><dt>发货地</dt><dd>{current.origin}</dd><dt>备货 / 出库时效</dt><dd>{current.dispatch||"待供应商提供"}</dd>
+   <section className={css.costEstimator} aria-label="目标国家成本测算">
+    <header><h3>目标国家及成本</h3><label>目标国家<select aria-label="选择目标国家" value={targetCountry} onChange={e=>setTargetCountry(e.target.value)}><option value="">请选择配送国家</option>{(current.shipToCountries||[]).map(c=><option key={c} value={c}>{c}</option>)}</select></label></header>
+    <div className={css.costBreakdown}>
+     <div><span>SKU 供货价</span><strong>{selectedSku?.price?formatMoney(selectedSku.price,current.quotationCurrency||"CNY"):"待报价"}</strong></div>
+     <div><span>质检 / 打包 / 贴标</span><strong>{current.serviceFees?.inspection!=null&&current.serviceFees.packing!=null&&current.serviceFees.labeling!=null?formatMoney(current.serviceFees.inspection+current.serviceFees.packing+current.serviceFees.labeling,current.serviceFees.currency):"待报价"}</strong></div>
+     <div><span>目标国家运费</span><strong>{targetCountry?(current.shippingQuotes?.find(q=>q.country===targetCountry)?.freight!=null?formatMoney(current.shippingQuotes.find(q=>q.country===targetCountry)!.freight!,current.shippingQuotes.find(q=>q.country===targetCountry)!.currency):"待报价"):"请选择国家"}</strong></div>
+     <div className={css.costTotal}><span>预计单件总成本</span><strong>{selectedCost?formatMoney(selectedCost.unitTotal,selectedCost.currency):"—"}</strong></div>
+    </div>
+    <small>演示测算，不含税费、平台佣金及其他未报价费用。切换国家或 SKU 自动更新。</small>
+   </section>
+   </aside><div className={css.productOverview}><h3>{current.name}</h3><p>{current.description}</p><dl><dt>供货商</dt><dd>{current.supplierName}</dd><dt>认证状态</dt><dd>演示审核通过</dd><dt>货盘商品 ID</dt><dd>{current.id}</dd><dt>商品类目</dt><dd>{current.category}</dd><dt>供货类型</dt><dd>{current.supplyType??"待确认"}</dd><dt>货源国家</dt><dd>{current.warehouseCountry||"待确认"}</dd><dt>一件代发</dt><dd>{current.dropship===true?"支持":current.dropship===false?"不支持":"待确认"}</dd><dt>来源版本</dt><dd>{current.version}</dd>
+    
+    <dt>起订量</dt><dd>{current.moq}</dd><dt>发货地</dt><dd>{current.origin}</dd><dt>备货 / 出库时效</dt><dd>{current.dispatch||"待供应商提供"}</dd>
     <dt>包装重量</dt><dd>{current.packagingWeightKg!==undefined?current.packagingWeightKg.toFixed(2)+" kg（演示）":"待供应商提供"}</dd>
     <dt>包装尺寸</dt><dd>{current.packagingLengthCm&&current.packagingWidthCm&&current.packagingHeightCm?`${current.packagingLengthCm} × ${current.packagingWidthCm} × ${current.packagingHeightCm} cm（演示）`:"待供应商提供"}</dd>
     <dt>包装体积</dt><dd>{packageVolume(current)}{current.packagingLengthCm?"（演示）":""}</dd><dt>售后说明</dt><dd>{current.returns}</dd></dl></div></div>
-   <section className={css.costEstimator} aria-label="目标国家成本测算">
-    <header><h3>目标国家成本测算</h3><label>目标国家<select aria-label="选择目标国家" value={targetCountry} onChange={e=>setTargetCountry(e.target.value)}><option value="">请选择配送国家</option>{(current.shipToCountries||[]).map(c=><option key={c} value={c}>{c}</option>)}</select></label></header>
-    {targetCountry?<div className={css.costGrid}>
-      <div><span>当前 SKU 供货价</span><strong>{selectedSku?.price?formatMoney(selectedSku.price,current.quotationCurrency||"CNY"):"待报价"}</strong></div>
-      <div><span>质检 + 打包 + 贴标</span><strong>{current.serviceFees?.inspection!=null&&current.serviceFees.packing!=null&&current.serviceFees.labeling!=null?formatMoney(current.serviceFees.inspection+current.serviceFees.packing+current.serviceFees.labeling,current.serviceFees.currency):"待报价"}</strong></div>
-      <div><span>配送至{targetCountry}运费 / 件</span><strong>{current.shippingQuotes?.find(q=>q.country===targetCountry)?.freight!=null?formatMoney(current.shippingQuotes.find(q=>q.country===targetCountry)!.freight!,current.shippingQuotes.find(q=>q.country===targetCountry)!.currency):"待报价"}</strong></div>
-      <div className={css.costTotal}><span>预计单件总成本</span><strong>{selectedCost?formatMoney(selectedCost.unitTotal,selectedCost.currency):"报价不完整"}</strong></div>
-     </div>:<p>选择目标国家后，按照当前 SKU 的供货价、服务费和运费计算单件总成本。</p>}
-    <p>总成本为单件演示估算：不包含税费、平台佣金、汇率差及其他未报价费用；切换 SKU 或国家自动重新计算。</p>
-   </section>
    <section className={css.logisticsSection} aria-label="各国家物流报价"><header><h3>各国家运费与配送时效</h3><span>演示报价，正式以供应商确认及实际重量、体积为准</span></header>
     <div className={css.skuTable}><table><thead><tr><th>配送国家</th><th>运输方式</th><th>预计运费 / 件</th><th>运输时效</th></tr></thead><tbody>
     {(current.shipToCountries||[]).map(country=>{const quote=current.shippingQuotes?.find(q=>q.country===country);return <tr key={country}><td>{country}</td><td>{quote?.method||"待确认"}</td><td>{quote?.freight===null||quote?.freight===undefined?"待供应商报价":formatMoney(quote.freight,quote.currency)+"（演示）"}</td><td>{quote?.transitDays||"待供应商提供"}</td></tr>})}
     {!current.shipToCountries?.length?<tr><td colSpan={4}>可配送国家及物流报价待供应商提供</td></tr>:null}
     </tbody></table></div><p>运输时效不包含备货 / 出库时间；具体费用需按 SKU、数量、目的地邮编与计费重量核算。</p></section>
-   <h3 className={css.skuTitle}>供货 SKU 与变体 <small>点击上方变体选项可同步切换主图、价格与库存</small></h3><div className={css.skuTable}><table><thead><tr><th>SKU</th><th>规格</th><th>供货价</th><th>演示库存</th></tr></thead><tbody>{current.skus.map(s=><tr key={s.id} data-selected={selectedSku?.id===s.id}><td>{s.id}</td><td>{s.label}</td><td>{s.price>0?"¥"+s.price.toFixed(2):"待核"}</td><td>{s.stock}</td></tr>)}</tbody></table></div>
    <footer><button type="button" onClick={()=>{setActive(null);setPurchase(null)}}>取消</button>{purchase&&purchase.productId===current.id?<><span>关联订单 {purchase.orderId} · {purchase.quantity} 件 · 模拟采购</span><button type="button" className={css.primary} disabled={selectedSku?.id!==purchase.skuId||!selectedSku||current.moq>purchase.quantity||selectedSku.stock<purchase.quantity||selectedSku.price<=0} onClick={confirmPurchase}>确认模拟采购</button></>:<button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setCollectOpen(true);setError("")}}>加入采集批次</button>}</footer>
   </section></div>:null}
   {collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setCollectOpen(false)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="加入我的采集批次">
