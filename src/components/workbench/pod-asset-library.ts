@@ -13,10 +13,27 @@ export type PodLibraryAsset={
 };
 const libraryKey=(organizationId:string,memberId:string)=>
  "shuomi:pod:asset-library:v1:"+encodeURIComponent(organizationId)+":"+encodeURIComponent(memberId);
+/** Built-in reference artwork is immutable, but its library visibility is per user.
+ * Only a display preference is stored; lineage, GitHub files, and order references stay intact.
+ */
+const hiddenOriginalKey=(org:string,member:string)=>
+ "shuomi:pod:hidden-original:v1:"+encodeURIComponent(org)+":"+encodeURIComponent(member);
+export function isPodOriginalHidden(org:string,member:string):boolean{
+ if(typeof window==="undefined"||!isShowcasePODScope(org,member))return false;
+ try{return localStorage.getItem(hiddenOriginalKey(org,member))==="hidden"}catch{return false}
+}
+export function setPodOriginalHidden(org:string,member:string,hidden:boolean):void{
+ if(typeof window==="undefined"||!isShowcasePODScope(org,member))throw Error("此素材仅属于默认演示账号");
+ try{
+  if(hidden)localStorage.setItem(hiddenOriginalKey(org,member),"hidden");
+  else localStorage.removeItem(hiddenOriginalKey(org,member));
+ }catch{throw Error("浏览器无法保存素材可见性设置，请检查网站存储权限")}
+ window.dispatchEvent(new CustomEvent("shuomi:pod:asset-library:change",{detail:{organizationId:org,memberId:member}}));
+}
 export function readPodLibrary(organizationId:string,memberId:string):PodLibraryAsset[]{
  if(typeof window==="undefined")return [];
  // Checked-in demo art stays visible in every browser, not sessionStorage.
- const builtins=isShowcasePODScope(organizationId,memberId)?[showcasePODOriginalAsset]:[];
+ const builtins=isShowcasePODScope(organizationId,memberId)&&!isPodOriginalHidden(organizationId,memberId)?[showcasePODOriginalAsset]:[];
  try {
   const saved=sessionStorage.getItem(libraryKey(organizationId,memberId));
   if(!saved)return builtins;
@@ -27,7 +44,7 @@ export function readPodLibrary(organizationId:string,memberId:string):PodLibrary
    const item=x as Record<string,unknown>;
    return typeof item.id==="number"&&typeof item.name==="string"&&typeof item.category==="string"
      &&typeof item.style==="number"&&(typeof item.dataUrl==="string"||typeof item.image==="string"||typeof item.archivePath==="string");
-  }).filter(asset=>!builtins.some(b=>b.id===asset.id));
+  }).filter(asset=>!isShowcasePODScope(organizationId,memberId)||asset.id!==showcasePODOriginalAsset.id);
   return [...builtins,...personal];
  }catch{return builtins;}
 }
