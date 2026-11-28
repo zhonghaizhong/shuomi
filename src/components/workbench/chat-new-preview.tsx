@@ -92,6 +92,9 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
       return;
     }
     if (chatActive) {
+      // Work modes remain available in the same right-hand panel. Operations that
+      // need confirmation must continue in this composer, even after prior turns.
+      if(modeIndex===1||modeIndex===2||modeIndex===6){setConfirmation(true);return;}
       const sent = draft.trim();
       const nextId = Date.now();
       const revised = buildApprovalPreview(modeIndex, sent);
@@ -187,14 +190,14 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
         const rows=Array.isArray(existing)?existing:[];
         const item={id:crypto.randomUUID(),name:request.slice(0,60),description:"通过硕米Chat创建的任务草案，待人工确认执行",scope:selectedStores.join("、")||"通用业务",state:"pending",time:"刚刚创建"};
         sessionStorage.setItem(key,JSON.stringify([item,...rows]));
-        setMessages([{id:Date.now(),role:"user",text:request},{id:Date.now()+1,role:"assistant",text:"已保存任务草案至任务中心「待确认」。当前仅为本地演示数据，尚未实际执行。可前往任务中心查看并确认。"}]);
+        setMessages(current=>[...current,{id:Date.now(),role:"user",text:request},{id:Date.now()+1,role:"assistant",text:"已保存任务草案至任务中心「待确认」。当前仅为本地演示数据，尚未实际执行。可前往任务中心查看并确认。"}]);
         setChatActive(true);setConfirmation(false);setDraft("");onAction("任务草案已加入任务中心待确认（演示）");return;
       }catch{onAction("演示任务保存失败，请检查浏览器存储权限");return;}
     }
     if(modeIndex===2){
       if(linkedProjectId){onAction("当前会话已经关联项目，请继续描述工作或新建会话。");setConfirmation(false);return;}
       if(!projectName.trim()){onAction("请填写项目名称");return;}
-      try{const p=createPreviewProject({name:projectName,goal:request,scope:selectedStores.join("、"),template:projectEntry.template?.name,resources:selectedResources});setLinkedProjectId(p.id);setSelectedResources(old=>[...new Set([...old,p.name])]);setMessages([{id:Date.now(),role:"user",text:request},{id:Date.now()+1,role:"assistant",text:"已创建本地演示项目："+p.name+"。当前会话已关联该项目，可返回项目中心查看目标、里程碑及进展。"}]);setConfirmation(false);setChatActive(true);setModeIndex(0);setDraft("");return;}catch{onAction("本地项目保存失败，请检查浏览器存储权限");return;}
+      try{const p=createPreviewProject({name:projectName,goal:request,scope:selectedStores.join("、"),template:projectEntry.template?.name,resources:selectedResources});setLinkedProjectId(p.id);setSelectedResources(old=>[...new Set([...old,p.name])]);setMessages(current=>[...current,{id:Date.now(),role:"user",text:request},{id:Date.now()+1,role:"assistant",text:"已创建本地演示项目："+p.name+"。当前会话已关联该项目，可返回项目中心查看目标、里程碑及进展。"}]);setConfirmation(false);setChatActive(true);setModeIndex(0);setDraft("");return;}catch{onAction("本地项目保存失败，请检查浏览器存储权限");return;}
     }
     const replyByMode = [
       "",
@@ -204,7 +207,7 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
       ["【技能演示草案】", "技能目标：" + request, "关联资源：" + resourceLabel, "建议补充触发条件、执行步骤和验收标准。"].join("\n"),
       ["【经营报告演示草案】", "报告需求：" + request, "店铺范围：" + storeLabel, "报告结构：经营概览、销售与利润表现、异常变化及建议。"].join("\n"),
     ];
-    setMessages([{ id: Date.now(), role: "user", text: request }, { id: Date.now() + 1, role: "assistant", text: replyByMode[modeIndex] }]);
+    setMessages(current=>[...current,{ id: Date.now(), role: "user", text: request }, { id: Date.now() + 1, role: "assistant", text: replyByMode[modeIndex] }]);
     setConfirmation(false);
     setChatActive(true);
     setDraft("");
