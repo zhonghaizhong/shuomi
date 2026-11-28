@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./chat-new-preview.module.css";
 import {readPreviewProjects, createPreviewProject, savePreviewProject, projectTemplates} from "./showcase-project-data";
 import {readEnabledPreviewSkills,readPersonalPreviewSkills,savePersonalPreviewSkill} from "./showcase-skill-library";
-import {savePersonalKnowledge} from "./showcase-knowledge-groups";
-import {savePreviewReport} from "./showcase-report-center";
+import {savePersonalKnowledge,readKnowledgeState} from "./showcase-knowledge-groups";
+import {savePreviewReport,readPreviewReports} from "./showcase-report-center";
 
 // Stable mode indices are used by existing tasks, schedules and project links.
 // Presentation order is independent: task creation directly follows new chat.
@@ -13,7 +13,7 @@ const modeOrder=[0,6,1,2,3,4,5];
 const modes = [
   { title: "创建会话", detail: "描述目标，硕米协助整理", action: "发送消息", placeholder: "向硕米提问，或描述你想完成的任务…", examples: [["每周汇总商品适配与上传进展", "进度、阻塞问题、关键变更与待决策事项"], ["找出可以退订的邮件", "识别订阅邮件及重复通知（需邮箱授权）"], ["准备下一场会议", "梳理议题、讨论重点与待确认事项"], ["分析最近店铺经营情况", "诊断利润、广告和订单异常并提出建议"]] },
   { title: "执行定时任务", detail: "描述任务、时间和提醒要求", action: "确认定时计划", placeholder: "例如：每周一至周五上午9点，检查待审核商品，发现异常时提醒我…", examples: [["每周一生成店铺经营周报", "按周整理销售、利润和异常变化"], ["每天早上检查待审核商品", "发现积压或异常时提醒我"], ["每周提醒我复盘广告投放效果", "汇总预算、点击和转化表现"], ["每月汇总商品上新与适配进度", "整理各店铺的上新进展"]] },
-  { title: "加入我的项目", detail: "协助明确项目目标与安排", action: "生成项目计划", placeholder: "例如：为美国站新品创建90天项目，分阶段安排任务和负责人…", examples: [["创建90天的跨境 OPC 创业项目", "从启动准备到阶段验证"], ["为美国站新品开发制定项目计划", "结合市场机会和开发方向"], ["将当前运营讨论关联到已有项目", "继续推进已有目标和任务"], ["为店铺季度增长建立执行项目", "拆分目标、里程碑与负责人"]] },
+  { title: "加入我的项目", detail: "协助明确项目目标与安排", action: "生成项目计划", placeholder: "例如：为美国站新品创建90天项目，分阶段安排任务和负责人…", examples: [["创建SHEIN美国站30天利润提升项目", "关联经营分析、任务和阶段报告"], ["为美国站新品开发制定项目计划", "结合市场机会和开发方向"], ["将当前运营讨论关联到已有项目", "继续推进已有目标和任务"], ["为店铺季度增长建立执行项目", "拆分目标、里程碑与负责人"]] },
   { title: "加入我的知识库", detail: "描述资料用途，保存前确认", action: "整理知识条目", placeholder: "例如：把平台刊登要求整理成知识库内容，供运营团队使用…", examples: [["把商品适配规则整理成知识条目", "供后续刊登与审核时引用"], ["沉淀客服高频问题与标准回复", "整理成便于查找的规范"], ["将跨境选品培训资料加入知识库", "提炼要点并保留来源"], ["整理平台刊登要求作为知识规范", "按平台和站点归类"]] },
   { title: "保存为我的技能", detail: "描述流程和触发条件", action: "生成技能草案", placeholder: "例如：把商品标题优化流程做成可重复使用的技能…", examples: [["保存商品标题优化步骤为技能", "归纳判断标准和输出格式"], ["制作图片重构的标准操作流程", "列出检查步骤和交付要求"], ["整理商品利润测算的自动化技能", "明确成本、费用和利润口径"], ["制作店铺经营周报的自动化技能", "设定数据范围和报告结构"]] },
   { title: "加入我的报告", detail: "描述范围和周期，预览后再确认", action: "生成报告草案", placeholder: "例如：结合近30天销售、广告和利润数据生成经营分析报告…", examples: [["生成本月店铺利润分析报告", "按店铺拆分利润和变化"], ["汇总项目阶段进度与风险", "整理里程碑、延误和待办"], ["制作新品选品结果评估报告", "对照市场机会与利润目标"], ["分析各平台商品刊登效率", "汇总处理量、耗时和异常"]] },
@@ -40,18 +40,18 @@ const modeGuides:Partial<Record<number,ModeGuide>>={
 };
 
 const resourceGroups: Record<string, string[]> = {
-  我的知识库: ["跨境平台规则", "电商运营方法", "跨境合规参考", "品牌运营资料库"],
-  我的技能: ["商品标题整理", "标题本地化", "冗长标题精简", "商品利润测算"],
-  我的项目: ["一号店经营提升", "美国站夏季女装开发", "二号店商品内容优化", "OPC跨境创业计划"],
+  我的知识库: [],
+  我的技能: [],
+  我的项目: [],
   我的智能体: ["商品优化智能体", "POD刊登智能体"],
-  我的工具: ["商品采集工具", "表格处理工具", "邮件助手"],
-  生态服务: ["品牌保护服务", "店铺开通服务"],
-  我的数据: ["美国站商品数据", "店铺经营周报", "选品分析数据"],
+  我的工具: ["商品采集插件", "自有商品快速上传", "POD素材管理工具"],
+  生态服务: [],
+  我的数据: [],
+  我的报告: [],
 };
 const stores = [
   ["一号店", "SHEIN", "美国站", "半托管"], ["二号店", "SHEIN", "加拿大站", "全托管"],
-  ["三号店", "Amazon", "美国站", "自营店"], ["新品测试店", "TikTok Shop", "美国站", "自营店"],
-  ["品牌旗舰店", "Amazon", "英国站", "自营店"],
+
 ];
 
 type Props = { organizationId?:string;memberId?:string };
@@ -252,7 +252,13 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     }
     setConfirmation(true);
   };
-  const visibleResources = (resourceTab==="我的项目"?readPreviewProjects().filter(p=>p.status!=="已归档").map(p=>p.name):resourceTab==="我的技能"?[...readEnabledPreviewSkills(organizationId,memberId),...readPersonalPreviewSkills(organizationId,memberId).map(s=>s.name)]:resourceGroups[resourceTab] ?? []).filter(item => item.toLowerCase().includes(resourceSearch.toLowerCase()));
+  const visibleResources = (
+    resourceTab==="我的项目" ? readPreviewProjects().map(p=>p.name) :
+    resourceTab==="我的技能" ? [...readEnabledPreviewSkills(organizationId,memberId),...readPersonalPreviewSkills(organizationId,memberId).map(skill=>skill.name)] :
+    resourceTab==="我的知识库" ? readKnowledgeState(organizationId,memberId).items.map(item=>item.name) :
+    resourceTab==="我的报告" ? readPreviewReports(organizationId,memberId).reports.map(report=>report.title) :
+    resourceGroups[resourceTab]??[]
+  ).filter((item,index,items)=>items.indexOf(item)===index&&item.toLowerCase().includes(resourceSearch.toLowerCase()));
   const visibleStores = stores.filter(row =>
     row.join(" ").toLowerCase().includes(storeSearch.toLowerCase()) &&
     (!storePlatform || row[1] === storePlatform) &&
