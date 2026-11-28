@@ -100,7 +100,8 @@ test("new chat keeps task and schedule demo inside one conversation and orders t
  await page.goto("/shuomi/#/workbench/ai/chat/new");
  const modes=page.getByRole("complementary",{name:"选择执行方式"});
  await expect(modes).toBeVisible();
- const buttons=modes.locator('[class*="modeList"] > button');
+ const buttons=modes.locator('button[aria-pressed]');
+ await expect(buttons).toHaveCount(7);
  await expect(buttons.nth(0)).toContainText("创建会话");
  await expect(buttons.nth(1)).toContainText("发起任务");
  await buttons.nth(1).click();
@@ -116,7 +117,7 @@ test("new chat keeps task and schedule demo inside one conversation and orders t
  await expect(thread).toContainText("核对待审核商品并整理处理方案");
  await expect(thread).toContainText("任务中心");
  await page.getByRole("button",{name:"＋ 新会话"}).click();
- await modes.getByRole("button",{name:"执行定时任务"}).click();
+ await modes.getByRole("button",{name:"执行定时任务",exact:true}).click();
  await page.getByLabel("描述你的业务目标").fill("每周检查待审核商品");
  await page.getByRole("button",{name:"确认定时计划"}).click();
  const schedule=page.getByLabel("会话内确认任务");
@@ -132,15 +133,15 @@ test("conversation stays in original composer for all right-hand work modes",asy
  const right=page.getByRole("complementary",{name:"选择执行方式"});
  const area=page.getByRole("region",{name:"新建会话输入区"});
  await expect(right).toBeVisible();
- await right.getByRole("button",{name:"创建会话"}).click();
+ await right.getByRole("button",{name:"创建会话",exact:true}).click();
  await page.getByLabel("描述你的业务目标").fill("每周汇总商品适配与上传进展");
  await area.getByRole("button",{name:"发送消息"}).click();
  await expect(page.getByRole("region",{name:"会话消息与输入区"})).toBeVisible();
- await expect(right.getByRole("button",{name:"创建会话"})).toBeVisible();
- await expect(right.getByRole("button",{name:"发起任务"})).toBeVisible();
+ await expect(right.getByRole("button",{name:"创建会话",exact:true})).toBeVisible();
+ await expect(right.getByRole("button",{name:"发起任务",exact:true})).toBeVisible();
  expect(page.url()).toBe(original);
  // Starting a task inside an existing conversation must not discard prior turns.
- await right.getByRole("button",{name:"发起任务"}).click();
+ await right.getByRole("button",{name:"发起任务",exact:true}).click();
  await page.getByLabel("描述你的业务目标").fill("检查本周刊登异常");
  await page.getByRole("button",{name:"确认任务草案",exact:true}).click();
  await expect(page.getByLabel("会话内确认任务")).toBeVisible();
@@ -150,14 +151,14 @@ test("conversation stays in original composer for all right-hand work modes",asy
  await expect(thread).toContainText("检查本周刊登异常");
  expect(page.url()).toBe(original);
  // Also use the in-composer project and scheduled-task workflows.
- await right.getByRole("button",{name:"执行定时任务"}).click();
+ await right.getByRole("button",{name:"执行定时任务",exact:true}).click();
  await page.getByLabel("描述你的业务目标").fill("每天检查订单");
  await page.getByRole("button",{name:"确认定时计划",exact:true}).click();
  await expect(page.getByLabel("会话内确认任务").getByLabel("定时安排")).toBeVisible();
  await page.getByLabel("会话内确认任务").getByRole("button",{name:"确认并继续"}).click();
  await expect(thread).toContainText("定时任务演示草案");
  expect(page.url()).toBe(original);
- await right.getByRole("button",{name:"加入我的项目"}).click();
+ await right.getByRole("button",{name:"加入我的项目",exact:true}).click();
  await page.getByLabel("描述你的业务目标").fill("管理本月商品上新");
  await page.getByRole("button",{name:"生成项目计划",exact:true}).click();
  await page.getByRole("textbox",{name:"项目名称"}).fill("会话内项目");
@@ -165,7 +166,7 @@ test("conversation stays in original composer for all right-hand work modes",asy
  await expect(thread).toContainText("会话内项目");
  expect(page.url()).toBe(original);
  for(const [name,action] of [["加入我的知识库","整理知识条目"],["保存为我的技能","生成技能草案"],["加入我的报告","生成报告草案"]]){
-  await right.getByRole("button",{name}).click();
+  await right.getByRole("button",{name,exact:true}).click();
   await page.getByLabel("描述你的业务目标").fill(name+" 演示主题");
   await page.getByRole("button",{name:action,exact:true}).click();
   await expect(thread).toContainText(name+" 演示主题");
@@ -184,7 +185,7 @@ test("chat keeps the original input docked at the bottom before and after send",
  await expect(composer).toBeVisible();
  await expect(messages).toBeVisible();
  await expect(input).toBeVisible();
- await expect(right.getByRole("button",{name:"创建会话"})).toBeVisible();
+ await expect(right.getByRole("button",{name:"创建会话",exact:true})).toBeVisible();
  // Playwright scrolls the bottom action into view on click. Measure the
  // actual dock geometry relative to its card and document, not viewport scroll.
  const send=composer.getByRole("button",{name:"发送消息",exact:true});
@@ -201,7 +202,7 @@ test("chat keeps the original input docked at the bottom before and after send",
  await expect(messages.getByRole("status")).toHaveText("演示对话已继续");
  await expect(page.getByRole("dialog",{name:"演示对话已继续"})).toHaveCount(0);
  await expect(input).toBeVisible();
- await expect(right.getByRole("button",{name:"发起任务"})).toBeVisible();
+ await expect(right.getByRole("button",{name:"发起任务",exact:true})).toBeVisible();
  expect(page.url()).toBe(initialURL);
  const after=await dockGeometry();
  for(const key of ["offset","bottom","height","cardHeight","cardDocumentY"] as const)
@@ -213,7 +214,7 @@ test("chat keeps the original input docked at the bottom before and after send",
  const repeated=await dockGeometry();
  for(const key of ["offset","bottom","height","cardHeight","cardDocumentY"] as const)
   expect(Math.abs(repeated[key]-before[key]),key+": "+JSON.stringify({before,repeated})).toBeLessThan(3);
- await right.getByRole("button",{name:"发起任务"}).click();
+ await right.getByRole("button",{name:"发起任务",exact:true}).click();
  await input.fill("检查今日异常");
  await composer.getByRole("button",{name:"确认任务草案"}).click();
  await expect(messages.getByLabel("会话内确认任务")).toBeVisible();
