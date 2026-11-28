@@ -102,9 +102,9 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
   const previous=records[0]?.supply;
   setSelected(list);
   setSkuEditing(Object.keys(skuPrices));setShowPackagingOverrides(true);setBatchSkuKeys([]);
-  setSupply({...emptyPreferredSupply,supplyKind:"现货",warehouseMode:"硕米仓库",currency:"CNY",dropship:true,skuPrices,skuOverrides,defaultSkuQuantity:firstQuantity===undefined?"":String(firstQuantity),
+  setSupply({...emptyPreferredSupply,supplyKind:"现货",warehouseMode:"硕米仓库",currency:"CNY",dropship:true,skuPrices,skuOverrides,defaultSkuQuantity:"",
    supplierName:profile?.name??"",supplierContact:profile?.contact??"",supplierPhone:profile?.phone??"",supplierLocation:profile?.location??"",supplierAgreement:Boolean(profile?.agreement),
-   unitPrice:firstPrice||previous?.unitPrice||"",packageWeight:previous?.packageWeight??"",packageSize:previous?.packageSize??"",shippingCountries:previous?.shippingCountries??"",origin:previous?.origin??"",dispatch:previous?.dispatch??"",returns:previous?.returns??"",maxQuantity:previous?.maxQuantity??"",stock:String(sourceSkus.reduce((sum,v)=>sum+(v.sku.stock??0),0)),moq:previous?.moq??"1"});
+   unitPrice:"",packageWeight:"",packageSize:"",shippingCountries:previous?.shippingCountries??"",origin:previous?.origin??"",dispatch:previous?.dispatch??"",returns:previous?.returns??"",maxQuantity:previous?.maxQuantity??"",stock:String(sourceSkus.reduce((sum,v)=>sum+(v.sku.stock??0),0)),moq:previous?.moq??"1"});
   setEditSupplier(!profile?.name);setShowSkuPricing(true);setShowTierPricing(false);
   setNotice("");setError("");setApplicationOpen(true);
  };
