@@ -548,3 +548,20 @@
 .modeGuideBottom{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .modeGuideBottom>span{font-size:12px;color:var(--cn-muted)}
 @media(max-width:650px){.modeGuideSteps{grid-template-columns:1fr}.modeGuideBottom{flex-wrap:wrap}}
+
+/* Expandable draft details live inside the chat message/confirmation, never a new modal. */
+.draftDetails{display:grid;gap:12px;width:100%;min-width:0;margin-top:12px;padding:14px;border:1px solid var(--cn-border-strong);border-radius:8px;background:var(--cn-inset)}
+.draftDetails>header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:7px;padding-bottom:8px;border-bottom:1px solid var(--cn-border)}
+.draftDetails>header strong{font-size:14px;color:var(--cn-heading)}
+.draftDetails>header small{font-size:11px;line-height:1.5;color:var(--cn-muted)}
+.draftDetails dl{display:grid;gap:0;margin:0;min-width:0}
+.draftDetails dl>div{display:grid;grid-template-columns:minmax(90px,26%) minmax(0,1fr);gap:12px;padding:9px 0;border-bottom:1px solid var(--cn-border);min-width:0}
+.draftDetails dt{font-size:12px;color:var(--cn-muted)}
+.draftDetails dd{margin:0;font-size:13px;color:var(--cn-heading);line-height:1.55;overflow-wrap:anywhere;white-space:pre-wrap}
+.draftDetailsUsage{display:grid;gap:5px}
+.draftDetailsUsage strong{font-size:12px;color:var(--cn-heading)}
+.draftDetailsUsage span,.draftDetails>p{font-size:12px;line-height:1.6;color:var(--cn-muted)}
+.draftDetails>p{margin:0}
+.approvalActions .draftDetails{max-width:100%;box-sizing:border-box}
+.inlineConfirmation .draftDetails{flex:0 0 auto}
+@media(max-width:540px){.draftDetails{padding:10px}.draftDetails dl>div{grid-template-columns:1fr;gap:3px}}
