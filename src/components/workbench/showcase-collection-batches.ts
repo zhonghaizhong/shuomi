@@ -1,5 +1,7 @@
 "use client";
 
+import {selectedCatalogFixtures} from "./showcase-selected-catalog-fixtures";
+
 /** Isolated, browser-session-only fixture batches. Never represents a 1688 API response. */
 export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";supplyProductId?:string;supplierId?:string;supplierName?:string;supplyVersion?:string;supplySkuId?:string;images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string;images?:string[];price?:string;stock?:string;description?:string;sourceUrl?:string}>;originalTitle?:string;description?:string;demoSourceLink?:string;supplyType?:string;warehouseCountry?:string;shipToCountries?:string[];moq?:number;dropship?:boolean|null;
  /** Customer-selected costing mode for catalog collection; not a marketplace price. */
@@ -128,6 +130,19 @@ function migrateAmazonMultiVariantBatch(batches:DemoCollectionBatch[]):DemoColle
   return {...b,name:b.name===oldName?"Amazon 美国站 · 7个真实商品（模拟采集）":b.name,products:[...b.products,...additions]};
  });
 }
+const selectedSeedId="SIM-SHUOMI-APPAREL-20261128";
+function selectedApparelBatch(organizationId:string,memberId:string):DemoCollectionBatch{
+ return {id:selectedSeedId,organizationId,ownerMemberId:memberId,source:"硕米优选",method:"硕米优选货盘采集（演示）",name:"硕米优选 · 服装采集测试批次",createdAt:"2026-11-28 21:42",status:"已采集 · 待上传",demo:true,
+ products:selectedCatalogFixtures.filter(p=>["SMYX-DEMO-001","SMYX-DEMO-002"].includes(p.id)).map(p=>({
+ id:"SIM-COLLECT-"+p.id,sku:p.id,name:p.name,originalTitle:p.name,source:"硕米优选",price:"¥"+p.price.toFixed(2),status:"演示数据" as const,
+ supplyProductId:p.id,supplierId:p.supplierId,supplierName:p.supplierName,supplyVersion:p.version,
+ supplyType:p.supplyType,warehouseCountry:p.warehouseCountry,shipToCountries:[...(p.shipToCountries??[])],moq:p.moq,dropship:p.dropship,
+ collectionPriceMode:"supply" as const,quoteCurrency:p.quotationCurrency,description:p.description,
+ images:[...new Set(p.skus.flatMap(s=>s.images??[]))],variants:p.skus.map(s=>s.label),variantCount:p.skus.length,
+ variantDetails:p.skus.map(s=>({sku:s.id,label:s.label,color:s.color,size:s.size,image:s.images?.[0]??"",images:[...(s.images??[])],price:"¥"+s.price.toFixed(2),stock:String(s.stock),description:p.description}))
+ }))};
+}
+const selectedSeedMarker=(org:string,member:string)=>"shuomi:selected-apparel-seeded-v1:"+org+":"+member;
 const amazonSeedMarker=(org:string,member:string)=>"shuomi:amazon-us-five-seeded-v1:"+org+":"+member;
 
 const prefix="shuomi:demo-collection-batches-v1:";
@@ -147,6 +162,10 @@ export function readDemoCollectionBatches(organizationId:string,memberId="admin"
    sessionStorage.setItem(amazonSeedMarker(organizationId,memberId),"1");
   }
   result=migrateAmazonMultiVariantBatch(result);
+  if(organizationId==="SM-ENT-000001"&&memberId==="admin"&&!sessionStorage.getItem(selectedSeedMarker(organizationId,memberId))){
+   if(!result.some(b=>b.id===selectedSeedId))result=[selectedApparelBatch(organizationId,memberId),...result];
+   sessionStorage.setItem(selectedSeedMarker(organizationId,memberId),"1");
+  }
   // GitHub-backed demo fixture: restore in each browser session without resetting user batches.
   if(organizationId==="SM-ENT-000001"&&memberId==="admin"){
    const fixture=sdsPODFixtureBatch(organizationId,memberId);
