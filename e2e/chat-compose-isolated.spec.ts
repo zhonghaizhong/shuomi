@@ -66,7 +66,8 @@ test("retains the input through the original create retry without dispatching a 
   await expect(page.getByRole("button",{name:"核对原创建请求"})).toBeVisible();
   await page.reload(); await expect(page.getByLabel("需求")).toHaveValue("【合成测试】请整理商品描述");
   await page.getByRole("button",{name:"核对原创建请求"}).click();
-  await page.waitForURL(`**/workbench/ai/chat/${id}`);
+  await expect(page).toHaveURL(/\/workbench\/ai\/chat\/new$/);
+  await expect(page.getByRole("region",{name:"当前新建会话"})).toBeVisible();
   await expect(page.getByLabel("需求")).toHaveValue("【合成测试】请整理商品描述");
   expect(creates).toBe(2); expect(messages).toBe(0);
   await page.setViewportSize({width:390,height:844});
