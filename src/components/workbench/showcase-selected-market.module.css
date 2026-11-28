@@ -187,3 +187,19 @@
 .collectionPricing input[type=radio]{width:17px;height:17px;accent-color:#7367f0}
 @media(max-width:850px){.costGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.costGrid{grid-template-columns:1fr 1fr}.costEstimator>header{align-items:stretch}.costEstimator label{width:100%}.costEstimator select{width:100%}}
+
+/* Compact cost summary directly under the SKU selector, not a full-width row. */
+.galleryColumn .costEstimator{margin:0;gap:10px;padding:13px;min-width:0}
+.galleryColumn .costEstimator>header{display:grid;gap:8px;align-items:stretch}
+.galleryColumn .costEstimator>header h3{font-size:14px!important}
+.galleryColumn .costEstimator>header label{display:grid;grid-template-columns:68px minmax(0,1fr);align-items:center;gap:8px;font-size:12px}
+.galleryColumn .costEstimator select{width:100%;min-width:0;height:36px}
+.costBreakdown{display:grid;gap:0}
+.costBreakdown>div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.costBreakdown>div:last-child{border-bottom:0}
+.costBreakdown span{font-size:12px;color:var(--muted)}
+.costBreakdown strong{font-size:13px;text-align:right;white-space:nowrap;color:var(--text);font-variant-numeric:tabular-nums}
+.costBreakdown .costTotal{padding-top:11px;margin-top:3px;border-top:1px solid var(--border)}
+.costBreakdown .costTotal strong{font-size:18px;color:#a99eff}
+:global(.light) .costBreakdown .costTotal strong{color:#5e50bb}
+.galleryColumn .costEstimator>small{font-size:11px;line-height:1.5;color:var(--muted)}
