@@ -6,6 +6,9 @@ export type SelectedCatalogProduct={
  id:string;name:string;category:string;description:string;supplierId:string;supplierName:string;
  price:number;moq:number;stock:number;dispatch:string;origin:string;returns:string;
  supplyType?:SupplyType;warehouseCountry?:string;shipToCountries?:string[];dropship?:boolean;
+ /** Supplier-supplied offer information, or explicitly marked demonstration estimates. */
+ quotationCurrency?:string;packagingWeightKg?:number;packagingLengthCm?:number;packagingWidthCm?:number;packagingHeightCm?:number;
+ shippingQuotes?:Array<{country:string;freight:number|null;currency:string;transitDays:string|null;method:string;demo?:boolean}>;
  version:string;approved:"演示审核通过";images:string[];skus:Array<{id:string;label:string;color:string;size:string;stock:number;price:number}>;
 };
 const supplierA={supplierId:"DEMO-SUP-A",supplierName:"演示供货商 · 织造工厂"};
@@ -29,4 +32,21 @@ const demoSupply: Array<Pick<SelectedCatalogProduct,"supplyType"|"warehouseCount
  {supplyType:"现货",warehouseCountry:"中国",shipToCountries:["美国"],dropship:false},
  {supplyType:"现货",warehouseCountry:"中国",shipToCountries:["美国","加拿大"],dropship:false}
 ];
-export const selectedCatalogFixtures:SelectedCatalogProduct[]=baseSelectedCatalogFixtures.map((item,index)=>({...item,...demoSupply[index]}));
+// Prices and freight below are sample numbers for UI demonstration ONLY.
+const demoPackage:Array<{weight:number;size:[number,number,number];shipping:Record<string,{freight:number;days:string}>}>=[
+ {weight:.25,size:[30,24,3],shipping:{"美国":{freight:29,days:"8–15 天"},"加拿大":{freight:37,days:"10–18 天"}}},
+ {weight:.65,size:[34,29,8],shipping:{"美国":{freight:42,days:"9–16 天"},"英国":{freight:47,days:"10–18 天"}}},
+ {weight:.22,size:[27,20,4],shipping:{"美国":{freight:8,days:"3–6 天"},"加拿大":{freight:17,days:"5–9 天"},"英国":{freight:21,days:"6–11 天"}}},
+ {weight:.48,size:[21,11,11],shipping:{"美国":{freight:32,days:"5–9 天"},"墨西哥":{freight:19,days:"3–7 天"}}},
+ {weight:.18,size:[25,20,5],shipping:{"美国":{freight:28,days:"8–15 天"}}},
+ {weight:.16,size:[26,22,3],shipping:{"美国":{freight:27,days:"8–15 天"},"加拿大":{freight:35,days:"10–18 天"}}}
+];
+export const selectedCatalogFixtures:SelectedCatalogProduct[]=baseSelectedCatalogFixtures.map((item,index)=>{
+ const offer=demoSupply[index],packing=demoPackage[index];
+ return {...item,...offer,quotationCurrency:"CNY",packagingWeightKg:packing.weight,
+  packagingLengthCm:packing.size[0],packagingWidthCm:packing.size[1],packagingHeightCm:packing.size[2],
+  shippingQuotes:(offer.shipToCountries||[]).map(country=>({
+   country,freight:packing.shipping[country]?.freight??null,currency:"CNY",
+   transitDays:packing.shipping[country]?.days??null,method:"演示标准运输",demo:true
+  }))};
+});
