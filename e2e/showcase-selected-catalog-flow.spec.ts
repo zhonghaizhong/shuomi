@@ -147,7 +147,8 @@ test("existing batch chooser is synced with My Data and imports preserve origin 
  const select=collect.getByRole("combobox",{name:"选择已有批次"});
  // The standard Amazon/1688 batches are real entries in the same browser store
  // and must not be hidden by a previous supply-only source filter.
- await expect(select.locator("option")).toContainText(["请选择批次","SDS","Amazon"]);
+ await expect(select.locator("option").filter({hasText:"SDS"})).toHaveCount(1);
+ await expect(select.locator("option").filter({hasText:"Amazon 美国站"})).toHaveCount(1);
  const amazon=await select.locator("option").evaluateAll(options=>
   options.find(o=>o.textContent?.includes("Amazon 美国站"))?.getAttribute("value")||"");
  expect(amazon).not.toBe("");
@@ -176,7 +177,7 @@ test("recollecting same product merges only new SKU rows into selected My Data b
  await card.getByRole("button",{name:"加入采集批次"}).click();
  collect=page.getByRole("dialog",{name:"加入我的采集批次"});
  await collect.getByRole("radio",{name:"加入已有批次"}).check();
- await collect.getByRole("combobox",{name:"选择已有批次"}).selectOption({label:/SKU增量合并批次/});
+ await collect.getByRole("combobox",{name:"选择已有批次"}).selectOption(await collect.getByRole("combobox",{name:"选择已有批次"}).locator("option").filter({hasText:"SKU增量合并批次"}).getAttribute("value")||"");
  await collect.getByRole("checkbox",{name:"全选纯棉圆领短袖T恤变体"}).uncheck();
  await collect.getByRole("checkbox",{name:"采集变体 纯棉圆领短袖T恤 白色 / L"}).check();
  await collect.getByRole("button",{name:"确认加入"}).click();
@@ -190,7 +191,7 @@ test("recollecting same product merges only new SKU rows into selected My Data b
  await card.getByRole("button",{name:"加入采集批次"}).click();
  collect=page.getByRole("dialog",{name:"加入我的采集批次"});
  await collect.getByRole("radio",{name:"加入已有批次"}).check();
- await collect.getByRole("combobox",{name:"选择已有批次"}).selectOption({label:/SKU增量合并批次/});
+ await collect.getByRole("combobox",{name:"选择已有批次"}).selectOption(await collect.getByRole("combobox",{name:"选择已有批次"}).locator("option").filter({hasText:"SKU增量合并批次"}).getAttribute("value")||"");
  await collect.getByRole("checkbox",{name:"全选纯棉圆领短袖T恤变体"}).uncheck();
  await collect.getByRole("checkbox",{name:"采集变体 纯棉圆领短袖T恤 白色 / L"}).check();
  await collect.getByRole("button",{name:"确认加入"}).click();
