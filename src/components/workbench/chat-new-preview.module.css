@@ -586,3 +586,7 @@
 .guideDialog>footer{display:flex;justify-content:flex-end;padding-top:5px}
 .guideDialog>footer button{height:36px;padding:0 18px}
 @media(max-width:600px){.guideDialog{padding:16px}.guideSteps{grid-template-columns:1fr}.guideSteps>div{min-height:0}}
+
+/* Keep example cards pale in the light workspace, including pointer hover. */
+:global(.light) .workspace .examples > div > button {background:#fff;}
+:global(.light) .workspace .examples > div > button:hover {background:#f1efff;}

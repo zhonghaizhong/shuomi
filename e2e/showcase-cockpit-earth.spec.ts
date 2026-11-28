@@ -475,7 +475,7 @@ test("Chat, task center and project center light visual surfaces follow Vuexy", 
   await page.goto("/shuomi/#/workbench/ai/chat");
   await page.getByRole("button",{name:"切换浅色主题"}).click();
   const screens=[
-    {route:"/workbench/ai/chat",surfaces:['[class*="landingCard"]','[class*="example"]','[class*="steps"] > li > *']},
+    {route:"/workbench/ai/chat",surfaces:['[data-conversation-composer="stable"]','[class*="_modeList_"] button[aria-pressed]','[class*="_examples_"] > div > button']},
     {route:"/workbench/ai/tasks",surfaces:['[data-task-center-preview="all"] [class*="guideIntro"]','[data-task-center-preview="all"] [class*="guideCapabilities"] > article','[data-task-center-preview="all"] [class*="guideSteps"] > article']},
     {route:"/workbench/ai/projects",surfaces:['[data-project-showcase] [class*="guideIntro"]','[data-project-showcase] [class*="guideCapabilities"] article','[data-project-showcase] [class*="guideSteps"] article']},
   ] as const;
@@ -544,8 +544,8 @@ test("new Chat conversation light theme never leaves dark input or mode panels",
     expect(visual.foreground,selector+": text still pastel").not.toBe("rgb(207, 205, 228)");
   }
   await page.screenshot({path:"test-results/chat-new-light-fixed.png",fullPage:true});
-  await page.getByRole("button",{name:"执行定时任务"}).click();
-  await expect(page.getByRole("button",{name:"执行定时任务"})).toHaveAttribute("aria-pressed","true");
+  await page.getByRole("button",{name:"执行定时任务",exact:true}).click();
+  await expect(page.getByRole("button",{name:"执行定时任务",exact:true})).toHaveAttribute("aria-pressed","true");
   await page.getByRole("button",{name:"资源与能力"}).click();
   const drawer=page.getByRole("dialog",{name:"选择资源与能力"});
   await expect(drawer).toBeVisible();
