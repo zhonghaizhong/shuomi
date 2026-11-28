@@ -75,7 +75,7 @@ test("selected product detail uses square gallery, SKU switching and per-item se
  await expect(detail.getByText("SKU：SMYX-001-WH-M")).toBeVisible();
 });
 
-test("destination updates per-SKU landed cost and saves selected pricing basis into collected batch",async({page})=>{
+test("destination updates per-SKU cost while collection saves every selected variant and country",async({page})=>{
  await page.goto("/shuomi/#/workbench/supply/selected");
  const market=page.locator('[data-selected-market="true"]');
  await market.locator('[data-selected-product="SMYX-DEMO-001"]').getByRole("button",{name:"查看详情"}).click();
@@ -85,40 +85,55 @@ test("destination updates per-SKU landed cost and saves selected pricing basis i
  await expect(estimate).toContainText("¥60.50");
  await detail.getByRole("combobox",{name:"选择目标国家"}).selectOption("加拿大");
  await expect(estimate).toContainText("¥68.50");
- await detail.getByRole("combobox",{name:"选择目标国家"}).selectOption("美国");
  await detail.getByRole("button",{name:"加入采集批次"}).click();
  const collect=page.getByRole("dialog",{name:"加入我的采集批次"});
- await expect(collect.getByRole("combobox",{name:"采集目标国家"})).toHaveValue("美国");
+ await expect(collect.getByRole("combobox",{name:"采集目标国家"})).toHaveCount(0);
  await collect.getByRole("radio",{name:"按总成本采集"}).check();
- await collect.getByRole("textbox",{name:"新批次名称"}).fill("美国总成本批次");
+ await expect(collect.getByText("已选 4 / 4 个")).toBeVisible();
+ await collect.getByRole("checkbox",{name:"采集变体 纯棉圆领短袖T恤 黑色 / L"}).uncheck();
+ await expect(collect.getByText("已选 3 / 4 个")).toBeVisible();
+ await collect.getByRole("textbox",{name:"新批次名称"}).fill("多站点成本变体测试批次");
  await collect.getByRole("button",{name:"确认加入"}).click();
- await expect(market.getByRole("status")).toContainText("目标国家单件总成本");
- await page.goto("/shuomi/#/workbench/data/mine");
- await expect(page.getByText("美国总成本批次")).toBeVisible();
+ await expect(market.getByRole("status")).toContainText("3 个选定 SKU");
+ const collected=await page.evaluate(()=>{
+  const raw=sessionStorage.getItem("shuomi:demo-collection-batches-v1:SM-ENT-000001");
+  if(!raw)return [];
+  return (JSON.parse(raw) as Array<{name:string;products:Array<{variantCount?:number;variantDetails?:Array<{sku:string}>;destinationCosts?:Array<{skuId:string;country:string;unitTotal:number|null}>}>}>)
+   .filter(b=>b.name==="多站点成本变体测试批次").flatMap(b=>b.products);
+ });
+ expect(collected).toHaveLength(1);
+ expect(collected[0].variantCount).toBe(3);
+ expect(collected[0].variantDetails?.some(v=>v.sku==="SMYX-001-BK-L")).toBe(false);
+ expect(collected[0].destinationCosts).toHaveLength(6);
+ expect(collected[0].destinationCosts?.some(q=>q.country==="美国"&&q.unitTotal===60.5)).toBe(true);
+ expect(collected[0].destinationCosts?.some(q=>q.country==="加拿大"&&q.unitTotal===68.5)).toBe(true);
 });
-test("supply-only catalog collection does not require a target country",async({page})=>{
+test("supply-only collection can use all variants with no country selector",async({page})=>{
  await page.goto("/shuomi/#/workbench/supply/selected");
  const market=page.locator('[data-selected-market="true"]');
  await market.locator('[data-selected-product="SMYX-DEMO-001"]').getByRole("button",{name:"加入采集批次"}).click();
  const collect=page.getByRole("dialog",{name:"加入我的采集批次"});
+ await expect(collect.getByText("已选 4 / 4 个")).toBeVisible();
  await collect.getByRole("radio",{name:"只采集供货价格"}).check();
- await collect.getByRole("textbox",{name:"新批次名称"}).fill("仅供货价批次");
+ await collect.getByRole("textbox",{name:"新批次名称"}).fill("仅供货价全部变体");
  await collect.getByRole("button",{name:"确认加入"}).click();
- await expect(market.getByRole("status")).toContainText("供应商供货价");
+ await expect(market.getByRole("status")).toContainText("仅供货价格");
 });
-test("landed-cost collection rejects unavailable shared destination for multiple products",async({page})=>{
+test("bulk collection supports each product's variant selection and prevents an empty selection",async({page})=>{
  await page.goto("/shuomi/#/workbench/supply/selected");
  const market=page.locator('[data-selected-market="true"]');
  await market.getByRole("checkbox",{name:"选择纯棉圆领短袖T恤"}).check();
  await market.getByRole("checkbox",{name:"选择宽松连帽卫衣"}).check();
  await market.getByRole("button",{name:"加入我的采集批次"}).click();
  const collect=page.getByRole("dialog",{name:"加入我的采集批次"});
+ await expect(collect.getByText("已选 8 / 8 个")).toBeVisible();
+ await collect.getByRole("checkbox",{name:"全选宽松连帽卫衣变体"}).uncheck();
+ await expect(collect.getByText("已选 4 / 8 个")).toBeVisible();
+ await collect.getByRole("button",{name:"确认加入"}).click();
+ await expect(collect.getByRole("alert")).toContainText("至少选择一个 SKU");
+ await collect.getByRole("checkbox",{name:"采集变体 宽松连帽卫衣 黑色 / M"}).check();
  await collect.getByRole("radio",{name:"按总成本采集"}).check();
- await expect(collect.getByRole("combobox",{name:"采集目标国家"}).locator("option")).toHaveText(["不指定国家（仅供货价）","美国"]);
+ await collect.getByRole("textbox",{name:"新批次名称"}).fill("批量部分变体成本批次");
  await collect.getByRole("button",{name:"确认加入"}).click();
- await expect(collect.getByRole("alert")).toContainText("目标国家");
- await collect.getByRole("combobox",{name:"采集目标国家"}).selectOption("美国");
- await collect.getByRole("textbox",{name:"新批次名称"}).fill("双商品美国成本");
- await collect.getByRole("button",{name:"确认加入"}).click();
- await expect(market.getByRole("status")).toContainText("目标国家单件总成本");
+ await expect(market.getByRole("status")).toContainText("5 个选定 SKU");
 });
