@@ -9,15 +9,12 @@ import {useDemoStoreBindings} from "../store-binding-demo";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
 import {readDemoOrders} from "../stores/showcase-order-demo";
 
-type StoreSummary={id:string;name:string;platform:string;site:string;type:string;gmv:string;impressions:string;clicks:string;trend:string;status:string;issue?:string};
-
-type AlertSummary={title:string;detail:string;level:string;tone:string};
-const alerts:AlertSummary[]=[];
+type StoreSummary={id:string;name:string;platform:string;site:string;type:string;impressions:string;clicks:string;status:string;issue?:string};
 
 export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}:{organizationId?:string;memberId?:string}={}) {
   const administrator=memberId==="admin"||getDemoMembership({organizationId,memberId})?.role==="管理员";
   const bindings=useDemoStoreBindings(organizationId,memberId,administrator);
-  const stores:StoreSummary[]=bindings.visible.filter(s=>Boolean(s.platformStoreId)).map(s=>({id:s.id,name:s.name,platform:s.platform,site:s.region,type:s.type,gmv:"—",impressions:"—",clicks:"—",trend:"—",status:s.connectionIssue?"需关注":"数据待接入",issue:s.connectionIssue}));
+  const stores:StoreSummary[]=bindings.visible.filter(s=>Boolean(s.platformStoreId)).map(s=>({id:s.id,name:s.name,platform:s.platform,site:s.region,type:s.type,impressions:"—",clicks:"—",status:s.connectionIssue?"需关注":"数据待接入",issue:s.connectionIssue}));
   const router = useRouter();
   const emptyFilters = { platform: "全部平台", site: "全部站点", type: "全部店铺类型", time: "全部时间", search: "" };
   const [filters, setFilters] = useState(emptyFilters);
@@ -70,15 +67,15 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
         </div>
       </article>
       <article className={styles.aiTasksCard}>
-        <header><h2>AI 执行与待办</h2><span>0 项待办</span></header>
-        <div className={styles.aiTasksList}><p>暂无已关联的 AI 任务和经营待办，后续接入业务再展示。</p></div>
+        <header><h2>AI 执行与待办</h2><span>数据待接入</span></header>
+        <div className={styles.aiTasksList}><p>尚无与当前店铺范围关联的可核验任务数据。请到任务中心查看实际进度。</p><button type="button" onClick={()=>router.push("/workbench/ai/tasks")}>查看任务中心</button></div>
       </article>
     </section>
     <div className={styles.overviewFilters}>
       <div className={styles.filterSelects}>
-        <select aria-label="平台" value={filters.platform} onChange={event => updateFilter("platform", event.target.value)}><option>全部平台</option>{[...new Set(stores.map(s=>s.platform))].map(x=><option key={x}>{x}</option>)}</select>
-        <select aria-label="站点" value={filters.site} onChange={event => updateFilter("site", event.target.value)}><option>全部站点</option>{[...new Set(stores.map(s=>s.site))].map(x=><option key={x}>{x}</option>)}</select>
-        <select aria-label="店铺类型" value={filters.type} onChange={event => updateFilter("type", event.target.value)}><option>全部店铺类型</option>{[...new Set(stores.map(s=>s.type))].map(x=><option key={x}>{x}</option>)}</select>
+        <select aria-label="平台" value={filters.platform} onChange={event => setFilters(current=>({...current,platform:event.target.value,site:"全部站点",type:"全部店铺类型"}))}><option>全部平台</option>{[...new Set(stores.map(s=>s.platform))].map(x=><option key={x}>{x}</option>)}</select>
+        <select aria-label="站点" value={filters.site} onChange={event => setFilters(current=>({...current,site:event.target.value,type:"全部店铺类型"}))}><option>全部站点</option>{[...new Set(stores.filter(s=>filters.platform==="全部平台"||s.platform===filters.platform).map(s=>s.site))].map(x=><option key={x}>{x}</option>)}</select>
+        <select aria-label="店铺类型" value={filters.type} onChange={event => updateFilter("type", event.target.value)}><option>全部店铺类型</option>{[...new Set(stores.filter(s=>(filters.platform==="全部平台"||s.platform===filters.platform)&&(filters.site==="全部站点"||s.site===filters.site)).map(s=>s.type))].map(x=><option key={x}>{x}</option>)}</select>
         <select aria-label="时间" value={filters.time} onChange={event => updateFilter("time", event.target.value)}><option>全部时间</option><option>最近7天</option><option>最近30天</option></select>
       </div>
       <div className={styles.filterActions}>
@@ -97,7 +94,7 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
       <header className={styles.digestHeader}><div><h2>经营表现</h2><span>核心指标 · {scopeLabel} · 按当前筛选汇总</span></div><button type="button" onClick={()=>router.push("/workbench/overview/stores")}>店铺详情</button></header>
       <div className={styles.digestMain}>
         <div className={styles.digestLead}><span>总 GMV</span><div><strong>—</strong><small>平台成交金额待接入</small></div><p>{visibleStores.length} 家店铺 · {scopeLabel} · 经营目标见目标管理</p></div>
-        <div className={styles.digestBars} role="img" aria-label="近一周 GMV 暂无数据">{[0, 0, 0, 0, 0, 0, 0].map((height, index) => <div key={index}><i style={{ height: `${height}%` }} /><span>{["周一", "周二", "周三", "周四", "周五", "周六", "周日"][index]}</span></div>)}</div>
+        <div className={styles.digestBars} role="img" aria-label="平台每日 GMV 未接入，图表不展示虚构走势">{[0, 0, 0, 0, 0, 0, 0].map((height, index) => <div key={index}><i style={{ height: `${height}%` }} /><span>{["周一", "周二", "周三", "周四", "周五", "周六", "周日"][index]}</span></div>)}</div>
       </div>
       <div className={styles.digestDetails}>
         <article><span className={styles.digestLabel}><ShoppingCart size={15}/>订单量</span><strong>{scopedOrders.length?scopedOrders.length.toLocaleString("zh-CN"):"—"}</strong><small>{scopedOrders.length?"当前范围演示订单 · 非实时平台数据":"平台订单未接入，当前无演示订单"}</small><div className={styles.digestProgress}><i data-tone="purple"/></div></article>
@@ -128,11 +125,11 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
     <section className={`${styles.panel} ${styles.storeMatrixPanel}`}>
       <header><div><span>店铺矩阵</span><h2>{visibleStores.length} 家店铺 · 订单 / 曝光 / 点击</h2></div><button className={styles.linkButton} onClick={() => router.push("/workbench/overview/stores")}>查看全部店铺 <ArrowRight size={13}/></button></header>
       <div className={styles.matrixTable} role="table" aria-label="店铺经营数据">
-        <div className={styles.matrixHead} role="row"><span><input type="checkbox" aria-label="全选当前页店铺"/></span><b>店铺</b><b>平台 / 站点</b><b>演示订单</b><b>曝光量</b><b>点击量</b><b>连接状态</b><b>数据状态</b></div>
+        <div className={styles.matrixHead} role="row"><span>操作</span><b>店铺</b><b>平台 / 站点</b><b>演示订单</b><b>曝光量</b><b>点击量</b><b>连接状态</b><b>数据状态</b></div>
         {pageStores.map(row => {
           const demoOrderCount=ordersByStore.get(row.id)??0;
           return <div className={styles.matrixRow} role="row" key={row.id}>
-            <span><input type="checkbox" aria-label={`选择${row.name}`}/></span>
+            <span><button type="button" aria-label={`查看${row.name}的店铺详情`} onClick={()=>router.push("/workbench/overview/stores")}>查看</button></span>
             <span className={styles.matrixStore}><i><Store size={15}/></i><strong>{row.name}<small>{row.type}</small></strong></span>
             <span>{row.platform} · {row.site}</span><b>{demoOrderCount||"—"}</b><b>{row.impressions}</b><b>{row.clicks}</b>
             <em data-status={row.status}>{row.issue??"未发现连接异常"}</em>
