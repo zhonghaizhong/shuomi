@@ -36,3 +36,23 @@ test("selected catalog supports multi-select and preserves private batch ownersh
  await collect.getByRole("button",{name:"确认加入"}).click();
  await expect(market.getByRole("status")).toContainText("2 件商品");
 });
+
+test("selected catalog shows renamed metrics, MOQ slider and country shipping details",async({page})=>{
+ await page.goto("/shuomi/#/workbench/supply/selected");
+ const market=page.locator('[data-selected-market="true"]');
+ await expect(market.getByText("货盘商品",{exact:true})).toBeVisible();
+ await expect(market.getByText("供应商数量",{exact:true})).toBeVisible();
+ const moq=market.getByRole("slider",{name:"起订量"});
+ await expect(moq).toHaveValue("100");
+ await moq.fill("1");
+ await expect(market.locator('[data-selected-product="SMYX-DEMO-001"]')).toBeVisible();
+ await expect(market.locator('[data-selected-product="SMYX-DEMO-003"]')).toHaveCount(0);
+ await moq.fill("100");
+ await market.locator('[data-selected-product="SMYX-DEMO-001"]').getByRole("button",{name:"查看详情"}).click();
+ const dialog=page.getByRole("dialog",{name:"优选商品详情"});
+ await expect(dialog.getByText("包装重量")).toBeVisible();
+ await expect(dialog.getByText("包装体积")).toBeVisible();
+ await expect(dialog.getByRole("heading",{name:"各国家运费与配送时效"})).toBeVisible();
+ await expect(dialog.getByText("29.00",{exact:false})).toBeVisible();
+ await expect(dialog.getByText("运输时效不包含备货")).toBeVisible();
+});
