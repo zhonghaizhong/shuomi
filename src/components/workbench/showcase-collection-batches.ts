@@ -4,6 +4,10 @@
 export type DemoCollectedProduct={id:string;name:string;sku:string;source:string;price:string;status:"演示数据";supplyProductId?:string;supplierId?:string;supplierName?:string;supplyVersion?:string;supplySkuId?:string;images?:string[];variants?:string[];variantCount?:number;variantDetails?:Array<{sku:string;label:string;color:string;size:string;image:string;images?:string[];price?:string;stock?:string;description?:string;sourceUrl?:string}>;originalTitle?:string;description?:string;demoSourceLink?:string;supplyType?:string;warehouseCountry?:string;shipToCountries?:string[];moq?:number;dropship?:boolean|null;
  /** Customer-selected costing mode for catalog collection; not a marketplace price. */
  collectionPriceMode?:"supply"|"landed";destinationCountry?:string;quoteCurrency?:string;costBreakdown?:{supplyPrice:number;inspection:number;packing:number;labeling:number;freight:number;unitTotal:number;currency:string;demo:boolean};
+ /** Every destination retained independently. In landed mode price remains a supply-price
+  * baseline; the country/variant total is recorded in destinationCosts, never flattened. */
+ destinationCosts?:Array<{skuId:string;country:string;supplyPrice:number;inspection:number|null;packing:number|null;labeling:number|null;freight:number|null;unitTotal:number|null;currency:string;complete:boolean;demo:boolean}>;
+
 };
 export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon"|"SDS"|"硕米优选";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
 type CatalogItem={name:string;price:string;variants:string[];description:string;photos:string[]};
