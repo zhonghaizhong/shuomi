@@ -34,6 +34,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const [previewProductId,setPreviewProductId]=useState<string|null>(null);
  const [generateProductId,setGenerateProductId]=useState<string|null>(null);
  const [generateSku,setGenerateSku]=useState("");
+ const [generateSkus,setGenerateSkus]=useState<string[]>([]);
  const [generateMessage,setGenerateMessage]=useState("");
  const [approvalPrintId,setApprovalPrintId]=useState<number|null>(null);
  const [approvalMode,setApprovalMode]=useState<"部分通过"|"全部通过">("部分通过");
@@ -127,6 +128,8 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
  const previewProduct=sourceLinkedProducts.find(p=>p.id===previewProductId);
  const generateProduct=sourceLinkedProducts.find(p=>p.id===generateProductId);
  const selectedGenerateVariant=generateProduct?.variantDetails?.find(v=>v.sku===generateSku);
+ const generateVariants=generateProduct?.variantDetails??[];
+ const generateColors=[...new Set(generateVariants.map(v=>v.color))];
  const relatedBindings=activePrint?activeBindings:[];
  const selectTab=(next:Tab)=>{setTab(next);setPreviewNote("");setSearch("");setApplied("");setCategory("全部分类");setStatus("全部状态");setPage(1);setPanel(null);setNotice("")};
  const open=(p:typeof panel,a?:Asset)=>{setPanel(p);setChosen(a??null);setNotice("")};
@@ -202,7 +205,7 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
        {tab==="我的素材库"?<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>setDeleteCandidate(asset)}>删除</button>{asset.readonly?<span className={css.sourceLocked}>已关联 · 保留历史原图</span>:null}</div>:tab==="产品图审核"?<div className={css.cardActions}>{asset.status==="待审核"?<><button type="button" onClick={()=>openApproval(asset,"部分通过")}>部分通过</button><button type="button" onClick={()=>openApproval(asset,"全部通过")}>全部通过</button><button type="button" onClick={()=>audit(asset.id,"退回重做")}>退回</button><button type="button" onClick={()=>audit(asset.id,"驳回")}>驳回</button></>:<><button type="button" onClick={()=>open("预览图片",asset)}>查看详情</button>{asset.status==="审核通过"?<button type="button" onClick={()=>{try{reopenPodPrintReview(organizationId,memberId,asset.lineagePrintId!,asset.lineageVersion!);setNotice("已撤销误通过，恢复待审核；已有预览文件保留。")}catch(error){setNotice(error instanceof Error?error.message:"撤销失败")}}}>撤销通过</button>:null}</>}</div>:<div className={css.cardActions}><button type="button" onClick={()=>promptFor(asset)}>查看提示词</button><button type="button" onClick={()=>open("加入素材",asset)}>加入素材库</button></div>}
       </article>)}</div>:<div className={css.empty}>{tab==="我的素材库"?(assets.length?"当前筛选条件下暂无素材，请重置筛选。":"暂无素材，可点击右上角「上传素材」添加。"):tab==="产品图审核"?(reviews.length?"当前筛选条件下暂无印花审核记录，请重置筛选。":"暂无已归档的印花待审核；原图存入正式文件库并登记编号后才会显示。"):"当前筛选条件下暂无灵感内容，请重置筛选。"}</div>}
     </div>{tab==="产品图审核"?<aside className={css.relatedPanel} aria-label="关联产品与效果预览"><h3>关联产品与效果预览</h3>{activePrint?<><div className={css.selectedPrintHeader}><img src={inspirationImageSrc(activePrint)} alt={activePrint.name}/><div><strong>{activePrint.name}</strong><small>编号：{activePrint.lineagePrintId} · V{activePrint.lineageVersion}</small><small>状态：{activePrint.status}</small></div></div><div className={css.relatedTabs}><strong>关联产品（{sourceLinkedProducts.length+relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length}）</strong><span>来源关联 · 不等于审核通过</span></div>
-{sourceLinkedProducts.length?<div className={css.relatedProducts}>{sourceLinkedProducts.map(p=><LinkedPodProduct key={activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id} product={p} onZoom={openProductZoom} onOpenPreview={()=>setPreviewProductId(p.id)} onGeneratePreview={()=>{setGenerateProductId(p.id);setGenerateSku(p.variantDetails?.[0]?.sku??"");setGenerateMessage("");}} previewCount={archivedPreviews.filter(x=>x.productId===p.id).length}/>)}</div>:null}
+{sourceLinkedProducts.length?<div className={css.relatedProducts}>{sourceLinkedProducts.map(p=><LinkedPodProduct key={activePrint.lineagePrintId+"@"+activePrint.lineageVersion+":"+p.id} product={p} onZoom={openProductZoom} onOpenPreview={()=>setPreviewProductId(p.id)} onGeneratePreview={()=>{setGenerateProductId(p.id);setGenerateSku(p.variantDetails?.[0]?.sku??"");setGenerateSkus([]);setGenerateMessage("");}} previewCount={archivedPreviews.filter(x=>x.productId===p.id).length}/>)}</div>:null}
 {relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).length?<div className={css.relatedProducts}>{relatedBindings.filter(b=>!sourceLinkedProducts.some(p=>p.id===b.productId)).map((b,i)=><div key={b.productId+"/"+b.variantId+"/"+i} className={css.relatedProduct}><div className={css.productPlaceholder}>暂无商品图</div><div><strong>正式绑定：{b.productId}</strong><small>变体：{b.variantId}</small>{b.sku?<small>SKU：{b.sku}</small>:null}</div></div>)}</div>:null}
 {!sourceLinkedProducts.length&&!relatedBindings.length?<div className={css.relatedEmpty}>该印花暂无可读取的关联商品。<small>演示数据仅在指定企业的管理员账号中显示；审核通过不强制要求生成效果图。</small></div>:null}{previewNote?<p role="status" className={css.previewNotice}>{previewNote}</p>:null}</>:<div className={css.relatedEmpty}>点击左侧任意印花图片，查看关联产品及效果预览。</div>}</aside>:null}</div>
     <div className={css.pagination}><span>共 {filtered.length} 条 · 第 {page} / {Math.max(1,Math.ceil(filtered.length/perPage))} 页</span><div><button type="button" disabled={page===1} onClick={()=>setPage(x=>Math.max(1,x-1))}>上一页</button><button type="button" disabled={page*perPage>=filtered.length} onClick={()=>setPage(x=>x+1)}>下一页</button></div></div>
@@ -276,15 +279,26 @@ export function PodManagementWorkspace({onClose,organizationId="SM-ENT-000001",m
      <footer><span>已选择 {approvalSkuCount} 个 SKU（{approvalProducts.filter(p=>(approvalDraft[p.id]??[]).length>0).length} 款商品）</span><div><button type="button" onClick={()=>setApprovalPrintId(null)}>取消</button><button type="button" disabled={!approvalSkuCount} onClick={approveSelected}>确认{approvalMode}</button></div></footer>
     </section></div>:null}
    {generateProduct?<div className={css.zoomOverlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setGenerateProductId(null)}}>
-    <section className={css.podActionDialog+" "+css.podGenerateDialog} role="dialog" aria-modal="true" aria-label="生成单张产品效果预览">
-     <header><div><strong>生成产品效果预览 · 选择规格</strong><small>每次只针对一个 SKU 生成一张组合效果图，不会批量消耗积分。</small></div><button type="button" onClick={()=>setGenerateProductId(null)}>关闭</button></header>
+    <section className={css.podActionDialog+" "+css.podGenerateDialog} role="dialog" aria-modal="true" aria-label="选择多个 SKU 生成产品效果预览">
+     <header><div><strong>生成产品效果预览 · 多选规格</strong><small>按颜色与尺码自由多选 SKU，右侧只展示当前查看规格的原始商品图。</small></div><button type="button" onClick={()=>setGenerateProductId(null)}>关闭</button></header>
      <div className={css.generatePreviewBody}>
-      <div><strong>{generateProduct.name}</strong><small>商品编号：{generateProduct.id}</small><label>选择具体 SKU<select value={generateSku} onChange={e=>{setGenerateSku(e.target.value);setGenerateMessage("")}}>{(generateProduct.variantDetails??[]).map(v=><option value={v.sku} key={v.sku}>{v.color} / {v.size} · {v.sku}</option>)}</select></label><p>颜色、尺码和完整 SKU 必须明确；未来如果同一颜色不同尺寸对应不同商品图片，按该 SKU 的原始图执行。</p></div>
-      <div>{(selectedGenerateVariant?.image??selectedGenerateVariant?.images?.[0]??generateProduct.images?.[0])?<img src={selectedGenerateVariant?.image??selectedGenerateVariant?.images?.[0]??generateProduct.images?.[0]} alt={"原始商品图 "+(selectedGenerateVariant?.label??"")} loading="lazy"/>:<div className={css.productPlaceholder}>暂无商品原图</div>}<small>当前 SKU 原始商品图</small></div>
+      <div className={css.generateSkuPanel}>
+       <strong>{generateProduct.name}</strong><small>商品编号：{generateProduct.id}</small>
+       <div className={css.generateSelectionHeader}><strong>选择颜色与尺码</strong><span>已选 {generateSkus.length}/{generateVariants.length} 个 SKU</span><button type="button" onClick={()=>setGenerateSkus(generateVariants.map(v=>v.sku))}>全选</button><button type="button" onClick={()=>setGenerateSkus([])}>清空</button></div>
+       <div className={css.generateColorRows}>{generateColors.map(color=><div className={css.generateColorRow} key={color}>
+        <div><strong>{color}</strong><small>{generateVariants.filter(v=>v.color===color&&generateSkus.includes(v.sku)).length}/{generateVariants.filter(v=>v.color===color).length} 已选</small></div>
+        <div className={css.generateSizeChoices}>{generateVariants.filter(v=>v.color===color).map(v=><button type="button" key={v.sku} title={v.sku} aria-pressed={generateSkus.includes(v.sku)} aria-label={v.color+" / "+v.size+" · "+v.sku} className={[generateSkus.includes(v.sku)?css.generateSizeSelected:"",generateSku===v.sku?css.generateSizeFocused:""].join(" ")} onClick={()=>{setGenerateSku(v.sku);setGenerateMessage("");setGenerateSkus(prev=>prev.includes(v.sku)?prev.filter(x=>x!==v.sku):[...prev,v.sku])}}>{v.size}</button>)}</div>
+       </div>)}</div>
+       <p>点击尺码勾选或取消，同时联动右侧原始商品图。不同尺码对应不同图片时，以实际 SKU 图片为准。</p>
+      </div>
+      <div className={css.generateSkuImage}>
+       {(selectedGenerateVariant?.image??selectedGenerateVariant?.images?.[0]??generateVariants.find(v=>v.color===selectedGenerateVariant?.color&&(v.image||v.images?.[0]))?.image??generateProduct.images?.[0])?<img src={selectedGenerateVariant?.image??selectedGenerateVariant?.images?.[0]??generateVariants.find(v=>v.color===selectedGenerateVariant?.color&&(v.image||v.images?.[0]))?.image??generateProduct.images?.[0]} alt={"原始商品图 "+(selectedGenerateVariant?.label??"")} loading="lazy"/>:<div className={css.productPlaceholder}>暂无商品原图</div>}
+       <strong>当前查看：{selectedGenerateVariant?.color??"—"} / {selectedGenerateVariant?.size??"—"}</strong><small>SKU：{selectedGenerateVariant?.sku??"—"}</small><small>原始商品图 · 非 AI 效果图</small>
+      </div>
      </div>
-     <p className={css.generateBillingNotice}>正式生成时将消耗 AI 积分，必须在调用前显示实际预计积分并确认。目前未接入生成服务及积分计费，不能生成或扣费。</p>
+     <p className={css.generateBillingNotice}>已选择 {generateSkus.length} 个 SKU。多选只表示待生成的规格清单，不会自动批量生图。正式生成前须展示每张图片和总积分、经确认后才逐张生成。目前未接入生图及积分接口。</p>
      {generateMessage?<p role="status">{generateMessage}</p>:null}
-     <footer><span>单张预览 · 不影响印花审核</span><div><button type="button" onClick={()=>setGenerateProductId(null)}>取消</button><button type="button" disabled={!generateSku} onClick={()=>setGenerateMessage("尚未接入 AI 生图与计费接口，未生成图片，也未扣除积分。")}>确认生成（尚未接入）</button></div></footer>
+     <footer><span>预览不影响印花审核 · 暂不产生积分费用</span><div><button type="button" onClick={()=>setGenerateProductId(null)}>取消</button><button type="button" disabled={!generateSkus.length} onClick={()=>setGenerateMessage("已选择 "+generateSkus.length+" 个 SKU。AI 生图与积分计费尚未接入，没有执行生图或扣费。")}>确认所选规格（尚未接入）</button></div></footer>
     </section></div>:null}
    {previewProduct?<div className={css.zoomOverlay} role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setPreviewProductId(null)}}>
     <section className={css.podActionDialog+" "+css.podWideDialog+" "+css.podPreviewWideDialog} role="dialog" aria-modal="true" aria-label={"产品效果预览："+previewProduct.name}>
