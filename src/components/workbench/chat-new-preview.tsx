@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./chat-new-preview.module.css";
 import {readPreviewProjects, createPreviewProject, savePreviewProject, projectTemplates} from "./showcase-project-data";
-import {useRouter} from "next/navigation";
 import {readEnabledPreviewSkills,readPersonalPreviewSkills,savePersonalPreviewSkill} from "./showcase-skill-library";
 import {savePersonalKnowledge} from "./showcase-knowledge-groups";
 import {savePreviewReport} from "./showcase-report-center";
@@ -60,7 +59,6 @@ type ApprovalKind = "knowledge" | "skill" | "report";
 type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; approval?: ApprovalKind };
 
 export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin" }: Props) {
-  const router=useRouter();
   const [projectEntry]=useState(()=>{const q=new URLSearchParams(typeof window==="undefined"?"":window.location.hash.split("?").slice(1).join("?"));const id=q.get("projectId");const template=projectTemplates.find(t=>t.name===q.get("projectTemplate"));const project=readPreviewProjects().find(p=>p.id===id&&p.status!=="已归档");return {mode:q.get("projectMode"),template,project}});
   const [linkedProjectId,setLinkedProjectId]=useState(projectEntry.project?.id||"");
   const [projectName,setProjectName]=useState(projectEntry.template?.name||"");
