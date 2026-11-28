@@ -136,7 +136,7 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
     : scheduleFrequency === "weekly"
       ? "每" + weekdayNames[Number(scheduleWeekday)] + " " + scheduleTime
       : "每月 " + scheduleMonthday + " 日 " + scheduleTime;
-  const startNewConversation = () => { setChatActive(false); setMessages([]); setDraft(""); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
+  const startNewConversation = () => { setChatActive(false); setMessages([]); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
   const buildApprovalPreview = (index: number, request: string): Omit<PreviewMessage, "id"> | null => {
     if (index === 3) return {
       role: "assistant",
@@ -215,9 +215,9 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
   };
 
   return <div className={styles.workspace} data-chat-active={chatActive}>
-      <section className={styles.composer} aria-label={chatActive ? "会话消息与输入区" : "新建会话输入区"}>
+      <section className={styles.composer} aria-label={chatActive ? "会话消息与输入区" : "新建会话输入区"} data-conversation-composer="stable">
         <header className={styles.composerIntro}><div><h2>有什么想交给硕米？</h2><p>{chatActive ? "当前会话的消息和处理结果在这里继续显示，不切换页面。" : "直接描述问题或工作目标，硕米协助整理并回复。"}</p></div>{chatActive && <button className={styles.newConversation} onClick={startNewConversation}>＋ 新会话</button>}</header>
-        {chatActive && <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请确认是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button></div></div>}</article>)}</div>}
+        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请确认是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button></div></div>}</article>)}
         {confirmation && <section className={styles.inlineConfirmation} aria-label="会话内确认任务">
         <header><div><h2 id="chat-confirm-title">确认{mode.title}</h2><p>请核对当前内容和关联范围，再继续下一步。</p></div><button aria-label="关闭" onClick={() => setConfirmation(false)}>×</button></header>
         {modeIndex === 1 && <section className={styles.scheduleFields} aria-label="定时安排">
@@ -231,8 +231,9 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
         <div className={styles.confirmSummary}>{modeIndex === 1 && <><span>执行安排</span><strong>{scheduleDescription}</strong></>}<span>执行方式</span><strong>{mode.title}</strong><span>工作内容</span><p>{draft}</p><span>关联店铺</span><p>{selectedStores.length ? selectedStores.join("、") : "未关联店铺"}</p><span>引用资源</span><p>{selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配"}</p></div>
         <footer className={styles.drawerFooter}><button onClick={() => setConfirmation(false)}>返回修改</button><button className={styles.primary} onClick={confirmAction}>确认并继续</button></footer>
         </section>}
+        </div>
         <label className={styles.srOnly} htmlFor="chat-new-prompt">描述你的业务目标</label>
-        <textarea id="chat-new-prompt" maxLength={2000} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); submit(); } }} placeholder={chatActive ? "继续输入，按 Ctrl / ⌘ + Enter 发送…" : mode.placeholder} />
+        <textarea id="chat-new-prompt" maxLength={2000} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); submit(); } }} placeholder={modeIndex===0?"向硕米提问，或描述你想完成的任务…":mode.placeholder} />
         {(selectedResources.length > 0 || selectedStores.length > 0 || files.length > 0) && <div className={styles.selectedTags}>
           {selectedStores.map(item => <span key={`store-${item}`}>店铺 · {item}<button aria-label={`移除${item}`} onClick={() => setSelectedStores(selectedStores.filter(value => value !== item))}>×</button></span>)}
           {selectedResources.map(item => <span key={`resource-${item}`}>资源 · {item}<button aria-label={`移除${item}`} onClick={() => setSelectedResources(selectedResources.filter(value => value !== item))}>×</button></span>)}
@@ -249,7 +250,7 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
             <button onClick={() => { setPendingResources(selectedResources); setDrawer("resources"); }}>资源与能力</button>
             <button onClick={() => { setPendingStores(selectedStores); setDrawer("stores"); }}>关联店铺{selectedStores.length ? ` · ${selectedStores.length}` : ""}</button>
           </div>
-          <div className={styles.sendGroup}><button className={styles.primary} onClick={submit}>{chatActive ? "发送消息" : mode.action}</button></div>
+          <div className={styles.sendGroup}><button className={styles.primary} onClick={submit}>{modeIndex===0?"发送消息":mode.action}</button></div>
         </footer>
       </section>
       <aside className={styles.modePanel} aria-label="选择执行方式">
