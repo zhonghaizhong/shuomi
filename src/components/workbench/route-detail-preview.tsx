@@ -289,7 +289,11 @@ function PlanDetail({ pathname, active, setActive, query, setQuery, submit, filt
   const primaryOrganization=organizationId==="SM-ENT-000001";
   const historicalPurchases=primaryOrganization?plansDemoPurchases:[];
   const historicalCredit=primaryOrganization?plansDemoWalletCredit:null;
-  const rows: string[][] = pathname.endsWith("usage") ? [] : [...(historicalCredit?[[historicalCredit.occurredAt,"钱包充值",historicalCredit.description,`¥${historicalCredit.amountCny.toLocaleString("zh-CN")}.00`,historicalCredit.status]]:[]),...historicalPurchases.map(p=>[p.at,p.type,p.detail,`¥${p.amountCny.toLocaleString("zh-CN")}.00`,p.status]),...demoPurchases.map(p=>[p.at,p.type,p.detail,"¥"+p.amountCny.toFixed(2),p.status])];
+  const externalPurchaseRows:string[][]=[];
+  if(typeof window!=="undefined"&&organizationAdmin){
+   try{const prefix="shuomi:demo-orders:"+organizationId+":";for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k?.startsWith(prefix))continue;const orders=JSON.parse(localStorage.getItem(k)||"[]");if(!Array.isArray(orders))continue;for(const o of orders){const p=o.purchasePayment;if(p?.demo===true&&p.status==="模拟支付成功"&&Number.isFinite(p.amountCny)&&["微信支付","支付宝"].includes(p.method))externalPurchaseRows.push([new Date(p.paidAt).toLocaleString("zh-CN",{hour12:false}),"商品采购",o.id+" · "+o.name+" · "+p.method,"¥"+p.amountCny.toFixed(2),p.status]);}}}catch{}
+  }
+  const rows: string[][] = pathname.endsWith("usage") ? [] : [...externalPurchaseRows,...(historicalCredit?[[historicalCredit.occurredAt,"钱包充值",historicalCredit.description,`¥${historicalCredit.amountCny.toLocaleString("zh-CN")}.00`,historicalCredit.status]]:[]),...historicalPurchases.map(p=>[p.at,p.type,p.detail,`¥${p.amountCny.toLocaleString("zh-CN")}.00`,p.status]),...demoPurchases.map(p=>[p.at,p.type,p.detail,"¥"+p.amountCny.toFixed(2),p.status])];
   const walletRows=[
    ...(historicalCredit?[{id:"credit",at:historicalCredit.occurredAt,type:"模拟充值",detail:historicalCredit.description,amount:"+"+"¥"+historicalCredit.amountCny.toLocaleString("zh-CN")+".00",balance:"¥10,000.00"}]:[]),
    ...historicalPurchases.map((p,i)=>({id:p.id,at:p.at,type:"模拟购买",detail:p.type+" · "+p.detail,amount:"-¥"+p.amountCny.toLocaleString("zh-CN")+".00",balance:"¥"+((historicalCredit?.amountCny||0)-historicalPurchases.slice(0,i+1).reduce((v,item)=>v+item.amountCny,0)).toLocaleString("zh-CN")+".00"})),

@@ -5,8 +5,7 @@ import {PackageSearch,Search,ShieldCheck,CheckCircle2} from "lucide-react";
 import {preferredApplicationChanged,readDemoSelectedCatalog} from "./preferred-application-store";
 import {selectedCatalogFixtures,type SelectedCatalogProduct} from "./showcase-selected-catalog-fixtures";
 import {readDemoCollectionBatches,addSelectedCatalogProducts,type DemoCollectedProduct,type DemoCollectionBatch} from "./showcase-collection-batches";
-import {readDemoPurchases,writeDemoPurchases,useDemoPurchases,type DemoPurchase} from "./showcase-purchases";
-import {plansDemoFacts} from "./plans-demo-facts";
+import {QrCode} from "lucide-react";
 import {readDemoStoreBindings} from "./store-binding-demo";
 import css from "./showcase-selected-market.module.css";
 
@@ -85,12 +84,13 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const [notice,setNotice]=useState(""),[error,setError]=useState("");
  const [purchase,setPurchase]=useState<{orderId:string;storeId:string;productId:string;skuId:string;quantity:number;source:string;org:string;member:string;storeName:string;region:string;destinationCountry:string;orderAmount:string;orderCreated:string}|null>(null);
  const [purchaseError,setPurchaseError]=useState("");
- const [paymentOpen,setPaymentOpen]=useState(false),[paymentPin,setPaymentPin]=useState(""),[paymentError,setPaymentError]=useState("");
+ const [paymentOpen,setPaymentOpen]=useState(false),[paymentMethod,setPaymentMethod]=useState<"微信支付"|"支付宝">("微信支付"),[paymentExpires,setPaymentExpires]=useState(0),[paymentNow,setPaymentNow]=useState(0),[paymentError,setPaymentError]=useState("");
  const paymentDialog=useRef<HTMLDialogElement>(null);
  useEffect(()=>{const d=paymentDialog.current;if(paymentOpen&&d&&!d.open)d.showModal();else if(!paymentOpen&&d?.open)d.close()},[paymentOpen]);
- const closePayment=()=>{setPaymentOpen(false);setPaymentPin("");setPaymentError("")};
- const {purchases:walletEntries}=useDemoPurchases(organizationId);
- const walletBalance=walletEntries[0]?.balanceAfter??(organizationId==="SM-ENT-000001"?plansDemoFacts.walletBalanceCny:0);
+ const closePayment=()=>{setPaymentOpen(false);setPaymentError("")};
+ const refreshPayment=(method:"微信支付"|"支付宝")=>{const now=Date.now();setPaymentMethod(method);setPaymentNow(now);setPaymentExpires(now+300000);setPaymentError("")};
+ useEffect(()=>{if(!paymentOpen)return;const timer=window.setInterval(()=>setPaymentNow(Date.now()),1000);return()=>window.clearInterval(timer)},[paymentOpen]);
+ const paymentRemaining=Math.max(0,Math.ceil((paymentExpires-paymentNow)/1000));
  useEffect(()=>{
   const refresh=()=>{setBatches(readDemoCollectionBatches(organizationId,memberId));setRevision(v=>v+1)};
   refresh();
@@ -162,9 +162,8 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const ownedBatches=batches.filter(b=>b.organizationId===organizationId&&b.ownerMemberId===memberId&&!archivedBatchIds.has(b.id));
  const purchaseTotal=selectedCost?.unitTotal!=null&&selectedCost.currency==="CNY"&&purchase?Math.round(selectedCost.unitTotal*purchase.quantity*100)/100:null;
  const confirmPurchase=()=>{
-  // Explicitly non-secret demonstration credential; no real authentication or payment.
-  if(!paymentOpen||paymentPin!=="123456"){setPaymentError("演示支付密码错误，请重新输入。");setPaymentPin("");return}
-  closePayment();
+  // Only the explicit demonstration callback can complete this local purchase.
+  if(!paymentOpen||Date.now()>=paymentExpires){setPaymentError("支付二维码已过期，请刷新。");return}
   setPurchaseError("");
   if(!purchase||!current||current.id!==purchase.productId||selectedSku?.id!==purchase.skuId)return;
   if(!Number.isSafeInteger(purchase.quantity)||purchase.quantity<=0||(terms?.moq??current.moq)>purchase.quantity||selectedSku.stock<purchase.quantity||selectedSku.price<=0||targetCountry!==purchase.destinationCountry||!selectedCost?.complete||purchaseTotal===null||purchaseTotal<=0){setPurchaseError("订单供货条件或配送报价不完整，不能采购。");return}
@@ -176,16 +175,11 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
    const order=rows.find((o:{id:string;storeId:string;stage:number;purchaseId?:string;supplyProductId?:string;supplySkuId?:string})=>o.id===purchase.orderId&&o.storeId===purchase.storeId&&o.stage<3&&!o.purchaseId&&o.supplyProductId===purchase.productId&&o.supplySkuId===purchase.skuId);
    if(!order)throw Error("订单不可采购或已采购。");
    const id="SIM-PURCHASE-"+order.id;
-   const entries=readDemoPurchases(organizationId);
-   const previous=entries.find(e=>e.id===id);
-   const balance=entries[0]?.balanceAfter??(organizationId==="SM-ENT-000001"?plansDemoFacts.walletBalanceCny:0);
-   if(!previous&&balance<purchaseTotal)throw Error("钱包余额不足，请先充值。");
-   if(previous&&(previous.type!=="商品采购"||previous.amountCny!==purchaseTotal))throw Error("采购账单金额不一致，请核对原账单。");
-   const entry:DemoPurchase={id,at:new Date().toLocaleString("zh-CN",{hour12:false}),type:"商品采购",quantity:purchase.quantity,amountCny:purchaseTotal,detail:order.id+" · "+current.name+" · "+selectedSku.id+" · "+targetCountry,balanceAfter:Math.round((balance-purchaseTotal)*100)/100,status:"模拟购买成功"};
-   if(!previous&&!writeDemoPurchases([entry,...entries],organizationId))throw Error("钱包扣款保存失败，未完成采购。");
-   try{localStorage.setItem(key,JSON.stringify(rows.map((o:{id:string})=>o.id===order.id?{...o,fulfillmentSource:"硕米优选",supplyProductId:purchase.productId,supplySkuId:purchase.skuId,purchaseId:id,purchaseAmountCny:purchaseTotal,stage:1}:o)))}catch(e){if(!previous)writeDemoPurchases(entries,organizationId);throw e}
+   // Store payment receipt and order state in the same local record; never touch wallet ledger.
+   localStorage.setItem(key,JSON.stringify(rows.map((o:{id:string})=>o.id===order.id?{...o,fulfillmentSource:"硕米优选",supplyProductId:purchase.productId,supplySkuId:purchase.skuId,purchaseId:id,purchaseAmountCny:purchaseTotal,purchasePayment:{id,method:paymentMethod,paidAt:new Date().toISOString(),amountCny:purchaseTotal,status:"模拟支付成功",demo:true},stage:1}:o)));
+   closePayment();
    window.dispatchEvent(new Event("shuomi:demo-orders-updated"));setPurchase(null);setActive(null);router.push("/workbench/store-orders?preview=1");
-  }catch(e){setPurchaseError(e instanceof Error?e.message:"采购保存失败")}
+  }catch(e){setPaymentError(e instanceof Error?e.message:"采购保存失败")}
  };
  const submit=()=>{
   setError("");
@@ -277,10 +271,10 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
     {(terms?.countries||[]).map(country=>{const quote=terms?.shipping.find(q=>q.country===country);return <tr key={country}><td>{country}</td><td>{quote?.method||"待确认"}</td><td>{quote?.freight===null||quote?.freight===undefined?"待供应商报价":formatMoney(quote.freight,quote.currency)+"（演示）"}</td><td>{quote?.transitDays||"待供应商提供"}</td></tr>})}
     {!terms?.countries.length?<tr><td colSpan={4}>当前 SKU 可配送国家及物流报价待供应商提供</td></tr>:null}
     </tbody></table></div><p>运输时效不包含备货 / 出库时间；具体费用需按 SKU、数量、目的地邮编与计费重量核算。</p></section>
-   {purchase&&purchase.productId===current.id?<section className={css.purchaseSummary} aria-label="关联订单及采购结算"><header><h3>关联订单</h3><span>订单信息自动关联 · 演示采购</span></header><div className={css.purchaseTable}><table><thead><tr><th>订单编号</th><th>所属店铺 / 站点</th><th>商品 / SKU</th><th>配送国家</th><th>数量</th><th>订单金额</th></tr></thead><tbody><tr><td>{purchase.orderId}</td><td>{purchase.storeName} · {purchase.region}</td><td>{current.name} · {selectedSku?.label}</td><td>{purchase.destinationCountry}</td><td>{purchase.quantity} 件</td><td>{purchase.orderAmount||"—"}</td></tr></tbody></table></div><div className={css.purchaseTotals}><div><span>钱包可用余额</span><strong>{formatMoney(walletBalance,"CNY")}</strong></div><div><span>本次采购应付</span><strong>{purchaseTotal===null?"待报价":formatMoney(purchaseTotal,"CNY")}</strong></div><div><span>预计扣款后余额</span><strong>{purchaseTotal===null||walletBalance<purchaseTotal?"—":formatMoney(walletBalance-purchaseTotal,"CNY")}</strong></div></div><small>点击确认支付并验证演示支付密码后从当前企业演示钱包扣款，生成采购账单并更新订单状态，不产生真实支付。</small>{purchaseError?<p role="alert">{purchaseError}</p>:purchaseTotal!==null&&walletBalance<purchaseTotal?<p role="alert">钱包余额不足，请先充值。</p>:null}</section>:null}
-   <footer><button type="button" onClick={()=>{setActive(null);setPurchase(null);setPurchaseError("")}}>取消</button>{purchase&&purchase.productId===current.id?<button type="button" className={css.primary} disabled={selectedSku?.id!==purchase.skuId||!selectedSku||(terms?.moq??current.moq)>purchase.quantity||selectedSku.stock<purchase.quantity||purchaseTotal===null||purchaseTotal<=0||walletBalance<purchaseTotal} onClick={()=>{setPaymentPin("");setPaymentError("");setPaymentOpen(true)}}>确认支付</button>:<button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setExcludedSkus([]);setCollectOpen(true);setError("")}}>加入采集批次</button>}</footer>
+   {purchase&&purchase.productId===current.id?<section className={css.purchaseSummary} aria-label="关联订单及采购结算"><header><h3>关联订单</h3><span>订单信息自动关联 · 演示采购</span></header><div className={css.purchaseTable}><table><thead><tr><th>订单编号</th><th>所属店铺 / 站点</th><th>商品 / SKU</th><th>配送国家</th><th>数量</th><th>订单金额</th></tr></thead><tbody><tr><td>{purchase.orderId}</td><td>{purchase.storeName} · {purchase.region}</td><td>{current.name} · {selectedSku?.label}</td><td>{purchase.destinationCountry}</td><td>{purchase.quantity} 件</td><td>{purchase.orderAmount||"—"}</td></tr></tbody></table></div><div className={css.purchaseTotals} data-external-payment="true"><div><span>采购数量</span><strong>{purchase.quantity} 件</strong></div><div><span>本次采购应付</span><strong>{purchaseTotal===null?"待报价":formatMoney(purchaseTotal,"CNY")}</strong></div></div><small>支持微信或支付宝扫码支付，不使用企业钱包。当前为演示流程，不产生真实支付。</small>{purchaseError?<p role="alert">{purchaseError}</p>:null}</section>:null}
+   <footer><button type="button" onClick={()=>{setActive(null);setPurchase(null);setPurchaseError("")}}>取消</button>{purchase&&purchase.productId===current.id?<button type="button" className={css.primary} disabled={selectedSku?.id!==purchase.skuId||!selectedSku||(terms?.moq??current.moq)>purchase.quantity||selectedSku.stock<purchase.quantity||purchaseTotal===null||purchaseTotal<=0} onClick={()=>{refreshPayment("微信支付");setPaymentOpen(true)}}>确认支付</button>:<button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setExcludedSkus([]);setCollectOpen(true);setError("")}}>加入采集批次</button>}</footer>
   </section></div>:null}
-  {paymentOpen&&purchase&&purchaseTotal!==null?<dialog ref={paymentDialog} className={css.paymentDialog} aria-label="支付密码确认" onCancel={e=>{e.preventDefault();closePayment()}}><form onSubmit={e=>{e.preventDefault();confirmPurchase()}}><header><h2>确认支付</h2><button type="button" aria-label="关闭支付确认" onClick={closePayment}>×</button></header><div className={css.paymentAmount}><span>本次支付金额</span><strong>{formatMoney(purchaseTotal,"CNY")}</strong><small>商品采购 · {purchase.quantity} 件</small></div><dl><div><dt>支付方式</dt><dd>企业钱包</dd></div><div><dt>可用余额</dt><dd>{formatMoney(walletBalance,"CNY")}</dd></div><div><dt>支付后余额</dt><dd>{formatMoney(walletBalance-purchaseTotal,"CNY")}</dd></div></dl><label className={css.paymentPin}>请输入6位支付密码<input autoFocus type="password" inputMode="numeric" autoComplete="off" aria-label="支付密码" maxLength={6} value={paymentPin} onChange={e=>{setPaymentPin(e.target.value.replace(/\D/g,"").slice(0,6));setPaymentError("")}}/></label><small className={css.paymentHint}>当前仅供演示，测试密码：123456。请勿输入真实密码。</small>{paymentError?<p role="alert">{paymentError}</p>:null}<footer><button type="button" onClick={closePayment}>取消</button><button type="submit" className={css.primary} disabled={paymentPin.length!==6||walletBalance<purchaseTotal}>立即支付</button></footer></form></dialog>:null}
+  {paymentOpen&&purchase&&purchaseTotal!==null?<dialog ref={paymentDialog} className={css.paymentDialog} aria-label="扫码支付" onCancel={e=>{e.preventDefault();closePayment()}}><form onSubmit={e=>e.preventDefault()}><header><h2>确认支付</h2><button type="button" aria-label="关闭支付确认" onClick={closePayment}>×</button></header><div className={css.paymentAmount}><span>本次采购应付</span><strong>{formatMoney(purchaseTotal,"CNY")}</strong><small>商品采购 · {purchase.quantity} 件</small></div><div className={css.paymentMethods}>{(["微信支付","支付宝"] as const).map(method=><button key={method} type="button" aria-pressed={method===paymentMethod} onClick={()=>refreshPayment(method)}><span style={{color:method==="微信支付"?"#07c160":"#1677ff"}}>●</span> {method}</button>)}</div><div className={css.paymentQr}><div className={css.paymentQrPreview}><QrCode size={112} color="#222"/><span>演示 · 不可扫码</span></div><strong>{paymentRemaining?"请使用"+paymentMethod+"扫码支付":"二维码已过期"}</strong><small>{paymentRemaining?"等待支付 · "+Math.floor(paymentRemaining/60)+":"+String(paymentRemaining%60).padStart(2,"0"):"请刷新二维码后重试"}</small><button type="button" onClick={()=>refreshPayment(paymentMethod)}>刷新二维码</button></div><small className={css.paymentHint}>尚未接入真实商户接口。以下按钮仅用于模拟第三方支付成功回调。</small>{paymentError?<p role="alert">{paymentError}</p>:null}<footer><button type="button" onClick={closePayment}>取消支付</button><button type="button" className={css.primary} disabled={!paymentRemaining} onClick={confirmPurchase}>模拟支付成功</button></footer></form></dialog>:null}
   {collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setCollectOpen(false)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="加入我的采集批次">
    <header><h2>加入我的采集批次</h2><button type="button" onClick={()=>setCollectOpen(false)}>关闭</button></header>
    <p>已选择 {chosen.length} 件商品、{selectedVariantCount} 个 SKU。默认采集全部变体，可取消不需要的颜色和规格；不修改共享货盘源数据。</p>
