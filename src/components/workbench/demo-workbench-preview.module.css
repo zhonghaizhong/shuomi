@@ -5162,3 +5162,27 @@
 :global(.light) .riskFactGrid>div{border-color:#e6e6f1}
 :global(.light) .riskFactGrid small{color:#6f6b7d}
 :global(.light) .riskMetricCards article>button>strong{color:var(--accent);background:color-mix(in srgb,var(--accent),white 83%)}
+
+/* Inline read-only conversation: keep the existing advice queue and theme. */
+.adviceConversation{display:flex;flex-direction:column;min-width:0;min-height:560px;gap:0}
+.adviceConversation>header{flex:none}
+.adviceChatBody{display:flex;flex-direction:column;gap:20px;padding:22px 0 12px;min-width:0;overflow:auto;max-height:calc(100vh - 300px)}
+.adviceChatQuestion{align-self:flex-end;max-width:85%;padding:13px 17px;background:color-mix(in srgb,#7367f0 15%,#393d55);border:1px solid #5e5684;border-radius:12px 12px 3px 12px;color:#e2e2f0}
+.adviceChatQuestion small,.adviceChatSources small{display:block;font-size:12px;color:#acabc1;margin-bottom:6px}
+.adviceChatQuestion p,.adviceChatBubble p{margin:0;line-height:1.7;font-size:14px;overflow-wrap:anywhere}
+.adviceChatAnswer{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.adviceChatAvatar{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:8px;background:#7367f0;color:white;font-size:13px;font-weight:700}
+.adviceChatBubble{flex:1;min-width:0;display:grid;gap:10px;padding:18px 20px;background:#393d55;border:1px solid #44485e;border-radius:3px 12px 12px 12px;color:#cfcde4}
+.adviceChatBubble>strong{color:#bcb3ff;font-size:15px}
+.adviceChatBubble h3{margin:6px 0 0;font-size:15px;color:#e2e2f0}
+.adviceChatBubble .adviceChatFootnote{font-size:12px;color:#acabc1;border-top:1px solid #52576e;padding-top:12px}
+.adviceChatSources{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.adviceChatSources small{margin:0}
+.adviceChatSources button{background:transparent;border:1px solid #625a93;color:#d3cfff;border-radius:6px;padding:5px 9px;font-size:12px;cursor:pointer}
+:global(.light) .adviceChatQuestion{background:#f1efff;border-color:#ded9fa;color:#444050}
+:global(.light) .adviceChatBubble{background:#f8f7fa;border-color:#e6e6f1;color:#444050}
+:global(.light) .adviceChatBubble>strong{color:#6556cc}
+:global(.light) .adviceChatBubble h3{color:#444050}
+:global(.light) .adviceChatQuestion small,:global(.light) .adviceChatSources small,:global(.light) .adviceChatBubble .adviceChatFootnote{color:#6f6b7d;border-color:#e6e6f1}
+:global(.light) .adviceChatSources button{color:#6556cc;border-color:#d8d2fa}
+@media(max-width:760px){.adviceChatBody{max-height:none}.adviceChatQuestion{max-width:100%}.adviceChatBubble{padding:12px}.adviceConversation{min-height:0}}
