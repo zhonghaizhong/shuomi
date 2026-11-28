@@ -6,17 +6,43 @@ import styles from "./showcase-knowledge-groups.module.css";
 export type KnowledgeItem={id:string;name:string;origin:"官方"|"我的";group:string;description:string;updated?:number};
 type KnowledgeState={groups:string[];items:KnowledgeItem[]};
 const prefix="shuomi-showcase-knowledge-groups-v1";
+export const projectDemoKnowledge:KnowledgeItem[]=[
+ {id:"demo-knowledge-profit",name:"SHEIN 经营指标与利润核对规范（演示）",origin:"我的",group:"",updated:Date.now()-86400000,description:`【适用项目】SHEIN 美国站30天利润提升项目。
+【经营数据字段】销售金额、有效订单、退款金额、平台佣金、商品采购成本、物流成本、其他费用、汇率和统计日期。不同币种、站点的数据不得直接相加。
+【处理约束】只有字段完整且来源可核验时计算净收入、单品毛利和净利润；缺成本不得推断利润。退款和订单取消须按同一口径处理。
+【异常识别】商品成本缺失、净利率低于业务设定底线、退款异常时生成待人工复核任务。
+【信息来源】本条为内部演示规范，不是SHEIN官方政策，也未连接一号店真实财务数据。`},
+ {id:"demo-knowledge-pod",name:"POD 服装主图与变体审核规则（演示）",origin:"我的",group:"",updated:Date.now()-86400000,description:`【适用项目】POD 新品开发与刊登项目。
+【输入范围】短袖、卫衣的各颜色尺码SKU，关联印花素材与对应商品图。
+【图片验收】演示方案采用1:1画幅、白底、英文文案；主图和详情图各8张为目标要求，不表示已真实生成。
+【映射规则】每个颜色的图片必须与对应变体匹配；错误颜色、印花越界、缺少正反面或资质时标记待审核或待补全。
+【人工关口】图片审核通过后才能进入后续平台适配，素材许可未确认不可发布。
+【说明】本条为演示业务规则，实际以目标平台最新要求和授权素材为准。`},
+ {id:"demo-knowledge-selected",name:"硕米优选货盘SKU采集与刊登规范（演示）",origin:"我的",group:"",updated:Date.now()-86400000,description:`【适用项目】SHEIN 美国站30天新品开发与销售项目。
+【现有样例】SMYX-DEMO-001纯棉圆领短袖T恤、SMYX-DEMO-002宽松连帽卫衣。
+【选品检查】核对货盘ID、SKU、颜色、尺码、MOQ、库存、配送国家及版本；同名产品也不得丢失来源SKU。
+【数据流转】通过硕米优选的「加入采集批次」进入我的数据，再执行商品内容优化与SHEIN站点适配。
+【异常处理】字段不完整进入待补全；需要审核的商品进入待审核；未经确认不得标记已上传。
+【边界】模拟供应商认证、库存、价格及配送条件仅供演示，不代表真实供货承诺。`},
+ {id:"demo-knowledge-research",name:"美国站候选商品数据来源与选品评审规范（演示）",origin:"我的",group:"",updated:Date.now()-86400000,description:`【适用项目】美国站新品市场调研与选品项目。
+【数据来源】本地演示货盘SKU和我的数据批次；数据市场服务仅作为待调用来源。
+【比较维度】商品类别、SKU组合、报价币种、MOQ、货源与配送国家、供货时效、图片与信息完整程度。
+【评审结论】样例SKU可做供货条件比较，不能从中推断美国站需求、销量或利润。
+【报告要求】列出可证实信息、未验证假设、待采购或待授权的数据及下一步核实任务。
+【边界】本条为演示规范，非外部真实市场研究资料。`}
+];
 const blank=():KnowledgeState=>({groups:[],items:[]});
+const seeded=(org:string,member:string)=>org==="SM-ENT-000001"&&member==="admin"?projectDemoKnowledge.map(x=>({...x})):[];
 const storageKey=(org:string,member:string)=>prefix+":"+org+":"+member;
 export function readKnowledgeState(org:string,member:string):KnowledgeState{
  try{
-  const raw=sessionStorage.getItem(storageKey(org,member));if(!raw)return blank();
+  const raw=sessionStorage.getItem(storageKey(org,member));if(!raw)return {groups:[],items:seeded(org,member)};
   const value=JSON.parse(raw);
   if(!Array.isArray(value.groups)||!Array.isArray(value.items))return blank();
   const groups=value.groups.filter((g:unknown):g is string=>typeof g==="string"&&g.trim().length>0&&g.length<=40).slice(0,100);
   const items=value.items.filter((x:KnowledgeItem)=>x&&typeof x.id==="string"&&typeof x.name==="string"&&typeof x.description==="string"&&["官方","我的"].includes(x.origin)&&typeof x.group==="string").slice(0,200);
-  return {groups,items};
- }catch{return blank()}
+  const demo=seeded(org,member);return {groups,items:[...items.filter(x=>!demo.some(d=>d.id===x.id)),...demo.map(d=>items.find(x=>x.id===d.id)??d)]};
+ }catch{return {groups:[],items:seeded(org,member)}}
 }
 export function writeKnowledgeState(org:string,member:string,value:KnowledgeState){
  sessionStorage.setItem(storageKey(org,member),JSON.stringify(value));
@@ -50,7 +76,7 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
  const [editor,setEditor]=useState<string|null>(null);
  const [editName,setEditName]=useState("");
  const [editDescription,setEditDescription]=useState("");
- const [more,setMore]=useState<string|null>(null);
+ const [more,setMore]=useState<string|null>(null);\n const [reading,setReading]=useState<string|null>(null);
  const [moveTarget,setMoveTarget]=useState("");
  useEffect(()=>{
   const refresh=()=>setState(readKnowledgeState(organizationId,memberId));
@@ -81,12 +107,13 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
     <td>{item.updated?new Date(item.updated).toLocaleDateString("zh-CN"):"—"}</td>
     <td><div className={styles.rowActions}>
      <button type="button" onClick={()=>router.push("/workbench/ai/chat/new?preview=1&knowledgeMode=reference&knowledgeName="+encodeURIComponent(item.name))}>使用</button>
-     {item.origin==="我的"&&<button type="button" onClick={()=>{setEditor(item.id);setEditName(item.name);setEditDescription(item.description)}}>编辑</button>}
+     <button type="button" onClick={()=>setReading(item.id)}>查看内容</button>\n     {item.origin==="我的"&&<button type="button" onClick={()=>{setEditor(item.id);setEditName(item.name);setEditDescription(item.description)}}>编辑</button>}
      <button type="button" aria-label={item.name+"的更多操作"} onClick={()=>{setMore(more===item.id?null:item.id);setMoveTarget(item.group)}}>更多</button>
     </div></td>
    </tr>)}
    {!visible.length&&<tr><td colSpan={5} className={styles.emptyCell}>{hasKnowledge?"没有符合条件的知识库":"暂无知识库"}</td></tr>}
   </tbody></table></div>
+  {reading&&state.items.some(x=>x.id===reading)&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setReading(null)}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="知识库完整内容"><header><h2>{state.items.find(x=>x.id===reading)?.name}</h2><button type="button" aria-label="关闭知识内容" onClick={()=>setReading(null)}>×</button></header><p style={{whiteSpace:"pre-wrap",lineHeight:1.85,maxHeight:"65vh",overflowY:"auto"}}>{state.items.find(x=>x.id===reading)?.description}</p><footer><button className={styles.primary} type="button" onClick={()=>setReading(null)}>关闭</button></footer></section></div>}
   {more&&state.items.some(x=>x.id===more)&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setMore(null)}}>
    <section className={styles.dialog} role="dialog" aria-modal="true" aria-label="知识库更多操作">
     <header><h2>知识库操作</h2><button type="button" aria-label="关闭更多操作" onClick={()=>setMore(null)}>×</button></header>
