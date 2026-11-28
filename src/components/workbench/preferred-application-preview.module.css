@@ -275,3 +275,17 @@
  .warehouseDetail{margin-left:0}
  .preferredApplyModal .applyFooter{flex-wrap:wrap}
 }
+
+/* Prefer concise defaults and editable exceptions to repetitive SKU rows. */
+.skuExceptions{display:grid;gap:7px;max-height:340px;overflow-y:auto;overflow-x:hidden;padding-right:4px;overscroll-behavior:contain}
+.skuException{border:1px solid var(--border);border-radius:8px;background:var(--subtle);padding:9px 12px;display:grid;gap:10px;min-width:0}
+.skuExceptionHead{display:flex;align-items:center;gap:11px;min-width:0}
+.skuExceptionHead>div{display:grid;gap:3px;min-width:0;flex:1}
+.skuExceptionHead strong{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.skuExceptionHead small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.skuExceptionHead>span{font-size:11px;color:var(--muted);white-space:nowrap}
+.preferredApplyModal .skuExceptionHead button{font-size:12px;white-space:nowrap;min-height:30px;padding:5px 11px}
+.skuExceptionFields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;min-width:0}
+.skuExceptionFields label{display:grid;gap:5px;min-width:0;font-size:11px;color:var(--text)}
+.preferredApplyModal .skuExceptionFields input{width:100%;min-width:0;min-height:36px;padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit}
+@media(max-width:700px){.skuExceptionFields{grid-template-columns:repeat(2,minmax(0,1fr))}.skuExceptionHead{flex-wrap:wrap}.skuExceptionHead>div{flex-basis:100%}}
