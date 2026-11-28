@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import styles from "./chat-new-preview.module.css";
 import {readPreviewProjects, createPreviewProject, savePreviewProject, projectTemplates} from "./showcase-project-data";
 import {useRouter} from "next/navigation";
@@ -70,7 +69,7 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
   const [files, setFiles] = useState<string[]>([]);
   const [confirmation, setConfirmation] = useState(false);
   const [chatActive, setChatActive] = useState(false);
-  const [contextOpen, setContextOpen] = useState(true);
+  
   const [messages, setMessages] = useState<PreviewMessage[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
@@ -78,12 +77,6 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
   useEffect(() => {
     if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
   }, [chatActive, messages]);
-  useEffect(() => {
-    const syncContextPanel = () => setContextOpen(!window.matchMedia("(max-width: 600px)").matches);
-    syncContextPanel();
-    window.addEventListener("resize", syncContextPanel);
-    return () => window.removeEventListener("resize", syncContextPanel);
-  }, []);
 
   const toggle = (values: string[], value: string, setter: (v: string[]) => void) => {
     setter(values.includes(value) ? values.filter(item => item !== value) : [...values, value]);
@@ -218,9 +211,9 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
     onAction(mode.action + " · 演示草案已生成");
   };
 
-  return <div className={styles.workspace} data-chat-active={chatActive} data-context-open={contextOpen}>
+  return <div className={styles.workspace} data-chat-active={chatActive}>
       <section className={styles.composer} aria-label={chatActive ? "会话消息与输入区" : "新建会话输入区"}>
-        <header className={styles.composerIntro}><div><h2>{chatActive ? (messages.find(item => item.role === "user")?.text.slice(0, 28) || "新建会话") : "有什么想交给硕米？"}</h2><p>{chatActive ? "对话演示 · 消息记录保留在当前会话中" : "直接描述问题或工作目标，硕米协助整理并回复。"}</p></div>{chatActive && <button className={styles.newConversation} onClick={startNewConversation}>＋ 新会话</button>}</header>
+        <header className={styles.composerIntro}><div><h2>有什么想交给硕米？</h2><p>{chatActive ? "当前会话的消息和处理结果在这里继续显示，不切换页面。" : "直接描述问题或工作目标，硕米协助整理并回复。"}</p></div>{chatActive && <button className={styles.newConversation} onClick={startNewConversation}>＋ 新会话</button>}</header>
         {chatActive && <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请确认是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button></div></div>}</article>)}</div>}
         {confirmation && <section className={styles.inlineConfirmation} aria-label="会话内确认任务">
         <header><div><h2 id="chat-confirm-title">确认{mode.title}</h2><p>请核对当前内容和关联范围，再继续下一步。</p></div><button aria-label="关闭" onClick={() => setConfirmation(false)}>×</button></header>
@@ -256,15 +249,15 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
           <div className={styles.sendGroup}><button className={styles.primary} onClick={submit}>{chatActive ? "发送消息" : mode.action}</button></div>
         </footer>
       </section>
-      <aside className={styles.modePanel} aria-label={chatActive ? "会话上下文" : "选择执行方式"} data-collapsed={chatActive && !contextOpen}>
-        {chatActive ? <><header className={styles.contextHead}><div><span>会话面板</span><h2>会话上下文</h2></div><button type="button" className={styles.contextToggle} aria-label={contextOpen ? "收起会话面板" : "展开会话面板"} title={contextOpen ? "收起会话面板" : "展开会话面板"} aria-expanded={contextOpen} aria-controls="chat-context-body" onClick={() => setContextOpen(open => !open)}>{contextOpen ? <PanelRightClose size={18} strokeWidth={1.8} aria-hidden="true" /> : <PanelRightOpen size={18} strokeWidth={1.8} aria-hidden="true" />}</button></header>{contextOpen && <div id="chat-context-body" className={styles.contextBody}><section><span>当前方式</span><strong>{mode.title}</strong><small>{mode.detail}</small></section><section><span>关联店铺</span>{selectedStores.length ? selectedStores.map(item => <b key={item}>{item}</b>) : <small>尚未关联店铺</small>}<button onClick={() => { setPendingStores(selectedStores); setDrawer("stores"); }}>管理店铺 →</button></section><section><span>引用资源</span>{selectedResources.length ? selectedResources.map(item => <b key={item}>{item}</b>) : <small>需要时再关联知识、技能或项目</small>}<button onClick={() => { setPendingResources(selectedResources); setDrawer("resources"); }}>管理资源 →</button></section>{linkedProjectId&&<section><span>关联项目</span><strong>{readPreviewProjects().find(p=>p.id===linkedProjectId)?.name}</strong><button onClick={()=>router.push("/workbench/ai/projects/active?preview=1")}>查看关联项目</button></section>}<div className={styles.contextHint}>可随时补充店铺和资料范围，聊天记录会继续保留。</div></div>}</> : <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modeOrder.map(index => {const item=modes[index];return <button key={item.title} className={index === modeIndex ? styles.modeSelected : ""} onClick={() => {setModeIndex(index);setConfirmation(false)}} aria-pressed={index === modeIndex}>
+      <aside className={styles.modePanel} aria-label="选择执行方式">
+        <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modeOrder.map(index => {const item=modes[index];return <button key={item.title} className={index === modeIndex ? styles.modeSelected : ""} onClick={() => {setModeIndex(index);setConfirmation(false)}} aria-pressed={index === modeIndex}>
           <i data-tone={index} /><span><strong>{item.title}</strong></span>
         </button>})}</div></section><section className={styles.examples}>
         <header><h2>试试这样说</h2><span>·</span><p>点击示例可放入输入区</p></header>
         <div>{mode.examples.map(([title, detail], index) => <button key={title} onClick={() => choosePrompt(title)}>
           <b data-tone={index}>0{index + 1}</b><span><strong>{title}</strong><small>{detail}</small></span>
         </button>)}</div>
-      </section></>}
+      </section></>
       </aside>
 
     {drawer && <div className={styles.overlay} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setDrawer(null); }}>
