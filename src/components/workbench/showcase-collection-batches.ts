@@ -153,7 +153,13 @@ export function readDemoCollectionBatches(organizationId:string,memberId="admin"
    const existing=result.find(b=>b.id===sdsPODBatchId);
    // Synchronize only the checked-in SDS demo variants across existing sessions.
    // Keep any user-created batches and all unrelated products untouched.
-   result=existing?result.map(b=>b.id===sdsPODBatchId?{...b,products:fixture.products}:b):[fixture,...result];
+   result=existing?result.map(b=>{
+    if(b.id!==sdsPODBatchId)return b;
+    // Update fixture-backed products only; never discard independently
+    // collected products or SKU additions from the user's existing batch.
+    const ids=new Set(fixture.products.map(p=>p.id));
+    return {...b,products:[...fixture.products,...b.products.filter(p=>!ids.has(p.id))]};
+   }):[fixture,...result];
   }
   sessionStorage.setItem(key(organizationId),JSON.stringify(result));
   return result.filter(batch=>batch.organizationId===organizationId&&batch.ownerMemberId===memberId).map(decorate);
