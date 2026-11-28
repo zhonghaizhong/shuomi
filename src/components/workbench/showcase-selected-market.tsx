@@ -146,7 +146,10 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  }:null;
  const setSku=(id:string)=>{const next=current?.skus.find(s=>s.id===id);if(next&&current&&targetCountry&&!skuCountries(current,next).includes(targetCountry))setTargetCountry("");setActiveSku(id);setPhotoIndex(0);setImageFailed(false)};
  const openProduct=(id:string)=>{setActive(id);setActiveSku("");setPhotoIndex(0);setImageFailed(false);setTargetCountry("")};
- const ownedBatches=batches.filter(b=>b.source==="硕米优选");
+ const archivedBatchKey="shuomi:my-data-archived-v1:"+organizationId+":"+memberId;
+ const archivedBatchIds=(()=>{try{const raw:unknown=JSON.parse(sessionStorage.getItem(archivedBatchKey)||"[]");return new Set(Array.isArray(raw)?raw.filter((x):x is string=>typeof x==="string"):[])}catch{return new Set<string>()}})();
+ // Exactly the active member's batches from 我的数据, including manually-created batches.
+ const ownedBatches=batches.filter(b=>b.organizationId===organizationId&&b.ownerMemberId===memberId&&!archivedBatchIds.has(b.id));
  const confirmPurchase=()=>{if(!purchase||!current||current.id!==purchase.productId||selectedSku?.id!==purchase.skuId)return;if(current.moq>purchase.quantity||selectedSku.stock<purchase.quantity||selectedSku.price<=0){setNotice("当前供货条件不满足订单采购要求。");return}try{const key="shuomi:demo-orders:"+organizationId+":"+purchase.storeId;const rows=JSON.parse(localStorage.getItem(key)||"[]");const order=rows.find((o:{id:string;storeId:string;stage:number;purchaseId?:string})=>o.id===purchase.orderId&&o.storeId===purchase.storeId&&o.stage<3&&!o.purchaseId);if(!order)throw Error("订单不可采购或已采购");const id="SIM-PURCHASE-"+order.id;localStorage.setItem(key,JSON.stringify(rows.map((o:{id:string})=>o.id===order.id?{...o,fulfillmentSource:"硕米优选",supplyProductId:purchase.productId,supplySkuId:purchase.skuId,purchaseId:id,stage:1}:o)));window.dispatchEvent(new Event("shuomi:demo-orders-updated"));setPurchase(null);setActive(null);router.push("/workbench/store-orders?preview=1")}catch(e){setNotice(e instanceof Error?e.message:"采购保存失败")}};
  const submit=()=>{
   setError("");
@@ -257,7 +260,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
    </div>
    <div className={css.modeChoices}><label><input type="radio" name="batch-mode" checked={batchMode==="new"} onChange={()=>setBatchMode("new")}/>创建新批次</label><label><input type="radio" name="batch-mode" checked={batchMode==="existing"} onChange={()=>setBatchMode("existing")}/>加入已有批次</label></div>
    {batchMode==="new"?<label className={css.inputField}>批次名称<input aria-label="新批次名称" maxLength={80} value={batchName} onChange={e=>setBatchName(e.target.value)}/></label>:
-    <label className={css.inputField}>选择已有硕米优选批次<select aria-label="选择已有批次" value={batchId} onChange={e=>setBatchId(e.target.value)}><option value="">请选择批次</option>{ownedBatches.map(b=><option key={b.id} value={b.id}>{b.name}（{b.products.length} 件）</option>)}</select></label>}
+    <label className={css.inputField}>选择「我的数据」中的采集批次<select aria-label="选择已有批次" value={batchId} onChange={e=>setBatchId(e.target.value)}><option value="">请选择批次</option>{ownedBatches.map(b=><option key={b.id} value={b.id}>{b.name} · {b.source}（{b.products.length} 件）</option>)}</select>{!ownedBatches.length?<small>当前账号没有可选的未归档批次，请先创建新批次。</small>:<small>与「我的数据 → 采集批次」同源；选择其他来源的批次后，将保留每件商品的原始来源。</small>}</label>}
    <p className={css.modalNote}>保存后在「我的数据 → 采集批次」查看，可继续按目标平台进行智能体优化、字段补全和刊登。没有自动购买或上架。</p>
    {error?<p className={css.error} role="alert">{error}</p>:null}
    <footer><button type="button" onClick={()=>setCollectOpen(false)}>取消</button><button type="button" className={css.primary} onClick={submit}>确认加入</button></footer>
