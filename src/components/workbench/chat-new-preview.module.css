@@ -590,3 +590,21 @@
 /* Keep example cards pale in the light workspace, including pointer hover. */
 :global(.light) .workspace .examples > div > button {background:#fff;}
 :global(.light) .workspace .examples > div > button:hover {background:#f1efff;}
+
+/* Full-size, result-specific preview dialogs: reports, skills and knowledge. */
+.outcomeBackdrop{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(8,12,25,.72)}
+.outcomeDialog{display:flex;flex-direction:column;width:min(1160px,100%);max-height:85dvh;min-height:min(570px,85dvh);min-width:0;overflow:hidden;border:1px solid var(--cn-border-strong);border-radius:12px;background:var(--cn-surface);color:var(--cn-text);box-shadow:0 26px 80px #0006}
+.outcomeDialog>header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:22px 28px 18px;border-bottom:1px solid var(--cn-border)}
+.outcomeDialog>header>div{min-width:0;display:grid;gap:7px}
+.outcomeDialog>header small{color:var(--cn-link);font-size:13px}
+.outcomeDialog>header h2{margin:0;color:var(--cn-heading);font-size:21px;line-height:1.45;overflow-wrap:anywhere}
+.outcomeDialog>header p{margin:0;color:var(--cn-muted);font-size:13px;line-height:1.6}
+.outcomeDialog>header button{flex:0 0 auto;width:36px;height:36px;border:1px solid var(--cn-border);border-radius:7px;background:var(--cn-raised);color:var(--cn-text);font-size:22px;cursor:pointer}
+.outcomeBody{overflow-y:auto;min-height:0;flex:1;display:grid;align-content:start;gap:16px;padding:24px 28px;background:var(--cn-inset)}
+.outcomeBody>section{padding:20px 22px;border:1px solid var(--cn-border);border-radius:9px;background:var(--cn-surface);min-width:0}
+.outcomeBody h3{margin:0 0 10px;color:var(--cn-heading);font-size:16px}
+.outcomeBody p{margin:0;color:var(--cn-text);font-size:14px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere}
+.outcomeDialog>footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:15px 28px;border-top:1px solid var(--cn-border)}
+.outcomeDialog>footer button{min-height:39px;padding:0 17px;border:1px solid var(--cn-border-strong);border-radius:6px;background:var(--cn-raised);color:var(--cn-text);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.outcomeDialog>footer .primary{background:var(--cn-primary);border-color:var(--cn-primary);color:#fff}
+@media(max-width:650px){.outcomeBackdrop{padding:10px}.outcomeDialog{max-height:94dvh;min-height:0}.outcomeDialog>header,.outcomeBody,.outcomeDialog>footer{padding:16px}.outcomeBody>section{padding:14px}.outcomeDialog>header h2{font-size:18px}}
