@@ -284,3 +284,10 @@
 .rowDialogActions{display:flex;justify-content:flex-end;gap:10px;}
 .rowFeedback{margin:10px 0;padding:10px 14px;border:1px solid var(--border);border-radius:var(--control-radius);background:var(--secondary);color:var(--foreground);font-size:var(--body-text-size);}
 @media(max-width:640px){.conversationItem{align-items:center;}.rowActions{flex-basis:54px;padding-right:10px;}.rowMenu{right:9px;top:calc(50% + 22px);}.conversationItem .conversationLink{padding:14px 9px 14px 14px;}}
+
+/* A newly created real conversation remains on the original composer route.
+   These controls are in-page, never a second navigation-only screen. */
+.inlineConversation{display:grid;gap:12px;min-width:0}
+.inlineConversationTop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;border:1px solid var(--border,#44485e);border-radius:8px}
+.inlineConversationTop span{font-size:13px;font-weight:500}
+.inlineConversationTop button{white-space:nowrap}
