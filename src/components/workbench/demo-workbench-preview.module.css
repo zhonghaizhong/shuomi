@@ -5203,8 +5203,8 @@
 
 .adviceChatTurn{display:flex;flex-direction:column;gap:20px;min-width:0}
 
-.goalsPreview .goalMetrics article:has(button[aria-pressed="true"]){outline:1px solid #7367f0;outline-offset:-1px}
-.goalsPreview .goalMetrics article>button.matrixMetricAction{width:100%;height:100%;display:flex;align-items:center;gap:16px;text-align:left;background:transparent;border:0;padding:0;color:inherit;cursor:pointer}
+.goalsPreview .goalMetrics article:has(button[aria-pressed="true"]){border-color:var(--metric-accent);outline:0}
+.goalsPreview .goalMetrics article>button.matrixMetricAction{width:100%;height:100%;display:flex;align-items:center;justify-content:flex-start;gap:18px;text-align:left;background:transparent;border:0;padding:0;color:inherit;cursor:pointer;outline:0}
 .goalsPreview .goalColumns,.goalsPreview .goalRow{grid-template-columns:1.45fr .75fr 1.5fr .65fr .8fr .9fr 1.1fr}
 .goalsPreview .goalRowActions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
 .goalsPreview .goalRowActions button{min-width:48px;width:auto;padding:6px 10px;white-space:nowrap}
@@ -5221,3 +5221,24 @@
 .cockpitPreview .riskTable .alertColumns>b:last-child{text-align:center}
 .cockpitPreview .riskTable .alertRow>.riskActions{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:nowrap}
 .cockpitPreview .riskTable .riskActions>button{min-width:76px;min-height:38px;padding:6px 10px;white-space:nowrap;text-align:center}
+
+/* Restore the original goal metric appearance while retaining button semantics. */
+.goalsPreview .goalMetrics article>button.matrixMetricAction>strong{display:grid;place-items:center;flex:0 0 64px;width:64px;height:52px;border-radius:6px;font-size:28px;font-weight:700;line-height:1;color:var(--metric-accent);background:color-mix(in srgb,var(--metric-accent),transparent 82%)}
+.goalsPreview .goalMetrics article[data-step="1"]>button.matrixMetricAction>strong{color:#d9d6ff;background:#3a3b64}
+.goalsPreview .goalMetrics article>button.matrixMetricAction>span{display:grid;gap:4px;text-align:left;justify-items:start;min-width:0}
+.goalsPreview .goalMetrics article>button.matrixMetricAction:focus-visible{outline:2px solid #7367f0;outline-offset:4px}
+:global(.light) .goalsPreview .goalMetrics article>button.matrixMetricAction>strong{background:color-mix(in srgb,var(--metric-accent) 12%,white);color:var(--metric-accent)}
+.goalsPreview .goalDeleteDialog{box-sizing:border-box;width:min(460px,100%);max-height:calc(100dvh - 48px);padding:22px;gap:16px;background:#2f3349;color:#cfcde4;border:1px solid #44485e;border-radius:8px;box-shadow:0 12px 36px #0004}
+.goalsPreview .goalDeleteDialog header{align-items:flex-start;flex-wrap:nowrap;gap:12px}
+.goalsPreview .goalDeleteDialog h2{font-size:19px;line-height:26px;color:#e2e2f0;padding-left:10px;border-left:3px solid #7367f0}
+.goalsPreview .goalDeleteDialog header p{margin-top:8px}
+.goalsPreview .goalDeleteDialog p{font-size:14px;line-height:1.65;color:#acabc1;overflow-wrap:anywhere}
+.goalsPreview .goalDeleteDialog footer{justify-content:flex-end;gap:10px;padding-top:6px}
+.goalsPreview .goalDeleteDialog button{min-height:36px;padding:6px 12px;border:1px solid #52576e;border-radius:6px;background:#393d55;color:#cfcde4}
+.goalsPreview .goalDeleteDialog header button{flex:none;min-width:32px;min-height:32px;padding:3px 8px}
+.goalsPreview .goalDeleteDialog footer button.primary{background:#7367f0;color:#fff;border-color:#7367f0}
+:global(.light) .goalsPreview .goalDeleteDialog{background:#fff;color:#444050;border-color:#e6e6f1}
+:global(.light) .goalsPreview .goalDeleteDialog h2{color:#444050}
+:global(.light) .goalsPreview .goalDeleteDialog p{color:#6f6b7d}
+:global(.light) .goalsPreview .goalDeleteDialog button{background:#f8f7fa;color:#444050;border-color:#e6e6f1}
+:global(.light) .goalsPreview .goalDeleteDialog footer button.primary{background:#7367f0;color:#fff;border-color:#7367f0}

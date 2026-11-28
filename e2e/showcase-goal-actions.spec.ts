@@ -111,3 +111,20 @@ test("store picker filters in platform, site and store-type order while keeping 
  await expect(picker.getByRole("checkbox",{name:"选择管理员演示店铺01"})).toBeChecked();
  await expect(picker).toContainText("已选 1 家");
 });
+
+test("goal cards preserve the original number blocks and compact themed deletion dialog",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto(root+"/overview/goals");
+ for(const theme of ["dark","light"]){
+  const toggle=page.getByRole("button",{name:theme==="dark"?"切换深色主题":"切换浅色主题"});if(await toggle.isVisible())await toggle.click();
+  const card=page.locator('[class*="goalMetrics"] article').first();
+  const number=card.locator("button > strong"),label=card.locator("button > span");
+  await expect(number).toHaveCSS("font-size","28px");await expect(number).toHaveCSS("width","64px");await expect(number).toHaveCSS("height","52px");
+  const a=await number.boundingBox(),b=await label.boundingBox();expect(a).not.toBeNull();expect(b).not.toBeNull();expect(b!.x-a!.x-a!.width).toBeLessThan(22);expect(b!.x-a!.x-a!.width).toBeGreaterThan(10);
+  await page.getByRole("button",{name:"删除",exact:true}).first().click();
+  const dialog=page.getByRole("dialog",{name:"删除目标"});await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveCSS("background-color",theme==="dark"?"rgb(47, 51, 73)":"rgb(255, 255, 255)");
+  expect((await dialog.boundingBox())!.width).toBeLessThanOrEqual(460);
+  await dialog.getByRole("button",{name:"取消",exact:true}).click();await expect(dialog).toHaveCount(0);
+ }
+});
