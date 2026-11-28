@@ -9,7 +9,8 @@ export type SelectedCatalogProduct={
  /** Supplier-supplied offer information, or explicitly marked demonstration estimates. */
  quotationCurrency?:string;packagingWeightKg?:number;packagingLengthCm?:number;packagingWidthCm?:number;packagingHeightCm?:number;
  shippingQuotes?:Array<{country:string;freight:number|null;currency:string;transitDays:string|null;method:string;demo?:boolean}>;
- version:string;approved:"演示审核通过";images:string[];skus:Array<{id:string;label:string;color:string;size:string;stock:number;price:number}>;
+ serviceFees?:{inspection:number|null;packing:number|null;labeling:number|null;currency:string;demo?:boolean};
+ version:string;approved:"演示审核通过";images:string[];skus:Array<{id:string;label:string;color:string;size:string;stock:number;price:number;images?:string[]}>;
 };
 const supplierA={supplierId:"DEMO-SUP-A",supplierName:"演示供货商 · 织造工厂"};
 const supplierB={supplierId:"DEMO-SUP-B",supplierName:"演示供货商 · 生活用品"};
@@ -43,7 +44,7 @@ const demoPackage:Array<{weight:number;size:[number,number,number];shipping:Reco
 ];
 export const selectedCatalogFixtures:SelectedCatalogProduct[]=baseSelectedCatalogFixtures.map((item,index)=>{
  const offer=demoSupply[index],packing=demoPackage[index];
- return {...item,...offer,quotationCurrency:"CNY",packagingWeightKg:packing.weight,
+ return {...item,...offer,quotationCurrency:"CNY",serviceFees:{inspection:1.2,packing:1.5,labeling:0.8,currency:"CNY",demo:true},packagingWeightKg:packing.weight,
   packagingLengthCm:packing.size[0],packagingWidthCm:packing.size[1],packagingHeightCm:packing.size[2],
   shippingQuotes:(offer.shipToCountries||[]).map(country=>({
    country,freight:packing.shipping[country]?.freight??null,currency:"CNY",
