@@ -528,7 +528,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
   if(selectedTask&&!persistText())return;
   const allFilled=selectedItem.missing.every(field=>(form[field]??textDraft.legacyMissingValues[field]??"").trim().length>0);
   if(!allFilled){setNotice("请补齐所有必填字段后保存。");return}
-  if(selectedItem.taskId){try{completeShowcaseUploadTask(organizationId,memberId,selectedItem.taskId,{...textDraft.legacyMissingValues,...form});setSelected(null);setForm({});setNotice("资料已补齐，进入待审核；必须审核智能体结果后才能提交目标店铺。");}catch(e){setNotice(e instanceof Error?e.message:"保存失败");}return;}
+  if(selectedItem.taskId){try{const completed=completeShowcaseUploadTask(organizationId,memberId,selectedItem.taskId,{...textDraft.legacyMissingValues,...form});setSelected(null);setForm({});setNotice(completed.agentId?"资料已补齐，进入待审核；必须审核智能体结果后才能提交目标店铺。":"资料已补齐，进入待平台提交；不启用智能体，无需内部审核。");}catch(e){setNotice(e instanceof Error?e.message:"保存失败");}return;}
   setItems(arr=>arr.map(x=>x.sku===selectedItem.sku?{...x,missing:[],status:"手动已补全"}:x));
   setSelected(null);setForm({});action("资料已保存到演示记录。请核对原任务，确认继续上传；启用智能体时先进入待审核。");
  };

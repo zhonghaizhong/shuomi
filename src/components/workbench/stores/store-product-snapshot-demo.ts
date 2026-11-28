@@ -1,5 +1,6 @@
 "use client";
 import {readShowcaseUploadTasks,persistShowcaseUploadTaskRecords,showcaseUploadTasksEvent} from "../listing/showcase-upload-tasks";
+import {apparelDemoEntries,apparelDemoTime} from "../showcase-apparel-sales-demo";
 import {listingDemoArtSet} from "../listing/showcase-listing-ai-images";
 
 /** Browser-only demonstration of the last successfully verified product sync.
@@ -54,7 +55,7 @@ export function saveVerifiedStoreProductSnapshot(snapshot:StoreProductSnapshot):
  * No external receipt is created or claimed; the simulated receipt is matched by task/store ID.
  * No other product or shop is seeded. Existing successful snapshots are not overwritten on load.
  */
-export function buildAdminStoreSyncDemo(org:string,store:string,platformStoreId:string):StoreProductSnapshot|null{
+function buildOriginalAdminStoreSyncDemo(org:string,store:string,platformStoreId:string):StoreProductSnapshot|null{
  if(org!=="SM-ENT-000001")return null;
  if(["SIM-ADMIN-02","SIM-ADMIN-03"].includes(store)&&platformStoreId==="SIM-SHEIN-ADMIN-"+store.slice(-2)){
  const second=store.endsWith("02"),base=typeof window!=="undefined"&&window.location.pathname.startsWith("/shuomi")?"/shuomi":"";
@@ -74,6 +75,19 @@ export function buildAdminStoreSyncDemo(org:string,store:string,platformStoreId:
  return {organizationId:org,storeId:store,platformStoreId,syncedAt:task.demoSubmission.publishedAt||task.demoSubmission.submittedAt,simulated:true,rows:platformRows.map(row=>row.platformProductId===simulatedReceipt.platformProductId&&simulatedReceipt.storeId===store?{...row,origin:"shuomi",demoUploadTaskId:simulatedReceipt.taskId,demoReceiptId:simulatedReceipt.id}:{...row,origin:"merchant"})};
 }
 
+export function buildAdminStoreSyncDemo(org:string,store:string,platformStoreId:string):StoreProductSnapshot|null{
+ const previous=readStoreProductSnapshot(org,store,platformStoreId);
+ const base=previous??buildOriginalAdminStoreSyncDemo(org,store,platformStoreId);
+ if(base&&!base.simulated)return base;
+ const rows=[...(base?.rows??[])];
+ for(const e of apparelDemoEntries(org).filter(x=>x.store.id===store&&x.store.platformStoreId===platformStoreId)){
+  const task=readShowcaseUploadTasks(org,"admin").find(t=>t.id===e.taskId&&t.status==="模拟已提交"&&t.demoSubmission?.simulatedPlatformProductId===e.platformProductId);
+  if(!task||!task.demoSubmission)continue;
+  if(!rows.some(r=>r.platformProductId===e.platformProductId))rows.push({platformProductId:e.platformProductId,name:e.product.name,sku:e.product.skus[0].id,imageUrl:e.product.images[0],platformStatus:task.demoSubmission.listingStatus==="已下架"?"模拟已下架":"模拟已上架",price:e.plan.price,stock:e.product.stock,origin:"shuomi",demoUploadTaskId:e.taskId,demoReceiptId:e.receiptId});
+ }
+ return rows.length?{organizationId:org,storeId:store,platformStoreId,syncedAt:base?.syncedAt??apparelDemoTime,rows,simulated:true}:base;
+}
+
 /** Explicit local demo action; keep the last sync timestamp and all unrelated rows. */
 export function saveSimulatedStoreDelisting(snapshot:StoreProductSnapshot,ids:string[]):void{
  if(snapshot.simulated!==true)throw Error("真实平台下架接口未接入");
@@ -84,7 +98,7 @@ export function saveSimulatedStoreDelisting(snapshot:StoreProductSnapshot,ids:st
  saveVerifiedStoreProductSnapshot({...current,rows});
  const tasks=readShowcaseUploadTasks(snapshot.organizationId,"admin");
  const taskIds=new Set(rows.filter(r=>targets.has(r.platformProductId)&&r.platformStatus==="模拟已下架"&&r.demoUploadTaskId).map(r=>r.demoUploadTaskId));
- if(snapshot.organizationId==="SM-ENT-000001"&&snapshot.storeId==="SIM-ADMIN-01"&&taskIds.size){
+ if(snapshot.organizationId==="SM-ENT-000001"&&taskIds.size){
  const next=tasks.map(t=>taskIds.has(t.id)&&t.storeId===snapshot.storeId&&t.demoSubmission?.listingStatus==="已上架"?{...t,demoSubmission:{...t.demoSubmission,listingStatus:"已下架" as const}}:t);
  persistShowcaseUploadTaskRecords(snapshot.organizationId,"admin",next);
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:snapshot.organizationId,memberId:"admin"}}));

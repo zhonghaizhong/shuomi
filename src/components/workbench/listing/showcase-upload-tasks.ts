@@ -1,4 +1,5 @@
 "use client";
+import {apparelDemoEntries,apparelDemoBatchId,apparelDemoBatchName,apparelDemoTime} from "../showcase-apparel-sales-demo";
 import {listingDemoArtSet,type ListingArtKind} from "./showcase-listing-ai-images";
 import {categoryFieldImpact,fieldSchemaMatches,validatePlatformFields,type PlatformFieldSchema,type ScopedFieldValues} from "./showcase-platform-field-schema";
 import {variantStructureImpact,variantStructureValidation,type VariantStructureDraft} from "./showcase-variant-structure";
@@ -76,7 +77,14 @@ export function readShowcaseUploadTasks(organizationId:string,memberId:string):S
  try{
   const k=key(organizationId,memberId);
   const session=sessionStorage.getItem(k),durable=localStorage.getItem(k);
-  const raw:unknown=JSON.parse(session||durable||"[]");
+  let raw:unknown=JSON.parse(session||durable||"[]");
+  const existing=Array.isArray(raw)?raw:[];
+  const seed:ShowcaseUploadTask[]=apparelDemoEntries(organizationId,memberId).filter(e=>!existing.some(t=>t?.id===e.taskId)).map(e=>({
+   id:e.taskId,organizationId,memberId,source:"采集批次",batchId:apparelDemoBatchId,batchName:apparelDemoBatchName,sourceVersionId:"original",sourceVersionLabel:"原始版本",productIds:["SIM-COLLECT-"+e.product.id],productCount:1,missingCount:0,
+   storeId:e.store.id,storeName:e.store.name,platform:"SHEIN",region:e.store.region,storeType:e.store.type,rule:"演示固定售价 "+e.plan.price,agentId:null,agentName:null,templateId:null,mode:"直接上传到平台",status:"模拟已提交",createdAt:apparelDemoTime,demo:true,
+   demoSubmission:{reviewedAt:apparelDemoTime,submittedAt:apparelDemoTime,platform:"SHEIN",site:e.store.region,storeId:e.store.id,storeName:e.store.name,result:"模拟提交成功",externalReceiptId:null,listingStatus:"已上架",publishedAt:apparelDemoTime,simulatedPlatformProductId:e.platformProductId,simulatedReceiptId:e.receiptId}
+  }));
+  if(seed.length){raw=[...seed,...existing];persistShowcaseUploadTaskRecords(organizationId,memberId,raw as ShowcaseUploadTask[]);}
   if(!session&&durable)sessionStorage.setItem(k,durable);
   return Array.isArray(raw)?raw.filter((value):value is ShowcaseUploadTask=>Boolean(value&&typeof value==="object"&&"id"in value&&"organizationId"in value&&value.organizationId===organizationId&&"memberId"in value&&value.memberId===memberId&&"productIds"in value&&Array.isArray(value.productIds)&&"status"in value)).map(task=>{
    const data=task.demoProduct;
@@ -320,18 +328,19 @@ export function applyVerifiedListingFieldSchema(org:string,member:string,taskId:
 }
 export function completeShowcaseUploadTask(org:string,member:string,taskId:string,fields:Record<string,string>):ShowcaseUploadTask{
  const records=readShowcaseUploadTasks(org,member),task=records.find(t=>t.id===taskId);
- if(!task||task.status!=="待补全"||!task.demoProduct)throw Error("没有可补全的演示任务");
+ if(!task||task.status!=="待补全")throw Error("没有可补全的演示任务");
+ if(!task.demoProduct&&task.agentId)throw Error("缺少智能体任务资料");
  if(task.textEdits?.categoryRulePending)throw Error("目标分类变更后尚未核对平台规则，不允许提交审核");
  if(task.textEdits?.variantStructurePending)throw Error("变体结构变更尚未完成SKU组合及平台规则复核，不能提交审核");
  const category=task.textEdits?.categoryPath??"";
  if(category){
   if(!fieldSchemaMatches(task.platformFieldSchema,{platform:task.platform,region:task.region,storeType:task.storeType,categoryPath:category}))throw Error("目标分类没有经过验证的完整平台字段规则，不能提交审核");
-  const detail=task.demoProduct.variantDetails??[];
+  const detail=task.demoProduct?.variantDetails??[];
   const errors=validatePlatformFields(task.platformFieldSchema!,task.textEdits?.fieldValues??{},{variantIds:[...new Set(detail.map(v=>v.color.trim().toLowerCase()))],skuIds:detail.length?detail.map(v=>v.sku):task.productIds});
   if(errors.length)throw Error("目标平台必填字段不完整："+errors.slice(0,4).join("；"));
  }
- if(task.demoProduct.missingFields.some(f=>!(fields[f]??task.textEdits?.legacyMissingValues?.[f])?.trim()))throw Error("请先补齐所有缺失资料");
- const next={...task,status:"待审核" as const,missingCount:0,textEdits:{...task.textEdits,legacyMissingValues:{...task.textEdits?.legacyMissingValues,...fields}},demoProduct:{...task.demoProduct,missingFields:[]}};
+ if((task.demoProduct?.missingFields??(task.missingCount?["商品必填资料"]:[])).some(f=>!(fields[f]??task.textEdits?.legacyMissingValues?.[f])?.trim()))throw Error("请先补齐所有缺失资料");
+ const next:ShowcaseUploadTask={...task,status:task.agentId?"待审核":"待平台提交",missingCount:0,textEdits:{...task.textEdits,legacyMissingValues:{...task.textEdits?.legacyMissingValues,...fields}},demoProduct:task.demoProduct?{...task.demoProduct,missingFields:[]}:undefined};
  persistShowcaseUploadTaskRecords(org,member,records.map(t=>t.id===taskId?next:t));
  window.dispatchEvent(new CustomEvent(showcaseUploadTasksEvent,{detail:{organizationId:org,memberId:member}}));
  return next;

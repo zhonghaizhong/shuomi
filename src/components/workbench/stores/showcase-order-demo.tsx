@@ -4,6 +4,7 @@ import {Truck} from "lucide-react";
 import type {DemoStoreBinding} from "../store-binding-demo";
 import {buildAdminStoreSyncDemo,readStoreProductSnapshot} from "./store-product-snapshot-demo";
 import {readShowcaseUploadTasks} from "../listing/showcase-upload-tasks";
+import {apparelDemoEntries,apparelDemoTime} from "../showcase-apparel-sales-demo";
 import {readDemoCollectionBatches} from "../showcase-collection-batches";
 import css from "./showcase-store-center.module.css";
 import orderCss from "./showcase-order-demo.module.css";
@@ -23,7 +24,7 @@ const targetIds=["SIM-SHEIN-ADMIN-01-B0CFPJYX7P","SIM-SHEIN-ADMIN-01-MERCHANT-00
 function readOriginalOrders(org:string,stores:DemoStoreBinding[]):Order[]{
  if(typeof window==="undefined"||org!=="SM-ENT-000001"||!stores.some(s=>s.id==="SIM-ADMIN-01"&&s.platformStoreId==="SIM-SHEIN-ADMIN-01"))return [];
  const key="shuomi:demo-orders:"+org+":SIM-ADMIN-01";
- try{const raw=localStorage.getItem(key);if(raw){const parsed=JSON.parse(raw);if(Array.isArray(parsed)&&parsed.length===4)return parsed}}
+ try{const raw=localStorage.getItem(key);if(raw){const parsed=JSON.parse(raw);if(Array.isArray(parsed)&&parsed.every(o=>o.storeId==="SIM-ADMIN-01"))return parsed}}
  catch{}
  const snapshot=readStoreProductSnapshot(org,"SIM-ADMIN-01","SIM-SHEIN-ADMIN-01")??buildAdminStoreSyncDemo(org,"SIM-ADMIN-01","SIM-SHEIN-ADMIN-01");
  const rows=targetIds.map(id=>snapshot?.rows.find(r=>r.platformProductId===id));
@@ -42,7 +43,22 @@ export function readDemoOrders(org:string,stores:DemoStoreBinding[]):Order[]{
  const p=snapshot?.rows.find(r=>r.origin==="merchant");if(!p)return [];
  const rows:Order[]=Array.from({length:s.id.endsWith("02")?6:2},(_,i)=>({id:"SIM-ORDER-"+s.id.slice(-2)+"-"+String(i+1).padStart(3,"0"),storeId:s.id,productId:p.platformProductId,sku:p.sku,name:p.name,image:p.imageUrl,origin:p.origin,amount:p.price??"未记录",created:"2026-11-"+(24+i%4)+"T09:00:00Z",stage:s.id.endsWith("02")?i%5:0}));
  try{localStorage.setItem(key,JSON.stringify(rows))}catch{}return rows;
- });return [...original,...extra];
+ });const all=[...original,...extra];
+ for(const e of apparelDemoEntries(org).filter(e=>stores.some(s=>s.id===e.store.id))){
+  const snapshot=buildAdminStoreSyncDemo(org,e.store.id,e.store.platformStoreId!);
+  const row=snapshot?.rows.find(r=>r.platformProductId===e.platformProductId);
+  if(!row)continue;
+  const key="shuomi:demo-orders:"+org+":"+e.store.id;
+  let saved:Order[]=[];try{const raw=JSON.parse(localStorage.getItem(key)||"[]");if(Array.isArray(raw))saved=raw.filter(o=>o.storeId===e.store.id)}catch{}
+  const additions:Order[]=e.plan.stages.map((stage,i)=>{
+   const sku=e.product.skus[i%e.product.skus.length];
+   const id="SIM-APPAREL-ORDER-"+e.store.id.slice(-2)+"-"+String(i+1).padStart(3,"0");
+   return {id,storeId:e.store.id,productId:e.platformProductId,sku:sku.id,name:e.product.name,image:sku.images?.[0],origin:"shuomi",amount:e.plan.price,created:apparelDemoTime,stage,fulfillmentSource:"硕米优选",supplyProductId:e.product.id,supplySkuId:sku.id,...(stage>=2?{purchaseId:"SIM-PURCHASE-"+id}:{}),...(stage>=3?{carrier:"演示物流",trackingNumber:"SIM-TRACK-"+id,shippedAt:apparelDemoTime,platformSync:"模拟同步成功" as const}:{})};
+  }).filter(x=>!saved.some(y=>y.id===x.id));
+  const merged=[...saved,...additions];try{localStorage.setItem(key,JSON.stringify(merged))}catch{}
+  for(const item of merged)if(!all.some(x=>x.id===item.id))all.push(item);
+ }
+ return all;
 }
 export function ShowcaseOrderDemo({organizationId,memberId,stores,onStores,onPurchase}:{organizationId:string;memberId:string;stores:DemoStoreBinding[];onStores:()=>void;onPurchase:(path:string)=>void}){
  const [orders,setOrders]=useState<Order[]>(()=>readDemoOrders(organizationId,stores)),[query,setQuery]=useState(""),[search,setSearch]=useState(""),[filter,setFilter]=useState("全部状态"),[selected,setSelected]=useState<string|null>(null),[notice,setNotice]=useState("");

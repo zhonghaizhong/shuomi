@@ -154,7 +154,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
  const productSnapshots=visibleProductStores.flatMap(x=>{
   const prior=readStoreProductSnapshot(organizationId,x.id,x.platformStoreId!);
   const legacy=prior?.simulated&&prior.rows.some(row=>row.platformProductId==="SIM-SHEIN-ADMIN-01-B00008GKD3");
-  const saved=legacy?buildAdminStoreSyncDemo(organizationId,x.id,x.platformStoreId!):prior??buildAdminStoreSyncDemo(organizationId,x.id,x.platformStoreId!);
+  const saved=legacy?buildAdminStoreSyncDemo(organizationId,x.id,x.platformStoreId!):buildAdminStoreSyncDemo(organizationId,x.id,x.platformStoreId!)??prior;
   return saved?[{store:x,snapshot:saved}]:[];
  });
  const lastProductSync=productSnapshots.map(x=>x.snapshot.syncedAt).sort().at(-1);
