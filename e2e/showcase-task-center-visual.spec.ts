@@ -64,6 +64,19 @@ test("task center dual theme surfaces, grid alignment and modal visibility",asyn
  }
 });
 
+// Simulate executor-originated events only in the isolated browser fixture.
+// The user-facing task detail deliberately has no fake failure/completion controls.
+async function executorEvent(page:import("@playwright/test").Page,id:string,change:Record<string,unknown>,event:string){
+ await page.evaluate(({id,change,event})=>{
+  const key="shuomi-task-center-demo-v1";
+  const rows=JSON.parse(sessionStorage.getItem(key)??"[]");
+  const task=rows.find((row:{id:string})=>row.id===id);
+  if(!task)throw new Error("Missing executor fixture: "+id);
+  Object.assign(task,change,{history:[...(task.history??[]),{time:"演示时间",event}]});
+  sessionStorage.setItem(key,JSON.stringify(rows));
+ },{id,change,event});
+ await page.reload();
+}
 test("task lifecycle preserves review conversation, handles retry and retains completed result",async({page})=>{
  await seedTaskTestData(page);
  const base="/shuomi/#/workbench/ai/tasks";
@@ -80,7 +93,8 @@ test("task lifecycle preserves review conversation, handles retry and retains co
  const task=page.locator('[class*="taskRow"]').filter({hasText:"美国站潜力商品分析"});
  await expect(task).toBeVisible();
  await task.getByRole("button").first().click();
- await dialog.getByRole("button",{name:"模拟执行异常",exact:true}).click();
+ await expect(dialog.getByRole("button",{name:"模拟执行异常",exact:true})).toHaveCount(0);
+ await executorEvent(page,"e2e-pending",{state:"errors",description:"演示授权异常"},"执行器报告异常");
  await page.goto(base+"/errors");
  const failed=page.locator('[class*="taskRow"]').filter({hasText:"美国站潜力商品分析"});
  await failed.getByRole("button").first().click();
@@ -92,26 +106,38 @@ test("task lifecycle preserves review conversation, handles retry and retains co
  await retry.click();
  await page.goto(base+"/running");
  await task.getByRole("button").first().click();
- await dialog.getByRole("button",{name:"模拟执行完成",exact:true}).click();
+ await expect(dialog.getByRole("button",{name:"模拟执行完成",exact:true})).toHaveCount(0);
+ await executorEvent(page,"e2e-pending",{state:"completed",progress:100,result:"演示分析结果"},"执行器报告完成");
  await page.goto(base+"/completed");
  await task.getByRole("button").first().click();
  await expect(dialog.getByText("执行结果",{exact:true})).toBeVisible();
  await expect(dialog.getByText("处理记录",{exact:true})).toBeVisible();
 });
-test("schedule creates a separate execution record and exposes it in plan history",async({page})=>{
+test("schedule exposes an independent executor record in plan history",async({page})=>{
  await seedTaskTestData(page);
  const base="/shuomi/#/workbench/ai/tasks";
  await page.goto(base+"/scheduled");
  const plan=page.locator('[class*="taskRow"]').filter({hasText:"每日店铺经营简报"});
  await plan.getByRole("button",{name:"详情",exact:true}).click();
  const dialog=page.getByRole("dialog");
- await dialog.getByRole("button",{name:"发起一次演示执行",exact:true}).click();
+ await expect(dialog.getByRole("button",{name:"发起一次演示执行",exact:true})).toHaveCount(0);
+ // The scheduler, not the plan detail UI, originates execution records.
+ await page.evaluate(()=>{
+  const key="shuomi-task-center-demo-v1";
+  const rows=JSON.parse(sessionStorage.getItem(key)??"[]");
+  const plan=rows.find((row:{id:string})=>row.id==="e2e-plan");
+  if(!plan)throw new Error("Missing schedule fixture");
+  rows.unshift({id:"e2e-plan-run",planId:plan.id,name:plan.name+" · 本次执行",scope:plan.scope,description:"演示执行器运行中",state:"running",progress:0,time:"演示时间"});
+  sessionStorage.setItem(key,JSON.stringify(rows));
+ });
+ await page.reload();
  await expect(plan).toBeVisible();
  await page.goto(base+"/running");
  const run=page.locator('[class*="taskRow"]').filter({hasText:"每日店铺经营简报 · 本次执行"});
  await expect(run).toBeVisible();
  await run.getByRole("button").first().click();
- await dialog.getByRole("button",{name:"模拟执行完成",exact:true}).click();
+ await expect(dialog.getByRole("button",{name:"模拟执行完成",exact:true})).toHaveCount(0);
+ await executorEvent(page,"e2e-plan-run",{state:"completed",progress:100,result:"演示经营简报"},"执行器报告完成");
  await page.goto(base+"/scheduled");
  await plan.getByRole("button",{name:"详情",exact:true}).click();
  await dialog.getByRole("button",{name:/每日店铺经营简报 · 本次执行 · 已完成/}).click();

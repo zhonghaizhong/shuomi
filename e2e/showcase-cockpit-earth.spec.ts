@@ -68,14 +68,19 @@ test("prefers reduced motion keeps globe still, without layout changes", async (
 
 test("cockpit quick actions navigate to the intended existing pages", async ({ page }) => {
   await page.goto(cockpit);
-  await page.getByRole("button", { name: "查看全部预警" }).click();
-  await expect(page).toHaveURL(/#\/workbench\/overview\/alerts/);
+  await page.getByRole("button", { name: "检查店铺" }).click();
+  await expect(page).toHaveURL(/#\/workbench\/store-center(?:\?|$)/);
   await page.goto(cockpit);
-  await page.getByRole("button", { name: "查看全部店铺" }).click();
+  await page.getByRole("button", { name: "店铺详情", exact: true }).click();
   await expect(page).toHaveURL(/#\/workbench\/overview\/stores/);
   await page.goto(cockpit);
-  await expect(page.locator('[data-dashboard="operations"]')).toContainText("0 项待办");
-  await expect(page.locator('[data-dashboard="operations"]')).toContainText("暂无已关联的 AI 任务");
+  const dashboard = page.locator('[data-dashboard="operations"]');
+  await expect(dashboard).toContainText("尚无与当前店铺范围关联的可核验任务数据");
+  await dashboard.getByRole("button", { name: "查看任务中心", exact: true }).click();
+  await expect(page).toHaveURL(/#\/workbench\/ai\/tasks(?:\?|$)/);
+  await page.goto(cockpit);
+  await dashboard.getByRole("button", { name: "进入店铺中心" }).click();
+  await expect(page).toHaveURL(/#\/workbench\/stores(?:\?|$)/);
 
 });
 
