@@ -1122,3 +1122,15 @@
 .fieldFoldAi,.fieldFoldExpand{flex:none;border:1px solid var(--stroke);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-size:12px;min-height:31px;padding:5px 10px;cursor:pointer;white-space:nowrap}
 .fieldFoldAi{border-color:#7367f0;color:#a99fff}
 .fieldFoldExpand{border:0;background:transparent;color:var(--muted)}
+
+/* Pending upload schedule: a compact centered date and recurrence editor. */
+.page[data-listing-stage="waiting"] .uploadScheduleDialog{width:min(560px,calc(100vw - 28px));max-height:min(84dvh,740px);overflow:auto;box-sizing:border-box}
+.page[data-listing-stage="waiting"] .uploadScheduleGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:15px 0}
+.page[data-listing-stage="waiting"] .uploadScheduleGrid label{display:grid;gap:7px;min-width:0;font-size:12px;font-weight:600;color:var(--ink)}
+.page[data-listing-stage="waiting"] .uploadScheduleGrid .uploadScheduleFull{grid-column:1/-1}
+.page[data-listing-stage="waiting"] .uploadScheduleGrid input,
+.page[data-listing-stage="waiting"] .uploadScheduleGrid select{width:100%;min-width:0;box-sizing:border-box;min-height:40px;padding:8px 11px;border:1px solid var(--stroke);border-radius:7px;background:var(--surface-alt);color:var(--ink);color-scheme:dark}
+:global(.light) .page[data-listing-stage="waiting"] .uploadScheduleGrid input,
+:global(.light) .page[data-listing-stage="waiting"] .uploadScheduleGrid select{color-scheme:light}
+.page[data-listing-stage="waiting"] .uploadScheduleHint{font-size:12px;line-height:1.6;color:var(--muted);margin:10px 0}
+@media(max-width:480px){.page[data-listing-stage="waiting"] .uploadScheduleGrid{grid-template-columns:1fr}.page[data-listing-stage="waiting"] .uploadScheduleGrid .uploadScheduleFull{grid-column:auto}}
