@@ -207,11 +207,20 @@ test("switching themes preserves menus and light-page selected card interaction"
   const queue = advice.locator('aside button');
   if (await queue.count()) {
     await queue.first().click();
-    await expect(advice.getByRole("heading", { name: "判断依据", exact: true })).toBeVisible();
-    await expect(advice.getByRole("heading", { name: "解决方案", exact: true })).toBeVisible();
-    await expect(advice.getByRole("button", { name: "前往处理", exact: true })).toBeVisible();
+    await expect(queue.first()).toHaveAttribute("aria-pressed","true");
+    const conversation=advice.getByRole("region",{name:"经营建议对话"});
+    await expect(conversation).toBeVisible();
+    await expect(conversation.getByRole("heading",{name:"当前经营情况",exact:true})).toBeVisible();
+    await expect(conversation.getByRole("heading",{name:"经营分析",exact:true})).toBeVisible();
+    await expect(conversation.getByRole("heading",{name:"经营建议",exact:true})).toBeVisible();
+    await expect(conversation.getByText("尚未接入大模型",{exact:false})).toBeVisible();
+    await expect(advice.getByRole("button",{name:"前往处理",exact:true})).toHaveCount(0);
+    await expect(advice.getByRole("button",{name:"确认已执行",exact:true})).toHaveCount(0);
+    await expect(advice.locator("textarea")).toHaveCount(0);
+    const bubble=conversation.locator('[class*="adviceChatBubble"]');
+    expect(await bubble.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(248, 247, 250)");
   } else {
-    await expect(advice.getByRole("heading", { name: "暂无可处理的建议" })).toBeVisible();
+    await expect(advice.getByRole("heading", { name: "暂无经营建议" })).toBeVisible();
     await expect(advice.getByRole("status").filter({hasText:"暂无经营建议"})).toBeVisible();
   }
   await page.getByRole("button", { name: "切换深色主题" }).click();
@@ -304,11 +313,20 @@ test("standard headers keep actions clickable and adapt to narrow screens", asyn
   const queue = advice.locator('aside button');
   if (await queue.count()) {
     await queue.first().click();
-    await expect(advice.getByRole("heading", { name: "判断依据", exact: true })).toBeVisible();
-    await expect(advice.getByRole("heading", { name: "解决方案", exact: true })).toBeVisible();
-    await expect(advice.getByRole("button", { name: "前往处理", exact: true })).toBeVisible();
+    await expect(queue.first()).toHaveAttribute("aria-pressed","true");
+    const conversation=advice.getByRole("region",{name:"经营建议对话"});
+    await expect(conversation).toBeVisible();
+    await expect(conversation.getByRole("heading",{name:"当前经营情况",exact:true})).toBeVisible();
+    await expect(conversation.getByRole("heading",{name:"经营分析",exact:true})).toBeVisible();
+    await expect(conversation.getByRole("heading",{name:"经营建议",exact:true})).toBeVisible();
+    await expect(conversation.getByText("尚未接入大模型",{exact:false})).toBeVisible();
+    await expect(advice.getByRole("button",{name:"前往处理",exact:true})).toHaveCount(0);
+    await expect(advice.getByRole("button",{name:"确认已执行",exact:true})).toHaveCount(0);
+    await expect(advice.locator("textarea")).toHaveCount(0);
+    const bubble=conversation.locator('[class*="adviceChatBubble"]');
+    expect(await bubble.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe("rgb(248, 247, 250)");
   } else {
-    await expect(advice.getByRole("heading", { name: "暂无可处理的建议" })).toBeVisible();
+    await expect(advice.getByRole("heading", { name: "暂无经营建议" })).toBeVisible();
     await expect(advice.getByRole("status").filter({hasText:"暂无经营建议"})).toBeVisible();
   }
 });
