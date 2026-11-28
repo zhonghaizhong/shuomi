@@ -254,8 +254,8 @@ export function addSelectedCatalogProducts(
   for(const c of next.destinationCosts??[])if(incoming.some(v=>v.sku===c.skuId))costs.set(c.skuId+"::"+c.country,c);
   const details=[...(old.variantDetails??[]),...incoming];
   products[index]={...old,variantDetails:details,
-   variants:[...new Set([...old.variants??[],...incoming.map(v=>v.label)])],
-   variantCount:details.length,shipToCountries:[...new Set([...old.shipToCountries??[],...next.shipToCountries??[]])],
+   variants:[...new Set([...(old.variants??[]),...incoming.map(v=>v.label)])],
+   variantCount:details.length,shipToCountries:[...new Set([...(old.shipToCountries??[]),...(next.shipToCountries??[])])],
    destinationCosts:costs.size?[...costs.values()]:undefined};
   modified+=incoming.length;
  }
