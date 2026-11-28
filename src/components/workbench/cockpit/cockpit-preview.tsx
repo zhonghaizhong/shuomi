@@ -8,6 +8,7 @@ import { SeamlessEarthGlobe } from "./seamless-earth-globe";
 import {useDemoStoreBindings,demoStoreServiceActive} from "../store-binding-demo";
 import {getDemoMembership} from "../../../../showcase/demo-identity";
 import {readDemoOrders} from "../stores/showcase-order-demo";
+import {readShowcaseTaskCenterTasks} from "../showcase-task-center";
 
 type StoreSummary={id:string;name:string;platform:string;site:string;type:string;impressions:string;clicks:string;status:string;issue?:string};
 
@@ -21,6 +22,32 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
   const [activeFilters, setActiveFilters] = useState(emptyFilters);
   const [tablePage, setTablePage] = useState(1);
   const [detailStoreId,setDetailStoreId]=useState<string|null>(null);
+  const [taskRevision,setTaskRevision]=useState(0);
+  useEffect(()=>{
+    const changed=(event:Event)=>{
+      const scope=(event as CustomEvent<{organizationId:string;memberId:string}>).detail;
+      if(scope?.organizationId===organizationId&&scope.memberId===memberId)setTaskRevision(n=>n+1);
+    };
+    const refresh=()=>setTaskRevision(n=>n+1);
+    window.addEventListener("shuomi-project-tasks-changed",changed);
+    window.addEventListener("focus",refresh);
+    window.addEventListener("pageshow",refresh);
+    return()=>{
+      window.removeEventListener("shuomi-project-tasks-changed",changed);
+      window.removeEventListener("focus",refresh);
+      window.removeEventListener("pageshow",refresh);
+    };
+  },[organizationId,memberId]);
+  const taskRecords=useMemo(()=>readShowcaseTaskCenterTasks(organizationId,memberId),[organizationId,memberId,taskRevision]);
+  const taskCounts={
+    pending:taskRecords.filter(t=>t.state==="pending"||t.state==="revision").length,
+    running:taskRecords.filter(t=>t.state==="running").length,
+    errors:taskRecords.filter(t=>t.state==="errors").length,
+    scheduled:taskRecords.filter(t=>t.state==="scheduled"&&!t.paused).length
+  };
+  const relevantTasks=taskRecords.filter(t=>t.state==="pending"||t.state==="revision"||t.state==="running"||t.state==="errors"||t.state==="scheduled"&&!t.paused)
+    .sort((a,b)=>(a.state==="errors"?0:a.state==="pending"||a.state==="revision"?1:a.state==="running"?2:3)-(b.state==="errors"?0:b.state==="pending"||b.state==="revision"?1:b.state==="running"?2:3))
+    .slice(0,3);
   const visibleStores = stores.filter(store => {
     const query = activeFilters.search.trim().toLocaleLowerCase();
     return (activeFilters.platform === "全部平台" || store.platform === activeFilters.platform)
@@ -68,6 +95,20 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
             </div>
           </div>
         </div>
+      </article>
+      <article className={styles.aiTasksCard} aria-label="AI 执行与待办">
+        <header><h2>AI 执行与待办</h2><span>任务中心演示记录</span></header>
+        <div className={styles.cockpitTaskCounters}>
+          {([{label:"待确认",value:taskCounts.pending,route:"/workbench/ai/tasks/pending"},{label:"执行中",value:taskCounts.running,route:"/workbench/ai/tasks/running"},{label:"异常",value:taskCounts.errors,route:"/workbench/ai/tasks/errors"},{label:"定时计划",value:taskCounts.scheduled,route:"/workbench/ai/tasks/scheduled"}] as const).map(item=>
+            <button type="button" key={item.label} onClick={()=>router.push(item.route)}><strong>{item.value}</strong><small>{item.label}</small></button>
+          )}
+        </div>
+        <div className={styles.cockpitTaskRows}>
+          {relevantTasks.length?relevantTasks.map(task=><button key={task.id} type="button" onClick={()=>router.push(task.state==="errors"?"/workbench/ai/tasks/errors":task.state==="pending"||task.state==="revision"?"/workbench/ai/tasks/pending":task.state==="scheduled"?"/workbench/ai/tasks/scheduled":"/workbench/ai/tasks/running")}>
+            <span className={styles.cockpitTaskName}>{task.name}</span><span className={styles.cockpitTaskStatus}>{task.state==="errors"?"异常":task.state==="pending"||task.state==="revision"?"待确认":task.state==="scheduled"?"定时计划":"执行中"}</span>
+          </button>):<p>当前账号没有待处理的演示任务；可进入任务中心查看全部记录。</p>}
+        </div>
+        <div className={styles.cockpitTaskFoot}><span>与任务中心同源 · 演示任务不代表真实 AI 执行</span><button type="button" onClick={()=>router.push("/workbench/ai/tasks")}>查看任务中心</button></div>
       </article>
     </section>
     <div className={styles.overviewFilters}>
