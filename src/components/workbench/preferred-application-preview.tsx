@@ -30,6 +30,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const [showSkuPricing,setShowSkuPricing]=useState(false);
  const [skuEditing,setSkuEditing]=useState<string[]>([]);
  const [showPackagingOverrides,setShowPackagingOverrides]=useState(false);
+ const [batchSkuKeys,setBatchSkuKeys]=useState<string[]>([]);
  const [showTierPricing,setShowTierPricing]=useState(false);
  const [applicationOpen,setApplicationOpen]=useState(false);
  const [recordDetail,setRecordDetail]=useState<string|null>(null);
@@ -100,11 +101,11 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
   }
   const previous=records[0]?.supply;
   setSelected(list);
-  setSkuEditing(Object.keys(skuOverrides));setShowPackagingOverrides(false);
+  setSkuEditing(Object.keys(skuPrices));setShowPackagingOverrides(true);setBatchSkuKeys([]);
   setSupply({...emptyPreferredSupply,supplyKind:"现货",warehouseMode:"硕米仓库",currency:"CNY",dropship:true,skuPrices,skuOverrides,defaultSkuQuantity:firstQuantity===undefined?"":String(firstQuantity),
    supplierName:profile?.name??"",supplierContact:profile?.contact??"",supplierPhone:profile?.phone??"",supplierLocation:profile?.location??"",supplierAgreement:Boolean(profile?.agreement),
    unitPrice:firstPrice||previous?.unitPrice||"",packageWeight:previous?.packageWeight??"",packageSize:previous?.packageSize??"",shippingCountries:previous?.shippingCountries??"",origin:previous?.origin??"",dispatch:previous?.dispatch??"",returns:previous?.returns??"",maxQuantity:previous?.maxQuantity??"",stock:String(sourceSkus.reduce((sum,v)=>sum+(v.sku.stock??0),0)),moq:previous?.moq??"1"});
-  setEditSupplier(!profile?.name);setShowSkuPricing(false);setShowTierPricing(false);
+  setEditSupplier(!profile?.name);setShowSkuPricing(true);setShowTierPricing(false);
   setNotice("");setError("");setApplicationOpen(true);
  };
  const submit=(event:FormEvent<HTMLFormElement>)=>{
@@ -115,11 +116,11 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
     const id=c.product.id+":"+String(sku.id);
     const override=supply.skuOverrides?.[id];
     skuPrices[id]={
-     price:override?.price??supply.unitPrice??"",
-     quantity:override?.quantity??supply.defaultSkuQuantity??"",
+     price:override?.price??supply.skuPrices?.[id]?.price??"",
+     quantity:override?.quantity??supply.skuPrices?.[id]?.quantity??"",
      moq:override?.moq??supply.moq,
-     weight:showPackagingOverrides?override?.weight??supply.packageWeight:supply.packageWeight,
-     size:showPackagingOverrides?override?.size??supply.packageSize:supply.packageSize
+     weight:override?.weight??supply.packageWeight,
+     size:override?.size??supply.packageSize
     };
    }
    const total=Object.values(skuPrices).reduce((sum,v)=>sum+Math.max(0,Number(v.quantity)||0),0);
@@ -235,33 +236,45 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
        </div>
       </section>
       <section className={styles.applySection}>
-       <div className={styles.applySectionHeading}><strong>统一供货规则</strong><span className={styles.applyMeta}>默认应用到所有 SKU · 运费与处理费由硕米后台核算</span></div>
+       <div className={styles.applySectionHeading}><strong>SKU 供货配置</strong><span className={styles.applyMeta}>衣服不同尺码价格、库存、包装重量分别填写 · 不会猜测差异</span></div>
        <div className={styles.fields}>
         <label>结算币种<select aria-label="结算币种" value={supply.currency??"CNY"} onChange={e=>setSupply(v=>({...v,currency:e.target.value}))}><option value="CNY">CNY · 人民币</option><option value="USD">USD · 美元</option></select></label>
-        <label>默认供货价<input required type="number" step="0.01" min="0.01" aria-label="基础供货价" value={supply.unitPrice??""} onChange={e=>setSupply(v=>({...v,unitPrice:e.target.value}))} placeholder="统一供货单价"/></label>
         <label>默认起订量<input required type="number" min="1" aria-label="最小起订量" value={supply.moq} onChange={e=>setSupply(v=>({...v,moq:e.target.value}))}/></label>
-        <label>{supply.supplyKind==="现货"?"每个 SKU 默认可售库存":"每个 SKU 默认可接单量"}<input required type="number" min="0" aria-label="SKU默认库存" value={supply.defaultSkuQuantity??""} onChange={e=>setSupply(v=>({...v,defaultSkuQuantity:e.target.value}))} placeholder="统一数量"/></label>
         <label>单次最大采购量（选填）<input type="number" min="1" aria-label="单次最大可采购量" value={supply.maxQuantity??""} onChange={e=>setSupply(v=>({...v,maxQuantity:e.target.value}))}/></label>
         <label><span className={styles.checkboxLine}><input type="checkbox" checked={Boolean(supply.dropship)} onChange={e=>setSupply(v=>({...v,dropship:e.target.checked}))}/>支持一件代发</span></label>
        </div>
-       <div className={styles.applyTools}><strong>SKU 差异配置</strong><span>{skuEditing.length} 个单独设置 · 其余采用上方默认值</span><button type="button" onClick={()=>setShowSkuPricing(v=>!v)}>{showSkuPricing?"收起差异":"调整差异 SKU"}</button></div>
-       {showSkuPricing?<div className={styles.skuExceptions}>
+       <p className={styles.applyHint}>每一行是独立 SKU。价格、可售量和包装重量必须按实际规格确认；相同数值可勾选多个 SKU 批量填写，不会覆盖未选中的规格。</p>
+       <div className={styles.applyTools}><strong>SKU 明细</strong><span>{Object.keys(supply.skuPrices??{}).length} 个 SKU · 已选 {batchSkuKeys.length} 个</span><button type="button" onClick={()=>setBatchSkuKeys(candidates.filter(c=>chosen.includes(c.product.id)).flatMap(c=>c.product.skus.map(s=>c.product.id+":"+String(s.id))))}>全选</button><button type="button" onClick={()=>setBatchSkuKeys([])}>清空</button></div>
+       <div className={styles.skuPricingWrap+" "+styles.skuFullTable}><table><thead><tr><th>选择</th><th>商品 / SKU</th><th>供货价</th><th>{supply.supplyKind==="现货"?"库存":"接单量"}</th><th>起订量</th><th>包装重量 kg</th><th>包装尺寸 cm</th></tr></thead><tbody>
         {candidates.filter(c=>chosen.includes(c.product.id)).flatMap(c=>c.product.skus.map(sku=>{
-         const key=c.product.id+":"+String(sku.id),override=supply.skuOverrides?.[key]??{},editing=skuEditing.includes(key);
+         const key=c.product.id+":"+String(sku.id),base=supply.skuPrices?.[key]??{price:"",quantity:""},override=supply.skuOverrides?.[key]??{};
          const update=(field:"price"|"quantity"|"moq"|"weight"|"size",value:string)=>setSupply(v=>({...v,skuOverrides:{...v.skuOverrides,[key]:{...v.skuOverrides?.[key],[field]:value}}}));
-         return <div className={styles.skuException} key={key}>
-          <div className={styles.skuExceptionHead}><div><strong>{sku.name}</strong><small>{sku.skuCode||sku.id}</small></div><span>{editing?"独立设置":"使用默认值"}</span><button type="button" onClick={()=>{
-           if(editing){setSkuEditing(old=>old.filter(x=>x!==key));setSupply(v=>{const next={...v.skuOverrides};delete next[key];return {...v,skuOverrides:next}})}
-           else setSkuEditing(old=>[...old,key]);
-          }}>{editing?"恢复默认":"单独调整"}</button></div>
-          {editing?<div className={styles.skuExceptionFields}>
-           <label>供货价<input type="number" step="0.01" min="0.01" aria-label={"SKU供货价 "+key} value={override.price??supply.unitPrice??""} onChange={e=>update("price",e.target.value)}/></label>
-           <label>{supply.supplyKind==="现货"?"库存":"可接单量"}<input type="number" min="0" aria-label={"SKU库存 "+key} value={override.quantity??supply.defaultSkuQuantity??""} onChange={e=>update("quantity",e.target.value)}/></label>
-           <label>起订量<input type="number" min="1" aria-label={"SKU起订量 "+key} value={override.moq??supply.moq} onChange={e=>update("moq",e.target.value)}/></label>
-           {showPackagingOverrides?<><label>包装重量 kg<input type="number" min="0.001" step="0.001" aria-label={"SKU包装重量 "+key} value={override.weight??supply.packageWeight??""} onChange={e=>update("weight",e.target.value)}/></label><label>包装尺寸 cm<input aria-label={"SKU包装尺寸 "+key} value={override.size??supply.packageSize??""} onChange={e=>update("size",e.target.value)} placeholder="长×宽×高"/></label></>:null}
-          </div>:null}
-         </div>
-        }))}</div>:null}
+         return <tr key={key}>
+          <td><input type="checkbox" aria-label={"选择 SKU "+key} checked={batchSkuKeys.includes(key)} onChange={e=>setBatchSkuKeys(v=>e.target.checked?[...v,key]:v.filter(x=>x!==key))}/></td>
+          <td><strong>{sku.name}</strong><small>{sku.skuCode||sku.id}</small></td>
+          <td><input aria-label={"SKU供货价 "+key} type="number" min="0.01" step="0.01" required value={override.price??base.price} onChange={e=>update("price",e.target.value)} placeholder="必填"/></td>
+          <td><input aria-label={"SKU库存 "+key} type="number" min="0" required value={override.quantity??base.quantity} onChange={e=>update("quantity",e.target.value)}/></td>
+          <td><input aria-label={"SKU起订量 "+key} type="number" min="1" required value={override.moq??supply.moq} onChange={e=>update("moq",e.target.value)}/></td>
+          <td><input aria-label={"SKU包装重量 "+key} type="number" min="0.001" step="0.001" required value={override.weight??supply.packageWeight??""} onChange={e=>update("weight",e.target.value)} placeholder="必填"/></td>
+          <td><input aria-label={"SKU包装尺寸 "+key} required value={override.size??supply.packageSize??""} onChange={e=>update("size",e.target.value)} placeholder="长×宽×高"/></td>
+         </tr>
+        }))}</tbody></table></div>
+       <div className={styles.applyTools}><strong>批量填写相同规格</strong><span>只会更新勾选的 {batchSkuKeys.length} 个 SKU</span></div>
+       <div className={styles.fields}>
+        <label>批量供货价<input type="number" min="0.01" step="0.01" aria-label="批量供货价" value={supply.unitPrice??""} onChange={e=>setSupply(v=>({...v,unitPrice:e.target.value}))} placeholder="选填"/></label>
+        <label>批量库存 / 接单量<input type="number" min="0" aria-label="批量库存" value={supply.defaultSkuQuantity??""} onChange={e=>setSupply(v=>({...v,defaultSkuQuantity:e.target.value}))} placeholder="选填"/></label>
+        <label>批量包装重量 kg<input type="number" min="0.001" step="0.001" aria-label="批量包装重量" value={supply.packageWeight??""} onChange={e=>setSupply(v=>({...v,packageWeight:e.target.value}))} placeholder="选填"/></label>
+        <label>批量包装尺寸 cm<input aria-label="批量包装尺寸" value={supply.packageSize??""} onChange={e=>setSupply(v=>({...v,packageSize:e.target.value}))} placeholder="长×宽×高（选填）"/></label>
+       </div>
+       <div className={styles.applyTools}><button type="button" disabled={!batchSkuKeys.length||![supply.unitPrice,supply.defaultSkuQuantity,supply.packageWeight,supply.packageSize].some(v=>v?.trim())} onClick={()=>{
+        const changes:{price?:string;quantity?:string;weight?:string;size?:string}={};
+        if(supply.unitPrice?.trim())changes.price=supply.unitPrice;
+        if(supply.defaultSkuQuantity?.trim())changes.quantity=supply.defaultSkuQuantity;
+        if(supply.packageWeight?.trim())changes.weight=supply.packageWeight;
+        if(supply.packageSize?.trim())changes.size=supply.packageSize;
+        setSupply(v=>({...v,skuOverrides:Object.fromEntries([...Object.entries(v.skuOverrides??{}),...batchSkuKeys.map(key=>[key,{...v.skuOverrides?.[key],...changes}] as const)])}));
+        setBatchSkuKeys([]);
+       }}>应用到选中 SKU</button><span>不填写的字段不会被批量覆盖</span></div>
        <div className={styles.applyTools}><label className={styles.checkboxLine}><input type="checkbox" checked={showTierPricing} onChange={e=>setShowTierPricing(e.target.checked)}/>阶梯供货报价</label></div>
        {showTierPricing?<label className={styles.applyTextLabel}>阶梯报价说明<textarea aria-label="阶梯报价规则" value={supply.tierPrices??""} onChange={e=>setSupply(v=>({...v,tierPrices:e.target.value}))} placeholder="例如 10–49 件 11.80；50 件以上 10.90"/></label>:null}
       </section>
@@ -277,9 +290,6 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
        <div className={styles.fields}>
         <label>发货地<input required aria-label="发货地" value={supply.origin} onChange={e=>setSupply(v=>({...v,origin:e.target.value}))} placeholder="国家 / 省市"/></label>
         <label>{supply.supplyKind==="现货"?"出库时效":"生产与发货时效"}<input required aria-label="发货时效" value={supply.dispatch} onChange={e=>setSupply(v=>({...v,dispatch:e.target.value}))} placeholder="例如 1–3 个工作日"/></label>
-        <label>默认包装重量（kg）<input required type="number" min="0.001" step="0.001" aria-label="包装重量" value={supply.packageWeight??""} onChange={e=>setSupply(v=>({...v,packageWeight:e.target.value}))} placeholder="例如 0.35"/></label>
-        <label>默认包装尺寸（cm）<input required aria-label="包装尺寸" value={supply.packageSize??""} onChange={e=>setSupply(v=>({...v,packageSize:e.target.value}))} placeholder="长×宽×高"/></label>
-        <label className={styles.full}><span className={styles.checkboxLine}><input type="checkbox" checked={showPackagingOverrides} onChange={e=>{setShowPackagingOverrides(e.target.checked);if(e.target.checked)setShowSkuPricing(true)}}/>部分 SKU 的包装重量或尺寸不同（在「SKU 差异配置」中调整）</span></label>
         <label className={styles.full}>可配送国家 / 地区<input required aria-label="可配送国家" value={supply.shippingCountries??""} onChange={e=>setSupply(v=>({...v,shippingCountries:e.target.value}))} placeholder="例如 美国、加拿大、英国"/></label>
         <label className={styles.full}>售后与质量处理规则<textarea required aria-label="售后政策" value={supply.returns} onChange={e=>setSupply(v=>({...v,returns:e.target.value}))} placeholder="质量问题及退换货责任划分"/></label>
         <label className={styles.full}>供货补充说明（可选）<textarea aria-label="供货价说明" value={supply.pricing} onChange={e=>setSupply(v=>({...v,pricing:e.target.value}))} placeholder="供货特殊要求、报价备注等；无需填写运费或处理费"/></label>
