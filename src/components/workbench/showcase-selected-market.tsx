@@ -5,6 +5,9 @@ import {PackageSearch,Search,ShieldCheck,CheckCircle2} from "lucide-react";
 import {preferredApplicationChanged,readDemoSelectedCatalog} from "./preferred-application-store";
 import {selectedCatalogFixtures,type SelectedCatalogProduct} from "./showcase-selected-catalog-fixtures";
 import {readDemoCollectionBatches,addSelectedCatalogProducts,type DemoCollectedProduct,type DemoCollectionBatch} from "./showcase-collection-batches";
+import {readDemoPurchases,writeDemoPurchases,useDemoPurchases,type DemoPurchase} from "./showcase-purchases";
+import {plansDemoFacts} from "./plans-demo-facts";
+import {readDemoStoreBindings} from "./store-binding-demo";
 import css from "./showcase-selected-market.module.css";
 
 const pagesize=8;
@@ -80,7 +83,10 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const [batchName,setBatchName]=useState("硕米优选采集批次"),[batchId,setBatchId]=useState("");
  const [batches,setBatches]=useState<DemoCollectionBatch[]>([]);
  const [notice,setNotice]=useState(""),[error,setError]=useState("");
- const [purchase,setPurchase]=useState<{orderId:string;storeId:string;productId:string;skuId:string;quantity:number;source:string;org:string;member:string}|null>(null);
+ const [purchase,setPurchase]=useState<{orderId:string;storeId:string;productId:string;skuId:string;quantity:number;source:string;org:string;member:string;storeName:string;region:string;destinationCountry:string;orderAmount:string;orderCreated:string}|null>(null);
+ const [purchaseError,setPurchaseError]=useState("");
+ const {purchases:walletEntries}=useDemoPurchases(organizationId);
+ const walletBalance=walletEntries[0]?.balanceAfter??(organizationId==="SM-ENT-000001"?plansDemoFacts.walletBalanceCny:0);
  useEffect(()=>{
   const refresh=()=>{setBatches(readDemoCollectionBatches(organizationId,memberId));setRevision(v=>v+1)};
   refresh();
@@ -109,7 +115,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   }));
   return [...selectedCatalogFixtures,...own];
  },[owned,organizationId]);
- useEffect(()=>{try{const k="shuomi:order-purchase:"+organizationId+":"+memberId;const raw=sessionStorage.getItem(k);if(!raw)return;const p=JSON.parse(raw);if(p.org!==organizationId||p.member!==memberId||p.source!=="硕米优选")return;const item=items.find(x=>x.id===p.productId&&x.skus.some(s=>s.id===p.skuId));if(!item){setNotice("订单关联的货盘商品或SKU已不可用，请核对供货来源。");sessionStorage.removeItem(k);return}setPurchase(p);setActive(item.id);setActiveSku(p.skuId);sessionStorage.removeItem(k)}catch{}},[organizationId,memberId,items]);
+ useEffect(()=>{try{const k="shuomi:order-purchase:"+organizationId+":"+memberId;const raw=sessionStorage.getItem(k);if(!raw)return;const p=JSON.parse(raw);if(p.org!==organizationId||p.member!==memberId||p.source!=="硕米优选")return;const item=items.find(x=>x.id===p.productId&&x.skus.some(s=>s.id===p.skuId));if(!item){setNotice("订单关联的货盘商品或SKU已不可用，请核对供货来源。");sessionStorage.removeItem(k);return}const store=readDemoStoreBindings(organizationId).find(s=>s.id===p.storeId&&s.ownerMemberId===memberId);if(!store){setNotice("订单所属店铺不可访问。");sessionStorage.removeItem(k);return}const destinationCountry=store.region.replace(/站$/,"");setPurchase({...p,storeName:store.name,region:store.region,destinationCountry});setTargetCountry(destinationCountry);setPurchaseError("");setActive(item.id);setActiveSku(p.skuId);setPhotoIndex(0);setImageFailed(false);sessionStorage.removeItem(k)}catch{}},[organizationId,memberId,items]);
  const categories=["全部类目",...new Set(items.map(p=>p.category))];
  const origins=[...new Set(items.map(p=>p.warehouseCountry).filter((value):value is string=>Boolean(value)))].sort();
  const destinations=[...new Set(items.flatMap(p=>p.shipToCountries??[]))].sort();
@@ -144,13 +150,36 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   width:selectedSku.packagingWidthCm??current.packagingWidthCm,
   height:selectedSku.packagingHeightCm??current.packagingHeightCm
  }:null;
- const setSku=(id:string)=>{const next=current?.skus.find(s=>s.id===id);if(next&&current&&targetCountry&&!skuCountries(current,next).includes(targetCountry))setTargetCountry("");setActiveSku(id);setPhotoIndex(0);setImageFailed(false)};
- const openProduct=(id:string)=>{setActive(id);setActiveSku("");setPhotoIndex(0);setImageFailed(false);setTargetCountry("")};
+ const setSku=(id:string)=>{if(purchase)return;const next=current?.skus.find(s=>s.id===id);if(next&&current&&targetCountry&&!skuCountries(current,next).includes(targetCountry))setTargetCountry("");setActiveSku(id);setPhotoIndex(0);setImageFailed(false)};
+ const openProduct=(id:string)=>{setPurchase(null);setPurchaseError("");setActive(id);setActiveSku("");setPhotoIndex(0);setImageFailed(false);setTargetCountry("")};
  const archivedBatchKey="shuomi:my-data-archived-v1:"+organizationId+":"+memberId;
  const archivedBatchIds=(()=>{try{const raw:unknown=JSON.parse(sessionStorage.getItem(archivedBatchKey)||"[]");return new Set(Array.isArray(raw)?raw.filter((x):x is string=>typeof x==="string"):[])}catch{return new Set<string>()}})();
  // Exactly the active member's batches from 我的数据, including manually-created batches.
  const ownedBatches=batches.filter(b=>b.organizationId===organizationId&&b.ownerMemberId===memberId&&!archivedBatchIds.has(b.id));
- const confirmPurchase=()=>{if(!purchase||!current||current.id!==purchase.productId||selectedSku?.id!==purchase.skuId)return;if(current.moq>purchase.quantity||selectedSku.stock<purchase.quantity||selectedSku.price<=0){setNotice("当前供货条件不满足订单采购要求。");return}try{const key="shuomi:demo-orders:"+organizationId+":"+purchase.storeId;const rows=JSON.parse(localStorage.getItem(key)||"[]");const order=rows.find((o:{id:string;storeId:string;stage:number;purchaseId?:string})=>o.id===purchase.orderId&&o.storeId===purchase.storeId&&o.stage<3&&!o.purchaseId);if(!order)throw Error("订单不可采购或已采购");const id="SIM-PURCHASE-"+order.id;localStorage.setItem(key,JSON.stringify(rows.map((o:{id:string})=>o.id===order.id?{...o,fulfillmentSource:"硕米优选",supplyProductId:purchase.productId,supplySkuId:purchase.skuId,purchaseId:id,stage:1}:o)));window.dispatchEvent(new Event("shuomi:demo-orders-updated"));setPurchase(null);setActive(null);router.push("/workbench/store-orders?preview=1")}catch(e){setNotice(e instanceof Error?e.message:"采购保存失败")}};
+ const purchaseTotal=selectedCost?.unitTotal!=null&&selectedCost.currency==="CNY"&&purchase?Math.round(selectedCost.unitTotal*purchase.quantity*100)/100:null;
+ const confirmPurchase=()=>{
+  setPurchaseError("");
+  if(!purchase||!current||current.id!==purchase.productId||selectedSku?.id!==purchase.skuId)return;
+  if(!Number.isSafeInteger(purchase.quantity)||purchase.quantity<=0||(terms?.moq??current.moq)>purchase.quantity||selectedSku.stock<purchase.quantity||selectedSku.price<=0||targetCountry!==purchase.destinationCountry||!selectedCost?.complete||purchaseTotal===null||purchaseTotal<=0){setPurchaseError("订单供货条件或配送报价不完整，不能采购。");return}
+  try{
+   const store=readDemoStoreBindings(organizationId).find(s=>s.id===purchase.storeId&&s.ownerMemberId===memberId&&!s.archived&&s.region.replace(/站$/,"")===targetCountry);
+   if(!store)throw Error("订单所属店铺或目标国家不匹配。");
+   const key="shuomi:demo-orders:"+organizationId+":"+purchase.storeId;
+   const rows=JSON.parse(localStorage.getItem(key)||"[]");
+   const order=rows.find((o:{id:string;storeId:string;stage:number;purchaseId?:string;supplyProductId?:string;supplySkuId?:string})=>o.id===purchase.orderId&&o.storeId===purchase.storeId&&o.stage<3&&!o.purchaseId&&o.supplyProductId===purchase.productId&&o.supplySkuId===purchase.skuId);
+   if(!order)throw Error("订单不可采购或已采购。");
+   const id="SIM-PURCHASE-"+order.id;
+   const entries=readDemoPurchases(organizationId);
+   const previous=entries.find(e=>e.id===id);
+   const balance=entries[0]?.balanceAfter??(organizationId==="SM-ENT-000001"?plansDemoFacts.walletBalanceCny:0);
+   if(!previous&&balance<purchaseTotal)throw Error("钱包余额不足，请先充值。");
+   if(previous&&(previous.type!=="商品采购"||previous.amountCny!==purchaseTotal))throw Error("采购账单金额不一致，请核对原账单。");
+   const entry:DemoPurchase={id,at:new Date().toLocaleString("zh-CN",{hour12:false}),type:"商品采购",quantity:purchase.quantity,amountCny:purchaseTotal,detail:order.id+" · "+current.name+" · "+selectedSku.id+" · "+targetCountry,balanceAfter:Math.round((balance-purchaseTotal)*100)/100,status:"模拟购买成功"};
+   if(!previous&&!writeDemoPurchases([entry,...entries],organizationId))throw Error("钱包扣款保存失败，未完成采购。");
+   try{localStorage.setItem(key,JSON.stringify(rows.map((o:{id:string})=>o.id===order.id?{...o,fulfillmentSource:"硕米优选",supplyProductId:purchase.productId,supplySkuId:purchase.skuId,purchaseId:id,purchaseAmountCny:purchaseTotal,stage:1}:o)))}catch(e){if(!previous)writeDemoPurchases(entries,organizationId);throw e}
+   window.dispatchEvent(new Event("shuomi:demo-orders-updated"));setPurchase(null);setActive(null);router.push("/workbench/store-orders?preview=1");
+  }catch(e){setPurchaseError(e instanceof Error?e.message:"采购保存失败")}
+ };
  const submit=()=>{
   setError("");
   try{
@@ -164,7 +193,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const choose=(id:string)=>setChosen(ids=>ids.includes(id)?ids.filter(v=>v!==id):[...ids,id]);
  useEffect(()=>{
   if(!active&&!collectOpen)return;
-  const dismiss=(e:KeyboardEvent)=>{if(e.key==="Escape"){setActive(null);setCollectOpen(false)}};
+  const dismiss=(e:KeyboardEvent)=>{if(e.key==="Escape"){setActive(null);setCollectOpen(false);setPurchase(null);setPurchaseError("")}};
   window.addEventListener("keydown",dismiss);return()=>window.removeEventListener("keydown",dismiss);
  },[active,collectOpen]);
  return <main className={css.page} aria-label="硕米优选" data-selected-market="true" data-organization={organizationId}>
@@ -209,14 +238,14 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   {notice?<div className={css.notice} role="status"><CheckCircle2 size={18}/>{notice}<button type="button" onClick={()=>router.push("/workbench/data/mine?preview=1")}>前往我的数据</button></div>:null}
   {chosen.length?<div className={css.bulk}><span>已选择 {chosen.length} 件商品</span><button type="button" className={css.primary} onClick={()=>{setExcludedSkus([]);setTargetCountry("");setCollectOpen(true);setError("")}}>加入我的采集批次</button><button type="button" onClick={()=>setChosen([])}>取消选择</button></div>:null}
   <p className={css.disclaimer}>本页为前端演示货盘。模拟审核、供应商、价格、库存和配送范围不代表真实认证；正式跨企业共享及供货交易须接入服务端权限、审核、库存和结算接口。当前只创建个人采集副本，不自动上架或采购。加入硕米优选不保证订单。</p>
-  {current&&!collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setActive(null)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="优选商品详情"><header><h2>商品与供货信息</h2><button type="button" onClick={()=>setActive(null)}>关闭</button></header>
+  {current&&!collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget){setActive(null);setPurchase(null);setPurchaseError("")}}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="优选商品详情"><header><h2>商品与供货信息</h2><button type="button" onClick={()=>{setActive(null);setPurchase(null);setPurchaseError("")}}>关闭</button></header>
    <div className={css.modalBody}><aside className={css.galleryColumn}>
     <div className={css.squareGallery} aria-label="商品图片轮播">
      {activePhoto&&!imageFailed?<a className={css.fullPhoto} href={activePhoto} target="_blank" rel="noreferrer" aria-label="查看商品原图"><img key={activePhoto} src={activePhoto} alt={current.name+" · "+(selectedSku?.label||"商品")+" · 图片 "+(photoIndex+1)} onError={()=>setImageFailed(true)}/></a>:<div className={css.emptySquare}><PackageSearch size={42}/><span>{skuPhotos.length?"图片暂不可用":"暂无商品图片"}</span></div>}
      {skuPhotos.length>1?<div className={css.galleryPaging}><button type="button" aria-label="上一张商品图片" onClick={()=>{setPhotoIndex(v=>(v+skuPhotos.length-1)%skuPhotos.length);setImageFailed(false)}}>上一张</button><span>{Math.min(photoIndex+1,skuPhotos.length)} / {skuPhotos.length}</span><button type="button" aria-label="下一张商品图片" onClick={()=>{setPhotoIndex(v=>(v+1)%skuPhotos.length);setImageFailed(false)}}>下一张</button></div>:null}
     </div>
     {skuPhotos.length>1?<div className={css.galleryThumbs}>{skuPhotos.map((src,i)=><button type="button" aria-label={"查看商品图片 "+(i+1)} key={src+"-"+i} aria-pressed={photoIndex===i} onClick={()=>{setPhotoIndex(i);setImageFailed(false)}}><img src={src} alt={"缩略图 "+(i+1)}/></button>)}</div>:null}
-    <div className={css.variantPicker}><strong>选择 SKU / 变体</strong><div className={css.variantChoices}>{current.skus.map(s=><button type="button" aria-label={"选择变体 "+s.label} aria-pressed={selectedSku?.id===s.id} key={s.id} onClick={()=>setSku(s.id)}>{s.label}</button>)}</div>
+    <div className={css.variantPicker}><strong>选择 SKU / 变体</strong><div className={css.variantChoices}>{current.skus.map(s=><button type="button" aria-label={"选择变体 "+s.label} aria-pressed={selectedSku?.id===s.id} disabled={Boolean(purchase)&&purchase?.skuId!==s.id} key={s.id} onClick={()=>setSku(s.id)}>{s.label}</button>)}</div>
      {selectedSku?<div className={css.variantFacts}><span>SKU：{selectedSku.id}</span><span>供货价：{selectedSku.price>0?formatMoney(selectedSku.price,current.quotationCurrency||"CNY"):"待供应商报价"}</span><span>库存：{selectedSku.stock}</span></div>:null}
     </div>
 
@@ -227,21 +256,22 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
     <dt>包装尺寸</dt><dd>{terms?.length&&terms.width&&terms.height?`${terms.length} × ${terms.width} × ${terms.height} cm（演示）`:"待供应商提供"}</dd>
     <dt>包装体积</dt><dd>{terms?.length&&terms.width&&terms.height?(terms.length*terms.width*terms.height/1000000).toFixed(4)+" m³（演示）":"待供应商提供"}</dd><dt>售后说明</dt><dd>{current.returns}</dd></dl></div></div>
    <section className={css.costEstimator} aria-label="目标国家成本测算">
-    <header><h3>目标国家及成本</h3><label>目标国家<select aria-label="选择目标国家" value={targetCountry} onChange={e=>setTargetCountry(e.target.value)}><option value="">请选择配送国家</option>{(terms?.countries||[]).map(c=><option key={c} value={c}>{c}</option>)}</select></label></header>
+    <header><h3>目标国家及成本</h3><label>目标国家<select aria-label="选择目标国家" value={targetCountry} disabled={Boolean(purchase)} onChange={e=>setTargetCountry(e.target.value)}><option value="">请选择配送国家</option>{purchase&&!(terms?.countries||[]).includes(targetCountry)?<option value={targetCountry}>{targetCountry}（暂不支持配送）</option>:null}{(terms?.countries||[]).map(c=><option key={c} value={c}>{c}</option>)}</select></label></header>
     <div className={css.costBreakdown}>
      <div><span>SKU 供货价</span><strong>{selectedSku?.price?formatMoney(selectedSku.price,current.quotationCurrency||"CNY"):"待报价"}</strong></div>
      <div><span>质检 / 打包 / 贴标</span><strong>{terms?.fees?.inspection!=null&&terms.fees.packing!=null&&terms.fees.labeling!=null?formatMoney(terms.fees.inspection+terms.fees.packing+terms.fees.labeling,terms.fees.currency):"待报价"}</strong></div>
      <div><span>目标国家运费</span><strong>{targetCountry?(terms?.shipping.find(q=>q.country===targetCountry)?.freight!=null?formatMoney(terms.shipping.find(q=>q.country===targetCountry)!.freight!,terms.shipping.find(q=>q.country===targetCountry)!.currency):"待报价"):"请选择国家"}</strong></div>
      <div className={css.costTotal}><span>预计单件总成本</span><strong>{selectedCost?.unitTotal!=null?formatMoney(selectedCost.unitTotal,selectedCost.currency):"—"}</strong></div>
     </div>
-    <small>演示测算，不含税费、平台佣金及其他未报价费用。切换国家或 SKU 自动更新。</small>
+    <small>演示测算，不含税费、平台佣金及其他未报价费用。{purchase?"配送国家与 SKU 已按订单锁定。":"切换国家或 SKU 自动更新。"}</small>
    </section>
    <section className={css.logisticsSection} aria-label="各国家物流报价"><header><h3>各国家运费与配送时效</h3><span>演示报价，正式以供应商确认及实际重量、体积为准</span></header>
     <div className={css.skuTable}><table><thead><tr><th>配送国家</th><th>运输方式</th><th>预计运费 / 件</th><th>运输时效</th></tr></thead><tbody>
     {(terms?.countries||[]).map(country=>{const quote=terms?.shipping.find(q=>q.country===country);return <tr key={country}><td>{country}</td><td>{quote?.method||"待确认"}</td><td>{quote?.freight===null||quote?.freight===undefined?"待供应商报价":formatMoney(quote.freight,quote.currency)+"（演示）"}</td><td>{quote?.transitDays||"待供应商提供"}</td></tr>})}
     {!terms?.countries.length?<tr><td colSpan={4}>当前 SKU 可配送国家及物流报价待供应商提供</td></tr>:null}
     </tbody></table></div><p>运输时效不包含备货 / 出库时间；具体费用需按 SKU、数量、目的地邮编与计费重量核算。</p></section>
-   <footer><button type="button" onClick={()=>{setActive(null);setPurchase(null)}}>取消</button>{purchase&&purchase.productId===current.id?<><span>关联订单 {purchase.orderId} · {purchase.quantity} 件 · 模拟采购</span><button type="button" className={css.primary} disabled={selectedSku?.id!==purchase.skuId||!selectedSku||current.moq>purchase.quantity||selectedSku.stock<purchase.quantity||selectedSku.price<=0} onClick={confirmPurchase}>确认模拟采购</button></>:<button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setExcludedSkus([]);setCollectOpen(true);setError("")}}>加入采集批次</button>}</footer>
+   {purchase&&purchase.productId===current.id?<section className={css.purchaseSummary} aria-label="关联订单及采购结算"><header><h3>关联订单</h3><span>订单信息自动关联 · 演示采购</span></header><div className={css.purchaseTable}><table><thead><tr><th>订单编号</th><th>所属店铺 / 站点</th><th>商品 / SKU</th><th>配送国家</th><th>数量</th><th>订单金额</th></tr></thead><tbody><tr><td>{purchase.orderId}</td><td>{purchase.storeName} · {purchase.region}</td><td>{current.name} · {selectedSku?.label}</td><td>{purchase.destinationCountry}</td><td>{purchase.quantity} 件</td><td>{purchase.orderAmount||"—"}</td></tr></tbody></table></div><div className={css.purchaseTotals}><div><span>钱包可用余额</span><strong>{formatMoney(walletBalance,"CNY")}</strong></div><div><span>本次采购应付</span><strong>{purchaseTotal===null?"待报价":formatMoney(purchaseTotal,"CNY")}</strong></div><div><span>预计扣款后余额</span><strong>{purchaseTotal===null||walletBalance<purchaseTotal?"—":formatMoney(walletBalance-purchaseTotal,"CNY")}</strong></div></div><small>点击去采购后从当前企业演示钱包扣款，生成采购账单并更新订单状态，不产生真实支付。</small>{purchaseError?<p role="alert">{purchaseError}</p>:purchaseTotal!==null&&walletBalance<purchaseTotal?<p role="alert">钱包余额不足，请先充值。</p>:null}</section>:null}
+   <footer><button type="button" onClick={()=>{setActive(null);setPurchase(null);setPurchaseError("")}}>取消</button>{purchase&&purchase.productId===current.id?<button type="button" className={css.primary} disabled={selectedSku?.id!==purchase.skuId||!selectedSku||(terms?.moq??current.moq)>purchase.quantity||selectedSku.stock<purchase.quantity||purchaseTotal===null||purchaseTotal<=0||walletBalance<purchaseTotal} onClick={confirmPurchase}>去采购</button>:<button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setExcludedSkus([]);setCollectOpen(true);setError("")}}>加入采集批次</button>}</footer>
   </section></div>:null}
   {collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setCollectOpen(false)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="加入我的采集批次">
    <header><h2>加入我的采集批次</h2><button type="button" onClick={()=>setCollectOpen(false)}>关闭</button></header>
