@@ -401,3 +401,60 @@
 .workspace:has(.inlineConfirmation) .composer textarea{flex:0 0 auto;min-height:110px!important;height:130px}
 .workspace:has(.inlineConfirmation) .composer{overflow-y:auto}
 @media(max-width:700px){.inlineConfirmation{max-height:min(410px,52dvh);padding:12px}.inlineConfirmation .confirmSummary{grid-template-columns:92px minmax(0,1fr)}}
+
+/* Conversation stays on its original "new chat" canvas: no replacement detail view. */
+.workspace[data-chat-active="true"],
+.workspace[data-chat-active="true"][data-context-open="false"]{
+ grid-template-columns:minmax(0,2.2fr) minmax(280px,.72fr);
+ grid-template-rows:minmax(0,1fr);
+ align-items:stretch;
+ height:min(900px,calc(100dvh - 180px));
+ min-height:760px;
+}
+.workspace[data-chat-active="true"] .composer{
+ display:flex;
+ flex-direction:column;
+ gap:14px;
+ padding:24px;
+ min-height:0;
+ height:100%;
+ overflow:hidden;
+}
+.workspace[data-chat-active="true"] .composerIntro h2{max-width:100%;font-size:26px}
+.workspace[data-chat-active="true"] .thread{
+ display:flex;flex:1 1 auto;min-height:120px;max-height:100%;
+ padding:16px 8px;overflow-y:auto;gap:12px;
+}
+.workspace[data-chat-active="true"] .composer>textarea{
+ flex:0 0 auto;
+ height:126px;
+ min-height:100px!important;
+ max-height:170px;
+}
+.workspace[data-chat-active="true"] .modePanel{
+ display:flex;flex-direction:column;min-height:0;height:100%;
+ overflow-y:auto;padding:28px 20px 20px;gap:10px;
+}
+.workspace[data-chat-active="true"] .modeList{gap:8px}
+.workspace[data-chat-active="true"] .modeList button{min-height:46px;padding-block:9px}
+.workspace[data-chat-active="true"] .examples{
+ display:grid;grid-column:auto;margin-top:auto;padding-top:16px;
+}
+.workspace[data-chat-active="true"] .examples>div{grid-template-columns:minmax(0,1fr);gap:8px}
+.workspace[data-chat-active="true"] .examples>div>button{grid-template-columns:32px minmax(0,1fr);min-height:76px;padding:11px}
+.workspace[data-chat-active="true"] .examples>div>button strong{font-size:13px}
+.workspace[data-chat-active="true"] .examples>div>button small{font-size:11px}
+.workspace[data-chat-active="true"] .inlineConfirmation{flex:0 1 auto;min-height:0;max-height:340px;overflow-y:auto}
+@media(max-width:900px){
+ .workspace[data-chat-active="true"]{grid-template-columns:minmax(0,1.75fr) minmax(240px,.8fr)}
+}
+@media(max-width:600px){
+ .workspace[data-chat-active="true"],
+ .workspace[data-chat-active="true"][data-context-open="false"]{
+  grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;
+  min-height:780px;height:auto;
+ }
+ .workspace[data-chat-active="true"] .composer{min-height:500px}
+ .workspace[data-chat-active="true"] .modePanel{height:auto;max-height:520px}
+ .workspace[data-chat-active="true"] .thread{min-height:160px}
+}
