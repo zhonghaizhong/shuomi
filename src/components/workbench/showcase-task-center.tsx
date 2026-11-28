@@ -6,7 +6,10 @@ import {ListChecks,MessageSquare,Workflow,Target,FileCheck2} from "lucide-react"
 import styles from "./demo-workbench-preview.module.css";
 import extra from "./showcase-task-center.module.css";
 import chat from "./chat-new-preview.module.css";
-import {demoProjectTasks} from "./showcase-project-data";\nimport {projectDemoSkills} from "./showcase-skill-library";\nimport {projectDemoKnowledge} from "./showcase-knowledge-groups";\nimport {projectDemoReports} from "./showcase-report-center";
+import {demoProjectTasks} from "./showcase-project-data";
+import {projectDemoSkills} from "./showcase-skill-library";
+import {projectDemoKnowledge} from "./showcase-knowledge-groups";
+import {projectDemoReports} from "./showcase-report-center";
 
 type Mode="all"|"pending"|"running"|"completed"|"errors"|"scheduled";
 type Task={id:string;name:string;description:string;scope:string;state:"pending"|"running"|"completed"|"errors"|"scheduled"|"revision";time:string;progress?:number;frequency?:string;paused?:boolean;history?:{time:string;event:string}[];conversation?:{role:"user"|"assistant";text:string}[];result?:string;planId?:string;projectId?:string;resourceIds?:string[]};

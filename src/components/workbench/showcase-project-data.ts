@@ -13,7 +13,9 @@ export const demoProjectScenarios:PreviewProject[]=[
  R("module","cockpit","运营驾驶舱","演示可引用","/workbench/cockpit"),
  R("module","task-center","任务中心","演示可引用","/workbench/ai/tasks"),
  R("report","report-center","我的报告","演示可引用","/workbench/ai/reports"),
- R("skill","demo-skill-profit","SHEIN 店铺利润诊断流程（演示）","演示可引用","/workbench/agents/skills/mine","已创建具体技能定义，但不代表真实自动计算"),\n R("knowledge","demo-knowledge-profit","SHEIN 经营指标与利润核对规范（演示）","演示可引用","/workbench/ai/knowledge/mine"),\n R("report","demo-report-growth","利润诊断准备报告（演示）","演示可引用","/workbench/ai/reports","可查看完整章节，未使用真实经营数据")
+ R("skill","demo-skill-profit","SHEIN 店铺利润诊断流程（演示）","演示可引用","/workbench/agents/skills/mine","已创建具体技能定义，但不代表真实自动计算"),
+ R("knowledge","demo-knowledge-profit","SHEIN 经营指标与利润核对规范（演示）","演示可引用","/workbench/ai/knowledge/mine"),
+ R("report","demo-report-growth","利润诊断准备报告（演示）","演示可引用","/workbench/ai/reports","可查看完整章节，未使用真实经营数据")
  ],stages:stages(
  {title:"核对店铺与经营数据",state:"进行中",detail:"确认当前组织的一号店及经营数据访问范围"},
  {title:"分析利润问题",state:"待开始",detail:"数据可用后再执行经营诊断"},
@@ -25,7 +27,10 @@ export const demoProjectScenarios:PreviewProject[]=[
  R("agent","pod.design.agent","POD刊登智能体","演示可引用","/workbench/agents/mine","当前演示默认已启用；执行需确认当前组织启用状态"),
  R("tool","pod-artwork","POD素材管理工具","演示可引用","/workbench/tools/mine"),
  R("module","listing","刊登管理","演示可引用","/workbench/supply/mine/procurement"),
- R("skill","demo-skill-pod-review","POD 多变体图片审核流程（演示）","演示可引用","/workbench/agents/skills/mine","规则已创建，真实图片处理尚未执行"),\n R("knowledge","demo-knowledge-pod","POD 服装主图与变体审核规则（演示）","演示可引用","/workbench/ai/knowledge/mine"),\n R("report","demo-report-pod","POD 新品开发阶段质量检查报告（演示）","演示可引用","/workbench/ai/reports"),\n R("store","pod-target","目标SHEIN店铺","待选择","/workbench/stores","需按目标站点确认店铺及平台 ID")
+ R("skill","demo-skill-pod-review","POD 多变体图片审核流程（演示）","演示可引用","/workbench/agents/skills/mine","规则已创建，真实图片处理尚未执行"),
+ R("knowledge","demo-knowledge-pod","POD 服装主图与变体审核规则（演示）","演示可引用","/workbench/ai/knowledge/mine"),
+ R("report","demo-report-pod","POD 新品开发阶段质量检查报告（演示）","演示可引用","/workbench/ai/reports"),
+ R("store","pod-target","目标SHEIN店铺","待选择","/workbench/stores","需按目标站点确认店铺及平台 ID")
  ],stages:stages(
  {title:"选择演示商品及变体",state:"已完成",detail:"模拟检查短袖与卫衣SKU结构，不代表真实图片生成"},
  {title:"素材与图片重构",state:"进行中",detail:"模拟执行阶段，真实图像生成需要服务端能力"},
@@ -39,7 +44,10 @@ export const demoProjectScenarios:PreviewProject[]=[
  R("batch","selected-collected","硕米优选采集批次","待选择","/workbench/data/mine","必须由当前账号在货盘选择具体 SKU 后创建，不能预设已生成"),
  R("agent","product.content.agent","商品优化智能体","演示可引用","/workbench/agents/mine","当前组织启用状态以智能体市场为准"),
  R("module","listing","刊登管理","演示可引用","/workbench/supply/mine/procurement"),
- R("skill","demo-skill-selected-listing","优选选品与SHEIN刊登检查（演示）","演示可引用","/workbench/agents/skills/mine"),\n R("knowledge","demo-knowledge-selected","优选SKU采集与刊登规范（演示）","演示可引用","/workbench/ai/knowledge/mine"),\n R("report","demo-report-selected","优选SKU选品与刊登风险记录（演示）","演示可引用","/workbench/ai/reports"),\n R("store","demo-shein-store-one","一号店","待选择","/workbench/stores","需确认真实店铺 ID 与平台授权")
+ R("skill","demo-skill-selected-listing","优选选品与SHEIN刊登检查（演示）","演示可引用","/workbench/agents/skills/mine"),
+ R("knowledge","demo-knowledge-selected","优选SKU采集与刊登规范（演示）","演示可引用","/workbench/ai/knowledge/mine"),
+ R("report","demo-report-selected","优选SKU选品与刊登风险记录（演示）","演示可引用","/workbench/ai/reports"),
+ R("store","demo-shein-store-one","一号店","待选择","/workbench/stores","需确认真实店铺 ID 与平台授权")
  ],stages:stages(
  {title:"查看优选货源",state:"已完成",detail:"关联演示货盘中已有的两款SKU商品"},
  {title:"选择SKU并创建采集批次",state:"进行中",detail:"须在货盘实际点击加入采集批次"},
@@ -52,7 +60,9 @@ export const demoProjectScenarios:PreviewProject[]=[
  R("module","selected-market","硕米优选","演示可引用","/workbench/supply/selected"),
  R("product","SMYX-DEMO-001","纯棉圆领短袖T恤","演示可引用","/workbench/supply/selected"),
  R("product","SMYX-DEMO-002","宽松连帽卫衣","演示可引用","/workbench/supply/selected"),
- R("skill","demo-skill-market-compare","候选商品比较与报告整理（演示）","演示可引用","/workbench/agents/skills/mine"),\n R("knowledge","demo-knowledge-research","候选商品数据来源与选品评审规范（演示）","演示可引用","/workbench/ai/knowledge/mine"),\n R("report","demo-report-market","选品阶段复盘报告（演示）","演示可引用","/workbench/ai/reports","已有可查看正文，但不是实时市场研究")
+ R("skill","demo-skill-market-compare","候选商品比较与报告整理（演示）","演示可引用","/workbench/agents/skills/mine"),
+ R("knowledge","demo-knowledge-research","候选商品数据来源与选品评审规范（演示）","演示可引用","/workbench/ai/knowledge/mine"),
+ R("report","demo-report-market","选品阶段复盘报告（演示）","演示可引用","/workbench/ai/reports","已有可查看正文，但不是实时市场研究")
  ],stages:stages(
  {title:"选择研究范围",state:"已完成",detail:"美国站服装类目演示样本"},
  {title:"比较现有货盘样例",state:"已完成",detail:"仅核对已有商品字段及SKU供货条件"},

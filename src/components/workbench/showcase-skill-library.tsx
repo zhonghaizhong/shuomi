@@ -68,7 +68,8 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const [enabled,setEnabled]=useState(()=>readEnabledPreviewSkills(organizationId,memberId));
  const [personal,setPersonal]=useState(()=>readPersonalPreviewSkills(organizationId,memberId));
  const [filter,setFilter]=useState("全部"),[query,setQuery]=useState(""),[search,setSearch]=useState("");
- const [intro,setIntro]=useState<string|null>(null);\n const [detailSkill,setDetailSkill]=useState<string|null>(null);
+ const [intro,setIntro]=useState<string|null>(null);
+ const [detailSkill,setDetailSkill]=useState<string|null>(null);
  const [groupState,setGroupState]=useState<SkillGroups>(()=>readSkillGroups(organizationId,memberId));
  const [groupFilter,setGroupFilter]=useState("全部分组");
  const [groupOpen,setGroupOpen]=useState(false);
@@ -92,7 +93,8 @@ export function ShowcaseSkillLibrary({pathname,organizationId="SM-ENT-000001",me
  const match=(s:string)=>s.toLowerCase().includes(search.toLowerCase());
  const cards=officialSkills.filter(s=>(category==="official"?(filter==="全部"||s[3]===filter):enabled.includes(s[0])&&filter!=="我的创建")&&match(s.join(" ")));
  const mine=category==="mine"&&filter!=="官方技能"?personal.filter(s=>match(s.name+" "+s.description)):[];
- const detailPreview=personal.find(item=>item.name===detailSkill);\n const mySkillRows=[...officialSkills.filter(item=>enabled.includes(item[0])).map(item=>({key:"official:"+item[0],name:item[0],description:item[1],source:"官方技能",enabled:true})),...personal.map(item=>({key:"personal:"+item.name,name:item.name,description:item.description,source:"我的创建",enabled:true}))].filter(item=>(item.name+" "+item.description).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
+ const detailPreview=personal.find(item=>item.name===detailSkill);
+ const mySkillRows=[...officialSkills.filter(item=>enabled.includes(item[0])).map(item=>({key:"official:"+item[0],name:item[0],description:item[1],source:"官方技能",enabled:true})),...personal.map(item=>({key:"personal:"+item.name,name:item.name,description:item.description,source:"我的创建",enabled:true}))].filter(item=>(item.name+" "+item.description).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
  return <main className={styles.shell} data-skill-showcase="true" data-skill-flow={category}>
  <header className={styles.hero}><div className={styles.heroCopy}><div className={styles.breadcrumb}>AI工作台 / 技能库</div><h1>技能库</h1><p>选择官方模板、我的技能或团队技能；需要时再在 AI 会话中调用。</p></div><button type="button" className={styles.primary} onClick={()=>chat("create")}>创建我的技能</button></header>
  {tabNavigation}
