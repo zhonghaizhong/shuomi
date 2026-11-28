@@ -208,3 +208,22 @@ test("recollecting same product merges only new SKU rows into selected My Data b
  await collect.getByRole("button",{name:"确认加入"}).click();
  await expect(collect.getByRole("alert")).toContainText("没有新增内容");
 });
+
+
+test("hoodie gallery loads all eight repository images and switches SKU colors",async({page})=>{
+ await page.goto("/shuomi/#/workbench/supply/selected");
+ const card=page.locator('[data-selected-product="SMYX-DEMO-002"]');
+ const cover=card.getByRole("img",{name:"宽松连帽卫衣",exact:true});
+ await expect.poll(()=>cover.evaluate((img:HTMLImageElement)=>img.naturalWidth)).toBeGreaterThan(0);
+ await card.getByRole("button",{name:"查看详情"}).click();
+ const detail=page.getByRole("dialog",{name:"优选商品详情"});
+ const photo=detail.getByLabel("商品图片轮播").getByRole("img");
+ for(const [label,color] of [["黑色 / M","black"],["灰色 / M","gray"]]){
+  await detail.getByRole("button",{name:"选择变体 "+label}).click();
+  for(let i=1;i<=4;i++){
+   await detail.getByRole("button",{name:"查看商品图片 "+i,exact:true}).click();
+   await expect(photo).toHaveAttribute("src",new RegExp(color+"-0"+i+"\\.png$"));
+   await expect.poll(()=>photo.evaluate((img:HTMLImageElement)=>img.naturalWidth)).toBeGreaterThan(0);
+  }
+ }
+});
