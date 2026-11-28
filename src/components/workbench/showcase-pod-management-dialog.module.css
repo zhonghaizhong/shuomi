@@ -612,3 +612,25 @@
 .generatePreviewBody img{width:100%;max-width:265px;aspect-ratio:1/1;object-fit:contain;background:#f1f1f1;border-radius:8px}
 .generateBillingNotice{font-size:12px;line-height:1.6;color:var(--podassets-muted,#acabc1);border-top:1px solid var(--podassets-line,#52576e);padding-top:12px;margin:0}
 @media(max-width:630px){.generatePreviewBody{grid-template-columns:1fr}.generatePreviewBody img{max-width:180px}.podActionDialog.podGenerateDialog{width:calc(100vw - 20px)}}
+
+/* POD preview request: multi-select color/size without a dropdown. */
+.podGenerateDialog .generatePreviewBody{grid-template-columns:minmax(0,1.45fr) minmax(220px,.8fr);align-items:start}
+.generateSkuPanel{display:grid;gap:11px;min-width:0;align-content:start}
+.generateSelectionHeader{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.generateSelectionHeader>strong{font-size:13px}
+.generateSelectionHeader>span{font-size:11px;margin-right:auto;color:var(--podassets-muted,#acabc1)}
+.podGenerateDialog .generateSelectionHeader>button{padding:5px 9px;min-height:29px;font-size:11px}
+.generateColorRows{display:grid;gap:8px;max-height:300px;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.generateColorRow{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;align-items:center;border:1px solid var(--podassets-line,#52576e);border-radius:8px;padding:9px 10px;min-width:0}
+.generateColorRow>div:first-child{display:grid;gap:4px;min-width:0}
+.generateColorRow strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.generateColorRow small{font-size:11px;color:var(--podassets-muted,#acabc1)}
+.generateSizeChoices{display:flex;gap:7px;align-items:center;min-width:0;overflow-x:auto;padding:3px}
+.podGenerateDialog .generateSizeChoices button{min-width:39px;min-height:34px;flex:none;padding:6px 9px;font-size:12px}
+.podGenerateDialog .generateSizeChoices button.generateSizeSelected{border-color:#7367f0;background:color-mix(in srgb,#7367f0 35%,var(--podassets-card,#393d55))}
+.podGenerateDialog .generateSizeChoices button.generateSizeFocused{outline:2px solid #7367f0;outline-offset:1px}
+.generateSkuImage{display:grid;gap:8px;align-content:start;min-width:0}
+.generateSkuImage img{width:100%;max-width:270px;aspect-ratio:1/1;object-fit:contain;border-radius:8px;background:#f1f1f1}
+.generateSkuImage strong{font-size:12px}
+.generateSkuImage small{overflow-wrap:anywhere}
+@media(max-width:650px){.podGenerateDialog .generatePreviewBody{grid-template-columns:1fr}.generateSkuImage img{max-width:180px}.generateColorRow{grid-template-columns:85px minmax(0,1fr)}}
