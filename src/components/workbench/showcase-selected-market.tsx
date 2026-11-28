@@ -27,16 +27,17 @@ function costForCountry(product:SelectedCatalogProduct,sku:CatalogSku,country:st
   unitTotal:valid?Math.round((sku.price+fees!.inspection!+fees!.packing!+fees!.labeling!+freight!.freight!)*100)/100:null,
   currency,complete:valid,demo:Boolean(product.id.includes("DEMO")||fees?.demo||freight?.demo)};
 }
-function toCollected(product:SelectedCatalogProduct,mode:CollectionMode):DemoCollectedProduct{
+function toCollected(product:SelectedCatalogProduct,mode:CollectionMode,selectedSkus:CatalogSku[]):DemoCollectedProduct{
  const currency=product.quotationCurrency||"CNY";
- const minSku=Math.min(...product.skus.map(s=>s.price));
- const countryCosts=product.skus.flatMap(s=>skuCountries(product,s).map(country=>costForCountry(product,s,country)));
+ if(!selectedSkus.length)throw Error(product.name+"：至少选择一个 SKU / 变体");
+ const minSku=Math.min(...selectedSkus.map(s=>s.price));
+ const countryCosts=selectedSkus.flatMap(s=>skuCountries(product,s).map(country=>costForCountry(product,s,country)));
  const supplyLabel=minSku>0?formatMoney(minSku,currency)+" 起":"待供应商报价";
  return {
-  id:"COLLECT-"+product.id,sku:product.skus[0]?.id??product.id,
+  id:"COLLECT-"+product.id,sku:selectedSkus[0]?.id??product.id,
   name:product.name,originalTitle:product.name,description:product.description,
   source:"硕米优选（演示） · "+product.supplierName,
-  supplyProductId:product.id,supplySkuId:product.skus[0]?.id,
+  supplyProductId:product.id,supplySkuId:selectedSkus[0]?.id,
   supplierId:product.supplierId,supplierName:product.supplierName,
   supplyVersion:product.version,supplyType:product.supplyType??"待确认",
   warehouseCountry:product.warehouseCountry??"",shipToCountries:[...new Set(countryCosts.map(q=>q.country))],
@@ -45,8 +46,8 @@ function toCollected(product:SelectedCatalogProduct,mode:CollectionMode):DemoCol
   // The price and variantDetails.price fields stay at supplier price; total landed
   // costs are country-specific, and cannot safely be represented as one price.
   destinationCosts:mode==="landed"?countryCosts:undefined,
-  images:[...product.images],variants:product.skus.map(s=>s.label),variantCount:product.skus.length,
-  variantDetails:product.skus.map(s=>({sku:s.id,label:s.label,color:s.color,size:s.size,
+  images:[...product.images],variants:selectedSkus.map(s=>s.label),variantCount:selectedSkus.length,
+  variantDetails:selectedSkus.map(s=>({sku:s.id,label:s.label,color:s.color,size:s.size,
    image:s.images?.[0]||"",images:[...(s.images||[])],
    price:String(s.price),stock:String(s.stock),description:product.description})),
   status:"演示数据"
@@ -64,6 +65,17 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const [active,setActive]=useState<string|null>(null),[chosen,setChosen]=useState<string[]>([]);
  const [activeSku,setActiveSku]=useState(""),[photoIndex,setPhotoIndex]=useState(0),[imageFailed,setImageFailed]=useState(false);
  const [collectOpen,setCollectOpen]=useState(false),[batchMode,setBatchMode]=useState<"new"|"existing">("new");
+ // All variants are selected by default; only explicitly unchecked SKU keys are excluded.
+ const [excludedSkus,setExcludedSkus]=useState<string[]>([]);
+ const skuKey=(productId:string,skuId:string)=>productId+"::"+skuId;
+ const isSkuIncluded=(productId:string,skuId:string)=>!excludedSkus.includes(skuKey(productId,skuId));
+ const toggleSku=(productId:string,skuId:string)=>setExcludedSkus(previous=>{
+  const key=skuKey(productId,skuId);return previous.includes(key)?previous.filter(x=>x!==key):[...previous,key];
+ });
+ const toggleAllSkus=(product:SelectedCatalogProduct,checked:boolean)=>setExcludedSkus(previous=>{
+  const keys=product.skus.map(s=>skuKey(product.id,s.id));
+  return checked?previous.filter(x=>!keys.includes(x)):[...new Set([...previous,...keys])];
+ });
  const [targetCountry,setTargetCountry]=useState(""),[priceMode,setPriceMode]=useState<CollectionMode>("supply");
  const [batchName,setBatchName]=useState("硕米优选采集批次"),[batchId,setBatchId]=useState("");
  const [batches,setBatches]=useState<DemoCollectionBatch[]>([]);
@@ -113,7 +125,9 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const shown=sorted.slice((Math.min(page,totalPages)-1)*pagesize,Math.min(page,totalPages)*pagesize);
  const current=items.find(p=>p.id===active);
  const selectedForCollection=items.filter(p=>chosen.includes(p.id));
- const allDestinationCosts=selectedForCollection.flatMap(p=>p.skus.flatMap(s=>skuCountries(p,s).map(country=>costForCountry(p,s,country))));
+ const selectedSkusFor=(product:SelectedCatalogProduct)=>product.skus.filter(s=>isSkuIncluded(product.id,s.id));
+ const selectedVariantCount=selectedForCollection.reduce((count,p)=>count+selectedSkusFor(p).length,0);
+ const allDestinationCosts=selectedForCollection.flatMap(p=>selectedSkusFor(p).flatMap(s=>skuCountries(p,s).map(country=>costForCountry(p,s,country))));
  const incompleteCosts=allDestinationCosts.filter(q=>!q.complete);
  const collectionCostReady=allDestinationCosts.length>0&&incompleteCosts.length===0;
  const selectedSku=current?.skus.find(s=>s.id===activeSku)??current?.skus[0];
@@ -138,9 +152,10 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   setError("");
   try{
    const selected=items.filter(p=>chosen.includes(p.id));
-   const batch=addSelectedCatalogProducts(organizationId,memberId,selected.map(p=>toCollected(p,priceMode)),
+   if(selected.some(p=>!selectedSkusFor(p).length))throw Error("每款商品至少选择一个 SKU / 变体");
+   const batch=addSelectedCatalogProducts(organizationId,memberId,selected.map(p=>toCollected(p,priceMode,selectedSkusFor(p))),
      batchMode==="new"?{kind:"new",name:batchName}:{kind:"existing",id:batchId});
-   setCollectOpen(false);setActive(null);setChosen([]);setTargetCountry("");setNotice("已将 "+selected.length+" 件商品及全部变体保存到「我的数据 / 采集批次」："+batch.name+"。采集方式："+(priceMode==="landed"?"各国家总成本明细":"仅供货价格")+"；已保留货源与SKU关联。");
+   setCollectOpen(false);setActive(null);setChosen([]);setExcludedSkus([]);setTargetCountry("");setNotice("已将 "+selected.length+" 件商品、"+selectedVariantCount+" 个选定 SKU 保存到「我的数据 / 采集批次」："+batch.name+"。采集方式："+(priceMode==="landed"?"各国家总成本明细":"仅供货价格")+"；已保留货源与SKU关联。");
   }catch(e){setError(e instanceof Error?e.message:"保存失败")}
  };
  const choose=(id:string)=>setChosen(ids=>ids.includes(id)?ids.filter(v=>v!==id):[...ids,id]);
@@ -226,10 +241,19 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
    <footer><button type="button" onClick={()=>{setActive(null);setPurchase(null)}}>取消</button>{purchase&&purchase.productId===current.id?<><span>关联订单 {purchase.orderId} · {purchase.quantity} 件 · 模拟采购</span><button type="button" className={css.primary} disabled={selectedSku?.id!==purchase.skuId||!selectedSku||current.moq>purchase.quantity||selectedSku.stock<purchase.quantity||selectedSku.price<=0} onClick={confirmPurchase}>确认模拟采购</button></>:<button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setCollectOpen(true);setError("")}}>加入采集批次</button>}</footer>
   </section></div>:null}
   {collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setCollectOpen(false)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="加入我的采集批次">
-   <header><h2>加入我的采集批次</h2><button type="button" onClick={()=>setCollectOpen(false)}>关闭</button></header><p>已选择 {chosen.length} 件商品。将复制商品资料及关联 ID 到当前账号，不修改共享货盘源数据。</p>
+   <header><h2>加入我的采集批次</h2><button type="button" onClick={()=>setCollectOpen(false)}>关闭</button></header>
+   <p>已选择 {chosen.length} 件商品、{selectedVariantCount} 个 SKU。默认采集全部变体，可取消不需要的颜色和规格；不修改共享货盘源数据。</p>
+   <section className={css.collectionVariants} aria-label="选择采集变体">
+    <div className={css.collectionVariantsTitle}><strong>选择采集的 SKU / 变体</strong><span>已选 {selectedVariantCount} / {selectedForCollection.reduce((n,p)=>n+p.skus.length,0)} 个</span></div>
+    {selectedForCollection.map(product=><div className={css.collectionVariantGroup} key={product.id}>
+     <div className={css.collectionVariantHead}><strong>{product.name}</strong><label><input type="checkbox" aria-label={"全选"+product.name+"变体"} checked={product.skus.every(s=>isSkuIncluded(product.id,s.id))} onChange={e=>toggleAllSkus(product,e.target.checked)}/>全选本商品</label></div>
+     <div className={css.collectionVariantOptions}>{product.skus.map(s=><label key={s.id} className={css.collectionVariantOption}><input type="checkbox" aria-label={"采集变体 "+product.name+" "+s.label} checked={isSkuIncluded(product.id,s.id)} onChange={()=>toggleSku(product.id,s.id)}/><span><strong>{s.label}</strong><small>{s.id} · {s.price>0?formatMoney(s.price,product.quotationCurrency||"CNY"):"待报价"}</small></span></label>)}</div>
+     {!selectedSkusFor(product).length?<small className={css.variantWarning}>请至少选择一个变体</small>:null}
+    </div>)}
+   </section>
    <div className={css.collectionPricing}>
     <fieldset><legend>采集价格方式</legend><label><input type="radio" name="collection-price-mode" checked={priceMode==="landed"} onChange={()=>setPriceMode("landed")}/>按总成本采集</label><label><input type="radio" name="collection-price-mode" checked={priceMode==="supply"} onChange={()=>setPriceMode("supply")}/>只采集供货价格</label></fieldset>
-    <p>{priceMode==="landed"?"采集每款商品的全部 SKU、全部可配送国家及其供货价、质检、打包、贴标、运费和单件总成本。": "采集全部 SKU 的供货价及可配送国家资料，不以任何国家的运费覆盖 SKU 供货价。"}<br/>{priceMode==="landed"?(collectionCostReady?"全部已提供的国家报价完整，可分别保留。":"其中 "+incompleteCosts.length+" 条 SKU / 国家报价不完整，仍保留为“待报价”，不计算虚假总价。"):"不同国家运费作为供货资料保留，不计入采集价格。"} 演示报价仅供参考。</p>
+    <p>{priceMode==="landed"?"按已选 SKU 采集全部可配送国家的供货价、质检、打包、贴标、运费及单件总成本。": "采集已选 SKU 的供货价及其可配送国家资料，不以任何国家运费覆盖供货价。"}<br/>{priceMode==="landed"?(collectionCostReady?"全部已提供的国家报价完整，可分别保留。":"其中 "+incompleteCosts.length+" 条 SKU / 国家报价不完整，仍保留为“待报价”，不计算虚假总价。"):"不同国家运费作为供货资料保留，不计入采集价格。"} 演示报价仅供参考。</p>
    </div>
    <div className={css.modeChoices}><label><input type="radio" name="batch-mode" checked={batchMode==="new"} onChange={()=>setBatchMode("new")}/>创建新批次</label><label><input type="radio" name="batch-mode" checked={batchMode==="existing"} onChange={()=>setBatchMode("existing")}/>加入已有批次</label></div>
    {batchMode==="new"?<label className={css.inputField}>批次名称<input aria-label="新批次名称" maxLength={80} value={batchName} onChange={e=>setBatchName(e.target.value)}/></label>:
