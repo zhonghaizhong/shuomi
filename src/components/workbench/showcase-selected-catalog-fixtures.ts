@@ -10,7 +10,11 @@ export type SelectedCatalogProduct={
  quotationCurrency?:string;packagingWeightKg?:number;packagingLengthCm?:number;packagingWidthCm?:number;packagingHeightCm?:number;
  shippingQuotes?:Array<{country:string;freight:number|null;currency:string;transitDays:string|null;method:string;demo?:boolean}>;
  serviceFees?:{inspection:number|null;packing:number|null;labeling:number|null;currency:string;demo?:boolean};
- version:string;approved:"演示审核通过";images:string[];skus:Array<{id:string;label:string;color:string;size:string;stock:number;price:number;images?:string[]}>;
+ version:string;approved:"演示审核通过";images:string[];skus:Array<{id:string;label:string;color:string;size:string;stock:number;price:number;images?:string[];
+  /** Per-SKU offers can override product defaults when the supplier supplies a variant-specific figure. */
+  moq?:number;origin?:string;dispatch?:string;warehouseCountry?:string;dropship?:boolean;
+  packagingWeightKg?:number;packagingLengthCm?:number;packagingWidthCm?:number;packagingHeightCm?:number;
+  serviceFees?:SelectedCatalogProduct["serviceFees"];shippingQuotes?:SelectedCatalogProduct["shippingQuotes"]}>;
 };
 const supplierA={supplierId:"DEMO-SUP-A",supplierName:"演示供货商 · 织造工厂"};
 const supplierB={supplierId:"DEMO-SUP-B",supplierName:"演示供货商 · 生活用品"};
