@@ -72,7 +72,8 @@ function validSections(value:unknown):OutcomeSection[]|null{if(!Array.isArray(va
 function draftField(text:string, label:string) {
   return text.split("\n").find(line=>line.startsWith(label+"："))?.slice(label.length+1).trim()||"";
 }
-function previewSections(message:PreviewMessage):{heading:string;content:string}[] {\n  if(message.outcomeSections?.length)return message.outcomeSections;
+function previewSections(message:PreviewMessage):{heading:string;content:string}[] {
+  if(message.outcomeSections?.length)return message.outcomeSections;
   const kind=message.approval;
   if(kind==="report"){
     const title=draftField(message.text,"报告主题")||"未命名报告";
@@ -272,7 +273,8 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   };
   const startNewConversation = () => { onAction(""); setChatActive(false); setMessages(current=>current.filter(message=>message.jobId&&message.jobStatus!=="ready"&&message.jobStatus!=="failed"));setGuideFor(null);setExpandedDraftId(null);setConfirmDetailsOpen(false); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
   const handleApproval = (message: PreviewMessage, confirm: boolean) => {
-    if (!message.approval) return;\n    if(confirm&&!(message.jobStatus==="ready"&&message.outcomeSections?.length)){onAction("尚未生成完整成果，无法确认保存");return;}
+    if (!message.approval) return;
+    if(confirm&&!(message.jobStatus==="ready"&&message.outcomeSections?.length)){onAction("尚未生成完整成果，无法确认保存");return;}
     const labels: Record<ApprovalKind, string> = { knowledge: "知识库", skill: "技能", report: "报告" };
     const label = labels[message.approval];
     if(confirm&&message.approval==="report"){
