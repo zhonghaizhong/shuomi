@@ -270,7 +270,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     const original=messages.slice(0,messages.findIndex(m=>m.id===item.id)).reverse().find(m=>m.role==="user");
     if(original)void requestOutcome(index,original.text);
   };
-  const startNewConversation = () => { onAction(""); setChatActive(false); setMessages([]);setGuideFor(null);setExpandedDraftId(null);setConfirmDetailsOpen(false); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
+  const startNewConversation = () => { onAction(""); setChatActive(false); setMessages(current=>current.filter(message=>message.jobId&&message.jobStatus!=="ready"&&message.jobStatus!=="failed"));setGuideFor(null);setExpandedDraftId(null);setConfirmDetailsOpen(false); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
   const handleApproval = (message: PreviewMessage, confirm: boolean) => {
     if (!message.approval) return;\n    if(confirm&&!(message.jobStatus==="ready"&&message.outcomeSections?.length)){onAction("尚未生成完整成果，无法确认保存");return;}
     const labels: Record<ApprovalKind, string> = { knowledge: "知识库", skill: "技能", report: "报告" };
@@ -278,16 +278,16 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     if(confirm&&message.approval==="report"){
       const title=message.outcomeSections?.[0]?.heading||message.text.split("\n").find(line=>line.startsWith("报告主题："))?.slice(5).trim();
       if(title){try{
-        const saved=savePreviewReport(organizationId,memberId,title,"报告需求："+title+"。当前仅生成演示结构与待确认事项，没有检索或分析真实业务数据。",linkedProjectId||undefined);
+        const saved=savePreviewReport(organizationId,memberId,title,(message.outcomeSections||[]).map(section=>section.heading+"\n"+section.content).join("\n\n"),linkedProjectId||undefined);
         if(!saved){onAction("报告主题为空，未保存演示报告");return;}
       }catch{onAction("报告演示数据保存失败，请检查浏览器存储权限");return}}
     }
     if(confirm&&message.approval==="report"&&linkedProjectId){const p=readPreviewProjects().find(p=>p.id===linkedProjectId&&p.status!=="已归档");const name=message.outcomeSections?.[0]?.heading||message.text.split("\n").find(x=>x.startsWith("报告主题："))?.slice(5).trim();if(p&&name){try{savePreviewProject({...p,reports:[...p.reports,name],updated:Date.now()})}catch{onAction("本地成果保存失败");return}}}
     if(confirm&&message.approval==="knowledge"){
       const name=message.outcomeSections?.[0]?.heading||message.text.split("\n").find(line=>line.startsWith("主题：")||line.startsWith("整理主题："))?.replace(/^(主题：|整理主题：)/,"").trim();
-      if(name){try{savePersonalKnowledge(organizationId,memberId,name,"经硕米Chat确认保存的演示知识条目，可在我的知识库中分组管理。")}catch{onAction("知识库演示记录保存失败");return}}
+      if(name){try{savePersonalKnowledge(organizationId,memberId,name,(message.outcomeSections||[]).map(section=>section.heading+"\n"+section.content).join("\n\n"))}catch{onAction("知识库演示记录保存失败");return}}
     }
-    if(confirm&&message.approval==="skill"){const goal=message.outcomeSections?.[0]?.heading||message.text.split("\n").find(line=>line.startsWith("技能目标："))?.slice(5).trim();if(goal)savePersonalPreviewSkill({name:skillEntry.mode==="edit"&&skillEntry.name?skillEntry.name:goal,description:goal},organizationId,memberId);}
+    if(confirm&&message.approval==="skill"){const goal=message.outcomeSections?.[0]?.heading||message.text.split("\n").find(line=>line.startsWith("技能目标："))?.slice(5).trim();if(goal)savePersonalPreviewSkill({name:skillEntry.mode==="edit"&&skillEntry.name?skillEntry.name:goal,description:(message.outcomeSections||[]).map(section=>section.heading+"\n"+section.content).join("\n\n")||goal},organizationId,memberId);}
     setMessages(current => current.map(item => item.id === message.id ? { ...item, approval: undefined } : item).concat({
       id: Date.now(),
       role: "assistant",
