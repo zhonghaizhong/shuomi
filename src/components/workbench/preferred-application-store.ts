@@ -97,7 +97,7 @@ function validateSupply(supply:PreferredSupply){
   if(!skuOffers.length||skuOffers.some(v=>!Number.isFinite(Number(v.price))||Number(v.price)<=0||!Number.isSafeInteger(Number(v.quantity))||Number(v.quantity)<0||
    (v.moq!==undefined&&(!Number.isSafeInteger(Number(v.moq))||Number(v.moq)<1))||
    (v.weight!==undefined&&(!Number.isFinite(Number(v.weight))||Number(v.weight)<=0))||
-   (v.size!==undefined&&!/^\\s*\\d+(?:\\.\\d+)?\\s*[x×*]\\s*\\d+(?:\\.\\d+)?\\s*[x×*]\\s*\\d+(?:\\.\\d+)?\\s*$/.test(v.size))))
+   (v.size!==undefined&&!/^\s*\d+(?:\.\d+)?\s*[x×*]\s*\d+(?:\.\d+)?\s*[x×*]\s*\d+(?:\.\d+)?\s*$/.test(v.size))))
    throw Error("请补充有效的 SKU 报价、库存、起订量及包装规格（长×宽×高）");
 
  }
