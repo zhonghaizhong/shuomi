@@ -583,7 +583,7 @@ test("chat keeps work modes available after sending, without overlapping the com
       await panel.getByRole("button",{name:"发起任务",exact:true}).click();
       await expect(panel.getByRole("button",{name:"发起任务",exact:true})).toHaveAttribute("aria-pressed","true");
       await page.locator("#chat-new-prompt").fill("核对商品资料");
-      await send.click();
+      await page.getByRole("button",{name:"确认任务草案",exact:true}).click();
       const confirmation=page.getByRole("region",{name:"会话内确认任务"});
       await expect(confirmation).toBeVisible();
       await expect(confirmation).toContainText("核对商品资料");

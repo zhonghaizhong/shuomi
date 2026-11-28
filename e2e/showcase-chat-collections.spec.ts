@@ -142,7 +142,7 @@ test("conversation stays in original composer for all right-hand work modes",asy
  // Starting a task inside an existing conversation must not discard prior turns.
  await right.getByRole("button",{name:"发起任务"}).click();
  await page.getByLabel("描述你的业务目标").fill("检查本周刊登异常");
- await page.getByRole("button",{name:"发送消息"}).click();
+ await page.getByRole("button",{name:"确认任务草案",exact:true}).click();
  await expect(page.getByLabel("会话内确认任务")).toBeVisible();
  await page.getByLabel("会话内确认任务").getByRole("button",{name:"确认并继续"}).click();
  const thread=page.getByLabel("聊天记录");
@@ -152,22 +152,22 @@ test("conversation stays in original composer for all right-hand work modes",asy
  // Also use the in-composer project and scheduled-task workflows.
  await right.getByRole("button",{name:"执行定时任务"}).click();
  await page.getByLabel("描述你的业务目标").fill("每天检查订单");
- await page.getByRole("button",{name:"发送消息"}).click();
+ await page.getByRole("button",{name:"确认定时计划",exact:true}).click();
  await expect(page.getByLabel("会话内确认任务").getByLabel("定时安排")).toBeVisible();
  await page.getByLabel("会话内确认任务").getByRole("button",{name:"确认并继续"}).click();
  await expect(thread).toContainText("定时任务演示草案");
  expect(page.url()).toBe(original);
  await right.getByRole("button",{name:"加入我的项目"}).click();
  await page.getByLabel("描述你的业务目标").fill("管理本月商品上新");
- await page.getByRole("button",{name:"发送消息"}).click();
+ await page.getByRole("button",{name:"生成项目计划",exact:true}).click();
  await page.getByRole("textbox",{name:"项目名称"}).fill("会话内项目");
  await page.getByLabel("会话内确认任务").getByRole("button",{name:"确认并继续"}).click();
  await expect(thread).toContainText("会话内项目");
  expect(page.url()).toBe(original);
- for(const name of ["加入我的知识库","保存为我的技能","加入我的报告"]){
+ for(const [name,action] of [["加入我的知识库","整理知识条目"],["保存为我的技能","生成技能草案"],["加入我的报告","生成报告草案"]]){
   await right.getByRole("button",{name}).click();
   await page.getByLabel("描述你的业务目标").fill(name+" 演示主题");
-  await page.getByRole("button",{name:"发送消息"}).click();
+  await page.getByRole("button",{name:action,exact:true}).click();
   await expect(thread).toContainText(name+" 演示主题");
   expect(page.url()).toBe(original);
  }

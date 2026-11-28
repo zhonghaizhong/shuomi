@@ -134,8 +134,8 @@ test("preferred application reads owned adapted products and promotes only demo-
  await skuStock.fill("120");
  await apply.getByRole("textbox",{name:"发货时效",exact:true}).fill("48小时内");
  await apply.getByRole("textbox",{name:"发货地",exact:true}).fill("浙江义乌");
- await apply.getByRole("textbox",{name:"可配送国家",exact:true}).fill("美国、加拿大、英国");
- await apply.getByRole("textbox",{name:"售后政策",exact:true}).fill("质量问题支持换货");
+ await expect(apply.getByRole("textbox",{name:"可配送国家",exact:true})).toHaveCount(0);
+ await expect(apply.getByRole("textbox",{name:"售后政策",exact:true})).toHaveCount(0);
  await apply.getByRole("button",{name:"提交优选申请（演示）",exact:true}).click();
  const detail=page.getByRole("dialog",{name:"优选申请详情"});
  await expect(detail).toBeVisible();
