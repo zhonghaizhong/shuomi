@@ -524,3 +524,27 @@
 .workspace[data-chat-active] .composerFooter{flex:0 0 auto;flex-wrap:wrap}
 @media(max-width:1100px){.workspace[data-chat-active],.workspace[data-chat-active="true"],.workspace[data-chat-active="false"]{height:auto;min-height:0;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto}.workspace[data-chat-active] .composer,.workspace[data-chat-active="true"] .composer,.workspace[data-chat-active="false"] .composer{height:600px;min-height:0}.workspace[data-chat-active] .modePanel{height:auto;max-height:540px}}
 @media(max-width:600px){.workspace[data-chat-active] .composer,.workspace[data-chat-active="true"] .composer,.workspace[data-chat-active="false"] .composer{height:min(660px,calc(100dvh - 165px));min-height:520px}.workspace[data-chat-active] .composerIntro h2{font-size:20px}}
+
+/* Split work-mode selection from the informational 查看 action. */
+.modeOptionRow{display:flex;gap:7px;align-items:stretch;min-width:0}
+.modeOptionRow>button:first-child{flex:1 1 auto;min-width:0}
+.modeOptionRow .modeViewButton{flex:0 0 auto;align-self:center;min-height:34px;padding:0 10px;border:1px solid var(--cn-border-strong);border-radius:6px;background:var(--cn-surface);color:var(--cn-link);font:inherit;font-size:12px;white-space:nowrap;cursor:pointer}
+.modeOptionRow .modeViewButton:hover{border-color:var(--cn-link);background:var(--cn-hover)}
+.modeOptionRow .modeViewButton:focus-visible{outline:2px solid var(--cn-link);outline-offset:2px}
+.modeGuide{display:grid;gap:12px;align-self:stretch;padding:16px;border:1px solid var(--cn-border-strong);border-radius:9px;background:var(--cn-raised);color:var(--cn-text);flex:0 0 auto}
+.modeGuide>header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.modeGuide>header>div{display:grid;gap:5px;min-width:0}
+.modeGuide>header small{color:var(--cn-subtle);font-size:12px}
+.modeGuide>header h3{margin:0;color:var(--cn-heading);font-size:16px;font-weight:650;line-height:1.45}
+.modeGuide>header button,.modeGuideBottom>button{border:1px solid var(--cn-border-strong);border-radius:6px;background:var(--cn-inset);color:var(--cn-link);min-height:32px;padding:0 9px;white-space:nowrap;cursor:pointer;font:inherit;font-size:12px}
+.modeGuide>p{margin:0;font-size:13px;color:var(--cn-muted);line-height:1.65}
+.modeGuideSteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.modeGuideSteps>div{display:grid;align-content:start;gap:8px;padding:12px;border:1px solid var(--cn-border);border-radius:7px;background:var(--cn-inset)}
+.modeGuideSteps b{font-size:12px;color:var(--cn-link)}
+.modeGuideSteps span{font-size:13px;line-height:1.5}
+.modeGuideOutcome{display:grid;gap:5px;border-top:1px solid var(--cn-border);padding-top:10px}
+.modeGuideOutcome strong{font-size:13px;color:var(--cn-heading)}
+.modeGuideOutcome span{font-size:12px;line-height:1.65;color:var(--cn-muted)}
+.modeGuideBottom{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.modeGuideBottom>span{font-size:12px;color:var(--cn-muted)}
+@media(max-width:650px){.modeGuideSteps{grid-template-columns:1fr}.modeGuideBottom{flex-wrap:wrap}}
