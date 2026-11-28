@@ -193,7 +193,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
    </div>
    {filtered.length?<><div className={css.grid}>
     {shown.map(item=><article key={item.id} className={css.product} data-selected-product={item.id}>
-     <div className={css.placeholder}><PackageSearch size={32}/><small>暂无商品图片</small><label className={css.selectItem}><input type="checkbox" aria-label={"选择"+item.name} checked={chosen.includes(item.id)} onChange={()=>choose(item.id)}/>选择</label></div>
+     <div className={css.placeholder}>{item.images[0]||item.skus.find(s=>s.images?.length)?.images?.[0]?<img className={css.coverImage} src={item.images[0]||item.skus.find(s=>s.images?.length)?.images?.[0]} alt={item.name}/>:<><PackageSearch size={32}/><small>暂无商品图片</small></>}<label className={css.selectItem}><input type="checkbox" aria-label={"选择"+item.name} checked={chosen.includes(item.id)} onChange={()=>choose(item.id)}/>选择</label></div>
      <div className={css.details}>
       <h3>{item.name}</h3>
       <div className={css.cardBadges}><span className={css.countryTag}>{item.warehouseCountry?item.warehouseCountry+"仓":"仓库待确认"}</span><span className={item.supplyType==="POD"?css.typePod:item.supplyType==="定制"?css.typeCustom:item.supplyType==="现货"?css.typeStock:css.typeUnknown}>{item.supplyType??"待确认"}</span></div>

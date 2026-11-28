@@ -234,3 +234,6 @@
 .modal:has(.galleryColumn)>.costEstimator .costBreakdown .costTotal strong{font-size:20px}
 @media(max-width:800px){.modal:has(.galleryColumn)>.costEstimator .costBreakdown{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:540px){.modal:has(.galleryColumn)>.costEstimator>header{align-items:stretch;flex-direction:column}.modal:has(.galleryColumn)>.costEstimator>header label{justify-content:space-between}}
+
+/* Square cover frames for all selected catalog products. */
+.product>.placeholder,.product>img{aspect-ratio:1/1;min-height:0;overflow:hidden}.placeholder>.coverImage{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:contain;background:#fff}.placeholder>.selectItem{z-index:1}
