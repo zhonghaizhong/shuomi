@@ -77,6 +77,8 @@ test("store products and seeded orders show truthful records and working navigat
  await expect(root).toContainText("同事01演示店铺01");
  await page.goto(base+"/store-orders");
  await expect(root.getByRole("heading",{name:"平台订单记录",exact:true})).toBeVisible();
+ // Filter merchant orders before counting: new apparel orders use the selected-market source and share the paginated table.
+ await root.getByLabel("供货来源",{exact:true}).selectOption("商家自行供货");
  const rows=root.locator("tbody tr");
  await expect(rows.filter({hasText:"管理员演示店铺02"})).toHaveCount(6);
  await expect(rows.filter({hasText:"管理员演示店铺03"})).toHaveCount(2);
@@ -98,6 +100,8 @@ test("store products and seeded orders show truthful records and working navigat
  await expect(detail).toContainText("模拟同步成功");
  await detail.getByRole("button",{name:"关闭",exact:true}).first().click();
  await page.reload();
+ await root.getByRole("textbox",{name:"搜索订单"}).fill("SIM-ORDER-03-001");
+ await root.getByRole("button",{name:"确认",exact:true}).click();
  const restored=root.locator("tbody tr").filter({hasText:"SIM-ORDER-03-001"});
  await expect(restored).toContainText("物流运输中");
  await restored.getByRole("button",{name:"查看物流",exact:true}).click();
