@@ -37,9 +37,7 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
  const router=useRouter();
  const [source,setSource]=useState<PickSource>("采集批次"),[batch,setBatch]=useState(""),[selectedVersionId,setSelectedVersionId]=useState("original"),[batchDialog,setBatchDialog]=useState(false),[store,setStore]=useState(""),[agent,setAgent]=useState(false),[agentId,setAgentId]=useState(""),[templateId,setTemplateId]=useState(""),[rules,setRules]=useState(true),[mode,setMode]=useState<"平台草稿"|"直接上传到平台"|"定时上传">("平台草稿");
  const [scheduledDate,setScheduledDate]=useState(""),[scheduledTime,setScheduledTime]=useState("");
- const [scheduleFrequency,setScheduleFrequency]=useState<"once"|"daily"|"weekly"|"interval">("once");
- const [scheduleIntervalDays,setScheduleIntervalDays]=useState("2");
- const [scheduleEndDate,setScheduleEndDate]=useState("");
+ const [scheduleIntervalMinutes,setScheduleIntervalMinutes]=useState("15");
  const [scheduleEnabled,setScheduleEnabled]=useState(false),[showTimeSettings,setShowTimeSettings]=useState(false);
  const [platformSite,setPlatformSite]=useState("");
  const [targetDialog,setTargetDialog]=useState(false),[draftPlatform,setDraftPlatform]=useState(""),[draftRegion,setDraftRegion]=useState(""),[draftType,setDraftType]=useState(""),[draftStore,setDraftStore]=useState("");
@@ -568,20 +566,18 @@ export function ShowcaseListingStage({stage,organizationId,memberId,tabNavigatio
       ].map(([label,value],i)=><div key={label} className={styles.uploadFact} data-kind={i}><strong>{label}</strong><span>{value}</span></div>)}</div>
      </div>
      <div className={styles.uploadActions}><div className={styles.scheduleRow}><label>定时上传<input aria-label="启用定时上传" type="checkbox" checked={scheduleEnabled} onChange={e=>{setScheduleEnabled(e.target.checked);setMode(e.target.checked?"定时上传":"直接上传到平台")}}/></label><button type="button" onClick={()=>setShowTimeSettings(true)}>设置时间</button></div>
-      {scheduleEnabled&&scheduledDate&&scheduledTime?<small>计划：{scheduledDate} {scheduledTime} · {scheduleFrequency==="once"?"仅执行一次":scheduleFrequency==="daily"?"每天":scheduleFrequency==="weekly"?"每周":`每 ${scheduleIntervalDays} 天`}{scheduleFrequency!=="once"&&scheduleEndDate?" · 截止 "+scheduleEndDate:""}（演示，未实际预约）</small>:null}
+      {scheduleEnabled&&scheduledDate&&scheduledTime?<small>上架计划：{scheduledDate} {scheduledTime} 开始 · 每隔 {scheduleIntervalMinutes} 分钟上架下一件（演示，未实际预约）</small>:null}
       <div className={styles.uploadActionButtons}><button type="button" disabled={!selectedCount||!chosenStore||!rules||(agent&&(!chosenAgent||!chosenTemplate))} onClick={()=>submitUpload("平台草稿")}>上传到草稿箱</button><button type="button" className={styles.primary} disabled={!selectedCount||!chosenStore||!rules||(agent&&(!chosenAgent||!chosenTemplate))||(scheduleEnabled&&(!scheduledDate||!scheduledTime))} onClick={()=>submitUpload(scheduleEnabled?"定时上传":"直接上传到平台")}>{scheduleEnabled?"确认定时上传":"直接上传到平台"}</button></div>
      </div>
    </section>
-   {showTimeSettings?<div className={styles.overlay} role="presentation" onMouseDown={e=>e.target===e.currentTarget&&setShowTimeSettings(false)}><section className={styles.dialog+" "+styles.uploadScheduleDialog} role="dialog" aria-modal="true" aria-label="设置上传时间"><h2>设置上传时间</h2><p>选择开始时间与执行频率；当前仅保存页面配置，不会自动创建平台刊登任务。</p>
+   {showTimeSettings?<div className={styles.overlay} role="presentation" onMouseDown={e=>e.target===e.currentTarget&&setShowTimeSettings(false)}><section className={styles.dialog+" "+styles.uploadScheduleDialog} role="dialog" aria-modal="true" aria-label="设置上传时间"><h2>设置上传时间</h2><p>设置本批商品开始上架的时间，以及相邻商品的上架间隔。不是按天或每周重复刊登整批商品。</p>
     <div className={styles.uploadScheduleGrid}>
      <label>开始日期<input aria-label="定时上传日期" type="date" value={scheduledDate} onChange={e=>setScheduledDate(e.target.value)}/></label>
-     <label>执行时间<input aria-label="定时上传时间" type="time" value={scheduledTime} onChange={e=>setScheduledTime(e.target.value)}/></label>
-     <label className={styles.uploadScheduleFull}>执行频率<select aria-label="定时上传频率" value={scheduleFrequency} onChange={e=>setScheduleFrequency(e.target.value as "once"|"daily"|"weekly"|"interval")}><option value="once">仅执行一次</option><option value="daily">每天</option><option value="weekly">每周（按开始日期的星期）</option><option value="interval">按间隔天数</option></select></label>
-     {scheduleFrequency==="interval"?<label>每隔多少天<input aria-label="定时上传间隔天数" type="number" min="1" max="365" step="1" value={scheduleIntervalDays} onChange={e=>setScheduleIntervalDays(e.target.value)}/></label>:null}
-     {scheduleFrequency!=="once"?<label>结束日期（选填）<input aria-label="定时上传结束日期" type="date" min={scheduledDate||undefined} value={scheduleEndDate} onChange={e=>setScheduleEndDate(e.target.value)}/></label>:null}
+     <label>开始时间<input aria-label="定时上传时间" type="time" value={scheduledTime} onChange={e=>setScheduledTime(e.target.value)}/></label>
+     <label className={styles.uploadScheduleFull}>上架间隔（分钟）<input aria-label="上架间隔分钟" type="number" min="1" max="10080" step="1" inputMode="numeric" value={scheduleIntervalMinutes} onChange={e=>setScheduleIntervalMinutes(e.target.value)} placeholder="例如 15"/></label>
     </div>
-    <p className={styles.uploadScheduleHint}>每次执行须具备有效店铺授权及可上传商品，重复频率不代表重复刊登相同商品。实际自动调度尚未接入。</p>
-    <footer><button type="button" onClick={()=>setShowTimeSettings(false)}>取消</button><button type="button" className={styles.primary} disabled={!scheduledDate||!scheduledTime||(scheduleFrequency==="interval"&&(!Number.isSafeInteger(Number(scheduleIntervalDays))||Number(scheduleIntervalDays)<1))||(scheduleFrequency!=="once"&&Boolean(scheduleEndDate)&&scheduleEndDate<scheduledDate)} onClick={()=>{setScheduleEnabled(true);setMode("定时上传");setShowTimeSettings(false)}}>保存时间与频率</button></footer></section></div>:null}
+    <p className={styles.uploadScheduleHint}>示例：开始时间 10:00，间隔 15 分钟，第 1 件计划 10:00 上架，第 2 件 10:15，第 3 件 10:30。只对本次待上传商品逐件安排，不会重复上架已经处理的商品。正式调度服务尚未接入。</p>
+    <footer><button type="button" onClick={()=>setShowTimeSettings(false)}>取消</button><button type="button" className={styles.primary} disabled={!scheduledDate||!scheduledTime||!Number.isSafeInteger(Number(scheduleIntervalMinutes))||Number(scheduleIntervalMinutes)<1||Number(scheduleIntervalMinutes)>10080} onClick={()=>{setScheduleEnabled(true);setMode("定时上传");setShowTimeSettings(false)}}>保存上架计划</button></footer></section></div>:null}
    <p className={styles.hint}>按照 Figma 保留平台草稿、直接上传和定时上传配置入口；当前展示只创建本账号任务记录，不模拟真实平台提交或智能体执行。</p>
   </>:<>
    <section className={styles.listPanel}><div className={styles.filters} data-listing-batch-filter>
