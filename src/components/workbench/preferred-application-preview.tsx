@@ -31,7 +31,6 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const [skuEditing,setSkuEditing]=useState<string[]>([]);
  const [showPackagingOverrides,setShowPackagingOverrides]=useState(false);
  const [batchSkuKeys,setBatchSkuKeys]=useState<string[]>([]);
- const [showTierPricing,setShowTierPricing]=useState(false);
  const [applicationOpen,setApplicationOpen]=useState(false);
  const [recordDetail,setRecordDetail]=useState<string|null>(null);
  const [reviewReason,setReviewReason]=useState("");
@@ -105,7 +104,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
   setSupply({...emptyPreferredSupply,supplyKind:"现货",warehouseMode:"硕米仓库",currency:"CNY",dropship:true,skuPrices,skuOverrides,defaultSkuQuantity:"",
    supplierName:profile?.name??"",supplierContact:profile?.contact??"",supplierPhone:profile?.phone??"",supplierLocation:profile?.location??"",supplierAgreement:Boolean(profile?.agreement),
    unitPrice:"",packageWeight:"",packageSize:"",shippingCountries:previous?.shippingCountries??"",origin:previous?.origin??"",dispatch:previous?.dispatch??"",returns:previous?.returns??"",maxQuantity:previous?.maxQuantity??"",stock:String(sourceSkus.reduce((sum,v)=>sum+(v.sku.stock??0),0)),moq:previous?.moq??"1"});
-  setEditSupplier(!profile?.name);setShowSkuPricing(true);setShowTierPricing(false);
+  setEditSupplier(!profile?.name);setShowSkuPricing(true);
   setNotice("");setError("");setApplicationOpen(true);
  };
  const submit=(event:FormEvent<HTMLFormElement>)=>{
@@ -244,21 +243,6 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
         <label><span className={styles.checkboxLine}><input type="checkbox" checked={Boolean(supply.dropship)} onChange={e=>setSupply(v=>({...v,dropship:e.target.checked}))}/>支持一件代发</span></label>
        </div>
        <p className={styles.applyHint}>每一行是独立 SKU。价格、可售量和包装重量必须按实际规格确认；相同数值可勾选多个 SKU 批量填写，不会覆盖未选中的规格。</p>
-       <div className={styles.applyTools}><strong>SKU 明细</strong><span>{Object.keys(supply.skuPrices??{}).length} 个 SKU · 已选 {batchSkuKeys.length} 个</span><button type="button" onClick={()=>setBatchSkuKeys(candidates.filter(c=>chosen.includes(c.product.id)).flatMap(c=>c.product.skus.map(s=>c.product.id+":"+String(s.id))))}>全选</button><button type="button" onClick={()=>setBatchSkuKeys([])}>清空</button></div>
-       <div className={styles.skuPricingWrap+" "+styles.skuFullTable}><table><thead><tr><th>选择</th><th>商品 / SKU</th><th>供货价</th><th>{supply.supplyKind==="现货"?"库存":"接单量"}</th><th>起订量</th><th>包装重量 kg</th><th>包装尺寸 cm</th></tr></thead><tbody>
-        {candidates.filter(c=>chosen.includes(c.product.id)).flatMap(c=>c.product.skus.map(sku=>{
-         const key=c.product.id+":"+String(sku.id),base=supply.skuPrices?.[key]??{price:"",quantity:""},override=supply.skuOverrides?.[key]??{};
-         const update=(field:"price"|"quantity"|"moq"|"weight"|"size",value:string)=>setSupply(v=>({...v,skuOverrides:{...v.skuOverrides,[key]:{...v.skuOverrides?.[key],[field]:value}}}));
-         return <tr key={key}>
-          <td><input type="checkbox" aria-label={"选择 SKU "+key} checked={batchSkuKeys.includes(key)} onChange={e=>setBatchSkuKeys(v=>e.target.checked?[...v,key]:v.filter(x=>x!==key))}/></td>
-          <td><strong>{sku.name}</strong><small>{sku.skuCode||sku.id}</small></td>
-          <td><input aria-label={"SKU供货价 "+key} type="number" min="0.01" step="0.01" required value={override.price??base.price} onChange={e=>update("price",e.target.value)} placeholder="必填"/></td>
-          <td><input aria-label={"SKU库存 "+key} type="number" min="0" required value={override.quantity??base.quantity} onChange={e=>update("quantity",e.target.value)}/></td>
-          <td><input aria-label={"SKU起订量 "+key} type="number" min="1" required value={override.moq??supply.moq} onChange={e=>update("moq",e.target.value)}/></td>
-          <td><input aria-label={"SKU包装重量 "+key} type="number" min="0.001" step="0.001" required value={override.weight??supply.packageWeight??""} onChange={e=>update("weight",e.target.value)} placeholder="必填"/></td>
-          <td><input aria-label={"SKU包装尺寸 "+key} required value={override.size??supply.packageSize??""} onChange={e=>update("size",e.target.value)} placeholder="长×宽×高"/></td>
-         </tr>
-        }))}</tbody></table></div>
        <div className={styles.applyTools}><strong>批量填写相同规格</strong><span>只会更新勾选的 {batchSkuKeys.length} 个 SKU</span></div>
        <div className={styles.fields}>
         <label>批量供货价<input type="number" min="0.01" step="0.01" aria-label="批量供货价" value={supply.unitPrice??""} onChange={e=>setSupply(v=>({...v,unitPrice:e.target.value}))} placeholder="选填"/></label>
@@ -275,8 +259,21 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
         setSupply(v=>({...v,skuOverrides:Object.fromEntries([...Object.entries(v.skuOverrides??{}),...batchSkuKeys.map(key=>[key,{...v.skuOverrides?.[key],...changes}] as const)])}));
         setBatchSkuKeys([]);
        }}>应用到选中 SKU</button><span>不填写的字段不会被批量覆盖</span></div>
-       <div className={styles.applyTools}><label className={styles.checkboxLine}><input type="checkbox" checked={showTierPricing} onChange={e=>setShowTierPricing(e.target.checked)}/>阶梯供货报价</label></div>
-       {showTierPricing?<label className={styles.applyTextLabel}>阶梯报价说明<textarea aria-label="阶梯报价规则" value={supply.tierPrices??""} onChange={e=>setSupply(v=>({...v,tierPrices:e.target.value}))} placeholder="例如 10–49 件 11.80；50 件以上 10.90"/></label>:null}
+       <div className={styles.applyTools}><strong>SKU 明细</strong><span>{Object.keys(supply.skuPrices??{}).length} 个 SKU · 已选 {batchSkuKeys.length} 个</span><button type="button" onClick={()=>setBatchSkuKeys(candidates.filter(c=>chosen.includes(c.product.id)).flatMap(c=>c.product.skus.map(s=>c.product.id+":"+String(s.id))))}>全选</button><button type="button" onClick={()=>setBatchSkuKeys([])}>清空</button></div>
+       <div className={styles.skuPricingWrap+" "+styles.skuFullTable}><table><thead><tr><th>选择</th><th>商品 / SKU</th><th>供货价</th><th>{supply.supplyKind==="现货"?"库存":"接单量"}</th><th>起订量</th><th>包装重量 kg</th><th>包装尺寸 cm</th></tr></thead><tbody>
+        {candidates.filter(c=>chosen.includes(c.product.id)).flatMap(c=>c.product.skus.map(sku=>{
+         const key=c.product.id+":"+String(sku.id),base=supply.skuPrices?.[key]??{price:"",quantity:""},override=supply.skuOverrides?.[key]??{};
+         const update=(field:"price"|"quantity"|"moq"|"weight"|"size",value:string)=>setSupply(v=>({...v,skuOverrides:{...v.skuOverrides,[key]:{...v.skuOverrides?.[key],[field]:value}}}));
+         return <tr key={key}>
+          <td><input type="checkbox" aria-label={"选择 SKU "+key} checked={batchSkuKeys.includes(key)} onChange={e=>setBatchSkuKeys(v=>e.target.checked?[...v,key]:v.filter(x=>x!==key))}/></td>
+          <td><strong>{sku.name}</strong><small>{sku.skuCode||sku.id}</small></td>
+          <td><input aria-label={"SKU供货价 "+key} type="number" min="0.01" step="0.01" required value={override.price??base.price} onChange={e=>update("price",e.target.value)} placeholder="必填"/></td>
+          <td><input aria-label={"SKU库存 "+key} type="number" min="0" required value={override.quantity??base.quantity} onChange={e=>update("quantity",e.target.value)}/></td>
+          <td><input aria-label={"SKU起订量 "+key} type="number" min="1" required value={override.moq??supply.moq} onChange={e=>update("moq",e.target.value)}/></td>
+          <td><input aria-label={"SKU包装重量 "+key} type="number" min="0.001" step="0.001" required value={override.weight??supply.packageWeight??""} onChange={e=>update("weight",e.target.value)} placeholder="必填"/></td>
+          <td><input aria-label={"SKU包装尺寸 "+key} required value={override.size??supply.packageSize??""} onChange={e=>update("size",e.target.value)} placeholder="长×宽×高"/></td>
+         </tr>
+        }))}</tbody></table></div>
       </section>
       <section className={styles.applySection}>
        <div className={styles.applySectionHeading}><strong>仓储与履约信息</strong>{supply.supplyKind!=="现货"?<span className={styles.applyPill}>按单生产 · 无需提前备货</span>:null}</div>
@@ -290,12 +287,9 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
        <div className={styles.fields}>
         <label>发货地<input required aria-label="发货地" value={supply.origin} onChange={e=>setSupply(v=>({...v,origin:e.target.value}))} placeholder="国家 / 省市"/></label>
         <label>{supply.supplyKind==="现货"?"出库时效":"生产与发货时效"}<input required aria-label="发货时效" value={supply.dispatch} onChange={e=>setSupply(v=>({...v,dispatch:e.target.value}))} placeholder="例如 1–3 个工作日"/></label>
-        <label className={styles.full}>可配送国家 / 地区<input required aria-label="可配送国家" value={supply.shippingCountries??""} onChange={e=>setSupply(v=>({...v,shippingCountries:e.target.value}))} placeholder="例如 美国、加拿大、英国"/></label>
-        <label className={styles.full}>售后与质量处理规则<textarea required aria-label="售后政策" value={supply.returns} onChange={e=>setSupply(v=>({...v,returns:e.target.value}))} placeholder="质量问题及退换货责任划分"/></label>
-        <label className={styles.full}>供货补充说明（可选）<textarea aria-label="供货价说明" value={supply.pricing} onChange={e=>setSupply(v=>({...v,pricing:e.target.value}))} placeholder="供货特殊要求、报价备注等；无需填写运费或处理费"/></label>
        </div>
       </section>
-      <p className={styles.modalTip}>提交后直接进入后台审核，无需等待运费、质检、打包及贴标费用评估。此页面仅演示本地申请记录，不执行真实平台入选或仓库认证。</p>
+      <p className={styles.modalTip}>提交后由硕米专员对接确认最优供货价、配送地区及售后合作规则，运费和处理费在后台评估。此处为本地申请演示，不代表真实审核或入选。</p>
       {error?<p role="alert">{error}</p>:null}
      </div>
      <footer className={styles.applyFooter}><span>已选 {chosen.length} 件商品 · {Object.keys(supply.skuPrices??{}).length} 个 SKU</span><div><button type="button" onClick={()=>setApplicationOpen(false)}>取消</button><button type="submit" className={styles.primary}>提交优选申请（演示）</button></div></footer>
