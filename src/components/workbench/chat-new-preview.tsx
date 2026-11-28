@@ -9,6 +9,9 @@ import {readEnabledPreviewSkills,readPersonalPreviewSkills,savePersonalPreviewSk
 import {savePersonalKnowledge} from "./showcase-knowledge-groups";
 import {savePreviewReport} from "./showcase-report-center";
 
+// Stable mode indices are used by existing tasks, schedules and project links.
+// Presentation order is independent: task creation directly follows new chat.
+const modeOrder=[0,6,1,2,3,4,5];
 const modes = [
   { title: "创建会话", detail: "描述目标，硕米协助整理", action: "发送消息", placeholder: "向硕米提问，或描述你想完成的任务…", examples: [["每周汇总商品适配与上传进展", "进度、阻塞问题、关键变更与待决策事项"], ["找出可以退订的邮件", "识别订阅邮件及重复通知（需邮箱授权）"], ["准备下一场会议", "梳理议题、讨论重点与待确认事项"], ["分析最近店铺经营情况", "诊断利润、广告和订单异常并提出建议"]] },
   { title: "执行定时任务", detail: "描述任务、时间和提醒要求", action: "确认定时计划", placeholder: "例如：每周一至周五上午9点，检查待审核商品，发现异常时提醒我…", examples: [["每周一生成店铺经营周报", "按周整理销售、利润和异常变化"], ["每天早上检查待审核商品", "发现积压或异常时提醒我"], ["每周提醒我复盘广告投放效果", "汇总预算、点击和转化表现"], ["每月汇总商品上新与适配进度", "整理各店铺的上新进展"]] },
@@ -219,6 +222,15 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
       <section className={styles.composer} aria-label={chatActive ? "会话消息与输入区" : "新建会话输入区"}>
         <header className={styles.composerIntro}><div><h2>{chatActive ? (messages.find(item => item.role === "user")?.text.slice(0, 28) || "新建会话") : "有什么想交给硕米？"}</h2><p>{chatActive ? "对话演示 · 消息记录保留在当前会话中" : "直接描述问题或工作目标，硕米协助整理并回复。"}</p></div>{chatActive && <button className={styles.newConversation} onClick={startNewConversation}>＋ 新会话</button>}</header>
         {chatActive && <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请确认是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button></div></div>}</article>)}</div>}
+        {confirmation && <section className={styles.inlineConfirmation} aria-label="会话内确认任务">
+        <header><div><h2 id="chat-confirm-title">确认{mode.title}</h2><p>请核对当前内容和关联范围，再继续下一步。</p></div><button aria-label="关闭" onClick={() => setConfirmation(false)}>×</button></header>
+        {modeIndex === 1 && <section className={styles.scheduleFields} aria-label="定时安排">
+          <label><span>执行频率</span><select value={scheduleFrequency} onChange={event => setScheduleFrequency(event.target.value)}><option value="daily">每天</option><option value="weekly">每周</option><option value="monthly">每月</option></select></label>
+          {scheduleFrequency === "weekly" && <label><span>执行星期</span><select value={scheduleWeekday} onChange={event => setScheduleWeekday(event.target.value)}>{weekdayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label>}
+          {scheduleFrequency === "monthly" && <label><span>每月几号</span><select value={scheduleMonthday} onChange={event => setScheduleMonthday(event.target.value)}>{Array.from({ length: 28 }, (_, index) => String(index + 1)).map(day => <option key={day} value={day}>{day} 日</option>)}</select></label>}
+          <label><span>执行时间</span><input type="time" value={scheduleTime} onChange={event => setScheduleTime(event.target.value)} /></label>
+          <p>确认后会生成定时任务演示草案，不会真实创建任务。</p>
+        </section>}
         <label className={styles.srOnly} htmlFor="chat-new-prompt">描述你的业务目标</label>
         <textarea id="chat-new-prompt" maxLength={2000} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); submit(); } }} placeholder={chatActive ? "继续输入，按 Ctrl / ⌘ + Enter 发送…" : mode.placeholder} />
         {(selectedResources.length > 0 || selectedStores.length > 0 || files.length > 0) && <div className={styles.selectedTags}>
@@ -241,9 +253,9 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
         </footer>
       </section>
       <aside className={styles.modePanel} aria-label={chatActive ? "会话上下文" : "选择执行方式"} data-collapsed={chatActive && !contextOpen}>
-        {chatActive ? <><header className={styles.contextHead}><div><span>会话面板</span><h2>会话上下文</h2></div><button type="button" className={styles.contextToggle} aria-label={contextOpen ? "收起会话面板" : "展开会话面板"} title={contextOpen ? "收起会话面板" : "展开会话面板"} aria-expanded={contextOpen} aria-controls="chat-context-body" onClick={() => setContextOpen(open => !open)}>{contextOpen ? <PanelRightClose size={18} strokeWidth={1.8} aria-hidden="true" /> : <PanelRightOpen size={18} strokeWidth={1.8} aria-hidden="true" />}</button></header>{contextOpen && <div id="chat-context-body" className={styles.contextBody}><section><span>当前方式</span><strong>{mode.title}</strong><small>{mode.detail}</small></section><section><span>关联店铺</span>{selectedStores.length ? selectedStores.map(item => <b key={item}>{item}</b>) : <small>尚未关联店铺</small>}<button onClick={() => { setPendingStores(selectedStores); setDrawer("stores"); }}>管理店铺 →</button></section><section><span>引用资源</span>{selectedResources.length ? selectedResources.map(item => <b key={item}>{item}</b>) : <small>需要时再关联知识、技能或项目</small>}<button onClick={() => { setPendingResources(selectedResources); setDrawer("resources"); }}>管理资源 →</button></section>{linkedProjectId&&<section><span>关联项目</span><strong>{readPreviewProjects().find(p=>p.id===linkedProjectId)?.name}</strong><button onClick={()=>router.push("/workbench/ai/projects/active?preview=1")}>查看关联项目</button></section>}<div className={styles.contextHint}>可随时补充店铺和资料范围，聊天记录会继续保留。</div></div>}</> : <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modes.map((item, index) => <button key={item.title} className={index === modeIndex ? styles.modeSelected : ""} onClick={() => setModeIndex(index)} aria-pressed={index === modeIndex}>
+        {chatActive ? <><header className={styles.contextHead}><div><span>会话面板</span><h2>会话上下文</h2></div><button type="button" className={styles.contextToggle} aria-label={contextOpen ? "收起会话面板" : "展开会话面板"} title={contextOpen ? "收起会话面板" : "展开会话面板"} aria-expanded={contextOpen} aria-controls="chat-context-body" onClick={() => setContextOpen(open => !open)}>{contextOpen ? <PanelRightClose size={18} strokeWidth={1.8} aria-hidden="true" /> : <PanelRightOpen size={18} strokeWidth={1.8} aria-hidden="true" />}</button></header>{contextOpen && <div id="chat-context-body" className={styles.contextBody}><section><span>当前方式</span><strong>{mode.title}</strong><small>{mode.detail}</small></section><section><span>关联店铺</span>{selectedStores.length ? selectedStores.map(item => <b key={item}>{item}</b>) : <small>尚未关联店铺</small>}<button onClick={() => { setPendingStores(selectedStores); setDrawer("stores"); }}>管理店铺 →</button></section><section><span>引用资源</span>{selectedResources.length ? selectedResources.map(item => <b key={item}>{item}</b>) : <small>需要时再关联知识、技能或项目</small>}<button onClick={() => { setPendingResources(selectedResources); setDrawer("resources"); }}>管理资源 →</button></section>{linkedProjectId&&<section><span>关联项目</span><strong>{readPreviewProjects().find(p=>p.id===linkedProjectId)?.name}</strong><button onClick={()=>router.push("/workbench/ai/projects/active?preview=1")}>查看关联项目</button></section>}<div className={styles.contextHint}>可随时补充店铺和资料范围，聊天记录会继续保留。</div></div>}</> : <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modeOrder.map(index => {const item=modes[index];return <button key={item.title} className={index === modeIndex ? styles.modeSelected : ""} onClick={() => {setModeIndex(index);setConfirmation(false)}} aria-pressed={index === modeIndex}>
           <i data-tone={index} /><span><strong>{item.title}</strong></span>
-        </button>)}</div></section><section className={styles.examples}>
+        </button>})}</div></section><section className={styles.examples}>
         <header><h2>试试这样说</h2><span>·</span><p>点击示例可放入输入区</p></header>
         <div>{mode.examples.map(([title, detail], index) => <button key={title} onClick={() => choosePrompt(title)}>
           <b data-tone={index}>0{index + 1}</b><span><strong>{title}</strong><small>{detail}</small></span>
@@ -268,20 +280,10 @@ export function ChatNewPreview({ onAction,organizationId="SM-ENT-000001",memberI
       </section>
     </div>}
 
-    {confirmation && <div className={styles.overlay} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setConfirmation(false); }}>
-      <section className={`${styles.drawer} ${styles.confirmDrawer}`} role="dialog" aria-modal="true" aria-labelledby="chat-confirm-title">
-        <header><div><h2 id="chat-confirm-title">确认{mode.title}</h2><p>请核对当前内容和关联范围，再继续下一步。</p></div><button aria-label="关闭" onClick={() => setConfirmation(false)}>×</button></header>
-        {modeIndex === 1 && <section className={styles.scheduleFields} aria-label="定时安排">
-          <label><span>执行频率</span><select value={scheduleFrequency} onChange={event => setScheduleFrequency(event.target.value)}><option value="daily">每天</option><option value="weekly">每周</option><option value="monthly">每月</option></select></label>
-          {scheduleFrequency === "weekly" && <label><span>执行星期</span><select value={scheduleWeekday} onChange={event => setScheduleWeekday(event.target.value)}>{weekdayNames.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label>}
-          {scheduleFrequency === "monthly" && <label><span>每月几号</span><select value={scheduleMonthday} onChange={event => setScheduleMonthday(event.target.value)}>{Array.from({ length: 28 }, (_, index) => String(index + 1)).map(day => <option key={day} value={day}>{day} 日</option>)}</select></label>}
-          <label><span>执行时间</span><input type="time" value={scheduleTime} onChange={event => setScheduleTime(event.target.value)} /></label>
-          <p>确认后会生成定时任务演示草案，不会真实创建任务。</p>
-        </section>}
+
         {modeIndex===2&&<section className={styles.scheduleFields}><label><span>项目名称</span><input aria-label="项目名称" value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="请输入项目名称" required/></label>{projectEntry.template&&<p>项目模板：{projectEntry.template.name}</p>}<p>确认后保存本地演示项目并自动关联会话。</p></section>}
         <div className={styles.confirmSummary}>{modeIndex === 1 && <><span>执行安排</span><strong>{scheduleDescription}</strong></>}<span>执行方式</span><strong>{mode.title}</strong><span>工作内容</span><p>{draft}</p><span>关联店铺</span><p>{selectedStores.length ? selectedStores.join("、") : "未关联店铺"}</p><span>引用资源</span><p>{selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配"}</p></div>
         <footer className={styles.drawerFooter}><button onClick={() => setConfirmation(false)}>返回修改</button><button className={styles.primary} onClick={confirmAction}>确认并继续</button></footer>
-      </section>
-    </div>}
+        </section>}
   </div>;
 }
