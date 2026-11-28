@@ -5211,3 +5211,13 @@
 .goalsPreview .goalStoreInfo{display:grid;gap:8px;min-width:0}
 .goalsPreview .goalStoreInfo>span{display:grid;gap:4px;min-width:0}
 .goalsPreview .goalStoreInfo small{font-size:12px;overflow-wrap:anywhere}
+
+/* One exact shared grid and alignment axis for every alert column. */
+.cockpitPreview .riskTable{--risk-tracks:minmax(82px,.7fr) minmax(136px,1.15fr) minmax(155px,1.35fr) minmax(180px,1.5fr) minmax(145px,1.1fr) minmax(158px,1.05fr) minmax(85px,.8fr) minmax(168px,1.45fr);overflow-x:auto}
+.cockpitPreview .riskTable :is(.alertColumns,.alertRow){box-sizing:border-box;width:100%;min-width:1220px;grid-template-columns:var(--risk-tracks);column-gap:12px;padding-inline:12px;border-width:1px;align-items:center}
+.cockpitPreview .riskTable :is(.alertColumns,.alertRow)>*{box-sizing:border-box;min-width:0;margin-inline:0;padding-inline:0;justify-self:stretch;text-align:left;align-self:center}
+.cockpitPreview .riskTable .alertRow>span{justify-content:stretch;justify-items:start;text-align:left}
+.cockpitPreview .riskTable .alertRow>span>:is(strong,small){text-align:left}
+.cockpitPreview .riskTable .alertColumns>b:last-child{text-align:center}
+.cockpitPreview .riskTable .alertRow>.riskActions{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:nowrap}
+.cockpitPreview .riskTable .riskActions>button{min-width:76px;min-height:38px;padding:6px 10px;white-space:nowrap;text-align:center}
