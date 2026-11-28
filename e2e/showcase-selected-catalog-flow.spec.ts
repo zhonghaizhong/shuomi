@@ -56,3 +56,21 @@ test("selected catalog shows renamed metrics, MOQ slider and country shipping de
  await expect(dialog.getByText("29.00",{exact:false})).toBeVisible();
  await expect(dialog.getByText("运输时效不包含备货")).toBeVisible();
 });
+
+test("selected product detail uses square gallery, SKU switching and per-item service fees",async({page})=>{
+ await page.goto("/shuomi/#/workbench/supply/selected");
+ const market=page.locator('[data-selected-market="true"]');
+ await market.locator('[data-selected-product="SMYX-DEMO-001"]').getByRole("button",{name:"查看详情"}).click();
+ const detail=page.getByRole("dialog",{name:"优选商品详情"});
+ await expect(detail).toBeVisible();
+ await expect(detail.getByLabel("商品图片轮播")).toBeVisible();
+ await expect(detail.getByText("质检费用")).toBeVisible();
+ await expect(detail.getByText("打包费用")).toBeVisible();
+ await expect(detail.getByText("贴标费用")).toBeVisible();
+ await detail.getByRole("button",{name:"选择变体 黑色 / L"}).click();
+ await expect(detail.getByText("SKU：SMYX-001-BK-L")).toBeVisible();
+ await expect(detail.getByText("库存：900")).toBeVisible();
+ await expect(detail.getByRole("button",{name:"选择变体 黑色 / L"})).toHaveAttribute("aria-pressed","true");
+ await detail.getByRole("button",{name:"选择变体 白色 / M"}).click();
+ await expect(detail.getByText("SKU：SMYX-001-WH-M")).toBeVisible();
+});
