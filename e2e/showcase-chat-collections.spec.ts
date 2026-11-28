@@ -172,3 +172,46 @@ test("conversation stays in original composer for all right-hand work modes",asy
   expect(page.url()).toBe(original);
  }
 });
+
+test("chat keeps the original input docked at the bottom before and after send",async({page})=>{
+ await page.setViewportSize({width:1600,height:950});
+ await page.goto("/shuomi/#/workbench/ai/chat/new");
+ const initialURL=page.url();
+ const composer=page.locator('[data-conversation-composer="stable"]');
+ const input=composer.getByLabel("描述你的业务目标");
+ const right=page.getByRole("complementary",{name:"选择执行方式"});
+ const messages=composer.getByLabel("聊天记录");
+ await expect(composer).toBeVisible();
+ await expect(messages).toBeVisible();
+ await expect(input).toBeVisible();
+ await expect(right.getByRole("button",{name:"创建会话"})).toBeVisible();
+ const before=await input.boundingBox();
+ const initialComposer=await composer.boundingBox();
+ expect(before).not.toBeNull();
+ await input.fill("每周汇总商品适配与上传进展");
+ await composer.getByRole("button",{name:"发送消息"}).click();
+ await expect(messages).toContainText("每周汇总商品适配与上传进展");
+ await expect(input).toBeVisible();
+ await expect(right.getByRole("button",{name:"发起任务"})).toBeVisible();
+ expect(page.url()).toBe(initialURL);
+ const after=await input.boundingBox(),afterComposer=await composer.boundingBox();
+ expect(after).not.toBeNull();
+ expect(Math.abs(after!.y-before!.y)).toBeLessThan(3);
+ expect(Math.abs(after!.height-before!.height)).toBeLessThan(3);
+ expect(Math.abs(afterComposer!.height-initialComposer!.height)).toBeLessThan(3);
+ await input.fill("继续核对今天的待补全商品");
+ await composer.getByRole("button",{name:"发送消息"}).click();
+ await expect(messages).toContainText("继续核对今天的待补全商品");
+ expect(page.url()).toBe(initialURL);
+ const repeated=await input.boundingBox();
+ expect(Math.abs(repeated!.y-before!.y)).toBeLessThan(3);
+ await right.getByRole("button",{name:"发起任务"}).click();
+ await input.fill("检查今日异常");
+ await composer.getByRole("button",{name:"确认任务草案"}).click();
+ await expect(messages.getByLabel("会话内确认任务")).toBeVisible();
+ await expect(input).toBeVisible();
+ await messages.getByLabel("会话内确认任务").getByRole("button",{name:"确认并继续"}).click();
+ await expect(messages).toContainText("检查今日异常");
+ expect(page.url()).toBe(initialURL);
+ await expect(input).toBeVisible();
+});
