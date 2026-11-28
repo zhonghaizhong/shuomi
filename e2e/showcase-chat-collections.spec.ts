@@ -260,3 +260,56 @@ test("view guides for project skill knowledge report without switching work mode
  await expect(input).toHaveValue("创建一个新品开发项目");
  expect(page.url()).toBe(currentURL);
 });
+
+test("draft 查看 displays real details inline for knowledge, skill, report, task, schedule, and project",async({page})=>{
+ await page.goto("/shuomi/#/workbench/ai/chat/new");
+ const url=page.url();
+ const modes=page.getByRole("complementary",{name:"选择执行方式"});
+ const composer=page.locator('[data-conversation-composer="stable"]');
+ const thread=composer.getByLabel("聊天记录");
+ const input=composer.getByLabel("描述你的业务目标");
+ for(const entry of [
+  {mode:"加入我的知识库",action:"整理知识条目",detail:"查看知识库草案详情",topic:"售后规则知识"},
+  {mode:"保存为我的技能",action:"生成技能草案",detail:"查看技能草案详情",topic:"图片审核标准"},
+  {mode:"加入我的报告",action:"生成报告草案",detail:"查看报告草案详情",topic:"新品利润分析"},
+ ]){
+  await modes.getByRole("button",{name:entry.mode,exact:true}).click();
+  await input.fill(entry.topic);
+  await composer.getByRole("button",{name:entry.action}).click();
+  await expect(thread).toContainText(entry.topic);
+  const view=thread.getByRole("button",{name:entry.detail}).last();
+  await view.click();
+  await expect(thread.getByRole("region",{name:"当前草案完整详情"})).toContainText(entry.topic);
+  await expect(thread.getByRole("region",{name:"当前草案完整详情"})).toContainText("确认后去哪里");
+  await expect(input).toBeVisible();
+  expect(page.url()).toBe(url);
+  await view.click();
+  await expect(thread.getByRole("region",{name:"当前草案完整详情"})).toHaveCount(0);
+ }
+ for(const entry of [
+  {mode:"发起任务",action:"确认任务草案",topic:"复核商品属性",kind:"任务"},
+  {mode:"执行定时任务",action:"确认定时计划",topic:"每周检查异常",kind:"定时任务"},
+  {mode:"加入我的项目",action:"生成项目计划",topic:"新品测试项目",kind:"项目"}
+ ]){
+  await modes.getByRole("button",{name:entry.mode,exact:true}).click();
+  await input.fill(entry.topic);
+  await composer.getByRole("button",{name:entry.action}).click();
+  const confirmation=thread.getByRole("region",{name:"会话内确认任务"});
+  await expect(confirmation).toBeVisible();
+  await confirmation.getByRole("button",{name:"查看详情"}).click();
+  const details=confirmation.getByRole("region",{name:"当前任务计划完整详情"});
+  await expect(details).toContainText(entry.topic);
+  await expect(details).toContainText("确认后如何处理");
+  await expect(input).toBeVisible();
+  expect(page.url()).toBe(url);
+  await confirmation.getByRole("button",{name:"返回修改"}).click();
+  await expect(confirmation).toHaveCount(0);
+ }
+ await modes.getByRole("button",{name:"创建会话",exact:true}).click();
+ await input.fill("普通对话不需要草案详情");
+ await composer.getByRole("button",{name:"发送消息"}).click();
+ await expect(thread).toContainText("普通对话不需要草案详情");
+ await expect(thread.getByRole("button",{name:"查看知识库草案详情"})).toHaveCount(1);
+ await expect(input).toBeVisible();
+ expect(page.url()).toBe(url);
+});
