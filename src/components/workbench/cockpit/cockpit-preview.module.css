@@ -1346,3 +1346,17 @@
 :global(.light) .page .supportGauge>span small{color:#625d70}
 
 .matrixRow em[data-status="待评估"]{color:#b7c6d7;background:transparent}:global(.light) .matrixRow em[data-status="待评估"]{color:#475569;background:transparent}
+
+/* Cohesive cockpit empty traffic states and genuine matrix actions. */
+.digestNoTrend{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;min-height:142px;flex:1;min-width:0;text-align:center;padding:18px;color:var(--muted);border:1px dashed var(--line);border-radius:9px;background:color-mix(in srgb,var(--surface-raised) 40%,transparent)}
+.digestNoTrend strong{font-size:13px;font-weight:650;color:var(--text)}
+.digestNoTrend span{font-size:12px;line-height:1.5;color:var(--muted)}
+.page .matrixHead,.page .matrixRow{grid-template-columns:62px minmax(144px,1.15fr) minmax(150px,1.25fr) minmax(95px,.65fr) minmax(100px,.65fr) minmax(100px,.65fr) minmax(145px,1fr) minmax(140px,1fr);min-width:1110px}
+.page .matrixRow>span:first-child button{min-height:29px;padding:3px 8px;background:transparent;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--text);cursor:pointer}
+.page .matrixRow>span:first-child button:hover{border-color:#7367f0;color:#a99fff}
+.page .matrixProgress{display:flex;align-items:center;justify-content:flex-start}
+.page .matrixProgress small{white-space:normal;overflow-wrap:anywhere;font-size:11px}
+.page .aiTasksList button{align-self:start;min-height:32px;border:1px solid var(--line);background:var(--surface-raised);color:var(--text);border-radius:7px;padding:6px 11px;cursor:pointer}
+:global(.light) .page .digestNoTrend{background:#faf9fd;border-color:#e5e1ed}
+:global(.light) .page .digestNoTrend strong{color:#444050}
+:global(.light) .page .matrixRow>span:first-child button{color:#444050;border-color:#dcd7e9}
