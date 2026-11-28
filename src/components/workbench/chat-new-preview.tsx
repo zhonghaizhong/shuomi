@@ -21,6 +21,22 @@ const modes = [
   { title: "发起任务", detail: "描述需要执行的工作，核对后加入任务中心", action: "确认任务草案", placeholder: "例如：检查美国站商品的待补全问题，整理异常原因并提出处理建议…", examples: [["检查待补全商品", "汇总缺失信息并给出处理建议"], ["分析店铺经营问题", "结合已有资料明确待确认事项"], ["整理商品上新任务", "梳理需要处理的商品和业务范围"], ["跟进近期异常", "汇总异常原因及需要人工确认的事项"]] },
 ];
 
+type ModeGuide={heading:string;summary:string;steps:[string,string,string];outcome:string;destination:string;url:string};
+const modeGuides:Partial<Record<number,ModeGuide>>={
+ 2:{heading:"项目是什么？创建后怎么推进？",summary:"项目是一个长期目标的工作空间，用来集中管理目标、阶段进度、关联资料和成果。它不是点击创建后就自动执行全部工作。",
+  steps:["描述目标并创建项目","围绕里程碑在当前会话中拆分、发起任务","在项目中心查看进度与报告，具体执行和确认在任务中心进行"],
+  outcome:"得到项目名称、目标、阶段里程碑和关联资源；当前演示先保存项目记录，具体任务须另行发起。",destination:"进行中项目",url:"/workbench/ai/projects/active?preview=1"},
+ 3:{heading:"知识库是什么？建好后怎么用？",summary:"知识库保存平台规则、业务资料和可复用的知识条目，供后续会话或智能体引用，不会自行执行任务。",
+  steps:["描述要沉淀的知识与资料来源","核对内容后保存到我的知识库","在资源与能力中选择知识库，让后续会话或任务参考"],
+  outcome:"得到可管理的知识条目；演示内容不代表已检索或验证真实平台资料。",destination:"我的知识库",url:"/workbench/ai/knowledge/mine"},
+ 4:{heading:"技能是什么？保存后怎么执行？",summary:"技能是可重复使用的操作方法，描述适用场景、输入要求、处理步骤及结果标准；单独保存并不会自动运行。",
+  steps:["描述希望复用的业务流程","确认触发条件、步骤及验收标准并保存","在资源与能力中引用技能，结合具体任务执行"],
+  outcome:"得到一项我的技能；使用时需明确任务与所需资料，当前为交互演示。",destination:"我的技能",url:"/workbench/agents/skills/mine"},
+ 5:{heading:"报告是什么？生成后去哪查看？",summary:"报告用于整理分析结论和阶段成果，可查看、收藏及关联项目；需要明确分析范围与数据来源。",
+  steps:["描述报告主题、时间和数据范围","核对草案后确认保存","在我的报告中查看、收藏或关联项目继续复盘"],
+  outcome:"得到演示报告草案；未接入真实数据时不会假称已完成实际经营分析。",destination:"我的报告",url:"/workbench/ai/reports"}
+};
+
 const resourceGroups: Record<string, string[]> = {
   我的知识库: ["跨境平台规则", "电商运营方法", "跨境合规参考", "品牌运营资料库"],
   我的技能: ["商品标题整理", "标题本地化", "冗长标题精简", "商品利润测算"],
@@ -72,9 +88,11 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   
   const [messages, setMessages] = useState<PreviewMessage[]>([]);
   const [feedback,onAction]=useState("");
+  const [guideOpen,setGuideOpen]=useState(true);
   const fileInput = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const mode = modes[modeIndex];
+  const modeGuide=modeGuides[modeIndex];
   useEffect(() => {
     if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
   }, [chatActive, messages, feedback, confirmation]);
@@ -176,7 +194,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     setMessages(current => current.map(item => item.id === message.id ? { ...item, approval: undefined } : item).concat({
       id: Date.now(),
       role: "assistant",
-      text: confirm ? "已在本次演示中确认加入" + label + "。你可以继续补充内容；此操作不会写入真实业务数据。" : "好的，请在下方告诉我需要调整的内容，我会更新这份" + label + "草案。",
+      text: confirm ? "已在本次演示中确认加入" + label + "。"+(message.approval==="knowledge"?"可在「我的知识库」管理，后续通过「资源与能力」引用；知识库不会自行执行任务。":message.approval==="skill"?"可在「我的技能」查看，后续在会话中引用并指定具体任务；保存技能不会自动运行。":"可在「我的报告」查看或收藏，必要时关联项目继续复盘。")+" 当前为本地演示，未写入真实业务服务。" : "好的，请在下方告诉我需要调整的内容，我会更新这份" + label + "草案。",
     }));
     onAction(confirm ? "演示确认加入" + label : "继续修改" + label + "草案");
   };
@@ -198,7 +216,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     if(modeIndex===2){
       if(linkedProjectId){onAction("当前会话已经关联项目，请继续描述工作或新建会话。");setConfirmation(false);return;}
       if(!projectName.trim()){onAction("请填写项目名称");return;}
-      try{const p=createPreviewProject({name:projectName,goal:request,scope:selectedStores.join("、"),template:projectEntry.template?.name,resources:selectedResources});setLinkedProjectId(p.id);setSelectedResources(old=>[...new Set([...old,p.name])]);setMessages(current=>[...current,{id:Date.now(),role:"user",text:request},{id:Date.now()+1,role:"assistant",text:"已创建本地演示项目："+p.name+"。当前会话已关联该项目，可返回项目中心查看目标、里程碑及进展。"}]);setConfirmation(false);setChatActive(true);setModeIndex(0);setDraft("");return;}catch{onAction("本地项目保存失败，请检查浏览器存储权限");return;}
+      try{const p=createPreviewProject({name:projectName,goal:request,scope:selectedStores.join("、"),template:projectEntry.template?.name,resources:selectedResources});setLinkedProjectId(p.id);setSelectedResources(old=>[...new Set([...old,p.name])]);setMessages(current=>[...current,{id:Date.now(),role:"user",text:request},{id:Date.now()+1,role:"assistant",text:"已创建本地演示项目："+p.name+"。\n如何推进：①在当前会话继续描述项目阶段目标；②针对每个阶段发起任务并在任务中心确认执行；③在「进行中项目」查看进度、关联资料和报告。项目本身不会自动执行任务。"}]);setConfirmation(false);setChatActive(true);setModeIndex(0);setDraft("");return;}catch{onAction("本地项目保存失败，请检查浏览器存储权限");return;}
     }
     const replyByMode = [
       "",
@@ -218,7 +236,10 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   return <div className={styles.workspace} data-chat-active={chatActive}>
       <section className={styles.composer} aria-label={chatActive ? "会话消息与输入区" : "新建会话输入区"} data-conversation-composer="stable">
         <header className={styles.composerIntro}><div><h2>有什么想交给硕米？</h2><p>{chatActive ? "当前会话的消息和处理结果在这里继续显示，不切换页面。" : "直接描述问题或工作目标，硕米协助整理并回复。"}</p></div>{chatActive && <button className={styles.newConversation} onClick={startNewConversation}>＋ 新会话</button>}</header>
-        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请确认是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button></div></div>}</article>)}
+        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{modeGuide&&<section className={styles.modeGuide} aria-label={mode.title+"使用说明"}>
+  <header><div><small>使用说明 · 创建前先了解</small><h3>{modeGuide.heading}</h3></div><button type="button" aria-expanded={guideOpen} onClick={()=>setGuideOpen(v=>!v)}>{guideOpen?"收起说明":"查看如何使用"}</button></header>
+  {guideOpen&&<><p>{modeGuide.summary}</p><div className={styles.modeGuideSteps}>{modeGuide.steps.map((step,i)=><div key={step}><b>{String(i+1).padStart(2,"0")}</b><span>{step}</span></div>)}</div><div className={styles.modeGuideOutcome}><strong>创建后会得到什么</strong><span>{modeGuide.outcome}</span></div><div className={styles.modeGuideBottom}><span>后续查看位置：{modeGuide.destination}</span><button type="button" onClick={()=>router.push(modeGuide.url)}>查看{modeGuide.destination}</button></div></>}
+ </section>}{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请确认是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button></div></div>}</article>)}
         {confirmation && <section className={styles.inlineConfirmation} aria-label="会话内确认任务">
         <header><div><h2 id="chat-confirm-title">确认{mode.title}</h2><p>请核对当前内容和关联范围，再继续下一步。</p></div><button aria-label="关闭" onClick={() => setConfirmation(false)}>×</button></header>
         {modeIndex === 1 && <section className={styles.scheduleFields} aria-label="定时安排">
@@ -256,7 +277,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
         </footer>
       </section>
       <aside className={styles.modePanel} aria-label="选择执行方式">
-        <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modeOrder.map(index => {const item=modes[index];return <button key={item.title} className={index === modeIndex ? styles.modeSelected : ""} onClick={() => {setModeIndex(index);setConfirmation(false)}} aria-pressed={index === modeIndex}>
+        <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modeOrder.map(index => {const item=modes[index];return <button key={item.title} className={index === modeIndex ? styles.modeSelected : ""} onClick={() => {setModeIndex(index);setConfirmation(false);setGuideOpen(true);if(threadRef.current)threadRef.current.scrollTop=0}} aria-pressed={index === modeIndex}>
           <i data-tone={index} /><span><strong>{item.title}</strong></span>
         </button>})}</div></section><section className={styles.examples}>
         <header><h2>试试这样说</h2><span>·</span><p>点击示例可放入输入区</p></header>
