@@ -176,3 +176,6 @@
 
 /* Non-destructive demo-record recovery feedback. */
 .recoveryMessage{margin:8px 16px;padding:10px 12px;border:1px solid #5b6fa1;border-radius:8px;font-size:13px;line-height:1.5;color:inherit;background:color-mix(in srgb,#7367f0 10%,transparent)}
+
+.library .manageHeaderActions .managePrimary,.library .manageInline .managePrimary{background:var(--accent);color:white;border-color:var(--accent)}
+.library .manageInline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.library .manageInline label{display:flex;align-items:center;gap:12px}.library .manageInline input{height:38px;min-width:100px;max-width:260px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:0 10px}.library .manageInline button{height:36px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:0 12px}.library .manageTable th:last-child{text-align:right}.library .manageActions{justify-content:flex-end}

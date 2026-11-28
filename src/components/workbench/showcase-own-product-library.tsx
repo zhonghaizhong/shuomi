@@ -1,6 +1,6 @@
 "use client";
 import {Fragment,useEffect,useMemo,useState,type MouseEvent} from "react";
-import {readOwnProductBatches,readOwnProducts,recoverOwnProductShowcaseFixtures,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
+import {readOwnProductBatches,readOwnProducts,recoverOwnProductShowcaseFixtures,createOwnProductBatch,renameOwnProductBatch,moveOwnProducts,ownProductUpdated,type OwnProductRecord} from "./showcase-own-product-data";
 import {readReusableOptimizedDatasets,optimizedDatasetsChanged} from "./showcase-optimized-datasets";
 import {readArchivedOptimizedVersions,setOptimizedVersionArchived,downloadOptimizedVersionCsv} from "./showcase-dataset-version-actions";
 import {ShowcaseOptimizedVersionDialog} from "./showcase-optimized-version-dialog";
@@ -34,15 +34,6 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
  const [manageError,setManageError]=useState("");
  const [recoveryMessage,setRecoveryMessage]=useState("");
  const demoScope=organizationId==="SM-ENT-000001"&&memberId==="admin";
- const restoreFixtures=()=>{
-  if(!demoScope)return;
-  try{
-   const result=recoverOwnProductShowcaseFixtures(organizationId,memberId);
-   setRevision(n=>n+1);
-   setArchivedOnly(false);setSearch("");setQuery("");setAppliedStatus("全部状态");setStatus("全部状态");setPage(1);
-   setRecoveryMessage(result.created?"已补回 "+result.created+" 款 GitHub 可重建的演示商品（六款基础样本、两款 POD 服装）；原有商品未覆盖。":"已核对：演示商品均已存在，未覆盖原数据。");
-  }catch(error){setRecoveryMessage("恢复未完成："+(error instanceof Error?error.message:"请检查浏览器存储空间"))}
- };
  useEffect(()=>{
   if(!demoScope||typeof window==="undefined")return;
   const marker="shuomi:own-library-safe-restore:v1:"+organizationId+":"+memberId;
@@ -52,8 +43,10 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
    const result=recoverOwnProductShowcaseFixtures(organizationId,memberId);
    setRevision(n=>n+1);
    setRecoveryMessage("空库已补回 "+result.created+" 款 GitHub 演示样本；此为重建，不是已丢失的浏览器原始记录。");
-  }catch(error){setRecoveryMessage("自动恢复未完成："+(error instanceof Error?error.message:"存储不可用")+"；可使用手动恢复按钮重试。")}
+  }catch(error){setRecoveryMessage("自动恢复未完成："+(error instanceof Error?error.message:"存储不可用")+"。")}
  },[demoScope,organizationId,memberId]);
+ const [newOpen,setNewOpen]=useState(false),[newName,setNewName]=useState(""),[renameId,setRenameId]=useState<string|null>(null),[renameName,setRenameName]=useState("");
+ const mutateBatch=(fn:()=>void)=>{try{fn();setRevision(v=>v+1);setManageError("");return true}catch(e){setManageError(e instanceof Error?e.message:"保存失败，请重试");return false}};
  const [manageQuery,setManageQuery]=useState(""),[manageApplied,setManageApplied]=useState(""),[manageStatus,setManageStatus]=useState("全部状态"),[managePage,setManagePage]=useState(1);
  useEffect(()=>{
   const refresh=(e:Event)=>{const d=(e as CustomEvent<{organizationId:string;memberId:string}>).detail;if(d?.organizationId===organizationId&&d.memberId===memberId)setRevision(v=>v+1)};
@@ -116,7 +109,7 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
    <div data-shuomi-filter-right className={css.filterActions}><select aria-label="自有商品状态" value={status} onChange={e=>setStatus(e.target.value)}><option>全部状态</option><option>已入库</option><option>入库待完善</option><option>待审核</option></select><button type="button" onClick={reset}>重置</button><button type="button" className={css.primary} onClick={apply}>确认</button></div>
   </section>
   <section className={css.batchSection} aria-label="自有商品批次列表">
-   <header className={css.batchHeading}><div><h2>自有商品批次</h2><span>共 {archivedOnly?batches.filter(b=>archived.has(b.id)).length:batches.filter(b=>!archived.has(b.id)).length} 批</span></div><div className={css.headingActions}><button type="button" aria-pressed={archivedOnly} onClick={()=>{setArchivedOnly(v=>!v);setPage(1);setChecked([]);setMenu(null)}}>{archivedOnly?"返回批次":"已归档"}</button><button type="button" onClick={()=>setManaging(true)}>管理批次</button>{demoScope?<button type="button" onClick={restoreFixtures}>恢复演示商品</button>:null}</div></header>{recoveryMessage?<p role="status" className={css.recoveryMessage}>{recoveryMessage}</p>:null}
+   <header className={css.batchHeading}><div><h2>自有商品批次</h2><span>共 {archivedOnly?batches.filter(b=>archived.has(b.id)).length:batches.filter(b=>!archived.has(b.id)).length} 批</span></div><div className={css.headingActions}><button type="button" aria-pressed={archivedOnly} onClick={()=>{setArchivedOnly(v=>!v);setPage(1);setChecked([]);setMenu(null)}}>{archivedOnly?"返回批次":"已归档"}</button><button type="button" onClick={()=>{setManaging(true);setNewOpen(false);setRenameId(null);setManageError("");setManagePage(1)}}>管理批次</button></div></header>{recoveryMessage?<p role="status" className={css.recoveryMessage}>{recoveryMessage}</p>:null}
    <div className={css.tableWrap}><table className={css.batchTable}><thead><tr><th><label className={css.selectTitle}><input type="checkbox" aria-label="选择当前页所有自有商品批次" disabled={!rows.length} checked={checkedAll} onChange={e=>setChecked(old=>e.target.checked?[...new Set([...old,...rows.map(b=>b.id)])]:old.filter(id=>!rows.some(b=>b.id===id)))}/>批次名称</label></th><th>商品总数</th><th>已入库</th><th>入库待完善</th><th>待审核</th><th>创建时间</th><th>操作</th></tr></thead><tbody>
     {rows.map(b=>{
      const count=counts(b.id),open=expanded.includes(b.id);
@@ -135,7 +128,8 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
   </section>
   {manageError?<p role="alert" className={css.error}>{manageError}</p>:null}
   {managing?<div className={css.backdrop} onMouseDown={e=>{if(e.target===e.currentTarget)setManaging(false)}}><section className={css.manageDialog} role="dialog" aria-modal="true" aria-label="管理自有商品批次" onKeyDown={e=>{if(e.key==="Escape")setManaging(false)}}>
-   <header className={css.manageHeader}><div><h2>批次管理</h2><p>统一管理自有商品批次，支持筛选、归档与恢复；不会删除商品及历史版本。</p></div><div className={css.manageHeaderActions}><button type="button" onClick={()=>setManaging(false)}>关闭</button></div></header>
+   <header className={css.manageHeader}><div><h2>批次管理</h2><p>新建、重命名及归档自有商品批次；商品移动在查看商品中完成，保留历史版本。</p></div><div className={css.manageHeaderActions}><button type="button" className={css.managePrimary} onClick={()=>{setNewOpen(v=>!v);setNewName("");setRenameId(null)}}>新建批次</button><button type="button" onClick={()=>setManaging(false)}>关闭</button></div></header>
+   {newOpen&&<form className={css.manageInline} onSubmit={e=>{e.preventDefault();if(mutateBatch(()=>{createOwnProductBatch(organizationId,memberId,newName)})){setNewOpen(false);setNewName("");setManagePage(1)}}}><label>新批次名称<input aria-label="新批次名称" required maxLength={60} value={newName} onChange={e=>setNewName(e.target.value)}/></label><button type="submit" className={css.managePrimary}>保存</button><button type="button" onClick={()=>setNewOpen(false)}>取消</button></form>}
    <form className={css.manageFilters} onSubmit={e=>{e.preventDefault();setManageApplied(manageQuery.trim());setManagePage(1)}}>
     <label className={css.manageSearch}><span aria-hidden="true">⌕</span><input aria-label="搜索自有商品批次名称" placeholder="搜索批次名称" value={manageQuery} onChange={e=>setManageQuery(e.target.value)}/></label>
     <select aria-label="管理自有商品批次状态" value={manageStatus} onChange={e=>{setManageStatus(e.target.value);setManagePage(1)}}><option>全部状态</option><option>正常</option><option>已归档</option></select>
@@ -143,9 +137,9 @@ export function ShowcaseOwnProductLibrary({organizationId,memberId}:{organizatio
    </form>
    {manageError?<p className={css.error} role="alert">{manageError}</p>:null}
    {(()=>{const filtered=batches.filter(b=>(!manageApplied||b.name.toLowerCase().includes(manageApplied.toLowerCase()))&&(manageStatus==="全部状态"||(manageStatus==="已归档"?archived.has(b.id):!archived.has(b.id))));const totalPages=Math.max(1,Math.ceil(filtered.length/10)),current=Math.min(managePage,totalPages);
-   return <><div className={css.manageTableScroll}><table className={css.manageTable}><thead><tr><th>批次名称</th><th>产品来源</th><th>总量</th><th>待完善</th><th>待审核</th><th>创建时间</th><th>批次状态</th><th>操作</th></tr></thead><tbody>{filtered.slice((current-1)*10,current*10).map(b=>{const count=counts(b.id);return <tr key={b.id}><td className={css.manageNameCell}><strong title={b.name}>{b.name}</strong></td><td><span className={css.managePill}>自有商品</span></td><td><span className={css.manageMetric}>{count.total}</span></td><td><span className={css.manageMetric}>{count.pending}</span></td><td><span className={css.manageMetric}>{count.review}</span></td><td>{b.createdAt}</td><td><span className={archived.has(b.id)?css.manageArchived:css.manageActive}>{archived.has(b.id)?"已归档":"正常"}</span></td><td><div className={css.manageActions}><button type="button" onClick={()=>archiveBatches([b.id],!archived.has(b.id))}>{archived.has(b.id)?"恢复":"归档"}</button></div></td></tr>})}</tbody></table>{filtered.length===0?<p className={css.empty}>暂无符合条件的批次</p>:null}</div><footer className={css.manageFooter}><span>共 {filtered.length} 批 · 第 {current} / {totalPages} 页</span><div><button type="button" disabled={current===1} onClick={()=>setManagePage(v=>Math.max(1,v-1))}>上一页</button><button type="button" disabled={current===totalPages} onClick={()=>setManagePage(v=>v+1)}>下一页</button></div></footer></>})()}
+   return <><div className={css.manageTableScroll}><table className={css.manageTable}><thead><tr><th>批次名称</th><th>产品来源</th><th>总量</th><th>待完善</th><th>待审核</th><th>创建时间</th><th>批次状态</th><th>操作</th></tr></thead><tbody>{filtered.slice((current-1)*10,current*10).map(b=>{const count=counts(b.id);return <tr key={b.id}><td className={css.manageNameCell}>{renameId===b.id?<form className={css.manageInline} onSubmit={e=>{e.preventDefault();if(mutateBatch(()=>renameOwnProductBatch(organizationId,memberId,b.id,renameName)))setRenameId(null)}}><input aria-label="重命名批次" required maxLength={60} value={renameName} onChange={e=>setRenameName(e.target.value)}/><button type="submit">保存</button><button type="button" onClick={()=>setRenameId(null)}>取消</button></form>:<strong title={b.name}>{b.name}</strong>}</td><td><span className={css.managePill}>自有商品</span></td><td><span className={css.manageMetric}>{count.total}</span></td><td><span className={css.manageMetric}>{count.pending}</span></td><td><span className={css.manageMetric}>{count.review}</span></td><td>{b.createdAt}</td><td><span className={archived.has(b.id)?css.manageArchived:css.manageActive}>{archived.has(b.id)?"已归档":"正常"}</span></td><td><div className={css.manageActions}><button type="button" onClick={()=>{setRenameId(b.id);setRenameName(b.name);setNewOpen(false)}}>重命名</button><button type="button" onClick={()=>archiveBatches([b.id],!archived.has(b.id))}>{archived.has(b.id)?"恢复":"归档"}</button></div></td></tr>})}</tbody></table>{filtered.length===0?<p className={css.empty}>暂无符合条件的批次</p>:null}</div><footer className={css.manageFooter}><span>共 {filtered.length} 批 · 第 {current} / {totalPages} 页</span><div><button type="button" disabled={current===1} onClick={()=>setManagePage(v=>Math.max(1,v-1))}>上一页</button><button type="button" disabled={current===totalPages} onClick={()=>setManagePage(v=>v+1)}>下一页</button></div></footer></>})()}
   </section></div>:null}
-  {currentViewBatch?<ShowcaseBatchProductsDialog key={currentViewBatch.id} ownProductMode batch={currentViewBatch} organizationId={organizationId} memberId={memberId} otherBatches={viewBatches.filter(b=>b.id!==currentViewBatch.id)} onClose={()=>setSelectedBatch(null)} onDownload={products=>downloadBatch(currentViewBatch.name,allProducts.filter(p=>p.batchId===currentViewBatch.id&&products.some(v=>v.id===p.id)))}/>:null}
+  {currentViewBatch?<ShowcaseBatchProductsDialog key={currentViewBatch.id} ownProductMode batch={currentViewBatch} organizationId={organizationId} memberId={memberId} otherBatches={viewBatches.filter(b=>b.id!==currentViewBatch.id&&!archived.has(b.id))} onMove={(ids,target)=>{if(archived.has(target))throw Error("不能移动到归档批次");moveOwnProducts(organizationId,memberId,currentViewBatch.id,target,ids)}} onClose={()=>setSelectedBatch(null)} onDownload={products=>downloadBatch(currentViewBatch.name,allProducts.filter(p=>p.batchId===currentViewBatch.id&&products.some(v=>v.id===p.id)))}/>:null}
   {selectedVersion?<ShowcaseOptimizedVersionDialog key={selectedVersion.id} dataset={selectedVersion} onClose={()=>setVersionDetailId(null)}/>:null}
 
  </section>;

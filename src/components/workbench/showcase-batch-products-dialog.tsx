@@ -17,7 +17,7 @@ function downloadCsv(batch:BatchProductView,products:BatchProductView["products"
  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob);
  const a=document.createElement("a");a.href=url;a.download=batch.id+".csv";a.click();URL.revokeObjectURL(url);
 }
-export function ShowcaseBatchProductsDialog({batch,organizationId,memberId,otherBatches,onClose,ownProductMode=false,onDownload}:{batch:BatchProductView;organizationId:string;memberId:string;otherBatches:BatchProductView[];onClose:()=>void;ownProductMode?:boolean;onDownload?:(products:BatchProductView["products"])=>void}){
+export function ShowcaseBatchProductsDialog({batch,organizationId,memberId,otherBatches,onClose,ownProductMode=false,onDownload,onMove}:{batch:BatchProductView;organizationId:string;memberId:string;otherBatches:BatchProductView[];onClose:()=>void;ownProductMode?:boolean;onDownload?:(products:BatchProductView["products"])=>void;onMove?:(ids:string[],target:string)=>void}){
  const dialog=useRef<HTMLDialogElement>(null),headingId=useId();
  const [state,setState]=useState<ProductState>(()=>load(organizationId,memberId,batch.id));
  const [tab,setTab]=useState<"当前商品"|"已归档">("当前商品");
@@ -39,7 +39,7 @@ export function ShowcaseBatchProductsDialog({batch,organizationId,memberId,other
  useEffect(()=>{setChosen([]);setPage(1);setMenu(null);},[tab,query,variant,minPrice,maxPrice]);
  function save(next:ProductState){setState(next);try{sessionStorage.setItem(key(organizationId,memberId,batch.id),JSON.stringify(next))}catch{setMessage("浏览器拒绝保存演示修改；刷新后可能恢复。")}}
  function archive(ids:string[],restore:boolean){const a=new Set(state.archived);ids.forEach(id=>restore?a.delete(id):a.add(id));save({...state,archived:[...a]});setChosen([]);setMenu(null);setPage(1);setMessage(restore?"已恢复所选演示商品。":"已归档所选演示商品，原始模拟采集数据保留。")}
- function move(){if(!moveTarget){setMessage("请选择目标批次。");return}const ids=chosen.length?chosen:menu?[menu]:[];if(!ids.length){setMessage("请选择需要移动的商品。");return}const moved={...state.moved};ids.forEach(id=>moved[id]=moveTarget);save({...state,moved});setMoveOpen(false);setMenu(null);setChosen([]);setPage(1);setMessage("已记录演示商品转移意向，未修改原始数据或其他批次。")}
+ function move(){if(!moveTarget){setMessage("请选择目标批次。");return}const ids=chosen.length?chosen:menu?[menu]:[];if(!ids.length){setMessage("请选择需要移动的商品。");return}if(onMove){try{onMove(ids,moveTarget);setMoveOpen(false);setMenu(null);setChosen([]);setPage(1);setMessage("商品已移动到目标批次。")}catch(e){setMessage(e instanceof Error?e.message:"移动失败，请重试")}return}const moved={...state.moved};ids.forEach(id=>moved[id]=moveTarget);save({...state,moved});setMoveOpen(false);setMenu(null);setChosen([]);setPage(1);setMessage("已记录演示商品转移意向，未修改原始数据或其他批次。")}
  function chooseMove(id?:string){setChosen(id?[id]:chosen);setMenu(null);setMoveTarget("");setMoveOpen(true)}
  function openDetail(id:string){setDetailId(id);setGalleryIndex(0);setSelectedVariantSku(null);setMenu(null)}
  const detailProduct=batch.products.find(p=>p.id===detailId);
@@ -96,6 +96,6 @@ export function ShowcaseBatchProductsDialog({batch,organizationId,memberId,other
      <footer><span>{ownProductMode?"仅查看自有商品资料，不修改原始数据":"仅查看演示商品资料，不修改原始数据"}</span><button type="button" onClick={()=>exportProducts([detailProduct])}>下载商品数据</button></footer>
     </aside>
    </div>:null}
-  {moveOpen?<div className={css.backdrop}><section className={css.moveDialog} role="dialog" aria-modal="true" aria-label="移动商品到其他批次"><h3>移动商品到其他批次</h3><p>演示模式只记录转移意向，不修改真实商品库。</p><label>目标批次<select aria-label="目标批次" value={moveTarget} onChange={e=>setMoveTarget(e.target.value)}><option value="">请选择批次</option>{otherBatches.map(b=><option value={b.id} key={b.id}>{b.name}</option>)}</select></label><footer><button type="button" onClick={()=>setMoveOpen(false)}>取消</button><button type="button" onClick={move} disabled={!moveTarget}>确认移动</button></footer></section></div>:null}
+  {moveOpen?<div className={css.backdrop}><section className={css.moveDialog} role="dialog" aria-modal="true" aria-label="移动商品到其他批次"><h3>移动商品到其他批次</h3><p>{onMove?"移动后商品归属将更新，原始商品资料及历史优化版本保留。":"演示模式只记录转移意向，不修改真实商品库。"}</p><label>目标批次<select aria-label="目标批次" value={moveTarget} onChange={e=>setMoveTarget(e.target.value)}><option value="">请选择批次</option>{otherBatches.map(b=><option value={b.id} key={b.id}>{b.name}</option>)}</select></label><footer><button type="button" onClick={()=>setMoveOpen(false)}>取消</button><button type="button" onClick={move} disabled={!moveTarget}>确认移动</button></footer></section></div>:null}
  </dialog>;
 }
