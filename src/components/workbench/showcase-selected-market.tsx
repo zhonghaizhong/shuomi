@@ -42,6 +42,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const [batchName,setBatchName]=useState("硕米优选采集批次"),[batchId,setBatchId]=useState("");
  const [batches,setBatches]=useState<DemoCollectionBatch[]>([]);
  const [notice,setNotice]=useState(""),[error,setError]=useState("");
+ const [purchase,setPurchase]=useState<{orderId:string;storeId:string;productId:string;skuId:string;quantity:number;source:string;org:string;member:string}|null>(null);
  useEffect(()=>{
   const refresh=()=>{setBatches(readDemoCollectionBatches(organizationId,memberId));setRevision(v=>v+1)};
   refresh();
@@ -70,6 +71,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   }));
   return [...selectedCatalogFixtures,...own];
  },[owned,organizationId]);
+ useEffect(()=>{try{const k="shuomi:order-purchase:"+organizationId+":"+memberId;const raw=sessionStorage.getItem(k);if(!raw)return;const p=JSON.parse(raw);if(p.org!==organizationId||p.member!==memberId||p.source!=="硕米优选")return;const item=items.find(x=>x.id===p.productId&&x.skus.some(s=>s.id===p.skuId));if(!item){setNotice("订单关联的货盘商品或SKU已不可用，请核对供货来源。");sessionStorage.removeItem(k);return}setPurchase(p);setActive(item.id);setActiveSku(p.skuId);sessionStorage.removeItem(k)}catch{}},[organizationId,memberId,items]);
  const categories=["全部类目",...new Set(items.map(p=>p.category))];
  const origins=[...new Set(items.map(p=>p.warehouseCountry).filter((value):value is string=>Boolean(value)))].sort();
  const destinations=[...new Set(items.flatMap(p=>p.shipToCountries??[]))].sort();
@@ -90,6 +92,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const setSku=(id:string)=>{setActiveSku(id);setPhotoIndex(0);setImageFailed(false)};
  const openProduct=(id:string)=>{setActive(id);setActiveSku("");setPhotoIndex(0);setImageFailed(false)};
  const ownedBatches=batches.filter(b=>b.source==="硕米优选");
+ const confirmPurchase=()=>{if(!purchase||!current||current.id!==purchase.productId||selectedSku?.id!==purchase.skuId)return;if(current.moq>purchase.quantity||selectedSku.stock<purchase.quantity||selectedSku.price<=0){setNotice("当前供货条件不满足订单采购要求。");return}try{const key="shuomi:demo-orders:"+organizationId+":"+purchase.storeId;const rows=JSON.parse(localStorage.getItem(key)||"[]");const order=rows.find((o:{id:string;storeId:string;stage:number;purchaseId?:string})=>o.id===purchase.orderId&&o.storeId===purchase.storeId&&o.stage<3&&!o.purchaseId);if(!order)throw Error("订单不可采购或已采购");const id="SIM-PURCHASE-"+order.id;localStorage.setItem(key,JSON.stringify(rows.map((o:{id:string})=>o.id===order.id?{...o,fulfillmentSource:"硕米优选",supplyProductId:purchase.productId,supplySkuId:purchase.skuId,purchaseId:id,stage:1}:o)));window.dispatchEvent(new Event("shuomi:demo-orders-updated"));setPurchase(null);setActive(null);router.push("/workbench/store-orders?preview=1")}catch(e){setNotice(e instanceof Error?e.message:"采购保存失败")}};
  const submit=()=>{
   setError("");
   try{
@@ -169,7 +172,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
     {!current.shipToCountries?.length?<tr><td colSpan={4}>可配送国家及物流报价待供应商提供</td></tr>:null}
     </tbody></table></div><p>运输时效不包含备货 / 出库时间；具体费用需按 SKU、数量、目的地邮编与计费重量核算。</p></section>
    <h3 className={css.skuTitle}>供货 SKU 与变体 <small>点击上方变体选项可同步切换主图、价格与库存</small></h3><div className={css.skuTable}><table><thead><tr><th>SKU</th><th>规格</th><th>供货价</th><th>演示库存</th></tr></thead><tbody>{current.skus.map(s=><tr key={s.id} data-selected={selectedSku?.id===s.id}><td>{s.id}</td><td>{s.label}</td><td>{s.price>0?"¥"+s.price.toFixed(2):"待核"}</td><td>{s.stock}</td></tr>)}</tbody></table></div>
-   <footer><button type="button" onClick={()=>setActive(null)}>取消</button><button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setCollectOpen(true);setError("")}}>加入采集批次</button></footer>
+   <footer><button type="button" onClick={()=>{setActive(null);setPurchase(null)}}>取消</button>{purchase&&purchase.productId===current.id?<><span>关联订单 {purchase.orderId} · {purchase.quantity} 件 · 模拟采购</span><button type="button" className={css.primary} disabled={selectedSku?.id!==purchase.skuId||!selectedSku||current.moq>purchase.quantity||selectedSku.stock<purchase.quantity||selectedSku.price<=0} onClick={confirmPurchase}>确认模拟采购</button></>:<button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setCollectOpen(true);setError("")}}>加入采集批次</button>}</footer>
   </section></div>:null}
   {collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setCollectOpen(false)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="加入我的采集批次">
    <header><h2>加入我的采集批次</h2><button type="button" onClick={()=>setCollectOpen(false)}>关闭</button></header><p>已选择 {chosen.length} 件商品。将复制商品资料及关联 ID 到当前账号，不修改共享货盘源数据。</p>

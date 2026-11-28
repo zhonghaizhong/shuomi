@@ -386,7 +386,7 @@ export function ShowcaseStoreCenter({pathname,navigate,memberId="admin",organiza
      <p className={css.productSyncFootnote}>演示店铺支持模拟同步，真实商品快照仅在接口接通并成功同步后更新。同步失败必须保留上一次成功结果；已保存商品不保证是实时状态。来源判定以店铺 ID、平台商品 ID 和已核实上传回执为准；没有对应回执的商品暂归为「商家原有 / 来源待核实」，不因商品名称相同就标记为硕米刊登。待刊登、已提交不等于已上架。</p>
     </section>
    </>:<>
-    <ShowcaseOrderDemo organizationId={organizationId} memberId={memberId} stores={stores} onStores={()=>link("/workbench/stores")}/>
+    <ShowcaseOrderDemo organizationId={organizationId} memberId={memberId} stores={stores} onStores={()=>link("/workbench/stores")} onPurchase={link}/>
    </>}
   </>}
   <p className={css.disclaimer}>{route==="stores"?"店铺分组与负责人可用于任务中心、数据中心和 AI 智能体的跨店筛选与权限管理。":"每个演示账号展示各自独立的已绑定店铺资料；当前未接入真实 SHEIN 数据同步，所有模拟订单与真实销售及库存分开。"}</p>
