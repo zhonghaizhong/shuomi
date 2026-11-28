@@ -592,3 +592,23 @@
 @media(max-width:950px){
  .podActionDialog.podWideDialog:has(.approvalWorkspace){height:calc(100dvh - 24px);max-height:calc(100dvh - 24px)}
 }
+
+/* Scoped recovery center and explicit one-SKU preview request. */
+.podTrashDialog{width:min(680px,100%);max-height:min(78dvh,700px)}
+.podTrashDialog .modalBody{max-height:60dvh;overflow:auto}
+.trashItem{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--podassets-line,#52576e);border-radius:8px;min-width:0}
+.trashItem img{width:66px;height:66px;flex:none;object-fit:contain;border-radius:6px;background:#f2f2f2}
+.trashItem span{flex:1;display:grid;gap:5px;min-width:0}
+.trashItem strong{font-size:13px;overflow-wrap:anywhere}
+.trashItem small{font-size:11px;color:var(--podassets-muted,#acabc1);line-height:1.5}
+.trashItem button{flex:none;padding:8px 12px;border:1px solid var(--podassets-line,#52576e);border-radius:7px;background:var(--podassets-card,#393d55);color:inherit}
+.podActionDialog.podGenerateDialog{width:min(850px,calc(100vw - 40px));max-height:min(85dvh,800px);overflow:auto}
+.generatePreviewBody{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(200px,.8fr);gap:16px;min-height:0}
+.generatePreviewBody>div{display:grid;align-content:start;gap:10px;min-width:0}
+.generatePreviewBody strong{font-size:15px;line-height:1.4}
+.generatePreviewBody small,.generatePreviewBody p{font-size:12px;line-height:1.5;color:var(--podassets-muted,#acabc1);margin:0}
+.generatePreviewBody label{display:grid;gap:7px;font-size:12px}
+.generatePreviewBody select{max-width:100%;min-height:42px;padding:9px 12px;background:var(--podassets-card,#393d55);border:1px solid var(--podassets-line,#52576e);border-radius:8px;color:var(--podassets-ink,#cfcde4)}
+.generatePreviewBody img{width:100%;max-width:265px;aspect-ratio:1/1;object-fit:contain;background:#f1f1f1;border-radius:8px}
+.generateBillingNotice{font-size:12px;line-height:1.6;color:var(--podassets-muted,#acabc1);border-top:1px solid var(--podassets-line,#52576e);padding-top:12px;margin:0}
+@media(max-width:630px){.generatePreviewBody{grid-template-columns:1fr}.generatePreviewBody img{max-width:180px}.podActionDialog.podGenerateDialog{width:calc(100vw - 20px)}}
