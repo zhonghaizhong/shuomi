@@ -105,14 +105,27 @@ test("preferred application reads owned adapted products and promotes only demo-
  await expect(after.getByRole("checkbox",{name:"选择尚未优化的测试产品"})).toBeEnabled();
  await expect(after.locator('[data-product-id="OWN-PREF-C"]')).toHaveCount(0);
  await after.locator('[data-product-id="OWN-PREF-A"]').getByRole("button",{name:"发起申请",exact:true}).click();
- const apply=page.getByRole("dialog",{name:"发起优选申请"});
+ const apply=page.getByRole("dialog",{name:"申请加入硕米优选",exact:true});
  await expect(apply).toBeVisible();
- await apply.getByRole("spinbutton",{name:"可供库存"}).fill("120");
- await apply.getByRole("spinbutton",{name:"最小起订量"}).fill("5");
- await apply.getByRole("combobox",{name:"发货时效"}).selectOption("48小时内");
- await apply.getByRole("textbox",{name:"发货地"}).fill("浙江义乌");
- await apply.getByRole("textbox",{name:"售后政策"}).fill("质量问题支持换货");
- await apply.getByRole("button",{name:"提交演示申请"}).click();
+ await expect(apply.getByText("首次入驻 · 建立档案")).toBeVisible();
+ await apply.getByRole("textbox",{name:"供应商名称",exact:true}).fill("演示供应商");
+ await apply.getByRole("textbox",{name:"供应商联系人",exact:true}).fill("演示联系人");
+ await apply.getByRole("textbox",{name:"供应商联系电话",exact:true}).fill("13800000000");
+ await apply.getByRole("textbox",{name:"供应商经营所在地",exact:true}).fill("中国浙江");
+ await apply.getByRole("checkbox",{name:/已阅读并同意硕米优选供应商合作规则/}).check();
+ await expect(apply.getByRole("radio",{name:/备货到硕米仓库/})).toBeChecked();
+ await apply.getByRole("spinbutton",{name:"基础供货价",exact:true}).fill("29");
+ await apply.getByRole("spinbutton",{name:"可供库存",exact:true}).fill("120");
+ await apply.getByRole("spinbutton",{name:"最小起订量",exact:true}).fill("5");
+ await apply.getByRole("spinbutton",{name:"SKU库存 OWN-PREF-A:1",exact:true}).fill("120");
+ await expect(apply.getByRole("spinbutton",{name:"SKU供货价 OWN-PREF-A:1",exact:true})).toHaveValue("29");
+ await apply.getByRole("textbox",{name:"发货时效",exact:true}).fill("48小时内");
+ await apply.getByRole("textbox",{name:"发货地",exact:true}).fill("浙江义乌");
+ await apply.getByRole("spinbutton",{name:"包装重量",exact:true}).fill("0.35");
+ await apply.getByRole("textbox",{name:"包装尺寸",exact:true}).fill("20 × 15 × 10");
+ await apply.getByRole("textbox",{name:"可配送国家",exact:true}).fill("美国、加拿大、英国");
+ await apply.getByRole("textbox",{name:"售后政策",exact:true}).fill("质量问题支持换货");
+ await apply.getByRole("button",{name:"提交优选申请（演示）",exact:true}).click();
  const detail=page.getByRole("dialog",{name:"优选申请详情"});
  await expect(detail).toBeVisible();
  await expect(detail.locator('[data-status="待审核"]')).toBeVisible();
@@ -230,7 +243,16 @@ test("preferred application lists only approved own products regardless of initi
  await expect(noOptimization.getByRole("checkbox")).toBeEnabled();
  // External-platform receipts or review states are NOT required.
  await approved.getByRole("button",{name:"发起申请"}).click();
- await expect(page.getByRole("dialog",{name:"发起优选申请"})).toBeVisible();
+ const apply=page.getByRole("dialog",{name:"申请加入硕米优选",exact:true});
+ await expect(apply).toBeVisible();
+ await expect(apply.getByText("首次入驻 · 建立档案")).toBeVisible();
+ await apply.getByRole("button",{name:"POD",exact:true}).click();
+ await expect(apply.getByText("按单生产 · 无需提前备货")).toBeVisible();
+ await expect(apply.getByRole("radio",{name:/备货到硕米仓库/})).toHaveCount(0);
+ await apply.getByRole("button",{name:"现货",exact:true}).click();
+ await apply.getByRole("radio",{name:/新增自有仓库/}).check();
+ await expect(apply.getByRole("textbox",{name:"新仓库名称"})).toBeVisible();
+ await expect(apply.getByRole("textbox",{name:"新仓库地址"})).toBeVisible();
 });
 
 
