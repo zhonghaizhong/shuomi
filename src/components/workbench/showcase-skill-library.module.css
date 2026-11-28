@@ -258,3 +258,7 @@
 .groupRow form{width:100%}
 @media(max-width:1260px){.mineToolbar{grid-template-columns:minmax(0,1fr)}.mineActions{justify-content:flex-end}.mineTableWrap{overflow-x:auto}.mineTable{min-width:790px}}
 @media(max-width:700px){.mineFilters{flex-wrap:wrap;gap:8px}.mineFilters input{width:100%;flex:1 1 100%}.mineTypeTabs{width:100%}.groupRow,.groupCreate{flex-wrap:wrap}.groupDialog{padding:16px}}
+
+/* Keep skill home card grid flush with header and usage panel across themes. */
+.shell[data-skill-flow="home"] > .skillIntroGrid{display:grid;grid-column:1/-1;justify-self:stretch;justify-items:stretch;align-items:stretch;width:100%;max-width:none;min-width:0;margin:0;padding:0;border:0;box-sizing:border-box}
+.shell[data-skill-flow="home"] > .skillIntroGrid > .skillIntroCard{justify-self:stretch;align-self:stretch;min-width:0;width:100%;max-width:none;margin:0;box-sizing:border-box}

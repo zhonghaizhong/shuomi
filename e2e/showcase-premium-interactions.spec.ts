@@ -85,14 +85,23 @@ test("store products and seeded orders show truthful records and working navigat
  await expect(rows.filter({hasText:"管理员演示店铺02"}).first()).toContainText("CA$39.99");
  await expect(rows.filter({hasText:"管理员演示店铺03"}).first()).toContainText("£29.99");
  const order=rows.filter({hasText:"SIM-ORDER-03-001"});
- await order.getByRole("button",{name:"查看",exact:true}).click();
- const detail=page.getByRole("dialog",{name:"订单履约详情"});
+ await expect(order).toContainText("商家自行供货");
+ await order.getByRole("button",{name:"发货",exact:true}).click();
+ const shipping=page.getByRole("dialog",{name:"订单发货"});
+ await expect(shipping).toBeVisible();
+ await shipping.getByRole("textbox",{name:"物流商"}).fill("DHL");
+ await shipping.getByRole("textbox",{name:"运单号"}).fill("DEMO-UK-001");
+ await shipping.getByRole("button",{name:"确认发货",exact:true}).click();
+ const detail=page.getByRole("dialog",{name:"订单物流详情"});
  await expect(detail).toBeVisible();
- await detail.getByRole("button",{name:"模拟处理订单"}).click();
- await expect(detail.getByText("演示履约状态已更新")).toBeVisible();
+ await expect(detail).toContainText("DEMO-UK-001");
+ await expect(detail).toContainText("模拟同步成功");
  await detail.getByRole("button",{name:"关闭",exact:true}).first().click();
  await page.reload();
- await expect(root.locator("tbody tr").filter({hasText:"SIM-ORDER-03-001"})).toContainText("待采购 / 收货");
+ const restored=root.locator("tbody tr").filter({hasText:"SIM-ORDER-03-001"});
+ await expect(restored).toContainText("物流运输中");
+ await restored.getByRole("button",{name:"查看物流",exact:true}).click();
+ await expect(page.getByRole("dialog",{name:"订单物流详情"})).toContainText("DEMO-UK-001");
 });
 
 test("My Stores filters work on local drafts and other account modules preserve their entry points",async({page})=>{
