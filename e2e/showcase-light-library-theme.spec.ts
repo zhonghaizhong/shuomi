@@ -432,7 +432,7 @@ test("archived project categories come from archived records and are hidden when
  await expect(root.getByText("广告复盘")).toBeVisible();
 });
 
-test("empty My Knowledge retains fixed search, group tools and table header",async({page})=>{
+test("My Knowledge retains fixed search, group tools and table header with seeded project knowledge",async({page})=>{
  await page.goto("/shuomi/#/workbench/ai/knowledge/mine");
  const root=page.locator("[data-my-knowledge-groups]");
  await expect(root).toBeVisible();
@@ -444,7 +444,8 @@ test("empty My Knowledge retains fixed search, group tools and table header",asy
  await expect(root.getByRole("button",{name:"管理分组"})).toBeVisible();
  await expect(root.getByRole("table")).toBeVisible();
  await expect(root.getByRole("columnheader")).toHaveCount(5);
- await expect(root.getByText("暂无知识库")).toBeVisible();
+ await expect(root.locator("tbody tr")).toHaveCount(4);
+ await expect(root.getByText("SHEIN 经营指标与利润核对规范（演示）")).toBeVisible();
  await expect(root.getByRole("button",{name:"添加官方知识",exact:true})).toHaveCount(0);
 });
 
@@ -466,7 +467,7 @@ test("My Knowledge toolbar stays in one row and its table has no vertical scroll
  expect(Math.max(...positions.map(p=>center(p!)))-Math.min(...positions.map(p=>center(p!)))).toBeLessThan(6);
  const table=root.getByRole("table");
  const dimensions=await table.evaluate(el=>({height:el.getBoundingClientRect().height,rows:el.querySelectorAll("tbody tr").length}));
- expect(dimensions.rows).toBe(1);expect(dimensions.height).toBeGreaterThan(85);
+ expect(dimensions.rows).toBe(5);expect(dimensions.height).toBeGreaterThan(85);
  const scroll=await root.locator('[class*="tableWrap"]').evaluate(el=>({height:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY}));
  expect(scroll.scrollHeight-scroll.height).toBeLessThanOrEqual(2);
  expect(scroll.overflowY).not.toBe("scroll");
@@ -540,12 +541,12 @@ test("Generate research report opens selected Chat mode, saves an approved demo 
  await dialog.getByRole("button",{name:"创建分组"}).click();
  await dialog.getByRole("button",{name:"完成"}).click();
  await reports.getByRole("combobox",{name:"美国站商品市场调研演示所属分组"}).selectOption("市场分析");
- await reports.getByRole("button",{name:"收藏",exact:true}).click();
+ await reports.getByRole("row").filter({hasText:"美国站商品市场调研演示"}).getByRole("button",{name:"收藏",exact:true}).click();
  await page.goto("/shuomi/#/workbench/ai/reports/favorites");
  await expect(page.locator("[data-report-center]").getByText("美国站商品市场调研演示")).toBeVisible();
 });
 
-test("My Skills keeps filtering and group management visible even when no skills are enabled",async({page})=>{
+test("My Skills keeps filtering and group management visible with seeded project skills",async({page})=>{
  await page.goto("/shuomi/#/workbench/agents/skills/mine");
  const root=page.locator('[data-skill-showcase="true"]');
  const toolbar=root.getByRole("region",{name:"我的技能筛选"});
@@ -554,7 +555,7 @@ test("My Skills keeps filtering and group management visible even when no skills
  await expect(toolbar.getByRole("combobox",{name:"按技能分组筛选"})).toHaveCount(0);
  await expect(toolbar.getByRole("textbox",{name:"搜索技能名称"})).toBeVisible();
  await expect(root.getByRole("table")).toBeVisible();
- await expect(root.getByText("暂无已启用的技能")).toBeVisible();
+ await expect(root.getByText("SHEIN 店铺利润诊断流程（演示）")).toBeVisible();
  await toolbar.getByRole("button",{name:"管理分组"}).click();
  const dialog=page.getByRole("dialog",{name:"管理技能分组"});
  await expect(dialog).toBeVisible();
