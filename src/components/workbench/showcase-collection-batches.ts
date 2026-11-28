@@ -256,7 +256,7 @@ export function addSelectedCatalogProducts(
   const prior=new Set((old.variantDetails??[]).map(v=>v.sku));
   const incoming=(next.variantDetails??[]).filter(v=>!prior.has(v.sku));
   if(!incoming.length)continue;
-  const costs=new Map((old.destinationCosts??[]).map(c=>[c.skuId+"::"+c.country,c]));
+  const costs=new Map((old.destinationCosts??[]).map(c=>[c.skuId+"::"+c.country,c] as const));
   for(const c of next.destinationCosts??[])if(incoming.some(v=>v.sku===c.skuId))costs.set(c.skuId+"::"+c.country,c);
   const details=[...(old.variantDetails??[]),...incoming];
   products[index]={...old,variantDetails:details,
