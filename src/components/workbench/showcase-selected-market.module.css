@@ -164,3 +164,26 @@
 .skuTitle small{font-size:12px;font-weight:400;color:var(--muted)}
 .skuTable tr[data-selected=true]{background:color-mix(in srgb,#7367f0 12%,var(--surface))}
 @media(max-width:760px){.modal:has(.galleryColumn){padding:15px;width:min(100%,calc(100vw - 20px))}.modal:has(.galleryColumn) .modalBody{grid-template-columns:1fr}.galleryColumn{max-width:420px;width:100%;margin:0 auto}.modal .productOverview dl{grid-template-columns:105px minmax(0,1fr)}}
+
+/* Supplier destination selection and auditable per-SKU cost basis. */
+.costEstimator{margin-top:16px;padding:15px;border:1px solid var(--border);border-radius:9px;background:var(--subtle);display:grid;gap:12px}
+.costEstimator>header{display:flex;align-items:end;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.costEstimator h3{font-size:15px!important;margin:0!important}
+.costEstimator label,.collectionPricing>label{display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:600}
+.costEstimator select,.collectionPricing select{width:min(240px,100%);height:38px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;color:var(--text);background:var(--surface);font:inherit;font-size:13px}
+.costGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.costGrid>div{display:flex;flex-direction:column;gap:7px;padding:12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);min-width:0}
+.costGrid span{font-size:12px;color:var(--muted);line-height:1.45}
+.costGrid strong{font-size:15px;overflow-wrap:anywhere;color:var(--text)}
+.costGrid .costTotal{border-color:#7367f0}
+.costGrid .costTotal strong{color:#a99eff;font-size:18px}
+:global(.light) .costGrid .costTotal strong{color:#5e50bb}
+.costEstimator>p,.collectionPricing>p{font-size:12px!important;color:var(--muted);margin:0!important}
+.collectionPricing{display:grid;gap:13px;padding:15px;border:1px solid var(--border);border-radius:8px;background:var(--subtle)}
+.collectionPricing>label select{width:100%}
+.collectionPricing fieldset{border:0;padding:0;margin:0;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.collectionPricing legend{display:block;margin-bottom:8px;font-size:13px;font-weight:600}
+.collectionPricing fieldset label{display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer}
+.collectionPricing input[type=radio]{width:17px;height:17px;accent-color:#7367f0}
+@media(max-width:850px){.costGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.costGrid{grid-template-columns:1fr 1fr}.costEstimator>header{align-items:stretch}.costEstimator label{width:100%}.costEstimator select{width:100%}}
