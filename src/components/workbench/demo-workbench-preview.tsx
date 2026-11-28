@@ -10,7 +10,6 @@ import {useDemoStoreBindings,countConsumedStorePeriods,countPoolConsumedStorePer
 import {getDemoMembership} from "../../../showcase/demo-identity";
 import { hasRouteDetailPreview, RouteDetailPreview } from "./route-detail-preview";
 import {ShowcaseSelectedMarket} from "./showcase-selected-market";
-import { ChatIntroduction } from "./ai-workbench/chat-introduction";
 import {ChatNewPreview} from "./chat-new-preview";
 import { ShowcaseActionDialog, type DemoGoal, type DemoDraft, type DemoDetail } from "./showcase-action-dialog";
 import { ShowcaseUploadedPreview } from "./showcase-uploaded-preview";
