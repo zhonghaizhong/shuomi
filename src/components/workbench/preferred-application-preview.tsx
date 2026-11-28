@@ -28,6 +28,8 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
  const [warehouseOptions,setWarehouseOptions]=useState<Array<{id:string;name:string;address:string;status:"已验证"|"待验证"|"验证失效"}>>([]);
  const [editSupplier,setEditSupplier]=useState(false);
  const [showSkuPricing,setShowSkuPricing]=useState(false);
+ const [skuEditing,setSkuEditing]=useState<string[]>([]);
+ const [showPackagingOverrides,setShowPackagingOverrides]=useState(false);
  const [showTierPricing,setShowTierPricing]=useState(false);
  const [applicationOpen,setApplicationOpen]=useState(false);
  const [recordDetail,setRecordDetail]=useState<string|null>(null);
@@ -88,17 +90,39 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
   }
   let profile:{name?:string;contact?:string;phone?:string;location?:string;agreement?:boolean}|null=null;
   try{profile=JSON.parse(localStorage.getItem(supplierKey)||"null")}catch{/* first-time application */}
+  const sourceSkus=available.flatMap(c=>c.product.skus.map(sku=>({key:c.product.id+":"+String(sku.id),sku})));
+  const firstPrice=sourceSkus.find(v=>v.sku.price&&Number(v.sku.price)>0)?.sku.price??"";
+  const firstQuantity=sourceSkus.find(v=>Number(v.sku.stock)>0)?.sku.stock;
+  const skuOverrides:NonNullable<PreferredSupply["skuOverrides"]>={};
+  for(const {key,sku} of sourceSkus){
+   if(sku.price&&Number(sku.price)>0&&sku.price!==firstPrice)skuOverrides[key]={...skuOverrides[key],price:String(sku.price)};
+   if(sku.stock!==undefined&&sku.stock!==firstQuantity)skuOverrides[key]={...skuOverrides[key],quantity:String(sku.stock)};
+  }
   setSelected(list);
-  setSupply({...emptyPreferredSupply,supplyKind:"现货",warehouseMode:"硕米仓库",currency:"CNY",dropship:true,skuPrices,
+  setSkuEditing(Object.keys(skuOverrides));setShowPackagingOverrides(false);
+  setSupply({...emptyPreferredSupply,supplyKind:"现货",warehouseMode:"硕米仓库",currency:"CNY",dropship:true,skuPrices,skuOverrides,defaultSkuQuantity:firstQuantity===undefined?"":String(firstQuantity),
    supplierName:profile?.name??"",supplierContact:profile?.contact??"",supplierPhone:profile?.phone??"",supplierLocation:profile?.location??"",supplierAgreement:Boolean(profile?.agreement),
-   unitPrice:"",packageWeight:"",packageSize:"",shippingCountries:"",maxQuantity:""});
-  setEditSupplier(!profile?.name);setShowSkuPricing(true);setShowTierPricing(false);
+   unitPrice:firstPrice,packageWeight:"",packageSize:"",shippingCountries:"",maxQuantity:"",stock:String(sourceSkus.reduce((sum,v)=>sum+(v.sku.stock??0),0)),moq:"1"});
+  setEditSupplier(!profile?.name);setShowSkuPricing(false);setShowTierPricing(false);
   setNotice("");setError("");setApplicationOpen(true);
  };
  const submit=(event:FormEvent<HTMLFormElement>)=>{
   event.preventDefault();
   try{
-   const record=submitPreferredDemoApplication(organizationId,memberId,chosen,supply);
+   const skuPrices:NonNullable<PreferredSupply["skuPrices"]>={};
+   for(const c of candidates.filter(c=>chosen.includes(c.product.id)))for(const sku of c.product.skus){
+    const id=c.product.id+":"+String(sku.id);
+    const override=supply.skuOverrides?.[id];
+    skuPrices[id]={
+     price:override?.price??supply.unitPrice??"",
+     quantity:override?.quantity??supply.defaultSkuQuantity??"",
+     moq:override?.moq??supply.moq,
+     weight:override?.weight??supply.packageWeight,
+     size:override?.size??supply.packageSize
+    };
+   }
+   const total=Object.values(skuPrices).reduce((sum,v)=>sum+Math.max(0,Number(v.quantity)||0),0);
+   const record=submitPreferredDemoApplication(organizationId,memberId,chosen,{...supply,stock:String(total),skuPrices});
    try{
     localStorage.setItem(supplierKey,JSON.stringify({name:supply.supplierName,contact:supply.supplierContact,phone:supply.supplierPhone,location:supply.supplierLocation,agreement:supply.supplierAgreement,status:"资料已提交·待后台审核"}));
     setSupplierSaved(true);
