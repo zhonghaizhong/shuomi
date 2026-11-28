@@ -201,8 +201,19 @@ test("switching themes preserves menus and light-page selected card interaction"
   await nav.getByRole("link", { name: "经营建议", exact: true }).click();
   await expect(page).toHaveURL(new RegExp("#/workbench/overview/advice$"));
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "暂无可处理的建议" })).toBeVisible();
-  await expect(page.getByRole("status").filter({hasText:"暂无经营建议"})).toBeVisible();
+  await expect(page.getByRole("heading", { name: "建议队列" })).toBeVisible();
+  const advice = page.locator('[class*="adviceWorkspace"]');
+  await expect(advice).toBeVisible();
+  const queue = advice.locator('aside button');
+  if (await queue.count()) {
+    await queue.first().click();
+    await expect(advice.getByRole("heading", { name: "判断依据", exact: true })).toBeVisible();
+    await expect(advice.getByRole("heading", { name: "解决方案", exact: true })).toBeVisible();
+    await expect(advice.getByRole("button", { name: "前往处理", exact: true })).toBeVisible();
+  } else {
+    await expect(advice.getByRole("heading", { name: "暂无可处理的建议" })).toBeVisible();
+    await expect(advice.getByRole("status").filter({hasText:"暂无经营建议"})).toBeVisible();
+  }
   await page.getByRole("button", { name: "切换深色主题" }).click();
   await expect(page.locator(".dark .showcase-shell")).toBeVisible();
   await page.getByRole("button", { name: "切换浅色主题" }).click();
@@ -287,8 +298,19 @@ test("standard headers keep actions clickable and adapt to narrow screens", asyn
   await expect(page.locator('[class*="page"] > header[class*="header"]')).toBeVisible();
   await page.getByRole("button", { name: "切换浅色主题" }).click();
   await expect(page.locator(".light .showcase-shell")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "暂无可处理的建议" })).toBeVisible();
-  await expect(page.getByRole("status").filter({hasText:"暂无经营建议"})).toBeVisible();
+  await expect(page.getByRole("heading", { name: "建议队列" })).toBeVisible();
+  const advice = page.locator('[class*="adviceWorkspace"]');
+  await expect(advice).toBeVisible();
+  const queue = advice.locator('aside button');
+  if (await queue.count()) {
+    await queue.first().click();
+    await expect(advice.getByRole("heading", { name: "判断依据", exact: true })).toBeVisible();
+    await expect(advice.getByRole("heading", { name: "解决方案", exact: true })).toBeVisible();
+    await expect(advice.getByRole("button", { name: "前往处理", exact: true })).toBeVisible();
+  } else {
+    await expect(advice.getByRole("heading", { name: "暂无可处理的建议" })).toBeVisible();
+    await expect(advice.getByRole("status").filter({hasText:"暂无经营建议"})).toBeVisible();
+  }
 });
 
 
