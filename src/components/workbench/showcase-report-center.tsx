@@ -5,7 +5,7 @@ import {useRouter} from "next/navigation";
 import styles from "./showcase-report-center.module.css";
 import {WorkbenchDateRange} from "./workbench-date-picker";
 
-export type PreviewReport={id:string;title:string;type:string;createdAt:number;favorite:boolean;group:string;summary:string;projectId?:string};
+export type PreviewReport={id:string;title:string;type:string;createdAt:number;favorite:boolean;group:string;summary:string;projectId?:string;documentPath?:string};
 type ReportStore={groups:string[];reports:PreviewReport[]};
 export const projectDemoReports:PreviewReport[]=[
  {id:"demo-report-growth",title:"SHEIN 美国站利润诊断准备报告（演示）",type:"经营报告",projectId:"demo-project-shein-growth",createdAt:Date.now()-7200000,favorite:false,group:"",summary:`一、报告定位
@@ -57,7 +57,7 @@ MOQ、库存、供货价、运费、平台费和真实店铺授权都须进一�
 
 六、后续任务
 确认SKU、采集批次和目标店铺，再处理缺失信息及刊登审核。`},
- {id:"demo-report-market",title:"美国站候选商品比较与选品阶段复盘（演示）",type:"调研报告",projectId:"demo-project-market-research",createdAt:Date.now()-86400000,favorite:false,group:"",summary:`一、研究任务
+ {id:"demo-report-market",documentPath:"/demo-documents/SMYX-demo-selection-review.md",title:"美国站候选商品比较与选品阶段复盘（演示）",type:"调研报告",projectId:"demo-project-market-research",createdAt:Date.now()-86400000,favorite:false,group:"",summary:`一、研究任务
 比较当前硕米优选演示货盘中可用的服装候选商品，并记录尚缺的市场证据。
 
 二、候选品
@@ -137,6 +137,6 @@ export function ShowcaseReportCenter({pathname,organizationId,memberId,tabNaviga
    <div className={styles.groupList}>{store.groups.length?store.groups.map(g=><div className={styles.groupRow} key={g}>{renaming===g?<form onSubmit={e=>{e.preventDefault();const n=renameText.trim();if(n&&(!store.groups.includes(n)||n===g)){save({groups:store.groups.map(x=>x===g?n:x),reports:store.reports.map(r=>r.group===g?{...r,group:n}:r)},"分组已重命名");if(group===g)setGroup(n);setRenaming("")}}}><input aria-label={"重命名"+g} value={renameText} onChange={e=>setRenameText(e.target.value)}/><button className={styles.primary}>保存</button></form>:<><span>{g} · {store.reports.filter(r=>r.group===g).length} 项</span><div><button onClick={()=>{setRenaming(g);setRenameText(g)}}>重命名</button><button onClick={()=>{save({groups:store.groups.filter(x=>x!==g),reports:store.reports.map(r=>r.group===g?{...r,group:""}:r)},"已删除分组，报告仍然保留");if(group===g)setGroup("全部分组")}}>删除分组</button></div></>}</div>):<p>暂无自定义分组</p>}</div>
    <footer><button className={styles.primary} onClick={()=>setShowGroups(false)}>完成</button></footer>
   </section></div>}
-  {chosen&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setDetail(null)}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看报告"><header><h2>{chosen.title}</h2><button aria-label="关闭报告" onClick={()=>setDetail(null)}>×</button></header><p className={styles.demoNotice}>演示报告 · 本报告内容为流程模拟，不代表真实调研或经营数据结果</p><p style={{whiteSpace:"pre-wrap",lineHeight:1.85}}>{chosen.summary}</p><p>创建日期：{format(chosen.createdAt)}</p><footer><button className={styles.primary} onClick={()=>setDetail(null)}>关闭</button></footer></section></div>}
+  {chosen&&<div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setDetail(null)}}><section className={styles.dialog} role="dialog" aria-modal="true" aria-label="查看报告"><header><h2>{chosen.title}</h2><button aria-label="关闭报告" onClick={()=>setDetail(null)}>×</button></header><p className={styles.demoNotice}>演示报告 · 本报告内容为流程模拟，不代表真实调研或经营数据结果</p><p style={{whiteSpace:"pre-wrap",lineHeight:1.85}}>{chosen.summary}</p><p>创建日期：{format(chosen.createdAt)}</p>{chosen.documentPath?<p><a target="_blank" rel="noopener noreferrer" href={"https://zhonghaizhong.github.io/shuomi"+chosen.documentPath}>查看完整报告文档（GitHub 存储）</a></p>:null}<footer><button className={styles.primary} onClick={()=>setDetail(null)}>关闭</button></footer></section></div>}
  </main>;
 }
