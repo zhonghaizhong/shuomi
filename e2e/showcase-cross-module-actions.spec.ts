@@ -44,18 +44,18 @@ test("task and project creation produce visible local drafts",async({page})=>{
  await expect(page).toHaveURL(/projectMode=reference/);
 });
 
-test("uploaded products keep empty state consistent through filtering, reset, and reload",async({page})=>{
+test("uploaded products preserve seeded listings through filtering, reset, and reload",async({page})=>{
  await page.goto(base+"/listing/uploaded");
  const main=page.locator("[data-showcase-uploaded]");
  await expect(main).toBeVisible();
- await expect(main).toContainText("暂无已上传商品记录");
- await expect(main.getByRole("button",{name:"查看商品"})).toHaveCount(0);
+ await expect(main).toContainText("共 2 条记录");
+ await expect(main.getByRole("button",{name:"查看商品"})).toHaveCount(2);
  const batch=main.getByRole("button",{name:"选择刊登批次"});
  await expect(batch).toBeVisible();
  await batch.click();
  const picker=page.getByRole("dialog",{name:"选择商品批次与版本"});
  await expect(picker).toBeVisible();
- await expect(picker).toContainText("暂无可选批次");
+ await expect(picker).toContainText("硕米优选 · 服装采集测试批次");
  await picker.getByRole("button",{name:"取消"}).click();
  await expect(picker).not.toBeVisible();
  await main.getByRole("textbox",{name:"搜索已上传商品"}).fill("不存在的商品 SKU");
@@ -65,9 +65,9 @@ test("uploaded products keep empty state consistent through filtering, reset, an
  await main.getByRole("button",{name:"重置"}).click();
  await expect(batch).toContainText("全部批次");
  await expect(main.getByRole("textbox",{name:"搜索已上传商品"})).toHaveValue("");
- await expect(main).toContainText("暂无已上传商品记录");
+ await expect(main).toContainText("共 2 条记录");
  await page.reload();
- await expect(main).toContainText("暂无已上传商品记录");
+ await expect(main).toContainText("共 2 条记录");
 });
 
 test("agent activation status is shared with my agents",async({page})=>{

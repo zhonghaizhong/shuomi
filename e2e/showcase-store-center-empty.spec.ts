@@ -118,8 +118,8 @@ test("store center resets previous demo stores and groups and all listing stages
   await expect(listing).toContainText("暂无商品记录");
  }
  await page.goto(root+"/listing/uploaded");
- await expect(page.locator("[data-showcase-uploaded]")).toContainText("共 0 条记录");
- await expect(page.locator("[data-showcase-uploaded]")).toContainText("暂无已上传商品记录");
+ await expect(page.locator("[data-showcase-uploaded]")).toContainText("共 2 条记录");
+ await expect(page.locator("[data-showcase-uploaded]")).toContainText("已上架（演示）");
 });
 test("Manage Groups is visible in the My Stores top actions even when there are no stores",async({page})=>{
  await page.goto(root+"/stores");

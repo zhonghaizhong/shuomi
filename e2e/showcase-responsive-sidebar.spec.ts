@@ -226,7 +226,7 @@ test("listing four-stage Figma flow has distinct functional screens",async({page
  await stageTabs.getByRole("button",{name:"已上传",exact:true}).click();
  await expect(stageTabs.getByRole("button",{name:"已上传",exact:true})).toHaveAttribute("aria-current","page");
  await expect(page.locator("[data-showcase-uploaded]")).toBeVisible();
- await expect(page.locator("[data-showcase-uploaded]")).toContainText("暂无已上传商品记录");
+ await expect(page.locator("[data-showcase-uploaded]")).toContainText("共 2 条记录");
 });
 
 test("listing overview uses aligned Vuexy cards and readable theme surfaces",async({page})=>{

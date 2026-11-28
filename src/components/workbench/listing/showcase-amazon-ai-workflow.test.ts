@@ -20,7 +20,7 @@ const args={organizationId:org,memberId:member,batchId:"SIM-AMAZON-US-5-20261124
  rule:"硕米规则",agentName:"商品优化智能体",templateId:"test-template"};
 it("creates 5 separate optimized items, three missing and two review without external submission",()=>{
  expect(simulateAmazonFiveListingWorkflow(args)).toEqual({created:5,missing:3,review:2,alreadyInstalled:false});
- const all=readShowcaseUploadTasks(org,member);
+ const all=readShowcaseUploadTasks(org,member).filter(t=>t.batchId===args.batchId);
  expect(all).toHaveLength(5);
  expect(all.filter(x=>x.status==="待补全")).toHaveLength(3);
  expect(all.filter(x=>x.status==="待审核")).toHaveLength(2);
@@ -39,7 +39,7 @@ it("simulates only Lodge approval against the bound SHEIN US store without an ex
  expect(simulateApprovedLodgeSubmission(org,"other-member",args.storeId)).toBe(false);
  expect(simulateApprovedLodgeSubmission(org,member,args.storeId)).toBe(true);
  expect(simulateApprovedLodgeSubmission(org,member,args.storeId)).toBe(false);
- const records=readShowcaseUploadTasks(org,member);
+ const records=readShowcaseUploadTasks(org,member).filter(t=>t.batchId===args.batchId);
  const lodge=records.find(t=>t.id.endsWith(":B00008GKD3"))!;
  expect(lodge.status).toBe("模拟已提交");
  expect(lodge.demoProduct?.reviewedAt).toBeTruthy();
@@ -58,7 +58,7 @@ it("simulates only Lodge approval against the bound SHEIN US store without an ex
 
 it("gates missing fields, then review and never fakes upload",()=>{
  simulateAmazonFiveListingWorkflow(args);
- const records=readShowcaseUploadTasks(org,member);
+ const records=readShowcaseUploadTasks(org,member).filter(t=>t.batchId===args.batchId);
  const incomplete=records.find(x=>x.status==="待补全")!;
  const ready=records.find(x=>x.status==="待审核")!;
  expect(()=>approveShowcaseUploadTask(org,member,incomplete.id)).toThrow();
@@ -85,12 +85,12 @@ it("references six independent square white-background photos per product",()=>{
 it("migrates old generated SVG pictures, without changing source photos or approval status",()=>{
  simulateAmazonFiveListingWorkflow(args);
  const before=readShowcaseUploadTasks(org,member);
- const target=before[0];
+ const target=before.find(t=>t.batchId===args.batchId)!;
  const old={...target,demoProduct:{...target.demoProduct!,optimizedImages:Array.from({length:8},(_,i)=>"data:image/svg+xml;charset=utf-8,"+i)}};
  const key="shuomi:listing-upload-tasks-v1:"+org+":"+member;
- sessionStorage.setItem(key,JSON.stringify([old,...before.slice(1)]));
+ sessionStorage.setItem(key,JSON.stringify([old,...before.filter(t=>t.id!==target.id)]));
  expect(refreshAmazonFiveDemoPhotos(org,member)).toBe(1);
- const updated=readShowcaseUploadTasks(org,member)[0];
+ const updated=readShowcaseUploadTasks(org,member).find(t=>t.id===target.id)!;
  expect(updated.status).toBe(target.status);
  expect(updated.demoProduct?.sourceImages).toEqual(target.demoProduct?.sourceImages);
  expect(updated.demoProduct?.optimizedImages).toHaveLength(6);
@@ -109,7 +109,7 @@ it("adds the two real photographed multi-variant families to the existing five-p
  expect(originalFive.created).toBe(5);
  const extra=simulateAmazonMultiVariantListingWorkflow({...args,batchName:original.name,products:original.products});
  expect(extra).toEqual({created:2,missing:1,review:1,alreadyInstalled:false});
- const all=readShowcaseUploadTasks(org,member);
+ const all=readShowcaseUploadTasks(org,member).filter(t=>t.batchId===args.batchId);
  expect(all).toHaveLength(7);
  expect(all.filter(t=>t.status==="待补全")).toHaveLength(4);
  expect(all.filter(t=>t.status==="待审核")).toHaveLength(3);
@@ -168,10 +168,10 @@ it("stores six independently versioned image roles per color, inherits across si
 it("preserves a legacy multi-variant task's status while removing false AI-image attribution",()=>{
  const batch=readDemoCollectionBatches(org,member).find(b=>b.id===args.batchId)!;
  simulateAmazonMultiVariantListingWorkflow({...args,products:batch.products});
- const original=readShowcaseUploadTasks(org,member)[0];
+ const original=readShowcaseUploadTasks(org,member).find(t=>t.batchId===args.batchId)!;
  const rawKey="shuomi:listing-upload-tasks-v1:"+org+":"+member;
  sessionStorage.setItem(rawKey,JSON.stringify([{...original,demoProduct:{...original.demoProduct!,optimizedImages:[...original.demoProduct!.sourceImages],variantImageGroups:undefined}}]));
- const migrated=readShowcaseUploadTasks(org,member)[0];
+ const migrated=readShowcaseUploadTasks(org,member).find(t=>t.id===original.id)!;
  expect(migrated.status).toBe(original.status);
  expect(migrated.demoProduct?.sourceImages).toEqual(original.demoProduct?.sourceImages);
  expect(migrated.demoProduct?.optimizedImages).toEqual([]);
@@ -262,4 +262,11 @@ it("activates a matching verified category schema, checks scoped values and arch
  const incompatible:PlatformFieldSchema={...schema,categoryPath:"Elsewhere"};
  expect(()=>applyVerifiedListingFieldSchema(org,member,task.id,incompatible)).toThrow(/不一致/);
  expect(draft.demoProduct?.sourceName).toBe(activated.demoProduct?.sourceName);
+});
+
+it("keeps the two direct apparel listings separate from Amazon AI results",()=>{
+ const records=readShowcaseUploadTasks(org,member).filter(t=>t.id.startsWith("SIM-LIST-APPAREL-"));
+ expect(records).toHaveLength(2);
+ for(const t of records){expect(t.status).toBe("模拟已提交");expect(t.agentId).toBeNull();expect(t.demoSubmission?.externalReceiptId).toBeNull();expect(t.demoSubmission?.listingStatus).toBe("已上架");}
+ expect(readShowcaseUploadTasks(org,"other-member")).toHaveLength(0);
 });
