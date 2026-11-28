@@ -77,14 +77,14 @@ export function ChatPage({ mode, conversationId }: { mode: ChatMode | "detail"; 
 
 function ScopedChat({ scope, authorizationKey, canUse, canPlan, planningReadiness, titleReadiness, mode, conversationId }: { scope: AIScope; authorizationKey: string; canUse: boolean; canPlan: boolean; planningReadiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE"; titleReadiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE"; mode: ChatMode | "detail"; conversationId?: string }) {
   if (mode === "detail" && conversationId) return <ConversationDetail key={conversationId} scope={scope} authorizationKey={authorizationKey} canUse={canUse} canPlan={canPlan} planningReadiness={planningReadiness} titleReadiness={titleReadiness} id={conversationId} />;
-  return <ChatCollection scope={scope} authorizationKey={authorizationKey} canUse={canUse} canPlan={canPlan} planningReadiness={planningReadiness} mode={mode === "detail" ? "home" : mode} />;
+  return <ChatCollection scope={scope} authorizationKey={authorizationKey} canUse={canUse} canPlan={canPlan} planningReadiness={planningReadiness} titleReadiness={titleReadiness} mode={mode === "detail" ? "home" : mode} />;
 }
 
 function planningStatus(readiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE") {
   return readiness === "NEEDS_CONFIGURATION" ? "当前企业的规划模型需要配置；可管理会话，模型发送待配置。" : "当前企业的任务规划尚未开放；可管理会话，模型发送待配置。";
 }
 
-function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningReadiness, mode }: { scope: AIScope; authorizationKey: string; canUse: boolean; canPlan: boolean; planningReadiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE"; mode: ChatMode }) {
+function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningReadiness, titleReadiness, mode }: { scope: AIScope; authorizationKey: string; canUse: boolean; canPlan: boolean; planningReadiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE"; titleReadiness: "AVAILABLE" | "NEEDS_CONFIGURATION" | "UNAVAILABLE"; mode: ChatMode }) {
   const router = useRouter();
   const context = useWorkbenchContext();
   const search = useSearchParams();
@@ -215,7 +215,7 @@ function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningRead
     {mode==="new"&&inlineConversationId?
      <section className={styles.inlineConversation} aria-label="当前新建会话">
       <div className={styles.inlineConversationTop}><span>会话已创建 · 继续在当前页面处理</span><Button variant="outline" onClick={()=>{setInlineConversationId(null);setCreateIntent(undefined);setCompose("");try{sessionStorage.removeItem(activeCreateKey);sessionStorage.removeItem(draftKey)}catch{/* Original conversation remains persisted. */}}}>＋ 新会话</Button></div>
-      <ConversationDetail key={inlineConversationId} scope={scope} authorizationKey={authorizationKey} canUse={canUse} canPlan={canPlan} planningReadiness={planningReadiness} titleReadiness={"AVAILABLE"} id={inlineConversationId}/>
+      <ConversationDetail key={inlineConversationId} scope={scope} authorizationKey={authorizationKey} canUse={canUse} canPlan={canPlan} planningReadiness={planningReadiness} titleReadiness={titleReadiness} id={inlineConversationId}/>
      </section>:null}
     {mode === "home" ? <WorkbenchViewNav className={styles.viewNavigation} label="会话视图"><Link href="/workbench/ai/chat" aria-current="page" prefetch={false}>会话首页</Link><Link href="/workbench/ai/chat/recent" prefetch={false}>最近会话</Link><Link href="/workbench/ai/chat/saved" prefetch={false}>收藏会话</Link></WorkbenchViewNav> : <WorkbenchViewNav className={styles.viewNavigation} label="会话视图">{([ ["new", "新建会话"], ["recent", "最近会话"], ["saved", "收藏会话"], ["archived", "归档会话"] ] as const).map(([view,label]) => <Link key={view} href={`/workbench/ai/chat/${view}${selectedOperationId && isAcquisitionUUID(selectedOperationId) ? `?operationId=${encodeURIComponent(selectedOperationId)}` : ""}`} prefetch={false} aria-current={mode === view ? "page" : undefined}>{label}</Link>)}</WorkbenchViewNav>}
     {mode==="new"&&inlineConversationId?null:canUse && !canPlan ? <ConsoleState kind="unavailable" title="规划暂不可用">{planningStatus(planningReadiness)}</ConsoleState> : null}
