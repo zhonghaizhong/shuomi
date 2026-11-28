@@ -222,3 +222,15 @@
 .collectionVariantOption small{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .variantWarning{font-size:12px;color:#e98a8a}
 @media(max-width:570px){.collectionVariantOptions{grid-template-columns:1fr}.collectionVariantHead{flex-wrap:wrap}}
+
+/* Full-width horizontal estimator: fill the area beneath both image and SKU-specific details. */
+.modal:has(.galleryColumn)>.costEstimator{width:100%;margin-top:16px;gap:11px}
+.modal:has(.galleryColumn)>.costEstimator>header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.modal:has(.galleryColumn)>.costEstimator>header label{display:flex;align-items:center;gap:8px}
+.modal:has(.galleryColumn)>.costEstimator .costBreakdown{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.modal:has(.galleryColumn)>.costEstimator .costBreakdown>div{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px 14px;border:1px solid var(--border);border-radius:7px;background:var(--surface);min-width:0}
+.modal:has(.galleryColumn)>.costEstimator .costBreakdown strong{white-space:normal;font-size:16px}
+.modal:has(.galleryColumn)>.costEstimator .costBreakdown .costTotal{margin:0;border-color:#7367f0}
+.modal:has(.galleryColumn)>.costEstimator .costBreakdown .costTotal strong{font-size:20px}
+@media(max-width:800px){.modal:has(.galleryColumn)>.costEstimator .costBreakdown{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.modal:has(.galleryColumn)>.costEstimator>header{align-items:stretch;flex-direction:column}.modal:has(.galleryColumn)>.costEstimator>header label{justify-content:space-between}}
