@@ -176,14 +176,24 @@ test("Store matrix seven filters stay on one desktop row and date picker works",
 
 /* Regression: alert/advice filters must not inherit the former two-column
    select/actions grids. Ensure both rows are really horizontal in the browser. */
-test("Alerts and advice each keep nine filter controls on one desktop row",async({page})=>{
+test("Alerts keep seven and advice nine filter controls on one desktop row",async({page})=>{
  await page.setViewportSize({width:1600,height:900});
  for(const [route,kind] of [["alerts","alerts"],["advice","advice"]] as const){
   await page.goto("/shuomi/#/workbench/overview/"+route);
   const bar=page.locator('[data-cockpit-filter="'+kind+'"]');
   await expect(bar).toBeVisible();
   const controls=bar.locator(':scope > *');
-  await expect(controls).toHaveCount(9);
+  await expect(controls).toHaveCount(kind==="alerts"?7:9);
+  for(const label of ["平台","站点","店铺类型"])await expect(bar.getByRole("combobox",{name:label,exact:true})).toBeVisible();
+  await expect(bar.getByRole("button",{name:"确认",exact:true})).toBeVisible();
+  await expect(bar.getByRole("button",{name:"重置",exact:true})).toBeVisible();
+  if(kind==="alerts"){
+   await expect(bar.getByRole("combobox",{name:"风险等级",exact:true})).toHaveCount(0);
+   await expect(bar.getByRole("combobox",{name:"处理状态",exact:true})).toHaveCount(0);
+  }else{
+   await expect(bar.getByRole("combobox",{name:"优先级",exact:true})).toBeVisible();
+   await expect(bar.getByRole("combobox",{name:"处理状态",exact:true})).toBeVisible();
+  }
   const boxes=await controls.evaluateAll(elements=>elements.map(el=>{
    const rect=el.getBoundingClientRect();
    const style=getComputedStyle(el);

@@ -90,7 +90,9 @@ test("my tools search and reset work and launch shows a truthful dialog",async({
  await modal.getByRole("button",{name:/我的素材库/}).click();
  await expect(modal).toContainText("蝴蝶牡丹 · 原始印花");
  await expect(modal.locator('[class*="assetCard"]')).toHaveCount(1);
- await expect(modal).toContainText("源图已关联 · 只读");
+ await expect(modal).toContainText("已关联 · 保留历史原图");
+ await expect(modal.locator('[class*="assetCard"]').getByRole("button",{name:"删除",exact:true})).toBeVisible();
+ await expect(modal.getByRole("button",{name:/已删除素材/})).toBeVisible();
  await expect(modal.getByRole("button",{name:"上传素材"})).toBeVisible();
  const geometry=await modal.boundingBox();
  const viewport=page.viewportSize()!;
