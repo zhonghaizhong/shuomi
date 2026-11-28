@@ -458,3 +458,57 @@
  .workspace[data-chat-active="true"] .modePanel{height:auto;max-height:520px}
  .workspace[data-chat-active="true"] .thread{min-height:160px}
 }
+
+/* Single persistent chat canvas, identical before/after the first message.
+   Conversation history grows above the always-visible bottom input. */
+.workspace,.workspace[data-chat-active="true"],.workspace:not([data-chat-active="true"]){
+ grid-template-columns:minmax(0,2.2fr) minmax(280px,.72fr);
+ grid-template-rows:minmax(0,1fr);
+ min-height:760px;
+ height:min(900px,calc(100dvh - 180px));
+ align-items:stretch;
+}
+.workspace .composer,.workspace[data-chat-active="true"] .composer,.workspace:not([data-chat-active="true"]) .composer{
+ display:flex;flex-direction:column;gap:12px;padding:22px;min-height:0;height:100%;overflow:hidden;
+}
+.workspace .composerIntro{flex:0 0 auto}
+.workspace .thread,.workspace[data-chat-active="true"] .thread{
+ flex:1 1 auto;min-height:0;height:auto;max-height:none;
+ display:flex;flex-direction:column;gap:12px;overflow-y:auto;
+ padding:12px 8px;border:1px solid var(--cn-border);
+ border-radius:8px;background:var(--cn-inset);
+}
+.workspace .threadEmpty{margin:0;color:var(--cn-subtle);font-size:14px;line-height:1.6}
+.workspace .thread>article{flex-shrink:0}
+.workspace .composer textarea,.workspace[data-chat-active="true"] .composer>textarea,.workspace:not([data-chat-active="true"]) .composer textarea{
+ display:block;width:100%;flex:0 0 auto;min-height:92px!important;height:100px;max-height:160px;
+ resize:vertical;padding:12px 15px;border-radius:8px;
+ background:var(--cn-inset);font-size:15px;
+}
+.workspace .composerFooter{flex:0 0 auto;margin-top:0;padding-top:10px;border-top:1px solid var(--cn-border)}
+.workspace .modePanel,.workspace[data-chat-active="true"] .modePanel,.workspace:not([data-chat-active="true"]) .modePanel{
+ display:flex;flex-direction:column;gap:10px;height:100%;min-height:0;
+ overflow-y:auto;padding:22px 18px 18px;
+}
+.workspace .modeList,.workspace[data-chat-active="true"] .modeList{gap:8px}
+.workspace .modeList button,.workspace[data-chat-active="true"] .modeList button{min-height:46px;padding-block:9px}
+.workspace .examples,.workspace[data-chat-active="true"] .examples{display:grid;grid-column:auto;margin-top:auto;padding-top:14px}
+.workspace .examples>div,.workspace[data-chat-active="true"] .examples>div{grid-template-columns:minmax(0,1fr);gap:8px}
+.workspace .examples>div>button,.workspace[data-chat-active="true"] .examples>div>button{min-height:70px}
+.workspace .thread .inlineConfirmation{flex:0 0 auto;max-height:none;min-height:0;overflow:visible}
+@media(max-width:900px){
+ .workspace,.workspace[data-chat-active="true"],.workspace:not([data-chat-active="true"]){grid-template-columns:minmax(0,1.65fr) minmax(240px,.85fr)}
+}
+@media(max-width:600px){
+ .workspace,.workspace[data-chat-active="true"],.workspace:not([data-chat-active="true"]){
+  grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;
+  height:auto;min-height:0;
+ }
+ .workspace .composer,.workspace[data-chat-active="true"] .composer,.workspace:not([data-chat-active="true"]) .composer{
+  min-height:520px;height:min(660px,calc(100dvh - 165px));padding:14px;
+ }
+ .workspace .modePanel,.workspace[data-chat-active="true"] .modePanel,.workspace:not([data-chat-active="true"]) .modePanel{
+  height:auto;min-height:0;max-height:540px;padding:16px;
+ }
+ .workspace .thread,.workspace[data-chat-active="true"] .thread{min-height:120px}
+}
