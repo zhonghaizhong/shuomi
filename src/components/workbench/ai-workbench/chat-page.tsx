@@ -96,6 +96,7 @@ function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningRead
   const scopeContext = projectId ? `project:${projectId}` : storeId ? `store:${storeId}` : "general";
   const draftKey = composeDraftKey(scope, scopeContext);
   const [compose, setCompose] = useState("");
+  const [inlineConversationId,setInlineConversationId]=useState<string|null>(null);
   const [storeState,setStoreState]=useState<ChatStoreState>({choice:undefined,ready:false});
   const composeInput = useRef<HTMLTextAreaElement>(null);
   const [voiceActive, setVoiceActive] = useState(false);
@@ -190,16 +191,16 @@ function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningRead
     const intent: PendingCreate = createIntent ?? {key:crypto.randomUUID(),body:selected ? {scopeSelection:scopeSelection(selected),scopeConfirmation:selected.confirmation} : {},...(directCompose ? {draft:compose,context:scopeContext,owner:scope,...(storeState.choice?{storeChoice:storeState.choice}:{})} : {})};
     setCreateIntent(intent); setCreating(true); setError("");
     try { sessionStorage.setItem(activeCreateKey, JSON.stringify(intent)); } catch { if(directCompose){if(!createIntent)setCreateIntent(undefined);setCreating(false);setDraftError("无法保存待恢复的请求和需求，请检查浏览器存储设置。");return;} }
-    if(directCompose && intent.conversationId && typeof intent.draft === "string") { try {const target=conversationDraftKey(scope,intent.conversationId),existing=readLocalDraft(sessionStorage.getItem(target));if(existing && existing.id!==intent.key){setError("会话中已有不同的未发送内容，请先打开原会话核对。");setCreating(false);return;}if(!existing)sessionStorage.setItem(target,JSON.stringify({id:intent.key,text:intent.draft}));if(intent.storeChoice){const storeKey=chatStoreChoiceKey(scope,`conversation:${intent.conversationId}`),previous=sessionStorage.getItem(storeKey),serialized=JSON.stringify(intent.storeChoice);if(previous&&previous!==serialized)throw new Error("store choice changed");sessionStorage.setItem(storeKey,serialized);}router.push(`/workbench/ai/chat/${intent.conversationId}`);}catch{setError("无法保存需求或店铺选择，请检查浏览器存储设置并重试。");}setCreating(false);return; }
+    if(directCompose && intent.conversationId && typeof intent.draft === "string") { try {const target=conversationDraftKey(scope,intent.conversationId),existing=readLocalDraft(sessionStorage.getItem(target));if(existing && existing.id!==intent.key){setError("会话中已有不同的未发送内容，请先打开原会话核对。");setCreating(false);return;}if(!existing)sessionStorage.setItem(target,JSON.stringify({id:intent.key,text:intent.draft}));if(intent.storeChoice){const storeKey=chatStoreChoiceKey(scope,`conversation:${intent.conversationId}`),previous=sessionStorage.getItem(storeKey),serialized=JSON.stringify(intent.storeChoice);if(previous&&previous!==serialized)throw new Error("store choice changed");sessionStorage.setItem(storeKey,serialized);}setInlineConversationId(intent.conversationId);}catch{setError("无法保存需求或店铺选择，请检查浏览器存储设置并重试。");}setCreating(false);return; }
     const controller = new AbortController(); abort.current = controller;
     try {
       const result = await requestAIWorkbench({ route: "conversation-create", method: "POST", path: "chat/conversations", scope, key: intent.key, body: intent.body, signal: controller.signal });
       if (controller.signal.aborted) return;
       if(directCompose && typeof intent.draft === "string") { try { const bound={...intent,conversationId:result.conversation.ID};sessionStorage.setItem(activeCreateKey,JSON.stringify(bound));setCreateIntent(bound);const target=conversationDraftKey(scope,result.conversation.ID);const existing=readLocalDraft(sessionStorage.getItem(target));if(existing && existing.id!==intent.key){setError("会话中已有不同的未发送内容，请先打开原会话核对。");return;}if(!existing)sessionStorage.setItem(target,JSON.stringify({id:intent.key,text:intent.draft}));if(intent.storeChoice){const storeKey=chatStoreChoiceKey(scope,`conversation:${result.conversation.ID}`),previous=sessionStorage.getItem(storeKey),serialized=JSON.stringify(intent.storeChoice);if(previous&&previous!==serialized)throw new Error("store choice changed");sessionStorage.setItem(storeKey,serialized);} } catch { setError("会话已创建，但无法保存需求；请保持页面并重试原请求。"); return; } }
-      if(directCompose && typeof intent.draft === "string"){router.push(`/workbench/ai/chat/${result.conversation.ID}${selectedOperationId && isAcquisitionUUID(selectedOperationId) ? `?operationId=${encodeURIComponent(selectedOperationId)}` : ""}`);return;}
+      if(directCompose && typeof intent.draft === "string"){setInlineConversationId(result.conversation.ID);return;}
       setCreateIntent(undefined);
       try { sessionStorage.removeItem(pendingCreateStorageKey(scope)); } catch { /* navigation still succeeds */ }
-      router.push(`/workbench/ai/chat/${result.conversation.ID}${selectedOperationId && isAcquisitionUUID(selectedOperationId) ? `?operationId=${selectedOperationId}` : ""}`);
+      setInlineConversationId(result.conversation.ID);
     } catch (cause) { if (!controller.signal.aborted) {
       if (cause instanceof AIWorkbenchError && cause.conversationAccepted === false && (cause.code === "NOT_FOUND" || cause.code === "PROPOSAL_STALE")) {
         try { sessionStorage.removeItem(activeCreateKey); } catch { setError("无法更新本地恢复记录，请检查浏览器存储设置。"); return; }
@@ -211,9 +212,14 @@ function ChatCollection({ scope, authorizationKey, canUse, canPlan, planningRead
     finally { if (!controller.signal.aborted) setCreating(false); abort.current = null; }
   }
   return <>
+    {mode==="new"&&inlineConversationId?
+     <section className={styles.inlineConversation} aria-label="当前新建会话">
+      <div className={styles.inlineConversationTop}><span>会话已创建 · 继续在当前页面处理</span><Button variant="outline" onClick={()=>{setInlineConversationId(null);setCreateIntent(undefined);setCompose("");try{sessionStorage.removeItem(activeCreateKey);sessionStorage.removeItem(draftKey)}catch{/* Original conversation remains persisted. */}}}>＋ 新会话</Button></div>
+      <ConversationDetail key={inlineConversationId} scope={scope} authorizationKey={authorizationKey} canUse={canUse} canPlan={canPlan} planningReadiness={planningReadiness} titleReadiness={"AVAILABLE"} id={inlineConversationId}/>
+     </section>:null}
     {mode === "home" ? <WorkbenchViewNav className={styles.viewNavigation} label="会话视图"><Link href="/workbench/ai/chat" aria-current="page" prefetch={false}>会话首页</Link><Link href="/workbench/ai/chat/recent" prefetch={false}>最近会话</Link><Link href="/workbench/ai/chat/saved" prefetch={false}>收藏会话</Link></WorkbenchViewNav> : <WorkbenchViewNav className={styles.viewNavigation} label="会话视图">{([ ["new", "新建会话"], ["recent", "最近会话"], ["saved", "收藏会话"], ["archived", "归档会话"] ] as const).map(([view,label]) => <Link key={view} href={`/workbench/ai/chat/${view}${selectedOperationId && isAcquisitionUUID(selectedOperationId) ? `?operationId=${encodeURIComponent(selectedOperationId)}` : ""}`} prefetch={false} aria-current={mode === view ? "page" : undefined}>{label}</Link>)}</WorkbenchViewNav>}
-    {canUse && !canPlan ? <ConsoleState kind="unavailable" title="规划暂不可用">{planningStatus(planningReadiness)}</ConsoleState> : null}
-    {mode === "home" ? <ChatIntroduction contentTasks={context.aiWorkbenchExecutionKind === "product.content.localize"} createAction={canUse ? <Button onClick={create} disabled={creating}>{creating ? "正在创建…" : "进入新建会话 →"}</Button> : <p>当前企业仅可查看已有会话。</p>} /> :
+    {mode==="new"&&inlineConversationId?null:canUse && !canPlan ? <ConsoleState kind="unavailable" title="规划暂不可用">{planningStatus(planningReadiness)}</ConsoleState> : null}
+    {mode==="new"&&inlineConversationId?null:mode === "home" ? <ChatIntroduction contentTasks={context.aiWorkbenchExecutionKind === "product.content.localize"} createAction={canUse ? <Button onClick={create} disabled={creating}>{creating ? "正在创建…" : "进入新建会话 →"}</Button> : <p>当前企业仅可查看已有会话。</p>} /> :
       mode === "new" ? <NewConversationIntroduction userId={scope.userId} directCompose={directCompose} canUse={canUse} createAction={canUse ? directCompose ? <>
         <label className={styles.composeLabel}><span className={styles.visuallyHidden}>需求</span><Textarea ref={composeInput} rows={5} value={createIntent?.draft ?? compose} disabled={creating || !!createIntent || draftReady !== draftKey} onChange={event=>updateCompose(event.target.value)} placeholder="输入你的需求" /></label>
         {projectId || storeId ? <p>工作背景：{createIntent ? "原请求待核对" : resolvedScope ? scopeLabel(resolvedScope) : "正在核对或无法读取"}</p> : null}
