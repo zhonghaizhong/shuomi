@@ -5120,3 +5120,25 @@
 .storeMatrixPreview .matrixTrendEmpty{border-color:var(--mx-line)}
 .storeMatrixPreview .matrixAnalysisOverlay{background:rgba(15,20,34,.58)}
 :global(.light) .storeMatrixPreview .matrixAnalysisOverlay{background:rgba(68,64,80,.25)}
+
+/* Risk list and advice workspace: approved Vuexy surfaces; leave statistic cards intact. */
+.riskTable{overflow-x:auto}
+.riskTable :is(.alertColumns,.alertRow){display:grid;grid-template-columns:.7fr 1.15fr 1.35fr 1.5fr 1.1fr 1.05fr .8fr 1.45fr;min-width:1120px;gap:12px;align-items:center;text-align:left;padding:12px}
+.riskTable .alertRow{min-height:72px;background:#393d55;border-color:#44485e}
+.riskTable .alertRow:nth-child(odd){background:#2f3349}
+.riskTable .alertRow>span{min-width:0;display:grid;gap:4px;overflow-wrap:anywhere}
+.riskTable .alertRow small,.riskAdviceQueue small{display:block;color:#acabc1;font-size:12px}
+.riskTable .alertRow [data-risk="高风险"]{color:#ff6b70}.riskTable .alertRow [data-risk="中风险"],.riskTable .alertRow [data-risk="待处理"]{color:#ffb95c}.riskTable .alertRow [data-risk="处理中"]{color:#83aaff}.riskTable .alertRow [data-risk="已恢复"]{color:#28c76f}
+.riskTable .alertRow .riskActions,.riskActions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.riskActions button{min-height:34px;padding:5px 10px;white-space:nowrap}
+.riskAdviceQueue{width:100%;display:grid;gap:6px;text-align:left;padding:12px;border:1px solid #44485e;background:#393d55;color:#e2e2f0;border-radius:6px;margin:6px 0;cursor:pointer}
+.riskAdviceQueue[aria-pressed="true"]{border-color:#7367f0}
+.riskEvidence{display:grid;gap:8px;padding:14px;border:1px solid #44485e;border-radius:8px;background:#393d55;color:#cfcde4}
+.riskEvidence h3,.riskEvidence p{margin:0}.riskEvidence button{justify-self:start}
+.riskDialog{background:#2f3349;border-color:#44485e;color:#cfcde4;width:min(780px,95vw)}
+.riskDialog label,.adviceDetail label:has(textarea){display:grid;gap:8px}
+.riskDialog textarea,.adviceDetail textarea{width:100%;min-height:90px;resize:vertical;border:1px solid #52576e;background:#393d55;color:#e2e2f0;border-radius:6px;padding:10px;font:inherit}
+:global(.light) .riskTable .alertRow,:global(.light) .riskAdviceQueue,:global(.light) .riskDialog{background:#fff;color:#444050;border-color:#e6e6f1}
+:global(.light) .riskTable .alertRow:nth-child(odd),:global(.light) .riskEvidence,:global(.light) .riskDialog textarea,:global(.light) .adviceDetail textarea{background:#f8f7fa;color:#444050;border-color:#e6e6f1}
+:global(.light) .riskTable .alertRow small,:global(.light) .riskAdviceQueue small{color:#6f6b7d}
+:global(.light) .riskTable .alertRow [data-risk="高风险"]{color:#b42335}:global(.light) .riskTable .alertRow [data-risk="中风险"],:global(.light) .riskTable .alertRow [data-risk="待处理"]{color:#99540a}:global(.light) .riskTable .alertRow [data-risk="处理中"]{color:#2858a5}:global(.light) .riskTable .alertRow [data-risk="已恢复"]{color:#168548}
