@@ -6,10 +6,10 @@ import type {DemoStoreBinding} from "./store-binding-demo";
 export type {DemoGoal} from "./showcase-goal-form";
 export type DemoDraft={kind:"task"|"project"|"knowledge"|"skill";name:string;description:string;store:string};
 export type DemoDetail={title:string;description:string;state?:string;value?:string};
-export function ShowcaseActionDialog({action,detail,onClose,onCreateGoal,onCreateDraft,stores=[]}:{
- action:string;detail?:DemoDetail|null;onClose:()=>void;onCreateGoal:(v:DemoGoal)=>void;onCreateDraft?:(v:DemoDraft)=>void;stores?:DemoStoreBinding[];
+export function ShowcaseActionDialog({action,detail,onClose,onCreateGoal,onCreateDraft,stores=[],initialGoal}:{
+ action:string;detail?:DemoDetail|null;onClose:()=>void;onCreateGoal:(v:DemoGoal)=>void;onCreateDraft?:(v:DemoDraft)=>void;stores?:DemoStoreBinding[];initialGoal?:DemoGoal;
 }){
- const goal=action==="新建目标";
+ const goal=action==="新建目标"||action==="调整目标"||action==="编辑目标";
  const kind:DemoDraft["kind"]|null=action.includes("新建任务")?"task":action.includes("新建项目")?"project":
   action.includes("添加知识")||action.includes("新增知识")?"knowledge":action.includes("新建技能")?"skill":null;
  const [name,setName]=useState(""),[description,setDescription]=useState("");
@@ -39,7 +39,7 @@ export function ShowcaseActionDialog({action,detail,onClose,onCreateGoal,onCreat
  return <div className={styles.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
    <section ref={panel} className={styles.panel} role="dialog" aria-modal="true" aria-labelledby="showcase-action-heading">
      <header className={styles.header}><div><small>{goal?"运营驾驶舱 / 目标管理":detail?"业务记录 / 查看详情":"硕米智能引擎 / 演示交互"}</small><h2 id="showcase-action-heading">{detail?.title??action}</h2></div><button ref={first} type="button" className={styles.close} aria-label="关闭弹窗" onClick={onClose}>×</button></header>
-     {goal?<ShowcaseGoalForm stores={stores} onCreateGoal={onCreateGoal} onClose={onClose}/>:kind?<form onSubmit={submit} className={styles.form}>
+     {goal?<ShowcaseGoalForm initial={initialGoal} stores={stores} onCreateGoal={onCreateGoal} onClose={onClose}/>:kind?<form onSubmit={submit} className={styles.form}>
        <p className={styles.note}>本次操作仅更新演示界面的本地数据，不会写入正式业务后台。</p>
        <label>{kind==="task"?"任务名称":kind==="project"?"项目名称":kind==="knowledge"?"知识名称":"技能名称"}<input required maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="输入名称"/></label>
        <label>业务说明<textarea rows={4} maxLength={1000} value={description} onChange={e=>setDescription(e.target.value)} placeholder="描述业务目标或需要处理的内容"/></label>

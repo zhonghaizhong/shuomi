@@ -5,7 +5,7 @@ import styles from "./showcase-action-dialog.module.css";
 
 export type DemoGoal={
  name:string;metric:"订单量"|"销售额";store:string;storeIds:string[];
- period:"每周"|"每月";value:string;currencyTargets?:Record<string,string>;demoScenario?:true;
+ period:"每周"|"每月";value:string;currencyTargets?:Record<string,string>;demoScenario?:true; id?:string; active?:boolean; deleted?:boolean;
 };
 const currencyBySite=(region:string):string=>{
  const site=region.toLowerCase();
@@ -20,13 +20,13 @@ const currencyBySite=(region:string):string=>{
  return "";
 };
 const pageSize=8;
-export function ShowcaseGoalForm({stores,onCreateGoal,onClose}:{
- stores:DemoStoreBinding[];onCreateGoal:(goal:DemoGoal)=>void;onClose:()=>void;
+export function ShowcaseGoalForm({stores,onCreateGoal,onClose,initial}:{
+ stores:DemoStoreBinding[];onCreateGoal:(goal:DemoGoal)=>void;onClose:()=>void;initial?:DemoGoal;
 }){
- const [name,setName]=useState("");
- const [metric,setMetric]=useState<DemoGoal["metric"]>("订单量");
- const [period,setPeriod]=useState<DemoGoal["period"]>("每月");
- const [selectedIds,setSelectedIds]=useState<string[]>([]);
+ const [name,setName]=useState(initial?.name??"");
+ const [metric,setMetric]=useState<DemoGoal["metric"]>(initial?.metric??"订单量");
+ const [period,setPeriod]=useState<DemoGoal["period"]>(initial?.period??"每月");
+ const [selectedIds,setSelectedIds]=useState<string[]>(initial?.storeIds??[]);
  const [shopOpen,setShopOpen]=useState(false);
  useEffect(()=>{if(!shopOpen)return;const onEscape=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();setShopOpen(false)}};document.addEventListener("keydown",onEscape);return()=>document.removeEventListener("keydown",onEscape)},[shopOpen]);
  const [search,setSearch]=useState("");
@@ -34,8 +34,8 @@ export function ShowcaseGoalForm({stores,onCreateGoal,onClose}:{
  const [site,setSite]=useState("全部站点");
  const [type,setType]=useState("全部类型");
  const [page,setPage]=useState(1);
- const [orderTarget,setOrderTarget]=useState("");
- const [currencyTargets,setCurrencyTargets]=useState<Record<string,string>>({});
+ const [orderTarget,setOrderTarget]=useState(initial?.metric==="订单量"?initial.value:"");
+ const [currencyTargets,setCurrencyTargets]=useState<Record<string,string>>(initial?.currencyTargets??{});
  const [error,setError]=useState("");
  // Permission and archived-state filtering are enforced upstream; use only the existing scoped bindings.
  const available=useMemo(()=>stores.filter(s=>!s.archived&&s.platformStoreId&&s.platformIdStatus!=="获取失败"),[stores]);
@@ -95,7 +95,7 @@ export function ShowcaseGoalForm({stores,onCreateGoal,onClose}:{
     <p className={styles.goalHint}>不同币种不直接相加；分别设定与考核，日后配置汇率及折算基准币种后才可汇总。</p>
    </div>}
   {error?<p className={styles.goalError} role="alert">{error}</p>:null}
-  <footer className={styles.actions}><button type="button" className={styles.secondary} onClick={onClose}>取消</button><button type="submit" className={styles.primary}>添加到演示列表</button></footer>
+  <footer className={styles.actions}><button type="button" className={styles.secondary} onClick={onClose}>取消</button><button type="submit" className={styles.primary}>{initial?"保存调整":"添加到演示列表"}</button></footer>
   {shopOpen?<div className={styles.goalPickerOverlay} onMouseDown={e=>{if(e.target===e.currentTarget)setShopOpen(false)}}>
    <section role="dialog" aria-modal="true" aria-label="选择目标店铺" className={styles.goalPickerPanel}>
     <header><div><strong>选择目标店铺</strong><small>已选择 {selected.length} 家 · 共 {available.length} 家可选店铺</small></div><button aria-label="关闭店铺选择" type="button" onClick={()=>setShopOpen(false)}>×</button></header>

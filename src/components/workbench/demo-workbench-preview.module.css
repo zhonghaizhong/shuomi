@@ -5202,3 +5202,12 @@
 @media(max-width:760px){.adviceConversation .adviceChatBody{max-height:65dvh}}
 
 .adviceChatTurn{display:flex;flex-direction:column;gap:20px;min-width:0}
+
+.goalsPreview .goalMetrics article:has(button[aria-pressed="true"]){outline:1px solid #7367f0;outline-offset:-1px}
+.goalsPreview .goalMetrics article>button.matrixMetricAction{width:100%;height:100%;display:flex;align-items:center;gap:16px;text-align:left;background:transparent;border:0;padding:0;color:inherit;cursor:pointer}
+.goalsPreview .goalColumns,.goalsPreview .goalRow{grid-template-columns:1.45fr .75fr 1.5fr .65fr .8fr .9fr 1.1fr}
+.goalsPreview .goalRowActions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
+.goalsPreview .goalRowActions button{min-width:48px;width:auto;padding:6px 10px;white-space:nowrap}
+.goalsPreview .goalStoreInfo{display:grid;gap:8px;min-width:0}
+.goalsPreview .goalStoreInfo>span{display:grid;gap:4px;min-width:0}
+.goalsPreview .goalStoreInfo small{font-size:12px;overflow-wrap:anywhere}
