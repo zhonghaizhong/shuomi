@@ -1,4 +1,14 @@
 import {expect,test} from "@playwright/test";
+/** Explicit test-only endpoint; no simulated success in production. */
+async function mockOutcomeService(page:import("@playwright/test").Page){
+ const jobs=new Map<string,string>();
+ await page.addInitScript(()=>{const meta=document.createElement("meta");meta.name="shuomi-outcome-api";meta.content="/shuomi/__e2e_outcomes";if(document.head)document.head.appendChild(meta);else new MutationObserver((_,observer)=>{if(document.head){document.head.appendChild(meta);observer.disconnect();}}).observe(document,{childList:true,subtree:true});});
+ await page.route("**/shuomi/__e2e_outcomes**",async route=>{
+  if(route.request().method()==="POST"){const {prompt}=route.request().postDataJSON();const jobId=String(jobs.size+1);jobs.set(jobId,prompt);await route.fulfill({json:{jobId}});return;}
+  const id=route.request().url().split("/").at(-1)||"";const prompt=jobs.get(id);await route.fulfill({json:prompt?{status:"completed",sections:[{heading:prompt,content:"测试成果：核对业务范围及审核标准。"}]}:{status:"failed",error:"Unknown test job"}});
+ });
+}
+
 /** Populate only the isolated Playwright tab; the actual workspace stays empty. */
 async function seedCollections(page:import("@playwright/test").Page){
  // Open the showcase first so the app can complete its empty-state hydration.
@@ -251,6 +261,7 @@ test("all seven modes offer 介绍 in a centered dialog, leaving selection and i
 });
 
 test("draft 查看 opens concrete outcome previews and keeps task plans in the conversation",async({page})=>{
+ await mockOutcomeService(page);
  await page.goto("/shuomi/#/workbench/ai/chat/new");
  const url=page.url();
  const modes=page.getByRole("complementary",{name:"选择执行方式"});
@@ -258,9 +269,9 @@ test("draft 查看 opens concrete outcome previews and keeps task plans in the c
  const thread=composer.getByLabel("聊天记录");
  const input=composer.getByLabel("描述你的业务目标");
  for(const entry of [
-  {mode:"加入我的知识库",action:"整理知识条目",detail:"查看知识条目完整内容",topic:"售后规则知识"},
-  {mode:"保存为我的技能",action:"生成技能草案",detail:"查看技能完整内容",topic:"图片审核标准"},
-  {mode:"加入我的报告",action:"生成报告草案",detail:"查看报告完整内容",topic:"新品利润分析"},
+  {mode:"加入我的知识库",action:"整理知识条目",detail:"查看完整知识条目",topic:"售后规则知识"},
+  {mode:"保存为我的技能",action:"生成技能草案",detail:"查看完整技能",topic:"图片审核标准"},
+  {mode:"加入我的报告",action:"生成报告草案",detail:"查看完整报告",topic:"新品利润分析"},
  ]){
   await modes.getByRole("button",{name:entry.mode,exact:true}).click();
   await input.fill(entry.topic);
@@ -301,7 +312,7 @@ test("draft 查看 opens concrete outcome previews and keeps task plans in the c
  await input.fill("普通对话不需要草案详情");
  await composer.getByRole("button",{name:"发送消息"}).click();
  await expect(thread).toContainText("普通对话不需要草案详情");
- await expect(thread.getByRole("button",{name:"查看知识条目完整内容"})).toHaveCount(1);
+ await expect(thread.getByRole("button",{name:"查看完整知识条目"})).toHaveCount(1);
  await expect(input).toBeVisible();
  expect(page.url()).toBe(url);
 });

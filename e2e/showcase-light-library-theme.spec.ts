@@ -1,4 +1,14 @@
 import {expect,test} from "@playwright/test";
+/** Explicit test-only endpoint; no simulated success in production. */
+async function mockOutcomeService(page:import("@playwright/test").Page){
+ const jobs=new Map<string,string>();
+ await page.addInitScript(()=>{const meta=document.createElement("meta");meta.name="shuomi-outcome-api";meta.content="/shuomi/__e2e_outcomes";if(document.head)document.head.appendChild(meta);else new MutationObserver((_,observer)=>{if(document.head){document.head.appendChild(meta);observer.disconnect();}}).observe(document,{childList:true,subtree:true});});
+ await page.route("**/shuomi/__e2e_outcomes**",async route=>{
+  if(route.request().method()==="POST"){const {prompt}=route.request().postDataJSON();const jobId=String(jobs.size+1);jobs.set(jobId,prompt);await route.fulfill({json:{jobId}});return;}
+  const id=route.request().url().split("/").at(-1)||"";const prompt=jobs.get(id);await route.fulfill({json:prompt?{status:"completed",sections:[{heading:prompt,content:"测试成果：核对业务范围及审核标准。"}]}:{status:"failed",error:"Unknown test job"}});
+ });
+}
+
 
 const routes=[
  "/ai/projects/recent",
@@ -503,6 +513,7 @@ test("Create My Skill remains in the shared header on every Skill Library tab",a
 });
 
 test("Generate research report opens selected Chat mode, saves an approved demo draft, and groups it",async({page})=>{
+ await mockOutcomeService(page);
  await page.goto("/shuomi/#/workbench/ai/reports");
  const reports=page.locator("[data-report-center]");
  await expect(reports.getByRole("button",{name:"生成调研报告"})).toBeVisible();
@@ -517,8 +528,10 @@ test("Generate research report opens selected Chat mode, saves an approved demo 
  await expect(page.getByRole("button",{name:"加入我的报告",exact:true})).toHaveAttribute("aria-pressed","true");
  await page.getByRole("textbox",{name:"描述你的业务目标"}).fill("美国站商品市场调研演示");
  await page.getByRole("button",{name:"生成报告草案"}).click();
- await expect(page.getByRole("button",{name:"确认加入报告"})).toBeVisible();
- await page.getByRole("button",{name:"确认加入报告"}).click();
+ await page.getByRole("button",{name:"查看完整报告",exact:true}).click();
+ const preview=page.getByRole("dialog",{name:"美国站商品市场调研演示",exact:true});
+ await expect(preview).toBeVisible();
+ await preview.getByRole("button",{name:"确认加入报告",exact:true}).click();
  await page.goto("/shuomi/#/workbench/ai/reports");
  await expect(reports.getByText("美国站商品市场调研演示")).toBeVisible();
  await reports.getByRole("button",{name:"管理分组"}).click();

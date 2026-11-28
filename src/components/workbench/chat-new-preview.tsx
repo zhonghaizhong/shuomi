@@ -60,7 +60,7 @@ type OutcomeSection={heading:string;content:string};
 type OutcomeJobStatus="waiting"|"running"|"ready"|"blocked"|"failed";
 type PreviewMessage = { id: number; role: "user" | "assistant"; text: string; approval?: ApprovalKind; jobId?:string; jobStatus?:OutcomeJobStatus; outcomeSections?:OutcomeSection[] };
 type SavedChat={messages:PreviewMessage[];chatActive:boolean};
-const outcomeApi=(process.env.NEXT_PUBLIC_SHUOMI_OUTCOME_API||"").replace(/\/$/,"");
+const outcomeApi=(process.env.NEXT_PUBLIC_SHUOMI_OUTCOME_API||(typeof window!=="undefined"?document.querySelector<HTMLMetaElement>('meta[name="shuomi-outcome-api"]')?.content:"")||"").replace(/\/$/,"");
 function chatStorageKey(organizationId:string,memberId:string){return "shuomi-chat-outcomes-v2:"+organizationId+":"+memberId}
 function readChatState(key:string):SavedChat|null{if(typeof window==="undefined")return null;try{const raw=localStorage.getItem(key);if(!raw)return null;const value=JSON.parse(raw) as SavedChat;if(!Array.isArray(value.messages))return null;return {messages:value.messages.filter(m=>m&&typeof m.id==="number"&&(m.role==="user"||m.role==="assistant")),chatActive:Boolean(value.chatActive)}}catch{return null}}
 function validSections(value:unknown):OutcomeSection[]|null{if(!Array.isArray(value)||!value.length)return null;const sections=value.filter((s):s is OutcomeSection=>Boolean(s&&typeof s.heading==="string"&&typeof s.content==="string"&&s.heading.trim()&&s.content.trim()));return sections.length===value.length?sections:null}
