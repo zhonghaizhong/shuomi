@@ -89,10 +89,11 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   const [messages, setMessages] = useState<PreviewMessage[]>([]);
   const [feedback,onAction]=useState("");
   const [guideOpen,setGuideOpen]=useState(true);
+  const [guideFor,setGuideFor]=useState<number|null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const mode = modes[modeIndex];
-  const modeGuide=modeGuides[modeIndex];
+  const modeGuide=modeGuides[guideFor??modeIndex];
   useEffect(() => {
     if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
   }, [chatActive, messages, feedback, confirmation]);
@@ -236,7 +237,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   return <div className={styles.workspace} data-chat-active={chatActive}>
       <section className={styles.composer} aria-label={chatActive ? "会话消息与输入区" : "新建会话输入区"} data-conversation-composer="stable">
         <header className={styles.composerIntro}><div><h2>有什么想交给硕米？</h2><p>{chatActive ? "当前会话的消息和处理结果在这里继续显示，不切换页面。" : "直接描述问题或工作目标，硕米协助整理并回复。"}</p></div>{chatActive && <button className={styles.newConversation} onClick={startNewConversation}>＋ 新会话</button>}</header>
-        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{modeGuide&&<section className={styles.modeGuide} aria-label={mode.title+"使用说明"}>
+        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{modeGuide&&<section className={styles.modeGuide} aria-label={modes[guideFor??modeIndex].title+"使用说明"}>
   <header><div><small>使用说明 · 创建前先了解</small><h3>{modeGuide.heading}</h3></div><button type="button" aria-expanded={guideOpen} onClick={()=>setGuideOpen(v=>!v)}>{guideOpen?"收起说明":"查看如何使用"}</button></header>
   {guideOpen&&<><p>{modeGuide.summary}</p><div className={styles.modeGuideSteps}>{modeGuide.steps.map((step,i)=><div key={step}><b>{String(i+1).padStart(2,"0")}</b><span>{step}</span></div>)}</div><div className={styles.modeGuideOutcome}><strong>创建后会得到什么</strong><span>{modeGuide.outcome}</span></div><div className={styles.modeGuideBottom}><span>后续查看位置：{modeGuide.destination}</span><button type="button" onClick={()=>router.push(modeGuide.url)}>查看{modeGuide.destination}</button></div></>}
  </section>}{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请确认是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button></div></div>}</article>)}
@@ -277,9 +278,12 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
         </footer>
       </section>
       <aside className={styles.modePanel} aria-label="选择执行方式">
-        <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modeOrder.map(index => {const item=modes[index];return <button key={item.title} className={index === modeIndex ? styles.modeSelected : ""} onClick={() => {setModeIndex(index);setConfirmation(false);setGuideOpen(true);if(threadRef.current)threadRef.current.scrollTop=0}} aria-pressed={index === modeIndex}>
-          <i data-tone={index} /><span><strong>{item.title}</strong></span>
-        </button>})}</div></section><section className={styles.examples}>
+        <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modeOrder.map(index => {const item=modes[index];return <div key={item.title} className={styles.modeOptionRow}>
+          <button type="button" className={index === modeIndex ? styles.modeSelected : ""} onClick={() => {setModeIndex(index);setGuideFor(index);setConfirmation(false);setGuideOpen(true);if(threadRef.current)threadRef.current.scrollTop=0}} aria-pressed={index === modeIndex}>
+            <i data-tone={index} /><span><strong>{item.title}</strong></span>
+          </button>
+          {modeGuides[index]&&<button type="button" className={styles.modeViewButton} aria-label={"查看"+item.title+"说明"} onClick={()=>{setGuideFor(index);setGuideOpen(true);if(threadRef.current)threadRef.current.scrollTop=0}}>查看</button>}
+        </div>})}</div></section><section className={styles.examples}>
         <header><h2>试试这样说</h2><span>·</span><p>点击示例可放入输入区</p></header>
         <div>{mode.examples.map(([title, detail], index) => <button key={title} onClick={() => choosePrompt(title)}>
           <b data-tone={index}>0{index + 1}</b><span><strong>{title}</strong><small>{detail}</small></span>
