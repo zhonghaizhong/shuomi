@@ -8,7 +8,7 @@ import {readOptimizedDatasets,optimizedDatasetsChanged,type OptimizedDataset,typ
  * Production must persist applications and authorize review/publishing server-side.
  */
 export type PreferredDecision="待审核"|"已通过"|"未通过";
-export type PreferredSupply={stock:string;moq:string;dispatch:string;origin:string;pricing:string;returns:string};
+export type PreferredSupply={stock:string;moq:string;dispatch:string;origin:string;pricing:string;returns:string; supplyKind?:"现货"|"定制"|"POD";warehouseMode?:"硕米仓库"|"已验证自有仓"|"新增自有仓";warehouseId?:string;warehouseName?:string;warehouseAddress?:string;currency?:string;unitPrice?:string;maxQuantity?:string;dropship?:boolean;packageWeight?:string;packageSize?:string;shippingCountries?:string;skuPrices?:Record<string,{price:string;quantity:string}>;supplierName?:string;supplierContact?:string;supplierPhone?:string;supplierLocation?:string;supplierAgreement?:boolean;productionCapacity?:string; tierPrices?:string};
 export const emptyPreferredSupply:PreferredSupply={stock:"",moq:"",dispatch:"",origin:"",pricing:"",returns:""};
 export type PreferredProductSnapshot={
  sourceProductId:string;sku:string;name:string;image:string;category:string;
@@ -82,11 +82,22 @@ export function readPreferredCandidates(org:string,member:string):PreferredCandi
  });
 }
 function validateSupply(supply:PreferredSupply){
- if(!Number.isSafeInteger(Number(supply.stock))||Number(supply.stock)<1||
-    !Number.isSafeInteger(Number(supply.moq))||Number(supply.moq)<1||
-    Number(supply.moq)>Number(supply.stock))throw Error("请填写有效库存及不超过库存的起订量");
- if(!supply.dispatch.trim()||!supply.origin.trim()||!supply.returns.trim())throw Error("请补充发货时效、发货地和售后政策");
+ const moq=Number(supply.moq),stock=Number(supply.stock);
+ if(!Number.isSafeInteger(moq)||moq<1)throw Error("请填写有效的最小起订量");
+ if(!Number.isSafeInteger(stock)||stock<1||moq>stock)throw Error("请填写有效的可售库存或可接单量，且不能小于起订量");
+ if(!supply.dispatch.trim()||!supply.origin.trim()||!supply.returns.trim())throw Error("请补充发货或生产时效、发货地及售后政策");
+ if(supply.supplyKind){
+  if(!supply.supplierName?.trim()||!supply.supplierContact?.trim()||!supply.supplierPhone?.trim()||!supply.supplierAgreement)throw Error("请完善供应商档案并同意合作规则");
+  if(!supply.unitPrice?.trim()||!Number.isFinite(Number(supply.unitPrice))||Number(supply.unitPrice)<=0)throw Error("请填写有效的基础供货价格");
+  if(!supply.packageWeight?.trim()||!Number.isFinite(Number(supply.packageWeight))||Number(supply.packageWeight)<=0||!supply.packageSize?.trim())throw Error("请补充包装重量和尺寸，供硕米后台核算运费");
+  if(!supply.shippingCountries?.trim())throw Error("请填写可配送国家或地区");
+  if(supply.supplyKind==="现货"&&supply.warehouseMode==="新增自有仓"&&(!supply.warehouseName?.trim()||!supply.warehouseAddress?.trim()))throw Error("请填写新增自有仓名称与地址以提交仓库验证");
+  if(supply.supplyKind==="现货"&&supply.warehouseMode==="已验证自有仓"&&!supply.warehouseId)throw Error("请选择已验证的自有仓库");
+  const skuOffers=Object.values(supply.skuPrices??{});
+  if(!skuOffers.length||skuOffers.some(v=>!Number.isFinite(Number(v.price))||Number(v.price)<=0||!Number.isSafeInteger(Number(v.quantity))||Number(v.quantity)<0))throw Error("请完整填写每个 SKU 的供货价格和可售量");
+ }
 }
+
 export function submitPreferredDemoApplication(org:string,member:string,productIds:string[],supply:PreferredSupply):PreferredApplicationRecord{
  if(typeof window==="undefined")throw Error("演示申请只能在浏览器中操作");
  const ids=[...new Set(productIds)];
