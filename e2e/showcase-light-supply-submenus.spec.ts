@@ -115,9 +115,9 @@ test("preferred application reads owned adapted products and promotes only demo-
  await apply.getByRole("checkbox",{name:/已阅读并同意硕米优选供应商合作规则/}).check();
  await expect(apply.getByRole("radio",{name:/备货到硕米仓库/})).toBeChecked();
  await apply.getByRole("spinbutton",{name:"基础供货价",exact:true}).fill("29");
- await apply.getByRole("spinbutton",{name:"可供库存",exact:true}).fill("120");
+ await apply.getByRole("spinbutton",{name:"SKU默认库存",exact:true}).fill("120");
  await apply.getByRole("spinbutton",{name:"最小起订量",exact:true}).fill("5");
- await apply.getByRole("spinbutton",{name:"SKU库存 OWN-PREF-A:1",exact:true}).fill("120");
+ await expect(apply.getByRole("spinbutton",{name:"SKU库存 OWN-PREF-A:1",exact:true})).toHaveValue("120");
  await expect(apply.getByRole("spinbutton",{name:"SKU供货价 OWN-PREF-A:1",exact:true})).toHaveValue("29");
  await apply.getByRole("textbox",{name:"发货时效",exact:true}).fill("48小时内");
  await apply.getByRole("textbox",{name:"发货地",exact:true}).fill("浙江义乌");
