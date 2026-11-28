@@ -125,7 +125,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   setError("");
   try{
    const selected=items.filter(p=>chosen.includes(p.id));
-   if(priceMode==="landed"&&!collectionCostReady)throw Error("所选商品在该国家的总成本报价不完整，请调整国家或改为只采集供货价格");
+   if(priceMode==="landed"&&!collectionCostReady)throw Error("所选商品的目标国家总成本报价不完整，请选择可配送国家或改为只采集供货价格");
    if(targetCountry&&selected.some(p=>!p.shipToCountries?.includes(targetCountry)))throw Error("所选目标国家不支持全部商品配送，请重新选择");
    const batch=addSelectedCatalogProducts(organizationId,memberId,selected.map(p=>toCollected(p,priceMode,targetCountry)),
      batchMode==="new"?{kind:"new",name:batchName}:{kind:"existing",id:batchId});
