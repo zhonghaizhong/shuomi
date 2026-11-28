@@ -90,6 +90,8 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   const [feedback,onAction]=useState("");
   const [guideOpen,setGuideOpen]=useState(true);
   const [guideFor,setGuideFor]=useState<number|null>(null);
+  const [expandedDraftId,setExpandedDraftId]=useState<number|null>(null);
+  const [confirmDetailsOpen,setConfirmDetailsOpen]=useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const mode = modes[modeIndex];
@@ -114,7 +116,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     if (chatActive) {
       // Work modes remain available in the same right-hand panel. Operations that
       // need confirmation must continue in this composer, even after prior turns.
-      if(modeIndex===1||modeIndex===2||modeIndex===6){setConfirmation(true);return;}
+      if(modeIndex===1||modeIndex===2||modeIndex===6){setConfirmDetailsOpen(false);setConfirmation(true);return;}
       const sent = draft.trim();
       const nextId = Date.now();
       const revised = buildApprovalPreview(modeIndex, sent);
@@ -156,7 +158,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     : scheduleFrequency === "weekly"
       ? "每" + weekdayNames[Number(scheduleWeekday)] + " " + scheduleTime
       : "每月 " + scheduleMonthday + " 日 " + scheduleTime;
-  const startNewConversation = () => { onAction(""); setChatActive(false); setMessages([]); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
+  const startNewConversation = () => { onAction(""); setChatActive(false); setMessages([]);setExpandedDraftId(null);setConfirmDetailsOpen(false); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
   const buildApprovalPreview = (index: number, request: string): Omit<PreviewMessage, "id"> | null => {
     if (index === 3) return {
       role: "assistant",
@@ -240,7 +242,13 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
         <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{modeGuide&&<section className={styles.modeGuide} aria-label={modes[guideFor??modeIndex].title+"使用说明"}>
   <header><div><small>使用说明 · 创建前先了解</small><h3>{modeGuide.heading}</h3></div><button type="button" aria-expanded={guideOpen} onClick={()=>setGuideOpen(v=>!v)}>{guideOpen?"收起说明":"查看如何使用"}</button></header>
   {guideOpen&&<><p>{modeGuide.summary}</p><div className={styles.modeGuideSteps}>{modeGuide.steps.map((step,i)=><div key={step}><b>{String(i+1).padStart(2,"0")}</b><span>{step}</span></div>)}</div><div className={styles.modeGuideOutcome}><strong>创建后会得到什么</strong><span>{modeGuide.outcome}</span></div><div className={styles.modeGuideBottom}><span>后续查看位置：{modeGuide.destination}</span><button type="button" onClick={()=>router.push(modeGuide.url)}>查看{modeGuide.destination}</button></div></>}
- </section>}{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请确认是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button></div></div>}</article>)}
+ </section>}{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请核对详情后决定是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button><button type="button" aria-expanded={expandedDraftId===item.id} aria-label={"查看"+(item.approval==="knowledge"?"知识库":item.approval==="skill"?"技能":"报告")+"草案详情"} onClick={()=>setExpandedDraftId(current=>current===item.id?null:item.id)}>{expandedDraftId===item.id?"收起":"查看"}</button></div>
+ {expandedDraftId===item.id&&<section className={styles.draftDetails} aria-label="当前草案完整详情">
+  <header><strong>{item.approval==="knowledge"?"知识库":item.approval==="skill"?"技能":"报告"}草案详情</strong><small>仅展示当前实际生成的演示内容，不补造未生成的数据</small></header>
+  <dl>{item.text.split("\n").filter(line=>line.includes("：")).map((line,index)=>{const separator=line.indexOf("：");return <div key={index}><dt>{line.slice(0,separator)}</dt><dd>{line.slice(separator+1)||"待完善"}</dd></div>})}</dl>
+  <div className={styles.draftDetailsUsage}><strong>确认后去哪里</strong><span>{item.approval==="knowledge"?"保存到「我的知识库」，之后从资源与能力中引用；目前不会自动产生具体问答内容。":item.approval==="skill"?"保存到「我的技能」，后续被会话或任务引用时执行；单独保存不会自动运行。":"保存到「我的报告」，可查看、收藏或关联项目；尚未执行真实数据分析。"}</span></div>
+  <p>如需详细条目、执行步骤、真实统计结果或来源明细，请在下方输入框补充要求；当前演示中未生成的内容不会伪装为已完成。</p>
+ </section>}</div>}</article>)}
         {confirmation && <section className={styles.inlineConfirmation} aria-label="会话内确认任务">
         <header><div><h2 id="chat-confirm-title">确认{mode.title}</h2><p>请核对当前内容和关联范围，再继续下一步。</p></div><button aria-label="关闭" onClick={() => setConfirmation(false)}>×</button></header>
         {modeIndex === 1 && <section className={styles.scheduleFields} aria-label="定时安排">
@@ -252,7 +260,18 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
         </section>}
         {modeIndex===2&&<section className={styles.scheduleFields}><label><span>项目名称</span><input aria-label="项目名称" value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="请输入项目名称" required/></label>{projectEntry.template&&<p>项目模板：{projectEntry.template.name}</p>}<p>确认后保存本地演示项目并自动关联会话。</p></section>}
         <div className={styles.confirmSummary}>{modeIndex === 1 && <><span>执行安排</span><strong>{scheduleDescription}</strong></>}<span>执行方式</span><strong>{mode.title}</strong><span>工作内容</span><p>{draft}</p><span>关联店铺</span><p>{selectedStores.length ? selectedStores.join("、") : "未关联店铺"}</p><span>引用资源</span><p>{selectedResources.length ? selectedResources.join("、") : "由硕米自动匹配"}</p></div>
-        <footer className={styles.drawerFooter}><button onClick={() => setConfirmation(false)}>返回修改</button><button className={styles.primary} onClick={confirmAction}>确认并继续</button></footer>
+        <footer className={styles.drawerFooter}><button onClick={() => setConfirmation(false)}>返回修改</button><button type="button" aria-expanded={confirmDetailsOpen} onClick={()=>setConfirmDetailsOpen(value=>!value)}>{confirmDetailsOpen?"收起详情":"查看详情"}</button><button className={styles.primary} onClick={confirmAction}>确认并继续</button></footer>
+        {confirmDetailsOpen&&<section className={styles.draftDetails} aria-label="当前任务计划完整详情">
+          <header><strong>{mode.title} · 草案详情</strong><small>核对信息及执行边界</small></header>
+          <dl><div><dt>工作目标</dt><dd>{draft||"待补充"}</dd></div>
+           {modeIndex===2&&<div><dt>项目名称</dt><dd>{projectName||"待填写"}</dd></div>}
+           {modeIndex===1&&<div><dt>执行频率</dt><dd>{scheduleDescription}</dd></div>}
+           <div><dt>业务范围</dt><dd>{selectedStores.length?selectedStores.join("、"):"尚未指定店铺"}</dd></div>
+           <div><dt>关联资源</dt><dd>{selectedResources.length?selectedResources.join("、"):"未手动关联，需执行时确认可用资源"}</dd></div>
+           <div><dt>当前状态</dt><dd>等待确认 · 本地交互演示</dd></div></dl>
+          <div className={styles.draftDetailsUsage}><strong>确认后如何处理</strong>
+           <span>{modeIndex===2?"仅保存演示项目与关联资料；不会自动启动后台持续执行。需在任务中心发起和确认具体任务。":modeIndex===1?"生成定时计划演示草案，尚未建立后台定时调度或真实自动执行。":"保存到任务中心待确认；具体执行仍需在任务中心审核，不会自动修改业务。"}</span></div>
+        </section>}
         </section>}
         {feedback && <p role="status" className={styles.threadEmpty}>{feedback}</p>}
         </div>
