@@ -118,8 +118,21 @@ for(const theme of ["dark","light"] as const){
   await expect(page).toHaveURL(/chat\/new\?preview=1&taskMode=task/);
   await page.locator("#chat-new-prompt").fill("检查商品资料");
   await page.getByRole("button",{name:"确认任务草案",exact:true}).click();
-  const dialog=page.getByRole("dialog",{name:"确认发起任务"});
-  await checkDialog(page,dialog,theme,"AI task creation Chat confirmation");
+  const dialog=page.getByRole("region",{name:"会话内确认任务"});
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("heading",{name:"确认发起任务"})).toBeVisible();
+  await expect(dialog).toContainText("检查商品资料");
+  await expect(dialog.getByRole("button",{name:"确认并继续"})).toBeEnabled();
+  await expect(page.getByRole("region",{name:"新建会话输入区"})).toContainText("确认发起任务");
+  const rect=await dialog.boundingBox();
+  const viewport=page.viewportSize()!;
+  expect(rect).not.toBeNull();
+  expect(rect!.x).toBeGreaterThanOrEqual(0);
+  expect(rect!.x+rect!.width).toBeLessThanOrEqual(viewport.width+2);
+  const colors=await dialog.evaluate(el=>({bg:getComputedStyle(el).backgroundColor,fg:getComputedStyle(el).color}));
+  const bg=rgb(colors.bg),fg=rgb(colors.fg);
+  expect(bg).not.toBeNull();expect(fg).not.toBeNull();
+  if(bg&&fg){const b=luminance(bg),t=luminance(fg);expect((Math.max(b,t)+.05)/(Math.min(b,t)+.05)).toBeGreaterThanOrEqual(4.5);if(theme==="light")expect(b).toBeGreaterThan(.55);else expect(b).toBeLessThan(.34);}
   await dialog.getByRole("button",{name:"返回修改"}).click();await expect(dialog).not.toBeVisible();
  });
 }

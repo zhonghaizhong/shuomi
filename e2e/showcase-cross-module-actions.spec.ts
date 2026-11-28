@@ -7,7 +7,7 @@ test("task and project creation produce visible local drafts",async({page})=>{
  await expect(page).toHaveURL(/chat\/new\?preview=1&taskMode=task/);
  await page.locator("#chat-new-prompt").fill("演示自定义任务");
  await page.getByRole("button",{name:"确认任务草案",exact:true}).click();
- await page.getByRole("dialog",{name:"确认发起任务"}).getByRole("button",{name:"确认并继续"}).click();
+ await page.getByRole("region",{name:"会话内确认任务"}).getByRole("button",{name:"确认并继续"}).click();
  await page.goto(base+"/ai/tasks/pending");
  await expect(page.getByText("演示自定义任务",{exact:true})).toBeVisible();
  await page.goto(base+"/ai/projects");
@@ -15,7 +15,7 @@ test("task and project creation produce visible local drafts",async({page})=>{
  await expect(page).toHaveURL(/chat\/new\?preview=1&projectMode=create/);
  await page.locator("#chat-new-prompt").fill("制定增长目标和阶段安排");
  await page.getByRole("button",{name:"生成项目计划",exact:true}).click();
- const project=page.getByRole("dialog",{name:"确认加入我的项目"});
+ const project=page.getByRole("region",{name:"会话内确认任务"});
  await project.getByRole("textbox",{name:"项目名称"}).fill("演示增长项目");
  await project.getByRole("button",{name:"确认并继续"}).click();
  await expect(page.getByText(/已创建本地演示项目：演示增长项目/)).toBeVisible();

@@ -676,7 +676,7 @@ test("task center modes retain readable light/dark surfaces and functional task 
   await expect(page.getByRole("button",{name:"发起任务",exact:true})).toHaveAttribute("aria-pressed","true");
   await page.locator("#chat-new-prompt").fill("检查商品资料");
   await page.getByRole("button",{name:"确认任务草案",exact:true}).click();
-  const dialog=page.getByRole("dialog",{name:"确认发起任务"});
+  const dialog=page.getByRole("region",{name:"会话内确认任务"});
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button",{name:"返回修改"}).click();
   await expect(dialog).not.toBeVisible();
