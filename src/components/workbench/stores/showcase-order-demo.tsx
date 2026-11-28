@@ -50,7 +50,7 @@ export function readDemoOrders(org:string,stores:DemoStoreBinding[]):Order[]{
   if(!row)continue;
   const key="shuomi:demo-orders:"+org+":"+e.store.id;
   let saved:Order[]=[];try{const raw=JSON.parse(localStorage.getItem(key)||"[]");if(Array.isArray(raw))saved=raw.filter(o=>o.storeId===e.store.id)}catch{}
-  const additions:Order[]=e.plan.stages.map((stage,i)=>{
+  const additions:Order[]=e.plan.stages.map((stage,i):Order=>{
    const sku=e.product.skus[i%e.product.skus.length];
    const id="SIM-APPAREL-ORDER-"+e.store.id.slice(-2)+"-"+String(i+1).padStart(3,"0");
    return {id,storeId:e.store.id,productId:e.platformProductId,sku:sku.id,name:e.product.name,image:sku.images?.[0],origin:"shuomi",amount:e.plan.price,created:apparelDemoTime,stage,fulfillmentSource:"硕米优选",supplyProductId:e.product.id,supplySkuId:sku.id,...(stage>=2?{purchaseId:"SIM-PURCHASE-"+id}:{}),...(stage>=3?{carrier:"演示物流",trackingNumber:"SIM-TRACK-"+id,shippedAt:apparelDemoTime,platformSync:"模拟同步成功" as const}:{})};
