@@ -223,3 +223,39 @@ test("chat keeps the original input docked at the bottom before and after send",
  expect(page.url()).toBe(initialURL);
  await expect(input).toBeVisible();
 });
+
+test("view guides for project skill knowledge report without switching work mode or moving composer",async({page})=>{
+ await page.setViewportSize({width:1600,height:950});
+ await page.goto("/shuomi/#/workbench/ai/chat/new");
+ const currentURL=page.url();
+ const right=page.getByRole("complementary",{name:"选择执行方式"});
+ const composer=page.locator('[data-conversation-composer="stable"]');
+ const input=composer.getByLabel("描述你的业务目标");
+ const original=await input.boundingBox();
+ const chatMode=right.getByRole("button",{name:"创建会话",exact:true});
+ await expect(chatMode).toHaveAttribute("aria-pressed","true");
+ for(const item of [
+  {mode:"加入我的项目",heading:"项目是什么？创建后怎么推进？",after:"进行中项目"},
+  {mode:"加入我的知识库",heading:"知识库是什么？建好后怎么用？",after:"我的知识库"},
+  {mode:"保存为我的技能",heading:"技能是什么？保存后怎么执行？",after:"我的技能"},
+  {mode:"加入我的报告",heading:"报告是什么？生成后去哪查看？",after:"我的报告"}
+ ]){
+  await right.getByRole("button",{name:"查看"+item.mode+"说明"}).click();
+  const guide=composer.getByRole("region",{name:item.mode+"使用说明"});
+  await expect(guide).toBeVisible();
+  await expect(guide.getByRole("heading",{name:item.heading})).toBeVisible();
+  await expect(guide).toContainText("创建后会得到什么");
+  await expect(guide).toContainText(item.after);
+  await expect(chatMode).toHaveAttribute("aria-pressed","true");
+  await expect(input).toBeVisible();
+  expect(page.url()).toBe(currentURL);
+  const after=await input.boundingBox();
+  expect(Math.abs(after!.y-original!.y)).toBeLessThan(3);
+ }
+ await right.getByRole("button",{name:"加入我的项目",exact:true}).click();
+ await expect(right.getByRole("button",{name:"加入我的项目",exact:true})).toHaveAttribute("aria-pressed","true");
+ await expect(composer.getByRole("region",{name:"加入我的项目使用说明"})).toBeVisible();
+ await input.fill("创建一个新品开发项目");
+ await expect(input).toHaveValue("创建一个新品开发项目");
+ expect(page.url()).toBe(currentURL);
+});
