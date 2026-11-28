@@ -23,6 +23,9 @@ const modes = [
 
 type ModeGuide={heading:string;summary:string;steps:[string,string,string];outcome:string;destination:string;url:string};
 const modeGuides:Partial<Record<number,ModeGuide>>={
+ 0:{heading:"创建会话有什么作用？",summary:"直接向硕米描述目标，持续讨论，按需引用业务资源和店铺数据；会话只是协作入口，不代表任务已经自动执行。",steps:["在固定输入框描述目标或问题","根据需要引用资源并持续补充信息","确认具体业务草案，再从对应模块查看成果"],outcome:"保留本次对话及需要确认的草案；当前演示不执行外部操作。",destination:"当前会话",url:"/workbench/ai/chat"},
+ 1:{heading:"定时任务如何运行？",summary:"根据指定频率、时间与执行范围创建定时计划。正式运行需有后台调度器、有效授权及可用执行能力。",steps:["描述任务、选择频率与执行时间","核对任务权限、执行条件和通知方式","到时按授权执行，异常或重要操作请求确认"],outcome:"生成待确认的定时计划；当前演示不会在后台自动执行。",destination:"任务中心 · 定时任务",url:"/workbench/ai/tasks/scheduled"},
+ 6:{heading:"发起任务后如何执行？",summary:"任务中心负责管理待确认、执行中、异常及已完成事项，可在授权后调用具体智能体与工具。",steps:["描述任务目标、范围和交付标准","审查并确认任务草案及权限","在任务中心跟踪结果、异常和后续处理"],outcome:"生成待确认的任务记录；当前演示不会自动调用真实业务接口。",destination:"任务中心",url:"/workbench/ai/tasks"},
  2:{heading:"项目是什么？创建后怎么推进？",summary:"项目是一个长期目标的工作空间，用来集中管理目标、阶段进度、关联资料和成果。它不是点击创建后就自动执行全部工作。",
   steps:["描述目标并创建项目","围绕里程碑在当前会话中拆分、发起任务","在项目中心查看进度与报告，具体执行和确认在任务中心进行"],
   outcome:"得到项目名称、目标、阶段里程碑和关联资源；当前演示先保存项目记录，具体任务须另行发起。",destination:"进行中项目",url:"/workbench/ai/projects/active?preview=1"},
@@ -88,14 +91,13 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   
   const [messages, setMessages] = useState<PreviewMessage[]>([]);
   const [feedback,onAction]=useState("");
-  const [guideOpen,setGuideOpen]=useState(true);
   const [guideFor,setGuideFor]=useState<number|null>(null);
   const [expandedDraftId,setExpandedDraftId]=useState<number|null>(null);
   const [confirmDetailsOpen,setConfirmDetailsOpen]=useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const mode = modes[modeIndex];
-  const modeGuide=modeGuides[guideFor??modeIndex];
+  const modeGuide=guideFor===null?null:modeGuides[guideFor];
   useEffect(() => {
     if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
   }, [chatActive, messages, feedback, confirmation]);
@@ -158,7 +160,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
     : scheduleFrequency === "weekly"
       ? "每" + weekdayNames[Number(scheduleWeekday)] + " " + scheduleTime
       : "每月 " + scheduleMonthday + " 日 " + scheduleTime;
-  const startNewConversation = () => { onAction(""); setChatActive(false); setMessages([]);setExpandedDraftId(null);setConfirmDetailsOpen(false); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
+  const startNewConversation = () => { onAction(""); setChatActive(false); setMessages([]);setGuideFor(null);setExpandedDraftId(null);setConfirmDetailsOpen(false); setDraft(""); setConfirmation(false); setModeIndex(0); setSelectedResources([]); setSelectedStores([]); setFiles([]); setLinkedProjectId("");setProjectName(""); };
   const buildApprovalPreview = (index: number, request: string): Omit<PreviewMessage, "id"> | null => {
     if (index === 3) return {
       role: "assistant",
@@ -239,10 +241,7 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
   return <div className={styles.workspace} data-chat-active={chatActive}>
       <section className={styles.composer} aria-label={chatActive ? "会话消息与输入区" : "新建会话输入区"} data-conversation-composer="stable">
         <header className={styles.composerIntro}><div><h2>有什么想交给硕米？</h2><p>{chatActive ? "当前会话的消息和处理结果在这里继续显示，不切换页面。" : "直接描述问题或工作目标，硕米协助整理并回复。"}</p></div>{chatActive && <button className={styles.newConversation} onClick={startNewConversation}>＋ 新会话</button>}</header>
-        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{modeGuide&&<section className={styles.modeGuide} aria-label={modes[guideFor??modeIndex].title+"使用说明"}>
-  <header><div><small>使用说明 · 创建前先了解</small><h3>{modeGuide.heading}</h3></div><button type="button" aria-expanded={guideOpen} onClick={()=>setGuideOpen(v=>!v)}>{guideOpen?"收起说明":"查看如何使用"}</button></header>
-  {guideOpen&&<><p>{modeGuide.summary}</p><div className={styles.modeGuideSteps}>{modeGuide.steps.map((step,i)=><div key={step}><b>{String(i+1).padStart(2,"0")}</b><span>{step}</span></div>)}</div><div className={styles.modeGuideOutcome}><strong>创建后会得到什么</strong><span>{modeGuide.outcome}</span></div><div className={styles.modeGuideBottom}><span>后续查看位置：{modeGuide.destination}</span><button type="button" onClick={()=>router.push(modeGuide.url)}>查看{modeGuide.destination}</button></div></>}
- </section>}{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请核对详情后决定是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button><button type="button" aria-expanded={expandedDraftId===item.id} aria-label={"查看"+(item.approval==="knowledge"?"知识库":item.approval==="skill"?"技能":"报告")+"草案详情"} onClick={()=>setExpandedDraftId(current=>current===item.id?null:item.id)}>{expandedDraftId===item.id?"收起":"查看"}</button></div>
+        <div className={styles.thread} ref={threadRef} aria-label="聊天记录" aria-live="polite">{!chatActive && !confirmation && <p className={styles.threadEmpty}>在下方输入需求，消息和处理结果会持续显示在这里。</p>}{messages.map(item => <article key={item.id} className={item.role === "user" ? styles.userTurn : styles.assistantTurn}><span>{item.role === "user" ? "我" : "硕米 · 演示回复"}</span><p>{item.text}</p>{item.approval && <div className={styles.approvalActions}><span>草案已生成，请核对详情后决定是否加入</span><div><button className={styles.approveButton} onClick={() => handleApproval(item, true)}>{item.approval === "knowledge" ? "确认加入知识库" : item.approval === "skill" ? "确认保存技能" : "确认加入报告"}</button><button onClick={() => handleApproval(item, false)}>继续修改</button><button type="button" aria-expanded={expandedDraftId===item.id} aria-label={"查看"+(item.approval==="knowledge"?"知识库":item.approval==="skill"?"技能":"报告")+"草案详情"} onClick={()=>setExpandedDraftId(current=>current===item.id?null:item.id)}>{expandedDraftId===item.id?"收起":"查看"}</button></div>
  {expandedDraftId===item.id&&<section className={styles.draftDetails} aria-label="当前草案完整详情">
   <header><strong>{item.approval==="knowledge"?"知识库":item.approval==="skill"?"技能":"报告"}草案详情</strong><small>仅展示当前实际生成的演示内容，不补造未生成的数据</small></header>
   <dl>{item.text.split("\n").filter(line=>line.includes("：")).map((line,index)=>{const separator=line.indexOf("：");return <div key={index}><dt>{line.slice(0,separator)}</dt><dd>{line.slice(separator+1)||"待完善"}</dd></div>})}</dl>
@@ -298,10 +297,10 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
       </section>
       <aside className={styles.modePanel} aria-label="选择执行方式">
         <><section className={styles.modePicker}><header className={styles.modePickerIntro}><h2>选择工作方式</h2><p>选择最符合当前需求的入口</p></header><div className={styles.modeList}>{modeOrder.map(index => {const item=modes[index];return <div key={item.title} className={styles.modeOptionRow}>
-          <button type="button" className={index === modeIndex ? styles.modeSelected : ""} onClick={() => {setModeIndex(index);setGuideFor(index);setConfirmation(false);setGuideOpen(true);if(threadRef.current)threadRef.current.scrollTop=0}} aria-pressed={index === modeIndex}>
+          <button type="button" className={index === modeIndex ? styles.modeSelected : ""} onClick={() => {setModeIndex(index);setConfirmation(false)}} aria-pressed={index === modeIndex}>
             <i data-tone={index} /><span><strong>{item.title}</strong></span>
           </button>
-          {modeGuides[index]&&<button type="button" className={styles.modeViewButton} aria-label={"查看"+item.title+"说明"} onClick={()=>{setGuideFor(index);setGuideOpen(true);if(threadRef.current)threadRef.current.scrollTop=0}}>查看</button>}
+          <button type="button" className={styles.modeViewButton} aria-label={"介绍"+item.title} onClick={()=>setGuideFor(index)}>介绍</button>
         </div>})}</div></section><section className={styles.examples}>
         <header><h2>试试这样说</h2><span>·</span><p>点击示例可放入输入区</p></header>
         <div>{mode.examples.map(([title, detail], index) => <button key={title} onClick={() => choosePrompt(title)}>
@@ -309,6 +308,17 @@ export function ChatNewPreview({ organizationId="SM-ENT-000001",memberId="admin"
         </button>)}</div>
       </section></>
       </aside>
+
+    {modeGuide&&guideFor!==null&&<div className={styles.guideBackdrop} onMouseDown={event=>{if(event.target===event.currentTarget)setGuideFor(null)}}>
+      <section className={styles.guideDialog} role="dialog" aria-modal="true" aria-label={modes[guideFor].title+"功能介绍"}>
+        <header><div><small>功能介绍 · {modes[guideFor].title}</small><h2>{modeGuide.heading}</h2></div><button type="button" aria-label="关闭功能介绍" onClick={()=>setGuideFor(null)}>关闭</button></header>
+        <p>{modeGuide.summary}</p>
+        <h3>使用流程</h3>
+        <div className={styles.guideSteps}>{modeGuide.steps.map((step,i)=><div key={step}><b>{String(i+1).padStart(2,"0")}</b><span>{step}</span></div>)}</div>
+        <div className={styles.guideOutcome}><strong>完成后会得到什么</strong><p>{modeGuide.outcome}</p><span>后续查看位置：{modeGuide.destination}</span></div>
+        <footer><button className={styles.primary} type="button" onClick={()=>setGuideFor(null)}>我知道了</button></footer>
+      </section>
+    </div>}
 
     {drawer && <div className={styles.overlay} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setDrawer(null); }}>
       <section className={styles.drawer} role="dialog" aria-modal="true" aria-labelledby="chat-drawer-title">
