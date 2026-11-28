@@ -92,7 +92,7 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
   try{profile=JSON.parse(localStorage.getItem(supplierKey)||"null")}catch{/* first-time application */}
   const sourceSkus=available.flatMap(c=>c.product.skus.map(sku=>({key:c.product.id+":"+String(sku.id),sku})));
   const firstPrice=sourceSkus.find(v=>v.sku.price&&Number(v.sku.price)>0)?.sku.price??"";
-  const firstQuantity=sourceSkus.find(v=>Number(v.sku.stock)>0)?.sku.stock;
+  const firstQuantity=sourceSkus.find(v=>v.sku.stock!==undefined)?.sku.stock;
   const skuOverrides:NonNullable<PreferredSupply["skuOverrides"]>={};
   for(const {key,sku} of sourceSkus){
    if(sku.price&&Number(sku.price)>0&&sku.price!==firstPrice)skuOverrides[key]={...skuOverrides[key],price:String(sku.price)};
