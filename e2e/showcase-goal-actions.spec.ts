@@ -49,7 +49,8 @@ test("goal actions open a detail dialog after creating a store-scoped draft",asy
  await page.getByRole("button",{name:"新建目标"}).click();
  await page.keyboard.press("Escape");
  await expect(page.getByRole("dialog",{name:"新建目标"})).toHaveCount(0);
- await expect(page.getByRole("button",{name:"操作"})).toHaveCount(0);
+ await expect(page.getByRole("button",{name:"操作",exact:true})).toHaveCount(3);
+ await expect(page.getByText("月度订单目标",{exact:true})).toHaveCount(0);
  await page.getByRole("button",{name:"新建目标"}).click();
  const create=page.getByRole("dialog",{name:"新建目标"});
  await create.getByRole("textbox",{name:"目标名称"}).fill("月度订单目标");
@@ -57,7 +58,9 @@ test("goal actions open a detail dialog after creating a store-scoped draft",asy
  await create.getByRole("spinbutton",{name:"目标值"}).fill("300");
  await create.getByRole("button",{name:"添加到演示列表"}).click();
  await expect(page.getByText("月度订单目标",{exact:true})).toBeVisible();
- await page.getByRole("button",{name:"操作"}).first().click();
+ const goalRow=page.locator('[class*="goalRow"]').filter({has:page.getByText("月度订单目标",{exact:true})});
+ await expect(page.getByRole("button",{name:"操作",exact:true})).toHaveCount(4);
+ await goalRow.getByRole("button",{name:"操作",exact:true}).click();
  const detail=page.getByRole("dialog");
  await expect(detail).toContainText("月度订单目标");
  await expect(detail).toContainText("当前状态");

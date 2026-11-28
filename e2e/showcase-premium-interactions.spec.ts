@@ -66,19 +66,33 @@ test("theme toggle and account menu follow Figma, with safe dialog for logout/de
  await expect(page.getByRole("heading",{name:"账户资料"})).toBeVisible();
 });
 
-test("cleared store product and order pages show truthful empty states and working navigation",async({page})=>{
- for(const [route,label] of [["/store-products","暂无已保存的同步商品"],["/store-orders","暂无平台订单"]]){
-  await page.goto(base+route);
-  const root=page.locator('[data-store-center-showcase]');
-  await expect(root).toBeVisible();
-  await expect(root.getByRole("heading",{name:label,exact:true})).toBeVisible();
-  await expect(root.getByText("共 0 条")).toBeVisible();
-  await root.getByRole("button",{name:route==="/store-products"?"管理我的店铺":"前往我的店铺",exact:true}).click();
-  await expect(root).toHaveAttribute("data-store-center-showcase","stores");
-  await expect(root).toContainText("共 11 家");
-  await expect(root).toContainText("管理员演示店铺01");
-  await expect(root).toContainText("同事01演示店铺01");
- }
+test("store products and seeded orders show truthful records and working navigation",async({page})=>{
+ await page.goto(base+"/store-products");
+ const root=page.locator('[data-store-center-showcase]');
+ await expect(root).toBeVisible();
+ await root.getByRole("button",{name:"管理我的店铺",exact:true}).click();
+ await expect(root).toHaveAttribute("data-store-center-showcase","stores");
+ await expect(root).toContainText("共 11 家");
+ await expect(root).toContainText("管理员演示店铺01");
+ await expect(root).toContainText("同事01演示店铺01");
+ await page.goto(base+"/store-orders");
+ await expect(root.getByRole("heading",{name:"平台订单记录",exact:true})).toBeVisible();
+ const rows=root.locator("tbody tr");
+ await expect(rows.filter({hasText:"管理员演示店铺02"})).toHaveCount(6);
+ await expect(rows.filter({hasText:"管理员演示店铺03"})).toHaveCount(2);
+ // Original store 01 orders require its prior approved Kindle listing. Verify each
+ // additional fixture independently rather than depending on another test's storage.
+ await expect(rows.filter({hasText:"管理员演示店铺02"}).first()).toContainText("CA$39.99");
+ await expect(rows.filter({hasText:"管理员演示店铺03"}).first()).toContainText("£29.99");
+ const order=rows.filter({hasText:"SIM-ORDER-03-001"});
+ await order.getByRole("button",{name:"查看",exact:true}).click();
+ const detail=page.getByRole("dialog",{name:"订单履约详情"});
+ await expect(detail).toBeVisible();
+ await detail.getByRole("button",{name:"模拟处理订单"}).click();
+ await expect(detail.getByText("演示履约状态已更新")).toBeVisible();
+ await detail.getByRole("button",{name:"关闭",exact:true}).first().click();
+ await page.reload();
+ await expect(root.locator("tbody tr").filter({hasText:"SIM-ORDER-03-001"})).toContainText("待采购 / 收货");
 });
 
 test("My Stores filters work on local drafts and other account modules preserve their entry points",async({page})=>{
