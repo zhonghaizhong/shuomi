@@ -76,7 +76,8 @@ export function KnowledgeGroupManager({organizationId,memberId,onBrowse}:{organi
  const [editor,setEditor]=useState<string|null>(null);
  const [editName,setEditName]=useState("");
  const [editDescription,setEditDescription]=useState("");
- const [more,setMore]=useState<string|null>(null);\n const [reading,setReading]=useState<string|null>(null);
+ const [more,setMore]=useState<string|null>(null);
+ const [reading,setReading]=useState<string|null>(null);
  const [moveTarget,setMoveTarget]=useState("");
  useEffect(()=>{
   const refresh=()=>setState(readKnowledgeState(organizationId,memberId));
