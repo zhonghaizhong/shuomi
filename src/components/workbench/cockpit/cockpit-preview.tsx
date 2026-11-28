@@ -42,7 +42,7 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
   for(const order of scopedOrders)ordersByStore.set(order.storeId,(ordersByStore.get(order.storeId)??0)+1);
   const connectionIssues=visibleStores.filter(store=>store.issue);
   const scopeLabel=activeFilters.time;
-  const pageSize = 5;
+  const pageSize = 10;
   const pageCount = Math.max(1, Math.ceil(visibleStores.length / pageSize));
   const currentPage=Math.min(tablePage,pageCount);
   const pageStores = visibleStores.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -58,9 +58,9 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
           <div className={styles.heroCopy}>
             <div className={styles.heroEyebrow}><span className={styles.heroPulse} aria-hidden="true" />运营总览 <span className={styles.heroEnglish}>OPERATIONS OVERVIEW</span></div>
             <h1>经营全局 · 一屏掌握</h1>
-            <p className={styles.heroIntro}>汇聚多店铺经营表现、核心指标与风险动态，让每一次决策都有清晰依据。</p>
+            <p className={styles.heroIntro}>按平台、站点及时间范围查看经营指标、演示订单和店铺连接情况。</p>
             <div className={styles.heroScope}>当前：{visibleStores.length} 家店铺 <i aria-hidden="true" /> {scopeLabel} <i aria-hidden="true" /> GMV / 曝光 / 点击待接入</div>
-            <div className={styles.heroHighlights} aria-label="经营总览能力"><span>多店数据统一查看</span><span>经营风险快速识别</span><span>AI 执行与待办追踪</span></div>
+            <div className={styles.heroHighlights} aria-label="经营总览能力"><span>多店经营指标</span><span>店铺连接提醒</span><span>订单与流量分析</span></div>
           </div>
           <div className={styles.overviewAside}>
             <div className={styles.overviewGlobe} aria-hidden="true">
@@ -68,10 +68,6 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
             </div>
           </div>
         </div>
-      </article>
-      <article className={styles.aiTasksCard}>
-        <header><h2>AI 执行与待办</h2><span>数据待接入</span></header>
-        <div className={styles.aiTasksList}><p>尚无与当前店铺范围关联的可核验任务数据。请到任务中心查看实际进度。</p><button type="button" onClick={()=>router.push("/workbench/ai/tasks")}>查看任务中心</button></div>
       </article>
     </section>
     <div className={styles.overviewFilters}>
