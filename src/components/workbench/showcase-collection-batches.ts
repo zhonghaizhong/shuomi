@@ -9,7 +9,7 @@ export type DemoCollectedProduct={id:string;name:string;sku:string;source:string
  destinationCosts?:Array<{skuId:string;country:string;supplyPrice:number;inspection:number|null;packing:number|null;labeling:number|null;freight:number|null;unitTotal:number|null;currency:string;complete:boolean;demo:boolean}>;
 
 };
-export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon"|"SDS"|"硕米优选";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
+export type DemoCollectionBatch={id:string;organizationId:string;ownerMemberId:string;source:"1688"|"Amazon"|"SDS"|"硕米优选"|"混合来源";method:string;name:string;createdAt:string;products:DemoCollectedProduct[];status:"已采集 · 待上传";demo:true};
 type CatalogItem={name:string;price:string;variants:string[];description:string;photos:string[]};
 // Public photographic sample references. Not original 1688 product photos or authenticated offers.
 const demoCatalog:CatalogItem[]=[
@@ -224,27 +224,49 @@ export function addSelectedCatalogProducts(
  target:{kind:"new";name:string}|{kind:"existing";id:string}
 ):DemoCollectionBatch{
  if(typeof window==="undefined")throw Error("当前浏览器无法保存演示采集批次");
- if(entries.length===0)throw Error("请至少选择一件商品");
+ if(!entries.length)throw Error("请至少选择一件商品");
+ // Initialize the same seeded batch store used by 我的数据 before reading/writing.
+ readDemoCollectionBatches(org,member);
  const stored=sessionStorage.getItem(key(org));
- const raw:unknown=stored===null?(org==="SM-ENT-000001"?[initialBatch(org)]:[]):JSON.parse(stored);
- const batches=Array.isArray(raw)?raw.filter(valid):[];
+ const parsed:unknown=stored?JSON.parse(stored):[];
+ const batches=Array.isArray(parsed)?parsed.filter(valid):[];
  const permitted=batches.filter(b=>b.organizationId===org&&b.ownerMemberId===member);
  const batch=target.kind==="existing"?permitted.find(b=>b.id===target.id):undefined;
- if(target.kind==="existing"&&!batch)throw Error("批次不存在或无权操作");
- if(batch&&batch.source!=="硕米优选")throw Error("请选择硕米优选采集批次，避免混淆原始数据来源");
+ if(target.kind==="existing"&&!batch)throw Error("所选批次不存在或不属于当前账户，请刷新后重新选择");
  const name=target.kind==="new"?target.name.trim():"";
  if(target.kind==="new"&&(!name||name.length>80))throw Error("请输入有效的批次名称");
  if(target.kind==="new"&&permitted.some(b=>b.name===name))throw Error("批次名称已存在");
- const copy=(p:DemoCollectedProduct):DemoCollectedProduct=>({...p,images:[...(p.images??[])],variants:[...(p.variants??[])],shipToCountries:[...(p.shipToCountries??[])],variantDetails:p.variantDetails?.map(v=>({...v,images:[...(v.images??[])]}))});
- const existing=new Set((batch?.products??[]).map(p=>p.supplyProductId||p.id));
- const additions=entries.filter(p=>!existing.has(p.supplyProductId||p.id)).map(copy);
- if(!additions.length)throw Error("选择的商品都已经存在于此采集批次");
+ const copy=(p:DemoCollectedProduct):DemoCollectedProduct=>({...p,images:[...(p.images??[])],variants:[...(p.variants??[])],shipToCountries:[...(p.shipToCountries??[])],destinationCosts:p.destinationCosts?.map(q=>({...q})),variantDetails:p.variantDetails?.map(v=>({...v,images:[...(v.images??[])]}))});
+ const idOf=(p:DemoCollectedProduct)=>p.supplyProductId||p.id;
+ // Keep one product row per supplier product. Repeated imports append only new
+ // variant SKU rows and their country quotes, never duplicate an existing SKU.
+ let modified=0;
+ const products=(batch?.products??[]).map(copy);
+ for(const input of entries){
+  const next=copy(input);
+  const index=products.findIndex(p=>idOf(p)===idOf(next));
+  if(index<0){products.push(next);modified++;continue}
+  const old=products[index];
+  const prior=new Set((old.variantDetails??[]).map(v=>v.sku));
+  const incoming=(next.variantDetails??[]).filter(v=>!prior.has(v.sku));
+  if(!incoming.length)continue;
+  const costs=new Map((old.destinationCosts??[]).map(c=>[c.skuId+"::"+c.country,c]));
+  for(const c of next.destinationCosts??[])if(incoming.some(v=>v.sku===c.skuId))costs.set(c.skuId+"::"+c.country,c);
+  const details=[...(old.variantDetails??[]),...incoming];
+  products[index]={...old,variantDetails:details,
+   variants:[...new Set([...old.variants??[],...incoming.map(v=>v.label)])],
+   variantCount:details.length,shipToCountries:[...new Set([...old.shipToCountries??[],...next.shipToCountries??[]])],
+   destinationCosts:costs.size?[...costs.values()]:undefined};
+  modified+=incoming.length;
+ }
+ if(!modified)throw Error("所选商品与 SKU 已全部存在该批次，没有新增内容");
  const now=new Date().toLocaleString("zh-CN",{hour12:false});
- const next:DemoCollectionBatch=batch?{...batch,products:[...batch.products,...additions]}:{
-  id:"SIM-SHUOMI-"+crypto.randomUUID(),organizationId:org,ownerMemberId:member,
-  source:"硕米优选",method:"共享货盘选品（演示）",name,createdAt:now,products:additions,
-  status:"已采集 · 待上传",demo:true
- };
+ const next:DemoCollectionBatch=batch?{...batch,
+  // Mixed-source batches preserve each item's original source and SKUs.
+  source:batch.products.length===0?"硕米优选":batch.source==="硕米优选"?"硕米优选":"混合来源",
+  products}:{id:"SIM-SHUOMI-"+crypto.randomUUID(),organizationId:org,ownerMemberId:member,
+  source:"硕米优选",method:"硕米优选货盘采集（演示）",name,createdAt:now,products,
+  status:"已采集 · 待上传",demo:true};
  sessionStorage.setItem(key(org),JSON.stringify(batch?batches.map(b=>b.id===batch.id?next:b):[next,...batches]));
  window.dispatchEvent(new CustomEvent("shuomi:demo-batches-updated",{detail:{organizationId:org}}));
  return next;
