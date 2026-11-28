@@ -94,7 +94,7 @@ export function CockpitPreview({organizationId="SM-ENT-000001",memberId="admin"}
       <header className={styles.digestHeader}><div><h2>经营表现</h2><span>核心指标 · {scopeLabel} · 按当前筛选汇总</span></div><button type="button" onClick={()=>router.push("/workbench/overview/stores")}>店铺详情</button></header>
       <div className={styles.digestMain}>
         <div className={styles.digestLead}><span>总 GMV</span><div><strong>—</strong><small>平台成交金额待接入</small></div><p>{visibleStores.length} 家店铺 · {scopeLabel} · 经营目标见目标管理</p></div>
-        <div className={styles.digestBars} role="img" aria-label="平台每日 GMV 未接入，图表不展示虚构走势">{[0, 0, 0, 0, 0, 0, 0].map((height, index) => <div key={index}><i style={{ height: `${height}%` }} /><span>{["周一", "周二", "周三", "周四", "周五", "周六", "周日"][index]}</span></div>)}</div>
+        <div className={styles.digestNoTrend} role="status"><strong>经营趋势待接入</strong><span>暂未获得平台按日期返回的 GMV，不展示推测走势</span></div>
       </div>
       <div className={styles.digestDetails}>
         <article><span className={styles.digestLabel}><ShoppingCart size={15}/>订单量</span><strong>{scopedOrders.length?scopedOrders.length.toLocaleString("zh-CN"):"—"}</strong><small>{scopedOrders.length?"当前范围演示订单 · 非实时平台数据":"平台订单未接入，当前无演示订单"}</small><div className={styles.digestProgress}><i data-tone="purple"/></div></article>
