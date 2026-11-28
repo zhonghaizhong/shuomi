@@ -250,7 +250,7 @@ test("all seven modes offer 介绍 in a centered dialog, leaving selection and i
  expect(page.url()).toBe(currentURL);
 });
 
-test("draft 查看 displays real details inline for knowledge, skill, report, task, schedule, and project",async({page})=>{
+test("draft 查看 opens concrete outcome previews and keeps task plans in the conversation",async({page})=>{
  await page.goto("/shuomi/#/workbench/ai/chat/new");
  const url=page.url();
  const modes=page.getByRole("complementary",{name:"选择执行方式"});
@@ -258,9 +258,9 @@ test("draft 查看 displays real details inline for knowledge, skill, report, ta
  const thread=composer.getByLabel("聊天记录");
  const input=composer.getByLabel("描述你的业务目标");
  for(const entry of [
-  {mode:"加入我的知识库",action:"整理知识条目",detail:"查看知识库草案详情",topic:"售后规则知识"},
-  {mode:"保存为我的技能",action:"生成技能草案",detail:"查看技能草案详情",topic:"图片审核标准"},
-  {mode:"加入我的报告",action:"生成报告草案",detail:"查看报告草案详情",topic:"新品利润分析"},
+  {mode:"加入我的知识库",action:"整理知识条目",detail:"查看知识条目完整内容",topic:"售后规则知识"},
+  {mode:"保存为我的技能",action:"生成技能草案",detail:"查看技能完整内容",topic:"图片审核标准"},
+  {mode:"加入我的报告",action:"生成报告草案",detail:"查看报告完整内容",topic:"新品利润分析"},
  ]){
   await modes.getByRole("button",{name:entry.mode,exact:true}).click();
   await input.fill(entry.topic);
@@ -268,12 +268,15 @@ test("draft 查看 displays real details inline for knowledge, skill, report, ta
   await expect(thread).toContainText(entry.topic);
   const view=thread.getByRole("button",{name:entry.detail}).last();
   await view.click();
-  await expect(thread.getByRole("region",{name:"当前草案完整详情"})).toContainText(entry.topic);
-  await expect(thread.getByRole("region",{name:"当前草案完整详情"})).toContainText("确认后去哪里");
-  await expect(input).toBeVisible();
+  const preview=page.getByRole("dialog",{name:entry.topic,exact:true});
+  await expect(preview).toBeVisible();
+  await expect(preview).toContainText(entry.topic);
+  await expect(preview).toContainText("待确认草案");
+  await expect(preview.getByRole("button",{name:"继续修改",exact:true})).toBeVisible();
   expect(page.url()).toBe(url);
-  await view.click();
-  await expect(thread.getByRole("region",{name:"当前草案完整详情"})).toHaveCount(0);
+  await preview.getByRole("button",{name:"关闭成果预览",exact:true}).click();
+  await expect(preview).toHaveCount(0);
+  await expect(input).toBeVisible();
  }
  for(const entry of [
   {mode:"发起任务",action:"确认任务草案",topic:"复核商品属性",kind:"任务"},
@@ -298,7 +301,7 @@ test("draft 查看 displays real details inline for knowledge, skill, report, ta
  await input.fill("普通对话不需要草案详情");
  await composer.getByRole("button",{name:"发送消息"}).click();
  await expect(thread).toContainText("普通对话不需要草案详情");
- await expect(thread.getByRole("button",{name:"查看知识库草案详情"})).toHaveCount(1);
+ await expect(thread.getByRole("button",{name:"查看知识条目完整内容"})).toHaveCount(1);
  await expect(input).toBeVisible();
  expect(page.url()).toBe(url);
 });
