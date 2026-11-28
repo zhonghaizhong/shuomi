@@ -8,6 +8,9 @@ import {readDemoCollectionBatches,addSelectedCatalogProducts,type DemoCollectedP
 import css from "./showcase-selected-market.module.css";
 
 const pagesize=8;
+const formatMoney=(value:number,currency:string)=>currency==="CNY"?"¥"+value.toFixed(2):currency+" "+value.toFixed(2);
+const packageVolume=(p:SelectedCatalogProduct)=>p.packagingLengthCm&&p.packagingWidthCm&&p.packagingHeightCm
+ ?(p.packagingLengthCm*p.packagingWidthCm*p.packagingHeightCm/1000000).toFixed(4)+" m³":"待供应商提供";
 function toCollected(product:SelectedCatalogProduct):DemoCollectedProduct{
  return {
   id:"COLLECT-"+product.id,sku:product.skus[0]?.id??product.id,
@@ -30,7 +33,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const [query,setQuery]=useState(""),[appliedQuery,setAppliedQuery]=useState("");
  const [category,setCategory]=useState("全部类目"),[page,setPage]=useState(1);
  const [country,setCountry]=useState("全部货源"),[destination,setDestination]=useState("全部国家");
- const [supplyType,setSupplyType]=useState("全部"),[moqLimit,setMoqLimit]=useState("不限");
+ const [supplyType,setSupplyType]=useState("全部"),[moqLimit,setMoqLimit]=useState(100);
  const [singleOnly,setSingleOnly]=useState(false),[dropshipOnly,setDropshipOnly]=useState(false);
  const [sortBy,setSortBy]=useState("综合排序");
  const [active,setActive]=useState<string|null>(null),[chosen,setChosen]=useState<string[]>([]);
@@ -73,7 +76,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   (country==="全部货源"||p.warehouseCountry===country)&&
   (destination==="全部国家"||p.shipToCountries?.includes(destination))&&
   (supplyType==="全部"||p.supplyType===supplyType)&&
-  (moqLimit==="不限"||p.moq<=Number(moqLimit))&&
+  (p.moq<=moqLimit)&&
   (!singleOnly||p.moq===1)&&(!dropshipOnly||p.dropship===true)&&
   (p.name+" "+p.id+" "+p.supplierName+" "+p.skus.map(s=>s.id).join(" ")).toLowerCase().includes(appliedQuery.toLowerCase()));
  const totalPages=Math.max(1,Math.ceil(filtered.length/pagesize));
@@ -99,15 +102,15 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  return <main className={css.page} aria-label="硕米优选" data-selected-market="true" data-organization={organizationId}>
   <header className={css.header}><div><small>供应市场 / 硕米优选</small><h1>硕米优选</h1><p>全球优质货源共享市场 · 现货、定制与 POD · 多仓供货 · 支持一件代发筛选</p></div><button type="button" onClick={()=>router.push("/workbench/supply/applications?preview=1")}>申请加入硕米优选</button></header>
   <section className={css.metrics} aria-label="货盘概览">
-   {[["共享商品",items.length],["演示供货商",new Set(items.map(p=>p.supplierId)).size],["货源国家",origins.length],["可配送国家",destinations.length]].map(([label,value])=><div key={label} className={css.metric}><strong>{value}</strong><span>{label}</span></div>)}
+   {[["货盘商品",items.length],["供应商数量",new Set(items.map(p=>p.supplierId)).size],["货源国家",origins.length],["可配送国家",destinations.length]].map(([label,value])=><div key={label} className={css.metric}><strong>{value}</strong><span>{label}</span></div>)}
   </section>
-  <section className={css.products} aria-label="共享货盘商品">
+  <section className={css.products} aria-label="货盘商品">
    <div className={css.toolbar}><div><h2>优选商品</h2><p>供货、配送与一件代发信息均为演示资料，正式业务以供应商审核的仓库履约规则为准。</p></div></div>
    <div className={css.filterPanel} aria-label="货盘筛选条件">
     <label className={css.filterField}>货源国家<select aria-label="货源国家" value={country} onChange={e=>{setCountry(e.target.value);setPage(1)}}><option>全部货源</option>{origins.map(v=><option key={v}>{v}</option>)}</select></label>
     <label className={css.filterField}>可配送国家<select aria-label="可配送国家" value={destination} onChange={e=>{setDestination(e.target.value);setPage(1)}}><option>全部国家</option>{destinations.map(v=><option key={v}>{v}</option>)}</select></label>
     <fieldset className={css.supplyTypeField}><legend>供货类型</legend><div className={css.segmented}>{["全部","现货","定制","POD"].map(t=><button type="button" key={t} className={supplyType===t?css.selected:""} aria-pressed={supplyType===t} onClick={()=>{setSupplyType(t);setPage(1)}}>{t}</button>)}</div></fieldset>
-    <label className={css.filterField}>起订量（MOQ）<select aria-label="起订量" value={moqLimit} onChange={e=>{setMoqLimit(e.target.value);setPage(1)}}><option value="不限">不限</option><option value="1">最多 1 件</option><option value="5">最多 5 件</option><option value="10">最多 10 件</option></select></label>
+    <label className={css.moqSliderField}>起订量（MOQ） <strong>≤ {moqLimit} 件</strong><input type="range" aria-label="起订量" min="1" max="100" step="1" value={moqLimit} onChange={e=>{setMoqLimit(Number(e.target.value));setPage(1)}}/><span>1 件 <small>100 件</small></span></label>
     <div className={css.checkFilters}>
      <label><input type="checkbox" checked={singleOnly} onChange={e=>{setSingleOnly(e.target.checked);setPage(1)}}/>仅看 1 件起订</label>
      <label><input type="checkbox" checked={dropshipOnly} onChange={e=>{setDropshipOnly(e.target.checked);setPage(1)}}/>仅看支持一件代发</label>
@@ -139,7 +142,15 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   {chosen.length?<div className={css.bulk}><span>已选择 {chosen.length} 件商品</span><button type="button" className={css.primary} onClick={()=>{setCollectOpen(true);setError("")}}>加入我的采集批次</button><button type="button" onClick={()=>setChosen([])}>取消选择</button></div>:null}
   <p className={css.disclaimer}>本页为前端演示货盘。模拟审核、供应商、价格、库存和配送范围不代表真实认证；正式跨企业共享及供货交易须接入服务端权限、审核、库存和结算接口。当前只创建个人采集副本，不自动上架或采购。加入硕米优选不保证订单。</p>
   {current&&!collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setActive(null)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="优选商品详情"><header><h2>商品与供货信息</h2><button type="button" onClick={()=>setActive(null)}>关闭</button></header>
-   <div className={css.modalBody}><div className={css.modalPicture}><PackageSearch size={44}/><span>暂无商品图片</span></div><div><h3>{current.name}</h3><p>{current.description}</p><dl><dt>供货商</dt><dd>{current.supplierName}</dd><dt>认证状态</dt><dd>演示审核通过</dd><dt>货盘商品 ID</dt><dd>{current.id}</dd><dt>商品类目</dt><dd>{current.category}</dd><dt>供货类型</dt><dd>{current.supplyType??"待确认"}</dd><dt>货源国家</dt><dd>{current.warehouseCountry||"待确认"}</dd><dt>可配送国家</dt><dd>{current.shipToCountries?.join("、")||"待确认"}</dd><dt>一件代发</dt><dd>{current.dropship===true?"支持":current.dropship===false?"不支持":"待确认"}</dd><dt>来源版本</dt><dd>{current.version}</dd><dt>供货价</dt><dd>{current.price>0?"¥"+current.price.toFixed(2)+" 起":"待核"}</dd><dt>库存</dt><dd>{current.stock}</dd><dt>起订量</dt><dd>{current.moq}</dd><dt>发货地</dt><dd>{current.origin}</dd><dt>发货时效</dt><dd>{current.dispatch}</dd><dt>售后说明</dt><dd>{current.returns}</dd></dl></div></div>
+   <div className={css.modalBody}><div className={css.modalPicture}><PackageSearch size={44}/><span>暂无商品图片</span></div><div><h3>{current.name}</h3><p>{current.description}</p><dl><dt>供货商</dt><dd>{current.supplierName}</dd><dt>认证状态</dt><dd>演示审核通过</dd><dt>货盘商品 ID</dt><dd>{current.id}</dd><dt>商品类目</dt><dd>{current.category}</dd><dt>供货类型</dt><dd>{current.supplyType??"待确认"}</dd><dt>货源国家</dt><dd>{current.warehouseCountry||"待确认"}</dd><dt>可配送国家</dt><dd>{current.shipToCountries?.join("、")||"待确认"}</dd><dt>一件代发</dt><dd>{current.dropship===true?"支持":current.dropship===false?"不支持":"待确认"}</dd><dt>来源版本</dt><dd>{current.version}</dd><dt>供货价</dt><dd>{current.price>0?formatMoney(current.price,current.quotationCurrency||"CNY")+" 起（演示报价）":"待供应商报价"}</dd><dt>库存</dt><dd>{current.stock}</dd><dt>起订量</dt><dd>{current.moq}</dd><dt>发货地</dt><dd>{current.origin}</dd><dt>备货 / 出库时效</dt><dd>{current.dispatch||"待供应商提供"}</dd>
+    <dt>包装重量</dt><dd>{current.packagingWeightKg!==undefined?current.packagingWeightKg.toFixed(2)+" kg（演示）":"待供应商提供"}</dd>
+    <dt>包装尺寸</dt><dd>{current.packagingLengthCm&&current.packagingWidthCm&&current.packagingHeightCm?`${current.packagingLengthCm} × ${current.packagingWidthCm} × ${current.packagingHeightCm} cm（演示）`:"待供应商提供"}</dd>
+    <dt>包装体积</dt><dd>{packageVolume(current)}{current.packagingLengthCm?"（演示）":""}</dd><dt>售后说明</dt><dd>{current.returns}</dd></dl></div></div>
+   <section className={css.logisticsSection} aria-label="各国家物流报价"><header><h3>各国家运费与配送时效</h3><span>演示报价，正式以供应商确认及实际重量、体积为准</span></header>
+    <div className={css.skuTable}><table><thead><tr><th>配送国家</th><th>运输方式</th><th>预计运费 / 件</th><th>运输时效</th></tr></thead><tbody>
+    {(current.shipToCountries||[]).map(country=>{const quote=current.shippingQuotes?.find(q=>q.country===country);return <tr key={country}><td>{country}</td><td>{quote?.method||"待确认"}</td><td>{quote?.freight===null||quote?.freight===undefined?"待供应商报价":formatMoney(quote.freight,quote.currency)+"（演示）"}</td><td>{quote?.transitDays||"待供应商提供"}</td></tr>})}
+    {!current.shipToCountries?.length?<tr><td colSpan={4}>可配送国家及物流报价待供应商提供</td></tr>:null}
+    </tbody></table></div><p>运输时效不包含备货 / 出库时间；具体费用需按 SKU、数量、目的地邮编与计费重量核算。</p></section>
    <h3 className={css.skuTitle}>供货 SKU 与变体</h3><div className={css.skuTable}><table><thead><tr><th>SKU</th><th>规格</th><th>供货价</th><th>演示库存</th></tr></thead><tbody>{current.skus.map(s=><tr key={s.id}><td>{s.id}</td><td>{s.label}</td><td>{s.price>0?"¥"+s.price.toFixed(2):"待核"}</td><td>{s.stock}</td></tr>)}</tbody></table></div>
    <footer><button type="button" onClick={()=>setActive(null)}>取消</button><button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setCollectOpen(true);setError("")}}>加入采集批次</button></footer>
   </section></div>:null}
