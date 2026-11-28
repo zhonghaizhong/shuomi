@@ -247,13 +247,15 @@ export function PreferredApplicationPreview({pathname,organizationId="SM-ENT-000
        <div className={styles.fields}>
         <label>批量供货价<input type="number" min="0.01" step="0.01" aria-label="批量供货价" value={supply.unitPrice??""} onChange={e=>setSupply(v=>({...v,unitPrice:e.target.value}))} placeholder="选填"/></label>
         <label>批量库存 / 接单量<input type="number" min="0" aria-label="批量库存" value={supply.defaultSkuQuantity??""} onChange={e=>setSupply(v=>({...v,defaultSkuQuantity:e.target.value}))} placeholder="选填"/></label>
+        <label>批量起订量<input type="number" min="1" step="1" aria-label="批量起订量" value={supply.defaultSkuMoq??""} onChange={e=>setSupply(v=>({...v,defaultSkuMoq:e.target.value}))} placeholder="选填"/></label>
         <label>批量包装重量 kg<input type="number" min="0.001" step="0.001" aria-label="批量包装重量" value={supply.packageWeight??""} onChange={e=>setSupply(v=>({...v,packageWeight:e.target.value}))} placeholder="选填"/></label>
         <label>批量包装尺寸 cm<input aria-label="批量包装尺寸" value={supply.packageSize??""} onChange={e=>setSupply(v=>({...v,packageSize:e.target.value}))} placeholder="长×宽×高（选填）"/></label>
        </div>
-       <div className={styles.applyTools}><button type="button" disabled={!batchSkuKeys.length||![supply.unitPrice,supply.defaultSkuQuantity,supply.packageWeight,supply.packageSize].some(v=>v?.trim())} onClick={()=>{
-        const changes:{price?:string;quantity?:string;weight?:string;size?:string}={};
+       <div className={styles.applyTools}><button type="button" disabled={!batchSkuKeys.length||![supply.unitPrice,supply.defaultSkuQuantity,supply.defaultSkuMoq,supply.packageWeight,supply.packageSize].some(v=>v?.trim())} onClick={()=>{
+        const changes:{price?:string;quantity?:string;moq?:string;weight?:string;size?:string}={};
         if(supply.unitPrice?.trim())changes.price=supply.unitPrice;
         if(supply.defaultSkuQuantity?.trim())changes.quantity=supply.defaultSkuQuantity;
+        if(supply.defaultSkuMoq?.trim())changes.moq=supply.defaultSkuMoq;
         if(supply.packageWeight?.trim())changes.weight=supply.packageWeight;
         if(supply.packageSize?.trim())changes.size=supply.packageSize;
         setSupply(v=>({...v,skuOverrides:Object.fromEntries([...Object.entries(v.skuOverrides??{}),...batchSkuKeys.map(key=>[key,{...v.skuOverrides?.[key],...changes}] as const)])}));
