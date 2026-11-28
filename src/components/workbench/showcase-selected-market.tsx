@@ -37,6 +37,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const [singleOnly,setSingleOnly]=useState(false),[dropshipOnly,setDropshipOnly]=useState(false);
  const [sortBy,setSortBy]=useState("综合排序");
  const [active,setActive]=useState<string|null>(null),[chosen,setChosen]=useState<string[]>([]);
+ const [activeSku,setActiveSku]=useState(""),[photoIndex,setPhotoIndex]=useState(0),[imageFailed,setImageFailed]=useState(false);
  const [collectOpen,setCollectOpen]=useState(false),[batchMode,setBatchMode]=useState<"new"|"existing">("new");
  const [batchName,setBatchName]=useState("硕米优选采集批次"),[batchId,setBatchId]=useState("");
  const [batches,setBatches]=useState<DemoCollectionBatch[]>([]);
@@ -83,6 +84,11 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
  const sorted=[...filtered].sort((a,b)=>sortBy==="起订量升序"?a.moq-b.moq:sortBy==="价格升序"?a.price-b.price:sortBy==="价格降序"?b.price-a.price:0);
  const shown=sorted.slice((Math.min(page,totalPages)-1)*pagesize,Math.min(page,totalPages)*pagesize);
  const current=items.find(p=>p.id===active);
+ const selectedSku=current?.skus.find(s=>s.id===activeSku)??current?.skus[0];
+ const skuPhotos=selectedSku?.images?.length?selectedSku.images:(current?.images??[]);
+ const activePhoto=skuPhotos.length?skuPhotos[Math.min(photoIndex,skuPhotos.length-1)]:null;
+ const setSku=(id:string)=>{setActiveSku(id);setPhotoIndex(0);setImageFailed(false)};
+ const openProduct=(id:string)=>{setActive(id);setActiveSku("");setPhotoIndex(0);setImageFailed(false)};
  const ownedBatches=batches.filter(b=>b.source==="硕米优选");
  const submit=()=>{
   setError("");
@@ -133,7 +139,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
       <div className={css.offerInfo}><span>起订量 <strong>{item.moq} 件</strong></span><span className={item.dropship===true?css.dropshipYes:css.dropshipNeutral}>{item.dropship===true?"✓ 支持一件代发":item.dropship===false?"不支持一件代发":"一件代发待确认"}</span></div>
       <div className={css.price}>{item.price>0?"¥"+item.price.toFixed(2)+" 起":"供货价待核"}</div>
       <div className={css.shipping}>可配送：{item.shipToCountries?.length?item.shipToCountries.join("、"):"待确认"}</div>
-      <div className={css.cardActions}><button type="button" onClick={()=>setActive(item.id)}>查看详情</button><button type="button" className={css.primary} onClick={()=>{setChosen([item.id]);setCollectOpen(true);setError("")}}>加入采集批次</button></div>
+      <div className={css.cardActions}><button type="button" onClick={()=>openProduct(item.id)}>查看详情</button><button type="button" className={css.primary} onClick={()=>{setChosen([item.id]);setCollectOpen(true);setError("")}}>加入采集批次</button></div>
      </div></article>)}
    </div><div className={css.pagination}><span>共 {filtered.length} 件商品</span><div><button type="button" disabled={page<=1} onClick={()=>setPage(v=>v-1)}>上一页</button><span>{Math.min(page,totalPages)} / {totalPages}</span><button type="button" disabled={page>=totalPages} onClick={()=>setPage(v=>v+1)}>下一页</button></div></div></>:
    <div className={css.empty}><PackageSearch size={30}/><h3>没有找到符合条件的商品</h3><p>请调整货源、配送国家、供货类型或搜索条件。</p></div>}
@@ -142,7 +148,18 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
   {chosen.length?<div className={css.bulk}><span>已选择 {chosen.length} 件商品</span><button type="button" className={css.primary} onClick={()=>{setCollectOpen(true);setError("")}}>加入我的采集批次</button><button type="button" onClick={()=>setChosen([])}>取消选择</button></div>:null}
   <p className={css.disclaimer}>本页为前端演示货盘。模拟审核、供应商、价格、库存和配送范围不代表真实认证；正式跨企业共享及供货交易须接入服务端权限、审核、库存和结算接口。当前只创建个人采集副本，不自动上架或采购。加入硕米优选不保证订单。</p>
   {current&&!collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setActive(null)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="优选商品详情"><header><h2>商品与供货信息</h2><button type="button" onClick={()=>setActive(null)}>关闭</button></header>
-   <div className={css.modalBody}><div className={css.modalPicture}><PackageSearch size={44}/><span>暂无商品图片</span></div><div><h3>{current.name}</h3><p>{current.description}</p><dl><dt>供货商</dt><dd>{current.supplierName}</dd><dt>认证状态</dt><dd>演示审核通过</dd><dt>货盘商品 ID</dt><dd>{current.id}</dd><dt>商品类目</dt><dd>{current.category}</dd><dt>供货类型</dt><dd>{current.supplyType??"待确认"}</dd><dt>货源国家</dt><dd>{current.warehouseCountry||"待确认"}</dd><dt>可配送国家</dt><dd>{current.shipToCountries?.join("、")||"待确认"}</dd><dt>一件代发</dt><dd>{current.dropship===true?"支持":current.dropship===false?"不支持":"待确认"}</dd><dt>来源版本</dt><dd>{current.version}</dd><dt>供货价</dt><dd>{current.price>0?formatMoney(current.price,current.quotationCurrency||"CNY")+" 起（演示报价）":"待供应商报价"}</dd><dt>库存</dt><dd>{current.stock}</dd><dt>起订量</dt><dd>{current.moq}</dd><dt>发货地</dt><dd>{current.origin}</dd><dt>备货 / 出库时效</dt><dd>{current.dispatch||"待供应商提供"}</dd>
+   <div className={css.modalBody}><aside className={css.galleryColumn}>
+    <div className={css.squareGallery} aria-label="商品图片轮播">
+     {activePhoto&&!imageFailed?<img key={activePhoto} src={activePhoto} alt={current.name+" · "+(selectedSku?.label||"商品")+" · 图片 "+(photoIndex+1)} onError={()=>setImageFailed(true)}/>:<div className={css.emptySquare}><PackageSearch size={42}/><span>{skuPhotos.length?"图片暂不可用":"暂无商品图片"}</span></div>}
+     {skuPhotos.length>1?<div className={css.galleryPaging}><button type="button" aria-label="上一张商品图片" onClick={()=>{setPhotoIndex(v=>(v+skuPhotos.length-1)%skuPhotos.length);setImageFailed(false)}}>上一张</button><span>{Math.min(photoIndex+1,skuPhotos.length)} / {skuPhotos.length}</span><button type="button" aria-label="下一张商品图片" onClick={()=>{setPhotoIndex(v=>(v+1)%skuPhotos.length);setImageFailed(false)}}>下一张</button></div>:null}
+    </div>
+    {skuPhotos.length>1?<div className={css.galleryThumbs}>{skuPhotos.map((src,i)=><button type="button" aria-label={"查看商品图片 "+(i+1)} key={src+"-"+i} aria-pressed={photoIndex===i} onClick={()=>{setPhotoIndex(i);setImageFailed(false)}}><img src={src} alt={"缩略图 "+(i+1)}/></button>)}</div>:null}
+    <div className={css.variantPicker}><strong>选择 SKU / 变体</strong><div className={css.variantChoices}>{current.skus.map(s=><button type="button" aria-label={"选择变体 "+s.label} aria-pressed={selectedSku?.id===s.id} key={s.id} onClick={()=>setSku(s.id)}>{s.label}</button>)}</div>
+     {selectedSku?<div className={css.variantFacts}><span>SKU：{selectedSku.id}</span><span>供货价：{selectedSku.price>0?formatMoney(selectedSku.price,current.quotationCurrency||"CNY"):"待供应商报价"}</span><span>库存：{selectedSku.stock}</span></div>:null}
+    </div>
+   </aside><div className={css.productOverview}><h3>{current.name}</h3><p>{current.description}</p><dl><dt>供货商</dt><dd>{current.supplierName}</dd><dt>认证状态</dt><dd>演示审核通过</dd><dt>货盘商品 ID</dt><dd>{current.id}</dd><dt>商品类目</dt><dd>{current.category}</dd><dt>供货类型</dt><dd>{current.supplyType??"待确认"}</dd><dt>货源国家</dt><dd>{current.warehouseCountry||"待确认"}</dd><dt>可配送国家</dt><dd>{current.shipToCountries?.join("、")||"待确认"}</dd><dt>一件代发</dt><dd>{current.dropship===true?"支持":current.dropship===false?"不支持":"待确认"}</dd><dt>来源版本</dt><dd>{current.version}</dd><dt>供货价</dt><dd>{current.price>0?formatMoney(current.price,current.quotationCurrency||"CNY")+" 起（演示报价）":"待供应商报价"}</dd><dt>质检费用</dt><dd>{current.serviceFees?.inspection!=null?formatMoney(current.serviceFees.inspection,current.serviceFees.currency)+(current.serviceFees.demo?"（演示/件）":"/件"):"待供应商报价"}</dd>
+    <dt>打包费用</dt><dd>{current.serviceFees?.packing!=null?formatMoney(current.serviceFees.packing,current.serviceFees.currency)+(current.serviceFees.demo?"（演示/件）":"/件"):"待供应商报价"}</dd>
+    <dt>贴标费用</dt><dd>{current.serviceFees?.labeling!=null?formatMoney(current.serviceFees.labeling,current.serviceFees.currency)+(current.serviceFees.demo?"（演示/件）":"/件"):"待供应商报价"}</dd><dt>库存</dt><dd>{current.stock}</dd><dt>起订量</dt><dd>{current.moq}</dd><dt>发货地</dt><dd>{current.origin}</dd><dt>备货 / 出库时效</dt><dd>{current.dispatch||"待供应商提供"}</dd>
     <dt>包装重量</dt><dd>{current.packagingWeightKg!==undefined?current.packagingWeightKg.toFixed(2)+" kg（演示）":"待供应商提供"}</dd>
     <dt>包装尺寸</dt><dd>{current.packagingLengthCm&&current.packagingWidthCm&&current.packagingHeightCm?`${current.packagingLengthCm} × ${current.packagingWidthCm} × ${current.packagingHeightCm} cm（演示）`:"待供应商提供"}</dd>
     <dt>包装体积</dt><dd>{packageVolume(current)}{current.packagingLengthCm?"（演示）":""}</dd><dt>售后说明</dt><dd>{current.returns}</dd></dl></div></div>
@@ -151,7 +168,7 @@ export function ShowcaseSelectedMarket({organizationId,memberId}:{organizationId
     {(current.shipToCountries||[]).map(country=>{const quote=current.shippingQuotes?.find(q=>q.country===country);return <tr key={country}><td>{country}</td><td>{quote?.method||"待确认"}</td><td>{quote?.freight===null||quote?.freight===undefined?"待供应商报价":formatMoney(quote.freight,quote.currency)+"（演示）"}</td><td>{quote?.transitDays||"待供应商提供"}</td></tr>})}
     {!current.shipToCountries?.length?<tr><td colSpan={4}>可配送国家及物流报价待供应商提供</td></tr>:null}
     </tbody></table></div><p>运输时效不包含备货 / 出库时间；具体费用需按 SKU、数量、目的地邮编与计费重量核算。</p></section>
-   <h3 className={css.skuTitle}>供货 SKU 与变体</h3><div className={css.skuTable}><table><thead><tr><th>SKU</th><th>规格</th><th>供货价</th><th>演示库存</th></tr></thead><tbody>{current.skus.map(s=><tr key={s.id}><td>{s.id}</td><td>{s.label}</td><td>{s.price>0?"¥"+s.price.toFixed(2):"待核"}</td><td>{s.stock}</td></tr>)}</tbody></table></div>
+   <h3 className={css.skuTitle}>供货 SKU 与变体 <small>点击上方变体选项可同步切换主图、价格与库存</small></h3><div className={css.skuTable}><table><thead><tr><th>SKU</th><th>规格</th><th>供货价</th><th>演示库存</th></tr></thead><tbody>{current.skus.map(s=><tr key={s.id} data-selected={selectedSku?.id===s.id}><td>{s.id}</td><td>{s.label}</td><td>{s.price>0?"¥"+s.price.toFixed(2):"待核"}</td><td>{s.stock}</td></tr>)}</tbody></table></div>
    <footer><button type="button" onClick={()=>setActive(null)}>取消</button><button type="button" className={css.primary} onClick={()=>{setChosen([current.id]);setCollectOpen(true);setError("")}}>加入采集批次</button></footer>
   </section></div>:null}
   {collectOpen?<div className={css.overlay} onMouseDown={e=>{if(e.target===e.currentTarget)setCollectOpen(false)}}><section className={css.modal} role="dialog" aria-modal="true" aria-label="加入我的采集批次">
